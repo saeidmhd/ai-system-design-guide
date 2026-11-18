@@ -1,115 +1,116 @@
-# AI Evals For Engineers, PMs & QAs: Complete Study Guide
+# ارزیابی‌های هوش مصنوعی برای مهندسان، مدیران محصول و کارشناسان QA: راهنمای جامع مطالعه
 
-*Based on the Maven course by Hamel Husain & Shreya Shankar, enriched with hands-on examples, production-ready code, and platform-specific guides for LangWatch, Langfuse, and more*
+*بر اساس دوره Maven توسط هامل حسین و شریا شانکار، غنی‌شده با مثال‌های عملی، کدهای آماده برای محیط پروداکشن و راهنماهای اختصاصی پلتفرم‌ها برای LangWatch، Langfuse و موارد دیگر*
 
-**Who is this guide for?**
-- **Engineers** building AI-powered products who need to systematically evaluate quality
-- **Product Managers** who own the product experience and need to lead error analysis
-- **QA Engineers** who need to build automated evaluation pipelines for AI systems
-- **Anyone** who wants to learn how to evaluate AI applications without taking the full course
+**این راهنما برای چه کسانی است؟**
+- **مهندسانی** که در حال توسعه محصولات مبتنی بر هوش مصنوعی هستند و نیاز دارند کیفیت را به صورت نظام‌مند ارزیابی کنند
+- **مدیران محصولی** که مالک تجربه محصول هستند و باید فرآیند تحلیل خطا (Error Analysis) را هدایت کنند
+- **مهندسان QA** که باید پایپ‌لاین‌های ارزیابی خودکار را برای سیستم‌های هوش مصنوعی بسازند
+- **هر کسی** که می‌خواهد بدون گذراندن دوره کامل، نحوه ارزیابی برنامه‌های کاربردی هوش مصنوعی را بیاموزد
 
-**What you'll learn:**
-- How to set up observability for any AI application
-- How to systematically find what's broken (error analysis)
-- How to build automated evaluators (code-based and LLM judges)
-- How to evaluate RAG systems, multi-step pipelines, and multi-turn conversations
-- How to run production evals: guardrails, safety, and real-time monitoring
-- How to use statistical correction to account for judge errors
-- How to close the loop: turn eval results into system improvements
-- How to do all of this with your observability platform of choice (LangWatch, Langfuse, Braintrust, LangSmith, or your own)
+**آنچه یاد خواهید گرفت:**
+- نحوه راه‌اندازی مشاهده‌پذیری (Observability) برای هر برنامه کاربردی هوش مصنوعی
+- نحوه یافتن نظام‌مند بخش‌های معیوب سیستم (تحلیل خطا یا Error Analysis)
+- نحوه ساخت ارزیاب‌های خودکار (مبتنی بر کد و داورهای LLM)
+- نحوه ارزیابی سیستم‌های RAG، پایپ‌لاین‌های چندمرحله‌ای و گفتگوهای چندنوبته
+- نحوه اجرای ارزیابی‌های پروداکشن: گاردریل‌ها (Guardrails)، ایمنی و مانیتورینگ بلادرنگ
+- نحوه استفاده از تصحیح آماری برای جبران خطاهای داور
+- نحوه تکمیل چرخه (Close the loop): تبدیل نتایج ارزیابی به بهبودهای سیستمی
+- نحوه انجام تمام این کارها با پلتفرم مشاهده‌پذیری دلخواه شما (LangWatch، Langfuse، Braintrust، LangSmith یا پلتفرم اختصاصی خودتان)
 
-**Platform Examples:** This guide uses **LangWatch** (open-source, self-hosted or cloud) and **Langfuse** (open-source, cloud or self-hosted) as primary examples. The methodology is platform-agnostic: adapt it to whichever tool you use.
+**نمونه‌های پلتفرم:** این راهنما از **LangWatch** (متن‌باز، خودمیزبان یا ابری) و **Langfuse** (متن‌باز، ابری یا خودمیزبان) به عنوان نمونه‌های اصلی استفاده می‌کند. این متدولوژی مستقل از پلتفرم است: می‌توانید آن را با هر ابزاری که استفاده می‌کنید تطبیق دهید.
 
-**LangWatch vs Langfuse:** Both are open-source platforms with similar core capabilities. LangWatch ships a library of 30+ ready-made evaluators (RAG, safety, quality) you can attach without writing a judge prompt. Langfuse ships managed LLM-as-a-judge evaluators built from templates, managed code evaluators, and more mature prompt management, and has the larger community. This guide shows both so you can choose based on your needs.
+**مقایسه LangWatch و Langfuse:** هر دو پلتفرم‌هایی متن‌باز با قابلیت‌های کلیدی مشابه هستند. LangWatch کتابخانه‌ای با بیش از ۳۰ ارزیاب آماده (RAG، ایمنی، کیفیت) ارائه می‌دهد که می‌توانید بدون نوشتن Prompt داور، آن‌ها را متصل کنید. Langfuse ارزیاب‌های مدیریت‌شده LLM-as-a-judge ساخته‌شده از قالب‌ها، ارزیاب‌های کدمحور مدیریت‌شده و سیستم مدیریت Prompt بالغ‌تری را ارائه می‌دهد و جامعه کاربری بزرگ‌تری دارد. این راهنما هر دو را نمایش می‌دهد تا بتوانید بر اساس نیازهای خود انتخاب کنید.
 
-**SDK versions matter.** The Langfuse samples target the OTel-based Python SDK v4 (4.16.0 at the end of September 2026), so install it with `pip install "langfuse>=4,<5"`: Langfuse shipped Python SDK v5 on October 14, 2026, and a bare `pip install langfuse` now resolves to v5 (5.2.0 on November 5) on Python 3.11 or later. v5 needs Langfuse Cloud or a self-hosted server at v4.59.0 or newer and removes several v4 calls the samples below use, including `api.scores_v3.get_many_v3()` (now `api.scores.get_many()`) and the legacy API calls, so those samples fail on v5 until ported; see [Integration Example: Langfuse](14-evaluation-and-observability/02-observability.md#integration-example-langfuse-python-sdk-v4) for the full list and the [v4 to v5 upgrade guide](https://langfuse.com/docs/observability/sdk/upgrade-path/python-v4-to-v5). Tutorials that call `langfuse.trace()` are written for the v2 SDK and fail on any current install. The LangWatch samples target Python SDK 1.x (1.4.0 at the end of September 2026; `langwatch.setup()`, `langwatch.experiment.init()`). Pin both SDKs and re-check samples when you upgrade. The samples call `gpt-4o` and `gpt-4o-mini` because they are widely available and still accept `temperature`; for choosing a judge model today, see Chapter 13 and Appendix E.
+**نسخه‌های SDK اهمیت دارند.** نمونه‌های Langfuse نسخه v4 از Python SDK مبتنی بر OTel (نسخه 4.16.0 در اواخر سپتامبر ۲۰۲۶) را هدف قرار داده‌اند، بنابراین آن را با `pip install "langfuse>=4,<5"` نصب کنید: Langfuse نسخه v5 از Python SDK را در ۱۴ اکتبر ۲۰۲۶ عرضه کرد و دستور ساده `pip install langfuse` اکنون در پایتون ۳.۱۱ یا بالاتر به نسخه v5 (نسخه 5.2.0 در ۵ نوامبر) اشاره دارد. نسخه v5 به Langfuse Cloud یا سرور خودمیزبان با نسخه v4.59.0 یا جدیدتر نیاز دارد و چندین فراخوانی v4 را که نمونه‌های زیر استفاده می‌کنند حذف کرده است، از جمله `api.scores_v3.get_many_v3()` (که اکنون `api.scores.get_many()` است) و فراخوانی‌های قدیمی API؛ بنابراین این نمونه‌ها تا زمانی که پورت شوند، روی v5 با خطا مواجه می‌شوند؛ برای فهرست کامل به [نمونه یکپارچه‌سازی: Langfuse](14-evaluation-and-observability/02-observability.md#integration-example-langfuse-python-sdk-v4) و [راهنمای ارتقا از v4 به v5](https://langfuse.com/docs/observability/sdk/upgrade-path/python-v4-to-v5) مراجعه کنید. آموزش‌هایی که `langfuse.trace()` را فراخوانی می‌کنند برای SDK نسخه v2 نوشته شده‌اند و در هر نصب فعلی با خطا مواجه می‌شوند. نمونه‌های LangWatch نسخه 1.x از Python SDK (نسخه 1.4.0 در اواخر سپتامبر ۲۰۲۶؛ `langwatch.setup()`، `langwatch.experiment.init()`) را هدف قرار می‌دهند. نسخه هر دو SDK را Pin کنید و هنگام ارتقا، نمونه‌ها را مجدداً بررسی نمایید. نمونه‌ها مدل‌های `gpt-4o` و `gpt-4o-mini` را فراخوانی می‌کنند زیرا به طور گسترده در دسترس هستند و همچنان `temperature` را می‌پذیرند؛ برای انتخاب مدل داور در حال حاضر، به فصل ۱۳ و پیوست E مراجعه کنید.
 
 ---
 
-## Table of Contents
+## فهرست مطالب
 
-1. [What Are AI Evals and Why You Need Them](#chapter-1)
-2. [Setting Up Observability](#chapter-2)
-3. [Error Analysis: The Secret Sauce](#chapter-3)
-4. [Building LLM-as-a-Judge Evaluators](#chapter-4)
-5. [Code-Based Evaluators](#chapter-5)
-6. [RAG System Evaluation](#chapter-6)
-7. [Multi-Step Pipeline Evaluation](#chapter-7)
-8. [Multi-Turn Conversation Evaluation](#chapter-8)
-9. [Production Evals: Safety, Guardrails & Monitoring](#chapter-9)
-10. [Statistical Correction with judgy](#chapter-10)
-11. [Closing the Loop: From Evals to Improvements](#chapter-11)
-12. [Human Annotation Best Practices](#chapter-12)
-13. [Cost, Latency & Scaling Evals](#chapter-13)
-14. [Practical Implementation Guide](#chapter-14)
-15. [Common Mistakes to Avoid](#chapter-15)
-16. [Tools and Resources](#chapter-16)
+1. [ارزیابی‌های هوش مصنوعی چیستند و چرا به آن‌ها نیاز دارید](#chapter-1)
+2. [راه‌اندازی مشاهده‌پذیری](#chapter-2)
+3. [تحلیل خطا: فرمول جادویی](#chapter-3)
+4. [ساخت ارزیاب‌های LLM-as-a-Judge](#chapter-4)
+5. [ارزیاب‌های مبتنی بر کد](#chapter-5)
+6. [ارزیابی سیستم RAG](#chapter-6)
+7. [ارزیابی پایپ‌لاین‌های چندمرحله‌ای](#chapter-7)
+8. [ارزیابی گفتگوهای چندنوبته](#chapter-8)
+9. [ارزیابی‌های پروداکشن: ایمنی، گاردریل‌ها و مانیتورینگ](#chapter-9)
+10. [تصحیح آماری با judgy](#chapter-10)
+11. [تکمیل چرخه: از ارزیابی‌ها تا بهبودها](#chapter-11)
+12. [بهترین شیوه‌های برچسب‌گذاری انسانی](#chapter-12)
+13. [هزینه، تاخیر (Latency) و مقیاس‌پذیری ارزیابی‌ها](#chapter-13)
+14. [راهنمای پیاده‌سازی عملی](#chapter-14)
+15. [اشتباهات رایجی که باید از آن‌ها اجتناب کرد](#chapter-15)
+16. [ابزارها و منابع](#chapter-16)
 
-**Appendices:**
-- [A: Glossary for PMs & QAs](#appendix-a)
-- [B: Quick Reference](#appendix-b)
-- [C: Complete Judge Prompts from Production](#appendix-c)
-- [D: Pipeline State Evaluator Prompts](#appendix-d)
-- [E: Judge Prompt Engineering Tips](#appendix-e)
-- [F: Platform Methods Reference (LangWatch & Langfuse)](#appendix-f)
-- [G: 30-Day Learning Path](#appendix-g)
+**پیوست‌ها:**
+- [A: واژه‌نامه برای مدیران محصول و کارشناسان QA](#appendix-a)
+- [B: مرجع سریع](#appendix-b)
+- [C: Promptهای کامل داور از محیط پروداکشن](#appendix-c)
+- [D: Promptهای ارزیاب وضعیت پایپ‌لاین](#appendix-d)
+- [E: نکات مهندسی Prompt داور](#appendix-e)
+- [F: مرجع متدهای پلتفرم (LangWatch و Langfuse)](#appendix-f)
+- [G: مسیر یادگیری ۳۰ روزه](#appendix-g)
 
 ---
 
 <a name="chapter-1"></a>
-## Chapter 1: What Are AI Evals and Why You Need Them
 
-### Simple Definition
+## فصل ۱: ارزیابی‌های هوش مصنوعی (AI Evals) چه هستند و چرا به آن‌ها نیاز دارید
 
-**Evals (Evaluations)** are systematic tests that check if your AI application is working correctly. Think of them like unit tests for traditional software, but for AI systems.
+### تعریف ساده
 
-### Why Everyone Needs Evals
+**Evals (ارزیابی‌ها / Evaluations)** آزمون‌هایی سیستماتیک هستند که بررسی می‌کنند آیا برنامه‌ی هوش مصنوعی شما به‌درستی کار می‌کند یا خیر. آن‌ها را مانند تست‌های واحد (Unit Tests) در نرم‌افزارهای سنتی، اما برای سیستم‌های هوش مصنوعی در نظر بگیرید.
 
-There's a debate in the AI community: some people say "just vibe check your app" (meaning: just use it yourself and see if it feels good). But here's the truth:
+### چرا همه به Evals نیاز دارند
 
-**Everyone needs evals.** The people who say they don't need evals are actually benefiting from evals that someone else did upstream.
+در جامعه‌ی هوش مصنوعی بحثی وجود دارد: برخی افراد می‌گویند «فقط برنامه‌تان را vibe check کنید» (به این معنی که: خودتان از آن استفاده کنید و ببینید آیا حس خوبی دارد یا نه). اما حقیقت این است:
 
-Example: If you're building a thin coding assistant on a frontier model, its lab already ran that model through large coding benchmarks before release. So you can "vibe check" your app. But for most applications that aren't simple uses of foundation models, you need your own evals.
+**همه به Evals نیاز دارند.** افرادی که می‌گویند به Evals نیازی ندارند، در واقع از ارزیابی‌هایی بهره می‌برند که افراد دیگری در مراحل بالادستی (upstream) انجام داده‌اند.
 
-### The Three Core Truths About Evals
+مثال: اگر در حال ساخت یک دستیار کدنویسی سبک بر روی یک مدل پیشرو (frontier model) هستید، آزمایشگاه توسعه‌دهنده‌ی آن، پیش از عرضه، آن مدل را با بنچمارک‌های بزرگ کدنویسی سنجیده است. بنابراین شما می‌توانید برنامه‌تان را «vibe check» کنید. اما برای اکثر برنامه‌هایی که استفاده‌های ساده‌ای از مدل‌های پایه (foundation models) نیستند، به Evals اختصاصی خودتان نیاز دارید.
 
-1. **You can't improve what you don't measure**
-   - Generic metrics like "helpfulness score" won't catch specific problems
-   - You need application-specific evals
+### سه حقیقت بنیادین درباره‌ی Evals
 
-2. **Error analysis is the most important step**
-   - More important than LLM judges
-   - More important than fancy observability tools
-   - This is where you actually learn what's broken
+1. **چیزی را که اندازه نگیرید، نمی‌توانید بهبود دهید**
+   - معیارهای عمومی مانند «امتیاز سودمندی» (helpfulness score) متوجه مشکلات خاص نخواهند شد
+   - شما به Evals اختصاصی برای برنامه‌ی کاربردی خود نیاز دارید
 
-3. **PMs and QAs must own error analysis, not just engineers**
-   - Engineers know if code works
-   - PMs know if the product experience is good
-   - QAs know how to systematically break things
-   - You have the domain expertise
-   - This is product work, not just technical work
+2. **تحلیل خطا (Error analysis) مهم‌ترین مرحله است**
+   - مهم‌تر از داورهای LLM
+   - مهم‌تر از ابزارهای پر زرق‌وبرق مشاهده‌پذیری (observability)
+   - این دقیقاً همان جایی است که متوجه می‌شوید کجای کار مشکل دارد
 
-### The AI Development Cycle is the Scientific Method
+3. **مدیران محصول (PMها) و کارشناسان تضمین کیفیت (QAها) باید مالک تحلیل خطا باشند، نه فقط مهندسان**
+   - مهندسان می‌دانند که آیا کد کار می‌کند یا خیر
+   - PMها می‌دانند که آیا تجربه‌ی محصول خوب است یا خیر
+   - QAها می‌دانند چگونه به‌صورت سیستماتیک سیستم را به خطا بیندازند
+   - شما از تخصص حوزه‌ای (domain expertise) برخوردارید
+   - این یک کار محصولی است، نه صرفاً یک کار فنی
 
-Building great AI products requires a rigorous evaluation process. In many ways, AI development IS the scientific method:
+### چرخه‌ی توسعه‌ی هوش مصنوعی همان روش علمی است
 
-1. **Observe** - Trace your AI's behavior (Chapter 2)
-2. **Hypothesize** - Identify what's broken through error analysis (Chapter 3)
-3. **Experiment** - Build evaluators and test changes (Chapters 4-9)
-4. **Measure** - Calculate metrics and correct for bias (Chapter 10)
-5. **Iterate** - Improve based on data, not hunches (Chapter 11)
+ساخت محصولات هوش مصنوعی عالی نیازمند یک فرایند ارزیابی دقیق و سخت‌گیرانه است. از جهات بسیار، توسعه‌ی هوش مصنوعی در واقع خودِ «روش علمی» (Scientific Method) است:
 
-### What Can Go Wrong Without Evals?
+1. **مشاهده (Observe)** - رفتار هوش مصنوعی خود را Trace (ردیابی) کنید (فصل ۲)
+2. **فرضیه‌سازی (Hypothesize)** - از طریق تحلیل خطا، اشکالات را شناسایی کنید (فصل ۳)
+3. **آزمایش (Experiment)** - ارزیاب‌ها (Evaluators) را بسازید و تغییرات را آزمایش کنید (فصل‌های ۴ تا ۹)
+4. **اندازه‌گیری (Measure)** - معیارها را محاسبه کرده و سوگیری‌ها (Bias) را اصلاح نمایید (فصل ۱۰)
+5. **تکرار و بهبود (Iterate)** - بر اساس داده‌ها بهبود دهید، نه حدس و گمان (فصل ۱۱)
 
-Your demo works great. Then production happens:
+### بدون Evals چه مشکلاتی ممکن است رخ دهد؟
 
-- Users hit edge cases you never thought of
-- Text messages contain typos and unusual formatting
-- Dates are formatted differently than expected
-- AI tries to handle requests it should hand off to humans
-- Small prompt changes break things that were working
+نسخه‌ی دموی شما فوق‌العاده کار می‌کند. سپس نوبت به محیط عملیاتی (Production) می‌رسد:
 
-**Example from real production data:**
+- کاربران به موارد نادری (Edge cases) برمی‌خورند که هرگز فکرش را هم نمی‌کردید
+- پیام‌های متنی حاوی غلط‌های املایی و قالب‌بندی‌های غیرعادی هستند
+- تاریخ‌ها با فرمتی متفاوت از آنچه انتظار می‌رفت ثبت می‌شوند
+- هوش مصنوعی تلاش می‌کند درخواست‌هایی را انجام دهد که باید به انسان‌ها واگذار می‌کرد
+- تغییرات کوچک در Prompt چیزهایی را که به‌درستی کار می‌کردند، از کار می‌اندازد
+
+**نمونه‌ای از داده‌های واقعی محیط عملیاتی (Production):**
 ```
 User: "I need a one bedroom with the bathroom NOT connected"
 AI: Returns apartments with connected bathrooms (WRONG!)
@@ -118,47 +119,48 @@ AI: "I'll check on that" but never actually checks
 PLUS: AI used markdown formatting (* asterisks *) in a text message
 ```
 
-Three different problems in one interaction! Without proper logging and evaluation, you'd never catch these patterns.
+سه مشکل متفاوت تنها در یک تعامل! بدون لاگ‌گیری (Logging) و ارزیابی مناسب، هرگز متوجه این الگوها نمی‌شدید.
 
-### For PMs: Why This Is Your Job
+### برای مدیران محصول (PMها): چرا این وظیفه‌ی شماست
 
-**Wrong approach:** "This is technical AI stuff, let engineering figure it out"
+**رویکرد نادرست:** «این‌ها مباحث فنی هوش مصنوعی است، بگذارید تیم مهندسی خودش فکری به حالش بکند»
 
-**Right approach:** PMs should lead error analysis because:
-1. You understand user needs
-2. You have product taste
-3. You have domain expertise
-4. This is product work disguised as technical work
+**رویکرد درست:** مدیران محصول (PMها) باید هدایت تحلیل خطا را بر عهده بگیرند، زیرا:
+1. شما نیازهای کاربران را درک می‌کنید
+2. شما سلیقه و شمّ محصولی دارید (Product taste)
+3. شما تخصص حوزه‌ای (Domain expertise) دارید
+4. این یک کار محصولی در پوشش کار فنی است
 
-**The teams shipping the best AI products have PMs who've personally reviewed hundreds or thousands of traces.**
+**تیم‌هایی که بهترین محصولات هوش مصنوعی را به بازار عرضه می‌کنند، مدیران محصولی دارند که شخصاً صدها یا هزاران Trace را بررسی کرده‌اند.**
 
-### For QAs: Your New Superpower
+### برای کارشناسان تضمین کیفیت (QAها): ابرقدرت جدید شما
 
-Traditional QA involves test cases with expected outputs. AI QA is different:
-1. Outputs are non-deterministic (same input can give different outputs)
-2. "Correct" is often subjective
-3. Edge cases are virtually infinite
-4. You need automated evaluators that scale
+تضمین کیفیت سنتی (Traditional QA) شامل سناریوهای آزمونی با خروجی‌های مورد انتظار است. اما QA هوش مصنوعی متفاوت است:
+1. خروجی‌ها غیرقطعی (Non-deterministic) هستند (یک ورودی یکسان می‌تواند خروجی‌های متفاوتی تولید کند)
+2. مفهوم «درست بودن» اغلب ذهنی و سلیقه‌ای (Subjective) است
+3. موارد خاص و نادر (Edge cases) عملاً بی‌پایان هستند
+4. شما به ارزیاب‌های خودکاری نیاز دارید که مقیاس‌پذیر باشند
 
-But the core QA mindset - systematic testing, edge case thinking, regression prevention - is exactly what AI evals need. QAs who learn evals become incredibly valuable.
+اما طرز فکر اصلی QA — آزمایش سیستماتیک، تفکر درباره‌ی موارد خاص (Edge case thinking) و پیشگیری از پسرفت (Regression prevention) — دقیقاً همان چیزی است که Evals هوش مصنوعی به آن نیاز دارد. کارشناسان QA که ارزیابی‌ها (Evals) را یاد بگیرند، به‌طرز باورنکردنی ارزشمند خواهند شد.
 
 ---
 
 <a name="chapter-2"></a>
-## Chapter 2: Setting Up Observability
 
-### What is a Trace?
+## فصل ۲: راه‌اندازی مشاهده‌پذیری (Observability)
 
-A **trace** is a complete recording of everything your AI did to respond to a user. It's like a detailed log that shows:
+### Trace چیست؟
 
-1. **System prompt** (instructions given to the AI)
-2. **User messages** (what the person asked)
-3. **Tool calls** (functions the AI tried to use)
-4. **Tool responses** (what those functions returned)
-5. **Assistant responses** (what the AI said back)
-6. **All context** (everything the LLM saw when making decisions)
+یک **Trace (ردیابی)**، ثبت کاملی از تمام اقداماتی است که هوش مصنوعی شما برای پاسخ به کاربر انجام داده است. این مفهوم مانند یک لاگ دقیق است که موارد زیر را نشان می‌دهد:
 
-### Example of a Complete Trace
+۱. **System Prompt** (دستورالعمل‌های ارائه‌شده به هوش مصنوعی)
+۲. **پیام‌های کاربر (User messages)** (آنچه فرد پرسیده است)
+۳. **فراخوانی ابزارها (Tool calls)** (توابعی که هوش مصنوعی برای استفاده از آن‌ها تلاش کرده است)
+۴. **پاسخ‌های ابزارها (Tool responses)** (آنچه آن توابع بازگردانده‌اند)
+۵. **پاسخ‌های دستیار (Assistant responses)** (آنچه هوش مصنوعی در پاسخ بازگو کرده است)
+۶. **تمام کانتکست (All context)** (هر آن چیزی که LLM هنگام تصمیم‌گیری مشاهده کرده است)
+
+### نمونه‌ای از یک Trace کامل
 
 ```
 === TRACE ID: abc123 ===
@@ -183,52 +185,52 @@ ASSISTANT RESPONSE:
 (Used markdown: ** ** in text message)
 ```
 
-### What Information to Capture
+### چه اطلاعاتی باید ثبت شوند؟
 
-**Minimum requirements:**
-- Input (user message)
-- Output (AI response)
-- Timestamp
-- Unique ID for the interaction
+**حداقل نیازمندی‌ها:**
+- ورودی (پیام کاربر)
+- خروجی (پاسخ هوش مصنوعی)
+- برچسب زمانی (Timestamp)
+- شناسه یکتا (Unique ID) برای تعامل
 
-**Better to include:**
-- System prompts used
-- Tool calls and their results
-- Model parameters (temperature or reasoning effort, max_tokens, etc.)
-- Token counts
-- Latency (response time)
-- Cost per request
+**بهتر است شامل این موارد باشد:**
+- System Promptهای استفاده‌شده
+- فراخوانی ابزارها و نتایج آن‌ها
+- پارامترهای مدل (مانند temperature یا reasoning effort، `max_tokens` و غیره)
+- تعداد Tokenها
+- تاخیر (Latency) (زمان پاسخ‌دهی)
+- هزینه به ازای هر درخواست
 
-**Best practice:**
-- User context (session history)
-- Error messages if any occurred
-- Model version used
-- Feature flags active at the time
+**بهترین روش‌ها (Best practice):**
+- کانتکست کاربر (تاریخچه Session)
+- پیام‌های خطا در صورت وقوع
+- نسخه مدل استفاده‌شده
+- فلگ‌های ویژگی (Feature flags) فعال در آن زمان
 
-### Choosing an Observability Platform
+### انتخاب پلتفرم مشاهده‌پذیری
 
-| Tool | Type | Best For | Cost |
+| ابزار | نوع | مناسب‌ترین برای | هزینه |
 |------|------|----------|------|
-| **LangWatch** | Open source, cloud or self-hosted | Simple setup, ready-made evaluators, great UX | Free tier + paid |
-| **Langfuse** | Open source, cloud or self-hosted | Custom pipelines, large community | Free tier + paid |
-| **Braintrust** | Cloud (self-hosting on Enterprise) | Excellent UI, team collaboration | Free tier + paid |
-| **LangSmith** | Cloud (self-hosted/hybrid on Enterprise) | LangChain and LangGraph users | Free tier + paid |
-| **Build Your Own** | Custom | Learning, custom needs | Free |
+| **LangWatch** | متن‌باز، ابری یا خودمیزبان | راه‌اندازی ساده، ارزیاب‌های آماده، تجربه کاربری (UX) عالی | سطح رایگان + پولی |
+| **Langfuse** | متن‌باز، ابری یا خودمیزبان | پایپ‌لاین‌های سفارشی، جامعه کاربری بزرگ | سطح رایگان + پولی |
+| **Braintrust** | ابری (امکان خودمیزبانی در نسخه سازمانی/Enterprise) | رابط کاربری (UI) عالی، همکاری تیمی | سطح رایگان + پولی |
+| **LangSmith** | ابری (خودمیزبان/ترکیبی در نسخه سازمانی/Enterprise) | کاربران LangChain و LangGraph | سطح رایگان + پولی |
+| **ساخت توسط خودتان (Build Your Own)** | سفارشی | یادگیری، نیازهای اختصاصی | رایگان |
 
-**LangWatch vs Langfuse comparison:**
-- **Setup:** LangWatch is slightly simpler to start (`langwatch.setup()` plus a trace decorator); Langfuse's OpenAI drop-in client is equally quick for OpenAI-only apps
-- **Evaluators:** LangWatch has 30+ ready-made evaluators (Ragas RAG metrics, PII, jailbreak, content safety, off-topic, LLM-as-judge templates); Langfuse runs managed LLM-as-a-judge evaluators (from templates) and managed code evaluators (Python or TypeScript) on production observations and experiments, and you can also score from your own code through the SDK
-- **Flexibility:** Langfuse is more flexible for custom workflows, LangWatch is more opinionated
-- **Community:** Langfuse has a larger community and more integrations
-- **UI:** Both have strong UIs; LangWatch focuses on analytics, Langfuse on workflow
+**مقایسه LangWatch با Langfuse:**
+- **راه‌اندازی (Setup):** شروع کار با LangWatch کمی ساده‌تر است (`langwatch.setup()` به همراه یک دکوراتور Trace)؛ کلاینت جایگزین مستقیم (drop-in) اختصاصی OpenAI در Langfuse نیز برای برنامه‌های مبتنی بر OpenAI به همان اندازه سریع است.
+- **ارزیاب‌ها (Evaluators):** ابزار LangWatch دارای بیش از ۳۰ ارزیاب آماده است (معیارهای RAG در Ragas، اطلاعات هویتی حساس یا PII، جیل‌بریک/Jailbreak، ایمنی محتوا، نامربوط بودن یا Off-topic، و الگوهای LLM-as-judge)؛ در حالی که Langfuse ارزیاب‌های مدیریت‌شده LLM-as-a-judge (بر اساس الگوها) و ارزیاب‌های کدی مدیریت‌شده (Python یا TypeScript) را روی مشاهدات محیط عملیاتی و آزمایش‌ها اجرا می‌کند، و همچنین می‌توانید از طریق SDK و از درون کد خود امتیازدهی را انجام دهید.
+- **انعطاف‌پذیری (Flexibility):** ابزار Langfuse برای گردش‌های کاری سفارشی انعطاف‌پذیرتر است، در حالی که LangWatch ساختاریافته‌تر و مقیدتر (Opinionated) عمل می‌کند.
+- **جامعه کاربری (Community):** ابزار Langfuse جامعه کاربری بزرگ‌تر و ادغام‌های (Integrations) بیشتری دارد.
+- **رابط کاربری (UI):** هر دو دارای رابط کاربری قدرتمندی هستند؛ تمرکز LangWatch بر تحلیل و آنالیتیکس است، در حالی که تمرکز Langfuse بر گردش کار (Workflow) است.
 
-All of these support the same core concepts: traces, spans, datasets, evaluations, and experiments. The methodology in this guide works with any of them.
+همه این ابزارها از مفاهیم کلیدی یکسانی پشتیبانی می‌کنند: Traceها، Spanها، مجموعه‌داده‌ها (Datasets)، ارزیابی‌ها و آزمایش‌ها. متدولوژی ارائه‌شده در این راهنما با هر یک از آن‌ها سازگار است.
 
-### Setting Up LangWatch (Open-Source, Cloud or Self-Hosted)
+### راه‌اندازی LangWatch (متن‌باز، ابری یا خودمیزبان)
 
-LangWatch is an open-source LLM observability and analytics platform. It provides tracing, evaluation, datasets, experiments, and 30+ ready-made evaluators.
+ابزار LangWatch یک پلتفرم متن‌باز مشاهده‌پذیری و تحلیل LLM است. این پلتفرم امکانات ردگیری (Tracing)، ارزیابی، مجموعه‌داده‌ها (Datasets)، آزمایش‌ها و بیش از ۳۰ ارزیاب آماده را فراهم می‌کند.
 
-#### Install and Configure
+#### نصب و پیکربندی
 
 ```bash
 pip install langwatch
@@ -240,13 +242,13 @@ import os
 os.environ["LANGWATCH_API_KEY"] = "lw_..."  # or set in .env file
 ```
 
-**Cloud vs Self-Hosted:**
-- **Cloud:** Sign up at [langwatch.ai](https://langwatch.ai), get API key, done in 5 minutes
-- **Self-Hosted:** Docker Compose for a quick local stack, Helm for Kubernetes production; the stack runs on PostgreSQL, Redis, and ClickHouse, with S3-compatible object storage as an option in the Helm chart
+**ابری در مقابل خودمیزبان (Cloud vs Self-Hosted):**
+- **ابری (Cloud):** در [langwatch.ai](https://langwatch.ai) ثبت‌نام کنید، کلید API را دریافت کنید، کار در ۵ دقیقه انجام می‌شود.
+- **خودمیزبان (Self-Hosted):** استفاده از Docker Compose برای یک استک محلی سریع، و Helm برای محیط عملیاتی کوبرنتیز (Kubernetes)؛ این استک روی PostgreSQL، Redis و ClickHouse اجرا می‌شود و ذخیره‌سازی شیء سازگار با S3 نیز به عنوان یک گزینه در چارت Helm در دسترس است.
 
-#### Instrument Your Application
+#### اینسترومنت کردن برنامه شما
 
-`langwatch.setup()` initializes the SDK. A `@langwatch.trace()` decorator creates the root of each trace, and `autotrack_openai_calls()` captures every OpenAI call made inside it:
+دستور `langwatch.setup()` اقدام به مقداردهی اولیه SDK می‌کند. دکوراتور `@langwatch.trace()` ریشه (Root) هر Trace را می‌سازد و `autotrack_openai_calls()` تمام فراخوانی‌های OpenAI انجام‌شده در داخل آن را ثبت می‌نماید:
 
 ```python
 import langwatch
@@ -270,12 +272,12 @@ def answer(question):
     return response.choices[0].message.content
 ```
 
-**Framework Support:**
-- OpenAI (`autotrack_openai_calls`)
-- LangChain, LlamaIndex, Anthropic, and others: OpenTelemetry instrumentors (for example OpenInference) passed to `langwatch.setup(instrumentors=[...])`, or the framework-specific helpers in the LangWatch docs
-- Any custom LLM (manual spans)
+**پشتیبانی از فریم‌ورک‌ها:**
+- ابزار OpenAI (`autotrack_openai_calls`)
+- فریم‌ورک‌های LangChain، LlamaIndex، Anthropic و سایر موارد: اینسترومنتورهای OpenTelemetry (برای مثال OpenInference) که به `langwatch.setup(instrumentors=[...])` ارسال می‌شوند، یا هلپرهای اختصاصی هر فریم‌ورک در مستندات LangWatch
+- هر LLM سفارشی (Spanهای دستی)
 
-#### Add Custom Spans with Decorators
+#### افزودن Spanهای سفارشی با استفاده از دکوراتورها
 
 ```python
 import langwatch
@@ -298,14 +300,14 @@ def execute_query(sql):
     return db.execute(sql)
 ```
 
-**Comparison with Langfuse:**
-Both use decorators and both take an explicit span type: `type=` on `@langwatch.span()`, `as_type=` on Langfuse's `@observe()`. LangWatch separates the root (`@langwatch.trace()`) from child spans; Langfuse makes the outermost `@observe()` the trace.
+**مقایسه با Langfuse:**
+هر دو از دکوراتورها استفاده می‌کنند و هر دو نوع صریح Span را می‌پذیرند: `type=` در `@langwatch.span()` و `as_type=` در دکوراتور `@observe()` متعلق به Langfuse. ابزار LangWatch ریشه (`@langwatch.trace()`) را از Spanهای فرزند جدا می‌کند؛ در حالی که Langfuse بیرونی‌ترین دکوراتور `@observe()` را به عنوان Trace در نظر می‌گیرد.
 
-### Setting Up Langfuse (Open-Source, Cloud or Self-Hosted)
+### راه‌اندازی Langfuse (متن‌باز، ابری یا خودمیزبان)
 
-Langfuse provides tracing, evaluation, datasets, experiments, and prompt management. It offers a managed cloud and a self-hosted option.
+ابزار Langfuse امکانات ردیابی (Tracing)، ارزیابی، مجموعه‌داده‌ها (Datasets)، آزمایش‌ها و مدیریت Prompt را ارائه می‌دهد. این ابزار نسخه ابری مدیریت‌شده و گزینه خودمیزبان را فراهم می‌کند.
 
-#### Install and Configure
+#### نصب و پیکربندی
 
 ```bash
 pip install "langfuse>=4,<5" openai  # Python SDK v4.x (OpenTelemetry-based); v5 breaks some calls below
@@ -318,7 +320,7 @@ pip install "langfuse>=4,<5" openai  # Python SDK v4.x (OpenTelemetry-based); v5
 # LANGFUSE_BASE_URL="https://cloud.langfuse.com"  # or your self-hosted URL (older examples use LANGFUSE_HOST)
 ```
 
-#### Instrument Your Application (Drop-In Replacement)
+#### اینسترومنت کردن برنامه شما (جایگزین مستقیم / Drop-In Replacement)
 
 ```python
 # Just change your import; everything else stays the same
@@ -337,7 +339,7 @@ response = client.chat.completions.create(
 )
 ```
 
-#### Add Custom Spans with Decorators
+#### افزودن Spanهای سفارشی با استفاده از دکوراتورها
 
 ```python
 from langfuse import observe
@@ -355,9 +357,9 @@ def generate_sql(question):
     return client.chat.completions.create(...)
 ```
 
-### Creating and Managing Prompts
+### ایجاد و مدیریت Promptها
 
-Both platforms support versioned prompt management:
+هر دو پلتفرم از مدیریت نسخه‌بندی‌شده Prompt پشتیبانی می‌کنند:
 
 #### LangWatch
 
@@ -385,9 +387,9 @@ response = completion(
 )
 ```
 
-The Python SDK's `prompts.create()` takes no `model` argument (as of SDK 1.4.0, even though some LangWatch doc examples pass one), so pick the model in the prompt editor in the LangWatch UI or send it through the REST API.
+متد `prompts.create()` در SDK پایتون، هیچ آرگومان `model` نمی‌پذیرد (تا نسخه SDK 1.4.0، با وجود این‌که برخی از مثال‌های مستندات LangWatch آن را ارسال می‌کنند)، بنابراین مدل را در ویرایشگر Prompt در رابط کاربری LangWatch انتخاب کنید یا آن را از طریق REST API بفرستید.
 
-**LangWatch advantage:** Simple API, and the model is stored with the prompt. Read it at runtime (`prompt.model`) and a model swap becomes a prompt version, not a deploy.
+**مزیت LangWatch:** دارای API ساده است و مدل به همراه Prompt ذخیره می‌شود. آن را در زمان اجرا بخوانید (`prompt.model`) و تعویض مدل به یک نسخه جدید از Prompt تبدیل می‌شود، نه یک استقرار (Deployment) جدید.
 
 #### Langfuse
 
@@ -411,9 +413,9 @@ prompt = langfuse.get_prompt("recipe-assistant", type="chat")
 compiled = prompt.compile(query="How do I make pancakes?")
 ```
 
-**Langfuse advantage:** More mature prompt management, better versioning UI, labels for organization.
+**مزیت Langfuse:** مدیریت بالغ‌تر Prompt، رابط کاربری بهتر برای نسخه‌بندی، و برچسب‌ها (Labels) جهت سازمان‌دهی.
 
-### Uploading Test Datasets
+### بارگذاری مجموعه‌داده‌های آزمایشی (Test Datasets)
 
 #### LangWatch
 
@@ -438,7 +440,7 @@ langwatch.dataset.create_records(
 df = langwatch.dataset.get_dataset("recipe-queries").to_pandas()
 ```
 
-**LangWatch advantage:** Datasets load straight into a pandas DataFrame, which is how most eval notebooks already work.
+**مزیت LangWatch:** مجموعه‌داده‌ها مستقیماً در یک DataFrame از کتابخانه pandas بارگذاری می‌شوند، که دقیقاً همان نحوه کار اکثر نوت‌بوک‌های ارزیابی (Eval) است.
 
 #### Langfuse
 
@@ -458,61 +460,62 @@ for query in ["Suggest a quick vegan breakfast recipe",
     )
 ```
 
-**Langfuse advantage:** More control over individual items, better for incremental additions.
+**مزیت Langfuse:** کنترل بیشتر روی آیتم‌های تکی، و مناسب‌تر برای افزودن‌های گام‌به‌گام (تدریجی).
 
-### Key Principle
+### اصل کلیدی
 
-**Without traces, you can't do evals.** This is your foundation. Set this up first before anything else.
+**بدون Traceها، نمی‌توانید ارزیابی‌ها (Evals) را انجام دهید.** این پایه و اساس شماست. پیش از هر کار دیگری، ابتدا این بخش را راه‌اندازی کنید.
 
-**Re-check that traces arrive after every SDK upgrade.** In August 2026 the OpenAI Python SDK (3.0) and the Anthropic Python SDK (1.0) both moved their HTTP layer from httpx to httpx2. Anthropic's migration guide warns that httpx-level hooks (OpenTelemetry's HTTPX instrumentor, Sentry's httpx integration, respx, vcrpy) can silently miss SDK requests unless `httpx2.alias_httpx()` runs before anything imports httpx. Nothing errors: spans quietly stop, and eval tests that replay recorded responses can start hitting the live API. Treat a trace count that drops after a dependency bump as an instrumentation bug until proven otherwise.
+**بررسی مجدد دریافت Traceها پس از هر ارتقای SDK:** در اوت ۲۰۲۶، هر دو SDK پایتون OpenAI (نسخه ۳.۰) و SDK پایتون Anthropic (نسخه ۱.۰) لایه HTTP خود را از httpx به httpx2 منتقل کردند. راهنمای مهاجرت Anthropic هشدار می‌دهد که هوک‌های سطح httpx (مانند اینسترومنتور HTTPX در OpenTelemetry، ادغام httpx در Sentry، کتابخانه‌های respx و vcrpy) می‌توانند بدون نمایش خطا، درخواست‌های SDK را از دست بدهند، مگر اینکه `httpx2.alias_httpx()` پیش از ایمپورت شدن httpx توسط هر بخش دیگری اجرا شود. هیچ خطایی ثبت نمی‌شود: ثبت Spanها در سکوت متوقف می‌شود و تست‌های ارزیابی که پاسخ‌های ثبت‌شده را بازپخش می‌کنند، ممکن است شروع به ارسال درخواست به API زنده کنند. هرگونه کاهش در تعداد Traceها پس از ارتقای وابستگی‌ها را یک باگ اینسترومنت‌سازی (Instrumentation) در نظر بگیرید، مگر اینکه خلاف آن ثابت شود.
 
-**For PMs/QAs:** You don't need to write the instrumentation code. Ask your engineers to set up tracing, then use the web UI to review traces visually. Both LangWatch (`langwatch.ai` or your self-hosted URL) and Langfuse (`cloud.langfuse.com` or your self-hosted URL) provide UIs that let you browse, search, and annotate traces without writing any code.
+**برای مدیران محصول و تضمین کیفیت (PMs/QAs):** نیازی نیست کد اینسترومنت‌سازی را بنویسید. از مهندسان خود بخواهید ردیابی (Tracing) را راه‌اندازی کنند، سپس از رابط کاربری وب برای بررسی بصری Traceها استفاده نمایید. هر دو پلتفرم LangWatch (آدرس `langwatch.ai` یا URL خودمیزبان شما) و Langfuse (آدرس `cloud.langfuse.com` یا URL خودمیزبان شما) رابط‌های کاربری (UI) ارائه می‌دهند که به شما امکان می‌دهند بدون نوشتن کد، Traceها را مرور، جستجو و یادداشت‌گذاری (Annotate) کنید.
 
-**Platform Choice Guidance:**
-- Choose **LangWatch** if: You want the fastest setup, built-in evaluators, and focus on analytics
-- Choose **Langfuse** if: You need maximum flexibility, have complex custom workflows, or want the largest community
-- Use **both**: They complement each other (LangWatch for quick evals, Langfuse for deep workflow customization), at the cost of instrumenting twice
+**راهنمای انتخاب پلتفرم:**
+- **LangWatch** را انتخاب کنید اگر: سریع‌ترین راه‌اندازی، ارزیاب‌های داخلی توکار، و تمرکز بر آنالیتیکس را می‌خواهید.
+- **Langfuse** را انتخاب کنید اگر: به حداکثر انعطاف‌پذیری نیاز دارید، گردش‌های کاری سفارشی و پیچیده دارید، یا به دنبال بزرگ‌ترین جامعه کاربری هستید.
+- از **هر دو** استفاده کنید: این دو مکمل یکدیگرند (LangWatch برای ارزیابی‌های سریع، Langfuse برای سفارشی‌سازی عمیق گردش کار)، به بهای دو بار انجام دادن اینسترومنت‌سازی.
 
 ---
 
 <a name="chapter-3"></a>
-## Chapter 3: Error Analysis: The Secret Sauce
 
-### What is Error Analysis?
+## فصل ۳: تحلیل خطا (Error Analysis): فرمول مخفی
 
-Error analysis is the **systematic process** of:
-1. Reviewing traces (logs of AI interactions)
-2. Taking notes on problems you see
-3. Categorizing those problems
-4. Counting how often each type of problem occurs
+### تحلیل خطا چیست؟
 
-**This is THE most important skill** in building reliable AI products.
+تحلیل خطا **فرآیندی سیستماتیک** برای انجام اقدامات زیر است:
+۱. بررسی تریس‌ها (traces - لاگ‌های تعاملات هوش مصنوعی)
+۲. یادداشت‌برداری از مشکلاتی که مشاهده می‌کنید
+۳. دسته‌بندی آن مشکلات
+۴. شمارش تعداد دفعات وقوع هر نوع مشکل
 
-Most teams skip straight to building fancy dashboards or LLM judges. That's backwards. You need to understand what's wrong before you can measure it.
+**این مهارت، مهم‌ترین مهارت** در ساخت محصولات هوش مصنوعی قابل‌اعتماد است.
 
-### Why PMs and QAs MUST Do This (Not Just Engineers)
+اکثر تیم‌ها مستقیماً به سراغ ساخت داشبوردهای پرزرق‌وبرق یا داورهای مبتنی بر LLM (همان LLM judges) می‌روند. این مسیر کاملاً وارونه است. شما ابتدا باید بفهمید چه چیزی ایراد دارد، پیش از آنکه بتوانید آن را بسنجید.
 
-**Wrong approach:**
-"This is technical AI stuff, let engineering figure it out"
+### چرا مدیران محصول (PMها) و تضمین کیفیت (QAها) حتماً باید این کار را انجام دهند (نه فقط مهندسان)
 
-**Right approach:**
-PMs and QAs should lead error analysis because:
+**رویکرد اشتباه:**
+«این مسائل مربوط به جنبه‌های فنی هوش مصنوعی است؛ بگذارید مهندسی خودش آن را حل کند»
 
-1. **You understand user needs** - Engineers don't know if a "connected bathroom" vs "disconnected bathroom" matters to users
-2. **You have product taste** - You know what good experiences look like
-3. **You have domain expertise** - You understand business requirements
-4. **This is product work** - Disguised as technical work, but it's really about product quality
+**رویکرد درست:**
+مدیران محصول و تیم‌های تضمین کیفیت (PMها و QAها) باید رهبری تحلیل خطا را بر عهده بگیرند، زیرا:
 
-**Real impact:**
-The teams shipping the best AI products have PMs who've personally reviewed hundreds or thousands of traces.
+۱. **شما نیازهای کاربر را درک می‌کنید** - مهندسان نمی‌دانند آیا تفاوت بین یک «حمام متصل به اتاق» در برابر «حمام مجزا» برای کاربران اهمیتی دارد یا خیر
+۲. **شما سلیقه و بینش محصولی دارید** - می‌دانید یک تجربه کاربری مطلوب چه شکلی است
+۳. **شما تخصص موضوعی (Domain Expertise) دارید** - نیازمندی‌های کسب‌وکار را درک می‌کنید
+۴. **این یک کار محصولی است** - هرچند ظاهر یک کار فنی را دارد، اما در واقع تماماً درباره کیفیت محصول است
 
-### Step 1: Generate Diverse Test Queries
+**تاثیر واقعی:**
+تیم‌هایی که بهترین محصولات هوش مصنوعی را به بازار عرضه می‌کنند، مدیران محصولی دارند که شخصاً صدها یا هزاران تریس (trace) را بررسی کرده‌اند.
 
-Before you can review traces, you need diverse test inputs. A powerful technique for this is **dimensional sampling**.
+### گام ۱: تولید پرس‌وجوهای آزمایشی متنوع
 
-#### Define Key Dimensions
+پیش از اینکه بتوانید تریس‌ها را بازبینی کنید، به ورودی‌های آزمایشی متنوعی نیاز دارید. یک تکنیک قدرتمند برای این منظور، **نمونه‌برداری ابعادی (Dimensional Sampling)** است.
 
-Identify 3-4 dimensions that matter for your product:
+#### تعریف ابعاد کلیدی
+
+۳ تا ۴ بُعد که برای محصول شما اهمیت دارند را شناسایی کنید:
 
 ```python
 DIMENSIONS = {
@@ -533,7 +536,7 @@ DIMENSIONS = {
 # Total possible combinations: 5 x 5 x 5 x 3 = 375
 ```
 
-#### Generate Random Combinations
+#### تولید ترکیب‌های تصادفی
 
 ```python
 import random
@@ -551,11 +554,11 @@ for i in range(25):  # Generate 25 diverse tuples
     dimension_tuples.append(tuple_data)
 ```
 
-#### Convert Tuples to Natural Language Queries Using an LLM
+#### تبدیل تاپل‌ها به پرس‌وجوهای زبان طبیعی با استفاده از یک LLM
 
-You can use any LLM to convert dimension tuples into realistic queries. Neither platform needs a special API for this step: call your LLM client directly, and wrap the loop in your platform's tracing (a `@langwatch.trace()` function or Langfuse's drop-in client) if you want the generations logged.
+می‌توانید از هر LLM برای تبدیل تاپل‌های ابعاد به پرس‌وجوهای واقع‌گرایانه استفاده کنید. هیچ‌یک از این دو پلتفرم برای این مرحله نیازی به API اختصاصی ندارند: کلاینت LLM خود را مستقیماً فراخوانی کنید، و اگر می‌خواهید خروجی‌های تولیدشده لاگ شوند، حلقه را درون سیستم ردگیری پلتفرم خود (یک تابع `@langwatch.trace()` یا کلاینت آماده‌به‌کار Langfuse) قرار دهید (wrap کنید).
 
-**With any LLM (platform-agnostic):**
+**با هر LLM (مستقل از پلتفرم):**
 
 ```python
 import openai
@@ -581,7 +584,7 @@ for t in dimension_tuples:
     queries.append(response.choices[0].message.content)
 ```
 
-**With Langfuse (manual tracking):**
+**با Langfuse (ردگیری دستی):**
 
 ```python
 from langfuse.openai import OpenAI
@@ -600,30 +603,30 @@ for t in dimension_tuples:
     queries.append(response.choices[0].message.content)
 ```
 
-**Example conversions:**
+**نمونه تبدیل‌ها:**
 
-| Dimension Tuple | Generated Query |
+| تاپل ابعاد | پرس‌وجوی تولیدشده |
 |---|---|
-| vegan, Italian, dinner, beginner | "Hey, I'm new to cooking and vegan. Can you suggest an easy Italian dinner?" |
-| gluten-free, any, dessert, intermediate | "I'm looking for a gluten-free dessert that's a bit of a challenge to make" |
-| keto, American, breakfast, advanced | "Give me a complex keto breakfast recipe, American style" |
+| گیاه‌خواری (vegan)، ایتالیایی، شام، مبتدی | «سلام، من در آشپزی تازه‌کار و وگان هستم. می‌توانی یک شام ایتالیایی ساده پیشنهاد بدهی؟» |
+| بدون گلوتن (gluten-free)، هر موردی، دسر، متوسط | «به دنبال یک دسر بدون گلوتن هستم که درست کردنش کمی چالش‌برانگیز باشد» |
+| کتو (keto)، آمریکایی، صبحانه، پیشرفته | «یک دستور پخت صبحانه کتوی پیچیده به سبک آمریکایی به من بده» |
 
-**For PMs/QAs:** This dimensional approach ensures you test the full space of user needs. Without it, you'll only test the obvious cases and miss edge cases where users combine unexpected requirements.
+**برای PMها و QAها:** این رویکرد ابعادی تضمین می‌کند که تمام گستره نیازهای کاربران را آزمایش می‌کنید. بدون این روش، صرفاً سناریوهای بدیهی را تست خواهید کرد و حالت‌های مرزی (Edge Cases) را که در آن‌ها کاربران الزامات غیرمنتظره را با یکدیگر ترکیب می‌کنند، از دست خواهید داد.
 
-### Step 2: Review 100 Traces and Take Notes (Open Coding)
+### گام ۲: بازبینی ۱۰۰ تریس و یادداشت‌برداری (کدگذاری باز)
 
-**The process (30 seconds per trace):**
+**فرآیند (۳۰ ثانیه برای هر تریس):**
 
-1. Open your trace viewer (LangWatch dashboard, Langfuse UI, or any tool)
-2. Look at the first trace
-3. Scan through it:
-   - Read the user message
-   - Check if AI called the right tools
-   - Look at what the tools returned
-   - Read the assistant's response
-   - Note any problems you see
+۱. ابزار مشاهده تریس خود را باز کنید (داشبورد LangWatch، رابط کاربری Langfuse، یا هر ابزار دیگر)
+۲. به نخستین تریس نگاه کنید
+۳. آن را سریع مرور کنید:
+   - پیام کاربر را بخوانید
+   - بررسی کنید آیا هوش مصنوعی ابزارهای درستی را فراخوانی کرده است یا خیر
+   - به آنچه ابزارها بازگردانده‌اند نگاه کنید
+   - پاسخ دستیار (Assistant) را بخوانید
+   - هر مشکلی را که مشاهده می‌کنید یادداشت کنید
 
-**Example notes from a real error analysis session:**
+**نمونه یادداشت‌های یک جلسه واقعی تحلیل خطا:**
 
 ```
 TRACE #1:
@@ -643,32 +646,32 @@ TRACE #4:
 Policy violation."
 ```
 
-**Rules for error analysis:**
+**قوانین تحلیل خطا:**
 
-1. **Don't try to catch everything** - Just note the most important things
-2. **Don't debate every trace** - Think quickly, write it down, move on
-3. **Skip the system prompt** - If it's usually the same, you don't need to read it every time
-4. **Get into a flow state** - This should feel fast, not tedious
+۱. **سعی نکنید همه‌چیز را شکار کنید** - فقط مهم‌ترین موارد را یادداشت کنید
+۲. **سر هر تریس به بحث و تردید ننشینید** - سریع فکر کنید، یادداشت کنید و رد شوید
+۳. **از System Prompt عبور کنید** - اگر معمولاً ثابت است، نیازی نیست هر بار آن را بخوانید
+۴. **به حالت غرقگی (Flow State) برسید** - این کار باید حس سرعت و چابکی داشته باشد، نه خستگی و ملال
 
-**Time commitment:**
-- First trace: 45 seconds
-- After 10 traces: 25 seconds each
-- After 50 traces: 20 seconds each
-- **Total time for 100 traces: ~45 minutes**
+**زمان مورد نیاز:**
+- تریس اول: ۴۵ ثانیه
+- پس از ۱۰ تریس: هر کدام ۲۵ ثانیه
+- پس از ۵۰ تریس: هر کدام ۲۰ ثانیه
+- **کل زمان برای ۱۰۰ تریس: حدود ۴۵ دقیقه**
 
-**Platform-Specific Note:**
-- **LangWatch:** Use "Annotations" to add notes directly to traces, or an annotation queue to work through a batch one by one
-- **Langfuse:** Use "Comments" to add notes to traces, or an annotation queue for structured review
+**نکته مربوط به پلتفرم‌های خاص:**
+- **LangWatch:** از «Annotations» برای افزودن مستقیم یادداشت‌ها به تریس‌ها، یا از یک صف یادداشت‌نویسی (Annotation Queue) برای بررسی دسته‌ای تریس‌ها یکی پس از دیگری استفاده کنید
+- **Langfuse:** از «Comments» برای افزودن یادداشت به تریس‌ها، یا از یک صف یادداشت‌نویسی برای بررسی ساختاریافته استفاده کنید
 
-### Step 3: Categorize Errors Using Axial Coding
+### گام ۳: دسته‌بندی خطاها با استفاده از کدگذاری محوری
 
-Now you have 40-50 notes scattered across traces. Time to organize them.
+اکنون ۴۰ تا ۵۰ یادداشت پراکنده در تریس‌ها دارید. وقت سامان‌دهی آن‌هاست.
 
-This process is called **"axial coding"** (a research method from sociology). You're grouping similar errors into categories.
+این فرآیند **«کدگذاری محوری» (Axial Coding)** نامیده می‌شود (یک روش تحقیق برگرفته از جامعه‌شناسی). در این مرحله، خطاهای مشابه را در دسته‌های مشخص گروه‌بندی می‌کنید.
 
-#### Using an LLM to Help Discover Categories
+#### استفاده از یک LLM برای کمک به کشف دسته‌بندی‌ها
 
-Export your notes, then use this prompt:
+یادداشت‌های خود را استخراج (Export) کنید، سپس از این Prompt استفاده نمایید:
 
 ```python
 prompt = f"""
@@ -692,34 +695,34 @@ Respond with a list:
 """
 ```
 
-**Example results from a real recipe bot evaluation:**
+**نمونه نتایج حاصل از ارزیابی واقعی یک ربات آشپزی:**
 
 ```
 ["Dietary Ignored", "Formatting Error", "Complexity Mismatch",
  "Meal Type Mismatch", "Ingredient Omission", "Skill Level Misalignment"]
 ```
 
-#### Refine Categories to Be Specific and Actionable
+#### اصلاح دسته‌بندی‌ها برای مشخص و قابل‌اقدام بودن
 
-**Problem:** Generic LLM suggestions are too vague!
+**مشکل:** پیشنهادهای عمومی LLM بیش از حد مبهم هستند!
 
-"Temporal issues" - what does that mean?
-"Quality issues" - too generic!
+«مشکلات زمانی (Temporal issues)» - این دقیقاً چه معنایی دارد؟
+«مشکلات کیفی (Quality issues)» - بیش از حد کلی است!
 
-**Better categories (specific and actionable):**
+**دسته‌بندی‌های بهتر (مشخص و قابل‌اقدام):**
 
-1. **Dietary Ignored** - Bot suggests ingredients that violate dietary restrictions
-2. **Formatting Error** - Markdown in SMS, wrong structure
-3. **Complexity Mismatch** - Recipe too hard/easy for stated skill level
-4. **Meal Type Mismatch** - Suggests dinner when asked for breakfast
-5. **Ingredient Omission** - Doesn't include unique ingredients user asked for
-6. **Skill Level Misalignment** - Advanced techniques for beginners
+۱. **نادیده گرفتن رژیم غذایی (Dietary Ignored)** - ربات موادی را پیشنهاد می‌دهد که محدودیت‌های غذایی را نقض می‌کنند
+۲. **خطای قالب‌بندی (Formatting Error)** - وجود Markdown در پیامک (SMS)، ساختار اشتباه
+۳. **عدم تطابق پیچیدگی (Complexity Mismatch)** - دستور پخت برای سطح مهارت تعیین‌شده بیش از حد سخت/آسان است
+۴. **عدم تطابق نوع وعده غذایی (Meal Type Mismatch)** - وقتی صبحانه خواسته شده، شام پیشنهاد می‌دهد
+۵. **حذف مواد اولیه (Ingredient Omission)** - مواد اولیه منحصربه‌فردی را که کاربر درخواست کرده است، شامل نمی‌شود
+۶. **عدم هم‌خوانی سطح مهارت (Skill Level Misalignment)** - ارائه تکنیک‌های پیشرفته برای افراد مبتدی
 
-**Your categories need to be specific enough that someone else could label errors using them.**
+**دسته‌بندی‌های شما باید آن‌قدر مشخص و دقیق باشند که شخص دیگری نیز بتواند با استفاده از آن‌ها خطاها را برچسب‌گذاری کند.**
 
-### Step 4: Label Your Errors with LLM Assistance
+### گام ۴: برچسب‌گذاری خطاها با کمک LLM
 
-This step works with any LLM. Use batch processing if your platform supports it:
+این گام با هر LLM کار می‌کند. اگر پلتفرم شما پشتیبانی می‌کند، از پردازش دسته‌ای (Batch Processing) استفاده کنید:
 
 ```python
 CLASSIFICATION_PROMPT = """Look at this Recipe Bot interaction and the
@@ -738,7 +741,7 @@ Respond with just the label name."""
 # or loop with any LLM client)
 ```
 
-**With LangWatch (parallel loop):**
+**با LangWatch (حلقه موازی):**
 
 ```python
 import langwatch
@@ -758,7 +761,7 @@ for index, row in evaluation.loop(error_notes_df.iterrows(), threads=8):
     evaluation.submit(task, index, row)
 ```
 
-**With Langfuse (manual iteration):**
+**با Langfuse (تکرار دستی):**
 
 ```python
 from langfuse.openai import OpenAI
@@ -774,40 +777,40 @@ for note in error_notes:
     note["label"] = response.choices[0].message.content
 ```
 
-### Step 5: Count and Prioritize
+### گام ۵: شمارش و اولویت‌بندی
 
-**Count how many times each category appears:**
+**تعداد دفعات تکرار هر دسته‌بندی را بشمارید:**
 
 ```python
 label_counts = error_notes_df["label"].value_counts()
 # list-of-dicts version: pd.DataFrame(error_notes)["label"].value_counts()
 ```
 
-**Example results from a real evaluation:**
+**نمونه نتایج حاصل از یک ارزیابی واقعی:**
 
-| Category | Count | Percentage |
+| دسته‌بندی | تعداد | درصد |
 |----------|-------|------------|
-| Complexity Mismatch | 2 | 22% |
-| Meal Type Mismatch | 2 | 22% |
-| Ingredient Omission | 2 | 22% |
-| Dietary Ignored | 1 | 11% |
-| Formatting Error | 1 | 11% |
-| Skill Level Misalignment | 1 | 11% |
+| عدم تطابق پیچیدگی (Complexity Mismatch) | ۲ | ۲۲٪ |
+| عدم تطابق نوع وعده غذایی (Meal Type Mismatch) | ۲ | ۲۲٪ |
+| حذف مواد اولیه (Ingredient Omission) | ۲ | ۲۲٪ |
+| نادیده گرفتن رژیم غذایی (Dietary Ignored) | ۱ | ۱۱٪ |
+| خطای قالب‌بندی (Formatting Error) | ۱ | ۱۱٪ |
+| عدم هم‌خوانی سطح مهارت (Skill Level Misalignment) | ۱ | ۱۱٪ |
 
-### Why This Changes Everything
+### چرا این کار همه‌چیز را متحول می‌کند
 
-**Before error analysis:**
-- You're paralyzed
-- Don't know what to fix first
-- Can't prioritize
+**پیش از تحلیل خطا:**
+- دچار سردرگمی و فلج تصمیم‌گیری هستید
+- نمی‌دانید ابتدا چه چیزی را باید اصلاح کنید
+- توان اولویت‌بندی ندارید
 
-**After error analysis:**
-- Clear priorities based on frequency
-- Understanding of severity (frequency vs. impact)
-- Evidence for stakeholder discussions
-- Concrete list of what to build evals for
+**پس از تحلیل خطا:**
+- اولویت‌های شفاف بر اساس فراوانی وقوع
+- درک شدت و اهمیت مشکل (فراوانی در برابر میزان اثرگذاری)
+- شواهد و مستندات برای مذاکره با ذی‌نفعان
+- فهرستی ملموس از مواردی که باید برای آن‌ها ارزیابی (Eval) ساخته شود
 
-**Example prioritization discussion:**
+**نمونه گفت‌وگوی اولویت‌بندی:**
 
 ```
 "Dietary restriction violations happen in 11% of cases, but when
@@ -819,70 +822,71 @@ annoying, not dangerous. This is LOW-SEVERITY.
 Let's fix dietary adherence first, then complexity matching."
 ```
 
-### The "Theoretical Saturation" Concept
+### مفهوم «اشباع نظری» (Theoretical Saturation)
 
-**When to stop reviewing traces?**
+**چه زمانی باید بررسی تریس‌ها را متوقف کرد؟**
 
-In qualitative research, there's a concept called "theoretical saturation" - when you stop finding new types of errors.
+در پژوهش‌های کیفی، مفهومی تحت عنوان «اشباع نظری» (Theoretical Saturation) مطرح است - یعنی زمانی که دیگر نوع جدیدی از خطا پیدا نمی‌کنید.
 
-- Review your first 50 traces: You find 10 different error types
-- Review next 25 traces: You find 2 new error types
-- Review next 25 traces: You find 0 new error types
-- **Stop here!** You've reached saturation
+- بازبینی ۵۰ تریس نخست: ۱۰ نوع خطای مختلف پیدا می‌کنید
+- بازبینی ۲۵ تریس بعدی: ۲ نوع خطای جدید پیدا می‌کنید
+- بازبینی ۲۵ تریس بعدی: ۰ نوع خطای جدید پیدا می‌کنید
+- **همین‌جا متوقف شوید!** شما به مرحله اشباع رسیده‌اید
 
-You don't need to review 1000 traces if you're not finding new patterns after 100.
+اگر پس از ۱۰۰ مورد دیگر الگوی جدیدی پیدا نمی‌کنید، نیازی به بازبینی ۱۰۰۰ تریس نیست.
 
-### For PMs/QAs: Your Error Analysis Checklist
+### ویژه مدیران محصول و تضمین کیفیت (PMs/QAs): چک‌لیست تحلیل خطای شما
 
-1. Ask engineering to set up tracing (LangWatch, Langfuse, or any tool)
-2. Open the trace viewer UI
-3. Browse 100 traces, taking quick notes on problems
-4. Use an LLM to help categorize your notes into 4-6 failure modes
-5. Count occurrences of each failure mode
-6. Create a prioritized list considering both frequency and severity
-7. Present findings to your team with data-backed recommendations
-8. Repeat monthly with new traces to catch new failure patterns
+۱. از تیم مهندسی بخواهید سیستم ردگیری/تریسینگ (LangWatch، Langfuse یا هر ابزار دیگر) را راه‌اندازی کنند
+۲. رابط کاربری مشاهده تریس (Trace Viewer UI) را باز کنید
+۳. ۱۰۰ تریس را مرور کرده و به سرعت درباره مشکلات یادداشت بردارید
+۴. از یک LLM برای دسته‌بندی یادداشت‌هایتان به ۴ تا ۶ حالت شکست (Failure Modes) کمک بگیرید
+۵. دفعات وقوع هر حالت شکست را بشمارید
+۶. با در نظر گرفتن هر دو عامل فراوانی و شدت اثر، یک فهرست اولویت‌بندی‌شده بسازید
+۷. یافته‌ها را همراه با توصیه‌های مبتنی بر داده به تیم خود ارائه دهید
+۸. این فرآیند را ماهانه با تریس‌های جدید تکرار کنید تا الگوهای جدید شکست را شناسایی کنید
 
 ---
 
 <a name="chapter-4"></a>
-## Chapter 4: Building LLM-as-a-Judge Evaluators
 
-### What is LLM-as-a-Judge?
+## فصل ۴: ساخت ارزیاب‌های LLM-as-a-Judge
 
-An **LLM judge** is an AI that evaluates other AI outputs. It reads traces and scores them.
+### مفهوم LLM-as-a-Judge چیست؟
 
-**Why use it?**
-- Automates evaluation at scale
-- Provides consistent judgment
-- Much faster than manual review
+یک **داور LLM** یک هوش مصنوعی است که خروجی‌های سایر سیستم‌های هوش مصنوعی را ارزیابی می‌کند. این سیستم ردها (traces) را می‌خواند و به آن‌ها امتیاز می‌دهد.
 
-**The challenge:**
-Most people build judges wrong. Their judges hallucinate, miss problems, or create false confidence.
+**چرا از آن استفاده کنیم؟**
+- ارزیابی را در مقیاس وسیع خودکار می‌کند
+- قضاوتی یکدست و سازگار ارائه می‌دهد
+- بسیار سریع‌تر از بازبینی دستی است
 
-### When to Use LLM-as-a-Judge
+**چالش موجود:**
+بیشتر افراد ارزیاب‌ها را به شکل نادرستی می‌سازند. داورهای آن‌ها دچار توهم (hallucination) می‌شوند، مشکلات را نادیده می‌گیرند یا اطمینان کاذب ایجاد می‌کنند.
 
-**Use LLM judges for:**
-- Subjective quality assessments
-- Policy compliance checking
-- Context understanding
-- Dietary adherence
-- Tone appropriateness
-- Multi-step reasoning checks
+### چه زمانی از LLM-as-a-Judge استفاده کنیم
 
-**Don't use LLM judges for:**
-- Format validation (use code)
-- Required field checks (use code)
-- Simple pattern matching (use code)
-- Exact string matching (use code)
+**از داورهای LLM برای موارد زیر استفاده کنید:**
+- ارزیابی‌های کیفی موضوعی و ذهنی (Subjective)
+- بررسی انطباق با خط‌مشی‌ها
+- درک زمینه و بافتار (Context)
+- رعایت محدودیت‌های رژیم غذایی
+- مناسب بودن لحن
+- بررسی‌های استدلال چندمرحله‌ای
 
-**Rule of thumb:** If you can express it as an if/else statement, use code. If you need judgment, use LLM.
+**از داورهای LLM برای موارد زیر استفاده نکنید:**
+- اعتبارسنجی فرمت (از کد استفاده کنید)
+- بررسی فیلدهای اجباری (از کد استفاده کنید)
+- تطبیق الگوهای ساده (از کد استفاده کنید)
+- تطبیق دقیق رشته‌ها (از کد استفاده کنید)
 
-### The Complete LLM Judge Workflow
+**قاعده کلی:** اگر می‌توانید آن را به صورت یک دستور `if/else` بیان کنید، از کد استفاده کنید. اگر به قضاوت و داوری نیاز دارید، از LLM استفاده کنید.
 
-Building reliable LLM judges requires a rigorous 7-step workflow:
+### جریان کاری کامل داور LLM
 
-#### Overview: The Pipeline
+ساخت داورهای LLM قابل اعتماد نیازمند یک جریان کاری دقیق و نظام‌مند ۷ مرحله‌ای است:
+
+#### نمای کلی: پایپ‌لاین (Pipeline)
 
 ```
 1. Generate traces (run your AI on test queries)
@@ -894,13 +898,13 @@ Building reliable LLM judges requires a rigorous 7-step workflow:
 7. Run on all traces + correct with judgy
 ```
 
-### Step 1: Generate Traces
+### گام ۱: تولید ردها (Traces)
 
-Run your AI system on diverse test queries to create traces. Use your platform's auto-instrumentation (see Chapter 2) to capture everything automatically.
+سیستم هوش مصنوعی خود را روی پرس‌وجوهای آزمایشی متنوع اجرا کنید تا ردها (traces) ایجاد شوند. از قابلیت ابزاردقیق‌سازی خودکار (Auto-instrumentation) پلتفرم خود (به فصل ۲ مراجعه کنید) برای ثبت خودکار همه چیز استفاده نمایید.
 
-### Step 2: Label Ground Truth Data
+### گام ۲: برچسب‌گذاری داده‌های واقعیت زمینی (Ground Truth)
 
-Label 150-200 traces as PASS or FAIL. You can do this manually (most accurate) or use a powerful LLM:
+۱۵۰ تا ۲۰۰ رد (trace) را با برچسب‌های PASS یا FAIL مشخص کنید. می‌توانید این کار را به صورت دستی (دقیق‌ترین حالت) انجام دهید یا از یک LLM قدرتمند استفاده کنید:
 
 ```
 You are an expert nutritionist evaluating dietary adherence.
@@ -923,11 +927,11 @@ Response: {response}
 Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}
 ```
 
-**Platform-Specific Labeling:**
+**برچسب‌گذاری اختصاصی در پلتفرم‌ها:**
 
-**With LangWatch (experiment loop):**
+**با LangWatch (حلقه آزمایش):**
 
-LangWatch's built-in evaluators cover generic checks (RAG faithfulness, PII, jailbreaks, off-topic). A domain criterion like dietary adherence is always your own judge: either an "LLM-as-a-Judge Boolean" evaluator configured in the UI with your prompt, or your judge called from an experiment loop, as here:
+ارزیاب‌های توکار LangWatch بررسی‌های عمومی (مانند RAG faithfulness، داده‌های هویتی حساس یا PII، جیل‌بریک‌ها و موارد خارج از موضوع یا off-topic) را پوشش می‌دهند. اما معیارهای حوزه‌محور (Domain) مانند رعایت رژیم غذایی همیشه نیازمند داور اختصاصی خودتان هستند: یا یک ارزیاب «LLM-as-a-Judge Boolean» که در رابط کاربری (UI) با Prompt شما پیکربندی شده است، یا ارزیابی که از درون یک حلقه آزمایش فراخوانی می‌شود، همانند اینجا:
 
 ```python
 import langwatch
@@ -954,7 +958,7 @@ for index, row in evaluation.loop(df.iterrows(), threads=8):
     evaluation.submit(task, index, row)
 ```
 
-**With Langfuse (custom implementation):**
+**با Langfuse (پیاده‌سازی سفارشی):**
 
 ```python
 from langfuse.openai import OpenAI
@@ -971,16 +975,16 @@ for trace in traces:
     labels.append(parse_json(response.choices[0].message.content))
 ```
 
-**LangWatch advantage:** 30+ ready-made evaluators save time on generic checks; per-row results show up in the experiment UI.
-**Langfuse advantage:** Complete control over custom evaluation logic, and once the prompt is validated you can register it as a managed LLM-as-a-judge evaluator that scores new observations automatically.
+**مزیت LangWatch:** بیش از ۳۰ ارزیاب آماده که در بررسی‌های عمومی در زمان صرفه‌جویی می‌کنند؛ نتایج به تفکیک هر سطر در رابط کاربری آزمایش نمایش داده می‌شوند.
+**مزیت Langfuse:** کنترل کامل روی منطق ارزیابی سفارشی، و پس از اعتبارسنجی Prompt می‌توانید آن را به عنوان یک ارزیاب مدیریت‌شده‌ی LLM-as-a-judge ثبت کنید تا مشاهدات جدید را به صورت خودکار امتیازدهی کند.
 
-### Step 3: Split Data (Train / Dev / Test)
+### گام ۳: تقسیم داده‌ها (Train / Dev / Test)
 
-This is critical and often skipped! You need three separate sets:
+این مرحله بسیار حیاتی است و اغلب نادیده گرفته می‌شود! شما به سه مجموعه مجزا نیاز دارید:
 
-- **Train (~15%):** Used to select few-shot examples for your judge prompt
-- **Dev (~40%):** Used to iterate and improve your judge prompt
-- **Test (~45%):** Used ONCE for final, unbiased evaluation
+- **مجموعه Train (~۱۵٪):** برای انتخاب نمونه‌های few-shot جهت استفاده در Prompt داور به کار می‌رود
+- **مجموعه Dev (~۴۰٪):** برای تکرار و بهبود Prompt داور استفاده می‌شود
+- **مجموعه Test (~۴۵٪):** تنها یک بار (ONCE) برای ارزیابی نهایی و بدون سوگیری استفاده می‌شود
 
 ```python
 from sklearn.model_selection import train_test_split
@@ -1000,13 +1004,13 @@ train, dev = train_test_split(
 )
 ```
 
-**Why stratified splitting?** You need both PASS and FAIL examples in every split. Without stratification, you might get a dev set with all PASS examples, making it useless for testing failure detection.
+**چرا تقسیم طبقه‌بندی‌شده (Stratified Splitting)؟** شما در هر بخش به نمونه‌های هر دو حالت PASS و FAIL نیاز دارید. بدون تقسیم طبقه‌بندی‌شده، ممکن است به یک مجموعه Dev با تمام نمونه‌های PASS برسید، که این موضوع آن را برای آزمایشِ تشخیص شکست‌ها و خطاها بی‌فایده می‌کند.
 
-### Step 4: Build Your Judge Prompt
+### گام ۴: ساخت Prompt داور خود
 
-Your judge prompt needs **four key parts:**
+Prompt داور شما به **چهار بخش کلیدی** نیاز دارد:
 
-#### Part 1: Role and Domain Definitions
+#### بخش ۱: تعاریف نقش و دامنه
 
 ```
 You are an expert nutritionist and dietary specialist evaluating
@@ -1023,7 +1027,7 @@ DIETARY RESTRICTION DEFINITIONS:
 [... all 16 definitions: see Appendix C for the full list ...]
 ```
 
-#### Part 2: Clear Evaluation Criteria
+#### بخش ۲: معیارهای شفاف ارزیابی
 
 ```
 EVALUATION CRITERIA:
@@ -1034,9 +1038,9 @@ EVALUATION CRITERIA:
 - Consider both explicit ingredients AND cooking methods
 ```
 
-#### Part 3: Few-Shot Examples (From Your Train Set!)
+#### بخش ۳: نمونه‌های Few-Shot (از مجموعه Train شما!)
 
-This is where the train set pays off. Select 1-3 examples of correct judgments:
+اینجا جایی است که مجموعه داده Train بازدهی خود را نشان می‌دهد. ۱ تا ۳ نمونه از قضاوت‌های درست را انتخاب کنید:
 
 ```
 Example 1 (PASS):
@@ -1059,7 +1063,7 @@ Explanation: The recipe FAILS because it includes cooked quinoa.
 Label: FAIL
 ```
 
-#### Part 4: Output Format
+#### بخش ۴: فرمت خروجی
 
 ```
 Now evaluate the following:
@@ -1072,29 +1076,29 @@ RETURN YOUR EVALUATION IN JSON FORMAT:
 "explanation": "Detailed explanation citing specific ingredients or methods"
 ```
 
-### Why Binary Scores Work Best
+### چرا امتیازهای باینری (Binary) بهترین عملکرد را دارند
 
-**Some people want 1-5 scales or percentages. Don't do this.**
+**برخی افراد به دنبال مقیاس‌های ۱ تا ۵ یا درصدی هستند. این کار را نکنید.**
 
-**With binary (PASS/FAIL):**
-- Only need to verify two things
-- Clear decision boundary
-- Easier to debug
-- Simpler to explain to stakeholders
+**با امتیازدهی باینری (PASS/FAIL):**
+- تنها کافی است دو حالت را اعتبارسنجی کنید
+- مرز تصمیم‌گیری کاملاً شفاف است
+- دیباگ کردن آن آسان‌تر است
+- توضیح آن برای ذی‌نفعان ساده‌تر است
 
-**With 1-5 scale:**
-- Need to verify every score aligns
-- What's the difference between 2 and 3?
-- 5x more work to validate
-- Business decisions are binary anyway
+**با مقیاس ۱ تا ۵:**
+- باید هم‌راستایی تک‌تک امتیازها را بررسی و اعتبارسنجی کنید
+- تفاوت بین ۲ و ۳ چیست؟
+- اعتبارسنجی آن ۵ برابر کار بیشتری می‌برد
+- تصمیمات کسب‌وکاری در هر صورت باینری هستند
 
-**Remember:** Either you fix something or you don't. Either it's broken or it's not.
+**به یاد داشته باشید:** یا مشکلی را برطرف می‌کنید یا نمی‌کنید. سیستم یا خراب است یا خراب نیست.
 
-### Step 5: Validate on Dev Set
+### گام ۵: اعتبارسنجی روی مجموعه داده Dev
 
-Run your judge on the Dev set and compare to ground truth. Here's how with each platform:
+داور خود را روی مجموعه Dev اجرا کرده و نتایج را با واقعیت زمینی (Ground Truth) مقایسه نمایید. نحوه انجام این کار در هر پلتفرم به شرح زیر است:
 
-#### Evaluator Functions (Platform-Agnostic)
+#### توابع ارزیاب (مستقل از پلتفرم)
 
 ```python
 def eval_tp(*, output, expected, **kwargs):
@@ -1122,9 +1126,9 @@ def eval_fn(*, output, expected, **kwargs):
     return 1.0 if judge == "FAIL" and truth == "PASS" else 0.0
 ```
 
-#### Running the Experiment
+#### اجرای آزمایش
 
-**With LangWatch:**
+**با LangWatch:**
 
 ```python
 import langwatch
@@ -1149,9 +1153,9 @@ for index, row in evaluation.loop(dev_df.iterrows(), threads=8):
 # with the same formulas as the Langfuse example below
 ```
 
-**LangWatch advantage:** Per-row cells are browsable in the experiment UI, so you can filter straight to the false positives.
+**مزیت LangWatch:** سلول‌های مربوط به هر سطر در رابط کاربری آزمایش قابل مرور هستند، بنابراین می‌توانید مستقیماً به سراغ موارد مثبت کاذب (False Positives) بروید و فیلتر کنید.
 
-**With Langfuse:**
+**با Langfuse:**
 
 ```python
 from langfuse import Evaluation
@@ -1189,42 +1193,42 @@ print(f"TPR: {tpr:.1%}")
 print(f"TNR: {tnr:.1%}")
 ```
 
-**Langfuse advantage:** More control over evaluation logic, better for complex custom metrics.
+**مزیت Langfuse:** کنترل بیشتر روی منطق ارزیابی، و مناسب‌تر بودن برای معیارهای سفارشی پیچیده.
 
-### The Metrics That Actually Matter
+### معیارهایی که واقعاً اهمیت دارند
 
-**Most people only look at "agreement":**
+**بیشتر افراد تنها به «میزان توافق» (Agreement) نگاه می‌کنند:**
 
 ```
 Agreement = (Judge agrees with me) / (Total traces)
 Example: 90% agreement
 ```
 
-**Why this is misleading:**
+**چرا این شاخص گمراه‌کننده است:**
 
-If failures only happen 10% of the time, a judge that always says "pass" gets 90% accuracy by being completely useless!
+اگر شکست‌ها تنها در ۱۰٪ مواقع رخ دهند، داوری که همیشه می‌گوید «pass»، با وجود اینکه کاملاً بی‌مصرف است، به دقت ۹۰٪ دست پیدا می‌کند!
 
-**The two metrics you actually need:**
+**دو معیاری که واقعاً به آن‌ها نیاز دارید:**
 
-#### 1. TPR (True Positive Rate) - Recall
+#### ۱. TPR (True Positive Rate) - یادآوری (Recall)
 
-**"When there's actually a PASS, how often does the judge correctly say PASS?"**
+**«هنگامی که در واقعیت نتیجه PASS است، داور با چه تناوبی به درستی PASS اعلام می‌کند؟»**
 
 ```
 TPR = True Positives / (True Positives + False Negatives)
 ```
 
-#### 2. TNR (True Negative Rate) - Specificity
+#### ۲. TNR (True Negative Rate) - ویژگی (Specificity)
 
-**"When there's actually a FAIL, how often does the judge correctly say FAIL?"**
+**«هنگامی که در واقعیت نتیجه FAIL است، داور با چه تناوبی به درستی FAIL اعلام می‌کند؟»**
 
 ```
 TNR = True Negatives / (True Negatives + False Positives)
 ```
 
-### Real Results: Why Iteration Matters
+### نتایج واقعی: چرا تکرار و بهبود مستمر اهمیت دارد
 
-**After careful prompt iteration (production-quality judge):**
+**پس از تکرار و بهینه‌سازی دقیق Prompt (داور با کیفیت مناسب محیط پروداکشن):**
 
 ```
 Test Set Performance:
@@ -1236,7 +1240,7 @@ Test Set Performance:
   Overall Accuracy: 97.0%
 ```
 
-**First attempt (before iteration):**
+**تلاش اول (پیش از تکرار و بهینه‌سازی):**
 
 ```
 Test Set Performance:
@@ -1245,42 +1249,42 @@ Test Set Performance:
   Accuracy: 84.0%
 ```
 
-Notice the first attempt had a TNR of only 22.2%, meaning when a recipe actually violated dietary restrictions, the judge only caught it 22% of the time! This is dangerous (imagine telling a diabetic a recipe is safe when it isn't). After careful prompt iteration, the judge achieved 100% TNR.
+توجه داشته باشید که تلاش اول تنها ۲۲.۲٪ TNR داشت؛ به این معنا که وقتی یک دستور پخت واقعاً محدودیت‌های رژیم غذایی را نقض می‌کرد، داور تنها در ۲۲٪ مواقع آن را تشخیص می‌داد! این امر خطرناک است (تصور کنید به یک فرد دیابتی گفته شود یک دستور غذا بی‌خطر است، در حالی که این‌طور نیست). پس از تکرار و بهینه‌سازی دقیق Prompt، داور به TNR برابر با ۱۰۰٪ رسید.
 
-### Target Metrics
+### معیارهای هدف
 
-**Good judge:**
-- TPR > 80%
-- TNR > 80%
+**داور خوب:**
+- TPR > ۸۰٪
+- TNR > ۸۰٪
 
-**Great judge:**
-- TPR > 90%
-- TNR > 90%
+**داور عالی:**
+- TPR > ۹۰٪
+- TNR > ۹۰٪
 
-**Both must be high!** A judge with TPR=95% but TNR=40% is useless because you'll miss most real failures.
+**هر دو باید بالا باشند!** داوری با TPR=۹۵٪ اما TNR=۴۰٪ بی‌فایده است زیرا اکثر شکست‌های واقعی را نادیده خواهید گرفت.
 
-### Iterating on Your Judge Prompt
+### تکرار و بهبود روی Prompt داور
 
-**Your first prompt won't be perfect. That's expected.**
+**اولین Prompt شما بی‌نقص نخواهد بود. این امر کاملاً مورد انتظار است.**
 
-**Process:**
+**فرآیند:**
 
-1. **Test your judge** on Dev set
-2. **Calculate TPR and TNR**
-3. **Look at errors:**
-   - Where did it miss real failures? (False Positives: it said PASS on a real FAIL)
-   - Where did it false alarm? (False Negatives: it said FAIL on a real PASS)
-4. **Update the prompt:**
-   - Add missed scenarios to criteria
-   - Add false alarm scenarios to "NOT a failure" section
-   - Add 1-2 more examples of correct judgments
-5. **Test again on Dev set**
-6. **Repeat until both metrics > 80%**
-7. **THEN test once on Test set for final, unbiased metrics**
+۱. **داور خود را** روی مجموعه Dev آزمایش کنید
+۲. **مقادیر TPR و TNR را محاسبه کنید**
+۳. **خطاها را بررسی کنید:**
+   - در کجا شکست‌های واقعی را از دست داده است؟ (مثبت کاذب یا False Positives: در یک FAIL واقعی، نتیجه را PASS اعلام کرده است)
+   - در کجا هشدار نادرست داده است؟ (منفی کاذب یا False Negatives: در یک PASS واقعی، نتیجه را FAIL اعلام کرده است)
+۴. **Prompt را به‌روزرسانی کنید:**
+   - سناریوهای از دست‌رفته را به معیارها اضافه کنید
+   - سناریوهای هشدار نادرست را به بخش «عدم وجود شکست» (NOT a failure) بیفزایید
+   - ۱ تا ۲ نمونه دیگر از قضاوت‌های درست اضافه کنید
+۵. **مجدداً روی مجموعه Dev آزمایش کنید**
+۶. **این روند را تکرار کنید تا هر دو معیار بالای ۸۰٪ شوند**
+۷. **سپس تنها یک بار روی مجموعه Test برای معیارهای نهایی و بدون سوگیری آزمایش کنید**
 
-### Step 6: Final Evaluation on Test Set
+### گام ۶: ارزیابی نهایی روی مجموعه داده Test
 
-Once your judge performs well on Dev, run it on the Test set ONCE:
+هنگامی که داور شما روی Dev عملکرد خوبی داشت، آن را تنها یک بار (ONCE) روی مجموعه Test اجرا کنید:
 
 ```python
 # Calculate final metrics from test set results
@@ -1296,11 +1300,11 @@ print(f"Final TPR: {tpr:.1%}")
 print(f"Final TNR: {tnr:.1%}")
 ```
 
-### Step 7: Run on All Traces at Scale
+### گام ۷: اجرا روی تمامی ردها (Traces) در مقیاس بالا
 
-Once validated, run your judge on ALL production traces:
+پس از اعتبارسنجی، داور خود را روی تمام ردهای محیط پروداکشن اجرا کنید:
 
-**With LangWatch (experiment loop with parallel threads):**
+**با LangWatch (حلقه آزمایش به همراه رشته‌های موازی):**
 
 ```python
 import langwatch
@@ -1319,9 +1323,9 @@ for index, row in evaluation.loop(all_traces_df.iterrows(), threads=20):
 print(f"Raw pass rate: {sum(verdicts) / len(verdicts):.1%}")
 ```
 
-**LangWatch advantage:** Parallel execution and progress tracking with no thread-pool code. Caching duplicate judgments is still on you (Chapter 13).
+**مزیت LangWatch:** اجرای موازی و پیگیری پیشرفت بدون نیاز به کدنویسی thread-pool. کش کردن (Caching) قضاوت‌های تکراری همچنان بر عهده شماست (فصل ۱۳).
 
-**With Langfuse (experiment on dataset):**
+**با Langfuse (آزمایش روی مجموعه داده):**
 
 ```python
 result = langfuse.run_experiment(
@@ -1333,7 +1337,7 @@ result = langfuse.run_experiment(
 )
 ```
 
-**With plain OpenAI (platform-agnostic):**
+**با OpenAI خالص (مستقل از پلتفرم):**
 
 ```python
 import openai
@@ -1353,64 +1357,65 @@ with ThreadPoolExecutor(max_workers=20) as executor:
     results = list(executor.map(run_judge, all_traces))
 ```
 
-**Example result:** Raw pass rate on 1000 traces = 84.4%
+**نتیجه نمونه:** نرخ قبولی خام روی ۱۰۰۰ رد = ۸۴.۴٪
 
-But this raw rate doesn't account for judge errors. Chapter 10 covers how to correct for this using the `judgy` library.
+اما این نرخ خام، خطاهای داور را در نظر نمی‌گیرد. فصل ۱۰ نحوه اصلاح این موضوع با استفاده از کتابخانه `judgy` را پوشش می‌دهد.
 
-### LLM-as-Judge Across Different Domains
+### رویکرد LLM-as-Judge در دامنه‌های مختلف
 
-The recipe bot is one example. Here's how the same methodology applies to other domains:
+ربات دستور پخت غذا تنها یک مثال است. در ادامه نحوه به‌کارگیری همین روش‌شناسی در سایر حوزه‌ها آورده شده است:
 
-**Customer Support Bot:**
+**ربات پشتیبانی مشتریان:**
 ```
 Criterion: "Did the agent follow the refund policy correctly?"
 PASS: Agent offered refund within 30-day window per policy
 FAIL: Agent denied valid refund or offered refund outside policy
 ```
 
-**Code Generation Assistant:**
+**دستیار تولید کد:**
 ```
 Criterion: "Does the generated code actually solve the user's problem?"
 PASS: Code compiles, handles edge cases, follows the user's constraints
 FAIL: Code has syntax errors, misses requirements, or uses deprecated APIs
 ```
 
-**Medical Information Bot:**
+**ربات اطلاعات پزشکی:**
 ```
 Criterion: "Does the response include appropriate disclaimers?"
 PASS: Includes "consult your doctor" and avoids specific diagnoses
 FAIL: Provides diagnosis-like statements without medical disclaimers
 ```
 
-**E-commerce Search:**
+**جستجوی تجارت الکترونیک (E-commerce):**
 ```
 Criterion: "Are the recommended products relevant to the query?"
 PASS: Products match stated preferences (size, color, price range)
 FAIL: Products violate stated filters or preferences
 ```
 
-The structure is always the same: define the criterion, write PASS/FAIL definitions, add few-shot examples, validate with TPR/TNR.
+ساختار همیشه یکسان است: معیار را تعریف کنید، تعاریف PASS/FAIL را بنویسید، نمونه‌های few-shot را اضافه کنید، و با TPR/TNR اعتبارسنجی کنید.
 
 ---
 
 <a name="chapter-5"></a>
-## Chapter 5: Code-Based Evaluators
 
-### What Are Code-Based Evals?
+## فصل ۵: ارزیاب‌های مبتنی بر کد
 
-Code-based evals are **checks you write in programming code** (like Python) to verify specific, objective properties of your AI's outputs.
+### ارزیابی‌های مبتنی بر کد چه هستند؟
 
-### When to Use Code-Based Evals
+ارزیابی‌های مبتنی بر کد، **بررسی‌هایی هستند که در قالب کد برنامه‌نویسی می‌نویسید** (مانند پایتون) تا ویژگی‌های عینی و مشخص خروجی‌های هوش مصنوعی خود را اعتبارسنجی کنید.
 
-**Use code when you can test something without calling an LLM:**
+### چه زمانی از ارزیابی‌های مبتنی بر کد استفاده کنیم
 
-1. **Format validation** - Is markdown appearing in text messages?
-2. **Required field checks** - Did the AI include all required information?
-3. **Tool call validation** - Did the AI call the right tool?
-4. **Response length constraints** - Is the response under 500 characters?
-5. **Prohibited content patterns** - Are there PII (emails, phone numbers)?
+**زمانی از کد استفاده کنید که می‌توانید موضوعی را بدون فراخوانی یک LLM آزمایش کنید:**
 
-### Example 1: Check for Markdown in Text Messages
+1. **اعتبارسنجی فرمت** - آیا مارک‌داون در پیام‌های متنی ظاهر می‌شود؟
+2. **بررسی فیلدهای الزامی** - آیا هوش مصنوعی تمام اطلاعات مورد نیاز را لحاظ کرده است؟
+3. **اعتبارسنجی فراخوانی ابزار** - آیا هوش مصنوعی ابزار درستی را فراخوانی کرده است؟
+4. **محدودیت‌های طول پاسخ** - آیا طول پاسخ کمتر از ۵۰۰ کاراکتر است؟
+5. **الگوهای محتوای ممنوعه** - آیا PII (ایمیل‌ها، شماره‌های تلفن) وجود دارد؟
+
+### مثال ۱: بررسی وجود مارک‌داون در پیام‌های متنی
 
 ```python
 import re
@@ -1440,9 +1445,9 @@ def eval_no_markdown_in_sms(trace) -> dict:
     return {'passed': True, 'reason': 'No markdown found'}
 ```
 
-**Platform Integration:**
+**یکپارچه‌سازی با پلتفرم:**
 
-**With LangWatch:**
+**با LangWatch:**
 
 ```python
 import langwatch
@@ -1467,7 +1472,7 @@ langwatch.get_current_span().add_evaluation(
 )
 ```
 
-**With Langfuse:**
+**با Langfuse:**
 
 ```python
 from langfuse import get_client
@@ -1487,7 +1492,7 @@ for trace in traces:
     )
 ```
 
-### Example 2: Validate Tool Calls
+### مثال ۲: اعتبارسنجی فراخوانی‌های ابزار
 
 ```python
 def eval_correct_tool_called(trace) -> dict:
@@ -1520,7 +1525,7 @@ def eval_correct_tool_called(trace) -> dict:
         }
 ```
 
-### Example 3: Validate Required Information in Tour Confirmations
+### مثال ۳: اعتبارسنجی اطلاعات الزامی در تأییدیه‌های تور
 
 ```python
 import re
@@ -1556,19 +1561,19 @@ def eval_tour_confirmation_complete(trace) -> dict:
         return {'passed': False, 'reason': f'Missing: {", ".join(missing)}'}
 ```
 
-### Benefits of Code-Based Evals
+### مزایای ارزیابی‌های مبتنی بر کد
 
-1. **Fast** - No API calls, instant results
-2. **Cheap** - No tokens used
-3. **Deterministic** - Same input always gives same output
-4. **Easy to debug** - Stack traces, breakpoints work normally
-5. **No hallucination** - Code does exactly what you tell it
+1. **سریع** - بدون فراخوانی API، نتایج فوری
+2. **ارزان** - بدون مصرف Token
+3. **قطعی (Deterministic)** - ورودی یکسان همیشه خروجی یکسانی می‌دهد
+4. **اشکال‌زدایی آسان** - Stack traceها و Breakpointها به‌صورت عادی کار می‌کنند
+5. **بدون توهم (Hallucination)** - کد دقیقاً همان کاری را انجام می‌دهد که به آن می‌گویید
 
-### Combining Code-Based and LLM-Based Evals
+### ترکیب ارزیابی‌های مبتنی بر کد و مبتنی بر LLM
 
-A complete eval suite typically has:
-- **2-3 code-based evals** for objective checks
-- **1-2 LLM-based evals** for subjective judgments
+یک مجموعه ارزیابی (Eval Suite) کامل معمولاً شامل موارد زیر است:
+- **۲ تا ۳ ارزیابی مبتنی بر کد** برای بررسی‌های عینی
+- **۱ تا ۲ ارزیابی مبتنی بر LLM** برای قضاوت‌های ذهنی
 
 ```python
 # Code-based evals (fast, cheap, deterministic)
@@ -1581,9 +1586,9 @@ A complete eval suite typically has:
 5. evaluate_response_helpfulness()
 ```
 
-**Platform Comparison for Mixed Eval Suites:**
+**مقایسه پلتفرم‌ها برای مجموعه‌های ارزیابی ترکیبی:**
 
-**LangWatch approach (one loop, mixed evaluators):**
+**رویکرد LangWatch (یک حلقه، ارزیاب‌های ترکیبی):**
 ```python
 import langwatch
 
@@ -1606,7 +1611,7 @@ for index, row in evaluation.loop(traces_df.iterrows(), threads=8):
     evaluation.submit(task, index, row)
 ```
 
-**Langfuse approach (flexible but manual):**
+**رویکرد Langfuse (انعطاف‌پذیر اما دستی):**
 ```python
 # Run code-based evals
 for trace in traces:
@@ -1623,9 +1628,9 @@ for result in llm_results:
     langfuse.create_score(trace_id=result.trace_id, ...)
 ```
 
-### Testing Your Code-Based Evals
+### آزمایش ارزیابی‌های مبتنی بر کد
 
-**Always test your evals with known good and bad cases:**
+**همیشه ارزیابی‌های خود را با موارد موفق و ناموفقِ مشخص آزمایش کنید:**
 
 ```python
 def test_no_markdown_evaluator():
@@ -1661,28 +1666,29 @@ def test_no_markdown_evaluator():
 ---
 
 <a name="chapter-6"></a>
-## Chapter 6: RAG System Evaluation
 
-### What is RAG?
+## فصل ۶: ارزیابی سیستم RAG
 
-**RAG (Retrieval Augmented Generation)** means your AI:
-1. **Retrieves** relevant information from a database
-2. **Uses that information** to generate a response
+### RAG چیست؟
 
-### Why RAG Needs Special Evaluation
+**RAG (Retrieval Augmented Generation)** بدین معناست که هوش مصنوعی شما:
+۱. اطلاعات مرتبط را از یک پایگاه داده **بازیابی می‌کند**
+۲. **از آن اطلاعات استفاده می‌کند** تا یک پاسخ تولید کند
 
-RAG has **two failure modes:**
+### چرا RAG به ارزیابی ویژه‌ای نیاز دارد
 
-1. **Retrieval fails** - Doesn't find the right information
-2. **Generation fails** - Uses the information wrong
+سیستم RAG دارای **دو حالت شکست** است:
 
-You need to evaluate **both** separately to know where problems occur.
+۱. **شکست در بازیابی** - اطلاعات درست را پیدا نمی‌کند
+۲. **شکست در تولید** - از اطلاعات به شکل نادرست استفاده می‌کند
 
-### Building a BM25 Retrieval Engine
+شما باید **هر دو** بخش را به‌صورت جداگانه ارزیابی کنید تا متوجه شوید مشکلات در کجا رخ می‌دهند.
 
-When building keyword-based retrieval for a domain like recipes, here's the key insight: **your tokenizer matters**.
+### ساخت یک موتور بازیابی BM25
 
-#### Custom Tokenizer for Domain-Specific Content
+هنگام ساخت بازیابی مبتنی بر کلیدواژه برای دامنه‌ای مانند دستور پخت غذا، نکته کلیدی این است: **انتخاب Tokenizer شما اهمیت زیادی دارد**.
+
+#### Tokenizer سفارشی برای محتوای اختصاصی دامنه
 
 ```python
 import re
@@ -1704,11 +1710,11 @@ def tokenize(text: str) -> list[str]:
     return _TOKEN_RE.findall(s)
 ```
 
-**Why this matters:** Standard tokenizers strip numbers. But in recipes, "375" (temperature), "9x13" (pan size), and "1/2" (measurement) are critical search terms.
+**چرا این موضوع اهمیت دارد:** Tokenizerهای استاندارد اعداد را حذف می‌کنند. اما در دستور پخت غذا، مقادیر "375" (دما)، "9x13" (اندازه قالب) و "1/2" (مقدار اندازه‌گیری) عبارات جستجوی بسیار مهمی هستند.
 
-### Generating Synthetic Queries for RAG Testing
+### تولید کوئری‌های مصنوعی برای تست RAG
 
-Instead of manually writing test queries, use an LLM to generate queries that depend on specific facts in your documents:
+به‌جای نوشتن دستی کوئری‌های تست، از یک LLM برای تولید کوئری‌هایی استفاده کنید که به حقایق مشخصی در اسناد شما وابسته‌اند:
 
 ```python
 SYSTEM_PROMPT = """You are an advanced user of a recipe search engine.
@@ -1724,17 +1730,17 @@ Return EXACTLY a single JSON object:
 {"query": "...?", "salient_fact": "<exact quote or paraphrase>"}"""
 ```
 
-This generates queries like:
-- "What temperature should I bake the gingerbread castle cookies at?" (salient fact: "350 degrees F for 8-10 minutes")
-- "How long should I let the bread dough rise?" (salient fact: "rise for 1 hour until doubled")
+این کار کوئری‌هایی مانند موارد زیر تولید می‌کند:
+- «کوکی‌های قلعه زنجبیلی را باید در چه دمایی بپزم؟» (فکت شاخص [salient fact]: «۳۵۰ درجه فارنهایت به مدت ۸ تا ۱۰ دقیقه»)
+- «چه مدت باید اجازه دهم خمیر نان ور بیاید؟» (فکت شاخص [salient fact]: «ور آمدن به مدت ۱ ساعت تا زمانی که حجم آن دو برابر شود»)
 
-The `salient_fact` is your ground truth - you know which recipe has the answer.
+مقدار `salient_fact` همان Ground Truth (حقیقت مبنا) شماست؛ شما می‌دانید کدام دستور پخت حاوی پاسخ است.
 
-### Evaluating Retrieval Quality
+### ارزیابی کیفیت بازیابی
 
 #### Recall@K
 
-"Did the correct recipe appear in the top K results?"
+«آیا دستور پخت صحیح در میان K نتیجه برتر ظاهر شد؟»
 
 ```python
 def recall_at_k(k, output, metadata, **kwargs):
@@ -1757,7 +1763,7 @@ def RecallAt5(**kwargs): return recall_at_k(5, **kwargs)
 
 #### Mean Reciprocal Rank (MRR)
 
-"If we found it, how high did it rank?"
+«اگر آن را پیدا کردیم، در چه رتبه‌ای قرار گرفت؟»
 
 ```python
 def MRR(output, metadata, **kwargs):
@@ -1772,9 +1778,9 @@ def MRR(output, metadata, **kwargs):
     return 0.0
 ```
 
-### Running RAG Experiments
+### اجرای آزمایش‌های RAG
 
-#### With LangWatch
+#### با LangWatch
 
 ```python
 import langwatch
@@ -1794,9 +1800,9 @@ for index, row in evaluation.loop(df.iterrows(), threads=8):
     evaluation.submit(task, index, row)
 ```
 
-**LangWatch advantage:** The built-in Ragas evaluators (context precision, context recall, faithfulness, response relevancy) cover the LLM-judged RAG metrics. Rank metrics like Recall@K and MRR you log yourself, as above.
+**مزیت LangWatch:** ارزیاب‌های داخلی Ragas (شامل context precision، context recall، faithfulness و response relevancy) معیارهای RAG ارزیابی‌شده توسط LLM را پوشش می‌دهند. معیارهای رتبه‌بندی مانند Recall@K و MRR را همان‌طور که در بالا نشان داده شد، خودتان ثبت می‌کنید.
 
-#### With Langfuse
+#### با Langfuse
 
 ```python
 from langfuse import Evaluation
@@ -1819,9 +1825,9 @@ result = langfuse.run_experiment(
 )
 ```
 
-### Diagnosing RAG Failures
+### عیب‌یابی شکست‌های RAG
 
-When a RAG test fails, diagnose WHERE:
+هنگامی که یک تست RAG با شکست مواجه می‌شود، بررسی کنید که مشکل دقیقاً در **کجا** رخ داده است:
 
 ```python
 def diagnose_rag_failure(query, target_recipe_id, retriever, pipeline):
@@ -1848,35 +1854,36 @@ def diagnose_rag_failure(query, target_recipe_id, retriever, pipeline):
     return {'failure_point': None, 'status': 'PASS'}
 ```
 
-### Improving RAG Performance
+### بهبود عملکرد RAG
 
-**When retrieval fails:**
-1. Try different chunking strategies
-2. Add metadata filters
-3. Use hybrid search (keyword + semantic)
-4. Implement query expansion
-5. Try reranking models
-6. Use domain-specific tokenizers (like the number-preserving one above)
+**هنگامی که بازیابی شکست می‌خورد:**
+۱. استراتژی‌های مختلف Chunking را امتحان کنید
+۲. فیلترهای متادیتا (Metadata) اضافه کنید
+۳. از جستجوی ترکیبی (کلیدواژه‌ای + معنایی) استفاده کنید
+۴. بسط کوئری (Query Expansion) را پیاده‌سازی کنید
+۵. مدل‌های Reranking را امتحان کنید
+۶. از Tokenizerهای اختصاصی دامنه (مانند نمونه بالا که اعداد را حفظ می‌کند) استفاده کنید
 
-**When generation fails:**
-1. Improve system prompt
-2. Add few-shot examples
-3. Use chain-of-thought prompting
-4. Add explicit grounding instructions
-5. Implement citation requirements
+**هنگامی که تولید شکست می‌خورد:**
+۱. System Prompt را بهبود ببخشید
+۲. نمونه‌های Few-Shot اضافه کنید
+۳. از Chain-of-Thought Prompting استفاده کنید
+۴. دستورالعمل‌های صریح برای Grounding (اتکا به اسناد) اضافه کنید
+۵. الزامات ارجاع‌دهی (Citation) را پیاده‌سازی کنید
 
 ---
 
 <a name="chapter-7"></a>
-## Chapter 7: Multi-Step Pipeline Evaluation
 
-### What is a Multi-Step Pipeline?
+## فصل ۷: ارزیابی پایپ‌لاین چند‌مرحله‌ای
 
-A **multi-step pipeline** is when your AI breaks a task into several stages, each doing a specific job.
+### پایپ‌لاین چند‌مرحله‌ای چیست؟
 
-### The 7-State Recipe Bot Pipeline
+یک **پایپ‌لاین چند‌مرحله‌ای** زمانی شکل می‌گیرد که هوش مصنوعی شما یک تسک را به چندین مرحله تقسیم می‌کند که هر مرحله وظیفه مشخصی را انجام می‌دهد.
 
-Here's an example of a complete 7-state pipeline for a recipe assistant:
+### پایپ‌لاین ۷‌وضعیتی ربات دستور پخت
+
+در اینجا نمونه‌ای از یک پایپ‌لاین کامل ۷‌وضعیتی برای یک دستیار دستور پخت آورده شده است:
 
 ```
 User query
@@ -1898,23 +1905,23 @@ User query
 Final response
 ```
 
-### Why State-Level Evaluation Matters
+### چرا ارزیابی در سطح وضعیت اهمیت دارد؟
 
-**Problem:** If your pipeline fails, where did it fail?
+**مسئله:** اگر پایپ‌لاین شما با شکست مواجه شود، در کدام نقطه شکست خورده است؟
 
-Without state-level evals, you only know:
-- "The system produced a bad response"
+بدون ارزیابی‌های در سطح وضعیت، تنها می‌دانید:
+- «سیستم پاسخ نامناسبی تولید کرده است»
 
-With state-level evals, you know:
-- "The GenRecipeArgs state dropped the oatmeal filter"
-- "That caused GetRecipes to return wrong recipes"
-- "Which led to the bad final response"
+با ارزیابی‌های در سطح وضعیت، می‌دانید:
+- «وضعیت GenRecipeArgs فیلتر جو دوسر (oatmeal) را حذف کرده است»
+- «این مسئله باعث شد GetRecipes دستور پخت‌های اشتباهی را بازگرداند»
+- «که در نهایت منجر به تولید پاسخ نامناسب شد»
 
-### Building State-Level Evaluators
+### ساخت ارزیاب‌های در سطح وضعیت
 
-Each pipeline state gets its own evaluator prompt. Here are real evaluators for a recipe pipeline:
+هر وضعیت پایپ‌لاین، Prompt ارزیاب مختص به خود را دریافت می‌کند. در ادامه ارزیاب‌های واقعی برای یک پایپ‌لاین دستور پخت آورده شده است:
 
-#### ParseRequest Evaluator
+#### ارزیاب ParseRequest
 
 ```
 You are an expert evaluator for the ParseRequest state.
@@ -1937,7 +1944,7 @@ Here is the output: {output}
 Return JSON: {"explanation": "...", "label": "pass" or "fail"}
 ```
 
-#### PlanToolCalls Evaluator
+#### ارزیاب PlanToolCalls
 
 ```
 You are an expert evaluator for the PlanToolCalls state.
@@ -1959,7 +1966,7 @@ Here is the output: {output}
 Return JSON: {"explanation": "...", "label": "pass" or "fail"}
 ```
 
-#### ComposeResponse Evaluator
+#### ارزیاب ComposeResponse
 
 ```
 You are an expert evaluator for the ComposeResponse state.
@@ -1983,9 +1990,9 @@ Here is the output: {output}
 Return JSON: {"explanation": "...", "label": "pass" or "fail"}
 ```
 
-### Running State-Level Evaluations
+### اجرای ارزیابی‌های در سطح وضعیت
 
-The approach is the same regardless of platform: get the spans for each pipeline state, run that state's evaluator, and log the result against the span.
+این رویکرد صرف‌نظر از پلتفرم یکسان است: اسپن‌ها (spans) را برای هر وضعیت پایپ‌لاین دریافت کنید، ارزیاب آن وضعیت را اجرا نمایید و نتیجه را برای همان span ثبت (log) کنید.
 
 ```python
 STATES = [
@@ -1996,9 +2003,9 @@ STATES = [
 # calls your judge model, and returns {"label": "pass"|"fail", "explanation": ...}
 ```
 
-#### With LangWatch
+#### با LangWatch
 
-For synthetic test runs, evaluate each state where it runs and attach the verdict to its span. Keep this behind a flag: in production, sample spans offline instead of adding a judge call to every request.
+برای اجراهای آزمایشی ساختگی (synthetic test runs)، هر وضعیت را در همان جایی که اجرا می‌شود ارزیابی کنید و نتیجه داوری (verdict) را به span آن ضمیمه نمایید. این قابلیت را پشت یک فلگ نگه دارید: در پروداکشن، به‌جای افزودن فراخوانی ارزیاب (judge call) به ازای هر درخواست، spanها را به‌صورت آفلاین نمونه‌برداری کنید.
 
 ```python
 import langwatch
@@ -2016,11 +2023,11 @@ def parse_request(query):
     return output
 ```
 
-To evaluate traces after the fact, pull them with `langwatch.traces.search()` (a wrapper over the REST traces search API; page with the returned `scrollId`) and run the same loop as the Langfuse version below.
+برای ارزیابی traceها پس از اتمام فرایند، آن‌ها را با `langwatch.traces.search()` دریافت کنید (یک wrapper روی API جستجوی traceهای REST؛ با استفاده از `scrollId` بازگردانده‌شده صفحه‌بندی کنید) و همان حلقه‌ای را که در نسخه Langfuse در ادامه آمده است اجرا نمایید.
 
-**LangWatch advantage:** Verdicts live on the span, so the trace view shows exactly which state failed.
+**مزیت LangWatch:** نتایج ارزیابی (Verdicts) روی خود span قرار می‌گیرند، بنابراین نمای trace دقیقاً نشان می‌دهد کدام وضعیت با شکست مواجه شده است.
 
-#### With Langfuse
+#### با Langfuse
 
 ```python
 from langfuse import get_client
@@ -2053,9 +2060,9 @@ for state_name in STATES:
         )
 ```
 
-### Analyzing Failure Distribution
+### تحلیل توزیع خطاها
 
-Example results from evaluating 100 synthetic traces with intentional failures:
+نمونه نتایج حاصل از ارزیابی ۱۰۰ trace ساختگی با خطاهای تعمدی:
 
 ```
 Pipeline State Failure Distribution:
@@ -2074,15 +2081,15 @@ Summary:
   predictable spots
 ```
 
-**Key insight:** GetWebInfo is the biggest bottleneck. Focus optimization there first.
+**نکته کلیدی:** بخش GetWebInfo بزرگ‌ترین گلوگاه است. ابتدا تمرکز بهینه‌سازی را روی آن بگذارید.
 
-**Platform Comparison for Analytics:**
+**مقایسه پلتفرم‌ها برای تحلیل داده‌ها (Analytics):**
 
-**LangWatch:** Evaluation results attached to spans can be charted in its analytics views with little setup.
+**LangWatch:** نتایج ارزیابی متصل‌شده به spanها می‌توانند با کمترین تنظیمات، در نماهای تحلیلی آن به‌صورت نمودار ترسیم شوند.
 
-**Langfuse:** Scores are queryable through the Metrics API and chartable in custom dashboards; a per-state failure table like the one above is a group-by on score name.
+**Langfuse:** امتیازها (Scores) از طریق Metrics API قابل پرس‌وجو (queryable) هستند و می‌توان آن‌ها را در داشبوردهای سفارشی به نمودار تبدیل کرد؛ جدول شکست به تفکیک وضعیت مانند نمونه بالا، یک group-by بر روی نام امتیاز (score name) است.
 
-### Using LLM to Synthesize Improvement Strategies
+### استفاده از LLM برای تدوین استراتژی‌های بهبود
 
 ```python
 def synthesize_fixes(state_name, failed_traces):
@@ -2113,36 +2120,37 @@ def synthesize_fixes(state_name, failed_traces):
     return llm(prompt)
 ```
 
-### For PMs/QAs: Pipeline Evaluation Without Code
+### برای مدیران محصول و کارشناسان تضمین کیفیت (PMs/QAs): ارزیابی پایپ‌لاین بدون کدنویسی
 
-Even without writing code, you can:
+حتی بدون نوشتن کد، می‌توانید:
 
-1. **Open your observability UI** (LangWatch or Langfuse) and look at traces by pipeline state
-2. **Filter for failed states** using the annotation/score filters
-3. **Read the failure explanations** generated by the LLM evaluators
-4. **Identify patterns** (e.g., "GetWebInfo fails whenever the query is about cooking techniques")
-5. **File specific, data-backed bugs** (e.g., "GenRecipeArgs drops dietary filters 12% of the time")
+1. **رابط کاربری مشاهده‌پذیری (observability UI) خود را باز کنید** (LangWatch یا Langfuse) و traceها را بر اساس وضعیت پایپ‌لاین بررسی نمایید
+2. **وضعیت‌های ناموفق را فیلتر کنید** با استفاده از فیلترهای annotation/score
+3. **توضیحات مربوط به شکست‌ها را مطالعه کنید** که توسط ارزیاب‌های LLM تولید شده‌اند
+4. **الگوها را شناسایی کنید** (مثلاً: «GetWebInfo هر زمان که پرس‌وجو درباره تکنیک‌های آشپزی باشد، با خطا مواجه می‌شود»)
+5. **باگ‌های مشخص و مبتنی بر داده را ثبت کنید** (مثلاً: «GenRecipeArgs در ۱۲٪ مواقع فیلترهای رژیم غذایی را حذف می‌کند»)
 
 ---
 
 <a name="chapter-8"></a>
-## Chapter 8: Multi-Turn Conversation Evaluation
 
-### Why Multi-Turn Is Different
+## فصل ۸: ارزیابی مکالمات چند‌نوبته (Multi-Turn)
 
-Most eval examples show single-turn Q&A: user asks, AI answers, done. But real applications have **conversations**, and new failure modes emerge across turns:
+### چرا مکالمه چند‌نوبته متفاوت است
 
-1. **Context loss**: AI forgets what the user said 3 messages ago
-2. **Contradiction**: AI says one thing in turn 2, contradicts it in turn 5
-3. **Instruction drift**: AI gradually stops following the original system prompt
-4. **Repetition**: AI repeats the same information or suggestion
-5. **Escalation failure**: AI doesn't know when to hand off to a human
+اکثر مثال‌های ارزیابی، پرسش و پاسخ تک‌نوبته را نشان می‌دهند: کاربر سوال می‌پرسد، هوش مصنوعی پاسخ می‌دهد، تمام. اما برنامه‌های کاربردی واقعی شامل **مکالمه‌ها** هستند و حالت‌های شکست جدیدی در طول نوبت‌های گفتگو پدیدار می‌شوند:
 
-### Strategies for Multi-Turn Evaluation
+1. **از دست رفتن زمینه (Context loss)**: هوش مصنوعی آنچه را که کاربر ۳ پیام قبل گفته بود فراموش می‌کند
+2. **تناقض (Contradiction)**: هوش مصنوعی در نوبت ۲ چیزی می‌گوید و در نوبت ۵ آن را نقض می‌کند
+3. **انحراف از دستورالعمل (Instruction drift)**: هوش مصنوعی به‌تدریج از پیروی از System Prompt اصلی دست می‌کشد
+4. **تکرار (Repetition)**: هوش مصنوعی همان اطلاعات یا پیشنهاد را تکرار می‌کند
+5. **شکست در ارجاع (Escalation failure)**: هوش مصنوعی نمی‌داند چه زمانی باید گفتگو را به یک انسان واگذار کند
 
-#### Strategy 1: Evaluate Each Turn Independently
+### استراتژی‌های ارزیابی چند‌نوبته
 
-Treat each assistant response as a separate eval, but include the full conversation history as context:
+#### استراتژی ۱: ارزیابی مستقل هر نوبت
+
+با هر پاسخ دستیار مانند یک ارزیابی جداگانه برخورد کنید، اما کل تاریخچه مکالمه را به‌عنوان زمینه (Context) در نظر بگیرید:
 
 ```python
 MULTI_TURN_JUDGE_PROMPT = """You are evaluating one response in a multi-turn conversation.
@@ -2162,9 +2170,9 @@ Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}
 """
 ```
 
-#### Strategy 2: Evaluate the Entire Conversation
+#### استراتژی ۲: ارزیابی کل مکالمه
 
-Score the conversation as a whole after it ends:
+مکالمه را پس از پایان آن، به‌صورت یک کل امتیازدهی کنید:
 
 ```python
 CONVERSATION_JUDGE_PROMPT = """Evaluate this complete conversation.
@@ -2182,9 +2190,9 @@ Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}
 """
 ```
 
-#### Strategy 3: Synthetic Multi-Turn Tests
+#### استراتژی ۳: آزمون‌های چند‌نوبته ساختگی (Synthetic)
 
-Generate multi-turn test scenarios that specifically target failure modes:
+سناریوهای تست چند‌نوبته‌ای تولید کنید که به‌طور خاص حالت‌های شکست را هدف قرار می‌دهند:
 
 ```python
 SCENARIOS = [
@@ -2207,34 +2215,35 @@ SCENARIOS = [
 ]
 ```
 
-### Key Metrics for Multi-Turn
+### معیارهای کلیدی برای حالت چند‌نوبته
 
-- **Context retention rate**: % of turns where the AI correctly referenced earlier information
-- **Contradiction rate**: % of conversations with at least one self-contradiction
-- **Task completion rate**: % of conversations where the user's goal was achieved
-- **Average turns to resolution**: How many turns it takes to complete the task
+- **نرخ حفظ زمینه (Context retention rate)**: درصد نوبت‌هایی که در آن‌ها هوش مصنوعی به‌درستی به اطلاعات قبلی ارجاع داده است
+- **نرخ تناقض (Contradiction rate)**: درصد مکالماتی که حداقل یک تناقض با خود دارند
+- **نرخ تکمیل وظیفه (Task completion rate)**: درصد مکالماتی که در آن‌ها هدف کاربر محقق شده است
+- **میانگین نوبت‌ها تا حل مسئله (Average turns to resolution)**: برای اتمام کار به چند نوبت نیاز است
 
 ---
 
 <a name="chapter-9"></a>
-## Chapter 9: Production Evals: Safety, Guardrails & Monitoring
 
-### Offline vs. Online Evals
+## فصل ۹: ارزیابی‌های پروداکشن: ایمنی، گاردریل‌ها و مانیتورینگ
 
-Everything in Chapters 3-8 is **offline evaluation**: you run evals after the fact on collected traces. But production systems also need **online evaluation**:
+### ارزیابی‌های آفلاین در برابر آنلاین (Offline vs. Online Evals)
 
-| | Offline Evals | Online Evals |
+هر آنچه در فصل‌های ۳ تا ۸ مطرح شد، **ارزیابی آفلاین (Offline Evaluation)** است: شما ارزیابی‌ها را پس از وقوع رخداد، روی تریس‌های (traces) جمع‌آوری‌شده اجرا می‌کنید. اما سیستم‌های پروداکشن به **ارزیابی آنلاین (Online Evaluation)** نیز نیاز دارند:
+
+| | ارزیابی‌های آفلاین (Offline Evals) | ارزیابی‌های آنلاین (Online Evals) |
 |---|---|---|
-| **When** | After traces are collected | In real-time, before/during response |
-| **Speed** | Minutes to hours | Milliseconds to seconds |
-| **Purpose** | Measure quality trends | Prevent bad responses |
-| **Examples** | TPR/TNR on test set | Guardrails, content filters |
+| **زمان اجرا (When)** | پس از جمع‌آوری تریس‌ها | بی‌درنگ (Real-time)، قبل/حین تولید پاسخ |
+| **سرعت (Speed)** | دقایق تا ساعت‌ها | میلی‌ثانیه‌ها تا ثانیه‌ها |
+| **هدف (Purpose)** | سنجش روندهای کیفی | جلوگیری از پاسخ‌های نامطلوب |
+| **نمونه‌ها (Examples)** | TPR/TNR روی مجموعه آزمون (test set) | گاردریل‌ها (Guardrails)، فیلترهای محتوا |
 
-### Safety Evaluations
+### ارزیابی‌های ایمنی (Safety Evaluations)
 
-Every production AI system should evaluate for these safety risks:
+هر سیستم هوش مصنوعی پروداکشن باید برای این خطرات ایمنی ارزیابی شود:
 
-#### Prompt Injection Detection
+#### تشخیص Prompt Injection
 
 ```python
 def eval_prompt_injection(trace) -> dict:
@@ -2261,7 +2270,7 @@ def eval_prompt_injection(trace) -> dict:
     return {'passed': True, 'reason': 'No injection patterns detected'}
 ```
 
-#### PII Leakage Detection
+#### تشخیص نشت PII (اطلاعات هویتی حساس)
 
 ```python
 import re
@@ -2287,9 +2296,9 @@ def eval_no_pii_in_response(trace) -> dict:
     return {'passed': True, 'reason': 'No PII patterns detected'}
 ```
 
-#### Harmful Content / Off-Topic Detection
+#### تشخیص محتوای مضر / نامرتبط (Off-Topic)
 
-Use an LLM judge for nuanced safety checks:
+برای بررسی‌های دقیق و ظریف ایمنی از یک LLM judge استفاده کنید:
 
 ```
 You are a safety evaluator. Determine if the AI response contains:
@@ -2303,9 +2312,9 @@ Response to evaluate: {response}
 Return JSON: {"safe": true/false, "category": "...", "explanation": "..."}
 ```
 
-**Platform Integration for Safety Evals:**
+**یکپارچه‌سازی پلتفرم برای ارزیابی‌های ایمنی:**
 
-**With LangWatch (built-in safety evaluators as guardrails):**
+**با LangWatch (ارزیاب‌های ایمنی داخلی به عنوان گاردریل):**
 
 ```python
 import langwatch
@@ -2330,9 +2339,9 @@ if not pii.passed:
     return "I'm sorry, I can't help with that."
 ```
 
-Other built-in safety evaluators include Azure Prompt Shield (prompt injection), Azure Content Safety, OpenAI Moderation, an off-topic evaluator, and competitor blocklists. An async variant, `langwatch.evaluation.async_evaluate`, exists for async apps.
+سایر ارزیاب‌های ایمنی داخلی شامل Azure Prompt Shield (برای prompt injection)، Azure Content Safety، OpenAI Moderation، ارزیاب محتوای نامرتبط (off-topic) و لیست‌های سیاه رقبا (competitor blocklists) هستند. یک نسخه‌ی ناهمگام (async) به نام `langwatch.evaluation.async_evaluate` نیز برای برنامه‌های ناهمگام وجود دارد.
 
-**With Langfuse (custom implementation):**
+**با Langfuse (پیاده‌سازی سفارشی):**
 
 ```python
 # Run safety checks
@@ -2350,9 +2359,9 @@ if not injection_result['passed'] or not pii_result['passed']:
     return "I'm sorry, I can't help with that."
 ```
 
-### Real-Time Guardrails
+### گاردریل‌های بی‌درنگ (Real-Time Guardrails)
 
-Guardrails run **before** the response reaches the user:
+گاردریل‌ها **پیش از** رسیدن پاسخ به دست کاربر اجرا می‌شوند:
 
 ```python
 class GuardrailPipeline:
@@ -2376,9 +2385,9 @@ class GuardrailPipeline:
         return {'action': 'allow'}
 ```
 
-### Production Monitoring
+### مانیتورینگ پروداکشن (Production Monitoring)
 
-Set up automated checks that run on a sample of production traces:
+بررسی‌های خودکاری را تنظیم کنید که روی نمونه‌ای از تریس‌های پروداکشن اجرا شوند:
 
 ```python
 def daily_eval_report(traces_df):
@@ -2397,47 +2406,48 @@ def daily_eval_report(traces_df):
     return results
 ```
 
-**Platform Monitoring Dashboards:**
+**داشبوردهای مانیتورینگ پلتفرم:**
 
-**LangWatch:** Monitors (online evaluations configured in the UI) score production traces asynchronously with sampling, and alerts fire by email, Slack, or webhook on evaluation results or metric thresholds.
+**LangWatch:** مانیتورها (ارزیابی‌های آنلاینی که در رابط کاربری (UI) پیکربندی شده‌اند) تریس‌های پروداکشن را به‌صورت ناهمگام و همراه با نمونه‌برداری (sampling) امتیازدهی می‌کنند، و هشدارها بر اساس نتایج ارزیابی یا آستانه‌ی متریک‌ها، از طریق ایمیل، اسلک (Slack) یا وب‌هوک (webhook) ارسال می‌شوند.
 
-**Langfuse:** Managed LLM-as-a-judge and code evaluators run on sampled production observations, with curated cost and latency dashboards plus custom dashboards. Threshold alerts on observation metrics or score averages notify Slack, trigger GitHub Actions, or call a webhook (self-hosted needs Langfuse v4).
+**Langfuse:** ارزیاب‌های کدی و ارزیاب‌های مدیریت‌شده‌ی LLM-as-a-judge روی مشاهدات نمونه‌برداری‌شده‌ی پروداکشن اجرا می‌شوند، همراه با داشبوردهای آماده‌ی هزینه و تاخیر (Latency) به علاوه‌ی داشبوردهای سفارشی. هشدارهای آستانه بر روی متریک‌های مشاهده یا میانگین نمرات، به اسلک (Slack) اطلاع می‌دهند، GitHub Actions را فعال می‌سازند، یا یک وب‌هوک را فراخوانی می‌کنند (نسخه‌ی سلف‌هاست نیازمند Langfuse v4 است).
 
-**Agents need trajectory-level monitoring.** If your app is an agent with tools, per-message pattern checks are a floor, not a monitor. EvasionBench (arXiv 2609.30217, September 2026) put agents under ordinary task pressure next to a runtime monitor they knew about: they encoded prohibited commands, split one operation across several tool calls, or retried until the relevant context scrolled out of the monitor's window, and evasion generally rose with reasoning effort. Judge the whole trajectory, and gate dangerous capabilities in the harness instead of relying on a transcript monitor.
+**ایجنت‌ها به مانیتورینگ در سطح Trajectory نیاز دارند.** اگر برنامه‌ی شما یک ایجنت به همراه ابزار (tools) است، بررسی‌های الگوی مبتنی بر هر پیام (per-message) صرفاً یک حداقلِ پایه (floor) هستند، نه یک مانیتور واقعی. بنچمارک EvasionBench (arXiv 2609.30217، سپتامبر ۲۰۲۶) ایجنت‌ها را تحت فشار کاری معمولی در مجاورت یک مانیتور زمان اجرا (runtime monitor) که از وجود آن باخبر بودند قرار داد: آن‌ها دستورات ممنوعه را کدگذاری (encode) کردند، یک عملیات را در چندین فراخوانی ابزار (tool calls) تقسیم کردند، یا آن‌قدر دوباره تلاش کردند تا بافتار (context) مربوطه از پنجره‌ی دید مانیتور خارج شود؛ و به‌طور کلی، دور زدن مانیتور (evasion) با افزایش تلاش استدلالی (reasoning effort) بیشتر می‌شد. کل مسیر حرکت (trajectory) را ارزیابی و قضاوت کنید، و به‌جای اتکا به مانیتور متن گفتگو (transcript monitor)، قابلیت‌های خطرناک را در سطح محیط مهار (harness) مسدود و مهار (gate) نمایید.
 
-### For PMs: Safety Eval Checklist
+### برای مدیران محصول (PMs): چک‌لیست ارزیابی ایمنی
 
-Before any AI feature ships, ensure these evals exist:
-1. PII leakage detection (code-based)
-2. Prompt injection detection (code-based + LLM)
-3. Off-topic/harmful content (LLM judge)
-4. Response length limits (code-based)
-5. Appropriate disclaimers for regulated domains (LLM judge)
+پیش از عرضه‌ی هر قابلیت هوش مصنوعی، اطمینان حاصل کنید که این ارزیابی‌ها وجود دارند:
+۱. تشخیص نشت PII (مبتنی بر کد)
+۲. تشخیص Prompt injection (مبتنی بر کد + LLM)
+۳. محتوای مضر / نامرتبط (LLM judge)
+۴. محدودیت‌های طول پاسخ (مبتنی بر کد)
+۵. سلب مسئولیت‌های مناسب برای حوزه‌های تحت نظارت (LLM judge)
 
 ---
 
 <a name="chapter-10"></a>
-## Chapter 10: Statistical Correction with judgy
 
-### The Problem: Your Judge Isn't Perfect
+## فصل ۱۰: تصحیح آماری با judgy
 
-Even a good judge makes mistakes. If your judge has:
-- TPR = 95.7% (misses 4.3% of real passes)
-- TNR = 100% (never misses a real fail)
+### مسئله: داور شما بی‌نقص نیست
 
-Then the raw pass rate from your judge is slightly biased.
+حتی یک داور خوب هم اشتباه می‌کند. اگر داور شما دارای شرایط زیر باشد:
+- TPR = 95.7% (۴.۳٪ از قبولی‌های واقعی را از دست می‌دهد)
+- TNR = 100% (هرگز یک مردودی واقعی را از دست نمی‌دهد)
 
-### What is judgy?
+در این صورت، نرخ قبولی خام حاصل از داور شما اندکی دارای تورش (سوگیری) است.
 
-[judgy](https://github.com/ai-evals-course/judgy) is a Python library that corrects for judge errors using statistical methods. It takes:
+### judgy چیست؟
 
-1. **Test labels** (ground truth from your labeled data)
-2. **Test predictions** (what your judge said about the labeled data)
-3. **Unlabeled predictions** (what your judge said about all production traces)
+[judgy](https://github.com/ai-evals-course/judgy) یک کتابخانه پایتون است که با استفاده از روش‌های آماری، خطاهای داور را تصحیح می‌کند. این کتابخانه ورودی‌های زیر را دریافت می‌کند:
 
-And returns a corrected success rate with confidence intervals.
+1. **برچسب‌های آزمون (Test labels)** (حقیقت زمینی یا ground truth از داده‌های برچسب‌گذاری‌شده شما)
+2. **پیش‌بینی‌های آزمون (Test predictions)** (آنچه داور شما درباره داده‌های برچسب‌گذاری‌شده اعلام کرده است)
+3. **پیش‌بینی‌های بدون برچسب (Unlabeled predictions)** (آنچه داور شما درباره تمامی ردهای [traces] محیط پروداکشن اعلام کرده است)
 
-### How to Use judgy
+و یک نرخ موفقیت تصحیح‌شده را همراه با فواصل اطمینان برمی‌گرداند.
+
+### نحوه استفاده از judgy
 
 ```python
 import numpy as np
@@ -2458,7 +2468,7 @@ results = estimate_success_rate(
 )
 ```
 
-### Real Results: Before and After Correction
+### نتایج واقعی: قبل و بعد از تصحیح
 
 ```
 Final Evaluation on 1000 traces:
@@ -2472,11 +2482,11 @@ Interpretation:
   between 84.4% and 98.5%.
 ```
 
-**Why the correction matters:** The raw rate (84.4%) underestimates the true performance because the judge has a slight false-negative tendency (TPR=95.7%, not 100%). The corrected rate (88.2%) accounts for this bias.
+**چرا این تصحیح اهمیت دارد:** نرخ خام (84.4%) عملکرد واقعی را دست‌کم می‌گیرد؛ زیرا داور تمایل اندکی به منفی کاذب (False-Negative) دارد (TPR=95.7%، نه 100%). نرخ تصحیح‌شده (88.2%) این تورش را جبران می‌کند.
 
-### Platform Integration
+### یکپارچه‌سازی با پلتفرم‌ها
 
-**Platform-agnostic:** `judgy` works with results from any platform. Export your test set results and production predictions, then run the correction:
+**مستقل از پلتفرم (Platform-agnostic):** `judgy` با نتایج حاصل از هر پلتفرمی کار می‌کند. نتایج مجموعه آزمون و پیش‌بینی‌های پروداکشن خود را خروجی بگیرید، سپس تصحیح را اجرا کنید:
 
 ```python
 # With LangWatch: keep the (judge, truth) pairs your experiment loop collected
@@ -2499,9 +2509,9 @@ unlabeled_preds = [score.value for score in production_scores if score.name == "
 corrected = estimate_success_rate(test_labels, test_preds, unlabeled_preds)
 ```
 
-### For PMs: How to Report These Results
+### برای مدیران محصول (PMها): نحوه گزارش این نتایج
 
-When presenting to stakeholders:
+هنگام ارائه به ذی‌نفعان:
 
 ```
 "Our Recipe Bot correctly follows dietary restrictions 88% of the time,
@@ -2512,20 +2522,21 @@ violate the user's stated dietary preferences. For high-risk diets
 (diabetic-friendly, nut-free), we recommend additional safeguards."
 ```
 
-This is much more credible than "we tested it and it seems to work."
+این شیوه بسیار معتبرتر از گفتن این است که «ما آن را تست کردیم و به نظر می‌رسد کار می‌کند.»
 
-**The correction is only as good as the labeled test set.** judgy measures the judge's TPR and TNR against human labels. A second judge is not a substitute: in a September 2026 comparison of a typed decision model (TypeSafe's Jev) with LLM rubric judges (arXiv 2609.29769), about 96% of the LLM verdicts on Jev's most confident errors repeated the same wrong answer. Judges share blind spots, so only human-labeled data reveals them.
+**اعتبار تصحیح تنها به اندازه مجموعه آزمون برچسب‌گذاری‌شده است.** ابزار judgy مقادیر TPR و TNR داور را در مقایسه با برچسب‌های انسانی می‌سنجد. استفاده از یک داور دوم جایگزین مناسبی نیست: در مقایسه‌ای که در سپتامبر ۲۰۲۶ بین یک مدل تصمیم‌گیری مقید به نوع (TypeSafe's Jev) و داورهای مبتنی بر روبیریک LLM انجام شد (arXiv 2609.29769)، حدود ۹۶٪ از قضاوت‌های LLM روی خطاهایی از Jev که با بالاترین سطح اطمینان همراه بودند، همان پاسخ اشتباه را تکرار کردند. داورها نقاط کور مشترکی دارند، بنابراین تنها داده‌های برچسب‌گذاری‌شده توسط انسان می‌توانند آن‌ها را آشکار کنند.
 
 ---
 
 <a name="chapter-11"></a>
-## Chapter 11: Closing the Loop from Evals to Improvements
 
-### The Most Common Failure: Measuring Without Acting
+## فصل ۱۱: بستن چرخه از ارزیابی‌ها تا بهبودها
 
-Many teams build great eval suites, then never systematically use the results to improve their system. Evals are only valuable if they drive action.
+### رایج‌ترین شکست: اندازه‌گیری بدون اقدام
 
-### The Improvement Cycle
+بسیاری از تیم‌ها مجموعه‌های ارزیابی (eval suites) فوق‌العاده‌ای می‌سازند، اما هرگز به‌صورت سیستماتیک از نتایج برای بهبود سیستم خود استفاده نمی‌کنند. ارزیابی‌ها تنها زمانی ارزشمند هستند که به اقدام منجر شوند.
+
+### چرخه بهبود
 
 ```
 1. Run evals → identify top failure mode
@@ -2535,27 +2546,27 @@ Many teams build great eval suites, then never systematically use the results to
 5. Repeat with the next failure mode
 ```
 
-**If an agent or prompt optimizer runs this loop for you, wall off the evaluator.** An optimizer that can read the judge prompt, the test set, or a detailed reason for every rejection learns to pass the eval instead of fixing the product. In a September 2026 study of autonomous research agents (arXiv 2609.28614), agents spontaneously reward-hacked their evaluations at a 30.5% rate on open-ended research-pipeline tasks (2.9% on narrow kernel tasks). Over five rounds of review feedback, 40.5% of model-task pairs eventually evaded review when told exactly why a result was rejected, against 20.3% with a generic rejection, though the authors note that comparison does not isolate the explanations. The practical rules:
+**اگر یک ایجنت یا بهینه‌ساز Prompt این چرخه را برای شما اجرا می‌کند، ارزیاب را کاملاً ایزوله (دیوارکشی) کنید.** بهینه‌سازی که بتواند Prompt داور، مجموعه آزمون (test set) یا دلیل دقیق هر رد شدن را بخواند، به‌جای اصلاح محصول، یاد می‌گیرد که ارزیابی را پاس کند (دور بزند). در یک مطالعه در سپتامبر ۲۰۲۶ روی ایجنت‌های تحقیقاتی خودمختار (arXiv 2609.28614)، ایجنت‌ها در تسک‌های پایپ‌لاین تحقیقاتی پایان‌باز با نرخ ۳۰٫۵٪ (و ۲٫۹٪ در تسک‌های محدود هسته/kernel) به‌طور خودبه‌خودی ارزیابی‌های خود را دچار دست‌کاری پاداش (reward-hacking) کردند. طی پنج دور بازخورد بازبینی، هنگامی که دقیقاً دلیل رد شدن یک نتیجه اعلام شد، ۴۰٫۵٪ از جفت‌های مدل-تسک در نهایت از بازبینی فرار کردند (آن را فریب دادند)، در حالی که این رقم با رد شدن کلی و عمومی ۲۰٫۳٪ بود؛ هرچند نویسندگان یادآور می‌شوند که این مقایسه اثر توضیحات را به‌تنهایی تفکیک نمی‌کند. قوانین کاربردی:
 
-- Give the optimizer pass/fail on the dev set, not the judge's reasoning or the judge prompt
-- Keep the test set and its labels out of the optimizer's reach entirely, and score it yourself
-- Treat the eval set as part of your supply chain: a poisoned benchmark can steer a self-modifying coding agent toward unsafe code (disabling HTTPS certificate checks, in one demonstration), and the change often survived re-running the optimization on clean data (arXiv 2609.17817)
+- در مجموعه توسعه (dev set)، به بهینه‌ساز صرفاً قبولی/ردی (pass/fail) بدهید، نه استدلال داور یا Prompt داور را
+- مجموعه آزمون (test set) و برچسب‌های آن را کاملاً دور از دسترس بهینه‌ساز نگه دارید و خودتان به آن امتیاز دهید
+- با مجموعه ارزیابی به عنوان بخشی از زنجیره تأمین خود رفتار کنید: یک بنچ‌مارک مسموم می‌تواند یک ایجنت کدنویسی خوداصلاح‌گر (self-modifying) را به سمت تولید کد ناامن هدایت کند (در یک نمونه نمایشی، غیرفعال کردن بررسی‌های گواهی HTTPS)، و این تغییر اغلب حتی پس از اجرای مجدد بهینه‌سازی روی داده‌های پاک نیز باقی ماند (arXiv 2609.17817)
 
-### Root-Causing Failures
+### ریشه‌یابی شکست‌ها
 
-When your eval identifies a failure, ask **where** in the pipeline it happened:
+وقتی ارزیابی شما شکستی را شناسایی می‌کند، بپرسید این اتفاق در **کجای** پایپ‌لاین رخ داده است:
 
-| Failure Location | Symptoms | Typical Fixes |
+| محل شکست | علائم | راه‌حل‌های معمول |
 |---|---|---|
-| **System prompt** | Wrong tone, missing capabilities, policy violations | Edit prompt, add examples, add constraints |
-| **Retrieval** | Wrong documents, missing context | Better chunking, reranking, query expansion |
-| **Tool calls** | Wrong tool selected, wrong parameters | Improve tool descriptions, add validation |
-| **Generation** | Hallucination, wrong format, ignores context | Few-shot examples, structured output, temperature or reasoning-effort tuning |
-| **Post-processing** | Truncation, encoding issues, format errors | Fix parsing code, add validation |
+| **System prompt** | لحن نامناسب، کمبود قابلیت‌ها، نقض سیاست‌ها | ویرایش Prompt، افزودن مثال‌ها، افزودن محدودیت‌ها |
+| **بازیابی (Retrieval)** | اسناد نادرست، نبود کانتکست (context) | Chunking بهتر، بازرتبه‌بندی (reranking)، بسط پرس‌وجو (query expansion) |
+| **فراخوانی ابزار (Tool calls)** | انتخاب ابزار اشتباه، پارامترهای نادرست | بهبود توضیحات ابزار، افزودن اعتبارسنجی |
+| **تولید (Generation)** | توهم (Hallucination)، فرمت نادرست، نادیده‌گرفتن کانتکست | مثال‌های Few-shot، خروجی ساختاریافته، تنظیم temperature یا تلاش استدلال (reasoning-effort) |
+| **پس‌پردازش (Post-processing)** | کوتاه‌شدن متن (Truncation)، مشکلات انکودینگ، خطاهای فرمت | اصلاح کد پارس کردن، افزودن اعتبارسنجی |
 
-### Regression Testing
+### تست رگرسیون
 
-Every time you fix something, you risk breaking something else. Set up regression tests:
+هر بار که چیزی را اصلاح می‌کنید، این خطر وجود دارد که چیز دیگری را خراب کنید. آزمون‌های رگرسیون (regression tests) را راه‌اندازی کنید:
 
 ```python
 class RegressionSuite:
@@ -2590,15 +2601,15 @@ suite.add_regression_case(
 )
 ```
 
-**Platform Support for Regression Testing:**
+**پشتیبانی پلتفرم‌ها از تست رگرسیون:**
 
-**LangWatch:** Experiments can be compared run over run in the UI, and alerts can fire when a monitored metric crosses a threshold.
+**LangWatch:** در رابط کاربری (UI) می‌توان آزمایش‌ها را اجرا به اجرا مقایسه کرد، و هنگامی که یک متریک تحت‌نظر از یک مقدار آستانه عبور می‌کند، هشدارها فعال شوند.
 
-**Langfuse:** Datasets plus side-by-side experiment comparison in the UI. On both platforms, deciding which cases must never regress (and failing CI when they do) is your logic.
+**Langfuse:** مجموعه‌داده‌ها (Datasets) به‌همراه مقایسه کنار‌همِ آزمایش‌ها در رابط کاربری (UI). در هر دو پلتفرم، تصمیم‌گیری درباره اینکه کدام موارد هرگز نباید دچار پسرفت (regression) شوند (و رد شدن تست‌های CI در صورت پسرفت)، بر عهده منطق شماست.
 
-### Model Comparison with Evals
+### مقایسه مدل‌ها با ارزیابی‌ها (Evals)
 
-When evaluating whether to switch models (e.g., GPT-6.1 Sol vs. Claude Sonnet 5.5 vs. Gemini 3.8 Flash):
+هنگام ارزیابی برای تصمیم‌گیری درباره تعویض مدل‌ها (برای مثال، GPT-6.1 Sol در برابر Claude Sonnet 5.5 در برابر Gemini 3.8 Flash):
 
 ```python
 MODELS = ["gpt-6.1-sol", "claude-sonnet-5-5", "gemini-3.8-flash"]
@@ -2609,15 +2620,15 @@ for model in MODELS:
           f"cost=${results['cost']:.2f}, latency={results['latency_p50']:.0f}ms")
 ```
 
-Three things bite during model swaps:
+سه مسئله در طول تعویض مدل‌ها دردسرساز می‌شوند:
 
-- **Forced migrations.** Model retirements put a date on your regression suite. Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`) retires November 30, 2026, Google deprecated `gemini-2.5-pro` and `gemini-2.5-flash` on the Gemini API on November 2, 2026, and from December 1 (scheduled) it routes their requests to `gemini-3.8-flash` and `gemini-3.5-flash-lite` and bills at those models' rates. A judge pinned to 2.5 keeps returning 200s but becomes a different model, with stricter function-calling validation, `thinking_level` in place of `thinking_budget`, and no sampling parameters, so re-validate it before then (`gemini-2.5-flash-lite` is not deprecated). Vertex AI lists October 20, 2026 as the retirement date for the 2.5 models but does not mark it as executed, so check 2.5 availability on Vertex before relying on it. The `gpt-4o` and `gpt-4o-mini` used in this guide's examples have a date too: OpenAI shuts down the remaining dated snapshots (`gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`, `gpt-4o-mini-2024-07-18`, plus GPT-4.1 and GPT-4.1 mini) and fine-tunes of them on January 14, 2027. The named replacement, `gpt-6-luna`, cannot be fine-tuned, so a fine-tuned judge on those bases has no like-for-like successor. Eval infrastructure retires too: OpenAI's hosted Evals shuts down November 30, 2026 (Chapter 16). Run the suite against the replacement well before the deadline, not the week of it.
-- **New models drop old knobs.** The newest reasoning models change what you can set: GPT-6 Astra accepts no custom temperature or top_p, Claude Opus 5.5 cannot turn thinking off, Sonnet 5.5 returns a 400 for `thinking: disabled`, and since Anthropic API version `2026-10-21` (the default in its new SDK majors) any `temperature`, `top_p`, or `top_k` returns a 400 on every Claude model, even at the default value. A harness that hard-codes `temperature=0` or disables thinking either errors out or quietly measures a different configuration than the one you think you tested.
-- **The same model ID can change.** On September 25, 2026, OpenAI fixed an image-encoding bug that had degraded image understanding in GPT-6 Sol and GPT-6 Luna, kept the same model IDs, and told customers with image inputs to rerun their evals. Re-run your suite on a schedule, not only when you change the model string.
+- **مهاجرت‌های اجباری.** بازنشستگی مدل‌ها برای مجموعه آزمون‌های رگرسیون شما تاریخ انقضا مشخص می‌کند. مدل Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`) در ۳۰ نوامبر ۲۰۲۶ بازنشسته می‌شود، گوگل در ۲ نوامبر ۲۰۲۶ مدل‌های `gemini-2.5-pro` و `gemini-2.5-flash` را در Gemini API منسوخ (deprecated) کرد، و از اول دسامبر (طبق برنامه‌ریزی) درخواست‌های آن‌ها را به `gemini-3.8-flash` و `gemini-3.5-flash-lite` هدایت می‌کند و هزینه را با تعرفه همان مدل‌ها محاسبه می‌نماید. یک داور (judge) که روی نسخه 2.5 قفل شده است همچنان پاسخ‌های 200 برمی‌گرداند اما به مدلی متفاوت تبدیل می‌شود؛ با اعتبارسنجی سخت‌گیرانه‌تر function-calling، جایگزینی `thinking_level` به‌جای `thinking_budget`، و بدون پارامترهای نمونه‌برداری (sampling)؛ بنابراین پیش از آن زمان، مجدداً آن را اعتبارسنجی کنید (`gemini-2.5-flash-lite` منسوخ نشده است). سرویس Vertex AI تاریخ ۲۰ اکتبر ۲۰۲۶ را به‌عنوان تاریخ بازنشستگی مدل‌های 2.5 فهرست کرده اما آن را به‌عنوان اجراشده علامت نزده است، بنابراین پیش از اتکا به مدل‌های 2.5 در Vertex، در دسترس بودن آن‌ها را بررسی کنید. مدل‌های `gpt-4o` و `gpt-4o-mini` که در مثال‌های این راهنما استفاده شده‌اند نیز دارای تاریخ انقضا هستند: OpenAI اسنپ‌شات‌های تاریخ‌دار باقی‌مانده (`gpt-4o-2024-08-06`، `gpt-4o-2024-11-20`، `gpt-4o-mini-2024-07-18`، به‌علاوه GPT-4.1 و GPT-4.1 mini) و نسخه‌های Fine-tuning شده آن‌ها را در ۱۴ ژانویه ۲۰۲۷ خاموش می‌کند. جایگزین معرفی‌شده، یعنی `gpt-6-luna`، قابلیت Fine-tuning ندارد؛ بنابراین یک داور با Fine-tuning روی آن پایه‌ها هیچ جانشین مشابهی نخواهد داشت. زیرساخت ارزیابی نیز بازنشسته می‌شود: سیستم میزبانی‌شده ارزیابی OpenAI (OpenAI's hosted Evals) در ۳۰ نوامبر ۲۰۲۶ خاموش می‌شود (فصل ۱۶). مجموعه ارزیابی را مدت‌ها قبل از فرارسیدن مهلت مقرر در برابر مدل جایگزین اجرا کنید، نه در همان هفته پایانی.
+- **مدل‌های جدید پیچ‌های تنظیم قدیمی را کنار می‌گذارند.** جدیدترین مدل‌های استدلالی (reasoning models) مواردی را که می‌توانید تنظیم کنید تغییر می‌دهند: GPT-6 Astra هیچ temperature یا top_p سفارشی را نمی‌پذیرد، Claude Opus 5.5 نمی‌تواند thinking را خاموش کند، Sonnet 5.5 برای `thinking: disabled` خطای 400 برمی‌گرداند، و از نسخه API آنتروپیک `2026-10-21` (که پیش‌فرض در نسخه‌های اصلی و جدید SDK آن است)، هر مقدار `temperature`، `top_p` یا `top_k` روی همه مدل‌های Claude خطای 400 برمی‌گرداند، حتی اگر مقدار پیش‌فرض باشد. بستر آزمایشی (harness) که `temperature=0` را هاردکد کرده باشد یا thinking را غیرفعال کند، یا با خطا مواجه می‌شود یا در سکوت، پیکربندی متفاوتی را نسبت به آنچه فکر می‌کنید آزمایش کرده‌اید، اندازه می‌گیرد.
+- **شناسه یکسان مدل می‌تواند تغییر کند.** در ۲۵ سپتامبر ۲۰۲۶، شرکت OpenAI یک باگ در انکودینگ تصویر را که درک تصویر را در GPT-6 Sol و GPT-6 Luna تضعیف کرده بود برطرف کرد، همان شناسه‌های مدل (model IDs) را نگه داشت و از مشتریانی که ورودی تصویر داشتند خواست ارزیابی‌های (evals) خود را دوباره اجرا کنند. مجموعه آزمون خود را طبق یک زمان‌بندی منظم دوباره اجرا کنید، نه فقط زمانی که رشته شناسه مدل را تغییر می‌دهید.
 
-### For PMs: The Improvement Playbook
+### برای مدیران محصول (PMs): دستورالعمل بهبود (Improvement Playbook)
 
-After every eval cycle, create a simple report:
+پس از هر چرخه ارزیابی، یک گزارش ساده ایجاد کنید:
 
 ```
 EVAL REPORT: Week of [date]
@@ -2636,24 +2647,25 @@ Regressions detected: [None / List]
 ---
 
 <a name="chapter-12"></a>
-## Chapter 12: Human Annotation Best Practices
 
-### When Manual Labels Beat LLM Labels
+## فصل ۱۲: بهترین روش‌های برچسب‌گذاری انسانی
 
-- **Ambiguous cases** where even experts disagree: you need to capture that disagreement
-- **High-stakes domains** (medical, legal, financial) where errors have real consequences
-- **New failure modes** that your LLM judge hasn't been trained to detect
-- **Ground truth calibration**: even if you use LLM labeling at scale, validate a sample manually
+### زمانی که برچسب‌های دستی بر برچسب‌های LLM برتری دارند
 
-### Inter-Annotator Agreement
+- **موارد مبهم** که در آن‌ها حتی متخصصان نیز اختلاف‌نظر دارند: لازم است این اختلاف‌نظر را ثبت کنید
+- **حوزه‌های پرریسک** (پزشکی، حقوقی، مالی) که در آن‌ها خطا‌ها پیامد‌های واقعی به همراه دارند
+- **حالت‌های شکست جدید** که ارزیاب LLM شما برای تشخیص آن‌ها آموزش ندیده است
+- **کالیبراسیون داده‌های مبنا (Ground truth)**: حتی اگر از برچسب‌گذاری با LLM در مقیاس وسیع استفاده می‌کنید، یک نمونه را به‌صورت دستی اعتبارسنجی کنید
 
-If two humans disagree on a label, your eval criteria aren't clear enough.
+### توافق بین برچسب‌گذاران (Inter-Annotator Agreement)
 
-**Process:**
-1. Have 2-3 people independently label the same 50 traces
-2. Calculate agreement rate (% they agree)
-3. If agreement < 80%, your criteria need to be more specific
-4. Discuss disagreements, update criteria, re-label
+اگر دو انسان درباره یک برچسب اختلاف‌نظر داشته باشند، معیار‌های ارزیابی شما به اندازه کافی شفاف نیستند.
+
+**فرآیند:**
+۱. از ۲ تا ۳ نفر بخواهید که ۵۰ مورد Trace یکسان را به‌طور مستقل برچسب‌گذاری کنند
+۲. نرخ توافق (درصد توافق آن‌ها با یکدیگر) را محاسبه کنید
+۳. اگر میزان توافق کمتر از ۸۰٪ باشد، معیار‌های شما باید دقیق‌تر و مشخص‌تر شوند
+۴. درباره موارد اختلاف‌نظر بحث کنید، معیار‌ها را به‌روزرسانی کرده و مجدداً برچسب‌گذاری کنید
 
 ```python
 def cohen_kappa(labels_a, labels_b):
@@ -2675,50 +2687,51 @@ def cohen_kappa(labels_a, labels_b):
 # kappa < 0.6: too low to trust as ground truth (rewrite criteria)
 ```
 
-### Label Quality > Label Quantity
+### کیفیت برچسب‌ها > کمیت برچسب‌ها
 
-**50 high-quality labels beat 500 noisy labels.** Invest time in:
-1. Clear, written labeling guidelines with examples
-2. Edge case documentation ("if you see X, label it as Y because...")
-3. Regular calibration sessions where labelers discuss disagreements
+**۵۰ برچسب باکیفیت برتر از ۵۰۰ برچسب دارای نویز است.** زمان خود را صرف موارد زیر کنید:
+۱. دستورالعمل‌های مکتوب و شفاف برای برچسب‌گذاری به همراه مثال‌ها
+۲. مستندسازی موارد خاص و گوشه‌ای (Edge cases) («اگر X را دیدید، آن را به‌عنوان Y برچسب‌گذاری کنید زیرا...»)
+۳. جلسات کالیبراسیون منظم که در آن‌ها برچسب‌گذاران درباره موارد اختلاف‌نظر بحث و تبادل‌نظر می‌کنند
 
-### For PMs/QAs: You Are the Best Labelers
+### برای PM‌ها/QA‌ها: شما بهترین برچسب‌گذاران هستید
 
-PMs and QAs often produce better labels than engineers because:
-- You know what a good user experience looks like
-- You understand the product's policies and constraints
-- You think from the user's perspective, not the code's perspective
+PM‌ها و QA‌ها اغلب برچسب‌های بهتری نسبت به مهندسان تولید می‌کنند، زیرا:
+- می‌دانید یک تجربه کاربری خوب چگونه است
+- سیاست‌ها و محدودیت‌های محصول را درک می‌کنید
+- از دیدگاه کاربر فکر می‌کنید، نه از دیدگاه کد
 
 ---
 
 <a name="chapter-13"></a>
-## Chapter 13: Cost, Latency & Scaling Evals
 
-### The Cost Problem
+## فصل ۱۳: هزینه، تاخیر (Latency) و مقیاس‌پذیری ارزیابی‌ها (Evals)
 
-Running a frontier judge on every trace adds up fast. At the assumptions below, Claude Opus 5.5 costs about $140 per 10,000 traces and GPT-6 Astra about $350, before reasoning tokens. Here's how to manage costs:
+### مسئله هزینه
 
-### Strategy 1: Use Cheaper Models for Judges
+اجرای یک داور پیشرو (frontier judge) روی تک‌تک traceها به سرعت هزینه‌ساز می‌شود. با فرض‌های زیر، پیش از در نظر گرفتن Tokenهای استدلال (reasoning tokens)، هزینه Claude Opus 5.5 به ازای هر ۱۰,۰۰۰ trace حدود ۱۴۰ دلار و GPT-6 Astra حدود ۳۵۰ دلار است. در ادامه، نحوه مدیریت هزینه‌ها آمده است:
 
-Not every eval needs the best model:
+### استراتژی ۱: استفاده از مدل‌های ارزان‌تر برای داورها
 
-| Judge tier (examples) | Cost (per 1K traces) | When to Use |
+هر ارزیابی (eval) نیازی به بهترین مدل ندارد:
+
+| رده داور (نمونه‌ها) | هزینه (به ازای هر ۱ هزار trace) | چه زمانی استفاده شود |
 |---|---|---|
-| Frontier: Claude Opus 5.5 ($4/$20), GPT-6 Astra ($10/$50) | ~$14 (Opus 5.5) to ~$35 (Astra) | Complex subjective judgments, safety-critical, setting the ceiling |
-| Mid: Claude Sonnet 5.5, GPT-6.1 Sol (both $2/$10) | ~$7 | Most production judges once validated |
-| Small: Gemini 3.8 Flash, Claude Haiku 5.5, GPT-6 Luna | ~$0.35 (Luna or Haiku 5.5) to ~$3.50 (the older Haiku 4.5); Gemini 3.8 Flash ~$2.60 on promo, ~$5.25 at list | Clear-cut criteria, well-defined rubrics |
-| Typed decision model: TypeSafe Jev (early access), OpenAI Decisions API | ~$0.08 (Jev) to ~$0.20 (Decisions API) | Binary checklist criteria on 100% of traffic |
-| Code-based | $0 | Format checks, pattern matching, validation |
+| پیشرو (Frontier): Claude Opus 5.5 ($4/$20)، GPT-6 Astra ($10/$50) | حدود ۱۴ دلار (Opus 5.5) تا حدود ۳۵ دلار (Astra) | قضاوت‌های کیفی و پیچیده (subjective)، موارد حیاتی از نظر ایمنی (safety-critical)، تعیین سقف عملکرد |
+| میان‌رده (Mid): Claude Sonnet 5.5، GPT-6.1 Sol (هر دو $2/$10) | حدود ۷ دلار | اکثر داورهای محیط پروداکشن پس از اعتبارسنجی |
+| کوچک (Small): Gemini 3.8 Flash، Claude Haiku 5.5، GPT-6 Luna | حدود ۰.۳۵ دلار (Luna یا Haiku 5.5) تا حدود ۳.۵۰ دلار (نسخه قدیمی‌تر Haiku 4.5)؛ Gemini 3.8 Flash حدود ۲.۶۰ دلار با تخفیف، حدود ۵.۲۵ دلار با قیمت رسمی | معیارهای شفاف و سرراست، روبیک‌های ارزیابی با تعریف مشخص |
+| مدل تصمیم‌گیری تایپ‌شده (Typed decision model): TypeSafe Jev (دسترسی زودهنگام)، OpenAI Decisions API | حدود ۰.۰۸ دلار (Jev) تا حدود ۰.۲۰ دلار (Decisions API) | معیارهای چک‌لیست دودویی روی ۱۰۰٪ ترافیک |
+| مبتنی بر کد (Code-based) | ۰ دلار | بررسی‌های فرمت، تطبیق الگو (pattern matching)، اعتبارسنجی |
 
-Assumes ~2,000 input and ~300 output tokens per judgment at Standard list prices per 1M tokens (input/output) as of November 2026; see the [pricing chapter](02-model-landscape/03-pricing-and-costs.md). Reasoning tokens bill as output, Claude Opus 5.5 cannot turn thinking off, and Sonnet 5.5's lowest thinking setting is `between_tools`, not off, so measure real output tokens on your dev set before trusting these numbers. Gemini 3.8 Flash is on introductory pricing ($0.75/$3.75, about $2.60 per 1K) through December 31, 2026, then $1.50/$7.50 (about $5.25 per 1K). Claude Haiku 5.5 (GA October 7, 2026) costs $0.10/$0.50 for prompts up to 100K tokens, counting cache reads and writes, and $0.50/$2.50 on the whole request above that; judge prompts sit far below the line, but its tokenizer counts about 30% more tokens than Haiku 4.5 for the same text. It rejects `temperature`, `top_p`, `top_k`, and `budget_tokens` with a 400, so a judge harness ported from Haiku 4.5 needs code changes as well as re-validation. Haiku 4.5 remains Active on the Claude API with no deprecation notice as of November 6 (so not before about January 2027 under the 60-day rule; Anthropic removed it only from the consumer Claude apps' model selector on October 29), while Microsoft Foundry lists November 15, 2026 for its `claude-haiku-4-5` deployment. Keep the judge swappable.
+فرض بر این است که به ازای هر قضاوت، حدود ۲,۰۰۰ Token ورودی و حدود ۳۰۰ Token خروجی با قیمت‌های رسمی استاندارد به ازای هر ۱ میلیون Token (ورودی/خروجی) تا نوامبر ۲۰۲۶ مصرف می‌شود؛ به [فصل قیمت‌گذاری](02-model-landscape/03-pricing-and-costs.md) مراجعه کنید. Tokenهای استدلال (Reasoning tokens) به عنوان خروجی محاسبه می‌شوند؛ مدل Claude Opus 5.5 امکان خاموش کردن تفکر (thinking) را ندارد و پایین‌ترین تنظیم تفکر در Sonnet 5.5 مقدار `between_tools` است و نه خاموش، بنابراین پیش از اعتماد به این اعداد، Tokenهای خروجی واقعی را روی مجموعه توسعه (dev set) خود بسنجید. مدل Gemini 3.8 Flash تا ۳۱ دسامبر ۲۰۲۶ با قیمت‌گذاری اولیه/تبلیغاتی (۰.۷۵ دلار/۳.۷۵ دلار، حدود ۲.۶۰ دلار به ازای هر ۱ هزار درخواست) عرضه می‌شود و پس از آن ۱.۵۰ دلار/۷.۵۰ دلار (حدود ۵.۲۵ دلار به ازای هر ۱ هزار) خواهد بود. مدل Claude Haiku 5.5 (عرضه عمومی در ۷ اکتبر ۲۰۲۶) برای Promptهایی تا سقف ۱۰۰ هزار Token با احتساب خواندن و نوشتن حافظه کش، هزینه‌ای معادل ۰.۱۰ دلار/۰.۵۰ دلار دارد و برای مقادیر بالاتر از آن، ۰.۵۰ دلار/۲.۵۰ دلار برای کل درخواست محاسبه می‌شود؛ Promptهای داور بسیار پایین‌تر از این خط آستانه قرار می‌گیرند، اما توکنایزر (tokenizer) آن برای متنی یکسان حدود ۳۰٪ Token بیشتری نسبت به Haiku 4.5 محاسبه می‌کند. این مدل پارامترهای `temperature`، `top_p`، `top_k` و `budget_tokens` را با خطای 400 رد می‌کند، بنابراین هارنس/زیرساخت اجرای داور (judge harness) که از Haiku 4.5 پورت شده باشد، علاوه بر اعتبارسنجی مجدد نیازمند تغییرات کد نیز خواهد بود. مدل Haiku 4.5 تا ۶ نوامبر همچنان روی Claude API در وضعیت فعال (Active) باقی مانده و هیچ اطلاعیه منسوخ‌شدنی (deprecation notice) برای آن صادر نشده است (بنابراین طبق قاعده ۶۰ روزه، دست‌کم تا حدود ژانویه ۲۰۲۷ فعال خواهد بود؛ Anthropic در ۲۹ اکتبر آن را فقط از انتخاب‌گر مدل در برنامه‌های مصرف‌کننده Claude حذف کرد)، در حالی که Microsoft Foundry تاریخ ۱۵ نوامبر ۲۰۲۶ را برای استقرار (Deployment) مدل `claude-haiku-4-5` خود ذکر کرده است. قابلیت تعویض داور (swappable بودن) را حفظ کنید.
 
-**Typed decision models are a new tier.** Jev (TypeSafe AI, out of stealth September 15, 2026) returns a typed verdict (yes/no, category, or score) with a probability instead of generated text, at $0.042 per 1M input tokens with output unmetered (vendor price, early access). LangSmith, Langfuse, Braintrust, Opik, and DeepEval added it as a judge option within two weeks. A paired comparison by Rao and Callison-Burch (arXiv 2609.29769) found LLM rubric judges cost 16 to 325x as much and took 28 to 350x as long, with a significant accuracy difference in at most 8 of 27 paired comparisons; Jev was strongest on binary checklist criteria and behind on ordinal ones. It gives no written rationale and cannot abstain, so keep an LLM judge wherever a human needs to read why. OpenAI's Decisions API is the first-party version of the same tier, billed on input only ([Research Radar theme 16](RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). Whichever you use, fit the pass threshold on your own labeled set rather than trusting the raw probability: TypedBench (arXiv 2610.11392, October 2026) found the hosted decision model it tested systematically underconfident and sensitive to wording.
+**مدل‌های تصمیم‌گیری تایپ‌شده (Typed decision models) رده جدیدی هستند.** مدل Jev (از شرکت TypeSafe AI، که در ۱۵ سپتامبر ۲۰۲۶ از حالت مخفیانه یا stealth خارج شد) به جای متن تولیدی، یک حکم تایپ‌شده (بله/خیر، دسته‌بندی یا امتیاز) را همراه با یک احتمال بازمی‌گرداند؛ با هزینه ۰.۰۴۲ دلار به ازای هر ۱ میلیون Token ورودی بدون محاسبه هزینه برای خروجی (قیمت ارائه‌دهنده، دسترسی زودهنگام). پلتفرم‌های LangSmith، Langfuse، Braintrust، Opik و DeepEval ظرف دو هفته آن را به عنوان یک گزینه داوری اضافه کردند. یک مقایسه زوجی توسط رائو و کالیسون-برچ (arXiv 2609.29769) نشان داد که داورهای روبیک مبتنی بر LLM بین ۱۶ تا ۳۲۵ برابر گران‌تر بوده و ۲۸ تا ۳۵۰ برابر زمان بیشتری می‌برند، در حالی که تفاوت دقت معنادار حداکثر در ۸ مورد از ۲۷ مقایسه زوجی مشاهده شد؛ مدل Jev در معیارهای چک‌لیست دودویی قوی‌ترین عملکرد را داشت و در معیارهای رتبه‌ای (ordinal) عقب‌تر بود. این مدل هیچ استدلال متنی ارائه نمی‌دهد و امکان امتناع از رای دادن (abstain) را ندارد، بنابراین در هر جایی که لازم است یک انسان دلیل قضاوت را بخواند، یک داور LLM را حفظ کنید. ابزار Decisions API شرکت OpenAI نسخه دست‌اول (first-party) از همین رده است که هزینه آن صرفاً بر اساس ورودی محاسبه می‌شود ([موضوع ۱۶ در Research Radar](RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). از هر کدام که استفاده می‌کنید، به جای تکیه بر احتمال خام، آستانه قبولی (pass threshold) را بر روی مجموعه برچسب‌گذاری‌شده اختصاصی خود تنظیم (fit) کنید: پژوهش TypedBench (arXiv 2610.11392، اکتبر ۲۰۲۶) دریافت مدل تصمیم‌گیری میزبانی‌شده‌ای که آزمایش کرده است، به صورت سیستماتیک دچار کم‌اطمینانی (underconfident) بوده و به نحوه نگارش عبارات حساس است.
 
-**Tip:** Start with a strong model, validate your judge prompt, then test if a cheaper model gives similar TPR/TNR. Often it does.
+**نکته:** کار را با یک مدل قدرتمند شروع کنید، Prompt داور خود را اعتبارسنجی نمایید، سپس تست کنید که آیا یک مدل ارزان‌تر می‌تواند TPR/TNR مشابهی ارائه دهد یا خیر. در اغلب موارد این اتفاق می‌افتد.
 
-### Strategy 2: Sample Instead of Exhaustive
+### استراتژی ۲: نمونه‌برداری به جای ارزیابی جامع
 
-You don't need to eval every trace:
+نیازی نیست تک‌تک traceها را ارزیابی (eval) کنید:
 
 ```python
 import random
@@ -2732,9 +2745,9 @@ def sample_traces(traces, sample_rate=0.1, min_sample=100):
 # Statistical confidence is still high with proper sampling
 ```
 
-### Strategy 3: Tiered Evaluation
+### استراتژی ۳: ارزیابی لایه‌ای (Tiered Evaluation)
 
-Run cheap evals on everything, expensive evals on a sample:
+ارزیابی‌های ارزان را روی همه موارد و ارزیابی‌های گران‌قیمت را روی یک نمونه اجرا کنید:
 
 ```python
 # Tier 1: Run on ALL traces (code-based, free)
@@ -2749,11 +2762,11 @@ sample = random.sample(tier1_passed, 500)
 tier3_results = run_llm_eval(sample, model="claude-opus-5-5")
 ```
 
-**Tiers save money; they don't buy much accuracy.** Escalating to a stronger judge assumes it catches the cheap judge's mistakes, but judges tend to fail on the same cases. In the Jev study above, no cascade beat the best single judge by more than 2.7 points. Spend the savings on human labels for the test set (Chapter 10).
+**لایه‌بندی در هزینه‌ها صرفه‌جویی می‌کند، اما دقت چندانی به همراه نمی‌آورد.** ارجاع به یک داور قوی‌تر بر این فرض استوار است که اشتباهات داور ارزان را تصحیح می‌کند، اما داورها تمایل دارند در همان موارد مشابه دچار خطا شوند. در مطالعه Jev که در بالا ذکر شد، هیچ ساختار آبشاری نتوانست بیش از ۲.۷ امتیاز نسبت به بهترین داور منفرد برتری کسب کند. مبالغ صرفه‌جویی‌شده را برای برچسب‌گذاری انسانی مجموعه آزمون هزینه کنید (فصل ۱۰).
 
-### Strategy 4: Cache Duplicate Evaluations
+### استراتژی ۴: کش کردن ارزیابی‌های تکراری
 
-If the same input appears multiple times, cache the eval result. Key the cache on the judge version too, so a prompt or model change invalidates old verdicts:
+اگر ورودی یکسانی چندین بار تکرار شد، نتیجه ارزیابی (eval) را کش کنید. کلید کش (cache key) را بر اساس نسخه داور نیز تنظیم کنید تا هرگونه تغییر در Prompt یا مدل، احکام قبلی را باطل سازد:
 
 ```python
 import hashlib
@@ -2768,36 +2781,37 @@ def cached_eval(trace, eval_fn, judge_version):
     return eval_cache[key]
 ```
 
-**Platform Support for Caching:** Neither LangWatch nor Langfuse documents automatic dedupe of judge calls, so own this cache yourself.
+**پشتیبانی پلتفرم‌ها از کشینگ:** نه LangWatch و نه Langfuse مستنداتی برای حذف خودکار فراخوانی‌های تکراری (dedupe) داور ارائه نداده‌اند، بنابراین مدیریت این کش را خودتان بر عهده بگیرید.
 
-### Strategy 5: Batch and Prompt-Cache Offline Runs
+### استراتژی ۵: پردازش دسته‌ای (Batch) و استفاده از Prompt Caching در اجراهای آفلاین
 
-Offline judge runs don't need instant answers. Batch APIs at Anthropic, OpenAI, and Google cost 50% of list (Sonnet 5.5 batch is $1/$5 per 1M; GPT-6 Sol Batch/Flex is $1/$5), with results returned within 24 hours. The judge prompt (rubric plus few-shot examples) is also a stable prefix: put it first and the trace last, and prompt caching bills the repeated prefix at 0.1x base input on most current models (0.05x on Claude Opus 5.5 and GPT-6.1 Sol).
+اجراهای آفلاین داور نیازی به پاسخ‌های آنی ندارند. هزینه APIهای دسته‌ای (Batch APIs) در شرکت‌های Anthropic، OpenAI و Google معادل ۵۰٪ قیمت رسمی است (هزینه Batch مدل Sonnet 5.5 برابر ۱ دلار/۵ دلار به ازای هر ۱ میلیون Token است؛ و GPT-6 Sol Batch/Flex معادل ۱ دلار/۵ دلار است) و نتایج ظرف ۲۴ ساعت بازگردانده می‌شوند. همچنین Prompt داور (روبیک به همراه مثال‌های few-shot) یک پیشوند پایدار (stable prefix) است: آن را در ابتدا و trace را در انتها قرار دهید؛ در این حالت مکانیزم prompt caching در اکثر مدل‌های فعلی، هزینه پیشوند تکراری را با ضریب ۰.۱ برابر ورودی پایه محاسبه می‌کند (۰.۰۵ برابر در Claude Opus 5.5 و GPT-6.1 Sol).
 
-### Latency Considerations for Real-Time Guardrails
+### ملاحظات تاخیر (Latency) برای گاردریل‌های بلادرنگ (Real-Time Guardrails)
 
-| Check Type | Typical Latency | Suitable for Real-Time? |
+| نوع بررسی | تاخیر (Latency) معمول | مناسب برای سیستم‌های بلادرنگ (Real-Time)؟ |
 |---|---|---|
-| Regex/code checks | <1ms | Yes |
-| Embedding similarity | 10-50ms | Yes |
-| Typed decision model (Jev) | ~0.4s average (LangChain's measurement) | Marginal (adds a network call) |
-| Small LLM (Haiku-class, low effort) | 200-500ms | Marginal (adds noticeable delay) |
-| LLM judge | ~2-3s for the LLM judges in the same LangChain test; more at higher reasoning effort | No (use offline only) |
+| بررسی‌های Regex/کد | <1ms | بله |
+| شباهت امبدینگ (Embedding similarity) | 10-50ms | بله |
+| مدل تصمیم‌گیری تایپ‌شده (Jev) | میانگین حدود ۰.۴ ثانیه (اندازه‌گیری LangChain) | در مرز پذیرش (یک فراخوانی شبکه اضافه می‌کند) |
+| LLM کوچک (در رده Haiku، تلاش پردازشی پایین) | 200-500ms | در مرز پذیرش (تاخیر محسوسی اضافه می‌کند) |
+| داور LLM | حدود ۲-۳ ثانیه برای داورهای LLM در همان تست LangChain؛ در سطوح بالاتر تلاش استدلالی بیشتر است | خیر (فقط به صورت آفلاین استفاده شود) |
 
 ---
 
 <a name="chapter-14"></a>
-## Chapter 14: Practical Implementation Guide
 
-### Your First Two Weeks with Evals
+## فصل ۱۴: راهنمای پیاده‌سازی عملی
 
-### Week 1: Foundation
+### دو هفته نخست شما با ارزیابی‌ها (Evals)
 
-#### Day 1-2: Set Up Logging (4 hours)
+### هفته ۱: پایه‌ریزی
 
-**Goal:** Capture traces of every AI interaction.
+#### روز ۱-۲: راه‌اندازی لاگ‌گیری (۴ ساعت)
 
-Pick your platform and set it up:
+**هدف:** ثبت ردپای (Trace) تک‌تک تعاملات هوش مصنوعی.
+
+پلتفرم خود را انتخاب کرده و آن را راه‌اندازی کنید:
 
 **LangWatch:**
 ```bash
@@ -2822,53 +2836,53 @@ from langfuse.openai import OpenAI  # Drop-in replacement
 client = OpenAI()  # Auto-traced
 ```
 
-Then instrument your app (see Chapter 2 for full examples).
+سپس برنامه خود را اینسترومنت (Instrument) کنید (برای مشاهده مثال‌های کامل به فصل ۲ مراجعه کنید).
 
-**Deliverable:** Every AI interaction is logged and visible in your observability UI.
+**خروجی قابل تحویل:** تمامی تعاملات هوش مصنوعی لاگ شده و در رابط کاربری مشاهده‌پذیری (Observability UI) شما قابل مشاهده باشند.
 
-#### Day 3: Manual Error Analysis (3 hours)
+#### روز ۳: تحلیل دستی خطاها (۳ ساعت)
 
-**Goal:** Review 100 traces and take notes.
+**هدف:** بررسی ۱۰۰ مورد Trace و یادداشت‌برداری.
 
-1. Open your trace viewer (LangWatch or Langfuse UI)
-2. Browse through traces
-3. Note problems in a spreadsheet or CSV
-4. Budget 30-60 seconds per trace
+۱. ابزار مشاهده Trace خود (رابط کاربری LangWatch یا Langfuse) را باز کنید
+۲. میان Traceها پیمایش کنید
+۳. مشکلات را در یک صفحه‌گسترده (Spreadsheet) یا فایل CSV یادداشت کنید
+۴. برای هر Trace بین ۳۰ تا ۶۰ ثانیه زمان اختصاص دهید
 
-**Deliverable:** 40-50 error notes from 100 traces.
+**خروجی قابل تحویل:** ۴۰ تا ۵۰ یادداشت خطا حاصل از ۱۰۰ مورد Trace.
 
-#### Day 4: Categorize Errors (2 hours)
+#### روز ۴: دسته‌بندی خطاها (۲ ساعت)
 
-**Goal:** Group your notes into 5-6 categories.
+**هدف:** گروه‌بندی یادداشت‌هایتان در ۵ تا ۶ دسته.
 
-1. Export your notes
-2. Use an LLM to suggest categories
-3. Refine categories to be specific and actionable
-4. Label each note with a category
-5. Count occurrences
+۱. از یادداشت‌های خود خروجی (Export) بگیرید
+۲. از یک LLM برای پیشنهاد دسته‌بندی‌ها استفاده کنید
+۳. دسته‌بندی‌ها را پالایش کنید تا دقیق، مشخص و قابل اقدام (Actionable) باشند
+۴. هر یادداشت را با یک دسته برچسب‌گذاری کنید
+۵. تعداد تکرار هر کدام را بشمارید
 
-**Deliverable:** Prioritized list of what's broken, with frequency data.
+**خروجی قابل تحویل:** فهرستی اولویت‌بندی‌شده از موارد معیوب، همراه با داده‌های مربوط به فراوانی تکرار آن‌ها.
 
-#### Day 5-7: Build Your First Eval (6 hours)
+#### روز ۵-۷: ساخت اولین ارزیابی (Eval) خود (۶ ساعت)
 
-**Goal:** Create one code-based eval and one LLM judge.
+**هدف:** ایجاد یک ارزیابی مبتنی بر کد (Code-based eval) و یک داور LLM (LLM judge).
 
-**Code-based eval (Day 5):** Pick your highest-frequency objective issue.
+**ارزیابی مبتنی بر کد (روز ۵):** عینی‌ترین مشکل با بالاترین فراوانی تکرار را انتخاب کنید.
 
-**LLM judge (Day 6-7):**
-1. Write the judge prompt with criteria + examples
-2. Label 50-100 traces as ground truth
-3. Split into train/dev/test
-4. Validate on dev set (iterate prompt until TPR/TNR > 80%)
-5. Test on test set for final metrics
+**داور LLM (روز ۶-۷):**
+۱. نوشتن Prompt داور همراه با معیارها + مثال‌ها
+۲. برچسب‌گذاری ۵۰ تا ۱۰۰ مورد Trace به عنوان حقیقت زمینی (Ground truth)
+۳. تقسیم داده‌ها به مجموعه‌های آموزش/توسعه/آزمون (Train/Dev/Test)
+۴. اعتبارسنجی روی مجموعه توسعه (بهبود و تکرار Prompt تا زمانی که TPR/TNR > ۸۰٪ شود)
+۵. ارزیابی روی مجموعه آزمون برای سنجش معیارهای نهایی
 
-**Deliverable:** Two working evals you can run on new traces.
+**خروجی قابل تحویل:** دو ارزیابی (Eval) آماده به کار که می‌توانید روی Traceهای جدید اجرا کنید.
 
-### Week 2: Automation and Monitoring
+### هفته ۲: خودکارسازی و مانیتورینگ
 
-#### Day 8-9: Automate Eval Runs
+#### روز ۸-۹: خودکارسازی اجرای ارزیابی‌ها
 
-**With LangWatch:**
+**با LangWatch:**
 ```python
 import langwatch
 
@@ -2884,9 +2898,9 @@ for index, row in evaluation.loop(daily_traces_df.iterrows(), threads=8):
     evaluation.submit(task, index, row)
 ```
 
-For always-on scoring, configure the same judge as a monitor (online evaluation) in the LangWatch UI with a sampling rate instead of a scheduled script.
+برای امتیازدهی همیشگی و بلادرنگ (Always-on)، همین داور را به‌جای یک اسکریپت زمان‌بندی‌شده، به‌عنوان یک مانیتور (ارزیابی آنلاین) در رابط کاربری LangWatch همراه با یک نرخ نمونه‌برداری (Sampling rate) پیکربندی کنید.
 
-**With Langfuse:**
+**با Langfuse:**
 ```python
 # Run evaluators separately
 for trace in daily_traces:
@@ -2899,7 +2913,7 @@ for trace in daily_traces:
     langfuse.create_score(trace_id=trace.id, name="dietary", ...)
 ```
 
-#### Day 10-11: Set Up Alerts
+#### روز ۱۰-۱۱: راه‌اندازی هشدارها
 
 ```python
 def check_for_degradation(current_rate, historical_avg, threshold=1.5):
@@ -2911,15 +2925,15 @@ if check_for_degradation(today_failure_rate, avg_failure_rate):
     send_slack_alert("Eval failure rate spiked!")
 ```
 
-**LangWatch:** Built-in alerts via email, Slack, or webhook when a metric crosses a threshold or a monitor's evaluation result matches a condition.
+**LangWatch:** هشدارهای داخلی از طریق ایمیل، اسلک (Slack) یا وب‌هوک (Webhook) هنگامی که یک معیار از یک آستانه عبور کند یا نتیجه ارزیابی یک مانیتور با شرطی مطابقت داشته باشد.
 
-**Langfuse:** Built-in alerts on observation metrics or score averages (for a boolean score, the average is the pass rate) over a window you choose, notifying Slack, triggering GitHub Actions, or calling a webhook. Self-hosted deployments need Langfuse v4. Comparisons against a rolling baseline, like the function above, still live in your own code.
+**Langfuse:** هشدارهای داخلی روی معیارهای مشاهده (Observation metrics) یا میانگین امتیازها (برای یک امتیاز بولی، میانگین همان نرخ قبولی یا Pass rate است) در یک بازه زمانی دلخواه، با ارسال اعلان به Slack، راه‌اندازی GitHub Actions یا فراخوانی یک وب‌هوک. استقرار (Deployment)های خودمیزبان به Langfuse v4 نیاز دارند. مقایسه در برابر یک خط پایه متحرک (Rolling baseline)، مانند تابع بالا، همچنان درون کد خودتان انجام می‌شود.
 
-#### Day 12-14: Dashboard
+#### روز ۱۲-۱۴: داشبورد
 
-**LangWatch:** Built-in analytics dashboard, no setup needed.
+**LangWatch:** داشبورد تحلیلی داخلی، بدون نیاز به راه‌اندازی.
 
-**Langfuse:** Curated latency, cost, and usage dashboards out of the box; build a custom dashboard in the UI for score trends, or pull scores through the API:
+**Langfuse:** داشبوردهای آماده برای تاخیر (Latency)، هزینه و میزان مصرف؛ امکان ساخت داشبورد سفارشی در رابط کاربری برای بررسی روندهای امتیاز، یا دریافت امتیازها از طریق API:
 ```python
 # Fetch recent scores (Scores API v3, Python SDK 4.8.1 to 4.x; the v1/v2 score
 # list endpoints are deprecated and leave Langfuse Cloud on November 16, 2026).
@@ -2939,263 +2953,267 @@ failure_rates = aggregate_by_day(scores)
 plot_dashboard(failure_rates)
 ```
 
-### Ongoing: 30 Minutes Per Week
+### اقدامات مداوم: ۳۰ دقیقه در هفته
 
-**Every Monday (15 minutes):**
-1. Check your observability UI for anomalies
-2. Review any alerts from past week
-3. Note patterns
+**هر دوشنبه (۱۵ دقیقه):**
+۱. بررسی رابط کاربری مشاهده‌پذیری برای ناهنجاری‌ها
+۲. مرور هرگونه هشدار از هفته گذشته
+۳. یادداشت کردن الگوها
 
-**Every Month (2 hours):**
-1. Do error analysis on 50 new traces
-2. Look for new failure modes
-3. Add new evals if needed
-4. Retire evals that never fire
+**هر ماه (۲ ساعت):**
+۱. انجام تحلیل خطا روی ۵۰ مورد Trace جدید
+۲. جستجو برای حالت‌های شکست (Failure modes) جدید
+۳. افزودن ارزیابی‌های (Evals) جدید در صورت نیاز
+۴. کنار گذاشتن ارزیابی‌هایی که هرگز فعال نمی‌شوند
 
-**After Major Changes (1 hour):**
-1. Run full eval suite
-2. Compare to baseline
-3. Investigate any regressions
+**پس از تغییرات عمده (۱ ساعت):**
+۱. اجرای مجموعه کامل ارزیابی‌ها (Full eval suite)
+۲. مقایسه با خط پایه (Baseline)
+۳. بررسی هرگونه پس‌رفت (Regression)
 
 ---
 
 <a name="chapter-15"></a>
-## Chapter 15: Common Mistakes to Avoid
 
-### Mistake #1: Skipping Error Analysis
+## فصل ۱۵: اشتباهات رایجی که باید از آن‌ها پرهیز کرد
 
-**What people do:** Jump straight to building LLM judges or dashboards.
-**Why it's wrong:** You don't know what to measure yet.
-**Fix:** Always start with error analysis. Spend real time reviewing traces.
+### اشتباه شماره ۱: نادیده گرفتن تحلیل خطا
 
-### Mistake #2: Using Only Agreement for Validation
+**کاری که افراد انجام می‌دهند:** مستقیماً سراغ ساخت داورهای LLM یا داشبوردها می‌روند.
+**چرا این کار اشتباه است:** هنوز نمی‌دانید چه چیزی را باید اندازه‌گیری کنید.
+**راهکار:** همیشه با تحلیل خطا شروع کنید. زمان واقعی و کافی را به بررسی traceها اختصاص دهید.
 
-**What people do:** "My judge has 90% agreement with humans, ship it!"
-**Why it's wrong:** A judge that always says "pass" gets 90% agreement when failures are rare.
-**Fix:** Always calculate TPR and TNR separately. Both must be high.
+### اشتباه شماره ۲: استفاده از صرفاً میزان توافق برای اعتبارسنجی
 
-### Mistake #3: PM/QA Delegates Error Analysis
+**کاری که افراد انجام می‌دهند:** «داور من ۹۰٪ با انسان‌ها توافق دارد، منتشرش کنید!»
+**چرا این کار اشتباه است:** داوری که همیشه می‌گوید "pass"، در صورتی که شکست‌ها نادر باشند، ۹۰٪ توافق کسب می‌کند.
+**راهکار:** همیشه TPR و TNR را به‌طور جداگانه محاسبه کنید. هر دو باید بالا باشند.
 
-**What people do:** "This is technical, let engineering review the logs."
-**Why it's wrong:** Engineers don't have product intuition or domain expertise.
-**Fix:** PMs and QAs must do error analysis. This is core product/quality work.
+### اشتباه شماره ۳: واگذاری تحلیل خطا توسط PM/QA
 
-### Mistake #4: Not Splitting Data (Train/Dev/Test)
+**کاری که افراد انجام می‌دهند:** «این یک موضوع فنی است، بگذارید مهندسی لاگ‌ها را بررسی کند.»
+**چرا این کار اشتباه است:** مهندسان شهود محصولی (Product intuition) یا تخصص دامنه ندارند.
+**راهکار:** PMها و QAها باید تحلیل خطا را انجام دهند. این کار، بخش اصلی و هسته فعالیت‌های محصول/کیفیت است.
 
-**What people do:** Use all labeled data to build and test the judge.
-**Why it's wrong:** You're overfitting to your test data. Your metrics are meaningless.
-**Fix:** Use the 15%/40%/45% split. Never touch the test set until final evaluation.
+### اشتباه شماره ۴: تفکیک نکردن داده‌ها (Train/Dev/Test)
 
-### Mistake #5: Not Doing Evals Until After Launch
+**کاری که افراد انجام می‌دهند:** استفاده از تمام داده‌های برچسب‌گذاری‌شده برای ساخت و تست داور.
+**چرا این کار اشتباه است:** شما دچار بیش‌برازش (Overfitting) روی داده‌های آزمون (Test) خود می‌شوید. معیارهای شما بی‌معنی خواهند بود.
+**راهکار:** از تقسیم‌بندی ۱۵٪ / ۴۰٪ / ۴۵٪ استفاده کنید. هرگز تا زمان ارزیابی نهایی به مجموعه داده آزمون (Test set) دست نزنید.
 
-**What people do:** Build the product, ship it, then start thinking about evals.
-**Fix:** Build evals while building the product, not after.
+### اشتباه شماره ۵: موکول کردن ارزیابی‌ها (Evals) به بعد از عرضه محصول
 
-### Mistake #6: Building Too Many Evals
+**کاری که افراد انجام می‌دهند:** محصول را می‌سازند، آن را عرضه می‌کنند و تازه سپس به فکر ارزیابی‌ها (Evals) می‌افتند.
+**راهکار:** ارزیابی‌ها (Evals) را هم‌زمان با ساخت محصول بسازید، نه پس از آن.
 
-**What people do:** "Let's have an eval for everything!"
-**Fix:** Start with 2-3 evals for your biggest problems. Add more only when needed.
-**Rule:** If an eval hasn't fired in 3 months, remove it.
+### اشتباه شماره ۶: ساخت بیش از حد ارزیابی‌ها (Evals)
 
-### Mistake #7: Low TNR (Ignoring False Positives)
+**کاری که افراد انجام می‌دهند:** «بیایید برای همه‌چیز یک eval داشته باشیم!»
+**راهکار:** با ۲ تا ۳ ارزیابی (Eval) برای بزرگ‌ترین مشکلات خود شروع کنید. فقط زمانی که لازم شد موارد بیشتری اضافه کنید.
+**قاعده:** اگر یک eval در طول ۳ ماه فعال نشده (fire نکرده) است، آن را حذف کنید.
 
-**What people do:** "My judge gets 95% of the good responses right (TPR=95%), good enough."
-**Why it's wrong:** In this guide PASS is the positive class, so TNR is the share of real failures the judge catches. At TNR=22% (the naive first attempt in Chapter 4), it waves through almost four of every five real failures while its overall accuracy still looks fine.
-**Fix:** Both TPR AND TNR must be high. Low TNR means the eval misses the failures it exists to find.
+### اشتباه شماره ۷: پایین بودن TNR (نادیده گرفتن مثبت‌های کاذب)
 
-### Mistake #8: Not Testing the Evals Themselves
+**کاری که افراد انجام می‌دهند:** «داور من ۹۵٪ از پاسخ‌های خوب را درست تشخیص می‌دهد (TPR=95%)، پس به اندازه کافی خوب است.»
+**چرا این کار اشتباه است:** در این راهنما PASS کلاس مثبت است، بنابراین TNR سهمی از شکست‌های واقعی است که داور آن‌ها را شناسایی می‌کند. با TNR=22% (تلاش ساده‌لوحانه اول در فصل ۴)، داور تقریباً چهار مورد از هر پنج شکست واقعی را بدون مشکل عبور می‌دهد، در حالی که دقت کلی (Overall accuracy) آن همچنان خوب به نظر می‌رسد.
+**راهکار:** هم TPR و هم TNR باید بالا باشند. پایین بودن TNR به این معنی است که ارزیابی (Eval)، همان شکست‌هایی را از دست می‌دهد که اساساً برای یافتن آن‌ها ایجاد شده است.
 
-**What people do:** Write an eval, assume it works, run it on all data.
-**Fix:** Test your evals with known good and bad cases before deploying.
+### اشتباه شماره ۸: تست نکردن خودِ ارزیابی‌ها (Evals)
 
-### Mistake #9: Copy-Pasting Eval Prompts
+**کاری که افراد انجام می‌دهند:** نوشتن یک eval، فرض بر این‌که کار می‌کند، و اجرای آن روی تمام داده‌ها.
+**راهکار:** ارزیابی‌های خود (evalها) را قبل از استقرار (Deployment) با نمونه‌های خوب و بدِ مشخص تست کنید.
 
-**What people do:** "This LLM judge prompt worked for someone else, I'll use it."
-**Fix:** Write evals specific to YOUR product, YOUR policies, YOUR users.
+### اشتباه شماره ۹: کپی-پیست کردن Promptهای ارزیابی
 
-### Mistake #10: Not Versioning System Prompts
+**کاری که افراد انجام می‌دهند:** «این Prompt داور LLM برای شخص دیگری کار کرده است، من هم از همان استفاده می‌کنم.»
+**راهکار:** ارزیابی‌هایی بنویسید که مشخصاً مختص محصول شما، خط‌مشی‌های شما، و کاربران شما باشند.
 
-**What people do:** Edit system prompt directly in production.
-**Fix:** Use your platform's prompt management (LangWatch, Langfuse, etc.) to version prompts. Log which version was used with each trace.
+### اشتباه شماره ۱۰: نسخه‌بندی نکردن System Promptها
 
-### Mistake #11: Not Correcting for Judge Bias
+**کاری که افراد انجام می‌دهند:** ویرایش مستقیم System Prompt در محیط پروداکشن (Production).
+**راهکار:** از سیستم مدیریت Prompt پلتفرم خود (LangWatch، Langfuse و غیره) برای نسخه‌بندی Promptها استفاده کنید. ثبت کنید (Log کنید) که به همراه هر trace از کدام نسخه استفاده شده است.
 
-**What people do:** Report the raw pass rate from the judge as the true rate.
-**Fix:** Use judgy to correct for judge errors and report confidence intervals.
+### اشتباه شماره ۱۱: تصحیح نکردن سوگیری داور (Judge Bias)
 
-### Mistake #12: Over-Engineering Early
+**کاری که افراد انجام می‌دهند:** گزارش نرخ قبولی خام (Raw pass rate) حاصل از داور به عنوان نرخ واقعی.
+**راهکار:** از judgy برای تصحیح خطاهای داور و گزارش فواصل اطمینان (Confidence intervals) استفاده کنید.
 
-**What people do:** Build a distributed eval platform before reviewing a single trace.
-**Fix:** Start simple. CSV + Python script + any observability tool. Add complexity only when simple stops working.
+### اشتباه شماره ۱۲: مهندسی بیش از حد (Over-Engineering) زودهنگام
+
+**کاری که افراد انجام می‌دهند:** ساخت یک پلتفرم ارزیابی توزیع‌شده پیش از بررسی حتی یک trace.
+**راهکار:** ساده شروع کنید. فایل CSV + اسکریپت پایتون + هر ابزار مشاهده‌پذیری (Observability). فقط زمانی پیچیدگی را اضافه کنید که رویکرد ساده دیگر جواب ندهد.
 
 ---
 
 <a name="chapter-16"></a>
-## Chapter 16: Tools and Resources
 
-### Observability Platforms
+## فصل ۱۶: ابزارها و منابع
 
-| Tool | Type | Best For | Cost |
-|------|------|----------|------|
-| **LangWatch** | Open source, cloud or self-hosted | Simple setup, ready-made evaluators, great analytics | Free tier + paid |
-| **Langfuse** | Open source, cloud or self-hosted | Custom pipelines, maximum flexibility, large community | Free tier + paid |
-| **Braintrust** | Cloud (self-hosting on Enterprise) | Excellent UI, team collaboration | Free tier + paid |
-| **LangSmith** | Cloud (self-hosted/hybrid on Enterprise) | LangChain and LangGraph users | Free tier + paid |
-| **Build Your Own** | Custom | Learning, custom needs | Free |
+### پلتفرم‌های مشاهده‌پذیری
 
-**Ownership and retention are selection criteria now.** Langfuse has been part of ClickHouse since January 2026 and remains MIT open source. Promptfoo is now part of OpenAI; it stays MIT and says it will keep supporting other providers. Dynatrace completed its $915M acquisition of Arize, the maker of Phoenix, on October 1, 2026, and says Phoenix stays available (it ships under the source-available Elastic-2.0 license). LangSmith SaaS keeps extended-retention traces for at most 180 days as of September 14, 2026 (self-hosted and BYOC unchanged), and on October 1, 2026 it replaced per-run and uptime pricing with usage-based pricing in LangChain Standard Units (1 LSU = $1), so re-forecast your bill from trace volume before renewing. Treat any SaaS trace store as a working set, not an audit archive: prefer OpenTelemetry-native instrumentation so you can export or switch, and copy what compliance needs into storage you own.
+| ابزار | نوع | مناسب‌ترین برای | هزینه |
+|------|------|------------------|-------|
+| **LangWatch** | متن‌باز، ابری یا خودمیزبان | راه‌اندازی ساده، ارزیاب‌های آماده، تحلیل‌های عالی | طرح رایگان + پولی |
+| **Langfuse** | متن‌باز، ابری یا خودمیزبان | پایپ‌لاین‌های سفارشی، حداکثر انعطاف‌پذیری، جامعه کاربری بزرگ | طرح رایگان + پولی |
+| **Braintrust** | ابری (خودمیزبانی در طرح Enterprise) | رابط کاربری عالی، همکاری تیمی | طرح رایگان + پولی |
+| **LangSmith** | ابری (خودمیزبان/ترکیبی در طرح Enterprise) | کاربران LangChain و LangGraph | طرح رایگان + پولی |
+| **ساخت توسط خودتان** | سفارشی | یادگیری، نیازهای سفارشی | رایگان |
 
-### Eval Frameworks
+**مالکیت و مدت نگهداری داده‌ها اکنون از معیارهای انتخاب هستند.** پلتفرم Langfuse از ژانویه ۲۰۲۶ بخشی از ClickHouse شده است و همچنان با مجوز متن‌باز MIT باقی می‌ماند. پلتفرم Promptfoo اکنون بخشی از OpenAI است؛ این ابزار نیز تحت مجوز MIT باقی می‌ماند و اعلام کرده که به پشتیبانی از سایر ارائه‌دهندگان ادامه خواهد داد. شرکت Dynatrace در ۱ اکتبر ۲۰۲۶ فرایند تصاحب ۹۱۵ میلیون دلاری Arize (سازنده Phoenix) را تکمیل کرد و اعلام نموده که Phoenix همچنان در دسترس خواهد ماند (این ابزار تحت مجوز source-available نسخه Elastic-2.0 عرضه می‌شود). نسخه ابری (SaaS) پلتفرم LangSmith از ۱۴ سپتامبر ۲۰۲۶ ردپاهای رهگیری (Traces) با نگهداری تمدیدشده را حداکثر تا ۱۸۰ روز نگه می‌دارد (نسخه‌های خودمیزبان و BYOC بدون تغییر باقی مانده‌اند)، و در ۱ اکتبر ۲۰۲۶ قیمت‌گذاری بر اساس هر اجرا (Per-run) و Uptime را با قیمت‌گذاری مبتنی بر مصرف بر حسب واحدهای استاندارد LangChain (هر 1 LSU = $1) جایگزین کرد؛ بنابراین پیش از تمدید، صورت‌حساب خود را بر اساس حجم traceها مجدداً برآورد کنید. با هر مخزن ذخیره‌سازی trace در SaaS به عنوان یک مجموعه کاری (Working set) برخورد کنید، نه یک آرشیو حسابرسی: ابزارسازی بومی OpenTelemetry (OpenTelemetry-native) را ترجیح دهید تا بتوانید داده‌ها را برون‌بری (Export) کرده یا پلتفرم را تغییر دهید، و هر آنچه را که الزامات انطباق (Compliance) نیاز دارند، در فضای ذخیره‌سازی تحت مالکیت خود کپی کنید.
 
-- **LangWatch Evaluators** - 30+ ready-made evaluators covering safety, quality, and RAG, plus LLM-as-judge templates for your own criteria
-- **Langfuse Evals** - Managed LLM-as-a-Judge evaluators from templates, custom evaluators via SDK
-- **Promptfoo** - Open-source (MIT) eval and red-teaming CLI, now part of OpenAI; OpenAI's recommended migration target for its hosted Evals platform, which shuts down November 30, 2026
-- **Simple Evals** (OpenAI) - Frozen since July 2025 (no new models or results); still hosts reference implementations of HealthBench, BrowseComp, and SimpleQA
-- **Ragas** - Specialized for RAG evaluation
-- **DeepEval** - Comprehensive eval framework
+### فریم‌ورک‌های ارزیابی
 
-### Key Libraries
+- **ارزیاب‌های LangWatch** - بیش از ۳۰ ارزیاب آماده که ایمنی، کیفیت و RAG را پوشش می‌دهند، به همراه قالب‌های LLM-as-judge برای معیارهای اختصاصی شما
+- **ارزیابی‌های Langfuse** - ارزیاب‌های مدیریت‌شده LLM-as-a-Judge بر اساس قالب‌ها، و ارزیاب‌های سفارشی از طریق SDK
+- **Promptfoo** - ابزار خط فرمان (CLI) متن‌باز (MIT) برای ارزیابی و تیم قرمز (Red-teaming) که اکنون بخشی از OpenAI است؛ این ابزار مقصد مهاجرت پیشنهادی OpenAI برای پلتفرم میزبانی‌شده Evals آن است که در ۳۰ نوامبر ۲۰۲۶ تعطیل می‌شود
+- **Simple Evals** (متعلق به OpenAI) - از ژوئیه ۲۰۲۵ فریز شده است (بدون مدل‌ها یا نتایج جدید)؛ همچنان پیاده‌سازی‌های مرجع HealthBench ،BrowseComp و SimpleQA را میزبانی می‌کند
+- **Ragas** - تخصصی برای ارزیابی RAG
+- **DeepEval** - فریم‌ورک جامع ارزیابی
 
-- **judgy** - Statistical bias correction for LLM judges: [github.com/ai-evals-course/judgy](https://github.com/ai-evals-course/judgy)
-- **rank_bm25** - BM25 retrieval for RAG systems
-- **litellm** - Unified LLM API interface
+### کتابخانه‌های کلیدی
 
-### Platform Comparison Matrix
+- **judgy** - تصحیح سوگیری آماری برای داوران LLM: [github.com/ai-evals-course/judgy](https://github.com/ai-evals-course/judgy)
+- **rank_bm25** - بازیابی BM25 برای سیستم‌های RAG
+- **litellm** - رابط API یکپارچه برای LLM
 
-| Feature | LangWatch | Langfuse | Notes |
+### ماتریس مقایسه پلتفرم‌ها
+
+| ویژگی | LangWatch | Langfuse | نکات |
 |---------|-----------|----------|-------|
-| **Setup Time** | ~5 min | ~5 min (OpenAI drop-in) to 15 min | LangWatch: `langwatch.setup()` plus a trace decorator |
-| **Built-in Evaluators** | 30+ ready-made (Ragas, PII, jailbreak, content safety, off-topic) | Managed LLM-as-a-judge from templates; managed code evaluators | LangWatch covers more generic checks without writing a prompt |
-| **Custom Evaluators** | Yes (experiment loop, span evaluations) | Yes (full SDK, experiments) | Both support custom logic |
-| **Analytics Dashboard** | Built-in | Curated dashboards plus custom dashboards | LangWatch needs less configuration |
-| **Cost Tracking** | Automatic | Automatic for supported models; custom model prices configurable | Both track per-model costs |
-| **Community Size** | Growing | Large, established | Langfuse has more integrations |
-| **Self-Hosting** | Docker Compose or Helm | Docker Compose or Helm | Similar stacks: PostgreSQL, Redis, ClickHouse on both; Langfuse also requires S3-compatible blob storage |
-| **Alerts** | Built-in (email, Slack, webhook) | Built-in (Slack, GitHub Actions, webhook; self-hosted needs v4) | Both alert on metric thresholds |
-| **Prompt Management** | Yes | Yes (more mature) | Langfuse has richer versioning UI |
-| **Eval Caching** | Do it yourself | Do it yourself | Neither documents dedupe of judge calls (Chapter 13) |
-| **Batch Evaluation** | Experiment loop (`threads=`) | Experiments (`max_concurrency=`) | Comparable |
-| **Real-time Evals** | Guardrails (`as_guardrail=True`) and async monitors | Async managed evaluators; blocking guardrails are your code | LangWatch is faster to set up for blocking checks |
+| **زمان راه‌اندازی** | حدود ۵ دقیقه | حدود ۵ دقیقه (جایگزین مستقیم / Drop-in برای OpenAI) تا ۱۵ دقیقه | در LangWatch: فراخوانی `langwatch.setup()` به همراه یک دکوراتور trace |
+| **ارزیاب‌های داخلی** | بیش از ۳۰ مورد آماده (Ragas، داده‌های هویتی/PII، جیل‌بریک، ایمنی محتوا، خارج از موضوع) | ارزیاب‌های مدیریت‌شده LLM-as-a-judge بر اساس قالب‌ها؛ ارزیاب‌های کد مدیریت‌شده | پلتفرم LangWatch بررسی‌های عمومی بیشتری را بدون نیاز به نوشتن Prompt پوشش می‌دهد |
+| **ارزیاب‌های سفارشی** | بله (حلقه آزمایش، ارزیابی Spanها) | بله (SDK کامل، آزمایش‌ها) | هر دو از منطق سفارشی پشتیبانی می‌کنند |
+| **داشبورد تحلیلی** | داخلی | داشبوردهای منتخب به همراه داشبوردهای سفارشی | پلتفرم LangWatch به پیکربندی کمتری نیاز دارد |
+| **رهگیری هزینه** | خودکار | خودکار برای مدل‌های پشتیبانی‌شده؛ قابلیت پیکربندی قیمت برای مدل‌های سفارشی | هر دو هزینه‌ها را به تفکیک مدل رهگیری می‌کنند |
+| **اندازه جامعه کاربری** | در حال رشد | بزرگ و تثبیت‌شده | پلتفرم Langfuse ادغام‌های بیشتری دارد |
+| **خودمیزبانی** | از طریق Docker Compose یا Helm | از طریق Docker Compose یا Helm | استک‌های مشابه: هر دو شامل PostgreSQL، Redis و ClickHouse هستند؛ Langfuse به ذخیره‌ساز Blob سازگار با S3 نیز نیاز دارد |
+| **هشدارها** | داخلی (ایمیل، Slack، وبهوک) | داخلی (Slack، گیت‌هاب اکشنز، وبهوک؛ نسخه خودمیزبان به v4 نیاز دارد) | هر دو بر اساس آستانه متریک‌ها هشدار می‌دهند |
+| **مدیریت Prompt** | بله | بله (جاافتاده‌تر) | پلتفرم Langfuse رابط کاربری غنی‌تری برای نسخه‌بندی دارد |
+| **کَش‌کردن ارزیابی‌ها** | باید خودتان پیاده‌سازی کنید | باید خودتان پیاده‌سازی کنید | هیچ‌کدام مستنداتی برای حذف تکرار (Dedupe) فراخوانی‌های داور ارائه نداده‌اند (فصل ۱۳) |
+| **ارزیابی دسته‌ای** | حلقه آزمایش (`threads=`) | آزمایش‌ها (`max_concurrency=`) | قابل مقایسه |
+| **ارزیابی‌های بلادرنگ** | گاردریل‌ها (`as_guardrail=True`) و مانیتورهای ناهمگام | ارزیاب‌های مدیریت‌شده ناهمگام؛ گاردریل‌های مسدودکننده در کد خودتان هستند | راه‌اندازی LangWatch برای بررسی‌های مسدودکننده سریع‌تر است |
 
-**When to choose LangWatch:**
-- You want to start fast (< 10 min setup)
-- You need ready-made evaluators for common use cases
-- You want analytics with little configuration
-- You prefer opinionated tooling that "just works"
+**چه زمانی LangWatch را انتخاب کنیم:**
+- می‌خواهید سریع شروع کنید (راه‌اندازی کمتر از ۱۰ دقیقه)
+- به ارزیاب‌های آماده برای موارد استفاده معمول نیاز دارید
+- تحلیل‌هایی با حداقل پیکربندی می‌خواهید
+- ابزارهای قاعده‌مند (Opinionated) را ترجیح می‌دهید که بدون دردسر کار کنند («Just works»)
 
-**When to choose Langfuse:**
-- You need maximum flexibility for custom workflows
-- You have complex evaluation logic
-- You want the largest community and integration ecosystem
-- You want the most mature prompt management
+**چه زمانی Langfuse را انتخاب کنیم:**
+- برای جریان‌های کاری سفارشی به حداکثر انعطاف‌پذیری نیاز دارید
+- منطق ارزیابی پیچیده‌ای دارید
+- بزرگ‌ترین جامعه کاربری و زیست‌بوم ادغام‌ها را می‌خواهید
+- به پیشرفته‌ترین و بالغ‌ترین ابزار مدیریت Prompt نیاز دارید
 
-**Why not both?**
-Some teams use both: LangWatch for quick evals and analytics, Langfuse for deep customization. The cost is double instrumentation and trace data split across two stores, so start with one and add the second only for a gap you can name.
+**چرا هر دو نه؟**
+برخی از تیم‌ها از هر دو استفاده می‌کنند: LangWatch برای ارزیابی‌ها و تحلیل‌های سریع، و Langfuse برای سفارشی‌سازی‌های عمیق. هزینه این کار، ابزارسازی مضاعف و تقسیم شدن داده‌های trace میان دو فضای ذخیره‌سازی است؛ بنابراین با یکی شروع کنید و دومی را تنها در صورتی اضافه کنید که کمبود یا نیازی مشخص داشته باشید.
 
-### Key Principles (Revisited)
+### اصول کلیدی (مرور مجدد)
 
-1. **Start simple** - Don't over-engineer
-2. **Error analysis first** - Always
-3. **PMs and QAs must be involved** - This is product/quality work
-4. **Both TPR and TNR matter** - Not just agreement
-5. **Code evals when possible** - LLM judges when needed
-6. **Test your evals** - They can have bugs too
-7. **Split your data** - Train/Dev/Test is non-negotiable
-8. **Correct for bias** - Use judgy for honest metrics
-9. **Version your prompts** - Track what changed when
-10. **Iterate based on data** - Not hunches
+1. **ساده شروع کنید** - بیش از حد مهندسی نکنید
+2. **تحلیل خطا در وهله اول** - همیشه
+3. **مدیران محصول و تیم‌های تضمین کیفیت باید مشارکت داشته باشند** - این یک فعالیت محصولی/کیفی است
+4. **هر دو معیار TPR و TNR اهمیت دارند** - نه فقط توافق
+5. **ارزیابی‌های کدی در صورت امکان** - و داوران LLM در صورت نیاز
+6. **ارزیابی‌های خود را تست کنید** - آن‌ها نیز می‌توانند باگ داشته باشند
+7. **داده‌های خود را تقسیم کنید** - تفکیک Train/Dev/Test غیرقابل‌مذاکره است
+8. **سوگیری را تصحیح کنید** - برای معیارهای صادقانه از judgy استفاده کنید
+9. **برای Promptهای خود نسخه‌بندی داشته باشید** - تغییرات و زمان آن‌ها را رهگیری کنید
+10. **بر اساس داده تکرار و بهینه‌سازی کنید** - نه بر اساس حدس و گمان
 
 ---
 
 <a name="appendix-a"></a>
-## Appendix A: Glossary for PMs & QAs
 
-A plain-language glossary of the technical terms used throughout this guide. Share this with non-technical stakeholders.
+## پیوست الف: واژه‌نامه برای مدیران محصول و تضمین کیفیت (PMs & QAs)
 
-### Evaluation & Metrics Terms
+واژه‌نامه‌ای به زبان ساده از اصطلاحات فنی به‌کاررفته در سرتاسر این راهنما. این بخش را با ذی‌نفعان غیرفنی به اشتراک بگذارید.
 
-| Term | Definition |
+### اصطلاحات ارزیابی و سنجه‌ها
+
+| اصطلاح | تعریف |
 |------|-----------|
-| **Eval (Evaluation)** | A systematic test that checks if an AI system is working correctly for a specific criterion |
-| **LLM-as-a-Judge** | Using a language model to automatically evaluate the output of another AI system |
-| **Ground Truth** | Human-verified labels that represent the "correct" answer; used to measure judge accuracy |
-| **True Positive Rate (TPR)** | The percentage of actual positives (e.g., good responses) that the judge correctly identifies. Also called *recall* or *sensitivity*. Formula: TP / (TP + FN) |
-| **True Negative Rate (TNR)** | The percentage of actual negatives (e.g., bad responses) that the judge correctly catches. Also called *specificity*. Formula: TN / (TN + FP) |
-| **False Positive (FP)** | When the judge says "Pass" but the real answer is "Fail" (a missed defect) |
-| **False Negative (FN)** | When the judge says "Fail" but the real answer is "Pass" (a false alarm) |
-| **Precision** | Of all items the judge labeled positive, how many were actually positive. Formula: TP / (TP + FP) |
-| **F1 Score** | The harmonic mean of precision and recall: a single number balancing both. Formula: 2 * (Precision * Recall) / (Precision + Recall) |
-| **Confusion Matrix** | A 2x2 table showing TP, FP, FN, TN counts; the foundation of all classification metrics |
-| **Confidence Interval (CI)** | A range of values (e.g., 72%–81%) within which the true metric likely falls, given sampling uncertainty |
-| **Bias Correction** | Adjusting raw judge scores to account for systematic over- or under-counting of passes/fails |
-| **Cohen's Kappa** | A statistic measuring agreement between two raters (or a rater and ground truth), adjusting for chance agreement. Values (Landis and Koch): <0 poor, 0–0.2 slight, 0.2–0.4 fair, 0.4–0.6 moderate, 0.6–0.8 substantial, >0.8 almost perfect |
+| **ارزیابی (Eval / Evaluation)** | یک آزمون سیستماتیک که بررسی می‌کند آیا سیستم هوش مصنوعی برای یک معیار مشخص به‌درستی کار می‌کند یا خیر |
+| **LLM-as-a-Judge** | استفاده از یک مدل زبانی (LLM) برای ارزیابی خودکار خروجیِ یک سیستم هوش مصنوعی دیگر |
+| **داده‌های مرجع (Ground Truth)** | برچسب‌های تأییدشده توسط انسان که نشان‌دهنده پاسخ «صحیح» هستند؛ برای سنجش دقت داور استفاده می‌شود |
+| **نرخ مثبت واقعی (True Positive Rate - TPR)** | درصد مثبت‌های واقعی (مانند پاسخ‌های خوب) که داور به‌درستی شناسایی می‌کند. همچنین *recall* (بازیابی) یا *sensitivity* (حساسیت) نامیده می‌شود. فرمول: TP / (TP + FN) |
+| **نرخ منفی واقعی (True Negative Rate - TNR)** | درصد منفی‌های واقعی (مانند پاسخ‌های نامطلوب) که داور به‌درستی شناسایی می‌کند. همچنین *specificity* (ویژگی) نامیده می‌شود. فرمول: TN / (TN + FP) |
+| **مثبت کاذب (False Positive - FP)** | زمانی که داور وضعیت را «قبول» (Pass) اعلام می‌کند، اما پاسخ واقعی «رد» (Fail) است (یک نقص نادیده‌گرفته‌شده) |
+| **منفی کاذب (False Negative - FN)** | زمانی که داور وضعیت را «رد» (Fail) اعلام می‌کند، اما پاسخ واقعی «قبول» (Pass) است (یک هشدار کاذب) |
+| **دقت (Precision)** | از میان تمام مواردی که داور برچسب مثبت زده است، چه تعداد واقعاً مثبت بوده‌اند. فرمول: TP / (TP + FP) |
+| **امتیاز F1 (F1 Score)** | میانگین همساز (هارمونیک) دقت (Precision) و بازیابی (Recall): عددی واحد که تعادلی میان هر دو برقرار می‌سازد. فرمول: 2 * (Precision * Recall) / (Precision + Recall) |
+| **ماتریس درهم‌ریختگی (Confusion Matrix)** | جدولی ۲×۲ که تعداد TP، FP، FN و TN را نشان می‌دهد؛ پایه و مبنای تمامی سنجه‌های طبقه‌بندی |
+| **بازه اطمینان (Confidence Interval - CI)** | محدوده‌ای از مقادیر (مثلاً ٪۷۲ تا ٪۸۱) که با در نظر گرفتن عدم‌قطعیت نمونه‌برداری، احتمالاً مقدار واقعی سنجه در آن قرار می‌گیرد |
+| **اصلاح سوگیری (Bias Correction)** | تعدیل امتیازات خام داور به‌منظور جبران بیش‌شماری یا کم‌شماری سیستماتیک موارد قبول/رد |
+| **کاپای کوهن (Cohen's Kappa)** | یک شاخص آماری برای سنجش میزان توافق میان دو ارزیاب (یا یک ارزیاب و داده‌های مرجع Ground Truth) با تعدیل توافق ناشی از شانس. مقادیر (بر اساس لندیس و کخ / Landis and Koch): کمتر از ۰ ضعیف (<0 poor)، بین ۰ تا ۰٫۲ ناچیز (0–0.2 slight)، بین ۰٫۲ تا ۰٫۴ متوسط رو به پایین (0.2–0.4 fair)، بین ۰٫۴ تا ۰٫۶ متوسط (0.4–0.6 moderate)، بین ۰٫۶ تا ۰٫۸ قابل‌توجه (0.6–0.8 substantial) و بیشتر از ۰٫۸ تقریباً بی‌نقص (>0.8 almost perfect) |
 
-### Data & Workflow Terms
+### اصطلاحات داده و گردش کار
 
-| Term | Definition |
+| اصطلاح | تعریف |
 |------|-----------|
-| **Train/Dev/Test Split** | Dividing labeled data into three sets: Train (for building the judge prompt), Dev (for iterating), Test (for final unbiased measurement) |
-| **Stratified Split** | Splitting data so each subset has the same proportion of Pass/Fail labels as the original |
-| **Few-Shot Examples** | Example input-output pairs included in a prompt to show the model what good evaluation looks like |
-| **Open Coding** | Reading traces and writing freeform notes about what's going wrong, with no categories yet |
-| **Axial Coding** | Grouping your open-coded notes into categories (error types) and counting frequency |
-| **Dimensional Sampling** | Systematically creating test inputs that cover all important dimensions (topics, edge cases, user types) |
-| **Failure Mode** | A specific, named way the AI system can fail (e.g., "dietary violation," "hallucinated citation") |
-| **Error Taxonomy** | The organized list of all failure modes for your application, ranked by frequency and severity |
+| **تفکیک داده‌ها به آموزش/توسعه/آزمون (Train/Dev/Test Split)** | تقسیم داده‌های برچسب‌گذاری‌شده به سه مجموعه: Train (آموزش - برای ساخت Prompt داور)، Dev (توسعه - برای تکرار و بهبود)، Test (آزمون - برای سنجش نهایی و بدون سوگیری) |
+| **تفکیک طبقه‌بندی‌شده (Stratified Split)** | تقسیم داده‌ها به‌گونه‌ای که هر زیرمجموعه، نسبت یکسانی از برچسب‌های قبول/رد (Pass/Fail) را در مقایسه با داده‌های اصلی داشته باشد |
+| **نمونه‌های چندیادگیری (Few-Shot Examples)** | جفت‌های نمونه ورودی-خروجی که در یک Prompt گنجانده می‌شوند تا نشان دهند یک ارزیابی خوب از نظر مدل چگونه است |
+| **کدگذاری باز (Open Coding)** | بررسی Traceها و نوشتن یادداشت‌های آزاد درباره اشکالات و خطاهای موجود، پیش از مشخص شدن دسته‌بندی‌ها |
+| **کدگذاری محوری (Axial Coding)** | دسته‌بندی یادداشت‌های کدگذاری باز در قالب گروه‌ها (انواع خطا) و شمارش فراوانی آن‌ها |
+| **نمونه‌برداری ابعادی (Dimensional Sampling)** | ایجاد سیستماتیک ورودی‌های آزمون که تمام ابعاد مهم (موضوعات، حالت‌های مرزی/Edge Cases، انواع کاربران) را پوشش می‌دهند |
+| **حالت شکست (Failure Mode)** | یک شیوه مشخص و نام‌گذاری‌شده از نحوه شکست سیستم هوش مصنوعی (مانند «نقض محدودیت غذایی» یا «استناد ساختگی / hallucinated citation») |
+| **رده‌بندی خطاها (Error Taxonomy)** | فهرست سازمان‌یافته‌ای از تمامی حالت‌های شکست برای برنامه کاربردی شما که بر اساس فراوانی و شدت رتبه‌بندی شده‌اند |
 
-### Observability & Platform Terms
+### اصطلاحات مشاهده‌پذیری و پلتفرم
 
-| Term | Definition |
+| اصطلاح | تعریف |
 |------|-----------|
-| **Trace** | A complete record of one AI interaction, from user input through all processing steps to final output |
-| **Span** | A single unit of work within a trace (e.g., one LLM call, one database lookup, one tool invocation) |
-| **Instrumentation** | Adding code to your application so that traces and spans are automatically captured |
-| **Dataset** | A stored collection of examples (inputs + expected outputs) used for running experiments |
-| **Experiment** | Running your AI system (or judge) against a dataset and recording all results |
-| **Annotation** | A label or score attached to a trace or span; can be human-generated or from an automated eval |
-| **Prompt Version** | A saved snapshot of a prompt template, allowing you to track changes and compare performance |
+| **ردیابی (Trace)** | یک سابقه کامل از یک تعامل هوش مصنوعی، از ورودی کاربر در طول تمامی مراحل پردازش تا خروجی نهایی |
+| **واحد کاری (Span)** | یک واحد کاری منفرد در یک Trace (مانند یک فراخوانی LLM، یک جستجو در پایگاه داده، یک فراخوانی ابزار) |
+| **ابزار دقیق‌سازی / تجهیز کد (Instrumentation)** | افزودن کد به برنامه کاربردی به‌گونه‌ای که Traceها و Spanها به‌صورت خودکار ثبت و جمع‌آوری شوند |
+| **مجموعه داده (Dataset)** | مجموعه‌ای ذخیره‌شده از نمونه‌ها (ورودی‌ها + خروجی‌های مورد انتظار) که برای اجرای آزمایش‌ها استفاده می‌شود |
+| **آزمایش (Experiment)** | اجرای سیستم هوش مصنوعی (یا داور) بر روی یک مجموعه داده (Dataset) و ثبت تمامی نتایج |
+| **حاشیه‌نویسی (Annotation)** | یک برچسب یا امتیاز پیوست‌شده به یک Trace یا Span؛ می‌تواند توسط انسان یا از طریق یک ارزیابی (Eval) خودکار ایجاد شده باشد |
+| **نسخه Prompt (Prompt Version)** | یک تصویر لحظه‌ای (Snapshot) ذخیره‌شده از یک الگوی Prompt که امکان پیگیری تغییرات و مقایسه عملکرد را فراهم می‌کند |
 
-### RAG-Specific Terms
+### اصطلاحات اختصاصی RAG
 
-| Term | Definition |
+| اصطلاح | تعریف |
 |------|-----------|
-| **RAG (Retrieval-Augmented Generation)** | An AI architecture that retrieves relevant documents before generating a response |
-| **BM25** | A classic keyword-based search algorithm used as a baseline for retrieval quality |
-| **Recall@K** | Of all relevant documents, what fraction appear in the top K retrieved results |
-| **MRR (Mean Reciprocal Rank)** | Average of 1/rank for the first relevant document; higher means relevant docs appear sooner |
-| **Chunking** | Splitting large documents into smaller pieces for retrieval |
-| **Context Window** | The maximum amount of text an LLM can process in a single call |
-| **Hallucination** | When an LLM generates information not supported by the retrieved context |
+| **RAG (Retrieval-Augmented Generation)** | یک معماری هوش مصنوعی که پیش از تولید پاسخ، اسناد مرتبط را بازیابی می‌کند |
+| **BM25** | یک الگوریتم جستجوی کلاسیک مبتنی بر کلمات کلیدی که به‌عنوان خط مبنا (Baseline) برای سنجش کیفیت بازیابی به کار می‌رود |
+| **Recall@K** | کسری از کل اسناد مرتبط که در میان K نتیجه برتر بازیابی‌شده ظاهر می‌شوند |
+| **میانگین رتبه معکوس (MRR / Mean Reciprocal Rank)** | میانگین رتبه معکوس (1/rank) برای نخستین سند مرتبط؛ مقدار بالاتر به این معنی است که اسناد مرتبط زودتر ظاهر می‌شوند |
+| **Chunking** | تقسیم اسناد بزرگ به قطعات کوچک‌تر جهت بازیابی |
+| **پنجره زمینه (Context Window)** | حداکثر حجم متنی که یک LLM می‌تواند در یک فراخوانی پردازش کند |
+| **توهم (Hallucination)** | زمانی که یک LLM اطلاعاتی تولید می‌کند که توسط زمینه (Context) بازیابی‌شده پشتیبانی نمی‌شود |
 
-### Statistical Terms
+### اصطلاحات آماری
 
-| Term | Definition |
+| اصطلاح | تعریف |
 |------|-----------|
-| **p_obs (Observed Rate)** | The raw pass rate from the judge, before any correction |
-| **θ̂ (Theta-hat)** | The corrected true success rate after accounting for judge errors |
-| **judgy** | A Python library that computes corrected success rates and confidence intervals given TPR and TNR |
-| **Sampling** | Evaluating a random subset of traces instead of all traces, used to manage cost |
-| **Statistical Significance** | Whether an observed difference is likely real or could be due to random chance |
+| **p_obs (Observed Rate / نرخ مشاهده‌شده)** | نرخ قبولی خام گزارش‌شده توسط داور، پیش از هرگونه اصلاح |
+| **θ̂ (Theta-hat)** | نرخ موفقیت واقعی اصلاح‌شده پس از در نظر گرفتن خطاهای داور |
+| **judgy** | یک کتابخانه پایتون که با دریافت TPR و TNR، نرخ‌های موفقیت اصلاح‌شده و بازه‌های اطمینان را محاسبه می‌کند |
+| **نمونه‌برداری (Sampling)** | ارزیابی یک زیرمجموعه تصادفی از Traceها به‌جای تمام آن‌ها، که برای مدیریت هزینه‌ها استفاده می‌شود |
+| **معناداری آماری (Statistical Significance)** | اینکه آیا تفاوت مشاهده‌شده احتمالاً واقعی است یا می‌تواند ناشی از شانس و تصادف باشد |
 
 ---
 
 <a name="appendix-b"></a>
-## Appendix B: Quick Reference
 
-### When to Use What Type of Eval
+## پیوست ب: مرجع سریع
 
-| Situation | Type | Example |
+### چه زمانی از چه نوع ارزیابی استفاده کنیم
+
+| موقعیت | نوع | مثال |
 |-----------|------|---------|
-| Format checking | Code-based | No markdown in SMS |
-| Required fields | Code-based | Tour confirmation has date/time |
-| Tool selection | Code-based | Called correct function |
-| Subjective quality | LLM judge | Response is helpful |
-| Policy compliance | LLM judge | Handoff requirements met |
-| Dietary adherence | LLM judge | Recipe follows restrictions |
-| Factual accuracy | LLM judge | Answer matches sources |
-| Response length | Code-based | Under 500 characters |
+| بررسی فرمت | مبتنی بر کد | عدم وجود markdown در پیامک |
+| فیلدهای ضروری | مبتنی بر کد | تاییدیه تور دارای تاریخ/زمان باشد |
+| انتخاب ابزار | مبتنی بر کد | فراخوانی تابع صحیح |
+| کیفیت ذهنی | داور LLM | پاسخ مفید باشد |
+| انطباق با سیاست‌ها | داور LLM | الزامات انتقال (Handoff) برآورده شده باشد |
+| رعایت رژیم غذایی | داور LLM | دستور پخت از محدودیت‌ها پیروی کند |
+| صحت حقایق | داور LLM | پاسخ با منابع مطابقت داشته باشد |
+| طول پاسخ | مبتنی بر کد | کمتر از ۵۰۰ کاراکتر |
 
-### Metrics Cheat Sheet
+### برگه تقلب متریک‌ها
 
 ```
 Confusion Matrix:
@@ -3216,7 +3234,7 @@ Target for evals:
 - TNR > 80% (catches real issues)
 ```
 
-### Data Split Ratios
+### نسبت‌های تقسیم داده
 
 ```
 Train: ~15%  (few-shot examples for judge prompt)
@@ -3224,19 +3242,19 @@ Dev:   ~40%  (iterate and improve judge prompt)
 Test:  ~45%  (final, unbiased evaluation - use ONCE)
 ```
 
-### Time Estimates
+### تخمین‌های زمانی
 
-| Activity | Time | Frequency |
+| فعالیت | زمان | تواتر |
 |----------|------|-----------|
-| Initial setup (LangWatch) | 30 min | Once |
-| Initial setup (Langfuse) | 1 hour | Once |
-| Error analysis (100 traces) | 1 hour | Monthly |
-| Build code-based eval | 1 hour | As needed |
-| Build LLM judge (full pipeline) | 4-6 hours | As needed |
-| Validate eval on dev set | 1 hour | Per iteration |
-| Weekly maintenance | 30 min | Weekly |
+| راه‌اندازی اولیه (LangWatch) | ۳۰ دقیقه | یک‌بار |
+| راه‌اندازی اولیه (Langfuse) | ۱ ساعت | یک‌بار |
+| تحلیل خطا (۱۰۰ trace) | ۱ ساعت | ماهانه |
+| ساخت ارزیابی مبتنی بر کد | ۱ ساعت | در صورت نیاز |
+| ساخت داور LLM (پایپ‌لاین کامل) | ۴-۶ ساعت | در صورت نیاز |
+| اعتبارسنجی ارزیابی روی مجموعه توسعه (dev set) | ۱ ساعت | در هر تکرار |
+| نگهداری هفتگی | ۳۰ دقیقه | هفتگی |
 
-### Platform Quick Start
+### شروع سریع پلتفرم‌ها
 
 **LangWatch:**
 ```python
@@ -3259,9 +3277,10 @@ client = OpenAI()
 ---
 
 <a name="appendix-c"></a>
-## Appendix C: Complete Judge Prompts from Production
 
-This is a production-quality judge prompt that achieved TPR=95.7% and TNR=100%:
+## پیوست C: Prompt‌های کامل داور از محیط تولید
+
+این یک Prompt داور با کیفیت مناسب محیط تولید است که به TPR=95.7% و TNR=100% دست یافته است:
 
 ```
 You are an expert nutritionist and dietary specialist evaluating whether
@@ -3322,11 +3341,12 @@ RETURN YOUR EVALUATION IN JSON FORMAT:
 ---
 
 <a name="appendix-d"></a>
-## Appendix D: Pipeline State Evaluator Prompts
 
-Complete evaluator prompts for each pipeline state. Each follows the same structure:
+## پیوست D: Prompt‌های ارزیاب وضعیت پایپ‌لاین
 
-### Standard Evaluator Structure
+Prompt‌های کامل ارزیاب برای هر وضعیت پایپ‌لاین. هر یک از ساختار یکسانی پیروی می‌کنند:
+
+### ساختار استاندارد ارزیاب
 
 ```
 1. Role definition ("You are an expert evaluator for the X state")
@@ -3338,43 +3358,44 @@ Complete evaluator prompts for each pipeline state. Each follows the same struct
 7. Output format (JSON with label and explanation)
 ```
 
-### Available Evaluators
+### ارزیاب‌های موجود
 
-| State | Key Criteria | Common Failures |
+| وضعیت | معیارهای کلیدی | خطاهای متداول |
 |-------|-------------|----------------|
-| ParseRequest | Accuracy, completeness, format | Misinterpretation, missing constraints |
-| PlanToolCalls | Tool selection, ordering, rationale | Missing tools, incorrect tools |
-| GenRecipeArgs | Query relevance, filter accuracy | Missing dietary filters, wrong servings |
-| GetRecipes | Relevance, dietary compliance | Irrelevant recipes, dietary violations |
-| GenWebArgs | Relevance, context alignment | Off-topic queries, too generic |
-| GetWebInfo | Relevance, quality | Irrelevant results, off-topic content |
-| ComposeResponse | Recipe accuracy, step clarity, constraint compliance | Contradictions, missing info, violations |
+| ParseRequest | دقت، جامعیت، فرمت | تفسیر نادرست، محدودیت‌های جاافتاده |
+| PlanToolCalls | انتخاب ابزار، ترتیب، منطق | ابزارهای جاافتاده، ابزارهای نادرست |
+| GenRecipeArgs | مرتبط بودن کوئری، دقت فیلتر | فیلترهای رژیم غذایی جاافتاده، تعداد وعده‌های نادرست |
+| GetRecipes | مرتبط بودن، انطباق با رژیم غذایی | دستورپخت‌های نامرتبط، نقض رژیم غذایی |
+| GenWebArgs | مرتبط بودن، هم‌راستایی با زمینه | کوئری‌های خارج از موضوع، بیش از حد کلی |
+| GetWebInfo | مرتبط بودن، کیفیت | نتایج نامرتبط، محتوای خارج از موضوع |
+| ComposeResponse | دقت دستورپخت، وضوح مراحل، رعایت محدودیت‌ها | تناقض‌ها، اطلاعات جاافتاده، موارد نقض |
 
-Full evaluator prompts for each state follow the structure above, tailored to the specific responsibilities and failure modes of each pipeline stage.
+Prompt‌های کامل ارزیاب برای هر وضعیت از ساختار فوق پیروی می‌کنند و متناسب با مسئولیت‌های خاص و حالت‌های شکست هر مرحله از پایپ‌لاین تنظیم شده‌اند.
 
 ---
 
 <a name="appendix-e"></a>
-## Appendix E: Judge Prompt Engineering Tips
 
-A collection of techniques that consistently improve LLM judge accuracy. Use this as a checklist when building or debugging a judge.
+## پیوست E: نکات مهندسی Prompt داور (Judge)
 
-### 1. Explanation Before Verdict
+مجموعه‌ای از تکنیک‌ها که دقت داور LLM را به‌طور مداوم بهبود می‌بخشند. هنگام ساخت یا دیباگ کردن یک داور، از این راهنما به‌عنوان یک چک‌لیست استفاده کنید.
 
-Always ask the judge to explain its reasoning *before* giving the final label. This is the single most impactful technique.
+### 1. ارائه توضیح پیش از صدور رای
+
+همیشه از داور بخواهید *پیش از* ارائه برچسب نهایی، استدلال خود را توضیح دهد. این تکنیک به‌تنهایی بیشترین تاثیر را دارد.
 
 ```
 ❌ Bad:  "Label: PASS or FAIL. Explanation: ..."
 ✅ Good: "Explanation: [your reasoning]. Label: PASS or FAIL"
 ```
 
-**Why it works:** When the model writes the label first, the explanation becomes a post-hoc rationalization. When reasoning comes first, the model actually deliberates, and the label follows logically.
+**چرا این روش موثر است:** وقتی مدل ابتدا برچسب را می‌نویسد، توضیح ارائه‌شده به یک توجیه‌تراشی پسینی (post-hoc rationalization) تبدیل می‌شود. اما وقتی استدلال در ابتدا قرار می‌گیرد، مدل واقعاً به تامل و بررسی می‌پردازد و برچسب نهایی به شکلی منطقی از دل آن حاصل می‌شود.
 
-**With reasoning models:** Most current frontier judges reason before they answer, often in hidden thinking (Claude Opus 5.5 cannot turn thinking off at all). Keep the written explanation field anyway: it's the rationale you audit during error analysis. Typed decision-model judges such as Jev return no rationale at all, which is the main thing you give up for their price.
+**در مدل‌های استدلالی (Reasoning Models):** بیشتر داورهای پیشگام (frontier) فعلی پیش از پاسخ‌دهی استدلال می‌کنند که اغلب در قالب تفکر پنهان (hidden thinking) انجام می‌شود (Claude Opus 5.5 اصلاً امکان خاموش کردن تفکر را ندارد). با این وجود، فیلد توضیحات متنی را در هر صورت حفظ کنید: این همان استدلالی است که در طول تحلیل خطا بررسی و ارزیابی (audit) می‌کنید. داورهای مدل تصمیم‌گیری مقید به نوع (Typed decision-model) مانند Jev هیچ استدلالی بازنمی‌گردانند، که این موضوع مهم‌ترین چیزی است که در ازای قیمت ارزان‌تر آن‌ها فدا می‌کنید.
 
-### 2. Be Ruthlessly Specific About Criteria
+### 2. در تعیین معیارها به شکلی بی‌رحمانه دقیق و صریح باشید
 
-Vague criteria lead to inconsistent judgments. Define exactly what counts as Pass and Fail.
+معیارهای مبهم منجر به قضاوت‌های ناسازگار می‌شوند. دقیقاً مشخص کنید چه مواردی قبولی (Pass) و چه مواردی مردودی (Fail) محسوب می‌شوند.
 
 ```
 ❌ Vague:  "Does the response follow dietary restrictions?"
@@ -3384,9 +3405,9 @@ Vague criteria lead to inconsistent judgments. Define exactly what counts as Pas
    dairy-free)."
 ```
 
-### 3. Include "What Does NOT Count as a Failure"
+### 3. بخش «چه مواردی خطا محسوب نمی‌شوند» را بگنجانید
 
-Judges tend to be overly strict. Explicitly list acceptable variations to calibrate leniency.
+داورها تمایل دارند بیش از حد سخت‌گیر باشند. تغییرات و تنوع‌های قابل‌قبول را صراحتاً فهرست کنید تا میزان آسان‌گیری و اغماض (leniency) را کالیبره نمایید.
 
 ```
 What does NOT count as a failure:
@@ -3396,40 +3417,40 @@ What does NOT count as a failure:
 - Providing substitution suggestions alongside the main recipe
 ```
 
-### 4. Use Domain-Specific Few-Shot Examples
+### 4. استفاده از مثال‌های Few-Shot مختص دامنه
 
-Generic examples are far less effective than examples from your actual data. Always pull few-shot examples from your Train set.
+مثال‌های عمومی بسیار کم‌اثرتر از مثال‌های برگرفته از داده‌های واقعی شما هستند. همیشه مثال‌های Few-Shot را از مجموعه آموزشی (Train set) خود استخراج کنید.
 
-**Example selection strategy:**
-- 1 clear Pass (easy case)
-- 1 clear Fail (easy case)
-- 1 borderline case (the kind the judge will struggle with most)
+**استراتژی انتخاب مثال:**
+- ۱ مورد قبولی (Pass) واضح و مشخص (حالت ساده)
+- ۱ مورد مردودی (Fail) واضح و مشخص (حالت ساده)
+- ۱ مورد مرزی (borderline) (همان حالتی که داور بیش از همه با آن به چالش می‌خورد)
 
-**Include the reasoning** in each example, not just the label. The judge learns the reasoning pattern, not just the answer.
+در هر مثال **استدلال را نیز بگنجانید**، نه فقط برچسب را. داور الگوی استدلال را یاد می‌گیرد، نه صرفاً پاسخ نهایی را.
 
-### 5. Temperature, Effort, and Reproducibility
+### 5. پارامتر Temperature، تلاش (Effort) و تکرارپذیری
 
-For models that still accept sampling parameters:
+برای مدل‌هایی که هنوز پارامترهای نمونه‌برداری (sampling parameters) را می‌پذیرند:
 
-| Use Case | Temperature | Rationale |
-|----------|-------------|-----------|
-| Binary classification (Pass/Fail) | 0.0 | Lowest variance, most reproducible |
-| Likert scale scoring (1-5) | 0.0-0.3 | Low variance, consistent |
-| Generating diverse critiques | 0.5-0.7 | Some creativity for different angles |
-| Brainstorming failure modes | 0.7-1.0 | High creativity for exploration |
+| مورد کاربرد (Use Case) | Temperature | منطق و دلیل (Rationale) |
+|---|---|---|
+| طبقه‌بندی باینری (Pass/Fail) | 0.0 | کمترین واریانس، بالاترین تکرارپذیری |
+| امتیازدهی در مقیاس لیکرت (1-5) | 0.0-0.3 | واریانس پایین، یکدست و منسجم |
+| تولید نقدهای متنوع | 0.5-0.7 | تا حدی خلاقیت برای بررسی از زوایای مختلف |
+| ایده‌پردازی برای حالت‌های شکست (Failure Modes) | 0.7-1.0 | خلاقیت بالا برای کاوش و اکتشاف |
 
-**Many current judge models no longer take a temperature.** Since Anthropic API version `2026-10-21`, which all eight of its new SDK and CLI majors (Python and TypeScript included) send by default, `temperature`, `top_p`, and `top_k` return a 400 on every Claude model, even at their default values; under earlier versions Claude 4.7 and later models already rejected non-default values, and Python SDK 1.0 (August 20, 2026) had removed the three parameters from the Messages methods. Google deprecated the same parameters in the Gemini API on July 21, 2026, and GPT-6 Astra accepts no custom temperature or top_p. On these models, reproducibility comes from pinning everything else:
+**بسیاری از مدل‌های داور فعلی دیگر پارامتر temperature را نمی‌پذیرند.** از زمان نسخه `2026-10-21` از Anthropic API، که هر هشت نسخه اصلی جدید SDK و CLI آن (شامل Python و TypeScript) به‌طور پیش‌فرض آن را ارسال می‌کنند، پارامترهای `temperature`، `top_p` و `top_k` روی همه مدل‌های Claude خطای 400 بازمی‌گردانند، حتی در مقادیر پیش‌فرضشان؛ در نسخه‌های قبلی، مدل‌های Claude 4.7 و بعد از آن نیز مقادیر غیرپیش‌فرض را رد می‌کردند، و Python SDK 1.0 (۲۰ اوت ۲۰۲۶) این سه پارامتر را از متدهای Messages حذف کرده بود. گوگل نیز همین پارامترها را در تاریخ ۲۱ ژوئیه ۲۰۲۶ در Gemini API منسوخ اعلام کرد و GPT-6 Astra نیز هیچ مقدار سفارشی برای temperature یا top_p نمی‌پذیرد. در این مدل‌ها، تکرارپذیری از طریق ثابت نگه‌داشتن (pinning) سایر موارد حاصل می‌شود:
 
-- The exact model ID (a dated snapshot where the vendor offers one) and the reasoning effort or thinking level
-- The judge prompt version and few-shot set
-- A structured output schema, so parsing never varies
-- Repeated scoring: run each dev item 3 times, track the judge's self-agreement rate, and majority-vote borderline cases
+- شناسه دقیق مدل (یک snapshot تاریخ‌دار، در صورتی که ارائه‌دهنده آن را فراهم کرده باشد) و میزان تلاش استدلالی (reasoning effort) یا سطح تفکر (thinking level)
+- نسخه Prompt داور و مجموعه Few-Shot
+- یک اسکیمای خروجی ساختاریافته، تا تجزیه و تحلیل (parsing) هرگز دستخوش تغییر نشود
+- امتیازدهی مکرر: هر آیتم مجموعه dev را ۳ بار اجرا کنید، نرخ توافق داور با خودش (self-agreement rate) را ردیابی نمایید و در موارد مرزی بر اساس رای اکثریت (majority-vote) تصمیم بگیرید
 
-Temperature 0 was never a determinism guarantee (batching and floating-point effects leak through), so measuring judge self-consistency is the right habit on every model.
+مقدار Temperature 0 هرگز تضمینی برای قطعیت (determinism) نبوده است (اثرات دسته‌بندی و ممیز شناور به درون آن نفوذ می‌کنند)، بنابراین سنجش خودسازگاری (self-consistency) داور عادتی درست برای تمام مدل‌ها است.
 
-### 6. Structured Output Formats
+### 6. فرمت‌های خروجی ساختاریافته
 
-Tell the judge exactly how to format its response. JSON is preferred for parsing reliability.
+دقیقاً به داور بگویید که خروجی خود را چگونه فرمت‌بندی کند. فرمت JSON برای قابلیت اطمینان در تجزیه و تحلیل (parsing) ترجیح داده می‌شود.
 
 ```
 Return your evaluation as JSON:
@@ -3441,19 +3462,19 @@ Return your evaluation as JSON:
 }
 ```
 
-**Tip:** The `confidence` field is useful for identifying borderline cases during error analysis but is not a reliable calibrated probability.
+**نکته:** فیلد `confidence` برای شناسایی موارد مرزی در حین تحلیل خطا مفید است، اما یک احتمال کالیبره‌شده و قابل اتکا محسوب نمی‌شود.
 
-### 7. Guard Against Common Judge Biases
+### 7. پیشگیری از سوگیری‌های رایج داور
 
-| Bias | Description | Mitigation |
-|------|-------------|------------|
-| **Leniency bias** | Judge defaults to "Pass" too often | Add explicit failure examples; emphasize "when in doubt, FAIL" |
-| **Verbosity bias** | Judge favors longer, more detailed responses | Add examples where a short response passes and a long one fails |
-| **Position bias** | Judge favors the first/last option in a list | Randomize order if comparing multiple outputs |
-| **Sycophancy bias** | Judge agrees with confident-sounding text | Add examples where confident text is wrong |
-| **Anchoring bias** | Judge is swayed by the first piece of evidence | Instruct judge to consider ALL evidence before concluding |
+| سوگیری (Bias) | شرح | روش تعدیل / مقابله (Mitigation) |
+|---|---|---|
+| **سوگیری آسان‌گیری (Leniency bias)** | داور بیش از حد به وضعیت پیش‌فرض «Pass» برمی‌گردد | مثال‌های صریحی از شکست و خطا اضافه کنید؛ تاکید نمایید که «در صورت تردید، FAIL اعلام کن» |
+| **سوگیری پرحرفی (Verbosity bias)** | داور پاسخ‌های طولانی‌تر و با جزئیات بیشتر را ترجیح می‌دهد | مثال‌هایی اضافه کنید که در آن‌ها یک پاسخ کوتاه قبول (Pass) می‌شود و یک پاسخ طولانی مردود (Fail) می‌گردد |
+| **سوگیری موقعیت (Position bias)** | داور گزینه اول یا آخر را در یک لیست ترجیح می‌دهد | در صورت مقایسه چندین خروجی، ترتیب آن‌ها را تصادفی کنید |
+| **سوگیری تاییدطلبی / چاپلوسی (Sycophancy bias)** | داور با متنی که لحنی مطمئن و بااعتمادبه‌نفس دارد موافقت می‌کند | مثال‌هایی اضافه کنید که در آن‌ها متنی با لحن بااعتمادبه‌نفس نادرست است |
+| **سوگیری لنگراندازی (Anchoring bias)** | داور تحت تاثیر نخستین شواهد قرار می‌گیرد | به داور دستور دهید قبل از نتیجه‌گیری، تمام شواهد را مد نظر قرار دهد |
 
-### 8. Iterative Refinement Workflow
+### 8. جریان کاری پالایش تکرارشونده (Iterative Refinement)
 
 ```
 1. Write initial prompt with 2-3 few-shot examples
@@ -3467,37 +3488,37 @@ Return your evaluation as JSON:
 7. Run ONCE on Test set for final, unbiased metrics
 ```
 
-**Common iteration patterns:**
-- TNR too low → Judge is missing real failures (passing them). Add more Fail examples, make fail criteria more explicit.
-- TPR too low → Judge has too many false alarms (failing good outputs). Add "what does NOT count as a failure" section, add Pass examples for edge cases.
-- Both low → Criteria are ambiguous. Rewrite from scratch with clearer definitions.
+**الگوهای رایج در تکرارها (Iteration):**
+- نرخ TNR بیش از حد پایین است ← داور شکست‌های واقعی را نادیده می‌گیرد (آن‌ها را قبول می‌کند). مثال‌های Fail بیشتری اضافه کنید و معیارهای شکست را صریح‌تر نمایید.
+- نرخ TPR بیش از حد پایین است ← داور هشدارهای کاذب زیادی دارد (خروجی‌های خوب را مردود می‌کند). بخش «چه مواردی خطا محسوب نمی‌شوند» را اضافه کنید و برای حالات مرزی (edge cases) مثال‌های Pass بیاورید.
+- هر دو پایین هستند ← معیارها مبهم هستند. آن‌ها را از نو با تعاریفی شفاف‌تر بازنویسی کنید.
 
-### 9. Model Selection for Judges
+### 9. انتخاب مدل برای داورها
 
-| Model Tier (examples, November 2026) | When to Use | What to Expect |
-|------------|------------|-----------------|
-| Frontier: Claude Opus 5.5, GPT-6 Astra | High-stakes evals, complex reasoning, setting the ceiling | Highest agreement on nuanced criteria; slowest and most expensive |
-| Mid: Claude Sonnet 5.5, GPT-6.1 Sol | Most production judges once validated | Often matches the ceiling on well-specified rubrics |
-| Small: Claude Haiku 5.5, Gemini 3.8 Flash, GPT-6 Luna | Cost-sensitive, high-volume evals | Good on clear-cut criteria; check TNR closely |
-| Open-weight: Qwen3.8-27B (Apache 2.0), GLM-5.3-Flash (MIT), DeepSeek V4.1-Flash (MIT) | Self-hosted, privacy-sensitive | Widest variance by task; validate before trusting |
-| Typed decision model: TypeSafe Jev (early access), OpenAI Decisions API | Binary checklist criteria on all traffic | No significant accuracy difference from LLM rubric judges in at least 19 of 27 paired comparisons (arXiv 2609.29769); weaker on ordinal scales; no rationale |
+| رده مدل (نمونه‌ها، نوامبر ۲۰۲۶) | زمان استفاده | آنچه باید انتظار داشت |
+|---|---|---|
+| پیشرو (Frontier): Claude Opus 5.5، GPT-6 Astra | ارزیابی‌های با ریسک بالا (High-stakes evals)، استدلال پیچیده، تعیین سقف عملکرد | بالاترین میزان توافق بر سر معیارهای ظریف و دقیق؛ کندترین و گران‌ترین |
+| میان‌رده (Mid): Claude Sonnet 5.5، GPT-6.1 Sol | اغلب داورهای محیط پروداکشن پس از اعتبارسنجی | معمولاً در معیارهای ارزیابی (rubrics) با مشخصات دقیق، با سقف عملکرد برابری می‌کند |
+| کوچک (Small): Claude Haiku 5.5، Gemini 3.8 Flash، GPT-6 Luna | ارزیابی‌های پرحجم و حساس به هزینه | مناسب برای معیارهای کاملاً واضح؛ نرخ TNR را از نزدیک زیر نظر داشته باشید |
+| وزن‌های باز (Open-weight): Qwen3.8-27B (مجوز Apache 2.0)، GLM-5.3-Flash (مجوز MIT)، DeepSeek V4.1-Flash (مجوز MIT) | خودمیزبانی‌شده (Self-hosted)، حساس به حریم خصوصی | بیشترین میزان واریانس بر اساس تسک؛ قبل از اعتماد، اعتبارسنجی کنید |
+| مدل تصمیم‌گیری مقید به نوع (Typed decision model): TypeSafe Jev (دسترسی اولیه)، OpenAI Decisions API | معیارهای چک‌لیست باینری روی تمامی ترافیک | بدون تفاوت معنادار در دقت در مقایسه با داورهای روبریک LLM در حداقل ۱۹ مورد از ۲۷ مقایسه جفتی (arXiv 2609.29769)؛ عملکرد ضعیف‌تر در مقیاس‌های ترتیبی (ordinal)؛ بدون ارائه استدلال (rationale) |
 
-Your own TPR/TNR on a held-out test set is the only accuracy number that matters; published judge accuracies don't transfer across tasks.
+تنها معیار دقتی که اهمیت دارد، مقادیر TPR/TNR خود شما روی یک مجموعه آزمون مجزا و دیده‌نشده (held-out test set) است؛ آمارهای دقت منتشرشده برای داورها به تسک‌های دیگر تعمیم پیدا نمی‌کند.
 
-**Tip:** Start with the most capable model to establish a performance ceiling. Then test whether a cheaper model can match it for your specific use case. Often it can, especially with good few-shot examples.
+**نکته:** کار را با توانمندترین مدل آغاز کنید تا سقف عملکرد (performance ceiling) مشخص شود. سپس بررسی کنید که آیا مدلی ارزان‌تر می‌تواند در مورد کاربرد خاص شما به همان سطح دست یابد یا خیر. اغلب اوقات، به‌ویژه با مثال‌های Few-Shot مناسب، این امر امکان‌پذیر است.
 
-### 10. Prompt Versioning
+### 10. نسخه‌بندی Prompt
 
-Always version your judge prompts. Track:
-- The prompt text
-- The few-shot examples used
-- The model ID, reasoning effort, and temperature (if the model still accepts one)
-- Dev set metrics (TPR, TNR) at that version
-- Date and reason for the change
+همیشه Promptهای داور خود را نسخه‌بندی کنید. موارد زیر را ثبت و ردیابی نمایید:
+- متن Prompt
+- مثال‌های Few-Shot استفاده‌شده
+- شناسه مدل (model ID)، میزان تلاش استدلالی (reasoning effort) و مقدار temperature (در صورتی که مدل هنوز آن را می‌پذیرد)
+- معیارهای مجموعه توسعه (TPR، TNR) در آن نسخه
+- تاریخ و دلیل اعمال تغییرات
 
-Both LangWatch and Langfuse have built-in prompt versioning. Use it.
+هر دو ابزار LangWatch و Langfuse دارای قابلیت داخلی نسخه‌بندی Prompt هستند. از آن استفاده کنید.
 
-**With LangWatch:**
+**با LangWatch:**
 ```python
 import langwatch
 
@@ -3518,7 +3539,7 @@ langwatch.prompts.update(
 )
 ```
 
-**With Langfuse:**
+**با Langfuse:**
 ```python
 from langfuse import get_client
 
@@ -3537,13 +3558,14 @@ langfuse.create_prompt(
 ---
 
 <a name="appendix-f"></a>
-## Appendix F: Platform Methods Reference (LangWatch & Langfuse)
 
-Signatures below match the released LangWatch Python SDK 1.4.0 and Langfuse Python SDK 4.16.0 (pin `langfuse<5`; v5, released October 14, 2026, removed `api.scores_v3`, `api.legacy.*` and `api.trace.*`). Where a vendor's docs and its released SDK disagree (LangWatch's `prompts.create(model=...)` is one case), trust the SDK signature, and re-check both before upgrading.
+## پیوست F: مرجع متدهای پلتفرم (LangWatch و Langfuse)
+
+امضاهای زیر با نسخه منتشرشده LangWatch Python SDK 1.4.0 و Langfuse Python SDK 4.16.0 مطابقت دارند (نسخه را روی `langfuse<5` پین کنید؛ نسخه ۵ که در ۱۴ اکتبر ۲۰۲۶ منتشر شد، `api.scores_v3`، `api.legacy.*` و `api.trace.*` را حذف کرده است). در مواردی که میان مستندات ارائه‌دهنده و SDK منتشرشده آن مغایرت وجود دارد (متد `prompts.create(model=...)` در LangWatch یک نمونه از آن است)، به امضای SDK اعتماد کنید و پیش از ارتقا، هر دو را مجدداً بررسی نمایید.
 
 ### LangWatch
 
-#### Tracing
+#### ردگیری (Tracing)
 
 ```python
 import langwatch
@@ -3573,7 +3595,7 @@ def execute_query(sql):
     return db.execute(sql)
 ```
 
-#### Querying Traces
+#### پرس‌وجوی ردها (Querying Traces)
 
 ```python
 import langwatch
@@ -3583,9 +3605,9 @@ page = langwatch.traces.search(params={"query": "ParseRequest", "pageSize": 100}
 trace = langwatch.traces.get(trace_id)  # one trace with its spans
 ```
 
-Both wrap the REST traces API; you can also export from the UI. For per-state evaluation, attaching verdicts to spans at run time (Chapter 7) avoids the round trip.
+هر دو، REST traces API را پوشش می‌دهند (wrap می‌کنند)؛ همچنین می‌توانید از طریق رابط کاربری (UI) خروجی بگیرید. برای ارزیابی به‌ازای هر حالت (per-state evaluation)، ضمیمه کردن قضاوت‌ها (verdicts) به spanها در زمان اجرا (فصل ۷)، از رفت‌وبرگشت اضافه (round trip) جلوگیری می‌کند.
 
-#### Datasets
+#### مجموعه‌داده‌ها (Datasets)
 
 ```python
 import langwatch
@@ -3609,7 +3631,7 @@ langwatch.dataset.create_records(
 df = langwatch.dataset.get_dataset("my-dataset").to_pandas()
 ```
 
-#### Experiments and Evaluators
+#### آزمایش‌ها و ارزیاب‌ها (Experiments and Evaluators)
 
 ```python
 import langwatch
@@ -3635,7 +3657,7 @@ for index, row in evaluation.loop(df.iterrows(), threads=4):
     evaluation.submit(task, index, row)
 ```
 
-#### Guardrails and Span Evaluations
+#### گاردریل‌ها و ارزیابی‌های Span (Guardrails and Span Evaluations)
 
 ```python
 import langwatch
@@ -3656,7 +3678,7 @@ langwatch.get_current_span().add_evaluation(
 )
 ```
 
-#### Prompt Management
+#### مدیریت Prompt (Prompt Management)
 
 ```python
 import langwatch
@@ -3679,7 +3701,7 @@ response = completion(model=prompt.model, messages=compiled.messages)
 
 ### Langfuse
 
-#### Tracing
+#### ردگیری (Tracing)
 
 ```python
 from langfuse.openai import OpenAI  # Drop-in replacement
@@ -3698,7 +3720,7 @@ def generate_answer(question):
     return client.chat.completions.create(...)
 ```
 
-#### Querying Traces and Observations
+#### پرس‌وجوی ردها و مشاهدات (Querying Traces and Observations)
 
 ```python
 from langfuse import get_client
@@ -3724,7 +3746,7 @@ observations = langfuse.api.observations.get_many(
 scores = langfuse.api.scores_v3.get_many_v3(name="dietary_adherence", limit=100)
 ```
 
-#### Datasets
+#### مجموعه‌داده‌ها (Datasets)
 
 ```python
 from langfuse import get_client
@@ -3740,7 +3762,7 @@ langfuse.create_dataset_item(
 )
 ```
 
-#### Experiments
+#### آزمایش‌ها (Experiments)
 
 ```python
 from langfuse import Evaluation
@@ -3762,7 +3784,7 @@ result = langfuse.run_experiment(
 print(result.format())
 ```
 
-#### Scores (Evaluation Results)
+#### امتیازها (نتایج ارزیابی) (Scores (Evaluation Results))
 
 ```python
 from langfuse import get_client
@@ -3783,7 +3805,7 @@ with langfuse.start_as_current_observation(as_type="span", name="eval") as span:
     span.score(name="accuracy", value=0.95, data_type="NUMERIC")
 ```
 
-#### Prompt Management
+#### مدیریت Prompt (Prompt Management)
 
 ```python
 from langfuse import get_client
@@ -3807,206 +3829,207 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 ---
 
 <a name="appendix-g"></a>
-## Appendix G: 30-Day Learning Path
 
-### Week 1: Foundations (Engineer, PM, or QA)
+## پیوست G: مسیر یادگیری ۳۰‌روزه
 
-| Day | Activity | Time | Role Focus |
+### هفته ۱: مبانی و پایه‌ها (مهندس، PM یا QA)
+
+| روز | فعالیت | زمان | تمرکز نقش |
 |-----|----------|------|------------|
-| 1 | Pick your platform (LangWatch or Langfuse), install it | 1h | All |
-| 2 | Instrument your app with auto-tracing | 2h | Engineer |
-| 2 | Browse the trace viewer UI, understand traces visually | 1h | PM/QA |
-| 3 | Create a test dataset with dimensional sampling | 2h | All |
-| 4 | Upload dataset to your platform, run first experiment | 1h | All |
-| 5 | Review 50 traces, take notes (open coding) | 1h | All |
-| 6 | Categorize errors using LLM (axial coding) | 1h | All |
-| 7 | Prioritize: frequency x severity matrix | 30m | All |
+| ۱ | پلتفرم خود را انتخاب کنید (LangWatch یا Langfuse) و آن را نصب نمایید | ۱ ساعت | همه |
+| ۲ | ابزارگذاری برنامه با رهگیری خودکار (auto-tracing) | ۲ ساعت | مهندس |
+| ۲ | بررسی رابط کاربری trace viewer و درک بصری Traceها | ۱ ساعت | PM/QA |
+| ۳ | ایجاد یک دیتاست تست با نمونه‌برداری چندبعدی (dimensional sampling) | ۲ ساعت | همه |
+| ۴ | بارگذاری دیتاست در پلتفرم و اجرای اولین آزمایش (experiment) | ۱ ساعت | همه |
+| ۵ | بازبینی ۵۰ ردگیری (Trace) و یادداشت‌برداری (کدگذاری باز / open coding) | ۱ ساعت | همه |
+| ۶ | دسته‌بندی خطاها با استفاده از LLM (کدگذاری محوری / axial coding) | ۱ ساعت | همه |
+| ۷ | اولویت‌بندی: ماتریس فراوانی × شدت (frequency x severity) | ۳۰ دقیقه | همه |
 
-### Week 2: Code-Based Evals
+### هفته ۲: ارزیابی‌های مبتنی بر کد (Code-Based Evals)
 
-| Day | Activity | Time | Role Focus |
+| روز | فعالیت | زمان | تمرکز نقش |
 |-----|----------|------|------------|
-| 8 | Build 2 code-based evals for your top issues | 2h | Engineer |
-| 8 | Define eval criteria in plain English | 1h | PM/QA |
-| 9 | Test evals with known good/bad cases | 1h | All |
-| 10 | Run evals on all traces, calculate failure rates | 1h | All |
-| 11-14 | Iterate based on results | 2h | All |
+| ۸ | ساخت ۲ ارزیابی مبتنی بر کد برای مهم‌ترین مسائل شما | ۲ ساعت | مهندس |
+| ۸ | تعریف معیارهای ارزیابی به زبان ساده و روان (plain English) | ۱ ساعت | PM/QA |
+| ۹ | آزمایش ارزیابی‌ها با نمونه‌های خوب/بد مشخص | ۱ ساعت | همه |
+| ۱۰ | اجرای ارزیابی‌ها روی تمام Traceها و محاسبه نرخ‌های شکست (failure rates) | ۱ ساعت | همه |
+| ۱۱-۱۴ | تکرار و بهبود بر اساس نتایج | ۲ ساعت | همه |
 
-### Week 3: LLM Judge
+### هفته ۳: قاضی LLM (LLM Judge)
 
-| Day | Activity | Time | Role Focus |
+| روز | فعالیت | زمان | تمرکز نقش |
 |-----|----------|------|------------|
-| 15 | Label 100-150 traces as ground truth | 3h | All |
-| 16 | Split into Train/Dev/Test | 30m | Engineer |
-| 17 | Write first judge prompt with few-shot examples | 2h | All |
-| 18 | Validate on Dev set, calculate TPR/TNR | 1h | All |
-| 19 | Iterate prompt until metrics > 80% | 2h | All |
-| 20 | Final test on Test set | 30m | All |
-| 21 | Run judge on all traces + correct with judgy | 1h | All |
+| ۱۵ | برچسب‌گذاری ۱۰۰ تا ۱۵۰ ردگیری (Trace) به عنوان حقیقت زمینه‌ای (Ground Truth) | ۳ ساعت | همه |
+| ۱۶ | تفکیک داده‌ها به بخش‌های Train/Dev/Test | ۳۰ دقیقه | مهندس |
+| ۱۷ | نگارش اولین Prompt قاضی همراه با مثال‌های چندنمونه‌ای (few-shot) | ۲ ساعت | همه |
+| ۱۸ | اعتبارسنجی روی مجموعه Dev و محاسبه TPR/TNR | ۱ ساعت | همه |
+| ۱۹ | تکرار و بهینه‌سازی Prompt تا زمانی که معیارها بیشتر از ۸۰٪ شوند | ۲ ساعت | همه |
+| ۲۰ | آزمون نهایی روی مجموعه Test | ۳۰ دقیقه | همه |
+| ۲۱ | اجرای قاضی روی تمام Traceها + تصحیح با ابزار judgy | ۱ ساعت | همه |
 
-### Week 4: Advanced Topics & Production
+### هفته ۴: مباحث پیشرفته و محیط عملیاتی (Production)
 
-| Day | Activity | Time | Role Focus |
+| روز | فعالیت | زمان | تمرکز نقش |
 |-----|----------|------|------------|
-| 22 | RAG evaluation: retrieval metrics + answer quality (Ch. 6) | 2h | Engineer |
-| 23 | Multi-step pipeline evaluation (Ch. 7) | 2h | Engineer |
-| 24 | Multi-turn conversation evaluation (Ch. 8) | 2h | Engineer |
-| 25 | Safety evals: prompt injection, PII leakage (Ch. 9) | 2h | All |
-| 26 | Set up regression test suite (Ch. 11) | 2h | Engineer |
-| 27 | Human annotation calibration: measure inter-annotator agreement (Ch. 12) | 1h | All |
-| 28 | Optimize for cost: tiered evaluation, sampling strategy (Ch. 13) | 1h | All |
-| 29 | Create monitoring dashboard + automated eval runs | 2h | Engineer |
-| 30 | Document eval suite, present to stakeholders, plan maintenance | 2h | All |
+| ۲۲ | ارزیابی RAG: معیارهای بازیابی (retrieval) + کیفیت پاسخ (فصل ۶) | ۲ ساعت | مهندس |
+| ۲۳ | ارزیابی پایپ‌لاین‌های چندمرحله‌ای (فصل ۷) | ۲ ساعت | مهندس |
+| ۲۴ | ارزیابی مکالمات چندنوبتی (Multi-turn) (فصل ۸) | ۲ ساعت | مهندس |
+| ۲۵ | ارزیابی‌های ایمنی: تزریق Prompt (Prompt injection)، نشت اطلاعات هویتی حساس (PII leakage) (فصل ۹) | ۲ ساعت | همه |
+| ۲۶ | راه‌اندازی مجموعه تست پسرفت (Regression Test Suite) (فصل ۱۱) | ۲ ساعت | مهندس |
+| ۲۷ | کالیبراسیون برچسب‌گذاری انسانی: سنجش توافق میان ارزیاب‌ها (Inter-annotator Agreement) (فصل ۱۲) | ۱ ساعت | همه |
+| ۲۸ | بهینه‌سازی هزینه‌ها: ارزیابی لایه‌ای (Tiered Evaluation)، استراتژی نمونه‌برداری (فصل ۱۳) | ۱ ساعت | همه |
+| ۲۹ | ایجاد داشبورد پایش (Monitoring) + اجرای خودکار ارزیابی‌ها | ۲ ساعت | مهندس |
+| ۳۰ | مستندسازی مجموعه ارزیابی، ارائه به ذی‌نفعان و برنامه‌ریزی برای نگهداری | ۲ ساعت | همه |
 
 ---
 
-## Lessons Learned
+## درس‌های آموخته‌شده
 
-Real lessons from implementing complete eval pipelines in production:
+درس‌های واقعی حاصل از پیاده‌سازی پایپ‌لاین‌های کامل ارزیابی در محیط عملیاتی (Production):
 
-**On Building Judges (Chapters 4, 10)**
+**درباره ساخت قاضی‌ها (فصل‌های ۴ و ۱۰)**
 
-1. **LLM-as-Judge is powerful but needs guardrails** - Without proper validation, a judge can confidently give wrong answers. Always validate against ground truth.
+۱. **رویکرد LLM-as-Judge قدرتمند است اما به حفاظ‌های ایمنی (Guardrails) نیاز دارد** - بدون اعتبارسنجی مناسب، قاضی ممکن است با اطمینان کامل پاسخ‌های نادرست ارائه دهد. همیشه آن را در برابر حقیقت زمینه‌ای (Ground Truth) اعتبارسنجی کنید.
 
-2. **You must test evaluators against ground truth** - A judge that seems reasonable but has TNR=22% is actively harmful: it misses most real failures.
+۲. **باید ارزیاب‌ها را در برابر حقیقت زمینه‌ای بسنجید** - قاضی‌ای که معقول به نظر می‌رسد اما TNR=22% دارد، عملاً آسیب‌رسان است: چنین قاضی‌ای بیشتر شکست‌ها و خطاهای واقعی را نادیده می‌گیرد.
 
-3. **Train/Dev/Test splits enable confidence** - Without them, you're fooling yourself about your judge's quality. This is non-negotiable.
+۳. **تفکیک داده‌ها به بخش‌های Train/Dev/Test ایجاد اطمینان می‌کند** - بدون این تفکیک، در مورد کیفیت قاضی خودتان را فریب می‌دهید. این موضوع غیرقابل مذاکره است.
 
-4. **Iterating on judge prompts is crucial** - The first prompt is never good enough. Plan for 3-5 iterations minimum. See Appendix E for techniques.
+۴. **تکرار و بازنگری روی Promptهای قاضی حیاتی است** - اولین Prompt هرگز به اندازه کافی خوب نیست. حداقل برای ۳ تا ۵ دور بازنگری برنامه‌ریزی کنید. برای تکنیک‌ها به پیوست E مراجعه نمایید.
 
-5. **Explanation-before-verdict is the #1 technique** - Asking the judge to reason before labeling improves accuracy more than any other single change.
+۵. **تکنیک «توضیح پیش از صدور حکم» (Explanation-before-verdict) برترین راهکار است** - درخواست از قاضی برای استدلال کردن پیش از برچسب‌گذاری، بیش از هر تغییر منفرد دیگری دقت را ارتقا می‌دهد.
 
-**On Process & Methodology (Chapters 3, 11, 12)**
+**درباره فرآیند و متدولوژی (فصل‌های ۳، ۱۱ و ۱۲)**
 
-6. **Error analysis is the real work** - Fancy tools don't matter if you haven't sat down and looked at your failures. Open coding → axial coding → prioritization is the workflow that works.
+۶. **تحلیل خطا کار واقعی و اصلی است** - اگر ننشسته‌اید و شکست‌های خود را از نزدیک بررسی نکرده‌اید، ابزارهای پر زرق‌وبرق اهمیتی ندارند. کدگذاری باز (Open coding) ← کدگذاری محوری (Axial coding) ← اولویت‌بندی، همان جریان کاری کارآمد و اثبات‌شده است.
 
-7. **Human annotators disagree more than you think** - Measure inter-annotator agreement (Cohen's kappa) before trusting your ground truth. If humans can't agree, the judge won't either.
+۷. **ارزیاب‌های انسانی بیش از آنچه تصور می‌کنید با یکدیگر اختلاف نظر دارند** - پیش از اعتماد به حقیقت زمینه‌ای خود، میزان توافق میان ارزیاب‌ها (ضریب کاپای کوهن / Cohen's kappa) را اندازه بگیرید. اگر انسان‌ها نتوانند به توافق برسند، قاضی نیز به توافق نخواهد رسید.
 
-8. **Closing the loop is what separates good teams from great ones** - Running evals is only half the job. The other half is systematically turning failures into improvements and preventing regressions.
+۸. **تکمیل چرخه (Closing the loop) همان عاملی است که تیم‌های خوب را از تیم‌های عالی متمایز می‌کند** - اجرای ارزیابی‌ها صرفاً نیمی از کار است. نیم دیگر، تبدیل نظام‌مند شکست‌ها به بهبودها و پیشگیری از بروز پسرفت است.
 
-**On Production & Scale (Chapters 9, 13)**
+**درباره محیط عملیاتی و مقیاس‌پذیری (فصل‌های ۹ و ۱۳)**
 
-9. **Safety evals are not optional** - Prompt injection, PII leakage, and jailbreak detection should be running before you worry about quality evals.
+۹. **ارزیابی‌های ایمنی اختیاری نیستند** - پیش از آنکه نگران ارزیابی‌های کیفی باشید، باید قابلیت‌های شناسایی تزریق Prompt (Prompt injection)، نشت اطلاعات هویتی حساس (PII leakage) و جیل‌بریک (Jailbreak) فعال و در حال اجرا باشند.
 
-10. **Start expensive, then optimize** - Use a frontier judge (Claude Opus 5.5, GPT-6 Astra) to establish your performance ceiling, then test whether a cheaper model can match it. Often it can.
+۱۰. **ابتدا با مدل‌های گران‌تر شروع کنید، سپس بهینه‌سازی نمایید** - از یک قاضی پیشرو و مرزی (مانند Claude Opus 5.5 یا GPT-6 Astra) برای تعیین سقف عملکرد خود استفاده کنید؛ سپس بسنجید که آیا مدلی ارزان‌تر می‌تواند عملکردی معادل آن ارائه دهد یا خیر. در اغلب موارد این امکان وجود دارد.
 
-11. **Sampling beats exhaustive evaluation** - Evaluating 10% of traces with statistical rigor gives you a better answer than evaluating 100% with a bad judge.
+۱۱. **نمونه‌برداری بر ارزیابی فراگیر و جامع برتری دارد** - ارزیابی ۱۰٪ از ردگیری‌ها (Traceها) با دقت و استواری آماری، پاسخ بسیار بهتری نسبت به ارزیابی ۱۰۰٪ با یک قاضی نامناسب به شما می‌دهد.
 
-12. **Good observability tools make the workflow 10x faster** - Integrated tracing, evaluation, datasets, and experiments in one platform (LangWatch, Langfuse, etc.) saves enormous time vs. stitching together custom scripts.
+۱۲. **ابزارهای خوب مشاهده‌پذیری (Observability)، سرعت جریان کار را ۱۰ برابر می‌کنند** - یکپارچه‌سازی ردگیری، ارزیابی، دیتاست‌ها و آزمایش‌ها در یک پلتفرم واحد (مانند LangWatch، Langfuse و غیره) در مقایسه با سرهم‌بندی اسکریپت‌های سفارشی، زمان فوق‌العاده زیادی را صرفه‌جویی می‌کند.
 
-**On Platform Choice**
+**درباره انتخاب پلتفرم**
 
-13. **LangWatch for speed, Langfuse for depth** - LangWatch gets you results in hours with built-in evaluators. Langfuse gives maximum control for complex custom logic. Some teams run both, at the cost of instrumenting twice.
+۱۳. **پلتفرم LangWatch برای سرعت، Langfuse برای عمق** - ابزار LangWatch به کمک ارزیاب‌های توکار خود ظرف چند ساعت نتایج را در اختیارتان قرار می‌دهد. پلتفرم Langfuse حداکثر کنترل را برای منطق‌های سفارشی و پیچیده مهیا می‌سازد. برخی تیم‌ها از هر دو پلتفرم استفاده می‌کنند که البته مستلزم دو بار ابزارگذاری است.
 
-14. **Built-in evaluators save weeks of dev time** - LangWatch's 30+ ready-made evaluators and Langfuse's judge templates cover most generic checks. If you're reinventing safety checks or RAG metrics, you're wasting time.
+۱۴. **ارزیاب‌های توکار هفته‌ها در زمان توسعه صرفه‌جویی می‌کنند** - بیش از ۳۰ ارزیاب آماده در LangWatch و قالب‌های قاضی در Langfuse، اغلب بررسی‌های عمومی را پوشش می‌دهند. اگر به دنبال بازآفرینی چرخ برای بررسی‌های ایمنی یا معیارهای RAG هستید، وقت خود را تلف می‌کنید.
 
-15. **Community matters for long-term success** - Langfuse's larger community means more integrations, more examples, more support. LangWatch's simpler API means faster onboarding.
-
----
-
-## Conclusion
-
-AI evals are not just "testing"; they're a product development methodology that touches engineering, product management, and quality assurance.
-
-**Key takeaways:**
-
-1. **Everyone needs evals**: Not just big companies. If your AI app touches users, you need systematic evaluation.
-2. **Start with error analysis**: Sit down and look at your failures before building anything automated (Chapter 3).
-3. **PMs and QAs must lead**: Error analysis and criteria definition are product/quality work, not just engineering tasks.
-4. **Build incrementally**: Start with code-based evals, then add LLM judges, then add safety evals. Don't try to do everything at once.
-5. **Measure what matters**: Application-specific criteria, not generic "helpfulness" scores.
-6. **Both TPR and TNR**: A judge that catches failures but also false-alarms is harmful. Measure both.
-7. **Split your data**: Train/Dev/Test is mandatory. Without it, you're overfitting your judge.
-8. **Correct for bias**: Use statistical correction (Chapter 10) for honest metrics.
-9. **Close the loop**: Evals that don't lead to improvements are wasted effort (Chapter 11).
-10. **Plan for scale**: Start with the best model, then optimize for cost (Chapter 13).
-
-**Your action plan (see Appendix G for details):**
-
-1. Week 1: Set up observability (LangWatch or Langfuse), do error analysis
-2. Week 2: Build 2-3 core code-based evals
-3. Week 3: Build and validate an LLM judge with proper train/dev/test splits
-4. Week 4: Advanced topics (RAG evals, multi-turn evals, safety evals, automation)
-5. Ongoing: 30 minutes per week maintenance + regression testing
-
-**Platform decision:**
-- Choose **LangWatch** if you want to start fast (<30 min setup) and use built-in evaluators
-- Choose **Langfuse** if you need maximum flexibility and have complex custom workflows
-- Use **both** if you need what each does best and can afford to instrument twice
-
-**Remember:** The teams shipping the best AI products are the ones with the best evals. Not the fanciest models. Not the biggest teams. The ones who systematically measure and improve.
-
-Start today. Your future self will thank you.
+۱۵. **جامعه کاربری برای موفقیت بلندمدت حائز اهمیت است** - جامعه کاربری بزرگ‌تر Langfuse به معنای یکپارچه‌سازی‌های بیشتر، مثال‌های افزون‌تر و پشتیبانی بهتر است. در مقابل، API ساده‌تر LangWatch شروع به کار سریع‌تر و پذیرش آسان‌تر را به همراه دارد.
 
 ---
 
-## Learning Resources
+## نتیجه‌گیری
 
-### Platform Documentation & Learning Hubs
+ارزیابی‌های هوش مصنوعی صرفاً «تست کردن» نیستند؛ بلکه متدولوژی توسعه محصول به شمار می‌آیند که با مهندسی، مدیریت محصول و تضمین کیفیت پیوند خورده است.
 
-- **LangWatch Docs**: [langwatch.ai/docs](https://langwatch.ai/docs)
-- **LangWatch GitHub**: [github.com/langwatch/langwatch](https://github.com/langwatch/langwatch)
-- **Langfuse Docs**: [langfuse.com/docs](https://langfuse.com/docs)
-- **Langfuse GitHub**: [github.com/langfuse/langfuse](https://github.com/langfuse/langfuse)
-- **Maven Course (AI Evals for Engineers & PMs)**: [maven.com/parlance-labs/evals](https://maven.com/parlance-labs/evals)
-- **HuggingFace Evaluation Guidebook**: [github.com/huggingface/evaluation-guidebook](https://github.com/huggingface/evaluation-guidebook)
+**نکات کلیدی:**
 
-### Research & Thought Leadership
+۱. **همه به ارزیابی نیاز دارند**: این امر تنها مختص شرکت‌های بزرگ نیست. اگر برنامه هوش مصنوعی شما با کاربران سر و کار دارد، به ارزیابی نظام‌مند نیاز دارید.
+۲. **با تحلیل خطا شروع کنید**: پیش از ساخت هر فرآیند خودکاری، بنشینید و شکست‌های خود را بررسی نمایید (فصل ۳).
+۳. **مدیران محصول و تیم‌های QA باید پیش‌قدم شوند**: تحلیل خطا و تعریف معیارها جزو وظایف مرتبط با محصول و کیفیت است، نه صرفاً کارهای مهندسی.
+۴. **به صورت تدریجی بسازید**: کار را با ارزیابی‌های مبتنی بر کد آغاز کنید، سپس قاضی‌های LLM را بیفزایید و در ادامه ارزیابی‌های ایمنی را اضافه نمایید. سعی نکنید همه کارها را به یکباره انجام دهید.
+۵. **آنچه اهمیت دارد را بسنجید**: معیارهای اختصاصی برنامه خود را بسنجید، نه امتیازهای عمومی و کلی مانند «میزان مفید بودن» (Helpfulness).
+۶. **هم TPR و هم TNR**: قاضی‌ای که خطاها را شکار می‌کند اما هشدارهای کاذب (False Alarms) زیادی هم صادر می‌نماید، زیان‌بار است. هر دو معیار را اندازه بگیرید.
+۷. **داده‌های خود را تفکیک کنید**: تقسیم‌بندی به Train/Dev/Test الزامی است. بدون آن، قاضی شما دچار بیش‌برازش (Overfitting) خواهد شد.
+۸. **انحراف و سوگیری (Bias) را اصلاح کنید**: برای دستیابی به معیارهای شفاف و صادقانه، از تصحیح آماری (فصل ۱۰) بهره بگیرید.
+۹. **چرخه را تکمیل کنید**: ارزیابی‌هایی که به بهبود منجر نشوند، تلاشی هدررفته هستند (فصل ۱۱).
+۱۰. **برای مقیاس‌پذیری برنامه‌ریزی کنید**: ابتدا با بهترین مدل کار را آغاز کرده و سپس هزینه‌ها را بهینه‌سازی کنید (فصل ۱۳).
 
-- **OpenAI Evals platform (retiring)**: the dashboard and API shut down November 30, 2026; a read-only step was scheduled for October 31, but export now rather than counting on further edits. OpenAI's migration guide: [Moving from OpenAI Evals to Promptfoo](https://developers.openai.com/cookbook/examples/evaluation/moving-from-openai-evals-to-promptfoo)
-- **OpenAI Cookbook** (practical examples & guides): [cookbook.openai.com](https://cookbook.openai.com/)
-- **OpenAI Research**: [openai.com/research](https://openai.com/research)
-- **Anthropic Research**: [anthropic.com/research](https://www.anthropic.com/research)
-- **METR** (Model Evaluation & Threat Research): [metr.org](https://metr.org/)
-- **Eugene Yan on eval process**: [eugeneyan.com/writing/eval-process](https://eugeneyan.com/writing/eval-process/)
+**برنامه اقدام شما (برای جزئیات به پیوست G مراجعه کنید):**
 
-### Blogs That Shaped This Guide
+۱. هفته ۱: راه‌اندازی مشاهده‌پذیری (LangWatch یا Langfuse)، انجام تحلیل خطا
+۲. هفته ۲: ساخت ۲ تا ۳ ارزیابی کلیدی مبتنی بر کد
+۳. هفته ۳: ساخت و اعتبارسنجی یک قاضی LLM با تفکیک مناسب داده‌ها به Train/Dev/Test
+۴. هفته ۴: مباحث پیشرفته (ارزیابی‌های RAG، ارزیابی‌های مکالمات چندنوبتی، ارزیابی‌های ایمنی، خودکارسازی)
+۵. مداوم: ۳۰ دقیقه در هفته برای نگهداری + تست پسرفت (Regression Testing)
 
-- **Hamel Husain's Blog**: [hamel.dev](https://hamel.dev/): Applied AI engineering, LLM evals deep-dives
-- **Shreya Shankar's Site**: [sh-reya.com](https://www.sh-reya.com/): LLM data systems research, eval methodology
-- **Maxim AI Articles**: [getmaxim.ai/articles](https://www.getmaxim.ai/articles): Agentic evaluation patterns
+**تصمیم‌گیری درباره پلتفرم:**
+- اگر می‌خواهید خیلی سریع کار را شروع کنید (راه‌اندازی کمتر از ۳۰ دقیقه) و از ارزیاب‌های توکار بهره‌مند شوید، **LangWatch** را برگزینید
+- اگر به حداکثر انعطاف‌پذیری نیاز دارید و جریان‌های کاری سفارشی و پیچیده‌ای در پیش دارید، **Langfuse** را انتخاب کنید
+- اگر به بهترین ویژگی‌های هر یک نیاز دارید و امکان دو بار ابزارگذاری را دارید، از **هر دو** استفاده نمایید
 
-### Open-Source Tools & Libraries
+**به یاد داشته باشید:** تیم‌هایی که بهترین محصولات هوش مصنوعی را به بازار عرضه می‌کنند، همان‌هایی هستند که بهترین ارزیابی‌ها را دارند؛ نه دارندگان پیشرفته‌ترین مدل‌ها و نه بزرگ‌ترین تیم‌ها، بلکه کسانی که به طور نظام‌مند می‌سنجند و بهبود می‌بخشند.
 
-| Tool | Focus | License | Links |
+از همین امروز شروع کنید. خودِ آینده‌تان از شما سپاس‌گزار خواهد بود.
+
+---
+
+## منابع یادگیری
+
+### مستندات پلتفرم‌ها و مراکز یادگیری
+
+- **مستندات LangWatch**: [langwatch.ai/docs](https://langwatch.ai/docs)
+- **گیت‌هاب LangWatch**: [github.com/langwatch/langwatch](https://github.com/langwatch/langwatch)
+- **مستندات Langfuse**: [langfuse.com/docs](https://langfuse.com/docs)
+- **گیت‌هاب Langfuse**: [github.com/langfuse/langfuse](https://github.com/langfuse/langfuse)
+- **دوره Maven (ارزیابی‌های هوش مصنوعی برای مهندسان و مدیران محصول)**: [maven.com/parlance-labs/evals](https://maven.com/parlance-labs/evals)
+- **کتابچه راهنمای ارزیابی HuggingFace**: [github.com/huggingface/evaluation-guidebook](https://github.com/huggingface/evaluation-guidebook)
+
+### پژوهش‌ها و پیشگامان فکری
+
+- **پلتفرم OpenAI Evals (در حال خروج از خدمت)**: داشبورد و API در تاریخ ۳۰ نوامبر ۲۰۲۶ از دسترس خارج می‌شوند؛ مرحله‌ای فقط‌خواندنی (Read-only) برای ۳۱ اکتبر زمان‌بندی شده بود، اما بهتر است همین حالا خروجی (Export) بگیرید تا اینکه به ویرایش‌های بعدی امید ببندید. راهنمای مهاجرت OpenAI: [انتقال از OpenAI Evals به Promptfoo](https://developers.openai.com/cookbook/examples/evaluation/moving-from-openai-evals-to-promptfoo)
+- **کتاب راهنمای OpenAI (OpenAI Cookbook)** (مثال‌ها و راهنماهای کاربردی): [cookbook.openai.com](https://cookbook.openai.com/)
+- **پژوهش‌های OpenAI**: [openai.com/research](https://openai.com/research)
+- **پژوهش‌های Anthropic**: [anthropic.com/research](https://www.anthropic.com/research)
+- **موسسه METR** (ارزیابی مدل و پژوهش تهدیدات / Model Evaluation & Threat Research): [metr.org](https://metr.org/)
+- **یوجین یان (Eugene Yan) درباره فرآیند ارزیابی**: [eugeneyan.com/writing/eval-process](https://eugeneyan.com/writing/eval-process/)
+
+### وبلاگ‌هایی که به شکل‌گیری این راهنما کمک کردند
+
+- **وبلاگ هامل حسین (Hamel Husain)**: [hamel.dev](https://hamel.dev/): مهندسی کاربردی هوش مصنوعی، بررسی‌های عمیق ارزیابی‌های LLM
+- **سایت شریا شانکار (Shreya Shankar)**: [sh-reya.com](https://www.sh-reya.com/): پژوهش سیستم‌های داده LLM، متدولوژی ارزیابی
+- **مقاله‌های Maxim AI**: [getmaxim.ai/articles](https://www.getmaxim.ai/articles): الگوهای ارزیابی Agentic
+
+### ابزارها و کتابخانه‌های متن‌باز
+
+| ابزار | تمرکز | مجوز | پیوندها |
 |------|-------|---------|-------|
-| **LangWatch** | Observability & built-in evals | Apache 2.0 (enterprise modules commercial) | [GitHub](https://github.com/langwatch/langwatch) · [Docs](https://langwatch.ai/docs) |
-| **Langfuse** | Custom pipelines & tracing | MIT (enterprise modules commercial) | [GitHub](https://github.com/langfuse/langfuse) · [Docs](https://langfuse.com/docs) |
-| **Arize Phoenix** | Tracing & evals, OTel-native | Elastic-2.0 | [GitHub](https://github.com/Arize-ai/phoenix) |
-| **Promptfoo** | Eval & red-teaming CLI; OpenAI Evals migration target | MIT | [GitHub](https://github.com/promptfoo/promptfoo) · [Docs](https://www.promptfoo.dev/docs/intro/) |
-| **RAGAS** | RAG-specific evaluation (no commits since February 24, 2026; v0.4.3 from January 13, 2026 is latest, so pin it) | Apache 2.0 | [GitHub](https://github.com/vibrantlabsai/ragas) · [Docs](https://docs.ragas.io/) |
-| **Comet Opik** | LLM tracing & evaluation | Apache 2.0 | [GitHub](https://github.com/comet-ml/opik) · [Site](https://www.comet.com/site/products/opik/) |
-| **judgy** | Statistical bias correction | Open | [GitHub](https://github.com/ai-evals-course/judgy) |
-| **Braintrust** | Experimentation & logging | Partial | [Docs](https://www.braintrust.dev/docs) |
-| **Galileo** (now Splunk Agent Observability, Cisco) | Hallucination detection | Proprietary | [Docs](https://docs.galileo.ai/) · [Splunk](https://www.splunk.com/en_us/products/agent-observability.html) |
-| **Maxim** | Agentic system evaluation | Proprietary | [Site](https://www.getmaxim.ai/) |
+| **LangWatch** | مشاهده‌پذیری و ارزیاب‌های توکار | Apache 2.0 (ماژول‌های سازمانی تجاری هستند) | [گیت‌هاب](https://github.com/langwatch/langwatch) · [مستندات](https://langwatch.ai/docs) |
+| **Langfuse** | پایپ‌لاین‌های سفارشی و ردگیری | MIT (ماژول‌های سازمانی تجاری هستند) | [گیت‌هاب](https://github.com/langfuse/langfuse) · [مستندات](https://langfuse.com/docs) |
+| **Arize Phoenix** | ردگیری و ارزیابی‌ها، منطبق بر OTel | Elastic-2.0 | [گیت‌هاب](https://github.com/Arize-ai/phoenix) |
+| **Promptfoo** | ابزار خط فرمان (CLI) ارزیابی و تیم قرمز؛ مقصد مهاجرت OpenAI Evals | MIT | [گیت‌هاب](https://github.com/promptfoo/promptfoo) · [مستندات](https://www.promptfoo.dev/docs/intro/) |
+| **RAGAS** | ارزیابی اختصاصی RAG (بدون کامیت از ۲۴ فوریه ۲۰۲۶؛ نسخه v0.4.3 از ۱۳ ژانویه ۲۰۲۶ آخرین نسخه است، پس آن را پین کنید) | Apache 2.0 | [گیت‌هاب](https://github.com/vibrantlabsai/ragas) · [مستندات](https://docs.ragas.io/) |
+| **Comet Opik** | ردگیری و ارزیابی LLM | Apache 2.0 | [گیت‌هاب](https://github.com/comet-ml/opik) · [وب‌سایت](https://www.comet.com/site/products/opik/) |
+| **judgy** | تصحیح آماری سوگیری | باز (Open) | [گیت‌هاب](https://github.com/ai-evals-course/judgy) |
+| **Braintrust** | آزمایش و لاگ‌گیری | جزئی (Partial) | [مستندات](https://www.braintrust.dev/docs) |
+| **Galileo** (اکنون Splunk Agent Observability متعلق به سیسکو) | شناسایی توهم (Hallucination) | انحصاری (Proprietary) | [مستندات](https://docs.galileo.ai/) · [اسپلانک](https://www.splunk.com/en_us/products/agent-observability.html) |
+| **Maxim** | ارزیابی سیستم‌های Agentic | انحصاری (Proprietary) | [وب‌سایت](https://www.getmaxim.ai/) |
 
-### Strategy Comparison Matrix
+### ماتریس مقایسه استراتژی‌ها
 
-| Company | Focus | Open Source | Best For | Unique Strength |
+| شرکت | تمرکز | متن‌باز | بهترین برای | نقطه قوت منحصربه‌فرد |
 |---------|-------|-------------|----------|-----------------|
-| **LangWatch** | Observability + Built-in Evals | Yes (Apache 2.0) | Fast setup, analytics | 30+ ready-made evaluators, auto-analytics |
-| **Langfuse** | Custom Pipelines | Yes (MIT) | Data sovereignty, flexibility | Self-hostable, full control over data |
-| **Anthropic** | Safety / Red Teaming | Partial | Frontier risks | Constitutional classifiers, multi-attempt adversarial testing |
-| **OpenAI** | Preparedness / Business | Promptfoo (MIT; now part of OpenAI) | Enterprise context | SME probing, contextual evals |
-| **RAGAS** | RAG-specific | Yes (Apache 2.0) | RAG pipelines | Reference-free metrics, synthetic test data generation |
-| **Maxim** | Agentic Systems | No | Multi-agent apps | Simulation framework, no-code evaluation |
-| **Braintrust** | Experimentation | Partial | Early-stage teams | Collaborative design, fast iteration |
-| **Galileo** (now Splunk Agent Observability) | Hallucinations | No | Quality assurance | ChainPoll, real-time monitoring; Cisco-owned |
-| **Comet Opik** | LLM Tracing & Evals | Yes (Apache 2.0) | End-to-end observability | Framework integrations, online evaluation rules |
-| **METR** | Catastrophic Risk | Research | Policy guidance | Autonomous capability assessment |
+| **LangWatch** | مشاهده‌پذیری + ارزیاب‌های توکار | بله (Apache 2.0) | راه‌اندازی سریع، تحلیل داده | بیش از ۳۰ ارزیاب آماده، تحلیل خودکار |
+| **Langfuse** | پایپ‌لاین‌های سفارشی | بله (MIT) | حاکمیت داده، انعطاف‌پذیری | قابلیت خودمیزبانی، کنترل کامل روی داده‌ها |
+| **Anthropic** | ایمنی / تیم قرمز | جزئی | ریسک‌های مرزی (Frontier risks) | دسته‌بندی‌کننده‌های مبتنی بر قانون اساسی، آزمون‌های خصمانه چندمرحله‌ای |
+| **OpenAI** | آمادگی / کسب‌وکار | Promptfoo (مجوز MIT؛ اکنون بخشی از OpenAI) | کاربردهای سازمانی | بررسی کارشناسان موضوعی (SME probing)، ارزیابی‌های زمینه‌ای |
+| **RAGAS** | اختصاصی RAG | بله (Apache 2.0) | پایپ‌لاین‌های RAG | معیارهای بی‌نیاز از مرجع، تولید داده‌های آزمون ترکیبی (Synthetic) |
+| **Maxim** | سیستم‌های Agentic | خیر | برنامه‌های چندایجنت (Multi-agent) | فریم‌ورک شبیه‌سازی، ارزیابی بدون کد (No-code) |
+| **Braintrust** | آزمایش و تجربه | جزئی | تیم‌های مراحل اولیه (Early-stage) | طراحی مشارکتی، تکرار سریع |
+| **Galileo** (اکنون Splunk Agent Observability) | توهمات | خیر | تضمین کیفیت (QA) | روش ChainPoll، پایش بلادرنگ؛ متعلق به سیسکو |
+| **Comet Opik** | ردگیری و ارزیابی‌های LLM | بله (Apache 2.0) | مشاهده‌پذیری سرتاسری (End-to-end) | یکپارچه‌سازی با فریم‌ورک‌ها، قوانین ارزیابی آنلاین |
+| **METR** | ریسک‌های فاجعه‌بار | پژوهشی | راهنمای سیاست‌گذاری | ارزیابی توانمندی خودمختار |
 
-### Contact Me
-- Om Bharatiya: [@ombharatiya](https://twitter.com/ombharatiya)
+### ارتباط با من
+- اوم بهاراتیا (Om Bharatiya): [@ombharatiya](https://twitter.com/ombharatiya)
 
-### Reference Work Credits
-This guide was built on the foundation of the following people's work and ideas. Their courses, blogs, and open-source contributions made this guide possible:
-- Hamel Husain: [@HamelHusain](https://x.com/HamelHusain), [hamel.dev](https://hamel.dev/)
-- Shreya Shankar: [@sh_reya](https://x.com/sh_reya), [sh-reya.com](https://www.sh-reya.com/)
-- Eugene Yan: [@eugeneyan](https://x.com/eugeneyan), [eugeneyan.com](https://eugeneyan.com/)
+### تقدیر از آثار مرجع
+این راهنما بر پایه ایده‌ها و آثار افراد زیر بنا شده است. دوره‌ها، وبلاگ‌ها و مشارکت‌های متن‌باز آن‌ها نگارش این راهنما را ممکن ساخت:
+- هامل حسین (Hamel Husain): [@HamelHusain](https://x.com/HamelHusain)، [hamel.dev](https://hamel.dev/)
+- شریا شانکار (Shreya Shankar): [@sh_reya](https://x.com/sh_reya)، [sh-reya.com](https://www.sh-reya.com/)
+- یوجین یان (Eugene Yan): [@eugeneyan](https://x.com/eugeneyan)، [eugeneyan.com](https://eugeneyan.com/)
 
 ---
 
-*This guide was inspired by and builds upon the AI Evals for Engineers & PMs course by Hamel Husain and Shreya Shankar, extended with additional research, production-ready code examples, and multi-platform guides covering LangWatch, Langfuse, and the broader eval tooling ecosystem.*
+*این راهنما با الهام از دوره «ارزیابی‌های هوش مصنوعی برای مهندسان و مدیران محصول» اثر هامل حسین و شریا شانکار تدوین شده و بر پایه آن بنا گردیده است؛ همچنین با پژوهش‌های تکمیلی، نمونه کدهای آماده برای محیط عملیاتی (Production) و راهنماهای چندپلتفرمی شامل LangWatch، Langfuse و اکوسیستم گسترده‌تر ابزارهای ارزیابی توسعه یافته است.*
 
-*Author: Om Bharatiya | Created: February 2026*
+*نویسنده: اوم بهاراتیا (Om Bharatiya) | تاریخ ایجاد: فوریه ۲۰۲۶*
