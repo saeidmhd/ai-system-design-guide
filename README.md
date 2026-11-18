@@ -1,5 +1,5 @@
-# 🧠 راهنمای جامع طراحی سیستم‌های هوش مصنوعی (AI System Design Guide)
-### مرجع کامل مصاحبه و پروداکشن (Production)
+# 🧠 راهنمای طراحی سیستم‌های هوش مصنوعی
+### مرجع کامل مصاحبه و محیط تولید
 
 <p align="center">
   <a href="https://www.aidaddy.tech"><img src="https://img.shields.io/badge/Read%20it%20online%20%E2%86%92-7C3AED?style=for-the-badge&logo=bookstack&logoColor=white" alt="Read the guide online at aidaddy.tech"></a>
@@ -7,7 +7,7 @@
   <a href="https://topmate.io/ombharatiya"><img src="https://img.shields.io/badge/Mentorship%20on%20Topmate-1F2937?style=for-the-badge&logoColor=white" alt="Book mentorship on Topmate"></a>
 </p>
 <p align="center">
-  <sub>🌐 جستجوی آنی در <b><a href="https://www.aidaddy.tech">aidaddy.tech</a></b>. 🎯 مصاحبه‌های آزمایشی ۱ به ۱ و منتورشیپ با Om. ⭐ برای حمایت از این پروژه به ریپازیتوری ستاره بدهید.</sub>
+  <sub>🌐 جست‌وجوی فوری در <b><a href="https://www.aidaddy.tech">aidaddy.tech</a></b>. 🎯 مصاحبه‌ی آزمایشی و منتورینگ یک‌به‌یک با Om. ⭐ برای حمایت از این کار، به مخزن ستاره بدهید.</sub>
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <b>اگر این راهنما برای شما مفید است، <a href="https://github.com/ombharatiya">@ombharatiya</a> را در GitHub، <a href="https://x.com/ombharatiya">X</a> و <a href="https://linkedin.com/in/ombharatiya">LinkedIn</a> دنبال کنید تا از انتشار فصول جدید، به‌روزرسانی مدل‌ها و پرامپت‌های مصاحبه مطلع شوید.</b>
+  <b>اگر این راهنما برایتان مفید بود، <a href="https://github.com/ombharatiya">@ombharatiya</a> را در GitHub، <a href="https://x.com/ombharatiya">X</a> و <a href="https://linkedin.com/in/ombharatiya">LinkedIn</a> دنبال کنید تا از انتشار فصل‌های جدید، به‌روزرسانی مدل‌ها و Promptهای مصاحبه باخبر شوید.</b>
 </p>
 
 <p align="center">
@@ -29,11 +29,11 @@
   <a href="https://github.com/ombharatiya/ai-system-design-guide/issues"><img src="https://img.shields.io/github/issues/ombharatiya/ai-system-design-guide?color=orange" alt="Open issues"></a>
 </p>
 
-> **مرجع زنده برای سیستم‌های AI در محیط پروداکشن.** پیوسته به‌روزرسانی‌شده. با عمق مناسب برای مصاحبه.
+> **مرجع زنده برای سیستم‌های هوش مصنوعی در محیط تولید.** به‌طور مداوم به‌روز می‌شود. با عمقی مناسب مصاحبه.
 
-یک راهنمای کاربردی و پیوسته به‌روزرسانی‌شده برای طراحی سیستم‌های AI، معماری‌های RAG، مهندسی LLM، هوش مصنوعی عامل‌محور (Agentic AI)، پروتکل‌های MCP و A2A، و آمادگی برای مصاحبه‌های مهندسی AI. شامل الگوهای پروداکشن، انتخاب مدل، ارزیابی و مطالعه‌های موردی واقعی برگرفته از مصاحبه‌های سطح Staff.
+راهنمایی عملی و به‌طور مداوم به‌روزشونده درباره‌ی طراحی سیستم‌های هوش مصنوعی، معماری‌های RAG، مهندسی LLM، هوش مصنوعی عاملی (Agentic AI)، پروتکل‌های MCP و A2A و آمادگی برای مصاحبه‌های مهندسی هوش مصنوعی. این راهنما الگوهای محیط تولید، انتخاب مدل، ارزیابی و مطالعه‌ی موردی‌های واقعی از مصاحبه‌های سطح Staff را پوشش می‌دهد.
 
-**تازه‌وارد هستید؟** مستقیماً به [بانک سوالات مصاحبه ۱۹۳ تایی](00-interview-prep/01-question-bank.md)، [فصل مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) بروید، یا [LLM مناسب برای پروداکشن](02-model-landscape/01-model-taxonomy.md) را انتخاب کنید.
+**تازه‌وارد هستید؟** به [بانک ۱۹۳ سؤالی مصاحبه](00-interview-prep/01-question-bank.md)، [فصل مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) بروید، یا [LLM مناسب محیط تولید را انتخاب کنید](02-model-landscape/01-model-taxonomy.md).
 
 ---
 
@@ -41,37 +41,37 @@
 
 | می‌خواهم... | از اینجا شروع کنید |
 |--------------|------------|
-| **برای مصاحبه‌ها آماده شوم** | [بانک سوالات](00-interview-prep/01-question-bank.md) → [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) |
-| **با یک مصاحبه‌کننده واقعی تمرین کنم** | [رزرو مصاحبه آزمایشی ۱ به ۱ یا منتورشیپ](https://enginebogie.com/u/ombharatiya) (همچنین در [Topmate](https://topmate.io/ombharatiya)) |
-| **سیستم‌های AI را سریع یاد بگیرم** | [سازوکار داخلی LLM](01-foundations/01-llm-internals.md) → [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) |
-| **یک RAG پروداکشن بسازم** | [Chunking](06-retrieval-systems/02-chunking-strategies.md) → [پایگاه‌های داده برداری (Vector DBs)](06-retrieval-systems/04-vector-databases.md) → [بازرتبه‌بندی (Reranking)](06-retrieval-systems/06-reranking-strategies.md) → [RAG پروداکشن](06-retrieval-systems/14-production-rag-at-scale.md) |
-| **بازیابی پیشرفته** | [بازیابی زمینه‌ای (Contextual Retrieval)](06-retrieval-systems/10-contextual-retrieval.md) → [ColBERT](06-retrieval-systems/11-late-interaction-colbert.md) → [RAG چندوجهی (Multi-modal RAG)](06-retrieval-systems/12-multimodal-rag.md) |
-| **یک AI چندمستاجره طراحی کنم** | [کنترل دسترسی](12-security-and-access/02-access-control.md) → [مطالعه موردی](16-case-studies/08-multi-tenant-saas.md) |
-| **ایجنت بسازم** | [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) → [MCP و A2A](07-agentic-systems/03-tool-use-and-mcp.md) → [LangGraph](09-frameworks-and-tools/02-langgraph-orchestration.md) |
-| **حلقه‌های ایجنت خودران را اجرا کنم** | [مهندسی حلقه (Loop Engineering)](07-agentic-systems/12-loop-engineering.md) (چهار سطح حلقه، خاتمه، بودجه‌ها، اعتبارسنجی، loopmaxxing) |
-| **ایجنت‌های ابزارمحور و تعامل با کامپیوتر** | [چشم‌انداز](17-tool-use-and-computer-agents/01-tool-use-landscape.md) → [بررسی عمیق OpenClaw](17-tool-use-and-computer-agents/03-openclaw-deep-dive.md) → [امنیت](17-tool-use-and-computer-agents/07-safety-and-governance.md) |
-| **ایجنت‌های کدنویسی خودمختار** | [Claude Code](09-frameworks-and-tools/09-claude-code.md) → [چشم‌انداز OpenCoder](09-frameworks-and-tools/10-opencoderguide.md) |
-| **از تغییرات مداوم نسخه‌های فریم‌ورک در امان بمانم** | [مدیریت تغییرات فریم‌ورک (Framework Churn)](09-frameworks-and-tools/12-navigating-framework-churn.md) (آموزش‌های قدیمی، قفل کردن نسخه، آنچه واقعاً باید آموخت) |
+| **برای مصاحبه آماده شوم** | [بانک سؤالات](00-interview-prep/01-question-bank.md) → [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) |
+| **با یک مصاحبه‌کننده‌ی واقعی تمرین کنم** | [رزرو مصاحبه‌ی آزمایشی یک‌به‌یک یا منتورینگ](https://enginebogie.com/u/ombharatiya) (در [Topmate](https://topmate.io/ombharatiya) هم موجود است) |
+| **سریع سیستم‌های هوش مصنوعی را یاد بگیرم** | [درونیات LLM](01-foundations/01-llm-internals.md) → [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) |
+| **RAG مناسب محیط تولید بسازم** | [Chunking](06-retrieval-systems/02-chunking-strategies.md) → [پایگاه‌های داده‌ی برداری (Vector Databases)](06-retrieval-systems/04-vector-databases.md) → [Reranking](06-retrieval-systems/06-reranking-strategies.md) → [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) |
+| **بازیابی پیشرفته** | [بازیابی زمینه‌ای](06-retrieval-systems/10-contextual-retrieval.md) → [ColBERT](06-retrieval-systems/11-late-interaction-colbert.md) → [RAG چندوجهی](06-retrieval-systems/12-multimodal-rag.md) |
+| **هوش مصنوعی چندمستأجره (multi-tenant) طراحی کنم** | [کنترل دسترسی](12-security-and-access/02-access-control.md) → [مطالعه‌ی موردی](16-case-studies/08-multi-tenant-saas.md) |
+| **Agent بسازم** | [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) → [MCP و A2A](07-agentic-systems/03-tool-use-and-mcp.md) → [LangGraph](09-frameworks-and-tools/02-langgraph-orchestration.md) |
+| **حلقه‌های Agent خودران اجرا کنم** | [مهندسی حلقه](07-agentic-systems/12-loop-engineering.md) (چهار سطح حلقه، شرط خاتمه، بودجه‌بندی، راستی‌آزمایی، loopmaxxing) |
+| **Agentهای استفاده از ابزار و کنترل کامپیوتر** | [چشم‌انداز](17-tool-use-and-computer-agents/01-tool-use-landscape.md) → [OpenClaw](17-tool-use-and-computer-agents/03-openclaw-deep-dive.md) → [ایمنی](17-tool-use-and-computer-agents/07-safety-and-governance.md) |
+| **Agentهای کدنویسی خودکار** | [Claude Code](09-frameworks-and-tools/09-claude-code.md) → [چشم‌انداز OpenCoder](09-frameworks-and-tools/10-opencoderguide.md) |
+| **از آشفتگی نسخه‌های فریم‌ورک (Framework) جان سالم به در ببرم** | [پیمایش آشفتگی فریم‌ورک‌ها](09-frameworks-and-tools/12-navigating-framework-churn.md) (آموزش‌های منسوخ، قفل کردن نسخه، آنچه واقعاً باید یاد گرفت) |
 | **مدل مناسب را انتخاب کنم (۲۰۲۶)** | [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) → [قیمت‌گذاری](02-model-landscape/03-pricing-and-costs.md) |
-| **ارزیابی AI در پروداکشن** | [راهنمای ارزیابی AI (Phoenix/Langfuse)](ai_evals_comprehensive_study_guide.md) → [راهنمای ارزیابی AI (LangWatch/Langfuse)](ai_evals_complete_guide_langwatch_langfuse.md) |
-| **بنچمارک‌ها را درست بخوانم** | [بنچمارک‌ها و لیدربوردها](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md) (اشباع، آلودگی داده، واریانس محیط ارزیابی) |
-| **پژوهش‌های پیشرو را دنبال کنم (۲۰۲۶)** | [رادار پژوهش](RESEARCH-RADAR.md) (مقاله‌های ترند و آنچه بعداً باید آموخت) |
-| **یک ایجنت صوتی بسازم** | [ایجنت‌های صوتی بلادرنگ](18-voice-and-audio-agents/01-realtime-voice-agents.md) (پایپ‌لاین در برابر گفتار-به-گفتار در برابر فرانت‌اند دوطرفه، تاخیر (Latency)، هزینه بر دقیقه) → [سوالات Voice AI](00-interview-prep/01-question-bank.md#voice-ai-questions) |
-| **بین مدل‌ها مسیریابی کنم / یک Gateway اضافه کنم** | [AI Gatewayها و مسیریابی مدل](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md) (پشتیبان/fallback، محدودیت نرخ، LiteLLM) |
-| **هزینه AI را کنترل کنم** | [FinOps و اقتصاد Token](11-infrastructure-and-mlops/04-finops-and-token-economics.md) (کشینگ، پردازش دسته‌ای، انتساب هزینه، اقتصاد واحد) |
-| **با قوانین و مقررات AI هماهنگ شوم** | [حاکمیت و انطباق قوانین هوش مصنوعی](13-reliability-and-safety/04-ai-governance-and-compliance.md) (قانون هوش مصنوعی اتحادیه اروپا، NIST RMF، الزامات پیاده‌سازی) |
-| **تصویر، ویدیو و صدا تولید کنم** | [تولید چندوجهی](19-multimodal-generation/01-multimodal-generation.md) (پایپ‌لاین‌ها، اصالت منبع، ارزیابی) |
-| **یک مدل استدلال آموزش دهم** | [RLVR و GRPO](03-training-and-adaptation/08-rlvr-and-reasoning-models.md) (نحوه آموزش سری o و R1) |
-| **مدل‌ها را به صورت محلی اجرا کنم** | [استقرار On-Device و Edge](04-inference-optimization/09-on-device-and-edge-deployment.md) (Ollama در برابر vLLM، کوانتیزاسیون، سخت‌افزار) |
-| **ایجنت‌ها را در برابر کرش مقاوم کنم** | [اجرای پایدار (Durable Execution)](07-agentic-systems/11-durable-execution.md) (بازتکرار، پردازش دقیقاً یک‌بار، Temporal) |
-| **لایه داده را مهندسی کنم** | [مهندسی داده برای AI](06-retrieval-systems/15-data-engineering-for-ai.md) (دریافت داده، حذف داده‌های تکراری، PII، پاکسازی آلودگی داده) |
-| **بهترین دوره‌ها را برای یادگیری AI پیدا کنم** | [دوره‌های پیشنهادی و مسیرهای یادگیری](COURSES.md) |
-| **از نقش فعلی‌ام به AI منتقل شوم** | [راهنمای تغییر نقش](TRANSITION_GUIDE.md) |
-| **بازار کار AI در سال ۲۰۲۶ را بشناسم** | [روندهای بازار کار](00-interview-prep/06-job-market-trends-2026.md) |
-| **پاسخی سریع به یک سوال متداول دریافت کنم** | [پرسش‌های متداول (FAQ)](00-interview-prep/07-faq.md) (RAG، ایجنت‌ها، مدل‌ها، ارزیابی، استنتاج (Inference)، حافظه، امنیت) |
-| **یک اصطلاح را جستجو کنم** | [واژه‌نامه](GLOSSARY.md) (تعریف تمام اصطلاحات) |
+| **هوش مصنوعی را در محیط تولید ارزیابی کنم** | [راهنمای ارزیابی هوش مصنوعی (Phoenix/Langfuse)](ai_evals_comprehensive_study_guide.md) → [راهنمای ارزیابی هوش مصنوعی (LangWatch/Langfuse)](ai_evals_complete_guide_langwatch_langfuse.md) |
+| **بنچمارک‌ها را درست بخوانم** | [بنچمارک‌ها و جدول‌های رتبه‌بندی](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md) (اشباع، آلودگی، تفاوت harness) |
+| **پژوهش‌های پیشرو را دنبال کنم (۲۰۲۶)** | [رادار پژوهش](RESEARCH-RADAR.md) (مقاله‌های پرطرفدار و آنچه باید بعد یاد گرفت) |
+| **یک Agent صوتی بسازم** | [Agentهای صوتی بلادرنگ](18-voice-and-audio-agents/01-realtime-voice-agents.md) (pipeline در برابر speech-to-speech در برابر front end دوطرفه‌ی همزمان، تاخیر (Latency)، هزینه به ازای هر دقیقه) → [سؤالات هوش مصنوعی صوتی](00-interview-prep/01-question-bank.md#voice-ai-questions) |
+| **بین مدل‌ها مسیریابی کنم / یک Gateway اضافه کنم** | [Gatewayهای هوش مصنوعی و مسیریابی مدل](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md) (fallback، محدودیت نرخ، LiteLLM) |
+| **هزینه‌ی هوش مصنوعی را کنترل کنم** | [FinOps و اقتصاد Token](11-infrastructure-and-mlops/04-finops-and-token-economics.md) (caching، batch، انتساب هزینه، اقتصاد واحد) |
+| **با مقررات هوش مصنوعی سازگار شوم** | [حاکمیت و انطباق هوش مصنوعی](13-reliability-and-safety/04-ai-governance-and-compliance.md) (EU AI Act، NIST RMF، آنچه باید پیاده‌سازی کرد) |
+| **تصویر، ویدیو و صدا تولید کنم** | [تولید چندوجهی](19-multimodal-generation/01-multimodal-generation.md) (pipelineها، منشأ‌یابی، ارزیابی) |
+| **یک مدل استدلالگر آموزش دهم** | [RLVR و GRPO](03-training-and-adaptation/08-rlvr-and-reasoning-models.md) (نحوه‌ی آموزش مدل‌های o-series و R1) |
+| **مدل‌ها را به‌صورت محلی اجرا کنم** | [استقرار روی دستگاه و لبه](04-inference-optimization/09-on-device-and-edge-deployment.md) (Ollama در برابر vLLM، کوانتیزاسیون، سخت‌افزار) |
+| **Agentها را در برابر کرش مقاوم کنم** | [اجرای پایدار](07-agentic-systems/11-durable-execution.md) (replay، exactly-once، Temporal) |
+| **لایه‌ی داده را مهندسی کنم** | [مهندسی داده برای هوش مصنوعی](06-retrieval-systems/15-data-engineering-for-ai.md) (ingestion، حذف تکرار، PII، decontamination) |
+| **بهترین دوره‌های یادگیری هوش مصنوعی را پیدا کنم** | [دوره‌ها و مسیرهای یادگیری پیشنهادی](COURSES.md) |
+| **از نقش فعلی‌ام به هوش مصنوعی گذار کنم** | [راهنمای گذار نقش](TRANSITION_GUIDE.md) |
+| **بازار کار هوش مصنوعی در ۲۰۲۶ را بفهمم** | [روندهای بازار کار](00-interview-prep/06-job-market-trends-2026.md) |
+| **پاسخ سریع یک سؤال رایج را بگیرم** | [پرسش‌های متداول](00-interview-prep/07-faq.md) (RAG، Agentها، مدل‌ها، ارزیابی، استنتاج (Inference)، حافظه، امنیت) |
+| **یک اصطلاح را جست‌وجو کنم** | [واژه‌نامه](GLOSSARY.md) (همه‌ی اصطلاحات تعریف شده‌اند) |
 
-### مسیر خود را انتخاب کنید
+### یک مسیر انتخاب کنید
 
 ```mermaid
 flowchart TD
@@ -90,45 +90,45 @@ flowchart TD
 
 ---
 
-## 🎯 چرا این راهنما؟
+## 🎯 چرا این راهنما
 
-**کتاب‌های سنتی حتی پیش از انتشار قدیمی می‌شوند.** این یک سند زنده است: با عرضه مدل‌های جدید و تکامل الگوها، این راهنما به‌روزرسانی می‌شود.
+**کتاب‌های چاپی پیش از انتشار منسوخ می‌شوند.** این یک سند زنده است: وقتی مدل‌های جدید منتشر می‌شوند یا الگوها تکامل می‌یابند، این راهنما هم به‌روز می‌شود.
 
 | این راهنما | کتاب‌های چاپی |
 |------------|---------------|
-| مدل‌های نوامبر ۲۰۲۶ (Claude Opus 5.5، Sonnet 5.5، Haiku 5.5، Fable 5.1، GPT-6 Astra/Sol/Luna، GPT-6.1 Sol/Terra، Gemini 4 Argon، Gemini 3.8 Flash، Grok 4.7، Muse Wonder، Muse Spark 1.3، DeepSeek V4.1-Flash، Mistral Large 4، MiMo-V2.6، GLM-5.3، Kimi K3.1 Pro، Qwen3.8) | گیر افتاده در GPT-4 |
-| مشخصات MCP نسخه 2026-07-28، A2A نسخه v1.0.1، OpenClaw، کار با کامپیوتر (Computer Use)، ایجنت‌های صوتی دوطرفه هم‌زمان (full-duplex)، RAG عامل‌محور (Agentic RAG)، ColBERT، استدلال نهفته (latent reasoning)، سرویس‌دهی MoE | وجود ندارند |
-| قیمت‌گذاری واقعی همراه با تاریخ‌های اعتبارسنجی نوامبر ۲۰۲۶ | از قبل اشتباه |
-| پرسش و پاسخ مصاحبه در سطح Staff (۱۹۳ سوال تا نوامبر ۲۰۲۶، شامل Voice AI و مراحلی بر اساس گزارش‌های اخیر متقاضیان) + روندهای بازار کار | سوالات عمومی |
+| مدل‌های نوامبر ۲۰۲۶ (Claude Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1, GPT-6 Astra/Sol/Luna, GPT-6.1 Sol/Terra, Gemini 4 Argon, Gemini 3.8 Flash, Grok 4.7, Muse Wonder, Muse Spark 1.3, DeepSeek V4.1-Flash, Mistral Large 4, MiMo-V2.6, GLM-5.3, Kimi K3.1 Pro, Qwen3.8) | گیر کرده روی GPT-4 |
+| MCP spec 2026-07-28، A2A v1.0.1، OpenClaw، Computer Use، Agentهای صوتی دوطرفه‌ی همزمان، RAG عاملی (Agentic RAG)، ColBERT، استدلال نهفته، سرو MoE | وجود ندارد |
+| قیمت‌های واقعی با تاریخ راستی‌آزمایی نوامبر ۲۰۲۶ | همین حالا هم اشتباه است |
+| پرسش و پاسخ مصاحبه‌ی سطح Staff (۱۹۳ سؤال تا نوامبر ۲۰۲۶، شامل هوش مصنوعی صوتی و دورهایی از گزارش‌های اخیر داوطلبان) + روندهای بازار کار | سؤالات عمومی |
 
-**انتخاب سریع مدل (نوامبر ۲۰۲۶):**
+**انتخاب‌گر سریع مدل (نوامبر ۲۰۲۶):**
 
-- **کدنویسی با ایجنت و وظایف سنگین پروداکشن:** Claude Opus 5.5 (۴ دلار / ۲۰ دلار به ازای هر ۱ میلیون Token)، مدلی که Anthropic به مشتریان توصیه می‌کند از آن شروع کنند و با امتیاز ۵۹ (در بالاترین سطح تلاش/max effort)، برترین امتیاز عمومی موجود را در Artificial Analysis Intelligence Index v5.0.1 کسب کرده است (۳ نوامبر ۲۰۲۶؛ مدل Gemini 4 Carbon امتیاز ۶۰ دارد اما دسترسی آن به گروهی از مدافعان سایبری محدود است و GPT-6 Astra امتیاز ۵۷ را به دست آورده است).
-- **گزینه پیش‌فرض پروداکشن:** رده ۲ دلار / ۱۰ دلار شامل Claude Sonnet 5.5، GPT-6 Sol و GPT-6.1 Sol. هزینه خواندن از کش در Sonnet 5.5 در تاریخ ۷ اکتبر به ۰.۱۰ دلار به ازای هر ۱ میلیون Token کاهش یافت؛ دقیقاً مشابه GPT-6.1 Sol، بنابراین حلقه‌های ایجنت با وابستگی بالا به کش اکنون روی هر دو مدل هزینه یکسانی دارند. ناوگان ایجنت‌ها، چت و بارهای کاری عمومی را به این دسته هدایت کنید. مدل Gemini 4 Argon (انتشار عمومی/GA در ۱۳ اکتبر) تنها تا ۳۰ نوامبر با نرخ ۲ دلار / ۱۰ دلار ارائه می‌شود و از ۱ دسامبر به ۴ دلار / ۲۰ دلار می‌رسد و صرفاً از کشینگ ضمنی پشتیبانی می‌کند، بنابراین آن را با نرخ ۴ دلار / ۲۰ دلار در بودجه لحاظ کنید.
-- **رده میانی جدید:** مدل GPT-6.1 Terra (۱ دلار / ۵ دلار، ۲۶ اکتبر) هزینه‌های رده ۲ دلار / ۱۰ دلار را نصف می‌کند و در شاخص امتیاز ۵۱ را به دست می‌آورد (در مقایسه با ۵۴ برای Sonnet 5.5 و ۵۵ برای GPT-6.1 Sol). پیش از پرداخت هزینه برای مدل‌های بزرگ‌تر، عملکرد آن را روی ترافیک پایدار خود بسنجید.
-- **بالاترین سقف توانمندی:** مدل‌های Claude Fable 5.1 یا GPT-6 Astra (۱۰ دلار / ۵۰ دلار)، تنها زمانی که ارزیابی‌های شما نشان دهند Opus 5.5 در بالاترین تلاش (high effort) پاسخگوی نیاز نیست.
-- **حجم بالا:** مدل‌های Claude Haiku 5.5 و GPT-6 Luna که هر دو ۰.۱۰ دلار / ۰.۵۰ دلار هستند؛ اما در Haiku 5.5 به محض اینکه Prompt از ۱۰۰ هزار Token فراتر رود، کل درخواست با نرخ ۰.۵۰ دلار / ۲.۵۰ دلار محاسبه می‌شود (خواندن و نوشتن کش نیز محاسبه می‌گردد)، بنابراین Promptهای آن را کوتاه نگه دارید. Gemini 3.8 Flash تا ۳۱ دسامبر با نصف قیمت یعنی ۰.۷۵ دلار / ۳.۷۵ دلار کار می‌کند و پس از آن ۱.۵۰ دلار / ۷.۵۰ دلار خواهد بود، بنابراین بودجه‌بندی را بر اساس قیمت اصلی انجام دهید؛ DeepSeek V4.1-Flash برای کارهای دسته‌ای (Batch) مناسب است که می‌توانید آن‌ها را در ساعات غیر اوج اجرا کنید، چرا که در این ساعات هزینه‌اش نصف قیمت ساعات اوج (۰.۳۰ دلار / ۱.۲۰ دلار) خواهد بود.
-- **مدل‌های وزن‌باز (Open Weights):** شرکت Moonshot در تاریخ ۴ نوامبر ۲۰۲۶ وزن‌های Kimi K3.1 Pro را منتشر کرد (۲.۸ تریلیون کل پارامترها، ۱۰۴ میلیارد پارامتر فعال، با لایسنس سفارشی) و این مدل در شاخص v5.0.1 امتیاز ۴۶ را ثبت کرده که ۱۳ امتیاز پشت سر Opus 5.5 قرار دارد؛ دومین امتیاز برتر در مدل‌های با وزن‌های منتشرشده متعلق به DeepSeek V4.1-Flash با امتیاز ۳۳ (در حالت max effort) است. پلتفرم Artificial Analysis تا ۶ نوامبر همچنان K3.1 Pro را اختصاصی (Proprietary) دسته‌بندی کرده بود، بنابراین بسته به شیوه دسته‌بندی، شکاف بین مدل‌های باز و بسته ۱۳ یا ۲۶ امتیاز ذکر می‌شود؛ در هنگام ارجاع این نکته را مشخص کنید. انتخاب‌های تثبیت‌شده عبارتند از MiMo-V2.6-Pro و DeepSeek V4.1-Flash (هر دو با لایسنس MIT)، GLM-5.3 و Kimi K3؛ در ماه اکتبر نیز مدل‌های Muse Spark Open از متا و Mistral Large 4 به این فهرست اضافه شدند. پیش از استفاده حتماً لایسنس را بررسی کنید: GLM-5.3 یک بازبینی امنیتی را تنها برای ارائه‌دهندگان MaaS با درآمد سالانه بیش از ۱۰ میلیارد دلار اعمال می‌کند؛ Kimi K3، Kimi K3.1 Pro و Muse Spark Open نیازمند توافق‌نامه‌ای جداگانه برای کسب‌وکارهای MaaS با درآمد بالای ۲۰ میلیون دلار هستند (K3.1 Pro همچنین نیازمند درج عنوان نمایان "Kimi K3.1-Pro" برای کاربران فعال ماهانه بالای ۱۰۰ میلیون نفر یا درآمد ماهانه بالای ۲۰ میلیون دلار است)، و Mistral Large 4 برای هرگونه کسب‌وکار MaaS نیازمند لایسنس تجاری است.
-- **پیش از آنکه مهاجرت کنید:** شرکت OpenAI برای پرامپت‌های ورودی بیش از ۲۷۲ هزار Token، کل درخواست را با نرخ Context طولانی محاسبه می‌کند و این سقف در Haiku 5.5 برابر با ۱۰۰ هزار Token است؛ در نسخه API تاریخ `2026-10-21` انتروپیک که SDKهای اصلی جدید به صورت پیش‌فرض ارسال می‌کنند، برای هر پارامتر `temperature`، `top_p` یا `top_k` در تمام مدل‌ها خطای 400 بازگردانده می‌شود، حتی اگر این مقادیر پیش‌فرض باشند؛ مدل‌های Opus 5.5، Sonnet 5.5 و Fable/Mythos 5.1 در صورت اجباری کردن `tool_choice` خطای 400 برمی‌گردانند، در حالی که Haiku 5.5 آن را می‌پذیرد اما بخش تفکر (thinking) را رد می‌کند؛ و سطح تلاش پیش‌فرض Opus 5.5 روی `medium` قرار دارد، در حالی که Opus 5 از `high` استفاده می‌کرد.
+- **کدنویسی عاملی و کارهای سخت محیط تولید:** Claude Opus 5.5 (به ازای هر ۱ میلیون Token برابر $4/$20)، مدلی که Anthropic به مشتریان توصیه می‌کند با آن شروع کنند و با امتیاز ۵۹ (بیشینه‌ی effort) بالاترین امتیاز عمومی‌دردسترس در Artificial Analysis Intelligence Index v5.0.1 است (۳ نوامبر ۲۰۲۶؛ Gemini 4 Carbon امتیاز ۶۰ دارد اما محدود به گروهی از مدافعان سایبری است و GPT-6 Astra امتیاز ۵۷ دارد).
+- **پیش‌فرض محیط تولید:** رده‌ی $2/$10 با Claude Sonnet 5.5، GPT-6 Sol و GPT-6.1 Sol. هزینه‌ی cache read در Sonnet 5.5 از ۷ اکتبر به $0.10 به ازای هر ۱ میلیون کاهش یافت، برابر با GPT-6.1 Sol؛ بنابراین حلقه‌های Agent که به‌شدت از cache استفاده می‌کنند اکنون روی هر دو تقریباً یک‌قدر هزینه دارند. ناوگان‌های Agent، چت و بارهای کاری عمومی را به اینجا مسیریابی کنید. Gemini 4 Argon (GA از ۱۳ اکتبر) فقط تا ۳۰ نوامبر $2/$10 و از ۱ دسامبر $4/$20 است و فقط implicit caching دارد، پس آن را با $4/$20 قیمت‌گذاری کنید.
+- **رده‌ی میانی، جدید:** GPT-6.1 Terra ($1/$5، ۲۶ اکتبر) رده‌ی $2/$10 را نصف می‌کند و در شاخص امتیاز ۵۱ می‌گیرد، در مقابل ۵۴ برای Sonnet 5.5 و ۵۵ برای GPT-6.1 Sol. پیش از پرداخت هزینه‌ی مدل‌های بزرگ‌تر، آن را روی ترافیک پایدار خودتان مقایسه کنید.
+- **سقف توانایی:** Claude Fable 5.1 یا GPT-6 Astra ($10/$50)، فقط وقتی ارزیابی‌های شما نشان می‌دهد Opus 5.5 با effort بالا کم می‌آورد.
+- **حجم بالا:** Claude Haiku 5.5 و GPT-6 Luna، هر دو $0.10/$0.50؛ اما Haiku 5.5 وقتی Prompt از ۱۰۰ هزار Token بگذرد (cache readها و writeها هم شمرده می‌شوند) کل درخواست را با $0.50/$2.50 محاسبه می‌کند، پس Promptهایش را کوتاه نگه دارید. Gemini 3.8 Flash تا ۳۱ دسامبر با نیم‌بها یعنی $0.75/$3.75 ارائه می‌شود و پس از آن $1.50/$7.50 است، پس بودجه را بر اساس قیمت لیست ببندید؛ DeepSeek V4.1-Flash برای کارهای batch مناسب است که می‌توانید خارج از اوج زمان‌بندی کنید، چون آن موقع نصف قیمت اوج‌اش یعنی $0.30/$1.20 هزینه دارد.
+- **وزن‌های باز:** Moonshot وزن‌های Kimi K3.1 Pro را در ۴ نوامبر ۲۰۲۶ منتشر کرد (۲.۸ تریلیون پارامتر کل، ۱۰۴ میلیارد فعال، مجوز سفارشی) و در شاخص v5.0.1 امتیاز ۴۶ می‌گیرد، یعنی ۱۳ امتیاز کمتر از Opus 5.5؛ امتیاز بعدیِ مدل با وزن منتشرشده DeepSeek V4.1-Flash با ۳۳ (بیشینه‌ی effort) است. Artificial Analysis هنوز در ۶ نوامبر K3.1 Pro را انحصاری (proprietary) برچسب زده بود، پس بسته به قاعده‌ی طبقه‌بندی، فاصله‌ی گزارش‌شده‌ی باز-در-برابر-بسته ۱۳ یا ۲۶ امتیاز است؛ قاعده را نام ببرید. گزینه‌های جاافتاده MiMo-V2.6-Pro و DeepSeek V4.1-Flash (هر دو MIT)، GLM-5.3 و Kimi K3 هستند و در اکتبر Muse Spark Open از Meta و Mistral Large 4 هم اضافه شدند. ابتدا مجوز را بخوانید: GLM-5.3 فقط برای اپراتورهای MaaS با درآمد سالانه‌ی بالای ۱۰ میلیارد دلار آمریکا یک بازبینی امنیتی اضافه می‌کند، Kimi K3، Kimi K3.1 Pro و Muse Spark Open برای کسب‌وکارهای MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا قرارداد جداگانه می‌خواهند (K3.1 Pro همچنین بالای ۱۰۰ میلیون کاربر ماهانه یا ۲۰ میلیون دلار درآمد ماهانه یک اعتبارنویسی قابل‌مشاهده‌ی "Kimi K3.1-Pro" می‌خواهد) و Mistral Large 4 برای هر کسب‌وکار MaaS مجوز تجاری لازم دارد.
+- **پیش از جابه‌جایی:** OpenAI بالای ۲۷۲ هزار Token ورودی کل درخواست را با نرخ بافت بلند و Haiku 5.5 بالای ۱۰۰ هزار محاسبه می‌کند؛ نسخه‌ی API شرکت Anthropic یعنی `2026-10-21` که SDKهای نسخه‌ی major جدید به‌طور پیش‌فرض ارسال می‌کنند، برای هر `temperature`، `top_p` یا `top_k` روی هر مدل، حتی با مقدار پیش‌فرض، خطای ۴۰۰ برمی‌گرداند؛ Opus 5.5، Sonnet 5.5 و Fable/Mythos 5.1 روی `tool_choice` اجباری خطای ۴۰۰ می‌دهند، در حالی که Haiku 5.5 آن را می‌پذیرد اما thinking را رد می‌کند؛ و Opus 5.5 پیش‌فرض effort را `medium` قرار می‌دهد، در حالی که Opus 5 از `high` استفاده می‌کرد.
 
-بررسی کامل در [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) و [راهنمای انتخاب مدل](02-model-landscape/04-model-selection-guide.md).
+تفکیک کامل در [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) و [راهنمای انتخاب مدل](02-model-landscape/04-model-selection-guide.md) آمده است.
 
 ---
 
-## 🎯 این راهنما چه چیزی هست (و چه چیزی نیست)
+## 🎯 این راهنما چیست (و چه چیزی نیست)
 
-**این راهنما هست:**
-- یک مرجع در سطح Staff برای طراحی سیستم‌های هوش مصنوعی پروداکشن (RAG، ایجنت‌ها، MCP، پایپ‌لاین‌های ارزیابی، ایزولاسیون چندمستاجره).
-- یک همراه آمادگی برای مصاحبه با ۱۹۳ سوال واقعی (شامل مجموعه‌ای برای Voice AI و مجموعه‌ای برگرفته از گزارش‌های اخیر مصاحبه داوطلبان)، چارچوب‌های پاسخ‌دهی همراه با متن پیاده‌شده یک مصاحبه آزمایشی، و ده تمرین پای تخته (Whiteboard) تا نوامبر ۲۰۲۶.
-- یک سند زنده که انتشار مدل‌های جدید، تغییرات پروتکل‌ها و الگوهای نوظهور را به محض عرضه دنبال می‌کند.
-- دارای دیدگاه مشخص درباره موازنه‌ها (Tradeoffs): تاخیر (Latency) در برابر هزینه، دقت (Accuracy) در برابر وفاداری (Faithfulness)، تک‌ایجنتی در برابر چندایجنت.
-- رایگان، با لایسنس MIT، و پذیرای PR از سوی متخصصان و فعالان حوزه.
+**این راهنما:**
+- یک مرجع سطح Staff برای طراحی سیستم‌های هوش مصنوعی در محیط تولید است (RAG، Agentها، MCP، pipelineهای ارزیابی، ایزوله‌سازی چندمستأجره (multi-tenant)).
+- همراه مصاحبه است با ۱۹۳ سؤال واقعی (شامل مجموعه‌ی هوش مصنوعی صوتی و مجموعه‌ای برگرفته از گزارش‌های اخیر مصاحبه‌ی داوطلبان)، چارچوب‌های پاسخ‌دهی همراه با یک رونوشت آزمایشی نمونه، و ده تمرین تخته‌سفید تا نوامبر ۲۰۲۶.
+- یک سند زنده است که انتشار مدل‌های جدید، تغییرات پروتکل‌ها و الگوهای نوظهور را هم‌زمان با عرضه دنبال می‌کند.
+- در مورد مصالحه‌ها (tradeoffها) نظر دارد: تاخیر (Latency) در برابر هزینه، دقت در برابر وفاداری به منبع، Agent تکی در برابر چند-Agent.
+- رایگان، با مجوز MIT است و PRهای فعالان این حوزه را می‌پذیرد.
 
 **این راهنما نیست:**
-- یک آموزش برای پایتون، PyTorch یا مبانی اولیه یادگیری ماشین (با یک دوره آموزشی شروع کنید؛ به [COURSES.md](COURSES.md) مراجعه نمایید).
-- یک موضع بی‌طرفانه و محتاطانه نسبت به ابزارها؛ این راهنما مدل‌ها، قیمت‌ها و فریم‌ورک‌های مشخصی را نام می‌برد زیرا سیستم‌های واقعی نیازمند انتخاب‌های واقعی هستند.
-- جایگزینی برای ساخت عملی سیستم‌ها؛ آن را در کنار یک پروژه واقعی بخوانید، نه به عنوان جایگزین آن.
-- خلاصه‌ای از مقالات پژوهشی؛ این راهنما مقالات را تنها زمانی نقل می‌کند که نحوه پیاده‌سازی عملی را تغییر دهند، نه صرفاً برای کامل بودن فهرست.
+- آموزش Python، PyTorch یا مبانی یادگیری ماشین (با یک دوره شروع کنید؛ [COURSES.md](COURSES.md) را ببینید).
+- یک راهنمای بی‌طرف نسبت به فروشندگان؛ مدل‌ها، قیمت‌ها و فریم‌ورک‌های مشخص را نام می‌برد، چون سیستم‌های واقعی به انتخاب‌های واقعی نیاز دارند.
+- جایگزینی برای ساختن عملی؛ آن را کنار یک پروژه بخوانید، نه به‌جای آن.
+- خلاصه‌ی مقالات پژوهشی؛ مقاله‌ها را وقتی ارجاع می‌دهد که عملکرد را تغییر دهند، نه برای کامل بودن.
 
 ---
 
@@ -164,7 +164,7 @@ flowchart TD
 └── RESEARCH-RADAR.md            # 🛰️ Frontier research radar: trending papers and what to learn next
 ```
 
-### فصول بر اساس مراحل چرخه حیات سیستم AI
+### فصل‌ها بر اساس مرحله‌ی چرخه‌ی عمر سیستم هوش مصنوعی
 
 ```mermaid
 mindmap
@@ -197,66 +197,66 @@ mindmap
 
 ---
 
-## 🔥 مطالعه‌های موردی منتخب
+## 🔥 مطالعه‌ی موردی‌های برجسته
 
-مسائل واقعی مصاحبه همراه با راه‌حل‌های کامل و نمودارها:
+مسائل واقعی مصاحبه با راه‌حل کامل و نمودار:
 
-| مطالعه موردی | مسئله | الگوهای کلیدی |
+| مطالعه‌ی موردی | مسئله | الگوهای کلیدی |
 |------------|---------|--------------|
-| [جستجوی بلادرنگ](16-case-studies/06-real-time-search.md) | تازگی ۵ دقیقه‌ای داده‌ها در مقیاس بالا | استریمینگ + جستجوی ترکیبی (Hybrid Search) |
-| [ایجنت کدنویسی](16-case-studies/07-autonomous-coding-agent.md) | تغییرات خودمختار روی چند فایل | سندباکسینگ (Sandboxing) + خوداصلاحی (Self-Correction) |
-| [SaaS چندمستاجره](16-case-studies/08-multi-tenant-saas.md) | کوکاکولا و پپسی روی یک زیرساخت مشترک | ایزولاسیون با دفاع لایه‌ای (Defense-in-Depth) |
-| [پشتیبانی مشتریان](16-case-studies/09-customer-support-automation.md) | نرخ حل خودکار ۶۰ درصدی | مسیریابی لایه‌ای (Tiered Routing) + ارجاع به اپراتور (Escalation) |
-| [هوشمندی اسناد](16-case-studies/10-document-intelligence.md) | استخراج ۵۰ هزار قرارداد در ماه | Vision-LLM + استخراج‌کننده‌های موازی |
-| [موتور پیشنهاددهنده](16-case-studies/11-recommendation-engine.md) | توضیحات شخصی‌سازی‌شده برای ۵۰ میلیون کاربر | رتبه‌بندی ML + توضیحات LLM |
-| [اتوماسیون انطباق و مقررات](16-case-studies/12-compliance-automation.md) | غربالگری اولیه مقررات FDA | استخراج ادعاها (Claim Extraction) + پایگاه داده سوابق |
-| [هوش مصنوعی صوتی سلامت](16-case-studies/13-voice-ai-healthcare.md) | تولید بلادرنگ یادداشت‌های بالینی | ASR تحت قرارداد BAA + یادداشت‌های مستند (Grounded) + بازبینی پرستار |
-| [تشخیص تقلب](16-case-studies/14-fraud-detection.md) | تصمیم‌گیری در ۱۰۰ میلی‌ثانیه با قابلیت تفسیرپذیری | ترکیب ML + قوانین |
-| [مدیریت دانش](16-case-studies/15-knowledge-management.md) | ۲ میلیون سند همراه با کنترل دسترسی | RAG آگاه از سطح دسترسی (Permission-Aware RAG) |
-| [ایجنت تعامل با کامپیوتر](16-case-studies/16-computer-use-agent-production.md) | اتوماسیون گزارش هزینه‌ها روی ۳ رابط کاربری قدیمی | ماشین‌های مجازی Firecracker + گیت اعتبارسنجی اقدام (Action Gate) + دفاع در برابر تزریق پرامپت غیرمستقیم (IPI) |
-| [Fine-tuning چندمستاجره](16-case-studies/17-multi-tenant-fine-tuning-platform.md) | ۲۸۰ مستاجر روی پایه مشترک + LoRA اختصاصی هر مستاجر | تعویض آنی LoRA (Hot-Swap) + ارزیابی به مثابه PRD برای هر مستاجر |
-| [CI/CD مشروط به ارزیابی](16-case-studies/18-eval-gated-cicd.md) | مسدودسازی PRهایی که کیفیت AI را کاهش می‌دهند | مجموعه‌های مرجع طلایی (Golden Sets) + داورهای LLM + تصحیح آماری |
-| [تقطیر برای مشتری (Distillation)](16-case-studies/19-customer-distillation-pipeline.md) | کاهش صورت‌حساب ماهانه ۵۰ هزار دلاری مدل پیشرو به حدود ۹ هزار دلار با دوره بازگشت سرمایه زیر ۳ ماه | تقطیر مبتنی بر Trace + انتشار تدریجی قناری (Canary Rollout) |
-| [ایجنت مدیریت دانش MCP](16-case-studies/20-mcp-knowledge-agent.md) | پاسخ‌دهی فراسیستمی از داده‌های Snowflake/Confluence/Jira/Slack | پروتکل MCP + سرور منبع OAuth + کنترل دسترسی مبتنی بر قابلیت‌ها |
+| [جست‌وجوی بلادرنگ](16-case-studies/06-real-time-search.md) | تازگی داده در ۵ دقیقه در مقیاس بالا | Streaming + جست‌وجوی ترکیبی |
+| [Agent کدنویسی](16-case-studies/07-autonomous-coding-agent.md) | تغییرات خودکار چندفایلی | Sandboxing + اصلاح خودکار |
+| [SaaS چندمستأجره (multi-tenant)](16-case-studies/08-multi-tenant-saas.md) | Coca-Cola و Pepsi روی یک زیرساخت | ایزوله‌سازی دفاع در عمق |
+| [پشتیبانی مشتری](16-case-studies/09-customer-support-automation.md) | نرخ حل خودکار ۶۰٪ | مسیریابی لایه‌ای + ارجاع (Escalation) |
+| [هوش اسناد](16-case-studies/10-document-intelligence.md) | استخراج از ۵۰ هزار قرارداد در ماه | Vision-LLM + استخراج‌گرهای موازی |
+| [موتور توصیه‌گر](16-case-studies/11-recommendation-engine.md) | توضیحات شخصی‌سازی‌شده برای ۵۰ میلیون کاربر | رتبه‌بندی ML + توضیحات LLM |
+| [اتوماسیون انطباق](16-case-studies/12-compliance-automation.md) | پیش‌غربال‌گری مقررات FDA | استخراج ادعا + پایگاه داده‌ی رویه‌های قبلی |
+| [هوش مصنوعی صوتی در سلامت](16-case-studies/13-voice-ai-healthcare.md) | تولید بلادرنگ یادداشت بالینی | ASR تحت BAA + یادداشت‌های مبتنی بر منبع + بازبینی پرستار |
+| [تشخیص تقلب](16-case-studies/14-fraud-detection.md) | تصمیم در ۱۰۰ms با توضیح‌پذیری | ترکیب ML + قواعد |
+| [مدیریت دانش](16-case-studies/15-knowledge-management.md) | ۲ میلیون سند با کنترل دسترسی | RAG آگاه از دسترسی |
+| [Agent کنترل کامپیوتر](16-case-studies/16-computer-use-agent-production.md) | خودکارسازی گزارش هزینه در ۳ رابط قدیمی | Firecracker VMs + Action Gate + دفاع در برابر IPI |
+| [Fine-tuning چندمستأجره (multi-tenant)](16-case-studies/17-multi-tenant-fine-tuning-platform.md) | ۲۸۰ مستأجر روی یک مدل پایه‌ی مشترک + LoRA مخصوص هر مستأجر | LoRA Hot-Swap + Eval-as-PRD برای هر مستأجر |
+| [CI/CD مبتنی بر ارزیابی](16-case-studies/18-eval-gated-cicd.md) | مسدود کردن PRهایی که کیفیت هوش مصنوعی را پس‌رفت می‌دهند | مجموعه‌های طلایی + داورهای LLM + اصلاح آماری |
+| [تقطیر برای مشتری](16-case-studies/19-customer-distillation-pipeline.md) | کاهش صورت‌حساب ۵۰ هزار دلاری ماهانه‌ی مدل پیشرو به حدود ۹ هزار دلار در ماه با بازگشت سرمایه‌ی کمتر از ۳ ماه | تقطیر مبتنی بر Trace + عرضه‌ی Canary |
+| [Agent دانش MCP](16-case-studies/20-mcp-knowledge-agent.md) | پاسخ‌های میان‌سیستمی از Snowflake/Confluence/Jira/Slack | MCP + OAuth Resource Server + دروازه‌بندی قابلیت‌ها |
 
 ---
 
-## 🔬 راهنماهای عمیق تکمیلی
+## 🔬 راهنماهای عمیق جانبی
 
-دو راهنمای همراه (هر کدام بیش از ۳۰۰۰ خط) ارزیابی AI را به صورت سرتاسری برای مهندسان، مدیران محصول (PMs) و مهندسان تضمین کیفیت (QAs) پوشش می‌دهند:
+دو راهنمای همراه (هر کدام بیش از ۳٬۰۰۰ خط) ارزیابی هوش مصنوعی را از ابتدا تا انتها برای مهندسان، PMها و QAها پوشش می‌دهند:
 
-| راهنما | پلتفرم‌های پوشش‌داده‌شده | محتوای داخلی |
+| راهنما | پلتفرم‌های پوشش‌داده‌شده | محتوا |
 |-------|------------------|---------------|
-| [ارزیابی هوش مصنوعی: راهنمای جامع مطالعه](ai_evals_comprehensive_study_guide.md) | Arize Phoenix + Langfuse | داوری با مدل (LLM-as-a-Judge)، ارزیابی RAG، ارزیابی چندنوبتی (Multi-turn)، ایمنی در پروداکشن، تصحیح آماری با `judgy`، مسیر یادگیری ۳۰ روزه |
-| [ارزیابی هوش مصنوعی: راهنمای LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md) | LangWatch + Langfuse | سرفصل یکسان همراه با بیش از ۳۰ ارزیاب آماده LangWatch، مقایسه شانه‌به‌شانه پلتفرم‌ها، راهنمای انتخاب پلتفرم |
+| [ارزیابی هوش مصنوعی: راهنمای مطالعه‌ی جامع](ai_evals_comprehensive_study_guide.md) | Arize Phoenix + Langfuse | LLM-as-a-Judge، ارزیابی RAG، ارزیابی چندنوبتی، ایمنی محیط تولید، اصلاح آماری با `judgy`، مسیر یادگیری ۳۰ روزه |
+| [ارزیابی هوش مصنوعی: راهنمای LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md) | LangWatch + Langfuse | همان سرفصل‌ها با بیش از ۳۰ ارزیاب آماده‌ی LangWatch، مقایسه‌ی پلتفرم‌ها کنار هم، راهنمای انتخاب پلتفرم |
 
-**مباحث پوشش‌داده‌شده در هر دو راهنما:**
-- راه‌اندازی ردیابی (Tracing) و مشاهده‌پذیری (Observability) (در Phoenix، LangWatch، Langfuse)
-- تحلیل خطا: کدگذاری باز (Open Coding) ← کدگذاری محوری (Axial Coding) ← طبقه‌بندی حالت‌های خرابی (Failure Mode Taxonomy)
-- ساخت داورهای LLM با تفکیک Train/Dev/Test و کالیبراسیون داده‌های واقعیت زمینی (Ground Truth)
-- ارزیاب‌های مبتنی بر کد (Regex، اسکیمای JSON، اعتبارسنج‌های فرمت)
-- ارزیابی‌های اختصاصی RAG: وفاداری (Faithfulness)، یادآوری زمینه (Context Recall)، ارتباط پاسخ (Answer Relevance)
-- ارزیابی پایپ‌لاین‌های چندمرحله‌ای و ارزیابی مکالمات چندنوبتی
-- گاردریل‌های پروداکشن، پایش ایمنی، تشخیص جابجایی داده‌ها (Drift Detection) به صورت بلادرنگ
-- تصحیح آماری با کتابخانه `judgy`
-- بهترین روش‌های برچسب‌گذاری انسانی و پایایی بین‌ارزیاب‌ها (Inter-rater Reliability)
-- بهینه‌سازی هزینه/تاخیر (Latency) برای پایپ‌لاین‌های ارزیابی در مقیاس بالا
+**موضوعات پوشش‌داده‌شده در هر دو راهنما:**
+- راه‌اندازی tracing و observability (Phoenix، LangWatch، Langfuse)
+- تحلیل خطا: کدگذاری باز ← کدگذاری محوری ← طبقه‌بندی حالت‌های شکست
+- ساخت داورهای LLM با تقسیم Train/Dev/Test و کالیبراسیون با ground truth
+- ارزیابی‌های مبتنی بر کد (regex، JSON schema، اعتبارسنج‌های قالب)
+- ارزیابی‌های ویژه‌ی RAG: faithfulness، context recall، answer relevance
+- ارزیابی pipelineهای چندمرحله‌ای و ارزیابی مکالمه‌ی چندنوبتی
+- Guardrailهای محیط تولید، پایش ایمنی، تشخیص drift بلادرنگ
+- اصلاح آماری با کتابخانه‌ی `judgy`
+- بهترین شیوه‌های حاشیه‌نویسی انسانی و توافق بین ارزیاب‌ها
+- بهینه‌سازی هزینه و تاخیر (Latency) برای pipelineهای ارزیابی در مقیاس بالا
 
 ---
 
 ## 🎓 برای آمادگی مصاحبه
 
-مصاحبه‌های مهندسی AI و طراحی سیستم سوالاتی از این قبیل می‌پرسند:
+مصاحبه‌های مهندسی هوش مصنوعی و طراحی سیستم چنین سؤال‌هایی می‌پرسند:
 
-> "Design a multi-tenant RAG system where competitors cannot see each other's data."
+> «یک سیستم RAG چندمستأجره (multi-tenant) طراحی کنید که رقبا نتوانند داده‌های یکدیگر را ببینند.»
 
-> "Your agent takes 15 steps for a 3-step task. How do you debug it?"
+> «Agent شما برای یک کار ۳ مرحله‌ای ۱۵ مرحله برمی‌دارد. چطور اشکال‌زدایی می‌کنید؟»
 
-این راهنما **الگوهای ملموس**، **موازنه‌های واقعی (Tradeoffs)**، و **حالت‌های شکست در پروداکشن** را در اختیار شما قرار می‌دهد: همان عمقی که مصاحبه‌کنندگان در سطوح Senior انتظار دارند.
+این راهنما **الگوهای مشخص**، **مصالحه‌های واقعی** و **حالت‌های شکست در محیط تولید** را در اختیارتان می‌گذارد: عمقی که مصاحبه‌کنندگان در سطوح ارشد انتظار دارند.
 
-➡️ با [آمادگی مصاحبه](00-interview-prep/) شروع کنید
+➡️ از [آمادگی مصاحبه](00-interview-prep/) شروع کنید
 
-**می‌خواهید قبل از مصاحبه واقعی تمرین کنید؟** خواندن پاسخ‌های قوی به شما دانش می‌دهد، اما جلسه مصاحبه مهارت متفاوتی را می‌سنجد: توضیح شفاهی یک طرح معماری، زیر فشار زمان، در حالی که کسی تصمیمات و موازنه‌های شما را به چالش می‌کشد. Om مصاحبه‌های آزمایشی ۱ به ۱ طراحی سیستم AI، بررسی پاسخ‌ها و رزومه، و منتورشیپ بلندمدت را برای افرادی که به دنبال ورود به نقش‌های ارشد AI هستند ارائه می‌دهد. برای رزرو به [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) مراجعه کنید.
+**پیش از مصاحبه‌ی اصلی یک تمرین عملی می‌خواهید؟** خواندن پاسخ‌های قوی دانش می‌سازد، اما مصاحبه چیز دیگری را می‌سنجد: توضیح یک طراحی با صدای بلند، زیر فشار زمان، در حالی که کسی روی مصالحه‌هایتان فشار می‌آورد. Om مصاحبه‌های آزمایشی طراحی سیستم هوش مصنوعی یک‌به‌یک، بازبینی پاسخ‌ها و رزومه و منتورینگ بلندمدت را برای کسانی که به نقش‌های ارشد هوش مصنوعی می‌روند برگزار می‌کند. از طریق [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
 
 <p align="center">
   <a href="https://enginebogie.com/u/ombharatiya"><img src="https://img.shields.io/badge/Book%20a%20mock%20interview%20%E2%86%92-0E7C66?style=for-the-badge&logo=googlecalendar&logoColor=white" alt="Book a mock interview on EngineBogie"></a>
@@ -267,72 +267,72 @@ mindmap
 
 ## ❓ پرسش‌های متداول
 
-### طراحی سیستم هوش مصنوعی (AI System Design) چیست؟
-طراحی سیستم AI شاخه‌ای تخصصی از مهندسی است که به معماری سیستم‌های سطح پروداکشن ساخته‌شده بر پایه LLMها، بازیابی اطلاعات (Retrieval)، ایجنت‌ها و ارزیابی (Evaluation) می‌پردازد. این حوزه شامل انتخاب مدل، پایپ‌لاین‌های RAG، ارکستراسیون ایجنت‌ها، حافظه، مشاهده‌پذیری و ایمنی است. برای آشنایی اولیه، به [سازوکار داخلی LLM](01-foundations/01-llm-internals.md) و [الگوهای طراحی AI](15-ai-design-patterns/) مراجعه کنید.
+### طراحی سیستم هوش مصنوعی چیست؟
+طراحی سیستم هوش مصنوعی شاخه‌ای است که به معماری سیستم‌های مناسب محیط تولید می‌پردازد که حول LLMها، بازیابی، Agentها و ارزیابی ساخته می‌شوند. این شاخه انتخاب مدل، pipelineهای RAG، ارکستراسیون Agent، حافظه، observability و ایمنی را پوشش می‌دهد. برای آشنایی اولیه، [درونیات LLM](01-foundations/01-llm-internals.md) و [الگوهای طراحی هوش مصنوعی](15-ai-design-patterns/) را ببینید.
 
-### چگونه برای مصاحبه مهندسی AI آماده شوم؟
-با [بانک سوالات](00-interview-prep/01-question-bank.md) (۱۹۳ سوال تا نوامبر ۲۰۲۶) شروع کنید، سپس با [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) و [تمرین‌های پای تخته](00-interview-prep/04-whiteboard-exercises.md) تمرین نمایید. بیشتر مصاحبه‌های سطح ارشد، طراحی RAG، دیباگ کردن ایجنت‌ها، ایزولاسیون چندمستاجره، و موازنه‌های هزینه/تاخیر (Latency) را می‌سنجند که همگی در [مطالعه‌های موردی](16-case-studies/) پوشش داده شده‌اند. قبل از جلسه مصاحبه واقعی، حداقل یک مصاحبه آزمایشی زمان‌بندی‌شده با فردی داشته باشید که میان کلامتان بیاید و تصمیمات و موازنه‌های شما را به چالش بکشد؛ می‌توانید چنین جلسه‌ای را با Om در [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
+### چگونه برای مصاحبه‌ی مهندسی هوش مصنوعی آماده شوم؟
+از [بانک سؤالات](00-interview-prep/01-question-bank.md) (۱۹۳ سؤال تا نوامبر ۲۰۲۶) شروع کنید، سپس با [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) و [تمرین‌های تخته‌سفید](00-interview-prep/04-whiteboard-exercises.md) تمرین کنید. بیشتر مصاحبه‌های ارشد، طراحی RAG، اشکال‌زدایی Agent، ایزوله‌سازی چندمستأجره (multi-tenant) و مصالحه‌های هزینه/تاخیر (Latency) را می‌سنجند که همگی در [مطالعه‌ی موردی‌ها](16-case-studies/) پوشش داده شده‌اند. پیش از مصاحبه‌ی واقعی، دست‌کم یک مصاحبه‌ی آزمایشی زمان‌دار با کسی انجام دهید که حرفتان را قطع کند و زیر سؤال ببرد؛ می‌توانید با Om از طریق [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
 
-### سیستم RAG (Retrieval-Augmented Generation) چیست؟
-سیستم RAG الگویی است که در آن، یک LLM پیش از تولید پاسخ، زمینه (Context) مرتبط را از یک منبع دانش خارجی (پایگاه داده برداری (Vector Database)، شاخص جستجو یا گراف) بازیابی می‌کند؛ این کار توهمات مدل (Hallucinations) را کاهش داده و پاسخ‌ها را بر داده‌های واقعی شما مستند می‌سازد. پایپ‌لاین کامل در [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) پوشش داده شده و نحوه مقیاس‌پذیری آن در [RAG در مقیاس پروداکشن](06-retrieval-systems/14-production-rag-at-scale.md) بررسی شده است.
+### RAG (تولید افزوده‌شده با بازیابی) چیست؟
+RAG الگویی است که در آن یک LLM پیش از تولید پاسخ، زمینه‌ی مرتبط را از یک منبع دانش خارجی (پایگاه داده‌ی برداری، شاخص جست‌وجو، گراف) بازیابی می‌کند؛ این کار توهم را کاهش می‌دهد و پاسخ‌ها را به داده‌های شما متکی می‌سازد. pipeline کامل در [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) و مقیاس‌پذیر کردن آن در [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) آمده است.
 
-### ایجنت‌های هوش مصنوعی (AI Agents) چه هستند و چه تفاوتی با چت‌بات‌ها دارند؟
-ایجنت‌های AI سیستم‌های هدایت‌شده با LLM هستند که برای دستیابی به اهداف، برنامه‌ریزی می‌کنند، ابزارها را فرامی‌خوانند و اقداماتی را در چندین مرحله به انجام می‌رسانند؛ در حالی که چت‌بات‌ها معمولاً در یک نوبت (Single turn) پاسخ می‌دهند. ایجنت‌ها مفاهیمی چون حلقه‌ها، حافظه، بازیابی از خطا و استفاده از ابزار از طریق پروتکل‌هایی مانند MCP را معرفی می‌کنند. برای شروع، [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) را مطالعه کنید.
+### Agentهای هوش مصنوعی چیستند و چه تفاوتی با چت‌بات‌ها دارند؟
+Agentهای هوش مصنوعی سیستم‌های مبتنی بر LLM هستند که برای رسیدن به اهداف، طی چند مرحله برنامه‌ریزی می‌کنند، ابزار فرا می‌خوانند و عمل می‌کنند؛ در حالی که چت‌بات‌ها معمولاً در یک نوبت پاسخ می‌دهند. Agentها حلقه، حافظه، بازیابی از خطا و استفاده از ابزار از طریق پروتکل‌هایی مانند MCP را وارد کار می‌کنند. از [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) شروع کنید.
 
-### پروتکل MCP (Model Context Protocol) چیست و چه مقایسه‌ای با A2A دارد؟
-پروتکل MCP یک پروتکل استاندارد باز است که به برنامه‌های مبتنی بر LLM اجازه می‌دهد تا ابزارهای خارجی و منابع داده را به روشی استاندارد شناسایی و فراخوانی کنند. پروتکل A2A (یا Agent2Agent) پروتکلی مکمل برای واگذاری کار به ایجنتی است که تحت کنترل شما نیست: ایجنت راه دور یک Agent Card را در مسیر `/.well-known/agent-card.json` منتشر می‌کند، کلاینت به آن پیامی می‌فرستد و ایجنت راه دور تصمیم می‌گیرد که آیا یک وظیفه طولانی‌مدت (Long-running task) باز کند یا خیر. این دو پروتکل لایه‌های متفاوتی را حل می‌کنند: MCP مرز ابزارها است و A2A مرز بین ایجنت‌ها، و اغلب سیستم‌ها بسیار پیش از نیاز به A2A، به MCP نیاز پیدا می‌کنند. هر دو پروتکل اکنون تحت نظارت بنیاد Agentic AI وابسته به Linux Foundation قرار دارند (A2A در اوت ۲۰۲۶ به آن پیوست). در مصاحبه‌ها به نسخه‌ها دقیقاً اشاره کنید: مشخصات MCP به صورت بازبینی‌های تاریخ‌دار عرضه می‌شود، نسخه فعلی (2026-07-28) هسته پروتکل را بدون حالت (Stateless) کرد، نسخه بعدی برای ۳۰ مارس ۲۰۲۷ برنامه‌ریزی شده است و چیزی به نام "MCP 2.0" وجود ندارد؛ آخرین نسخه رسمی A2A نیز v1.0.1 است. به [استفاده از ابزار و MCP](07-agentic-systems/03-tool-use-and-mcp.md) مراجعه کنید.
+### MCP (پروتکل زمینه‌ی مدل) چیست و چه تفاوتی با A2A دارد؟
+MCP یک پروتکل باز است که به برنامه‌های LLM امکان می‌دهد ابزارها و منابع داده‌ی خارجی را به شیوه‌ای استاندارد کشف و فراخوانی کنند. A2A (Agent2Agent) پروتکل مکمل برای سپردن کار به Agentی است که کنترلش را ندارید: Agent راه دور یک Agent Card را در `/.well-known/agent-card.json` منتشر می‌کند، کلاینت برایش پیام می‌فرستد و Agent راه دور تصمیم می‌گیرد یک task طولانی‌مدت باز کند یا نه. این دو لایه‌های متفاوتی را حل می‌کنند: MCP مرز ابزار است و A2A مرز Agent، و بیشتر سیستم‌ها مدت‌ها پیش از نیاز به A2A به MCP نیاز دارند. هر دو اکنون زیر نظر Agentic AI Foundation متعلق به Linux Foundation هستند (A2A در اوت ۲۰۲۶ پیوست). نسخه‌ها را در مصاحبه دقیق ذکر کنید: spec پروتکل MCP به‌صورت بازنگری‌های تاریخ‌دار منتشر می‌شود، نسخه‌ی فعلی (2026-07-28) هسته‌ی پروتکل را stateless کرد، نسخه‌ی بعدی برای ۳۰ مارس ۲۰۲۷ برنامه‌ریزی شده است و چیزی به نام «MCP 2.0» وجود ندارد؛ آخرین انتشار spec برای A2A نسخه‌ی v1.0.1 است. [استفاده از ابزار و MCP](07-agentic-systems/03-tool-use-and-mcp.md) را ببینید.
 
-### کدام LLM را در پروداکشن استفاده کنم: Claude، GPT، Gemini یا متن‌باز؟
-این انتخاب به بودجه تاخیر (Latency)، طول Context، هزینه به ازای هر تسک (تعداد Token به ازای تسک ضرب‌در قیمت، نه صرفاً قیمت هر Token)، کیفیت استفاده از ابزار و محل ذخیره‌سازی داده‌ها (Data Residency) بستگی دارد. یک نقطه شروع منطقی در نوامبر ۲۰۲۶ عبارت است از: مدل Claude Opus 5.5 (۴ دلار / ۲۰ دلار به ازای هر ۱ میلیون Token) برای کدنویسی با ایجنت و کارهای پیچیده، رده ۲ دلار / ۱۰ دلار (Claude Sonnet 5.5، GPT-6 Sol و GPT-6.1 Sol) برای اکثر ترافیک پروداکشن، مدل GPT-6.1 Terra (۱ دلار / ۵ دلار) در هر جایی که کیفیت مطلوب شما را تامین کند، مدل‌های Claude Haiku 5.5، GPT-6 Luna یا Gemini 3.8 Flash برای حجم‌های بالا (Haiku 5.5 تنها برای Promptهای زیر ۱۰۰ هزار Token که قیمت ۰.۱۰ دلار / ۰.۵۰ دلار شامل آن می‌شود)، و Claude Fable 5.1 یا GPT-6 Astra (۱۰ دلار / ۵۰ دلار) تنها زمانی که ارزیابی‌های شما نشان دهند رده‌های ارزان‌تر کیفیت لازم را ندارند. فصول [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) و [قیمت‌گذاری](02-model-landscape/03-pricing-and-costs.md) این گزینه‌ها را به همراه Gemini 4 Argon، Grok 4.7، Muse Spark 1.3، DeepSeek V4.1-Flash و مدل‌های وزن‌باز مانند MiMo-V2.6، GLM-5.3، Kimi K3.1 Pro (انتشار وزن‌ها از ۴ نوامبر ۲۰۲۶) و Mistral Large 4 مقایسه می‌کنند و [راهنمای انتخاب مدل](02-model-landscape/04-model-selection-guide.md) آن‌ها را در قالب یک درخت تصمیم‌گیری ارائه می‌دهد. پیش از مهاجرت، ارزیابی‌های خود را اجرا کنید: امتیازهای ارائه‌دهندگان در محیط‌های آزمون یا سطوح تلاش مختلف لزوماً قابل تعمیم نیستند.
+### در محیط تولید از کدام LLM استفاده کنم: Claude، GPT، Gemini یا متن‌باز؟
+بستگی به بودجه‌ی تاخیر (Latency)، طول بافت، هزینه به ازای هر کار (تعداد Token در هر کار ضربدر قیمت، نه قیمت به ازای هر Token)، کیفیت استفاده از ابزار و محل نگهداری داده دارد. یک نقطه‌ی شروع معقول برای نوامبر ۲۰۲۶: Claude Opus 5.5 (به ازای هر ۱ میلیون $4/$20) برای کدنویسی عاملی و کارهای سخت، رده‌ی $2/$10 (Claude Sonnet 5.5، GPT-6 Sol، GPT-6.1 Sol) برای بیشتر ترافیک محیط تولید، GPT-6.1 Terra ($1/$5) هر جا که معیار کیفیت شما را برآورده کند، Claude Haiku 5.5، GPT-6 Luna یا Gemini 3.8 Flash برای حجم بالا (Haiku 5.5 فقط روی Promptهای زیر ۱۰۰ هزار Token که قیمت $0.10/$0.50 اعمال می‌شود) و Claude Fable 5.1 یا GPT-6 Astra ($10/$50) فقط وقتی ارزیابی‌های شما نشان می‌دهد رده‌های ارزان‌تر کم می‌آورند. فصل‌های [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) و [قیمت‌گذاری](02-model-landscape/03-pricing-and-costs.md) اینها را به‌علاوه‌ی Gemini 4 Argon، Grok 4.7، Muse Spark 1.3، DeepSeek V4.1-Flash و مدل‌های با وزن باز مانند MiMo-V2.6، GLM-5.3، Kimi K3.1 Pro (وزن‌ها از ۴ نوامبر ۲۰۲۶) و Mistral Large 4 مقایسه می‌کنند و [راهنمای انتخاب مدل](02-model-landscape/04-model-selection-guide.md) آن‌ها را به یک درخت تصمیم تبدیل می‌کند. پیش از جابه‌جایی، ارزیابی‌های خودتان را اجرا کنید: امتیازهای فروشندگان بین harnessها و تنظیمات effort قابل انتقال نیستند.
 
-### چگونه یک سیستم LLM یا RAG را در پروداکشن ارزیابی کنم؟
-ارزیابی‌های آفلاین (داوری مدل با کالیبراسیون واقعیت زمینی/Ground Truth)، معیارهای آنلاین (وفاداری، یادآوری زمینه، ارتباط پاسخ) و ردیابی مداوم را با هم ترکیب کنید. راهنماهای عمیق و همراه [ارزیابی هوش مصنوعی: Phoenix + Langfuse](ai_evals_comprehensive_study_guide.md) و [ارزیابی هوش مصنوعی: LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md) این مسیر را به طور سرتاسری تشریح می‌کنند.
+### چگونه یک LLM یا سیستم RAG را در محیط تولید ارزیابی کنم؟
+ارزیابی‌های آفلاین (LLM-as-a-judge با کالیبراسیون ground-truth)، معیارهای آنلاین (faithfulness، context recall، answer relevance) و tracing پیوسته را ترکیب کنید. راهنماهای عمیق همراه، یعنی [ارزیابی هوش مصنوعی: Phoenix + Langfuse](ai_evals_comprehensive_study_guide.md) و [ارزیابی هوش مصنوعی: LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md)، این فرایند را از ابتدا تا انتها شرح می‌دهند.
 
-### چگونه یک سیستم RAG چندمستاجره را به صورت امن بسازم؟
-از راهبرد دفاع لایه‌ای (Defense-in-depth) استفاده کنید: شاخص‌ها یا فضاهای نام (Namespaces) مجزا به ازای هر مستاجر، بررسی دسترسی در زمان کوئری (Query-time access checks)، و محافظ‌های لایه پرامپت. فصل [کنترل دسترسی](12-security-and-access/02-access-control.md) و [مطالعه موردی SaaS چندمستاجره](16-case-studies/08-multi-tenant-saas.md) الگوهایی را پوشش می‌دهند که در مصاحبه‌ها و پروداکشن کاربرد عملی دارند.
+### چگونه یک سیستم RAG چندمستأجره (multi-tenant) ایمن بسازم؟
+از دفاع در عمق استفاده کنید: شاخص‌ها یا namespaceهای جداگانه برای هر مستأجر، بررسی دسترسی در زمان کوئری و guardهای لایه‌ی Prompt. فصل [کنترل دسترسی](12-security-and-access/02-access-control.md) و [مطالعه‌ی موردی SaaS چندمستأجره (multi-tenant)](16-case-studies/08-multi-tenant-saas.md) الگوهایی را پوشش می‌دهند که هم در مصاحبه و هم در محیط تولید پابرجا می‌مانند.
 
-### سیستم RAG عامل‌محور (Agentic RAG) چیست؟
-سیستم Agentic RAG بازیابی اطلاعات را با یک حلقه ایجنت ترکیب می‌کند که می‌تواند تصمیم بگیرد چه چیزی را جستجو کند، چه زمانی دوباره کوئری بزند، و چه زمانی موضوع را ارجاع دهد، به جای اینکه صرفاً یک مرحله ثابت «بازیابی و سپس تولید» را اجرا کند. برای معماری‌ها و موازنه‌ها به [Agentic RAG](06-retrieval-systems/08-agentic-rag.md) مراجعه کنید.
+### RAG عاملی (Agentic RAG) چیست؟
+RAG عاملی، بازیابی را با یک حلقه‌ی Agent ترکیب می‌کند که می‌تواند تصمیم بگیرد چه چیزی را جست‌وجو کند، چه زمانی دوباره کوئری بزند و چه زمانی ارجاع دهد، به‌جای اجرای یک گذر ثابت بازیابی-سپس-تولید. برای معماری‌ها و مصالحه‌ها [RAG عاملی](06-retrieval-systems/08-agentic-rag.md) را ببینید.
 
-### آیا این راهنما رایگان است؟ آیا می‌توانم مشارکت کنم؟
-بله، دارای مجوز MIT و کاملاً رایگان است. از Pull Requestها استقبال می‌شود؛ [راهنمای مشارکت](CONTRIBUTING.md) را ببینید. اگر تجربیاتی از شکست در پروداکشن، بنچمارک‌های جدید مدل‌ها یا سوالات مصاحبه دارید، یک PR باز کنید.
+### آیا این راهنما رایگان است؟ می‌توانم مشارکت کنم؟
+بله، با مجوز MIT و رایگان است. PRها پذیرفته می‌شوند؛ [راهنمای مشارکت](CONTRIBUTING.md) را ببینید. اگر حالت‌های شکست محیط تولید، بنچمارک‌های مدل جدید یا سؤالات مصاحبه برای افزودن دارید، یک PR باز کنید.
 
-### این راهنما هر چند وقت یک‌بار به‌روزرسانی می‌شود؟
-به‌طور مداوم. با انتشار مدل‌های جدید، تغییرات پروتکل‌ها (MCP، A2A) و ظهور الگوهای جدید، این موارد به راهنما اضافه می‌شوند. به‌روزرسانی نوامبر ۲۰۲۶ مدل‌ها، قیمت‌ها، پروتکل‌ها و نسخه‌های فریم‌ورک‌ها را تا وضعیت آن‌ها در ۶ نوامبر ۲۰۲۶ ارتقا داد. موارد افزوده‌شده اخیر عبارتند از دوازده [سوال برگرفته از گزارش‌های اخیر مصاحبه‌ها](00-interview-prep/01-question-bank.md#questions-from-recent-interview-reports) (سوالات Q174 تا Q185: ایجنت‌های تله‌متری امنیتی، کاوشگر کد هماهنگ با مجوزها، devboxها، پردازش بررسی‌ها در شرایط تزریق پرامپت، جستجوی عامل‌محور فروشگاهی، دور مصاحبه الزامی طراحی AI)، هشت [سوال نوامبر ۲۰۲۶](00-interview-prep/01-question-bank.md#advanced-questions---november-2026) (سوالات Q186 تا Q193: ایزولاسیون اعمال مقررات به ازای مشتری نهایی، رشته پیام‌های سمت سرور، برنامه منسوخ‌سازی چند ارائه‌دهنده، برنامه‌های دسترسی سایبری، بررسی مجوزهای مدل‌های وزن‌باز، لیدربوردهای بازامتیازدهی‌شده، ایزولاسیون مستاجران در حالت fail-open، کنترل‌های تایید ایجنت)، هجده [سوال برگرفته از گزارش‌های اخیر مصاحبه‌ها](00-interview-prep/01-question-bank.md#questions-from-recent-interview-reports) (سوالات Q156 تا Q173: بررسی اسناد طراحی، توزیع مدل، زمان‌بندی GPU، حافظه موقت KV و Tokenizerها از صفر، ایجنت‌های بدون فریم‌ورک، مراحل کدنویسی با کمک AI، آمادگی برای لانچ، غربالگری ایمنی)، هشت [سوال اکتبر ۲۰۲۶](00-interview-prep/01-question-bank.md#advanced-questions---october-2026) (سوالات Q148 تا Q155: مانیتورینگ ایجنت، طبقه‌بندی رخدادها، زنجیره تامین گیت‌وی، مهاجرت Fine-tuning، جهش‌های قیمتی، مدل‌های تصمیم‌گیری، استقرار نسخه‌های API، توافق‌نامه‌های SLA پچ‌ها)، یک بخش دوازده‌سوالی [Voice AI](00-interview-prep/01-question-bank.md#voice-ai-questions)، هفت سوال سپتامبر ۲۰۲۶، تمرین پای تخته دهم، بازنویسی فصل [ایجنت‌های صوتی بلادرنگ](18-voice-and-audio-agents/01-realtime-voice-agents.md) و [روندهای بازار کار در نوامبر ۲۰۲۶](00-interview-prep/06-job-market-trends-2026.md).
+### این راهنما هر چند وقت به‌روز می‌شود؟
+به‌طور مداوم. انتشار مدل‌های جدید، تغییرات پروتکل‌ها (MCP، A2A) و الگوهای نوظهور هم‌زمان با عرضه اضافه می‌شوند. به‌روزرسانی نوامبر ۲۰۲۶، مدل‌ها، قیمت‌ها، پروتکل‌ها و نسخه‌های فریم‌ورک را به وضعیت ۶ نوامبر ۲۰۲۶ رساند. از افزوده‌های اخیر: دوازده [سؤال دیگر از گزارش‌های اخیر مصاحبه](00-interview-prep/01-question-bank.md#questions-from-recent-interview-reports) (Q174-Q185: Agentهای تله‌متری امنیتی، یک کاوشگر کد منطبق با دسترسی، devboxها، دریافت بازبینی در شرایط prompt injection، جست‌وجوی خرده‌فروشی عاملی، یک دور طراحی با هوش مصنوعی اجباری)، هشت [سؤال نوامبر ۲۰۲۶](00-interview-prep/01-question-bank.md#advanced-questions---november-2026) (Q186-Q193: ایزوله‌سازی اعمال قواعد به ازای هر مشتری نهایی، رشته‌های پیام سمت سرور، برنامه‌ی انقضای چندفروشنده‌ای، برنامه‌های دسترسی سایبری، بازبینی مجوز وزن باز، جدول‌های رتبه‌بندی بازنمره‌دهی‌شده، ایزوله‌سازی چندمستأجره (multi-tenant) با شکست باز، کنترل‌های تأیید Agent)، هجده [سؤال از گزارش‌های اخیر مصاحبه](00-interview-prep/01-question-bank.md#questions-from-recent-interview-reports) (Q156-Q173: بازبینی سند طراحی، توزیع مدل، زمان‌بندی GPU، KV cache و tokenizer از صفر، Agent بدون فریم‌ورک، دورهای کدنویسی با کمک هوش مصنوعی، آمادگی عرضه، غربال‌های ایمنی)، هشت [سؤال اکتبر ۲۰۲۶](00-interview-prep/01-question-bank.md#advanced-questions---october-2026) (Q148-Q155: پایش Agent، طبقه‌بندی حادثه، زنجیره‌ی تأمین Gateway، مهاجرت fine-tune، پرتگاه‌های قیمت، مدل‌های تصمیم، عرضه‌ی نسخه‌ی API، SLAهای وصله)، یک [بخش هوش مصنوعی صوتی](00-interview-prep/01-question-bank.md#voice-ai-questions) دوازده‌سؤالی، هفت سؤال سپتامبر ۲۰۲۶، یک تمرین تخته‌سفید دهم، یک فصل بازنویسی‌شده‌ی [Agentهای صوتی بلادرنگ](18-voice-and-audio-agents/01-realtime-voice-agents.md) و [روندهای بازار کار نوامبر ۲۰۲۶](00-interview-prep/06-job-market-trends-2026.md).
 
-### آیا اگر در حال انتقال از نقش‌های بک‌اند، QA، PM یا EM به AI باشم می‌توانم از این راهنما استفاده کنم؟
-بله. [راهنمای تغییر نقش](TRANSITION_GUIDE.md) مهارت‌های موجود را به مسیرهای شغلی مهندسی AI، MLE و معمار AI نگاشت می‌دهد و مسیرهای مطالعه اختصاصی برای هر نقش ارائه می‌کند. می‌توانید آن را همراه با [COURSES.md](COURSES.md) برای دسترسی به منابع آموزشی منتخب مطالعه کنید.
+### اگر از بک‌اند، QA، PM یا EM به هوش مصنوعی گذار می‌کنم، می‌توانم از این راهنما استفاده کنم؟
+بله. [راهنمای گذار نقش](TRANSITION_GUIDE.md) مهارت‌های فعلی را به مسیرهای مهندس هوش مصنوعی، MLE و معمار هوش مصنوعی نگاشت می‌کند، با مسیرهای مطالعه برای هر نقش. آن را با [COURSES.md](COURSES.md) برای منابع یادگیری منتخب همراه کنید.
 
 ---
 
 ## 🔄 کتاب زنده
 
 این راهنما موارد زیر را دنبال می‌کند:
-- انتشار مدل‌های جدید و عملکرد آن‌ها در دنیای واقعی
-- الگوهای نوظهور (MCP، Agentic RAG، مهندسی جریان / Flow Engineering)
-- قیمت‌گذاری‌ها و محدودیت‌های نرخ (Rate Limits) به‌روزرسانی‌شده
-- موارد منسوخ‌شده و تغییرات بهترین شیوه‌های کاری
+- انتشار مدل‌های جدید و عملکرد واقعی آن‌ها
+- الگوهای نوظهور (MCP، Agentic RAG، Flow Engineering)
+- قیمت‌ها و محدودیت‌های نرخ به‌روز
+- منسوخ‌شدن‌ها و تغییر بهترین شیوه‌ها
 
-با **⭐ Star و Watch** کردن ریپازیتوری، از انتشار به‌روزرسانی‌ها مطلع شوید.
+**⭐ ستاره بدهید و Watch کنید** تا هنگام ارسال به‌روزرسانی‌ها مطلع شوید.
 
 ---
 
 ## 🤝 مشارکت
 
-اطلاعات قدیمی دیده‌اید؟ تجربه پروداکشن برای به اشتراک گذاشتن دارید؟ از PRها استقبال می‌شود.
-به [راهنمای مشارکت](CONTRIBUTING.md) مراجعه کنید.
+اطلاعات منسوخ پیدا کردید؟ تجربه‌ی محیط تولید برای به‌اشتراک‌گذاری دارید؟ PRها خوش‌آمدند.
+[راهنمای مشارکت](CONTRIBUTING.md) را ببینید.
 
 ---
 
-## 👋 در ارتباط باشید
+## 👋 در ارتباط بمانید
 
-اگر این راهنما برای شما مفید است، ساده‌ترین راه برای حمایت از آن، دنبال کردن مجاری است که فصول جدید و به‌روزرسانی‌ها ابتدا در آنجا اعلام می‌شوند:
+اگر این راهنما برایتان مفید است، ساده‌ترین راه حمایت این است که جایی را دنبال کنید که فصل‌های جدید و به‌روزرسانی‌ها ابتدا در آن اعلام می‌شوند:
 
-- **وب‌سایت:** [aidaddy.tech](https://www.aidaddy.tech) - مطالعه راهنمای کامل همراه با جستجو، ناوبری روان، و طراحی مناسب برای موبایل.
-- **گیت‌هاب:** [@ombharatiya](https://github.com/ombharatiya) - دنبال کردن ریپازیتوری، ستاره دادن به پروژه، و پیگیری نسخه‌های جدید.
-- **ایکس / توییتر:** [@ombharatiya](https://x.com/ombharatiya) - یادداشت‌های کوتاه درباره انتشار مدل‌ها، MCP، ایجنت‌ها، و مصاحبه‌ها.
-- **لینکدین:** [ombharatiya](https://linkedin.com/in/ombharatiya) - تحلیل‌های عمیق‌تر و نکات آمادگی مصاحبه برای نقش‌های ارشد AI.
-- **مصاحبه‌های آزمایشی و منتورشیپ:** [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) - رزرو جلسه آزمایشی ۱ به ۱ طراحی سیستم AI، بررسی پاسخ‌ها یا منتورشیپ مستمر برای ورود به نقش‌های AI.
+- **وب‌سایت:** [aidaddy.tech](https://www.aidaddy.tech) - کل راهنما را با جست‌وجو، ناوبری تمیز و چیدمان سازگار با موبایل بخوانید.
+- **GitHub:** [@ombharatiya](https://github.com/ombharatiya) - برای مخزن دنبال کنید، به پروژه ستاره بدهید و منتظر انتشارهای جدید بمانید.
+- **X / Twitter:** [@ombharatiya](https://x.com/ombharatiya) - نکته‌های کوتاه درباره‌ی انتشار مدل‌ها، MCP، Agentها و مصاحبه‌ها.
+- **LinkedIn:** [ombharatiya](https://linkedin.com/in/ombharatiya) - نوشته‌های عمیق‌تر و نکات آمادگی مصاحبه برای نقش‌های ارشد هوش مصنوعی.
+- **مصاحبه‌ی آزمایشی و منتورینگ:** [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) - یک مصاحبه‌ی آزمایشی یک‌به‌یک طراحی سیستم هوش مصنوعی، بازبینی پاسخ‌هایتان یا منتورینگ مستمر برای گذار به نقش‌های هوش مصنوعی رزرو کنید.
 
 <p align="center">
   <a href="https://github.com/ombharatiya"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-ombharatiya-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
@@ -342,12 +342,12 @@ mindmap
 
 ---
 
-## 📄 مجوز (License)
+## 📄 مجوز
 
-مجوز MIT. به [LICENSE](LICENSE) مراجعه کنید.
+مجوز MIT. [LICENSE](LICENSE) را ببینید.
 
 ---
 
 <p align="center">
-  <b>ساخته‌شده و نگهداری‌شده توسط <a href="https://github.com/ombharatiya">Om Bharatiya</a> · <a href="https://github.com/ombharatiya">GitHub</a> · <a href="https://x.com/ombharatiya">Twitter</a> · <a href="https://linkedin.com/in/ombharatiya">LinkedIn</a></b>
+  <b>ساخته و نگهداری‌شده توسط <a href="https://github.com/ombharatiya">Om Bharatiya</a> · <a href="https://github.com/ombharatiya">GitHub</a> · <a href="https://x.com/ombharatiya">Twitter</a> · <a href="https://linkedin.com/in/ombharatiya">LinkedIn</a></b>
 </p>
