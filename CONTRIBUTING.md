@@ -1,40 +1,40 @@
-# Contributing
+# مشارکت در پروژه (Contributing)
 
-Thanks for helping keep this guide accurate and useful. It is a living reference for production AI systems and interview prep, so contributions grounded in real-world practice are especially welcome.
+از اینکه به دقیق و کاربردی ماندن این راهنما کمک می‌کنید، سپاسگزاریم. این مستند یک مرجع زنده برای سیستم‌های هوش مصنوعی در محیط عملیاتی (production) و آمادگی برای مصاحبه‌های شغلی است؛ بنابراین مشارکت‌هایی که بر پایه تجربیات دنیای واقعی باشند، به‌ویژه مورد استقبال قرار می‌گیرند.
 
-## What to contribute
+## چه مواردی را می‌توان اضافه کرد
 
-High-value additions include:
+موارد باارزش برای مشارکت عبارتند از:
 
-- **Interview questions** with staff-level depth and worked answers.
-- **Production failure modes** you have hit, plus how you diagnosed and fixed them.
-- **Model benchmarks** and pricing updates for confirmed, publicly released models.
-- **Corrections** to anything outdated, ambiguous, or wrong.
-- **New patterns** (RAG, agents, MCP, eval pipelines, multi-tenant isolation) with concrete tradeoffs.
+- **سوالات مصاحبه** با عمق فنی در سطح مهندس ارشد (Staff-level) همراه با پاسخ‌های تشریحی و گام‌به‌گام.
+- **حالت‌های شکست در محیط عملیاتی (Production failure modes)** که با آن‌ها مواجه شده‌اید، به همراه نحوه عیب‌یابی و رفع آن‌ها.
+- **بنچمارک‌های مدل** و به‌روزرسانی‌های قیمت‌گذاری برای مدل‌های تاییدشده‌ای که به‌طور عمومی منتشر شده‌اند.
+- **اصلاحات** برای هر موردی که قدیمی، مبهم یا نادرست است.
+- **الگوهای جدید** (شامل RAG، ایجنت‌ها، MCP، پایپ‌لاین‌های ارزیابی، و جداسازی مستأجرها (multi-tenant)) همراه با موازنه‌های (Tradeoffs) ملموس و عینی.
 
-## How to propose changes
+## نحوه پیشنهاد تغییرات
 
-1. Fork the repo and create a branch from the latest `main`.
-2. Make your change in focused commits with logical boundaries.
-3. Open a pull request describing what changed and why. Link a source for any new model, price, or benchmark claim.
+۱. ریپازیتوری را Fork کرده و یک شاخه (branch) جدید از آخرین نسخه `main` بسازید.
+۲. تغییرات خود را در کامیت‌های متمرکز و با مرزبندی‌های منطقی اعمال کنید.
+۳. یک Pull Request باز کنید و توضیح دهید چه چیزی و چرا تغییر کرده است. برای هرگونه ادعای جدید درباره مدل‌ها، قیمت‌ها یا بنچمارک‌ها، لینک منبع معتبر ارائه دهید.
 
-For small fixes (typos, broken links, stale numbers), a direct PR is perfect. For larger additions such as a new chapter or case study, open an issue first so we can align on scope.
+برای اصلاحات کوچک (غلط‌های املایی، لینک‌های خراب، ارقام قدیمی)، ارسال مستقیم PR بسیار عالی است. برای موارد بزرگ‌تر مانند یک فصل جدید یا مطالعه موردی (case study)، ابتدا یک Issue باز کنید تا بتوانیم بر سر دامنه کار به توافق برسیم.
 
-## Style conventions
+## اصول و قواعد نگارش (Style conventions)
 
-- **No em dashes.** Use commas, parentheses, or a rewrite instead. This applies to prose, commit messages, and code comments.
-- **Confirmed-real models only.** Reference models that have actually shipped publicly. Do not invent model names, versions, prices, or benchmark numbers. When you cite pricing or capabilities, link the source.
-- **Say who measured it.** Label vendor-reported numbers as vendor-reported. Cite a benchmark score with its version, reasoning effort, harness, and runner (public leaderboard or vendor), because the same model can differ by several points across those. Describe announced, preview, and beta features as exactly that, not as shipped.
-- **Date time-sensitive facts in the sentence** ("released September 22, 2026", "as of October 2026") instead of adding "Last verified" stamps, which belong only in the model taxonomy, pricing, and job-market chapters.
-- **American spelling and straight quotes.** Use "-ize" endings and spellings such as "behavior" and "labeling", and use `"` and `'` rather than curly quotes.
-- **Conventional commits.** Use messages like `docs: fix broken links in case studies` or `feat(retrieval): add ColBERT reranking notes`, scoped to one logical change each.
-- **Match the surrounding voice.** Opinionated, concrete, and tradeoff-aware. Prefer specific numbers and named tools over vendor-neutral hedging.
-- **Keep links relative** and verify they resolve before opening a PR.
+- **عدم استفاده از خط تیره بلند (Em dash —).** به جای آن از ویرگول، پرانتز یا بازنویسی جمله استفاده کنید. این قانون برای متن اصلی، پیام‌های کامیت و کامنت‌های کد اعمال می‌شود.
+- **فقط مدل‌های واقعی و تاییدشده.** فقط به مدل‌هایی اشاره کنید که در عمل و به‌طور عمومی منتشر شده‌اند. نام مدل‌ها، نسخه‌ها، قیمت‌ها یا ارقام بنچمارک را از خود ابداع نکنید. هنگامی که به قیمت‌گذاری یا قابلیت‌ها استناد می‌کنید، لینک منبع را ضمیمه کنید.
+- **مشخص کنید چه کسی آن را اندازه‌گیری کرده است.** اعدادی که توسط ارائه‌دهنده گزارش شده‌اند را به عنوان گزارش‌شده توسط ارائه‌دهنده (vendor-reported) برچسب‌گذاری کنید. امتیاز بنچمارک را همراه با نسخه آن، میزان تلاش استدلال (reasoning effort)، هارنس (harness) و مجری ارزیابی (لیدربورد عمومی یا ارائه‌دهنده) ذکر کنید؛ چرا که یک مدل در شرایط مختلف ممکن است چندین امتیاز اختلاف داشته باشد. ویژگی‌های معرفی‌شده، پیش‌نمایش (preview) و آزمایشی (beta) را دقیقاً با همان عنوان توصیف کنید، نه به عنوان ویژگی‌های نهایی منتشرشده.
+- **حقایق حساس به زمان را درون جمله تاریخ‌گذاری کنید** (مانند «منتشرشده در ۲۲ سپتامبر ۲۰۲۶»، «تا اکتبر ۲۰۲۶») به جای اضافه کردن برچسب‌های «آخرین بررسی»، که این برچسب‌ها صرفاً مختص فصل‌های رده‌بندی مدل‌ها، قیمت‌گذاری و بازار کار هستند.
+- **املای استاندارد آمریکایی و نقل‌قول‌های مستقیم.** از پسوندهای "-ize" و املای کلماتی نظیر "behavior" و "labeling" استفاده کنید، و به جای نقل‌قول‌های منحنی (curly quotes) از `"` و `'` استفاده نمایید.
+- **کامیت‌های استاندارد (Conventional commits).** از پیام‌هایی مانند `docs: fix broken links in case studies` یا `feat(retrieval): add ColBERT reranking notes` استفاده کنید که هر کدام به یک تغییر منطقی محدود باشند.
+- **همخوانی با لحن کلی راهنما.** قاطع، ملموس و آگاه به موازنه‌ها (Tradeoffs). ارقام مشخص و نام ابزارها را به عبارات خنثی و مبهم ترجیح دهید.
+- **نسبی نگه‌داشتن لینک‌ها.** لینک‌ها را به صورت نسبی (relative) نگه دارید و قبل از باز کردن PR مطمئن شوید که به درستی باز می‌شوند.
 
-## Quality bar
+## معیار کیفیت (Quality bar)
 
-- Be accurate. If you are unsure, say so or leave it out.
-- Be concrete. Name the model, the metric, the failure mode, the cost.
-- Be current. This guide tracks what ships, so flag anything that has aged out.
+- دقیق باشید. اگر مطمئن نیستید، به آن اشاره کنید یا از آوردنش صرف‌نظر نمایید.
+- ملموس و مشخص باشید. نام مدل، متریک، حالت شکست و هزینه را به طور دقیق ذکر کنید.
+- به‌روز باشید. این راهنما آنچه منتشر و مستقر می‌شود را دنبال می‌کند، بنابراین هر موردی که از رده خارج شده را علامت‌گذاری کنید.
 
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
+با مشارکت در این پروژه، شما موافقت می‌کنید که مشارکت‌هایتان تحت [مجوز MIT (MIT License)](LICENSE) منتشر شود.
