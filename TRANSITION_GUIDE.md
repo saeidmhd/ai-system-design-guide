@@ -1,19 +1,19 @@
-# 🔄 Transitioning to AI Engineering Roles
+# 🔄 گذار به نقش‌های مهندسی هوش مصنوعی (AI)
 
-> A concrete, role-specific guide for engineers, PMs, QAs, and managers moving into AI-focused positions.
-> **No generic advice. Every path maps to real skills, real repo sections, and real courses.**
-
----
-
-## Who This Guide Is For
-
-You currently work as a software engineer, QA, PM, EM, or data engineer, and you want to move into an AI-focused role. This guide maps your **existing skills** to specific AI roles, tells you **exactly what gaps to close**, and points you to the right sections of this repo and courses to fill them.
+> راهنمایی ملموس و تفکیک‌شده بر اساس نقش برای مهندسان، مدیران محصول (PM)، کارشناسان تضمین کیفیت (QA) و مدیرانی که در حال انتقال به موقعیت‌های شغلی متمرکز بر هوش مصنوعی (AI) هستند.
+> **بدون توصیه‌های کلیشه‌ای و عمومی. هر مسیر به مهارت‌های واقعی، بخش‌های واقعی همین مخزن (ریپو) و دوره‌های واقعی نگاشت می‌شود.**
 
 ---
 
-## The AI Role Landscape
+## این راهنما برای چه کسانی است
 
-Before picking a path, understand what the target roles actually are:
+شما در حال حاضر به‌عنوان مهندس نرم‌افزار، QA، مدیر محصول (PM)، مدیر مهندسی (EM) یا مهندس داده فعالیت می‌کنید و می‌خواهید به نقشی متمرکز بر هوش مصنوعی (AI) وارد شوید. این راهنما **مهارت‌های فعلی** شما را به نقش‌های مشخص هوش مصنوعی نگاشت می‌کند، به شما می‌گوید **دقیقاً چه شکاف‌هایی را باید پر کنید**، و شما را به بخش‌های مناسب این مخزن (ریپو) و دوره‌ها برای پر کردن آن‌ها هدایت می‌کند.
+
+---
+
+## چشم‌انداز نقش‌های هوش مصنوعی (AI)
+
+پیش از انتخاب یک مسیر، درک کنید که نقش‌های هدف در واقع چه هستند:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -47,15 +47,15 @@ Before picking a path, understand what the target roles actually are:
 
 ---
 
-## Transition Paths by Current Role
+## مسیرهای گذار بر اساس نقش فعلی
 
 ---
 
-### 1. 🖥️ Backend Engineer → AI Engineering
+### 1. 🖥️ مهندس بک‌اند (Backend Engineer) → مهندسی هوش مصنوعی (AI Engineering)
 
-**Why backend is the best starting point:** You already understand APIs, latency, databases, distributed systems, and production reliability. AI applications need all of these. The gap is mostly domain knowledge, not engineering fundamentals.
+**چرا بک‌اند بهترین نقطه شروع است:** شما از پیش با APIها، تاخیر (Latency)، پایگاه‌های داده، سیستم‌های توزیع‌شده و قابلیت اطمینان محیط پروداکشن آشنا هستید. برنامه‌های کاربردی هوش مصنوعی به تمام این موارد نیاز دارند. این شکاف دانشی عمدتاً مربوط به دانش این حوزه است، نه اصول و بنیادهای مهندسی.
 
-#### Target Roles
+#### نقش‌های هدف
 
 ```
 Backend Engineer
@@ -66,57 +66,57 @@ Backend Engineer
       └──► RAG Architect                  (4–8 months)
 ```
 
-#### Skill Gap Analysis
+#### تحلیل شکاف مهارت‌ها
 
-| You already have | Gap to close | Priority |
-|-----------------|--------------|----------|
-| REST API design | LLM API integration patterns | 🔴 High |
-| Database design | Vector databases (Qdrant, Pinecone, Weaviate) | 🔴 High |
-| Async/streaming | Streaming LLM responses, token streaming | 🔴 High |
-| Auth & multi-tenancy | Multi-tenant RAG isolation | 🔴 High |
-| Caching (Redis, CDN) | Prompt caching, semantic caching | 🟡 Medium |
-| Monitoring (Prometheus) | LLM observability (traces, evals) | 🟡 Medium |
-| CI/CD | LLMOps pipelines, model version management | 🟡 Medium |
-| N/A | Embedding models and vector math | 🟡 Medium |
-| N/A | Prompt engineering fundamentals | 🟡 Medium |
-| N/A | RAG pipeline architecture | 🟡 Medium |
-| N/A | Agent frameworks (LangGraph, CrewAI) | 🟢 Lower |
-| N/A | Fine-tuning concepts (LoRA, RLHF) | 🟢 Lower |
+| مهارت‌های فعلی شما | شکاف مهارتی که باید جبران شود | اولویت |
+|-----------------|------------------------------|----------|
+| طراحی REST API | الگوهای یکپارچه‌سازی LLM API | 🔴 بالا |
+| طراحی پایگاه داده | پایگاه‌های داده برداری (Vector Database) (Qdrant, Pinecone, Weaviate) | 🔴 بالا |
+| پردازش ناهمگام / استریمینگ (Async/streaming) | استریمینگ پاسخ‌های LLM، استریمینگ Token | 🔴 بالا |
+| احراز هویت و چندمستأجری (multi-tenant) | ایزوله‌سازی RAG چندمستأجره (multi-tenant) | 🔴 بالا |
+| کشینگ (Redis, CDN) | کشینگ Prompt، کشینگ معنایی (Semantic caching) | 🟡 متوسط |
+| مانیتورینگ (Prometheus) | مشاهده‌پذیری LLM (ردیابی‌ها و ارزیابی‌ها / traces, evals) | 🟡 متوسط |
+| CI/CD | پایپ‌لاین‌های LLMOps، مدیریت نسخه‌های مدل | 🟡 متوسط |
+| N/A | مدل‌های Embedding و ریاضیات برداری | 🟡 متوسط |
+| N/A | اصول و مبانی Prompt Engineering | 🟡 متوسط |
+| N/A | معماری پایپ‌لاین RAG | 🟡 متوسط |
+| N/A | فریم‌ورک‌های ایجنت (LangGraph, CrewAI) | 🟢 پایین‌تر |
+| N/A | مفاهیم Fine-tuning (LoRA, RLHF) | 🟢 پایین‌تر |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰ روزه شما
 
-**Month 1: LLM Integration**
-- Learn OpenAI / Anthropic API (streaming, function calling, structured output). On OpenAI, use the Responses API: the Assistants API shut down on August 26, 2026, so skip tutorials built on it
-- Build a simple RAG system: PDF ingestion → Qdrant → LLM response
-- Read this repo: [01-foundations](01-foundations/), [02-model-landscape](02-model-landscape/), [05-prompting-and-context](05-prompting-and-context/)
-- Course: *ChatGPT Prompt Engineering for Developers* (DeepLearning.AI, free)
+**ماه ۱: یکپارچه‌سازی LLM**
+- یادگیری API شرکت‌های OpenAI / Anthropic (استریمینگ، function calling، خروجی ساختاریافته). در OpenAI، از Responses API استفاده کنید: Assistants API در ۲۶ اوت ۲۰۲۶ خاموش شد، بنابراین آموزش‌های مبتنی بر آن را نادیده بگیرید
+- ساخت یک سیستم RAG ساده: ورود داده‌های PDF (PDF ingestion) → Qdrant → پاسخ LLM
+- مطالعه این مخزن: [01-مبانی](01-foundations/)، [02-چشم‌انداز مدل‌ها](02-model-landscape/)، [05-Prompt‌نویسی و زمینه](05-prompting-and-context/)
+- دوره: *ChatGPT Prompt Engineering for Developers* (DeepLearning.AI، رایگان)
 
-**Month 2: Production Patterns**
-- Add multi-tenant isolation to your RAG system
-- Add LangSmith or Langfuse tracing  
-- Implement prompt caching for cost savings
-- Read this repo: [06-retrieval-systems](06-retrieval-systems/), [12-security-and-access](12-security-and-access/), [08-memory-and-state](08-memory-and-state/)
-- Course: *Building and Evaluating Advanced RAG* (DeepLearning.AI, free)
+**ماه ۲: الگوهای محیط پروداکشن**
+- افزودن ایزوله‌سازی چندمستأجره (multi-tenant) به سیستم RAG خود
+- افزودن ردیابی (Tracing) با LangSmith یا Langfuse  
+- پیاده‌سازی کش‌سازی Prompt برای صرفه‌جویی در هزینه‌ها
+- مطالعه این مخزن: [06-سیستم‌های بازیابی](06-retrieval-systems/)، [12-امنیت و دسترسی](12-security-and-access/)، [08-حافظه و وضعیت](08-memory-and-state/)
+- دوره: *Building and Evaluating Advanced RAG* (DeepLearning.AI، رایگان)
 
-**Month 3: Agentic Systems**
-- Build a LangGraph agent with tools (web search, code execution)
-- Add evaluation pipeline with RAGAS or Phoenix
-- Deploy with proper cost controls and rate limiting
-- Read this repo: [07-agentic-systems](07-agentic-systems/), [09-frameworks-and-tools](09-frameworks-and-tools/), [14-evaluation-and-observability](14-evaluation-and-observability/)
-- Course: *AI Agents in LangGraph* (DeepLearning.AI, free)
+**ماه ۳: سیستم‌های ایجنتیک (Agentic Systems)**
+- ساخت یک ایجنت LangGraph به همراه ابزارها (جست‌وجوی وب، اجرای کد)
+- افزودن پایپ‌لاین ارزیابی با RAGAS یا Phoenix
+- استقرار (Deployment) همراه با کنترل‌های مناسب هزینه و محدودسازی نرخ (Rate Limiting)
+- مطالعه این مخزن: [07-سیستم‌های عاملی](07-agentic-systems/)، [09-فریم‌ورک‌ها و ابزارها](09-frameworks-and-tools/)، [14-ارزیابی و مشاهده‌پذیری](14-evaluation-and-observability/)
+- دوره: *AI Agents in LangGraph* (DeepLearning.AI، رایگان)
 
-#### Portfolio Project Ideas
-- Multi-tenant document Q&A service with access control
-- Agentic code reviewer that posts GitHub PR comments
-- RAG-powered internal knowledge base with eval pipeline
+#### ایده‌های پروژه برای پورتفولیو
+- سرویس پرسش و پاسخ (Q&A) اسناد به‌صورت چندمستأجره (multi-tenant) همراه با کنترل دسترسی
+- ایجنت بازبین کد (Agentic code reviewer) که در PRهای GitHub کامنت ثبت می‌کند
+- پایگاه دانش داخلی مبتنی بر RAG به همراه پایپ‌لاین ارزیابی (Eval pipeline)
 
 ---
 
-### 2. 🎨 Frontend Engineer → AI Product Engineering
+### 2. 🎨 مهندس فرانت‌اند → مهندسی محصول هوش مصنوعی
 
-**Why this transition works:** Frontend engineers understand UX, real-time UI updates, and user behavior. AI products live or die on UX: streaming responses, progressive rendering, loading states, feedback collection. Your skills are more valuable than you think.
+**چرا این گذار جواب می‌دهد:** مهندسان فرانت‌اند UX، به‌روزرسانی‌های بلادرنگ UI و رفتار کاربر را به‌خوبی درک می‌کنند. موفقیت یا شکست محصولات هوش مصنوعی به UX گره خورده است: پاسخ‌های استریم‌شده، رندر تدریجی (Progressive Rendering)، وضعیت‌های بارگذاری (Loading States) و جمع‌آوری بازخورد. مهارت‌های شما باارزش‌تر از آن است که تصور می‌کنید.
 
-#### Target Roles
+#### نقش‌های هدف
 
 ```
 Frontend Engineer
@@ -126,54 +126,54 @@ Frontend Engineer
       └──► Full-Stack LLM Engineer     (6–9 months, add backend LLM skills)
 ```
 
-#### Skill Gap Analysis
+#### تحلیل شکاف مهارتی
 
-| You already have | Gap to close | Priority |
+| آنچه در حال حاضر دارید | شکافی که باید پر شود | اولویت |
 |-----------------|--------------|----------|
-| Streaming UI (SSE, WebSocket) | LLM token streaming integration | 🔴 High |
-| State management | Conversation state, session memory | 🔴 High |
-| User feedback patterns | AI feedback collection (thumbs, ratings) | 🔴 High |
-| Form validation | Prompt input validation and sanitization | 🟡 Medium |
-| Error handling for async | LLM timeout, fallback, retry patterns | 🟡 Medium |
-| A/B testing | LLM A/B testing and variant tracking | 🟡 Medium |
-| N/A | Basic prompt engineering | 🟡 Medium |
-| N/A | LLM API integration (at least one provider) | 🟡 Medium |
-| N/A | Understanding of context windows | 🟡 Medium |
-| N/A | Basic RAG concepts (what it is and why) | 🟢 Lower |
+| رابط کاربری استریمینگ (SSE، WebSocket) | یکپارچه‌سازی استریم Tokenهای LLM | 🔴 بالا |
+| مدیریت وضعیت | وضعیت گفتگو، حافظه نشست (Session) | 🔴 بالا |
+| الگوهای بازخورد کاربر | جمع‌آوری بازخورد هوش مصنوعی (thumbs، امتیازدهی) | 🔴 بالا |
+| اعتبارسنجی فرم | اعتبارسنجی و پاک‌سازی ورودی Prompt | 🟡 متوسط |
+| مدیریت خطا برای عملیات ناهمگام (Async) | الگوهای وقفه (Timeout)، جایگزین (Fallback) و تلاش مجدد (Retry) در LLM | 🟡 متوسط |
+| تست A/B | تست A/B و ردیابی نسخه‌ها (Variant Tracking) در LLM | 🟡 متوسط |
+| ندارد | مبانی مهندسی Prompt | 🟡 متوسط |
+| ندارد | یکپارچه‌سازی با API یک LLM (حداقل یک ارائه‌دهنده) | 🟡 متوسط |
+| ندارد | درک پنجره‌های زمینه (Context Windows) | 🟡 متوسط |
+| ندارد | مفاهیم پایه RAG (چیستی و چرایی آن) | 🟢 پایین‌تر |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰ روزه شما
 
-**Month 1: Integrate LLMs into UI**
-- Build a streaming chat interface (Next.js + Vercel AI SDK)
-- Implement proper loading states, token-by-token rendering, error boundaries
-- Add a feedback widget (thumbs up/down, regenerate button)
-- Course: *ChatGPT Prompt Engineering for Developers* (DeepLearning.AI, free)
+**ماه ۱: یکپارچه‌سازی LLMها با UI**
+- ساخت یک رابط چت استریمینگ (Next.js + Vercel AI SDK)
+- پیاده‌سازی وضعیت‌های مناسب بارگذاری، رندر Token به Token و مرزهای خطا (Error Boundaries)
+- افزودن ویجت بازخورد (thumbs up/down، دکمه regenerate)
+- دوره: *ChatGPT Prompt Engineering for Developers* (DeepLearning.AI، رایگان)
 
-**Month 2: UX Patterns for AI**
-- Implement conversation memory with session state
-- Add citation rendering for RAG responses
-- Build a prompt playground UI for your team
-- Read this repo: [08-memory-and-state](08-memory-and-state/), [05-prompting-and-context](05-prompting-and-context/)
+**ماه ۲: الگوهای UX برای هوش مصنوعی**
+- پیاده‌سازی حافظه گفتگو با وضعیت نشست (Session State)
+- افزودن رندر ارجاعات (Citations) برای پاسخ‌های RAG
+- ساخت رابط کاربری محیط آزمایش Prompt (Prompt Playground) برای تیم خود
+- مطالعه این مخزن: [08-حافظه و وضعیت](08-memory-and-state/)، [05-Prompt و زمینه](05-prompting-and-context/)
 
-**Month 3: Eval Integration**
-- Instrument your UI to collect feedback signals
-- Connect feedback to a Langfuse or LangSmith project
-- Run a basic A/B test between two prompt variants
-- Read this repo: [14-evaluation-and-observability](14-evaluation-and-observability/)
-- Course: *Evaluating and Debugging Generative AI* (DeepLearning.AI + W&B, free)
+**ماه ۳: یکپارچه‌سازی ارزیابی (Eval)**
+- ابزارگذاری رابط کاربری (UI) برای جمع‌آوری سیگنال‌های بازخورد
+- اتصال بازخوردها به یک پروژه در Langfuse یا LangSmith
+- اجرای یک تست A/B پایه‌ای بین دو نسخه (Variant) مختلف از Prompt
+- مطالعه این مخزن: [14-ارزیابی و مشاهده‌پذیری](14-evaluation-and-observability/)
+- دوره: *Evaluating and Debugging Generative AI* (DeepLearning.AI + W&B، رایگان)
 
-#### Portfolio Project Ideas
-- Streaming document editor with AI suggestions and inline citations
-- Multi-step AI form wizard with persistent context
-- AI feedback dashboard showing per-feature quality metrics
+#### ایده‌های پروژه برای پورتفولیو
+- ویرایشگر اسناد استریمینگ همراه با پیشنهادهای هوش مصنوعی و ارجاعات درون‌خطی (Inline Citations)
+- ویزارد فرم چندمرحله‌ای هوش مصنوعی با زمینه پایدار (Persistent Context)
+- داشبورد بازخورد هوش مصنوعی با نمایش معیارهای کیفیت به تفکیک قابلیت (Per-feature)
 
 ---
 
-### 3. 🧪 QA Engineer → AI Eval Engineer
+### 3. 🧪 مهندس QA → مهندس ارزیابی هوش مصنوعی (AI Eval Engineer)
 
-**Why QA is the most underrated path:** AI evaluation is essentially a new form of QA. Manual test case design, edge case thinking, regression prevention: these are exactly what AI systems need. But the tools are different, and the mindset around non-deterministic outputs needs to shift.
+**چرا QA دست‌کم‌گرفته‌شده‌ترین مسیر است:** ارزیابی هوش مصنوعی اساساً شکل جدیدی از QA است. طراحی دستی موارد آزمون (Test cases)، تفکر دربارهٔ حالت‌های خاص و لبه‌ای (Edge cases)، و پیشگیری از پسرفت (Regression): این‌ها دقیقاً همان چیزهایی هستند که سیستم‌های هوش مصنوعی به آن‌ها نیاز دارند. اما ابزارها متفاوت‌اند و طرز فکر پیرامون خروجی‌های غیرقطعی (Non-deterministic) باید تغییر کند.
 
-#### Target Roles
+#### نقش‌های هدف
 
 ```
 QA Engineer
@@ -183,56 +183,56 @@ QA Engineer
       └──► Red Team Analyst            (6–9 months, security focus)
 ```
 
-#### Skill Gap Analysis
+#### تحلیل شکاف مهارت‌ها
 
-| You already have | Gap to close | Priority |
+| مهارت‌های فعلی شما | شکافی که باید پر شود | اولویت |
 |-----------------|--------------|----------|
-| Test case design | Eval dataset creation (dimensional sampling) | 🔴 High |
-| Regression testing mindset | Eval suites as CI quality gates | 🔴 High |
-| Bug reporting | Error analysis methodology (open/axial coding) | 🔴 High |
-| Test automation | LLM-as-judge evaluator automation | 🔴 High |
-| Non-functional testing | Hallucination, bias, toxicity detection | 🟡 Medium |
-| User acceptance testing | Human annotation workflows | 🟡 Medium |
-| N/A | Tracing and observability setup | 🟡 Medium |
-| N/A | RAGAS metrics (faithfulness, relevance, recall) | 🟡 Medium |
-| N/A | Basic prompt engineering | 🟢 Lower |
-| N/A | Python scripting for eval pipelines | 🟢 Lower |
+| طراحی موارد آزمون (Test case design) | ساخت مجموعه داده ارزیابی (نمونه‌برداری ابعادی) | 🔴 بالا |
+| طرز فکر آزمون‌های پسرفت (Regression testing) | مجموعه‌های ارزیابی به عنوان دروازه‌های کیفیت CI | 🔴 بالا |
+| گزارش باگ (Bug reporting) | متدولوژی تحلیل خطا (کدگذاری باز/محوری) | 🔴 بالا |
+| خودکارسازی آزمون (Test automation) | خودکارسازی ارزیاب‌های LLM-as-judge | 🔴 بالا |
+| آزمون‌های غیرکارکردی (Non-functional testing) | تشخیص توهم، سوگیری و سمیت (Hallucination, bias, toxicity) | 🟡 متوسط |
+| آزمون پذیرش کاربر (UAT) | ورک‌فلوهای حاشیه‌نویسی انسانی (Human annotation) | 🟡 متوسط |
+| ناموجود (N/A) | راه‌اندازی ردیابی (Tracing) و مشاهده‌پذیری (Observability) | 🟡 متوسط |
+| ناموجود (N/A) | معیارهای RAGAS (وفاداری، ارتباط، بازیابی) | 🟡 متوسط |
+| ناموجود (N/A) | مهندسی Prompt مقدماتی | 🟢 پایین‌تر |
+| ناموجود (N/A) | اسکریپت‌نویسی پایتون برای پایپ‌لاین‌های ارزیابی | 🟢 پایین‌تر |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰ روزه شما
 
-**Month 1: Error Analysis Foundation**
-- Set up Langfuse or Phoenix tracing on any LLM application (your own or open source)
-- Do 3 rounds of manual error analysis: review 50 traces, write notes, categorize
-- Read the repo's evals companion guides:
-  - [AI Evals: Comprehensive Study Guide](ai_evals_comprehensive_study_guide.md)
-  - [AI Evals: LangWatch + Langfuse Guide](ai_evals_complete_guide_langwatch_langfuse.md)
-- Course chapter to read: *Error Analysis: The Secret Sauce* (inside evals guides, Chapter 3)
+**ماه ۱: پایه‌ریزی تحلیل خطا**
+- راه‌اندازی ردیابی (Tracing) با Langfuse یا Phoenix روی هر اپلیکیشن LLM (برنامه خودتان یا یک پروژه متن‌باز)
+- انجام ۳ مرحله تحلیل خطای دستی: بررسی ۵۰ رد (Trace)، یادداشت‌برداری و دسته‌بندی آن‌ها
+- راهنماهای مکمل ارزیابی این مخزن را مطالعه کنید:
+  - [ارزیابی هوش مصنوعی: راهنمای جامع مطالعه](ai_evals_comprehensive_study_guide.md)
+  - [ارزیابی هوش مصنوعی: راهنمای جامع LangWatch و Langfuse](ai_evals_complete_guide_langwatch_langfuse.md)
+- فصلی از دوره که باید مطالعه شود: *تحلیل خطا: فرمول جادویی (The Secret Sauce)* (درون راهنماهای ارزیابی، فصل ۳)
 
-**Month 2: Build Evaluators**
-- Write 3 code-based evaluators (JSON schema check, format validator, regex-based)
-- Write 1 LLM-as-judge evaluator with Train/Dev/Test calibration
-- Introduce `judgy` for statistical bias correction
-- Read this repo: [14-evaluation-and-observability](14-evaluation-and-observability/)
-- Course: *Quality and Safety for LLM Applications* (DeepLearning.AI + WhyLabs, free)
+**ماه ۲: ساخت ارزیاب‌ها**
+- نوشتن ۳ ارزیاب مبتنی بر کد (بررسی شمای JSON، اعتبارسنج فرمت و مبتنی بر regex)
+- نوشتن ۱ ارزیاب LLM-as-judge همراه با کالیبراسیون Train/Dev/Test
+- معرفی و به‌کارگیری `judgy` برای تصحیح سوگیری آماری
+- مطالعه این بخش از مخزن: [۱۴- ارزیابی و مشاهده‌پذیری](14-evaluation-and-observability/)
+- دوره: *کیفیت و ایمنی برای برنامه‌های کاربردی LLM* (از DeepLearning.AI + WhyLabs، رایگان)
 
-**Month 3: CI/CD Integration**
-- Wire evaluators into a GitHub Actions workflow so evals run on every PR
-- Define quality gates (faithfulness > 0.85, format pass rate > 0.99)
-- Create a weekly eval report dashboard
-- Course: *AI Evals For Engineers & PMs* (Maven, Hamel + Shreya; paid, worth it for career transition)
+**ماه ۳: یکپارچه‌سازی با CI/CD**
+- اتصال ارزیاب‌ها به ورک‌فلوی GitHub Actions به‌گونه‌ای که ارزیابی‌ها روی هر PR اجرا شوند
+- تعریف دروازه‌های کیفیت (وفاداری / faithfulness > 0.85، نرخ قبولی قالب > 0.99)
+- ایجاد یک داشبورد گزارش هفتگی ارزیابی
+- دوره: *ارزیابی‌های هوش مصنوعی برای مهندسان و مدیران محصول* (Maven، هامل + شریا؛ پولی، اما برای تغییر مسیر شغلی ارزشمند است)
 
-#### Portfolio Project Ideas
-- Open-source eval suite for a public LLM application
-- Blog post: "How I applied QA methodology to catch LLM failures"
-- Eval pipeline template repo with LangSmith + GitHub Actions
+#### ایده‌های پروژه برای پورتفولیو
+- مجموعه ارزیابی متن‌باز برای یک اپلیکیشن عمومی LLM
+- پست وبلاگ: «چگونه از متدولوژی QA برای شناسایی خطاهای LLM استفاده کردم»
+- مخزن قالب پایپ‌لاین ارزیابی با LangSmith + GitHub Actions
 
 ---
 
-### 4. 📋 Product Manager → AI Product Manager
+### 4. 📋 مدیر محصول → مدیر محصول هوش مصنوعی (AI Product Manager)
 
-**Why PMs are uniquely positioned:** AI products fail not because of bad models but because of bad product decisions (wrong problem, wrong eval criteria, wrong success metrics). PMs who understand AI failure modes are extremely rare and highly valued.
+**چرا مدیران محصول (PMها) در موقعیت منحصربه‌فردی قرار دارند:** محصولات هوش مصنوعی نه به دلیل مدل‌های ضعیف، بلکه به خاطر تصمیمات نادرست محصولی (مسئله‌ی اشتباه، معیارهای ارزیابی غلط، معیارهای موفقیت نادرست) شکست می‌خورند. مدیران محصولی که حالت‌های شکست (Failure Modes) هوش مصنوعی را درک می‌کنند، بسیار کمیاب بوده و از ارزش بسیار بالایی برخوردارند.
 
-#### Target Roles
+#### نقش‌های هدف
 
 ```
 Product Manager
@@ -242,56 +242,56 @@ Product Manager
       └──► Head of AI Product           (9–18 months, leadership path)
 ```
 
-#### Skill Gap Analysis
+#### تحلیل شکاف مهارتی
 
-| You already have | Gap to close | Priority |
+| مهارت‌های فعلی شما | شکافی که باید پر شود | اولویت |
 |-----------------|--------------|----------|
-| User research | Error analysis as voice-of-customer | 🔴 High |
-| Success metrics definition | AI-specific metrics (faithfulness, completion rate) | 🔴 High |
-| Roadmap prioritization | Failure mode prioritization from eval data | 🔴 High |
-| A/B testing | LLM A/B testing design (prompt variants, models) | 🔴 High |
-| Stakeholder communication | Explaining AI limitations to partners | 🟡 Medium |
-| PRD writing | AI system capability docs and constraint documentation | 🟡 Medium |
-| N/A | How LLMs work at a high level (no code required) | 🟡 Medium |
-| N/A | RAG pipeline concepts | 🟡 Medium |
-| N/A | Tracing / observability tools (Langfuse UI) | 🟡 Medium |
-| N/A | Prompt engineering basics | 🟢 Lower |
+| تحقیقات کاربر | تحلیل خطا به عنوان صدای مشتری (Voice-of-Customer) | 🔴 بالا |
+| تعریف معیارهای موفقیت | معیارهای اختصاصی هوش مصنوعی (faithfulness، نرخ تکمیل) | 🔴 بالا |
+| اولویت‌بندی نقشه‌ی راه | اولویت‌بندی حالت‌های شکست بر اساس داده‌های ارزیابی (eval) | 🔴 بالا |
+| تست A/B | طراحی آزمون A/B برای LLM (انواع Prompt، مدل‌ها) | 🔴 بالا |
+| ارتباط با ذی‌نفعان | توضیح محدودیت‌های هوش مصنوعی برای شرکا | 🟡 متوسط |
+| نگارش PRD | مستندسازی قابلیت‌ها و محدودیت‌های سیستم هوش مصنوعی | 🟡 متوسط |
+| N/A | نحوه کارکرد LLMها در سطح کلان (بدون نیاز به کدنویسی) | 🟡 متوسط |
+| N/A | مفاهیم پایپ‌لاین RAG | 🟡 متوسط |
+| N/A | ابزارهای Tracing / مشاهده‌پذیری (رابط کاربری Langfuse) | 🟡 متوسط |
+| N/A | مبانی مهندسی Prompt | 🟢 پایین‌تر |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰ روزه شما
 
-**Month 1: Build Technical Vocabulary**
-- Read this repo's foundations, WITHOUT skipping to code:
-  - [01-foundations](01-foundations/): understand transformers conceptually
-  - [02-model-landscape](02-model-landscape/): know which models exist and what they cost
-  - [GLOSSARY.md](GLOSSARY.md): learn the vocabulary
-- Course: *AI for Everyone* (Coursera, Andrew Ng, free), designed for non-technical roles
+**ماه ۱: تقویت دایره واژگان فنی**
+- مبانی این مخزن را مطالعه کنید، بدون این‌که مستقیماً به سراغ کدها بروید:
+  - [01-foundations](01-foundations/): ترنسفورمرها را به‌صورت مفهومی درک کنید
+  - [02-model-landscape](02-model-landscape/): بدانید چه مدل‌هایی وجود دارند و هزینه آن‌ها چقدر است
+  - [GLOSSARY.md](GLOSSARY.md): واژگان را بیاموزید
+- دوره: *AI for Everyone* (در Coursera، اثر Andrew Ng، رایگان)، طراحی‌شده برای نقش‌های غیرفنی
 
-**Month 2: Own Error Analysis**
-- Ask your engineering team to set up Langfuse or LangSmith
-- Personally review 100+ traces from your product; take notes and find patterns
-- Run an error analysis session with your team; lead the failure mode categorization
-- Read this repo: [14-evaluation-and-observability](14-evaluation-and-observability/)
-- Read: Chapter 3 (Error Analysis) in [AI Evals Comprehensive Study Guide](ai_evals_comprehensive_study_guide.md)
+**ماه ۲: مالکیت تحلیل خطا را بر عهده بگیرید**
+- از تیم مهندسی خود بخواهید Langfuse یا LangSmith را راه‌اندازی کنند
+- شخصاً بیش از ۱۰۰ تریس (Trace) از محصول خود را بررسی کنید؛ یادداشت بردارید و الگوها را پیدا کنید
+- یک جلسه تحلیل خطا با تیم خود برگزار کنید؛ دسته‌بندی حالت‌های شکست (Failure Modes) را رهبری کنید
+- این بخش از مخزن را مطالعه کنید: [14-evaluation-and-observability](14-evaluation-and-observability/)
+- مطالعه کنید: فصل ۳ (تحلیل خطا) در [راهنمای جامع مطالعه ارزیابی‌های هوش مصنوعی](ai_evals_comprehensive_study_guide.md)
 
-**Month 3: Define Your Eval Strategy**
-- Write an "AI Quality Spec" for your product: define what good looks like for each feature
-- Work with engineers to instrument evals for those criteria
-- Set success metrics for your next quarter that include AI quality gates (not just user growth)
-- Course: *AI Evals For Engineers & PMs* (Maven, Hamel + Shreya; explicitly designed for PMs)
+**ماه ۳: استراتژی ارزیابی (Eval) خود را تدوین کنید**
+- یک «مشخصات کیفیت هوش مصنوعی» (AI Quality Spec) برای محصول خود بنویسید: مشخص کنید عملکرد مطلوب برای هر قابلیت به چه صورت است
+- با مهندسان همکاری کنید تا ارزیابی‌ها را برای آن معیارها پیاده‌سازی و اینسترومنت (instrument) کنند
+- سنجه‌های موفقیت فصل بعد خود را به گونه‌ای تعیین کنید که شامل دروازه‌های کیفیت هوش مصنوعی (AI Quality Gates) باشند (نه صرفاً رشد کاربران)
+- دوره: *AI Evals For Engineers & PMs* (در Maven، اثر Hamel + Shreya؛ مشخصاً برای مدیران محصول طراحی شده است)
 
-#### Skills That Make You Stand Out as an AI PM
-- You've personally reviewed traces (most PMs delegate this)
-- You can define failure modes quantitatively, not just qualitatively
-- You can communicate the cost of quality improvements (prompt changes vs. model upgrades vs. fine-tuning)
-- You understand the difference between RAG, fine-tuning, and prompt engineering, and when each is appropriate
+#### مهارت‌هایی که شما را به عنوان یک مدیر محصول هوش مصنوعی (AI PM) متمایز می‌کنند
+- شما شخصاً تریس‌ها (Traceها) را بررسی کرده‌اید (بیشتر مدیران محصول این کار را واگذار می‌کنند)
+- می‌توانید حالت‌های شکست را نه فقط به صورت کیفی، بلکه به شکل کمّی تعریف کنید
+- می‌توانید هزینه بهبودهای کیفیت را به خوبی توضیح دهید و منتقل کنید (تغییرات Prompt در برابر ارتقای مدل در برابر Fine-tuning)
+- تفاوت میان RAG، Fine-tuning و مهندسی Prompt را درک می‌کنید و می‌دانید هر کدام در چه زمانی مناسب هستند
 
 ---
 
-### 5. 👨‍💼 Engineering Manager → AI Engineering Manager
+### 5. 👨💼 مدیر مهندسی (Engineering Manager) → مدیر مهندسی هوش مصنوعی (AI Engineering Manager)
 
-**The EM transition is about leadership evolution:** Technical literacy in AI is necessary but not sufficient. The key shift is managing non-deterministic systems, teams evaluating quality without ground truth, and a field that changes every 3–6 months.
+**گذار مدیر مهندسی (EM) درباره تکامل رهبری است:** داشتن سواد فنی در هوش مصنوعی لازم است اما کافی نیست. تغییر کلیدی، مدیریت سیستم‌های غیر‌قطعی (Non-deterministic)، هدایت تیم‌هایی که کیفیت را بدون حقیقت مبنا (Ground Truth) ارزیابی می‌کنند، و فعالیت در حوزه‌ای است که هر ۳ تا ۶ ماه تغییر می‌کند.
 
-#### Target Roles
+#### نقش‌های هدف
 
 ```
 Engineering Manager
@@ -301,44 +301,44 @@ Engineering Manager
       └──► VP of AI / Head of AI        (18–36 months)
 ```
 
-#### What Changes as an AI EM
+#### تغییرات در جایگاه یک مدیر مهندسی هوش مصنوعی (AI EM)
 
-| Traditional EM | AI EM additions |
+| مدیر مهندسی سنتی (Traditional EM) | موارد افزوده در مدیر مهندسی هوش مصنوعی (AI EM) |
 |----------------|-----------------|
-| Sprint planning | Eval-driven iteration cycles |
-| PR review standards | Eval suite as the new "tests pass" bar |
-| Hiring for backend/frontend | Hiring for LLM, vector search, evals expertise |
-| Incident response for outages | Incident response for quality regressions |
-| Roadmap with feature flags | Roadmap with model upgrade risks |
-| Performance reviews based on delivery | Performance reviews including AI quality ownership |
+| برنامه‌ریزی اسپرینت | چرخه‌های تکرار مبتنی بر ارزیابی (Eval-driven) |
+| استانداردهای بررسی PR | مجموعه ارزیابی (Eval suite) به عنوان معیار جدید قبولی تست‌ها ("tests pass") |
+| استخدام برای بک‌اند/فرانت‌اند | استخدام برای تخصص در LLM، جستجوی برداری (Vector Search) و ارزیابی‌ها (Evals) |
+| پاسخ به حوادث برای قطعی‌ها (Outages) | پاسخ به حوادث برای پسرفت کیفی (Quality Regressions) |
+| نقشه راه همراه با Feature Flagها | نقشه راه همراه با ریسک‌های ارتقای مدل |
+| ارزیابی عملکرد بر اساس تحویل (Delivery) | ارزیابی عملکرد شامل مالکیت کیفیت هوش مصنوعی |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰ روزه شما
 
-**Month 1: Technical Depth**
-- Read all of [09-frameworks-and-tools](09-frameworks-and-tools/) to understand the tooling landscape
-- Read [09-claude-code.md](09-frameworks-and-tools/09-claude-code.md) and [10-opencoderguide.md](09-frameworks-and-tools/10-opencoderguide.md); you'll manage teams using these
-- Understand costs: read [02-model-landscape/03-pricing-and-costs.md](02-model-landscape/03-pricing-and-costs.md)
-- Course: *Generative AI with LLMs* (Coursera, DeepLearning.AI), which gives you enough depth to lead technical discussions
+**ماه ۱: عمق فنی**
+- تمام [09-frameworks-and-tools](09-frameworks-and-tools/) را مطالعه کنید تا چشم‌انداز ابزارها را درک کنید
+- [09-claude-code.md](09-frameworks-and-tools/09-claude-code.md) و [10-opencoderguide.md](09-frameworks-and-tools/10-opencoderguide.md) را مطالعه کنید؛ شما تیم‌هایی را مدیریت خواهید کرد که از این‌ها استفاده می‌کنند
+- هزینه‌ها را درک کنید: [02-model-landscape/03-pricing-and-costs.md](02-model-landscape/03-pricing-and-costs.md) را مطالعه کنید
+- دوره: *Generative AI with LLMs* (پلتفرم Coursera، DeepLearning.AI)، که به شما عمق کافی برای هدایت بحث‌های فنی را می‌دهد
 
-**Month 2: Process and Team Design**
-- Redesign your team's definition of "done" to include eval gates
-- Build an eval culture: weekly trace reviews, quality metrics in retros
-- Define your AI incident runbook: what happens when hallucination rate spikes?
-- Read this repo: [13-reliability-and-safety](13-reliability-and-safety/), [14-evaluation-and-observability](14-evaluation-and-observability/)
+**ماه ۲: طراحی فرآیند و تیم**
+- تعریف تیم خود از «انجام کار» ("done") را باز‌طراحی کنید تا شامل گیت‌های ارزیابی (Eval gates) شود
+- یک فرهنگ ارزیابی (Eval) بسازید: بررسی‌های هفتگی Traceها، معیارهای کیفیت در جلسات بازنگری (Retros)
+- ران‌بوک (Runbook) حوادث هوش مصنوعی خود را تعریف کنید: زمانی که نرخ توهم (Hallucination) جهش پیدا می‌کند چه رخ می‌دهد؟
+- این مخزن را مطالعه کنید: [13-reliability-and-safety](13-reliability-and-safety/)، [14-evaluation-and-observability](14-evaluation-and-observability/)
 
-**Month 3: Strategy and Hiring**
-- Define the AI skills matrix for your team: who has what, what's missing
-- Build an interview rubric for AI engineers (use [00-interview-prep](00-interview-prep/) as your source)
-- Set team-level AI quality OKRs for next quarter
-- Course: *CS294 LLM Agents* (Berkeley, free), which gives you the depth for strategy conversations
+**ماه ۳: استراتژی و استخدام**
+- ماتریس مهارت‌های هوش مصنوعی را برای تیم خود تعریف کنید: چه کسی چه مهارتی دارد و چه چیزهایی کم است
+- یک روبیک مصاحبه برای مهندسان هوش مصنوعی بسازید (از [00-interview-prep](00-interview-prep/) به عنوان منبع خود استفاده کنید)
+- OKRهای کیفیت هوش مصنوعی را در سطح تیم برای فصل آینده تعیین کنید
+- دوره: *CS294 LLM Agents* (دانشگاه برکلی، رایگان)، که عمق لازم برای گفتگو‌های استراتژیک را در اختیارتان قرار می‌دهد
 
 ---
 
-### 6. 🛠️ DevOps / Platform Engineer → MLOps / AI Infrastructure Engineer
+### 6. 🛠️ مهندس DevOps / پلتفرم → مهندس MLOps / زیرساخت هوش مصنوعی (AI Infrastructure Engineer)
 
-**Why platform engineers thrive here:** Kubernetes, CI/CD, observability, cost management, SLAs: you've done all of this. The AI-specific additions are GPU scheduling, model serving, and LLMOps pipelines.
+**چرا مهندسان پلتفرم در این حوزه موفق می‌شوند:** کوبرنتیز (Kubernetes)، CI/CD، مشاهده‌پذیری (Observability)، مدیریت هزینه و SLAها: شما پیش از این همه این کارها را انجام داده‌اید. موارد جدید و مختص هوش مصنوعی که به این مهارت‌ها اضافه می‌شوند عبارتند از: زمان‌بندی GPU (GPU scheduling)، سرویس‌دهی مدل (Model Serving) و پایپ‌لاین‌های LLMOps.
 
-#### Target Roles
+#### نقش‌های هدف (Target Roles)
 
 ```
 DevOps / Platform Engineer
@@ -348,48 +348,48 @@ DevOps / Platform Engineer
       └──► AI Platform Engineer         (9–12 months)
 ```
 
-#### Skill Gap Analysis
+#### تحلیل شکاف مهارتی (Skill Gap Analysis)
 
-| You already have | Gap to close | Priority |
+| مهارت‌هایی که از قبل دارید | شکافی که باید پر کنید | اولویت |
 |-----------------|--------------|----------|
-| Container orchestration (K8s) | GPU node pools, NVIDIA device plugins | 🔴 High |
-| CI/CD pipelines | LLMOps pipelines (model eval, deployment gates) | 🔴 High |
-| Observability stacks | LLM-specific metrics (token throughput, TTFT) | 🔴 High |
-| Cost management | GPU cost optimization, spot instances for training | 🔴 High |
-| Secret management | API key rotation for multiple LLM providers | 🟡 Medium |
-| N/A | vLLM / SGLang for self-hosted model serving (Hugging Face TGI is in maintenance mode) | 🟡 Medium |
-| N/A | Model versioning and registry | 🟡 Medium |
-| N/A | Quantization basics (GPTQ, AWQ, GGUF, FP8, NVFP4) | 🟡 Medium |
-| N/A | Basic prompt engineering to understand what you're serving | 🟢 Lower |
+| ارکستراسیون کانتینرها (K8s) | نودپول‌های GPU (GPU node pools)، پلاگین‌های دستگاه NVIDIA (NVIDIA device plugins) | 🔴 بالا |
+| پایپ‌لاین‌های CI/CD | پایپ‌لاین‌های LLMOps (ارزیابی مدل، گیت‌های استقرار (Deployment)) | 🔴 بالا |
+| استک‌های مشاهده‌پذیری (Observability) | معیارهای مختص LLM (توان عملیاتی (Throughput) بر حسب Token، TTFT) | 🔴 بالا |
+| مدیریت هزینه | بهینه‌سازی هزینه GPU، اینستنس‌های Spot برای آموزش | 🔴 بالا |
+| مدیریت Secretها (Secret Management) | چرخش کلیدهای API (API key rotation) برای چندین ارائه‌دهنده LLM | 🟡 متوسط |
+| N/A | استفاده از vLLM / SGLang برای سرویس‌دهی خودمیزبان مدل (سرویس Hugging Face TGI در حالت نگهداری است) | 🟡 متوسط |
+| N/A | نسخه‌بندی و رجیستری مدل (Model versioning and registry) | 🟡 متوسط |
+| N/A | مبانی کوانتیزاسیون (GPTQ, AWQ, GGUF, FP8, NVFP4) | 🟡 متوسط |
+| N/A | مهندسی مقدماتی Prompt برای درک آنچه سرویس‌دهی می‌کنید | 🟢 پایین‌تر |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰ روزه شما
 
-**Month 1: LLM Serving**
-- Deploy vLLM 0.32.0 or later (the security floor since October 18, 2026: 0.30.0 closed more than 20 advisories from August and September, including a model-load remote-code-execution bug, and 0.32.0 fixes two October CVEs that affect it; note that 0.32.0 requires Python 3.11 and no longer allows all CORS origins by default; if the host will load third-party model repositories, take v0.33.0 (November 2, 2026), which fixes GHSA-qrj2-j723-m6w8 but ships CUDA 13.0-only builds that need NVIDIA driver 580 or newer and turns on a `/v1/decisions` endpoint by default) serving a small Apache-2.0 model such as IBM Granite 4.2 8B. Read the model card's engine pin before you pick: IBM's Granite Switch 4.1 (October 2026) pins its optional vLLM backend to ">= 0.26.0, < 0.31.0", below that floor, which is the kind of conflict a CI check should catch
-- Add Prometheus metrics: tokens/sec, latency P50/P95/P99, queue depth
-- Set up auto-scaling based on request queue
-- Read this repo: [04-inference-optimization](04-inference-optimization/), [11-infrastructure-and-mlops](11-infrastructure-and-mlops/)
-- Course: *Efficiently Serving LLMs* (DeepLearning.AI + Predibase, free)
+**ماه ۱: سرویس‌دهی LLM (LLM Serving)**
+- استقرار (Deployment) نسخه 0.32.0 یا بالاتر vLLM (کف امنیتی از ۱۸ اکتبر ۲۰۲۶: نسخه 0.30.0 بیش از ۲۰ توصیه‌نامه امنیتی مربوط به ماه‌های اوت و سپتامبر از جمله باگ اجرای کد از راه دور هنگام بارگذاری مدل را برطرف کرد، و نسخه 0.32.0 دو CVE ماه اکتبر را که روی آن تأثیر می‌گذاشت رفع می‌کند؛ توجه داشته باشید که نسخه 0.32.0 به پایتون 3.11 نیاز دارد و به‌طور پیش‌فرض دیگر به تمام مبداهای CORS اجازه دسترسی نمی‌دهد؛ اگر هاست قرار است مخازن مدل شخص ثالث (Third-party) را بارگذاری کند، از نسخه v0.33.0 (۲ نوامبر ۲۰۲۶) استفاده کنید که آسیب‌پذیری GHSA-qrj2-j723-m6w8 را برطرف کرده اما فقط با بیلد‌های اختصاصی CUDA 13.0 عرضه می‌شود که به درایور 580 یا جدیدتر NVIDIA نیاز دارند و اندپوینت `/v1/decisions` را به‌طور پیش‌فرض فعال می‌کند) برای سرویس‌دهی یک مدل کوچک با مجوز Apache-2.0 مانند IBM Granite 4.2 8B. پیش از انتخاب، پین موتور (Engine Pin) در Model Card را بررسی کنید: مدل Granite Switch 4.1 شرکت IBM (اکتبر ۲۰۲۶) بک‌اند اختیاری vLLM خود را به ">= 0.26.0, < 0.31.0" پین می‌کند که پایین‌تر از این کف امنیتی است؛ این دقیقاً همان نوع تداخلی است که یک بررسی CI باید آن را شناسایی کند
+- افزودن متریک‌های Prometheus: نرخ tokens/sec، تاخیر (Latency) در صدک‌های P50/P95/P99 و عمق صف (Queue depth)
+- راه‌اندازی مقیاس‌پذیری خودکار (Auto-scaling) بر اساس صف درخواست‌ها
+- مطالعه این بخش‌های ریپازیتوری: [04-بهینه‌سازی استنتاج (Inference)](04-inference-optimization/)، [11-زیرساخت و MLOps](11-infrastructure-and-mlops/)
+- دوره آموزشی: *سرویس‌دهی کارآمد به LLMها (Efficiently Serving LLMs)* (از DeepLearning.AI + Predibase، رایگان)
 
-**Month 2: LLMOps Pipeline**
-- Set up LangSmith or Langfuse for trace collection
-- Build a CI/CD quality gate: eval suite runs before model deploy
-- Implement prompt version control (Langfuse prompt registry or DSPy)
-- Read this repo: [14-evaluation-and-observability](14-evaluation-and-observability/)
+**ماه ۲: پایپ‌لاین LLMOps**
+- راه‌اندازی LangSmith یا Langfuse برای جمع‌آوری Traceها (Trace collection)
+- ایجاد یک گیت کیفی (Quality Gate) در CI/CD: اجرای مجموعه ارزیابی (Eval suite) پیش از استقرار (Deployment) مدل
+- پیاده‌سازی کنترل نسخه Prompt (با رجیستری Prompt در Langfuse یا DSPy)
+- مطالعه این بخش از ریپازیتوری: [14-ارزیابی و مشاهده‌پذیری](14-evaluation-and-observability/)
 
-**Month 3: Scale and Cost**
-- Compare self-hosted vs. API cost at target volume (use pricing guide in repo)
-- Set up cost dashboards per model, per team, per feature
-- Implement graceful multi-provider failover
-- Course: *Machine Learning in Production* (Coursera, DeepLearning.AI)
+**ماه ۳: مقیاس‌پذیری و هزینه**
+- مقایسه هزینه سرویس‌دهی خودمیزبان (Self-hosted) در برابر API در حجم هدف (از راهنمای قیمت‌گذاری در ریپازیتوری استفاده کنید)
+- راه‌اندازی داشبوردهای هزینه به تفکیک هر مدل، هر تیم و هر قابلیت (Feature)
+- پیاده‌سازی انتقال آرام و بدون وقفه بین چندین ارائه‌دهنده (Graceful multi-provider failover)
+- دوره آموزشی: *یادگیری ماشین در محیط پروداکشن (Machine Learning in Production)* (Coursera، DeepLearning.AI)
 
 ---
 
-### 7. 📊 Data Engineer → AI Data / Feature Engineer
+### 7. 📊 مهندس داده → مهندس داده / ویژگی هوش مصنوعی (AI Data / Feature Engineer)
 
-**Why data engineers are essential:** Training data is the competitive moat of AI systems. Data pipelines, quality, and freshness determine model performance more than architecture. Your skills are immediately applicable.
+**چرا مهندسان داده ضروری هستند:** داده‌های آموزشی، خندق رقابتی سیستم‌های هوش مصنوعی هستند. خط‌لوله‌های داده، کیفیت و تازگی آن‌ها، بیش از معماری مدل، عملکرد آن را تعیین می‌کنند. مهارت‌های شما بلافاصله قابل به‌کارگیری هستند.
 
-#### Target Roles
+#### نقش‌های هدف
 
 ```
 Data Engineer
@@ -399,44 +399,44 @@ Data Engineer
       └──► Fine-tuning Data Specialist  (4–8 months)
 ```
 
-#### Skill Gap Analysis
+#### تحلیل شکاف مهارتی
 
-| You already have | Gap to close | Priority |
+| مهارت‌های فعلی شما | شکاف مهارتی که باید پر شود | اولویت |
 |-----------------|--------------|----------|
-| ETL pipelines | Document ingestion pipelines for RAG | 🔴 High |
-| Data quality checks | Eval dataset quality validation | 🔴 High |
-| Schema design | Metadata schema for vector databases | 🔴 High |
-| Streaming pipelines | Real-time embedding and index update | 🟡 Medium |
-| N/A | Embedding model selection and batching | 🟡 Medium |
-| N/A | Vector database operations (upsert, filter, ANN search) | 🟡 Medium |
-| N/A | Chunking strategies for document types | 🟡 Medium |
-| N/A | Annotation pipeline design for fine-tuning | 🟢 Lower |
-| N/A | RLHF preference data format | 🟢 Lower |
+| خط‌لوله‌های ETL | خط‌لوله‌های دریافت اسناد برای RAG | 🔴 بالا |
+| بررسی‌های کیفیت داده | اعتبارسنجی کیفیت دیتاست ارزیابی (Eval) | 🔴 بالا |
+| طراحی اسکیما | اسکیمای متادیتا برای پایگاه داده برداری (Vector Database) | 🔴 بالا |
+| خط‌لوله‌های جریانی (Streaming) | تولید بلادرنگ Embedding و به‌روزرسانی ایندکس | 🟡 متوسط |
+| ندارد | انتخاب مدل Embedding و پردازش دسته‌ای (Batching) | 🟡 متوسط |
+| ندارد | عملیات پایگاه داده برداری (Vector Database) (مانند upsert، فیلتر، جستجوی ANN) | 🟡 متوسط |
+| ندارد | استراتژی‌های Chunking برای انواع اسناد | 🟡 متوسط |
+| ندارد | طراحی خط‌لوله برچسب‌گذاری (Annotation) برای Fine-tuning | 🟢 پایین‌تر |
+| ندارد | فرمت داده‌های ترجیحی (Preference Data) در RLHF | 🟢 پایین‌تر |
 
-#### Your 90-Day Plan
+#### برنامه ۹۰‌روزه شما
 
-**Month 1: RAG Data Pipeline**
-- Build an ingestion pipeline: PDF/HTML/DOCX → chunked → embedded → Qdrant
-- Add data quality gates: minimum chunk size, deduplication, language detection
-- Implement incremental sync: only re-embed changed documents
-- Read this repo: [06-retrieval-systems/02-chunking-strategies.md](06-retrieval-systems/02-chunking-strategies.md), [10-document-processing](10-document-processing/)
+**ماه اول: خط‌لوله داده RAG**
+- ساخت یک خط‌لوله دریافت (Ingestion): PDF/HTML/DOCX → اعمال Chunking → تولید Embedding → ذخیره در Qdrant
+- افزودن گیت‌های کیفیت داده: حداقل اندازه Chunk، حذف داده‌های تکراری (Deduplication)، تشخیص زبان
+- پیاده‌سازی همگام‌سازی افزایشی (Incremental Sync): تولید مجدد Embedding فقط برای اسناد تغییریافته
+- مطالعه این مخزن: [06-retrieval-systems/02-chunking-strategies.md](06-retrieval-systems/02-chunking-strategies.md)، [10-document-processing](10-document-processing/)
 
-**Month 2: Eval Dataset Engineering**
-- Build a test dataset using dimensional sampling (see evals guides)
-- Set up human annotation pipeline using Label Studio or Argilla
-- Track inter-annotator agreement; reject low-quality labels
-- Read: [AI Evals Comprehensive Study Guide](ai_evals_comprehensive_study_guide.md), Chapter 12 (Human Annotation)
-- Course: *Finetuning Large Language Models* (DeepLearning.AI, free)
+**ماه دوم: مهندسی دیتاست ارزیابی (Eval Dataset)**
+- ساخت یک دیتاست آزمون با استفاده از نمونه‌گیری ابعادی (Dimensional Sampling) (راهنماهای ارزیابی را ببینید)
+- راه‌اندازی خط‌لوله برچسب‌گذاری انسانی با استفاده از Label Studio یا Argilla
+- پایش توافق میان برچسب‌گذاران (Inter-Annotator Agreement)؛ رد برچسب‌های بی‌کیفیت
+- مطالعه: [راهنمای جامع مطالعه ارزیابی‌های هوش مصنوعی](ai_evals_comprehensive_study_guide.md)، فصل ۱۲ (برچسب‌گذاری انسانی)
+- دوره آموزشی: *Finetuning Large Language Models* (DeepLearning.AI، رایگان)
 
-**Month 3: Advanced Data Engineering**
-- Build a pipeline that turns production traces into fine-tuning examples
-- Implement embedding drift detection: alert when document distribution shifts
-- Benchmark 3 embedding models on your domain data
-- Read this repo: [03-training-and-adaptation](03-training-and-adaptation/)
+**ماه سوم: مهندسی داده پیشرفته**
+- ساخت خط‌لوله‌ای که ردپاهای محیط عملیاتی (Production Traces) را به نمونه‌های آموزشی Fine-tuning تبدیل کند
+- پیاده‌سازی تشخیص انحراف Embedding (Embedding Drift Detection): هشدار در صورت تغییر توزیع اسناد
+- بنچ‌مارک ۳ مدل Embedding بر روی داده‌های دامنه کاری خود (Domain Data)
+- مطالعه این مخزن: [03-training-and-adaptation](03-training-and-adaptation/)
 
 ---
 
-## 📊 Role Comparison Overview
+## 📊 نمای کلی مقایسه نقش‌ها
 
 ```
 Role            Months to   Avg Salary    Best Suited For
@@ -451,107 +451,107 @@ Data Eng        2–4 mo       $165–210K    RAG Data, Fine-tuning Data
 EM              6–12 mo      $200–280K    AI Engineering Manager
 ```
 
-*Salaries are US market estimates based on Levels.fyi and LinkedIn data, May 2026. Ranges vary significantly by company, location, and experience level. For a later anchor, levels.fyi's self-reported US median for AI Engineer was $160K on October 2, 2026.*
+*حقوق‌ها برآوردهای بازار ایالات متحده بر اساس داده‌های Levels.fyi و LinkedIn در مه ۲۰۲۶ هستند. دامنه‌ها بر اساس شرکت، موقعیت مکانی و سطح تجربه به‌طور قابل‌توجهی متغیر است. برای یک نقطه اتکای جدیدتر، میانه گزارش‌شده توسط خود کاربران در levels.fyi برای مهندس هوش مصنوعی (AI Engineer) در ۲ اکتبر ۲۰۲۶ برابر با ۱۶۰ هزار دلار ($160K) بود.*
 
 ---
 
-## 🗺️ Which Repo Sections Map to What
+## 🗺️ نگاشت بخش‌های مخزن به موضوعات مختلف
 
-Use this when you're ready to go deep:
+وقتی آماده عمیق‌تر شدن در مباحث هستید، از این راهنما استفاده کنید:
 
-| Topic | Repo Section | Why |
+| موضوع | بخش مخزن | دلیل |
 |-------|-------------|-----|
-| How LLMs work | [01-foundations](01-foundations/) | Foundation for everything else |
-| Which model to use | [02-model-landscape](02-model-landscape/) | Model selection is a daily decision |
-| Fine-tuning | [03-training-and-adaptation](03-training-and-adaptation/) | For fine-tuning data specialist path |
-| GPU serving / vLLM | [04-inference-optimization](04-inference-optimization/) | MLOps / Platform path |
-| Prompt engineering | [05-prompting-and-context](05-prompting-and-context/) | Everyone needs this |
-| RAG pipeline | [06-retrieval-systems](06-retrieval-systems/) | Backend / Data Eng path |
-| Agentic systems | [07-agentic-systems](07-agentic-systems/) | Backend / Senior AI Eng path |
-| Memory & state | [08-memory-and-state](08-memory-and-state/) | All engineers building agents |
-| LangGraph, CrewAI, Claude Code | [09-frameworks-and-tools](09-frameworks-and-tools/) | Practical tool selection |
-| Document parsing | [10-document-processing](10-document-processing/) | Data Eng / RAG path |
-| GPU infra, LLMOps | [11-infrastructure-and-mlops](11-infrastructure-and-mlops/) | DevOps / Platform path |
-| Multi-tenant security | [12-security-and-access](12-security-and-access/) | Backend / PM path |
-| Guardrails, red teaming | [13-reliability-and-safety](13-reliability-and-safety/) | QA / Red Team path |
-| RAGAS, LangSmith, evals | [14-evaluation-and-observability](14-evaluation-and-observability/) | QA / PM / all roles |
-| Design patterns | [15-ai-design-patterns](15-ai-design-patterns/) | Senior level preparation |
-| Case studies | [16-case-studies](16-case-studies/) | Interview prep, reference designs |
-| Evals deep dive | [AI Evals Comprehensive Guide](ai_evals_comprehensive_study_guide.md) | QA / PM path |
-| AI Evals (LangWatch) | [AI Evals LangWatch Guide](ai_evals_complete_guide_langwatch_langfuse.md) | QA / Eval Eng path |
-| Interview prep | [00-interview-prep](00-interview-prep/) | All roles |
-| Courses | [COURSES.md](COURSES.md) | All roles |
+| نحوه کارکرد LLMها | [01-foundations](01-foundations/) | پایه‌ای برای تمامی مباحث دیگر |
+| کدام مدل را انتخاب کنیم | [02-model-landscape](02-model-landscape/) | انتخاب مدل یک تصمیم‌گیری روزمره است |
+| مبحث Fine-tuning | [03-training-and-adaptation](03-training-and-adaptation/) | برای مسیر شغلی متخصص داده و Fine-tuning |
+| سروینگ با GPU / vLLM | [04-inference-optimization](04-inference-optimization/) | مسیر MLOps / پلتفرم |
+| مهندسی Prompt | [05-prompting-and-context](05-prompting-and-context/) | همه افراد به این بخش نیاز دارند |
+| پایپ‌لاین RAG | [06-retrieval-systems](06-retrieval-systems/) | مسیر مهندسی بک‌اند / داده |
+| سیستم‌های Agentic | [07-agentic-systems](07-agentic-systems/) | مسیر مهندسی بک‌اند / مهندس ارشد هوش مصنوعی |
+| حافظه و وضعیت (Memory & state) | [08-memory-and-state](08-memory-and-state/) | تمام مهندسانی که ایجنت می‌سازند |
+| LangGraph، CrewAI، Claude Code | [09-frameworks-and-tools](09-frameworks-and-tools/) | انتخاب کاربردی ابزارها |
+| پارس و پردازش اسناد | [10-document-processing](10-document-processing/) | مسیر مهندسی داده / RAG |
+| زیرساخت GPU، LLMOps | [11-infrastructure-and-mlops](11-infrastructure-and-mlops/) | مسیر DevOps / پلتفرم |
+| امنیت چندمستأجری (multi-tenant) | [12-security-and-access](12-security-and-access/) | مسیر بک‌اند / مدیر محصول (PM) |
+| گاردریل‌ها، تیم قرمز (Red teaming) | [13-reliability-and-safety](13-reliability-and-safety/) | مسیر تضمین کیفیت (QA) / تیم قرمز |
+| RAGAS، LangSmith، ارزیابی‌ها (Evals) | [14-evaluation-and-observability](14-evaluation-and-observability/) | مسیر QA / مدیر محصول / تمامی نقش‌ها |
+| الگوهای طراحی (Design patterns) | [15-ai-design-patterns](15-ai-design-patterns/) | آمادگی برای سطح ارشد (Senior) |
+| مطالعات موردی (Case studies) | [16-case-studies](16-case-studies/) | آمادگی مصاحبه، طراحی‌های مرجع |
+| بررسی عمیق ارزیابی‌ها (Evals deep dive) | [راهنمای جامع AI Evals](ai_evals_comprehensive_study_guide.md) | مسیر QA / مدیر محصول (PM) |
+| ارزیابی هوش مصنوعی با LangWatch | [راهنمای AI Evals با LangWatch](ai_evals_complete_guide_langwatch_langfuse.md) | مسیر QA / مهندس ارزیابی (Eval Eng) |
+| آمادگی برای مصاحبه | [00-interview-prep](00-interview-prep/) | تمامی نقش‌ها |
+| دوره‌ها | [COURSES.md](COURSES.md) | تمامی نقش‌ها |
 
 ---
 
-## 📚 Recommended Starter Courses by Role
+## 📚 دوره‌های مقدماتی پیشنهادی بر اساس نقش
 
-> Full details in [COURSES.md](COURSES.md)
+> جزئیات کامل در [COURSES.md](COURSES.md)
 
-| Your Role | First Course | Second Course | Third Course |
+| نقش شما | دوره اول | دوره دوم | دوره سوم |
 |-----------|-------------|---------------|--------------|
-| **Backend** | ChatGPT Prompt Engineering for Devs (DL.AI, free) | Building & Evaluating RAG (DL.AI, free) | AI Agents in LangGraph (DL.AI, free) |
-| **Frontend** | ChatGPT Prompt Engineering for Devs (DL.AI, free) | Building Systems with ChatGPT API (DL.AI, free) | Evaluating & Debugging GenAI (DL.AI + W&B, free) |
-| **QA** | AI Evals Guide in this repo (free) | Quality & Safety for LLM Apps (DL.AI, free) | AI Evals For Engineers & PMs (Maven, Hamel + Shreya, paid) |
-| **PM** | AI for Everyone (Coursera, free) | AI Evals Guide Chapter 3 (free) | AI Evals For Engineers & PMs (Maven, Hamel + Shreya, paid) |
-| **DevOps** | Efficiently Serving LLMs (DL.AI, free) | Evaluating & Debugging GenAI (DL.AI + W&B, free) | Machine Learning in Production (Coursera) |
-| **Data Eng** | Building & Evaluating RAG (DL.AI, free) | Finetuning LLMs (DL.AI, free) | AI Evals Guide in this repo (free) |
-| **EM** | Generative AI with LLMs (Coursera) | AI Agents in LangGraph (DL.AI, free) | CS294 LLM Agents (Berkeley, free) |
+| **بک‌اند** | ChatGPT Prompt Engineering for Devs (DL.AI، رایگان) | Building & Evaluating RAG (DL.AI، رایگان) | AI Agents in LangGraph (DL.AI، رایگان) |
+| **فرانت‌اند** | ChatGPT Prompt Engineering for Devs (DL.AI، رایگان) | Building Systems with ChatGPT API (DL.AI، رایگان) | Evaluating & Debugging GenAI (DL.AI + W&B، رایگان) |
+| **تضمین کیفیت (QA)** | راهنمای AI Evals در این مخزن (رایگان) | Quality & Safety for LLM Apps (DL.AI، رایگان) | AI Evals For Engineers & PMs (Maven، هامل + شریا، پولی) |
+| **مدیر محصول (PM)** | AI for Everyone (Coursera، رایگان) | فصل ۳ راهنمای AI Evals (رایگان) | AI Evals For Engineers & PMs (Maven، هامل + شریا، پولی) |
+| **دواپس (DevOps)** | Efficiently Serving LLMs (DL.AI، رایگان) | Evaluating & Debugging GenAI (DL.AI + W&B، رایگان) | Machine Learning in Production (Coursera) |
+| **مهندسی داده** | Building & Evaluating RAG (DL.AI، رایگان) | Finetuning LLMs (DL.AI، رایگان) | راهنمای AI Evals در این مخزن (رایگان) |
+| **مدیر مهندسی (EM)** | Generative AI with LLMs (Coursera) | AI Agents in LangGraph (DL.AI، رایگان) | CS294 LLM Agents (Berkeley، رایگان) |
 
 *DL.AI = DeepLearning.AI*
 
 ---
 
-## Common Mistakes to Avoid
+## اشتباهات رایج که باید از آن‌ها اجتناب کرد
 
-1. **Skipping fundamentals.** Jumping to LangChain before understanding what an embedding is leads to cargo-cult code you can't debug.
+۱. **نادیده گرفتن اصول پایه.** رفتن مستقیم به سراغ LangChain پیش از درک ماهیت Embedding، منجر به تولید کدهای مقلدانه و باری‌به‌هرجهت (Cargo-cult) می‌شود که توانایی دیباگ کردن آن‌ها را نخواهید داشت.
 
-2. **Building before evaluating.** Ship nothing without a way to measure quality. Define your eval criteria before writing the first prompt.
+۲. **ساخت محصول پیش از ارزیابی.** هیچ قابلیتی را بدون داشتن راهکاری برای سنجش کیفیت عرضه نکنید. معیارهای ارزیابی (Eval) خود را پیش از نوشتن اولین Prompt مشخص نمایید.
 
-3. **Copying prompts without understanding them.** Prompts are engineering decisions. Understand why each element is there.
+۳. **کپی کردن Promptها بدون درک آن‌ها.** هر Prompt یک تصمیم مهندسی است؛ درک کنید که چرا هر جزء در آن گنجانده شده است.
 
-4. **Ignoring costs until it's too late.** Every API call has a price. Build cost tracking from day one. See [02-model-landscape/03-pricing-and-costs.md](02-model-landscape/03-pricing-and-costs.md).
+۴. **نادیده گرفتن هزینه‌ها تا زمانی که خیلی دیر شود.** هر فراخوانی API هزینه‌ای دارد. سازوکار رهگیری هزینه‌ها را از روز نخست ایجاد کنید. بخش [02-model-landscape/03-pricing-and-costs.md](02-model-landscape/03-pricing-and-costs.md) را ببینید.
 
-5. **Assuming the model is the bottleneck.** In most production AI systems, the bottleneck is retrieval quality, prompt design, or data quality. The model is rarely the problem.
+۵. **فرض اینکه مدل گلوگاه سیستم است.** در اکثر سیستم‌های هوش مصنوعی در محیط پروداکشن، گلوگاه اصلی کیفیت بازیابی (Retrieval)، طراحی Prompt یا کیفیت داده‌ها است. خود مدل به‌ندرت منشأ مشکل است.
 
-6. **Using "latest" in model version strings in production.** Pin exact versions, and pin reasoning effort too. Silent model updates will break your product: Claude Opus 5.5 changed its default effort from `high` to `medium`, and coding tools such as Codex CLI and Claude Code swapped their default models with ordinary releases in September 2026.
+۶. **استفاده از "latest" در رشته نسخه مدل در پروداکشن.** نسخه‌های دقیق را پین (Pin) کنید و میزان تلاش استدلال (Reasoning effort) را نیز ثابت نگه دارید. به‌روزرسانی‌های بی‌سر‌و‌صدای مدل، محصول شما را با خطا مواجه خواهد کرد: Claude Opus 5.5 میزان تلاش پیش‌فرض خود را از `high` به `medium` تغییر داد و ابزارهای کدنویسی نظیر Codex CLI و Claude Code نیز مدل‌های پیش‌فرض خود را با انتشار نسخه‌های عادی در سپتامبر ۲۰۲۶ تغییر دادند.
 
-7. **Over-agenting.** Starting with a 5-agent system when a single well-prompted call would work. Start simple, add complexity only when needed.
-
----
-
-## The 2026 Market: Why Experience Is Your Advantage
-
-The entry-level door into AI-exposed work has narrowed sharply since 2022, and by 2026 the evidence comes from large postings and administrative datasets, not anecdotes:
-
-- **Indeed Hiring Lab (September 17, 2026):** in the most AI-exposed occupations, the entry-level share of job postings fell from 29% in 2021 to 10% in 2026, while the senior share rose from 22% to 47%. Most of the apparent AI pay premium is that shift in seniority mix.
-- **US Census Bureau (working paper CES-WP-26-56, September 2026):** after late 2022, initial earnings for graduates of the most AI-exposed majors, led by computer science, fell about 13% relative to the least-exposed majors, an effect the authors compare to graduating into a large recession.
-- **Federal Reserve Bank of Dallas (September 22, 2026):** each 10-point increase in a major's share of automatable tasks was associated with a 1.7-point lower chance of employment in Texas within a year of graduating.
-
-For a career switcher this cuts in your favor. Hiring has tilted toward people who already know how production systems fail, so **move laterally into an AI role at your current level instead of restarting as a junior**: lead with the systems you have shipped and add the AI-specific skills on top.
-
-The breakout hybrid role of 2026 is the **Forward Deployed Engineer (FDE)**, an engineer embedded with customers to take an AI system from use case through integration, evals, and security review to handover. It now comes in two flavors: frontier-lab FDE roles (OpenAI total compensation roughly $350K to $550K, per an outside estimate) and consulting FDE roles that BCG X hires straight from campus (a $110K to $190K base, per secondary reporting, unconfirmed). Anthropic's Claude Frontier Academy, announced October 2, 2026, plans to train 10,000 "Frontier Deployed Engineers" at customers and partners by the end of 2027, by nomination through Anthropic's account and partner teams. It is a credential program, not a hiring pipeline, but expect the title on more job descriptions. Backend engineers with customer-facing experience and solutions engineers are the natural fit. See [Job Market Trends](00-interview-prep/06-job-market-trends-2026.md) for the full role taxonomy.
+۷. **استفاده افراطی از ایجنت‌ها (Over-agenting).** شروع کار با یک سیستم ۵ ایجنتی در شرایطی که یک فراخوانی ساده با یک Prompt مناسب کفایت می‌کند. ساده شروع کنید و پیچیدگی را تنها در صورت نیاز اضافه نمایید.
 
 ---
 
-## How to Get Hired
+## بازار سال ۲۰۲۶: چرا تجربه مزیت رقابتی شماست
 
-**Build in public.** The AI engineering job market rewards demonstrated work:
+دروازه ورود به مشاغل در معرض هوش مصنوعی در سطح مقدماتی (Entry-level) از سال ۲۰۲۲ به‌شدت تنگ‌تر شده است، و تا سال ۲۰۲۶ شواهد این موضوع به‌جای داستان‌ها و شنیده‌ها، از مجموعه‌داده‌های اداری و آگهی‌های شغلی گسترده به دست می‌آید:
 
-1. **GitHub portfolio**: One polished end-to-end project beats 10 toy projects
-2. **Write a blog post**: Describing one real problem you solved and how (error analysis, eval pipeline, RAG latency fix)
-3. **Contribute to open source**: OpenHands, LlamaIndex, DSPy, RAGAS. Even documentation PRs get you noticed.
-4. **Use this repo's interview prep**: [00-interview-prep/01-question-bank.md](00-interview-prep/01-question-bank.md) has 193 questions with strong answers
-5. **Get a mock interview or a mentor**: a career switch goes faster with someone who has sat on the other side of the table. Om offers 1:1 mock AI system design interviews and transition mentorship on [EngineBogie](https://enginebogie.com/u/ombharatiya) and [Topmate](https://topmate.io/ombharatiya)
+- **واحد پژوهش ایندید (Indeed Hiring Lab - ۱۷ سپتامبر ۲۰۲۶):** در مشاغلی که بیشترین مواجهه را با هوش مصنوعی دارند، سهم آگهی‌های استخدامی سطح مقدماتی از ۲۹٪ در سال ۲۰۲۱ به ۱۰٪ در سال ۲۰۲۶ کاهش یافته، در حالی که سهم موقعیت‌های ارشد از ۲۲٪ به ۴۷٪ افزایش داشته است. بخش اعظم این افزایش ظاهری دستمزد در حوزه هوش مصنوعی، ناشی از همین تغییر در ترکیب سابقه کاری است.
+- **اداره آمار ایالات متحده (مقاله کاری CES-WP-26-56، سپتامبر ۲۰۲۶):** پس از اواخر سال ۲۰۲۲، درآمد اولیه فارغ‌التحصیلان رشته‌هایی با بالاترین میزان مواجهه با هوش مصنوعی (به‌ویژه علوم کامپیوتر)، در مقایسه با رشته‌هایی با کمترین میزان مواجهه، حدود ۱۳٪ کاهش یافته است؛ اثری که نویسندگان آن را به فارغ‌التحصیلی در میانه یک رکود اقتصادی بزرگ تشبیه کرده‌اند.
+- **بانک فدرال رزرو دالاس (۲۲ سپتامبر ۲۰۲۶):** هر ۱۰ واحد افزایش در سهم وظایف قابل خودکارسازی یک رشته، با ۱.۷ واحد کاهش در شانس اشتغال در ایالت تگزاس ظرف یک سال پس از فارغ‌التحصیلی همراه بوده است.
 
-**What to say in interviews:**
-- Name specific decisions: "I chose Qdrant over Pinecone because of X" (not "I built a RAG system")
-- Cite failure modes you've encountered and how you fixed them
-- Know at least one benchmark by heart (Terminal-Bench 4.0 or SWE-Bench Pro's private set, RAGAS scores, TTFT for your serving setup), and say which effort level and harness produced the number
-- Show you think about eval and cost, not just features
+برای افرادی که مسیر شغلی خود را تغییر می‌دهند، این شرایط به نفع شما تمام می‌شود. روند استخدام به سمت افرادی متمایل شده است که از قبل می‌دانند سیستم‌ها در محیط پروداکشن چگونه با شکست مواجه می‌شوند؛ بنابراین **به‌جای شروع دوباره از سطح تازه‌کار (Junior)، به‌صورت افقی و در همان سطح فعلی خود به یک موقعیت هوش مصنوعی منتقل شوید**: بر سیستم‌هایی که تاکنون توسعه داده و مستقر کرده‌اید تکیه کنید و مهارت‌های ویژه هوش مصنوعی را به آن‌ها بیفزایید.
 
-**Check the AI-tool policy for every round, in writing.** Policies split: Meta runs an AI-assisted coding round, Anthropic's candidate guidance rules out AI assistance in live interviews and take-homes unless it says otherwise, and Google is piloting Gemini in one round for some junior to mid-level roles. Some companies are also moving final rounds back on site. See [AI tools in the loop](00-interview-prep/06-job-market-trends-2026.md#ai-tools-in-the-loop-check-the-policy-per-round).
+نقش ترکیبی و برجسته سال ۲۰۲۶، **مهندس مستقر در مشتری (Forward Deployed Engineer یا FDE)** است؛ مهندسی که در کنار مشتریان مستقر می‌شود تا یک سیستم هوش مصنوعی را از مرحله تعریف مورد کاربرد (Use case) تا یکپارچه‌سازی، ارزیابی‌ها (Evals)، بازبینی امنیتی و در نهایت تحویل نهایی پیش ببرد. این نقش اکنون در دو دسته ظاهر می‌شود: نقش‌های FDE در آزمایشگاه‌های مرزی و پیشرو (مجموع دریافتی در OpenAI طبق برآوردهای بیرونی حدود ۳۵۰ تا ۵۵۰ هزار دلار است) و نقش‌های FDE مشاوره‌ای که BCG X مستقیماً از دانشگاه‌ها استخدام می‌کند (پایه حقوق ۱۱۰ تا ۱۹۰ هزار دلار بر اساس گزارش‌های ثانویه و تأییدنشده). آکادمی Claude Frontier شرکت Anthropic که در ۲ اکتبر ۲۰۲۶ معرفی شد، برنامه‌ریزی کرده است تا پایان سال ۲۰۲۷، ۱۰,۰۰۰ «مهندس مستقر پیشرو» را در میان مشتریان و شرکای تجاری، با معرفی تیم‌های حساب و شرکای تجاری Anthropic آموزش دهد. این یک برنامه اعطای گواهینامه است، نه یک فرایند استخدامی، اما انتظار می‌رود این عنوان را در شرح شغل‌های بیشتری مشاهده کنید. مهندسان بک‌اند با تجربه تعامل با مشتری و مهندسان راه‌کار (Solutions Engineers) گزینه‌های بسیار مناسبی برای این نقش هستند. برای مشاهده رده‌بندی کامل نقش‌ها، به بخش [روندهای بازار کار](00-interview-prep/06-job-market-trends-2026.md) مراجعه کنید.
 
 ---
 
-*Part of the [AI System Design Guide](README.md), maintained by [ombharatiya](https://github.com/ombharatiya)*
+## چگونه استخدام شویم
+
+**در دید عموم بسازید (Build in public).** بازار کار مهندسی هوش مصنوعی به کارهای اثبات‌شده و عملی پاداش می‌دهد:
+
+۱. **پورتفولیوی گیت‌هاب (GitHub portfolio):** یک پروژه کامل و صیقل‌خورده سرتاسری (End-to-End) بسیار ارزشمندتر از ۱۰ پروژه کوچک و نمایشی است.
+۲. **نوشتن مقاله وبلاگی:** شرح یک مسئله واقعی که حل کرده‌اید و شیوه برطرف کردن آن (تحلیل خطا، پایپ‌لاین ارزیابی، یا رفع تاخیر (Latency) در RAG).
+۳. **مشارکت در پروژه‌های متن‌باز:** پروژه‌هایی نظیر OpenHands، LlamaIndex، DSPy و RAGAS. حتی PRهای مربوط به مستندات نیز توجه‌ها را به شما جلب می‌کند.
+۴. **استفاده از بخش آمادگی برای مصاحبه در این مخزن:** فایل [00-interview-prep/01-question-bank.md](00-interview-prep/01-question-bank.md) دارای ۱۹۳ سؤال همراه با پاسخ‌های قوی و مستدل است.
+۵. **انجام مصاحبه شبیه‌سازی‌شده یا گرفتن منتور:** تغییر مسیر شغلی در کنار کسی که پیش‌تر در آن‌سوی میز مصاحبه نشسته است، با سرعت بیشتری انجام می‌شود. Om جلسات ۱ به ۱ شبیه‌سازی مصاحبه طراحی سیستم هوش مصنوعی و راهنمایی تغییر مسیر شغلی را در [EngineBogie](https://enginebogie.com/u/ombharatiya) و [Topmate](https://topmate.io/ombharatiya) ارائه می‌دهد.
+
+**در مصاحبه‌ها چه بگویید:**
+- تصمیم‌های مشخص را نام ببرید: «من به دلیل X، پایگاه داده Qdrant را به جای Pinecone انتخاب کردم» (نه صرفاً اینکه «من یک سیستم RAG ساختم»)
+- حالت‌های شکست و خطاهایی را که با آن‌ها روبه‌رو شده‌اید و شیوه برطرف کردنشان را بیان کنید
+- حداقل یک بنچمارک را دقیقاً در ذهن داشته باشید (Terminal-Bench 4.0 یا مجموعه خصوصی SWE-Bench Pro، نمرات RAGAS، مقدار TTFT برای ستاپ سروینگ خود) و مشخص کنید کدام سطح تلاش (Effort level) و محیط آزمایش (Harness) آن عدد را به وجود آورده است
+- نشان دهید که علاوه بر ویژگی‌های محصول، به ارزیابی (Eval) و مدیریت هزینه‌ها نیز توجه دارید
+
+**سیاست استفاده از ابزارهای هوش مصنوعی را برای هر مرحله از مصاحبه، به‌طور مکتوب جویا شوید.** سیاست‌ها متفاوت است: Meta یک مرحله کدنویسی با کمک هوش مصنوعی برگزار می‌کند؛ راهنمای داوطلبان Anthropic استفاده از هوش مصنوعی را در مصاحبه‌های زنده و تسک‌های خانگی رد می‌کند مگر خلاف آن ذکر شده باشد؛ و Google نیز در حال اجرای آزمایشی Gemini در یک مرحله برای برخی نقش‌های مقدماتی تا متوسط است. برخی شرکت‌ها نیز در حال برگرداندن مراحل نهایی مصاحبه به صورت حضوری (On-site) هستند. بخش [ابزارهای هوش مصنوعی در چرخه مصاحبه](00-interview-prep/06-job-market-trends-2026.md#ai-tools-in-the-loop-check-the-policy-per-round) را مشاهده کنید.
+
+---
+
+*بخشی از [راهنمای جامع طراحی سیستم هوش مصنوعی](README.md)، نگهداری‌شده توسط [ombharatiya](https://github.com/ombharatiya)*
