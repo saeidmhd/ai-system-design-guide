@@ -1,19 +1,19 @@
-# AI Design Patterns Quick Reference
+# مرجع سریع الگوهای طراحی هوش مصنوعی
 
-Quick lookup for common patterns. See individual chapters for detailed implementation.
+مرجع سریع برای الگوهای رایج. برای پیاده‌سازی تفصیلی به فصل‌های مربوطه مراجعه کنید.
 
 ---
 
-## Retrieval Patterns
+## الگوهای بازیابی
 
-| Pattern | Use Case | Key Tradeoff |
+| الگو | مورد کاربرد | موازنه کلیدی |
 |---------|----------|--------------|
-| **Basic RAG** | Simple Q&A over documents | Easy to implement, limited accuracy |
-| **Hybrid Search** | Combining semantic + keyword | Better recall, more complexity |
-| **Reranking** | High-precision retrieval | Accuracy vs latency |
-| **Query Expansion** | Ambiguous queries | Better recall, more tokens |
-| **HyDE** | No direct matches expected | Creative, but can hallucinate |
-| **Parent-Child Chunking** | Need surrounding context | Memory overhead |
+| **RAG پایه (Basic RAG)** | پرسش و پاسخ ساده روی اسناد | پیاده‌سازی آسان، دقت محدود |
+| **جستجوی ترکیبی (Hybrid Search)** | ترکیب معنایی + کلیدواژه‌ای | فراخوانی (Recall) بهتر، پیچیدگی بیشتر |
+| **رتبه‌بندی مجدد (Reranking)** | بازیابی با دقت بالا | دقت در برابر تاخیر (Latency) |
+| **بسط پرس‌وجو (Query Expansion)** | پرس‌وجوهای مبهم | فراخوانی (Recall) بهتر، Tokenهای بیشتر |
+| **HyDE** | عدم انتظار تطابق مستقیم | خلاقانه، اما با احتمال توهم (Hallucination) |
+| **Chunking والد-فرزند (Parent-Child Chunking)** | نیاز به کانتکست پیرامونی | سربار حافظه |
 
 ```
 Query → Embed → Vector Search → Rerank → Top-K → Generate
@@ -23,36 +23,36 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 
 ---
 
-## Generation Patterns
+## الگوهای تولید
 
-| Pattern | Use Case | Key Tradeoff |
+| الگو | مورد کاربرد | موازنه کلیدی |
 |---------|----------|--------------|
-| **Zero-Shot** | Simple tasks | Fast, less reliable |
-| **Few-Shot** | Need format control | Token cost |
-| **Chain-of-Thought** | Reasoning tasks | Latency, shows work |
-| **Self-Consistency** | High-stakes answers | 3-5x cost |
-| **Structured Output** | API responses | Constrained creativity |
+| **Zero-Shot (صفر-نمونه)** | وظایف ساده | سریع، با قابلیت اطمینان کمتر |
+| **Few-Shot (چند-نمونه)** | نیاز به کنترل قالب | هزینه Token |
+| **زنجیره تفکر (Chain-of-Thought)** | وظایف استدلالی | تاخیر (Latency)، نمایش مراحل کار |
+| **خودسازگاری (Self-Consistency)** | پاسخ‌های حساس و حیاتی | ۳ تا ۵ برابر هزینه |
+| **خروجی ساختاریافته (Structured Output)** | پاسخ‌های API | خلاقیت محدودشده |
 
 ---
 
-## Agent Patterns
+## الگوهای ایجنت
 
-| Pattern | Use Case | Complexity |
+| الگو | مورد کاربرد | پیچیدگی |
 |---------|----------|------------|
-| **ReAct** | Tool-using agents | Medium |
-| **Plan-and-Execute** | Multi-step tasks | High |
-| **Multi-Agent Debate** | Verification | High |
-| **Human-in-the-Loop** | High-stakes actions | Medium |
-| **Swarm / Handoff** | Specialized sub-agents | High |
-| **Advisor / Executor** | Cheap model runs the loop, strong model consulted at decision points | Medium |
-| **Orchestrator + isolated subagents** | Parallel work without context contention | High |
-| **Managed harness (rent the loop)** | Durable sessions and recovery you do not operate | Low to build; residency and retention limits decide |
+| **ReAct** | ایجنت‌های مجهز به ابزار | متوسط |
+| **برنامه‌ریزی و اجرا (Plan-and-Execute)** | وظایف چندمرحله‌ای | بالا |
+| **مناظره چند-ایجنتی (Multi-Agent Debate)** | اعتبارسنجی | بالا |
+| **انسان در حلقه (Human-in-the-Loop)** | اقدامات حساس و حیاتی | متوسط |
+| **اسوارم / واگذاری (Swarm / Handoff)** | ساب‌ایجنت‌های تخصصی | بالا |
+| **مشاور / مجری (Advisor / Executor)** | مدل ارزان حلقه را اجرا می‌کند، در نقاط تصمیم‌گیری با مدل قوی مشورت می‌شود | متوسط |
+| **ارکستریتور + ساب‌ایجنت‌های ایزوله (Orchestrator + isolated subagents)** | کار موازی بدون تداخل کانتکست (Context) | بالا |
+| **هارنس مدیریت‌شده (اجاره حلقه) [Managed harness]** | نشست‌های پایا و بازیابی پس از خرابی که مدیریت آن با شما نیست | ساخت ساده؛ محدودیت‌های اقامت داده (Residency) و نگهداری داده تعیین‌کننده هستند |
 
-**Advisor / executor**, added in 2026, is the cost-quality lever worth knowing: an inexpensive executor drives the agent loop and calls a stronger advisor model at decision points, passing the transcript and receiving a plan or correction. It is a cost claim rather than a quality claim: pairing a low-effort executor with a stronger advisor can beat the cost-quality line that executor traces by raising its own effort, while the top scores still belong to maximum effort at higher cost. Published figures are vendor-benchmarked, so measure on your own tasks. Consult rate is the metric to watch: if the executor consults on nearly every step you have bought an expensive model with extra latency.
+**مشاور / مجری (Advisor / executor)** که در سال ۲۰۲۶ افزوده شد، اهرم هزینه-کیفیتی است که ارزش شناخت دارد: یک مجری (Executor) کم‌هزینه حلقه ایجنت را اجرا می‌کند و در نقاط تصمیم‌گیری، با ارسال متن وقایع (Transcript) و دریافت برنامه یا اصلاحیه، با یک مدل مشاور (Advisor) قوی‌تر ارتباط برقرار می‌کند. این رویکرد بیش از آنکه ادعایی درباره کیفیت باشد، ادعایی درباره هزینه است: ترکیب یک مجری با سطح تلاش پایین (Low-effort) با یک مشاور قوی‌تر می‌تواند از خط هزینه-کیفیتی که همان مجری با افزایش سطح تلاش خود رسم می‌کند پیشی بگیرد، در حالی که بالاترین امتیازها همچنان متعلق به حداکثر تلاش با هزینه بالاتر است. ارقام منتشرشده بر اساس بنچمارک ارائه‌دهندگان (Vendor) است، بنابراین عملکرد را روی وظایف اختصاصی خود بسنجید. نرخ مشورت (Consult rate) معیاری است که باید زیر نظر داشته باشید: اگر مجری تقریباً در هر گام مشورت کند، شما در عمل یک مدل گران‌قیمت با تاخیر (Latency) اضافی خریده‌اید.
 
-**Orchestrator plus isolated subagents** is where the single-versus-multi-agent argument landed. Subagents get their own context and return summaries, with no peer-to-peer channel between them. Context is what is isolated, not state: managed platforms typically share one sandbox, filesystem, and credential set across the roster. Vendor platforms enforce the limits that make it work in practice, typically one level of delegation and a cap on roster size (OpenAI's Agents API defaults `max_concurrent_subagents` to 6), which is a good default even when your framework does not enforce it.
+**ارکستریتور به همراه ساب‌ایجنت‌های ایزوله (Orchestrator plus isolated subagents)** همان نقطه‌ای است که بحث «تک‌ایجنتی در برابر چند‌ایجنتی» در آن به سرانجام رسید. ساب‌ایجنت‌ها کانتکست (Context) اختصاصی خود را دریافت کرده و خلاصه‌ها را بازمی‌گردانند، بدون اینکه هیچ کانال همتا‌به‌همتایی (Peer-to-peer) بین آنها وجود داشته باشد. آنچه ایزوله می‌شود کانتکست است، نه وضعیت (State): پلتفرم‌های مدیریت‌شده معمولاً یک سندباکس، سیستم فایل و مجموعه اطلاعات دسترسی (Credential) مشترک را در کل فهرست ایجنت‌ها به اشتراک می‌گذارند. پلتفرم‌های ارائه‌دهنده (Vendor) محدودیت‌هایی را اعمال می‌کنند تا این الگو در عمل کار کند؛ معمولاً یک سطح از تفویض اختیار (Delegation) و سقفی برای تعداد اعضای فهرست (Agents API شرکت OpenAI مقدار پیش‌فرض `max_concurrent_subagents` را روی ۶ قرار می‌دهد)، که حتی زمانی که فریمورک شما آن را اعمال نکند نیز پیش‌فرض مناسبی است.
 
-**Managed harness** options multiplied in September 2026, when OpenAI's Agents API (public beta) and Amazon Bedrock Managed Agents built on it (preview) joined Claude Managed Agents (beta). Amazon Bedrock AgentCore's managed agent harness has been generally available since June 17, 2026, with any model and an export path to Strands-based code, which answers the lock-in objection. All of them run durable sessions and crash recovery for you. The disqualifiers are usually data handling rather than features (the Agents API launched with US residency only and no zero data retention), and no managed runtime gives exactly-once semantics for your own side-effecting tools. See [Durable Execution](07-agentic-systems/11-durable-execution.md#managed-agent-runtimes-renting-the-durable-loop).
+گزینه‌های **هارنس مدیریت‌شده (Managed harness)** در سپتامبر ۲۰۲۶ چندبرابر شدند؛ زمانی که Agents API شرکت OpenAI (نسخه بتای عمومی) و Amazon Bedrock Managed Agents ساخته‌شده بر پایه آن (نسخه پیش‌نمایش) به Claude Managed Agents (نسخه بتا) ملحق شدند. هارنس ایجنت مدیریت‌شده Amazon Bedrock AgentCore از ۱۷ ژوئن ۲۰۲۶ به همراه هر مدلی و با قابلیت صدور (Export) به کدهای مبتنی بر Strands، به صورت عمومی (GA) در دسترس بوده است که به دغدغه وابستگی به ارائه‌دهنده (Lock-in) پاسخ می‌دهد. همه آنها نشست‌های پایا (Durable sessions) و بازیابی پس از خرابی (Crash recovery) را برای شما اجرا می‌کنند. عوامل بازدارنده معمولاً نحوه مدیریت داده‌ها هستند تا کمبود قابلیت‌ها (Agents API صرفاً با اقامت داده در آمریکا [US residency] و بدون عدم حفظ داده [Zero data retention] راه‌اندازی شد)، و هیچ محیط اجرای (Runtime) مدیریت‌شده‌ای معناشناسی دقیقاً یک‌بار (Exactly-once semantics) را برای ابزارهای اختصاصی شما که دارای اثر جانبی (Side-effecting) هستند ارائه نمی‌دهد. به [اجرای پایا](07-agentic-systems/11-durable-execution.md#managed-agent-runtimes-renting-the-durable-loop) مراجعه کنید.
 
 ```
 ┌─────────────────────────────────────────┐
@@ -68,16 +68,16 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 
 ---
 
-## Agentic Coding Patterns (2026)
+## الگوهای کدنویسی مبتنی بر ایجنت (2026)
 
-| Pattern | Use Case | Key Tool |
+| الگو | مورد استفاده | ابزار کلیدی |
 |---------|----------|----------|
-| **Scaffold → Implement → Verify** | Full feature development | Claude Code / OpenHands |
-| **Read-Plan-Edit** | Refactoring existing code | Claude Code text_editor |
-| **Test-Driven Agent** | High reliability code | Agent writes tests first |
-| **Shadow Review** | PR quality gate | Agent reviews diff before merge |
-| **AGENTS.md / CLAUDE.md Manifest** | Project context injection | AGENTS.md works across tools; Claude Code reads it when no CLAUDE.md exists |
-| **Sub-Agent Parallelism** | Large codebase changes | Multiple agents per module |
+| **اسکلت‌بندی → پیاده‌سازی → اعتبارسنجی (Scaffold → Implement → Verify)** | توسعه کامل قابلیت | Claude Code / OpenHands |
+| **خواندن-برنامه‌ریزی-ویرایش (Read-Plan-Edit)** | ریفکتورینگ کد موجود | Claude Code text_editor |
+| **ایجنت آزمون‌محور (Test-Driven Agent)** | کد با قابلیت اطمینان بالا | ایجنت ابتدا آزمون‌ها را می‌نویسد |
+| **بررسی در سایه (Shadow Review)** | گیت کیفی PR | ایجنت پیش از ادغام، diff را بررسی می‌کند |
+| **مانیفست AGENTS.md / CLAUDE.md** | تزریق کانتکست پروژه | فایل AGENTS.md در ابزارهای مختلف کار می‌کند؛ Claude Code در صورت عدم وجود CLAUDE.md آن را می‌خواند |
+| **موازی‌سازی زیرایجنت‌ها (Sub-Agent Parallelism)** | تغییرات بزرگ در پایگاه کد (Codebase) | چندین ایجنت به ازای هر ماژول |
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -93,7 +93,7 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 └────────────────────────────────────────────────────────┘
 ```
 
-**When to use which tool:**
+**چه زمانی از کدام ابزار استفاده کنیم:**
 ```
 Need full autonomy + CLI → Claude Code / Codex CLI
 Need open-source + any LLM → OpenHands / Cline / OpenCode
@@ -104,16 +104,16 @@ Need a harness you don't operate → OpenAI Agents API / Claude Managed Agents
 
 ---
 
-## Reliability Patterns
+## الگوهای قابلیت اطمینان
 
-| Pattern | Problem Solved | Implementation |
+| الگو | مشکل حل‌شده | پیاده‌سازی |
 |---------|----------------|----------------|
-| **Retry with Backoff** | Transient failures | Exponential backoff |
-| **Circuit Breaker** | Cascading failures | Fail-fast after threshold |
-| **Fallback Model** | Primary unavailable | Secondary model |
-| **Timeout** | Slow responses | Cancel + fallback |
-| **Bulkhead** | Resource isolation | Separate pools |
-| **Refusal-Aware Routing** | Safety refusal returned as a success | Branch on `stop_reason`, not HTTP status |
+| **تلاش مجدد با پس‌نشینی (Retry with Backoff)** | خطاهای گذرا | پس‌نشینی نمایی (Exponential backoff) |
+| **قطع‌کننده مدار (Circuit Breaker)** | شکست‌های آبشاری | شکست سریع پس از رسیدن به آستانه |
+| **مدل جایگزین (Fallback Model)** | عدم دسترس‌پذیری مدل اصلی | مدل ثانویه |
+| **مهلت زمانی (Timeout)** | پاسخ‌های کند | لغو + جایگزینی (Fallback) |
+| **دیواره حائل / ایزوله‌سازی منابع (Bulkhead)** | ایزوله‌سازی منابع | استخرهای مجزا |
+| **مسیریابی آگاه از امتناع (Refusal-Aware Routing)** | بازگردانده شدن امتناع امنیتی به عنوان پاسخ موفق | انشعاب بر اساس `stop_reason`، نه وضعیت HTTP |
 
 ```python
 # Reliability stack
@@ -125,34 +125,34 @@ async def generate(prompt):
     return await primary_model.generate(prompt)
 ```
 
-Fallbacks have to cross vendors, because one incident can hit everything a vendor serves at once (OpenAI's September 29, 2026 incident degraded the API, ChatGPT, and Codex together for about 5 hours 20 minutes). Fallback also changes behavior, not just the endpoint: Claude thinking blocks are bound to the model that produced them and cannot be replayed into another, and a Claude safety refusal arrives as HTTP 200 with `stop_reason: "refusal"`, so a status-code check never sees it. See [Design Patterns](15-ai-design-patterns/01-design-patterns.md#pattern-retry-with-fallback).
+مکانیزم‌های Fallback باید میان ارائه‌دهندگان مختلف (Cross-vendor) باشند، زیرا یک اختلال می‌تواند به تمام سرویس‌های یک ارائه‌دهنده به طور هم‌زمان ضربه بزند (حادثه ۲۹ سپتامبر ۲۰۲۶ شرکت OpenAI باعث افت کارایی هم‌زمان API، ChatGPT و Codex به مدت حدود ۵ ساعت و ۲۰ دقیقه شد). همچنین Fallback صرفاً تغییر اندپوینت نیست، بلکه رفتار را نیز تغییر می‌دهد: بلوک‌های تفکر Claude وابسته به مدلی هستند که آن‌ها را تولید کرده است و نمی‌توان آن‌ها را در مدل دیگری بازپخش کرد، و امتناع امنیتی Claude به صورت HTTP 200 همراه با `stop_reason: "refusal"` ارسال می‌شود، بنابراین بررسی کد وضعیت (status-code) هرگز آن را تشخیص نمی‌دهد. به [الگوهای طراحی](15-ai-design-patterns/01-design-patterns.md#pattern-retry-with-fallback) مراجعه کنید.
 
 ---
 
-## Caching Patterns
+## الگوهای کشینگ
 
-| Pattern | Hit Rate | Use Case |
+| الگو | نرخ برخورد (Hit Rate) | مورد استفاده |
 |---------|----------|----------|
-| **Exact Match** | Low | Identical queries |
-| **Semantic Cache** | Medium | Similar queries |
-| **Prompt (Prefix) Cache** | High for agent loops | Stable prefix (system prompt, tools, history); provider cache reads bill at 0.025x to 0.1x input, and self-hosted engines (vLLM, SGLang) reuse the KV cache directly |
-| **Response Cache** | Varies | Deterministic outputs |
+| **تطابق دقیق (Exact Match)** | پایین | پرس‌وجوهای یکسان |
+| **کش معنایی (Semantic Cache)** | متوسط | پرس‌وجوهای مشابه |
+| **کش Prompt (پیشوند) (Prompt (Prefix) Cache)** | بالا برای حلقه‌های ایجنت | پیشوند پایدار (system prompt، ابزارها، تاریخچه)؛ خواندن از کش ارائه‌دهنده با نرخ 0.025x تا 0.1x هزینه ورودی محاسبه می‌شود، و موتورهای خودمیزبان (vLLM، SGLang) مستقیماً از KV cache استفاده مجدد می‌کنند |
+| **کش پاسخ (Response Cache)** | متغیر | خروجی‌های قطعی (دترمینیستیک) |
 
 ---
 
-## Security Patterns
+## الگوهای امنیتی
 
-| Pattern | Threat | Implementation |
+| الگو | تهدید | پیاده‌سازی |
 |---------|--------|----------------|
-| **Input Validation** | Prompt injection | Sanitize, detect |
-| **Output Filtering** | Data leakage | PII detection, blocklists |
-| **Tenant Isolation** | Cross-tenant access | Filter at query time |
-| **Rate Limiting** | Abuse | Per-user/tenant limits |
-| **Egress Allowlist** | Exfiltration, eval breakouts | Default-deny network, including DNS, package proxies, and publish endpoints |
-| **Bound Approvals** | Approval laundering | Approval hashed to the exact action and re-verified at execution |
-| **Skill Pinning** | Silently changed instructions | Verify skill manifest digests; re-approve on any change |
-| **Harness Isolation** | Repo config running code outside the sandbox (GitSpawn) | Run the agent harness itself inside the sandbox; treat `.git/config` and agent config files as code |
-| **Monitor-and-Kill** | An alert nobody acts on in time | Wire the monitor to an automatic stop and test it like a failover; an OpenAI training run alarmed after about 12 minutes but was killed about 2.5 hours later when its auto-stop failed |
+| **اعتبارسنجی ورودی (Input Validation)** | تزریق Prompt (Prompt injection) | پاک‌سازی، شناسایی |
+| **فیلتر کردن خروجی (Output Filtering)** | نشت داده | شناسایی PII، لیست‌های مسدود (بلاک‌لیست‌ها) |
+| **جداسازی مستأجرها (multi-tenant)** | دسترسی میان‌مستأجری (multi-tenant) | فیلتر کردن در زمان پرس‌وجو |
+| **محدودسازی نرخ (Rate Limiting)** | سوءاستفاده | محدودیت‌های به ازای هر کاربر/مستأجر (multi-tenant) |
+| **فهرست مجاز خروجی (Egress Allowlist)** | استخراج داده، خروج غیرمجاز ارزیابی از محیط ایزوله (eval breakouts) | شبکه با دسترسی پیش‌فرض مسدود (Default-deny)، شامل DNS، پروکسی‌های پکیج و اندپوینت‌های انتشار |
+| **تأییدیه‌های مقید (Bound Approvals)** | تطهیر تأییدیه (Approval laundering) | هش شدن تأییدیه به اکشن دقیق و اعتبارسنجی مجدد در زمان اجرا |
+| **تثبیت مهارت (Skill Pinning)** | تغییر بی‌سروصدای دستورالعمل‌ها | اعتبارسنجی دایجست مانیفست مهارت؛ تأیید مجدد در صورت هرگونه تغییر |
+| **ایزوله‌سازی هارنس (Harness Isolation)** | اجرای کد خارج از سندباکس توسط تنظیمات مخزن (GitSpawn) | اجرای خود هارنس ایجنت درون سندباکس؛ در نظر گرفتن `.git/config` و فایل‌های پیکربندی ایجنت به عنوان کد |
+| **مانیتور و توقف اضطراری (Monitor-and-Kill)** | هشداری که هیچ‌کس به‌موقع به آن واکنش نشان نمی‌دهد | متصل کردن مانیتور به مکانیزم توقف خودکار و آزمایش آن مانند یک فرایند Failover؛ یکی از فرآیندهای آموزش OpenAI پس از حدود ۱۲ دقیقه هشدار داد، اما با شکست توقف خودکار، حدود ۲٫۵ ساعت بعد متوقف (kill) شد |
 
 ```
 Input → Validate → Sanitize → LLM → Filter → Validate → Output
@@ -160,26 +160,27 @@ Input → Validate → Sanitize → LLM → Filter → Validate → Output
 
 ---
 
-## Evaluation Patterns
 
-| Pattern | Use Case | Metrics |
+## الگوهای ارزیابی
+
+| الگو | مورد کاربرد | متریک‌ها |
 |---------|----------|---------|
-| **Golden Set** | Regression testing | Pass rate |
-| **LLM-as-Judge** | Quality scoring | Binary pass/fail per criterion, calibrated against human labels |
-| **Human Eval** | Ground truth | Agreement rate |
-| **A/B Testing** | Production comparison | User metrics |
+| **مجموعه طلایی (Golden Set)** | تست رگرسیون | نرخ قبولی (Pass rate) |
+| **LLM به‌مثابه داور (LLM-as-Judge)** | امتیازدهی کیفیت | قبولی/رد باینری به ازای هر معیار، کالیبره‌شده در برابر برچسب‌های انسانی |
+| **ارزیابی انسانی (Human Eval)** | داده مرجع (Ground truth) | نرخ توافق (Agreement rate) |
+| **تست A/B (A/B Testing)** | مقایسه در محیط عملیاتی (Production) | متریک‌های کاربر |
 
 ---
 
-## Cost Optimization Patterns
+## الگوهای بهینه‌سازی هزینه
 
-| Pattern | Savings | Tradeoff |
+| الگو | میزان صرفه‌جویی | موازنه (Tradeoff) |
 |---------|---------|----------|
-| **Model Routing** | 50-70% | Complexity |
-| **Prompt (Prefix) Caching** | 90-97.5% on cached input tokens | Write premium (1.25x; 2x for Anthropic's 1-hour cache); TTL management |
-| **Response / Semantic Caching** | 20-40% | Staleness |
-| **Prompt Compression** | 10-30% | Quality risk |
-| **Batch / Flex Tier** | 50% | Latency (async or best-effort) |
+| **مسیریابی مدل (Model Routing)** | ۵۰ تا ۷۰٪ | پیچیدگی |
+| **کش Prompt (پیشوند) (Prompt (Prefix) Caching)** | ۹۰ تا ۹۷.۵٪ روی Tokenهای ورودی کش‌شده | هزینه اضافی نوشتن (۱.۲۵ برابر؛ ۲ برابر برای کش ۱ ساعته Anthropic)؛ مدیریت TTL |
+| **کش پاسخ / معنایی (Response / Semantic Caching)** | ۲۰ تا ۴۰٪ | کهنگی داده‌ها (Staleness) |
+| **فشرده‌سازی Prompt (Prompt Compression)** | ۱۰ تا ۳۰٪ | ریسک افت کیفیت |
+| **سطح دسته‌ای / انعطاف‌پذیر (Batch / Flex Tier)** | ۵۰٪ | تاخیر (Latency) (به‌صورت ناهمگام یا best-effort) |
 
 ```
 Query → Classify → Route → [Small Model] or [Large Model]
@@ -189,40 +190,40 @@ Query → Classify → Route → [Small Model] or [Large Model]
 
 ---
 
-## Anti-Patterns to Avoid
+## پادالگوهایی که باید از آن‌ها اجتناب کرد
 
-| Anti-Pattern | Problem | Better Approach |
+| پادالگو (Anti-Pattern) | مشکل | رویکرد بهتر |
 |--------------|---------|-----------------|
-| **Context Stuffing** | Token waste | Retrieve relevant only |
-| **Retry Forever** | Resource exhaustion | Circuit breaker |
-| **Trust All Output** | Hallucination | Verify, ground |
-| **Single Model** | Single point of failure | Multi-provider |
-| **No Observability** | Blind debugging | Trace everything |
-| **Infinite Agentic Loop** | Agent spins without progress | Max turns + Critic agent |
-| **Over-trusting Computer-Use** | Agent clicks wrong UI elements | Screenshot validation + HITL |
-| **No AGENTS.md / Manifest** | Agent lacks project context | Always provide coding manifest |
-| **Max Effort Everywhere** | 3-10x cost with no benefit | Pin effort per route; thinking can no longer be disabled on some models (Opus 5.5, Sonnet 5.5), so effort is the remaining lever |
-| **Floating Model Defaults** | Silent behavior change when a tool or SDK swaps its default | Pin model ID and effort; re-run evals on every change |
+| **انباشت کانتکست (Context Stuffing)** | اتلاف Token | تنها بازیابی موارد مرتبط |
+| **تلاش مجدد بی‌پایان (Retry Forever)** | اتمام منابع (Resource exhaustion) | مدارشکن (Circuit breaker) |
+| **اعتماد به تمام خروجی‌ها (Trust All Output)** | توهم (Hallucination) | اعتبارسنجی و ارجاع به منبع (Verify, ground) |
+| **تک‌مدلی (Single Model)** | نقطه تکی شکست (Single point of failure) | چند ارائه‌دهنده (Multi-provider) |
+| **عدم وجود مشاهده‌پذیری (No Observability)** | اشکال‌زدایی کورکورانه | ردیابی (Trace) همه‌چیز |
+| **حلقه بی‌پایان ایجنتی (Infinite Agentic Loop)** | ایجنت بدون هیچ پیشرفتی درجا می‌زند | حداکثر دور (Max turns) + ایجنت منتقد (Critic agent) |
+| **اعتماد بیش‌ازحد به استفاده از کامپیوتر (Over-trusting Computer-Use)** | ایجنت روی المان‌های اشتباه UI کلیک می‌کند | اعتبارسنجی اسکرین‌شات + انسان در حلقه (HITL) |
+| **نبود AGENTS.md / مانیفست (No AGENTS.md / Manifest)** | ایجنت فاقد کانتکست پروژه است | همیشه مانیفست کدنویسی ارائه دهید |
+| **حداکثر تلاش در همه‌جا (Max Effort Everywhere)** | هزینه ۳ تا ۱۰ برابری بدون هیچ فایده‌ای | تثبیت میزان تلاش (effort) به ازای هر مسیر؛ در برخی مدل‌ها (Opus 5.5 و Sonnet 5.5) دیگر امکان غیرفعال‌سازی تفکر (thinking) وجود ندارد، بنابراین تلاش (effort) تنها اهرم باقی‌مانده است |
+| **پیش‌فرض‌های شناور مدل (Floating Model Defaults)** | تغییر رفتار خاموش هنگامی که یک ابزار یا SDK پیش‌فرض خود را تغییر می‌دهد | شناسه مدل (model ID) و تلاش (effort) را تثبیت کنید؛ با هر تغییر، ارزیابی‌ها (evals) را مجدداً اجرا نمایید |
 
 ---
 
-## Pattern Selection Guide
+## راهنمای انتخاب الگو
 
-**Starting a new project?**
-1. Begin with Basic RAG
-2. Add reranking when precision matters
-3. Add hybrid search for keyword-heavy content
+**در حال شروع یک پروژه جدید هستید؟**
+1. با Basic RAG شروع کنید
+2. در صورت اهمیت داشتن دقت، بازرتبه‌بندی (Reranking) را اضافه کنید
+3. برای محتواهای سرشار از کلمات کلیدی، جستجوی ترکیبی (Hybrid Search) را اضافه کنید
 
-**Need reliability?**
-1. Start with retry + timeout
-2. Add circuit breaker for external calls
-3. Add fallback models on a different vendor for critical paths
+**به قابلیت اطمینان نیاز دارید؟**
+1. با تلاش مجدد (retry) + مهلت زمانی (timeout) شروع کنید
+2. برای فراخوانی‌های خارجی، مدارشکن (Circuit breaker) را اضافه کنید
+3. برای مسیرهای بحرانی (critical paths)، مدل‌های جایگزین (fallback) را از یک ارائه‌دهنده (vendor) دیگر اضافه کنید
 
-**Cost concerns?**
-1. Turn on provider prompt caching for stable prefixes, then add semantic caching for repeated questions
-2. Add model routing for query complexity, and pin reasoning effort per route
-3. Batch where latency allows
+**دغدغه هزینه دارید؟**
+1. کش Prompt ارائه‌دهنده را برای پیشوندهای پایدار فعال کنید، سپس کش معنایی (Semantic Caching) را برای سوالات تکراری بیفزایید
+2. برای مدیریت پیچیدگی پرس‌وجوها، مسیریابی مدل (Model Routing) را اضافه کنید و تلاش استدلال (reasoning effort) را به ازای هر مسیر تثبیت نمایید
+3. در جاهایی که تاخیر (Latency) اجازه می‌دهد، پردازش را به‌صورت دسته‌ای (Batch) انجام دهید
 
 ---
 
-*See [15-ai-design-patterns/](15-ai-design-patterns/) for detailed implementations*
+*برای مشاهده پیاده‌سازی‌های دقیق، [15-ai-design-patterns/](15-ai-design-patterns/) را ببینید*
