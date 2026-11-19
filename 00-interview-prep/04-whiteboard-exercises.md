@@ -1,50 +1,52 @@
-# Whiteboard Exercises for AI System Design
+<div dir="rtl">
 
-This chapter provides detailed walkthroughs of system design exercises commonly asked in AI-focused interviews. Each exercise includes the full problem statement, a structured solution approach, and discussion points that distinguish strong candidates.
+# تمرین‌های تخته‌سفید برای طراحی سیستم‌های هوش مصنوعی (AI System Design)
 
-## Table of Contents
+این فصل راهنمای گام‌به‌گام و تفصیلی تمرین‌های طراحی سیستم را ارائه می‌دهد که معمولاً در مصاحبه‌های متمرکز بر هوش مصنوعی پرسیده می‌شوند. هر تمرین شامل صورت کامل مسئله، رویکرد حل ساختاریافته، و نکات تحلیلی است که داوطلبان برتر را متمایز می‌کند.
 
-- [Exercise 1: Enterprise RAG System](#exercise-1-enterprise-rag-system)
-- [Exercise 2: Customer Support Chatbot](#exercise-2-customer-support-chatbot)
-- [Exercise 3: Code Review Assistant](#exercise-3-code-review-assistant)
-- [Exercise 4: Document Processing Pipeline](#exercise-4-document-processing-pipeline)
-- [Exercise 5: Real-Time Content Moderation](#exercise-5-real-time-content-moderation)
-- [Exercise 6: Multi-Tenant AI Platform](#exercise-6-multi-tenant-ai-platform)
-- [Exercise 7: Semantic Search at Scale](#exercise-7-semantic-search-at-scale)
-- [Exercise 8: Evaluation Pipeline for a Production LLM Product](#exercise-8-evaluation-pipeline-for-a-production-llm-product)
-- [Exercise 9: Memory and State for a Long-Running Agent](#exercise-9-memory-and-state-for-a-long-running-agent)
-- [Exercise 10: Inference Batching Service on a Single GPU](#exercise-10-inference-batching-service-on-a-single-gpu) ⭐ *NEW*
-- [Tips for Whiteboard Exercises](#tips-for-whiteboard-exercises)
+## جدول محتوا
+
+- [تمرین ۱: سیستم RAG سازمانی](#exercise-1-enterprise-rag-system)
+- [تمرین ۲: چت‌بات پشتیبانی مشتریان](#exercise-2-customer-support-chatbot)
+- [تمرین ۳: دستیار بررسی کد (Code Review)](#exercise-3-code-review-assistant)
+- [تمرین ۴: پایپ‌لاین پردازش اسناد](#exercise-4-document-processing-pipeline)
+- [تمرین ۵: نظارت بر محتوا به‌صورت بلادرنگ](#exercise-5-real-time-content-moderation)
+- [تمرین ۶: پلتفرم هوش مصنوعی چندمستأجره](#exercise-6-multi-tenant-ai-platform)
+- [تمرین ۷: جستجوی معنایی در مقیاس بالا](#exercise-7-semantic-search-at-scale)
+- [تمرین ۸: پایپ‌لاین ارزیابی برای یک محصول LLM در محیط عملیاتی](#exercise-8-evaluation-pipeline-for-a-production-llm-product)
+- [تمرین ۹: حافظه و وضعیت برای یک Agent با اجرای طولانی‌مدت](#exercise-9-memory-and-state-for-a-long-running-agent)
+- [تمرین ۱۰: سرویس Batching در استنتاج روی یک GPU منفرد](#exercise-10-inference-batching-service-on-a-single-gpu) ⭐ *جدید*
+- [نکاتی برای تمرین‌های تخته‌سفید](#tips-for-whiteboard-exercises)
 
 ---
 
-## Exercise 1: Enterprise RAG System
+## تمرین ۱: سیستم RAG سازمانی
 
-### Problem Statement
+### صورت مسئله
 
-Design a RAG-based knowledge assistant for a large enterprise with the following requirements:
+یک دستیار دانشی مبتنی بر RAG برای یک سازمان بزرگ با نیازمندی‌های زیر طراحی کنید:
 
-- 10 million documents from multiple sources (SharePoint, Confluence, Google Drive, internal wikis)
-- 50,000 employees with role-based access
-- Documents update continuously
-- Must respect document permissions at query time
-- Sub-3 second response time for 95% of queries
-- Support for multiple languages (English, Spanish, Mandarin)
+- ۱۰ میلیون سند از منابع چندگانه (SharePoint، Confluence، Google Drive، ویکی‌های داخلی)
+- ۵۰,۰۰۰ کارمند با سطوح دسترسی مبتنی بر نقش (Role-based access)
+- اسناد به‌صورت مداوم به‌روزرسانی می‌شوند
+- رعایت کامل دسترسی‌های اسناد در زمان اجرای پرس‌وجو الزامی است
+- زمان پاسخ‌دهی زیر ۳ ثانیه برای ۹۵٪ از پرس‌وجوها (p95 < 3s)
+- پشتیبانی از چند زبان (انگلیسی، اسپانیایی، چینی ماندارین)
 
-### Time Allocation (35 minutes)
+### تخصیص زمان (۳۵ دقیقه)
 
-| Phase | Time | Focus |
+| فاز | زمان | تمرکز |
 |-------|------|-------|
-| Clarification | 3 min | Scope, priorities, constraints |
-| High-level architecture | 7 min | Components and data flow |
-| Data pipeline | 8 min | Ingestion, chunking, indexing |
-| Query pipeline | 8 min | Retrieval, generation, permissions |
-| Reliability and scale | 5 min | Failure handling, scaling |
-| Evaluation | 4 min | Metrics and monitoring |
+| شفاف‌سازی (Clarification) | ۳ دقیقه | دامنه، اولویت‌ها، قیدها و محدودیت‌ها |
+| معماری در سطح بالا | ۷ دقیقه | مولفه‌ها و جریان داده‌ها |
+| پایپ‌لاین داده | ۸ دقیقه | ورود داده (Ingestion)، Chunking، نمایه‌سازی |
+| پایپ‌لاین پرس‌وجو | ۸ دقیقه | بازیابی، تولید متن، دسترسی‌ها |
+| پایداری و مقیاس‌پذیری | ۵ دقیقه | مدیریت شکست، مقیاس‌دهی |
+| ارزیابی (Evaluation) | ۴ دقیقه | متریک‌ها و مانیتورینگ |
 
-### Solution Walkthrough
+### راهنمای گام‌به‌گام راه‌حل
 
-#### Clarification Questions
+#### سؤالات شفاف‌کننده
 
 ```
 1. What is the document size distribution? (PDFs, wikis, code?)
@@ -54,7 +56,9 @@ Design a RAG-based knowledge assistant for a large enterprise with the following
 5. Are there compliance requirements? (Audit, data residency)
 ```
 
-#### High-Level Architecture
+#### معماری در سطح بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -90,9 +94,11 @@ Design a RAG-based knowledge assistant for a large enterprise with the following
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Data Pipeline Deep Dive
+</div>
 
-**1. Connectors:**
+#### تحلیل عمیق پایپ‌لاین داده
+
+**۱. اتصال‌دهنده‌ها (Connectors):**
 ```
 Each source has a dedicated connector:
 - SharePoint: Graph API with delta sync
@@ -106,7 +112,7 @@ Connector responsibilities:
 - Normalize to common document schema
 ```
 
-**2. Document Schema:**
+**۲. شمای اسناد (Document Schema):**
 ```json
 {
   "doc_id": "uuid",
@@ -130,7 +136,7 @@ Connector responsibilities:
 }
 ```
 
-**3. Chunking Strategy:**
+**۳. استراتژی Chunking:**
 ```
 Given mixed document types, use adaptive chunking:
 
@@ -146,7 +152,7 @@ Chunk parameters:
 Each chunk inherits parent document permissions.
 ```
 
-**4. Embedding:**
+**۴. ساخت بردار (Embedding):**
 ```
 Multilingual requirement suggests:
 - Model: Cohere Embed 5 (embed-v5.0-pro: 100+ languages, 128K
@@ -167,7 +173,7 @@ Batch embedding:
 - Store embedding with chunk in vector DB
 ```
 
-**5. Vector Database Choice:**
+**۵. انتخاب پایگاه داده برداری (Vector Database):**
 ```
 Pinecone or Qdrant for this scale.
 
@@ -184,9 +190,9 @@ Schema:
 - Metadata: doc_id, chunk_id, language, permissions, source
 ```
 
-#### Query Pipeline Deep Dive
+#### تحلیل عمیق پایپ‌لاین پرس‌وجو
 
-**1. Permission Resolution:**
+**۱. تحلیل و تفکیک دسترسی‌ها:**
 ```python
 def get_user_permissions(user_id: str) -> PermissionSet:
     """
@@ -207,7 +213,7 @@ def get_user_permissions(user_id: str) -> PermissionSet:
     return perms
 ```
 
-**2. Retrieval with Filtering:**
+**۲. بازیابی همراه با اعمال فیلتر دسترسی:**
 ```python
 def retrieve(query: str, user_id: str, top_k: int = 20) -> List[Chunk]:
     perms = get_user_permissions(user_id)
@@ -237,7 +243,7 @@ def retrieve(query: str, user_id: str, top_k: int = 20) -> List[Chunk]:
     return results
 ```
 
-**3. Reranking:**
+**۳. رتبه‌بندی مجدد (Reranking):**
 ```
 Rerank top-20 to get top-5 with a cross-encoder.
 Model: a hosted 32K-context reranker, Cohere Rerank 5 (Pro $0.05,
@@ -247,7 +253,7 @@ and Mandarin queries before choosing
 Latency budget: ~150ms (matches the p95 budget below)
 ```
 
-**4. Generation:**
+**۴. تولید پاسخ (Generation):**
 ```python
 def generate(query: str, chunks: List[Chunk], user_id: str) -> Response:
     context = format_chunks_with_citations(chunks)
@@ -272,11 +278,11 @@ QUESTION: {query}
     return format_with_source_links(response, chunks)
 ```
 
-No `temperature` here: Claude API version `2026-10-21` returns a 400 for any sampling parameter on every model, even at its default value, and GPT-6 Astra does not accept them. Grounding comes from the prompt, retrieval and citation checks, not from sampling settings.
+در اینجا از پارامتر `temperature` استفاده نمی‌شود: نسخه `2026-10-21` در API کلود برای هرگونه پارامتر نمونه‌برداری در تمام مدل‌ها خطای 400 برمی‌گرداند (حتی روی مقدار پیش‌فرض آن)، و GPT-6 Astra نیز آن‌ها را نمی‌پذیرد. مستندسازی پاسخ بر پایه پرامپت، بازیابی دقیق و بررسی ارجاعات حاصل می‌شود، نه تنظیمات نمونه‌برداری.
 
-#### Scaling and Reliability
+#### مقیاس‌پذیری و پایداری (Scaling and Reliability)
 
-**Latency Budget (p95 < 3s):**
+**بودجه تاخیر (p95 < 3s):**
 ```
 Permission resolution:   50ms  (cached)
 Embedding:              100ms
@@ -288,7 +294,7 @@ Network/overhead:       100ms
 Total:                 2000ms (buffer for P95)
 ```
 
-**Scaling Considerations:**
+**ملاحظات مقیاس‌پذیری:**
 ```
 - Vector DB: Sharded by source or hash
 - Embedding service: Horizontal scale, stateless
@@ -296,7 +302,7 @@ Total:                 2000ms (buffer for P95)
 - Cache: Redis cluster for permissions and responses
 ```
 
-**Failure Handling:**
+**مدیریت شکست:**
 ```
 - Vector DB down: Return cached results + degraded warning
 - LLM down: Fallback to secondary provider
@@ -304,23 +310,23 @@ Total:                 2000ms (buffer for P95)
 - Embedding service: Batch retries with circuit breaker
 ```
 
-#### Evaluation Approach
+#### رویکرد ارزیابی (Evaluation)
 
-**Offline Metrics:**
+**متریک‌های آفلاین:**
 ```
 - Retrieval: Precision@5, Recall@5, MRR
 - Generation: RAGAS (faithfulness, relevance)
 - End-to-end: Answer correctness on test set
 ```
 
-**Online Metrics:**
+**متریک‌های آنلاین:**
 ```
 - User feedback: Thumbs up/down
 - Query reformulation rate: User rephrasing indicates failure
 - Citation click-through: Are sources useful?
 ```
 
-**Monitoring:**
+**مانیتورینگ:**
 ```
 - Latency dashboards by percentile
 - Permission filter hit rate
@@ -330,24 +336,26 @@ Total:                 2000ms (buffer for P95)
 
 ---
 
-## Exercise 2: Customer Support Chatbot
+## تمرین ۲: چت‌بات پشتیبانی مشتریان
 
-### Problem Statement
+### صورت مسئله
 
-Design an AI-powered customer support system for an e-commerce company:
+یک سیستم پشتیبانی مشتریان مبتنی بر هوش مصنوعی برای یک شرکت تجارت الکترونیک طراحی کنید:
 
-- Handle 10,000 conversations per day
-- Access to product catalog (1M products), order history, FAQs
-- Goal: Resolve 70% of tickets without human handoff
-- Support order lookup, returns, product questions
-- Multilingual support (3 languages)
-- Integration with existing Zendesk ticketing
+- پردازش ۱۰,۰۰۰ گفتگو در روز
+- دسترسی به کاتالوگ محصولات (۱ میلیون محصول)، تاریخچه سفارشات، پرسش‌های متداول (FAQ)
+- هدف: حل ۷۰٪ تیکت‌ها بدون نیاز به ارجاع به اپراتور انسانی
+- پشتیبانی از استعلام سفارش، مرجوعی، و سؤالات محصول
+- پشتیبانی از ۳ زبان
+- ادغام با سیستم تیکتینگ موجود (Zendesk)
 
-### Solution Highlights
+### نکات برجسته راه‌حل
 
-**Key Architectural Decisions:**
+**تصمیمات کلیدی معماری:**
 
-1. **Agent Architecture with Flow Control:**
+۱. **معماری Agent همراه با کنترل جریان (Flow Control):**
+<div dir="ltr">
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
@@ -370,7 +378,9 @@ Design an AI-powered customer support system for an e-commerce company:
 └─────────────────────────────────────────────────────────┘
 ```
 
-2. **Tool Design:**
+</div>
+
+۲. **طراحی ابزارها (Tools):**
 ```python
 tools = [
     {
@@ -410,7 +420,7 @@ tools = [
 ]
 ```
 
-3. **Escalation Criteria:**
+۳. **معیارهای ارجاع به انسان (Escalation Criteria):**
 ```
 Escalate to human when:
 - Customer explicitly requests human
@@ -421,7 +431,7 @@ Escalate to human when:
 - Refund above threshold amount
 ```
 
-4. **Integration Pattern:**
+۴. **الگوی یکپارچه‌سازی با Zendesk:**
 ```
 Zendesk integration:
 - Webhook receives new tickets
@@ -433,24 +443,24 @@ Zendesk integration:
 
 ---
 
-## Exercise 3: Code Review Assistant
+## تمرین ۳: دستیار بررسی کد (Code Review Assistant)
 
-### Problem Statement
+### صورت مسئله
 
-Design a code review assistant for a development platform:
+یک دستیار بررسی کد برای یک پلتفرم توسعه نرم‌افزار طراحی کنید:
 
-- Reviews pull requests automatically
-- Provides specific, actionable feedback
-- Respects repository style guides and conventions
-- Can suggest code fixes
-- Integration with GitHub/GitLab
-- Handles 50,000 PRs per day
+- بررسی خودکار Pull Requestها
+- ارائه بازخوردهای مشخص و عملیاتی
+- رعایت راهنماهای سبک کدنویسی (Style guides) و کنوانسیون‌های ریپازیتوری
+- توانایی پیشنهاد اصلاحات کد
+- یکپارچه‌سازی با GitHub / GitLab
+- توانایی پردازش ۵۰,۰۰۰ پول ریکوئست (PR) در روز
 
-### Solution Highlights
+### نکات برجسته راه‌حل
 
-**Key Technical Choices:**
+**انتخاب‌های فنی کلیدی:**
 
-1. **Context Assembly:**
+۱. **سرهم‌بندی کانتکست (Context Assembly):**
 ```
 For each changed file, assemble context:
 - The diff (changed lines)
@@ -460,7 +470,7 @@ For each changed file, assemble context:
 - Previous review comments (learn from feedback)
 ```
 
-2. **Review Categories:**
+۲. **دسته‌بندی‌های بررسی:**
 ```python
 review_types = [
     "bug_risk",           # Potential bugs
@@ -472,7 +482,7 @@ review_types = [
 ]
 ```
 
-3. **Model Selection:**
+۳. **انتخاب مدل:**
 ```
 Primary: Claude Sonnet 5.5 or GPT-6.1 Sol (both $2/$10 per 1M);
   pick with a bake-off on a few hundred past PRs whose real
@@ -495,7 +505,7 @@ prefix, skip generated and vendored files, set effort per route
 (thinking tokens bill as output), escalate selectively.
 ```
 
-4. **Output Format:**
+۴. **فرمت خروجی:**
 ````markdown
 ## Review Summary
 
@@ -514,7 +524,7 @@ prefix, skip generated and vendored files, set effort per route
 ...
 ````
 
-5. **Latency Strategy:**
+۵. **استراتژی مدیریت تاخیر (Latency):**
 ```
 Target: Review ready within 2 minutes of PR creation
 
@@ -525,26 +535,27 @@ Strategy:
 - Cache repository conventions
 ```
 
-6. **Approval Authority:**
-The assistant comments; by default it does not approve. Since October 28, 2026, Copilot code review approvals are generally available on GitHub: when an admin turns them on (they are off by default), a Copilot approval counts toward the repository's required approvals, admins choose which file paths Copilot may approve, and pushing new commits dismisses the approval. So "agent approves agent" is now a supported configuration, not a hypothetical. If you enable it or anything similar, limit it to low-risk paths, never let an agent approve a PR an agent wrote, and dismiss the approval on every new push. Expect this separation-of-duties follow-up.
+۶. **اختیار تایید (Approval Authority):**
+دستیار هوش مصنوعی کامنت ثبت می‌کند؛ اما به‌صورت پیش‌فرض تایید (Approve) نمی‌کند. از ۲۸ اکتبر ۲۰۲۶ قابلیت تایید بررسی کد با Copilot در گیت‌هاب به‌صورت عمومی عرضه شد: هنگامی که مدیر مخزن آن را فعال می‌کند، تایید Copilot جزو تاییدیه‌های الزامی مخزن شمرده می‌شود، مدیران مشخص می‌کنند Copilot مجاز به تایید چه مسیرهایی است، و پوش کردن کامیت‌های جدید تاییدیه را باطل می‌سازد. بنابراین سناریوی «تایید یک Agent توسط Agent دیگر» اکنون یک پیکربندی واقعی است، نه صرفاً یک فرض نظری. اگر چنین قابلیتی را فعال می‌کنید، آن را به مسیرهای کم‌ریسک محدود کنید، هرگز اجازه ندهید یک Agent پول ریکوئستی را که خودش نوشته تایید کند، و تاییدیه را با هر کامیت جدید باطل نمایید. انتظار پرسیدن این سؤال درباره تفکیک وظایف (Separation of duties) را در مصاحبه داشته باشید.
 
 ---
 
-## Exercise 4: Document Processing Pipeline
+## تمرین ۴: پایپ‌لاین پردازش اسناد
 
-### Problem Statement
+### صورت مسئله
 
-Design a document processing pipeline for financial services:
+یک پایپ‌لاین پردازش اسناد برای خدمات مالی طراحی کنید:
 
-- Process 100,000 documents per day (invoices, contracts, forms)
-- Extract structured data with 99% accuracy
-- Handle PDFs, scanned documents, handwritten notes
-- HIPAA/SOC2 compliance
-- Human review for low-confidence extractions
+- پردازش ۱۰۰,۰۰۰ سند در روز (فاکتورها، قراردادها، فرم‌ها)
+- استخراج داده‌های ساختاریافته با دقت ۹۹٪
+- پشتیبانی از فایل‌های PDF، اسناد اسکن‌شده، و دست‌نوشته‌ها
+- انطباق کامل با استانداردهای HIPAA و SOC2
+- بازبینی انسانی برای استخراج‌های با ضریب اطمینان پایین
 
-### Solution Highlights
+### نکات برجسته راه‌حل
 
-**Pipeline Architecture:**
+**معماری پایپ‌لاین:**
+<div dir="ltr">
 
 ```
 ┌────────┐   ┌───────────┐   ┌────────────┐   ┌────────────┐
@@ -558,9 +569,11 @@ Design a document processing pipeline for financial services:
                               └──────────┘   └──────────┘   └──────────┘
 ```
 
-**Key Components:**
+</div>
 
-1. **Document Classification:**
+**مولفه‌های کلیدی:**
+
+۱. **کلاس‌بندی اسناد:**
 ```
 Fine-tuned classifier on document types:
 - Invoice, Contract, Receipt, Form, ID, Other
@@ -569,7 +582,7 @@ Model: LayoutLMv3 or fine-tuned ViT
 Confidence threshold: 0.95 for auto-routing
 ```
 
-2. **Extraction Strategy:**
+۲. **استراتژی استخراج (Extraction Strategy):**
 ```
 Tiered extraction based on document type:
 
@@ -592,7 +605,7 @@ degraded image understanding in GPT-6 Sol and GPT-6 Luna on
 September 25, 2026, without changing either ID.
 ```
 
-3. **Validation Rules:**
+۳. **قوانین اعتبارسنجی (Validation Rules):**
 ```python
 validation_rules = {
     "invoice": [
@@ -609,7 +622,7 @@ validation_rules = {
 }
 ```
 
-4. **Human Review Interface:**
+۴. **رابط کاربری بازبینی انسانی:**
 ```
 Reviewer sees:
 - Original document image
@@ -619,7 +632,7 @@ Reviewer sees:
 - One-click approval or field-level corrections
 ```
 
-5. **Compliance Measures:**
+۵. **تدابیر انطباق و امنیت:**
 ```
 HIPAA/SOC2 requirements:
 - All documents encrypted at rest (AES-256)
@@ -636,21 +649,22 @@ HIPAA/SOC2 requirements:
 
 ---
 
-## Exercise 5: Real-Time Content Moderation
+## تمرین ۵: مدیریت و نظارت بر محتوا به‌صورت بلادرنگ (Real-Time Content Moderation)
 
-### Problem Statement
+### صورت مسئله
 
-Design a content moderation system for a social platform:
+یک سیستم نظارت بر محتوا برای یک پلتفرم شبکه اجتماعی طراحی کنید:
 
-- 1 million posts per day (text, images, video)
-- Latency requirement: under 500ms for posts to be visible
-- Detect: hate speech, violence, adult content, spam
-- Appeal workflow for false positives
-- Support 10 languages
+- ۱ میلیون پست در روز (متن، تصویر، ویدیو)
+- الزام تاخیر: نمایش پست‌ها در کمتر از ۵۰۰ میلی‌ثانیه
+- تشخیص موارد: سخنان نفرت‌پراکنانه، خشونت، محتوای غیراخلاقی، هرزنامه (اسپم)
+- فرآیند تجدیدنظر (Appeal) برای موارد مثبت کاذب (False positives)
+- پشتیبانی از ۱۰ زبان مختلف
 
-### Solution Highlights
+### نکات برجسته راه‌حل
 
-**Architecture Pattern: Multi-Stage Cascade**
+**الگوی معماری: آبشار چندمرحله‌ای (Multi-Stage Cascade)**
+<div dir="ltr">
 
 ```
          ┌───────────────────────────────────────────┐
@@ -676,9 +690,11 @@ Design a content moderation system for a social platform:
          └───────────────────────────────────────────┘
 ```
 
-**Key Design Decisions:**
+</div>
 
-1. **Latency Optimization:**
+**تصمیمات کلیدی طراحی:**
+
+۱. **بهینه‌سازی تاخیر (Latency):**
 ```
 Target: 500ms total
 
@@ -697,7 +713,7 @@ Stage 3 (LLM): 400ms (async for borderline)
 - Used for nuanced decisions
 ```
 
-2. **Threshold Strategy:**
+۲. **استراتژی آستانه‌های تصمیم‌گیری (Thresholds):**
 ```python
 class ModerationDecision:
     BLOCK = "block"          # High confidence violation
@@ -719,7 +735,7 @@ thresholds = {
 }
 ```
 
-3. **Appeal Workflow:**
+۳. **جریان کاری تجدیدنظر (Appeal Workflow):**
 ```
 1. User submits appeal
 2. Content queued for human review
@@ -733,22 +749,23 @@ thresholds = {
 
 ---
 
-## Exercise 6: Multi-Tenant AI Platform
+## تمرین ۶: پلتفرم هوش مصنوعی چندمستأجره (Multi-Tenant AI Platform)
 
-### Problem Statement
+### صورت مسئله
 
-Design a multi-tenant AI platform (AI-as-a-Service):
+یک پلتفرم هوش مصنوعی چندمستأجره (AI-as-a-Service) طراحی کنید:
 
-- Serve 500+ enterprise customers
-- Each customer has their own documents and models
-- Complete data isolation between tenants
-- Per-tenant usage tracking and billing
-- Different pricing tiers with different capabilities
-- SOC2 compliance required
+- سرویس‌دهی به بیش از ۵۰۰ مشتری سازمانی
+- هر مشتری اسناد و مدل‌های اختصاصی خود را دارد
+- ایزوله‌سازی کامل داده‌ها بین مستأجرها (Tenants)
+- رهگیری مصرف و صورت‌حساب به تفکیک هر مشتری
+- سطوح قیمتی مختلف همراه با قابلیت‌های متفاوت
+- رعایت الزامات انطباق با استاندارد SOC2
 
-### Solution Highlights
+### نکات برجسته راه‌حل
 
-**Tenant Isolation Architecture:**
+**معماری ایزوله‌سازی مستأجرها:**
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -780,7 +797,9 @@ Design a multi-tenant AI platform (AI-as-a-Service):
                                         └─────────────────┘
 ```
 
-**Critical Isolation Points:**
+</div>
+
+**نقاط حیاتی ایزوله‌سازی:**
 
 ```python
 class TenantContext:
@@ -806,7 +825,7 @@ def enforce_tenant_context(request, call_next):
     return response
 ```
 
-**Billing and Usage Tracking:**
+**محاسبه صورت‌حساب و رهگیری مصرف:**
 
 ```python
 usage_schema = {
@@ -833,28 +852,28 @@ async def track_usage(tenant_id: str, operation: Usage):
     await redis.incr(f"usage:{tenant_id}:{today()}", operation.tokens)
 ```
 
-**Residency as a priced tier:**
+**موقعیت داده‌ها (Residency) به عنوان یک سطح با قیمت‌گذاری مجزا:**
 
-Enterprise tenants that need in-region processing cost more to serve. Anthropic charges 1.1x for US-only inference (`inference_geo`) on Claude 4.6 and later models, OpenAI adds 10% on its data-residency endpoints for models released since March 5, 2026, and regional Claude endpoints on Bedrock and Google Cloud carry about a 10% premium over global ones (on Google-managed Vertex, current models such as Opus 5.5 and Sonnet 5.5 get only `us` or `eu` multi-region residency at that premium, not a single region; see [Pricing and Costs](../02-model-landscape/03-pricing-and-costs.md)). Route only residency-bound tenants to pinned regions, record the route in every usage row, and price it into the tier instead of paying the premium on all traffic.
+مستأجرهای سازمانی که به پردازش در یک منطقه جغرافیایی خاص نیاز دارند، هزینه سرویس‌دهی بالاتری دارند. شرکت Anthropic ضریب ۱.۱ برابری برای استنتاج صرفاً در خاک آمریکا (`inference_geo`) در مدل‌های Claude 4.6 به بعد دریافت می‌کند، OpenAI هزینه ۱۰ درصدی مازاد برای اندپوینت‌های اقامت داده‌ها برای مدل‌های پس از ۵ مارس ۲۰۲۶ اعمال می‌کند، و اندپوینت‌های منطقه‌ای کلود روی Bedrock و Google Cloud حدود ۱۰٪ هزینه بالاتری نسبت به اندپوینت‌های جهانی دارند (در پلتفرم Vertex گوگل، مدل‌های فعلی مانند Opus 5.5 و Sonnet 5.5 فقط اقامت چندمنطقه‌ای `us` یا `eu` را با این ضریب ارائه می‌دهند، نه یک منطقه منفرد؛ بخش [قیمت‌گذاری و هزینه‌ها](../02-model-landscape/03-pricing-and-costs.md) را ببینید). تنها مشتریانی را که قید اقامت دارند به مناطق پین‌شده هدایت کنید، مسیر انتخابی را در رکوردهای مصرف ثبت نمایید، و هزینه آن را در پکیج مشتری لحاظ کنید به جای اینکه ضریب مازاد را روی تمام ترافیک بپردازید.
 
 ---
 
-## Exercise 7: Semantic Search at Scale
+## تمرین ۷: جستجوی معنایی در مقیاس بالا (Semantic Search at Scale)
 
-### Problem Statement
+### صورت مسئله
 
-Design a semantic search system for an e-commerce site:
+یک سیستم جستجوی معنایی برای یک فروشگاه آنلاین بزرگ طراحی کنید:
 
-- 50 million products
-- 100 million queries per day
-- P99 latency under 100ms
-- Support filters (price, category, brand, ratings)
-- Personalization based on user history
-- Real-time inventory updates
+- ۵۰ میلیون محصول
+- ۱۰۰ میلیون پرس‌وجو در روز
+- تاخیر p99 زیر ۱۰۰ میلی‌ثانیه
+- پشتیبانی از فیلترها (قیمت، دسته‌بندی، برند، امتیاز کاربران)
+- شخصی‌سازی نتایج بر پایه تاریخچه کاربر
+- به‌روزرسانی بلادرنگ موجودی کالاها
 
-### Solution Highlights
+### نکات برجسته راه‌حل
 
-**Key Challenge: 100ms at 100M queries/day**
+**چالش کلیدی: تاخیر ۱۰۰ میلی‌ثانیه در ۱۰۰ میلیون پرس‌وجوی روزانه**
 
 ```
 100M queries/day = 1,157 QPS average
@@ -867,14 +886,15 @@ At 100ms latency, need:
 - Minimal LLM involvement
 ```
 
-**Architecture:**
+**معماری سیستم:**
+<div dir="ltr">
 
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                         CDN/Edge                            │
 │              (Cache popular queries: ~30% hit)              │
 └─────────────────────────────┬──────────────────────────────┘
-                              │
+                               │
 ┌─────────────────────────────▼──────────────────────────────┐
 │                      Query Service                          │
 │  1. Embed query (cached embeddings for common queries)      │
@@ -883,7 +903,7 @@ At 100ms latency, need:
 │  4. Personalize ranking                                     │
 │  5. Return results                                          │
 └─────────────────────────────┬──────────────────────────────┘
-                              │
+                               │
 ┌─────────────────────────────▼──────────────────────────────┐
 │                    Vector Database Cluster                  │
 │  - Sharded by category (reduce search space)                │
@@ -892,7 +912,9 @@ At 100ms latency, need:
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Latency Budget:**
+</div>
+
+**بودجه تاخیر:**
 
 ```
 Edge cache check:    5ms
@@ -906,7 +928,7 @@ Network overhead:   25ms
 Total:              100ms target (with cache hit)
 ```
 
-**Hybrid Search Strategy:**
+**استراتژی جستجوی ترکیبی (Hybrid Search):**
 
 ```python
 def search(query: str, filters: dict, user_id: str) -> List[Product]:
@@ -936,7 +958,7 @@ def search(query: str, filters: dict, user_id: str) -> List[Product]:
     return personalized[:20]
 ```
 
-**Real-Time Updates:**
+**به‌روزرسانی‌های بلادرنگ:**
 
 ```
 Product updates (price, inventory) flow:
@@ -952,23 +974,24 @@ Reindexing (description changes):
 
 ---
 
-## Exercise 8: Evaluation Pipeline for a Production LLM Product
+## تمرین ۸: پایپ‌لاین ارزیابی برای یک محصول LLM در محیط عملیاتی
 
-### Problem Statement
+### صورت مسئله
 
-"Your company ships an AI assistant used by 50,000 daily users. Leadership wants to ship model and prompt changes weekly without quality regressions. Design the evaluation pipeline: offline evals, CI gating, judge calibration, and production monitoring. Budget: the eval system itself should cost under 2% of inference spend."
+«شرکت شما یک دستیار هوش مصنوعی با ۵۰,۰۰۰ کاربر فعال روزانه ارائه می‌دهد. مدیران شرکت می‌خواهند تغییرات مدل و پرامپت را به‌صورت هفتگی بدون افت کیفیت (Regression) عرضه کنند. پایپ‌لاین ارزیابی را طراحی کنید: ارزیابی‌های آفلاین، گیت‌های کنترل CI/CD، کالیبراسیون قاضی (Judge)، و مانیتورینگ در محیط عملیاتی. بودجه: کل هزینه سیستم ارزیابی باید زیر ۲٪ از کل هزینه استنتاج سیستم باشد.»
 
-### Clarifying Questions to Ask
+### سؤالات شفاف‌کننده که باید بپرسید
 
-- What does "quality" mean for this product? (Task success, faithfulness, tone, safety?)
-- Do we have any labeled data today, or are we starting from zero?
-- What is the change velocity? (Prompts daily, models monthly?)
-- What is the cost of a shipped regression? (Support tickets, churn, regulatory exposure?)
-- Who consumes eval results? (Engineers gating PRs, PMs tracking quality, execs tracking trend lines?)
+- «کیفیت» برای این محصول چه تعریفی دارد؟ (موفقیت در انجام کار، وفاداری به منبع، لحن بیان، ایمنی؟)
+- آیا داده‌های برچسب‌گذاری‌شده در حال حاضر وجود دارند یا باید از صفر شروع کنیم؟
+- نرخ و سرعت اعمال تغییرات چقدر است؟ (پرامپت‌ها روزانه، مدل‌ها ماهانه؟)
+- هزینه و پیامد انتشار یک نسخه دارای پسرفت کیفی چیست؟ (تیکت‌های پشتیبانی، ریزش مشتریان، پیامدهای قانونی؟)
+- چه کسانی نتایج ارزیابی را مصرف می‌کنند؟ (مهندسان برای مرج کردن PR، مدیران محصول برای پیگیری کیفیت، مدیران ارشد برای بررسی نمودارها؟)
 
-### Solution Walkthrough
+### راهنمای گام‌به‌گام راه‌حل
 
-**High-level architecture:**
+**معماری در سطح بالا:**
+<div dir="ltr">
 
 ```
                     ┌────────────────────────────────────────────┐
@@ -990,7 +1013,9 @@ Reindexing (description changes):
                     └──── dashboards + regression alerts ─────────┘
 ```
 
-**1. Dataset strategy (the part most candidates skip):**
+</div>
+
+**۱. استراتژی مجموعه داده (بخشی که بیشتر داوطلبان نادیده می‌گیرند):**
 
 ```
 Golden dataset composition:
@@ -1003,13 +1028,13 @@ Split: dev (iterate freely) / held-out (CI-only, never inspected)
 Refresh: quarterly, sampled from recent traffic; archive old sets
 ```
 
-**2. Scoring design:**
+**۲. طراحی امتیازدهی (Scoring):**
 
-- Binary pass/fail per dimension (faithfulness, completeness, tone, safety), not 1-5 scales. Binary decisions are reproducible; Likert drifts.
-- LLM-as-judge for scale: a cheap model (GPT-6 Luna, Gemini 3.8 Flash, Claude Haiku 5.5) with a rubric and few-shot anchors per dimension. Because the dimensions are binary, a decision model (such as OpenAI's Decisions API; see [Decision Models](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)) is a cheaper option for the clear-cut ones. It gives no rationale, and its probabilities need calibrating against the human-graded slice like any judge.
-- Judge calibration: monthly agreement check against the human-graded slice. Judge-human agreement is itself a dashboard metric; below 85% agreement, the judge prompt gets fixed before any product conclusions are drawn.
+- استفاده از تایید/رد دودویی (Binary pass/fail) برای هر بعد کیفی (وفاداری، جامعیت، لحن، ایمنی)، نه مقیاس‌های ۱ تا ۵. تصمیمات باینری قابل تکرار هستند؛ مقیاس‌های لیکرت دچار لغزش و بی‌ثباتی می‌شوند.
+- استفاده از LLM-as-judge برای مقیاس‌پذیری: یک مدل ارزان‌قیمت (GPT-6 Luna، Gemini 3.8 Flash، Claude Haiku 5.5) همراه با یک شیوه‌نامه ارزیابی و مثال‌های لنگری (Few-shot anchors) برای هر بعد. از آنجا که ابعاد دودویی هستند، یک مدل تصمیم‌گیری (مانند Decisions API شرکت OpenAI؛ بخش [مدل‌های تصمیم‌گیری](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities) را ببینید) گزینه‌ای ارزان‌تر برای سناریوهای شفاف است. این مدل توضیحی نمی‌دهد و احتمالات آن مانند هر قاضی دیگری باید با نمونه انسانی کالیبره شود.
+- کالیبراسیون قاضی: بررسی ماهانه نرخ توافق با نمونه بررسی‌شده توسط انسان. نرخ توافق قاضی و انسان خودش یک متریک در داشبورد است؛ زیر ۸۵٪ توافق، ابتدا پرامپت قاضی اصلاح می‌شود و سپس نتیجه‌گیری محصولی صورت می‌گیرد.
 
-**3. CI gating:**
+**۳. گیت‌های کنترلی CI/CD:**
 
 ```python
 def eval_gate(pr_results, baseline_results):
@@ -1025,13 +1050,13 @@ def eval_gate(pr_results, baseline_results):
     return Pass()
 ```
 
-**4. Production monitoring:**
+**۴. مانیتورینگ در محیط عملیاتی:**
 
-- Sampled judge scoring on live traffic (1-5%), trended daily.
-- Outcome linkage: complaint rate, thumbs-down rate, and escalation rate plotted against eval scores on the same dashboard. Divergence between eval trend and outcome trend triggers an eval review.
-- Drift alarms: input distribution shift (intent cluster mix), score drop by segment, and judge agreement decay.
+- نمونه‌برداری و نمره‌دهی قاضی روی ۱ تا ۵ درصد از ترافیک زنده و ثبت روند روزانه.
+- اتصال به پیامدهای محصولی: نرخ نارضایتی، نرخ دیس‌لایک و نرخ ارجاع به اپراتور در همان داشبورد در کنار نمرات ارزیابی رسم می‌شوند. انحراف میان روند ارزیابی و پیامدهای واقعی، بازبینی پایپ‌لاین ارزیابی را کلید می‌زند.
+- هشدارهای انحراف و تغییر توزیع: جابه‌جایی در توزیع ورودی‌ها، افت امتیاز در بخش‌های خاص، و افت سازگاری قاضی.
 
-**5. Cost control:**
+**۵. کنترل هزینه‌ها:**
 
 ```
 50K DAU, ~3 requests each = 150K requests/day
@@ -1043,38 +1068,39 @@ Total: well under the 2% budget; the human slice is the
 dominant cost and it is what keeps the judge honest.
 ```
 
-**6. Tooling and portability:**
+**۶. ابزارها و قابلیت حمل (Portability):**
 
-Keep datasets, rubrics, judge prompts and gate thresholds in your own repo, and treat hosted eval platforms as replaceable runners. OpenAI's hosted Evals shuts down November 30, 2026 (OpenAI points users to Promptfoo, which is now part of OpenAI and remains MIT-licensed), and LangSmith SaaS keeps extended-retention traces for at most 180 days from September 14, 2026. Quarter-over-quarter trend lines need a store you control.
+مجموعه‌های داده، شیوه‌نامه‌ها، پرامپت‌های قاضی و آستانه‌های گیت را در مخزن اختصاصی خود نگه دارید و با پلتفرم‌های هاست‌شده ارزیابی به عنوان ابزارهای اجرای قابل تعویض برخورد کنید. سرویس ارزیابی ابری OpenAI در ۳۰ نوامبر ۲۰۲۶ خاموش می‌شود (و کاربران را به Promptfoo هدایت می‌کند)، و سرویس ابری LangSmith لاگ‌ها را حداکثر ۱۸۰ روز نگه می‌دارد. برای ثبت روندهای چندفصلی به یک پایگاه داده تحت کنترل خودتان نیاز دارید.
 
-### What Distinguishes Strong Candidates
+### ویژگی‌های متمایزکننده داوطلبان برتر
 
-- They design the dataset before the scorer; a great judge on a stale dataset measures nothing.
-- They treat the judge as a system component with its own eval (calibration vs humans), not as ground truth.
-- They name eval gaming risks unprompted: dev-set overfitting, judge sycophancy, metric narrowing, silent exclusion of hard cases.
-- They keep the held-out set and reference answers unreachable from the system under test. Agents with tool access find answer keys: a September 2026 audit (arXiv 2609.34262) judged 24% to 73% of passing SWE-Bench Pro v1.0 trajectories unearned, depending on the model, mostly through git history that exposed reference solutions.
-- They link offline scores to production outcomes instead of celebrating green dashboards.
-- They quantify the eval budget and place the expensive human grading where it has the most leverage.
+- آن‌ها پیش از مدل نمره‌دهنده، مجموعه داده را طراحی می‌کنند؛ یک قاضی فوق‌العاده روی داده‌های قدیمی هیچ چیز معناداری را نمی‌سنجد.
+- با قاضی به عنوان یکی از اجزای سیستم که خودش نیاز به ارزیابی دارد برخورد می‌کنند، نه به عنوان مرجع حقیقت مطلق.
+- ریسک‌های دور زدن و تقلب در ارزیابی را خودشان نام می‌برند: بیش‌برازش روی داده‌های توسعه، تملق قاضی، باریک شدن بیش‌از‌حد معیارها، و حذف پنهان موارد دشوار.
+- مجموعه داده پنهان (Held-out) و پاسخ‌های مرجع را از دسترس سیستم تحت آزمایش دور نگه می‌دارند. Agentهای دارای ابزار پاسخ‌ها را پیدا می‌کنند: حسابرسی سپتامبر ۲۰۲۶ (arXiv 2609.34262) نشان داد بین ۲۴ تا ۷۳ درصد از مسیرهای موفق در SWE-Bench Pro v1.0 غیرواقعی بودند، عمدتاً از طریق بررسی تاریخچه گیت که پاسخ‌های مرجع را لو می‌داد.
+- نمرات آفلاین را به پیامدهای محیط عملیاتی متصل می‌کنند، نه اینکه صرفاً به سبز بودن داشبوردها دلخوش باشند.
+- بودجه ارزیابی را به‌صورت کمّی محاسبه می‌کنند و ارزیابی گران‌قیمت انسانی را در نقطه‌ای قرار می‌دهند که بالاترین اهرم و اثرگذاری را دارد.
 
 ---
 
-## Exercise 9: Memory and State for a Long-Running Agent
+## تمرین ۹: حافظه و وضعیت برای یک Agent با اجرای طولانی‌مدت
 
-### Problem Statement
+### صورت مسئله
 
-"Design the memory system for a personal AI assistant that works with a user over months: it should remember preferences and facts, learn from past sessions, recall relevant history at the right moments, and forget what it should not keep. Sessions can run for hours. Support 1M users."
+«سیستم حافظه را برای یک دستیار هوش مصنوعی شخصی طراحی کنید که ماه‌ها با یک کاربر کار می‌کند: باید ترجیحات و حقایق را به خاطر بسپارد، از جلسات گذشته بیاموزد، تاریخچه مرتبط را در لحظات مناسب فرابخواند، و آنچه را که نباید نگه دارد فراموش کند. جلسات گفتگو ممکن است ساعت‌ها طول بکشند. سیستم باید ۱ میلیون کاربر را پشتیبانی کند.»
 
-### Clarifying Questions to Ask
+### سؤالات شفاف‌کننده که باید بپرسید
 
-- What memory failures hurt most: forgetting something important, or recalling something wrong or stale?
-- Privacy constraints? (GDPR deletion, per-user isolation, regulated data?)
-- Is memory per-user only, or shared organizational knowledge too?
-- Latency budget for recall on each turn?
-- How long do individual sessions run? (Determines in-session vs cross-session design.)
+- کدام خطای حافظه آسیب بیشتری می‌زند: فراموش کردن یک موضوع مهم، یا به یاد آوردن یک داده غلط یا تاریخ‌گذشته؟
+- محدودیت‌های حریم خصوصی چیست؟ (حذف مبتنی بر GDPR، ایزوله‌سازی کاربر، داده‌های تحت قوانین خاص؟)
+- آیا حافظه صرفاً مختص هر کاربر است یا دانش مشترک سازمانی نیز وجود دارد؟
+- بودجه تاخیر برای بازیابی حافظه در هر دور گفتگو چقدر است؟
+- هر جلسه گفتگو چقدر طول می‌کشد؟ (طراحی درون‌سشن در برابر بین‌سشن را تعیین می‌کند.)
 
-### Solution Walkthrough
+### راهنمای گام‌به‌گام راه‌حل
 
-**The memory hierarchy:**
+**سلسله‌مراتب حافظه:**
+<div dir="ltr">
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -1096,10 +1122,13 @@ Keep datasets, rubrics, judge prompts and gate thresholds in your own repo, and 
 └──────────────────────────────────────────────────────────┘
 ```
 
-**1. In-session (L1): context engineering, not storage.**
-Compaction at a window threshold (summarize history, keep recent artifacts), just-in-time loading of large content by reference, and a structured scratch note the agent re-reads after compaction. A session that runs hours never holds its whole transcript in context.
+</div>
 
-**2. Write path (the hard part):**
+**۱. درون جلسه (سطح L1): مهندسی کانتکست، نه ذخیره‌سازی.**
+فشرده‌سازی در یک آستانه مشخص پنجره (خلاصه‌سازی تاریخچه، حفظ خروجی‌های مهم اخیر)، بارگذاری در لحظه اسناد حجیم با ارجاع به آن‌ها، و یادداشت‌های ساختاریافته که Agent پس از فشرده‌سازی مجدداً می‌خواند. جلسه‌ای که ساعت‌ها طول می‌کشد هرگز کل متن گفتگو را در کانتکست نگه نمی‌دارد.
+
+**۲. مسیر نوشتن در حافظه (بخش دشوار مسئله):**
+<div dir="ltr">
 
 ```
 Session ends (or hits checkpoint)
@@ -1119,22 +1148,24 @@ Session ends (or hits checkpoint)
                 preferences, commitments, corrections
 ```
 
-The conflict path matters most: "user moved from Madrid to Lisbon" must supersede, not coexist. Bitemporal records (valid_from, valid_to) make supersession auditable and reversible.
+</div>
 
-**3. Read path:**
+مسیر حل تعارض بیشترین اهمیت را دارد: گزاره «کاربر از مادرید به لیسبون نقل مکان کرد» باید جایگزین داده قبلی شود، نه اینکه هر دو هم‌زمان باقی بمانند. استفاده از رکوردهای دوگانه زمانی (valid_from و valid_to) فرآیند جایگزینی را قابل ممیزی و برگشت‌پذیر می‌کند.
 
-- Each turn builds a recall query from the current intent, retrieves top-k from L2 (similarity + recency + importance weighting) and matching facts from L3.
-- A relevance gate drops weak matches rather than stuffing them in; wrong memories poison the response worse than missing ones.
-- Recall budget: a few hundred tokens of memory per turn, never a transcript dump.
-- Measure memory-on against memory-off. Even correct, relevant memories can hurt: MemTrapBench (arXiv 2608.20202, August 2026) found every memory strategy it tested underperformed the no-memory setting on its trap tasks, where correctly stored memories pulled the agent into reasoning fixation or distorted beliefs about the current task.
+**۳. مسیر خواندن از حافظه:**
 
-**4. Forgetting and privacy:**
+- در هر دور گفتگو، یک پرس‌وجوی یادآوری از نیت فعلی ساخته می‌شود، برترین موارد از سطح L2 (با ترکیب شباهت، تازگی زمانی و اهمیت) و حقایق منطبق از سطح L3 بازیابی می‌شوند.
+- یک گیت سنجش ارتباط، موارد با شباهت ضعیف را حذف می‌کند؛ خاطرات غلط بسیار بیشتر از نبود خاطره پاسخ را مسموم می‌کنند.
+- بودجه یادآوری: چند صد توکن حافظه در هر دور گفتگو، نه ریختن کل سوابق در پرامپت.
+- مقایسه حالت «حافظه فعال» در برابر «بدون حافظه»: بنچمارک MemTrapBench (اوت ۲۰۲۶) نشان داد تمام استراتژی‌های حافظه در تسک‌های تله‌دار عملکردی ضعیف‌تر از حالت بدون حافظه داشتند، زیرا خاطرات درست اما نامتناسب، Agent را دچار تثبیت استدلال نادرست می‌کردند.
 
-- Decay: episodic entries lose retrieval weight over time unless reinforced by access.
-- Consolidation: a periodic job merges related episodes into summaries (many "billing question" episodes become one pattern note). Vendors now ship this as an offline "dreaming" pass: Anthropic's Dreams (research preview) and Mem0's Dream (Pro and Enterprise plans).
-- GDPR deletion: per-user partition keys everywhere; deletion removes L2/L3/L4 rows and invalidates caches. Hard isolation per user; memory is never shared across tenants by similarity.
+**۴. فراموشی و حریم خصوصی:**
 
-**5. Scale sketch (1M users):**
+- زوال زمانی (Decay): رکوردهای رویدادی با گذشت زمان وزن بازیابی خود را از دست می‌دهند مگر اینکه با دسترسی‌های جدید تقویت شوند.
+- ادغام و یکپارچه‌سازی: یک جاب دوره‌ای گفتگوهای مرتبط را در خلاصه‌ها ادغام می‌کند. شرکت‌ها اکنون این قابلیت را تحت عنوان فرآیند آفلاین «رویاپردازی (Dreaming)» عرضه می‌کنند (مانند Dreams در Anthropic و Dream در Mem0).
+- حذف داده مبتنی بر GDPR: کلیدهای پارتیشن مجزا برای هر کاربر؛ حذف کردن موجب پاک شدن ردیف‌های L2/L3/L4 و ابطال کش‌ها می‌شود. حافظه هرگز بر اساس شباهت معنایی میان مستأجرها به اشتراک گذاشته نمی‌شود.
+
+**۵. تخمین مقیاس (برای ۱ میلیون کاربر):**
 
 ```
 Storage: ~thousands of L2 entries + hundreds of L3 facts per
@@ -1147,35 +1178,35 @@ Cost: extraction pass on session close is the main LLM cost;
   V4.1-Flash) with a strict schema
 ```
 
-### What Distinguishes Strong Candidates
+### ویژگی‌های متمایزکننده داوطلبان برتر
 
-- They separate in-session context management from cross-session memory instead of conflating them.
-- They spend time on the write path (extraction, dedup, conflict supersession) rather than only on retrieval.
-- They treat wrong recall as worse than no recall and design the relevance gate accordingly.
-- They name memory poisoning as a security surface: untrusted content written today and trusted tomorrow needs provenance tags and review gates.
-- They know the build-vs-buy options and how they have moved, while still being able to design from primitives. Mem0's open-source SDK has been ADD-only since v2.0 (April 2026), with merge and supersede moved to its paid Dream feature, so a conflict path like the one above stays in your code. Letta archived its MemGPT-era server in August 2026 and now keeps memory as git-backed Markdown files with no vector index by default. Zep remains a graph-based option.
+- تفکیک شفاف میان مدیریت کانتکست درون جلسه و حافظه بلندمدت میان جلسات مختلف.
+- صرف زمان کافی روی مسیر نوشتن (استخراج، حذف تکرارها، حل تعارضات) به جای تمرکز صرف روی بازیابی.
+- برخورد با یادآوری غلط به عنوان خطایی مخرب‌تر از به یاد نیاوردن، و طراحی گیت ارتباط بر این اساس.
+- توجه به مسموم‌سازی حافظه به عنوان یک سطح حمله امنیتی: محتوای غیرقابل‌اعتمادی که امروز ذخیره می‌شود نباید فردا کورکورانه مورد اعتماد قرار گیرد.
+- آگاهی از ابزارهای آماده و محدودیت‌های آن‌ها: فریم‌ورک متن‌باز Mem0 از نسخه ۲.۰ صرفاً عملیات افزودن (ADD-only) را پشتیبانی می‌کند و ادغام و جایگزینی را به سرویس پولی برده است؛ بنابراین کد حل تعارض باید در برنامه خودتان پیاده شود. فریم‌ورک Letta نیز سرور قدیمی خود را آرشیو کرده و بر پایه فایل‌های Markdown در گیت بدون نمایه برداری کار می‌کند.
 
 ---
 
-## Exercise 10: Inference Batching Service on a Single GPU
+## تمرین ۱۰: سرویس Batching در استنتاج روی یک GPU منفرد
 
-### Problem Statement
+### صورت مسئله
 
-"Design the batching layer for an LLM inference service on one GPU. Users wait synchronously for results, and a batch holds at most 100 sequences. Explain how requests are admitted, grouped, scheduled and returned, then how the design changes when traffic outgrows the GPU."
+«لایه Batching را برای یک سرویس استنتاج LLM روی یک GPU منفرد طراحی کنید. کاربران به‌صورت همگام (Synchronous) منتظر نتایج می‌مانند و هر بچ حداکثر ۱۰۰ دنباله (Sequence) را در خود جای می‌دهد. نحوه پذیرش، دسته‌بندی، زمان‌بندی و بازگرداندن نتایج را شرح دهید، و سپس توضیح دهید هنگامی که ترافیک از ظرفیت یک GPU فراتر رود، معماری چگونه تغییر می‌کند.»
 
-Interview-prep guides report variants of this prompt from Anthropic system design rounds (Aced, formerly Exponent, September 2026; candidate-reported, not confirmed by the company). It tests whether you understand serving from the inside rather than only calling an API.
+این پرسش در مصاحبه‌های طراحی سیستم Anthropic گزارش شده است (گزارش‌های داوطلبان از طریق Aced، سپتامبر ۲۰۲۶). این تمرین نشان می‌دهد که آیا سرویس‌دهی را از درون درک می‌کنید یا صرفاً کار با APIها را بلدید.
 
-### Clarifying Questions to Ask
+### سؤالات شفاف‌کننده که باید بپرسید
 
-- Is this autoregressive generation or a single forward pass (embeddings, classification, scoring)? The answer changes the whole design.
-- What are the prompt and output length distributions? Prefill-heavy RAG prompts and decode-heavy chat stress different things.
-- Which SLO matters: time to first token (TTFT), inter-token latency, or end-to-end, and at what percentile?
-- Do users stream, or wait for the full response?
-- Are there priority classes or tenants? Can clients cancel?
+- آیا تسک از نوع تولید خودبازگشتی (Autoregressive Generation) است یا یک اجرای منفرد (Forward pass مانند Embedding یا کلاس‌بندی)؟ این پاسخ کل معماری را تغییر می‌دهد.
+- توزیع طول پرامپت و طول خروجی چگونه است؟ پرامپت‌های سنگین RAG و چت‌های طولانی در خروجی به بخش‌های مختلفی فشار می‌آورند.
+- کدام SLO اهمیت دارد: زمان رسیدن به اولین توکن (TTFT)، تاخیر میان توکن‌ها، یا تاخیر سرتاسری، و در چه صدکی؟
+- آیا کاربران استریمینگ دریافت می‌کنند یا منتظر کل پاسخ می‌مانند؟
+- آیا اولویت‌بندی درخواست‌ها یا امکان انصراف کلاینت وجود دارد؟
 
-### Solution Walkthrough
+### راهنمای گام‌به‌گام راه‌حل
 
-**1. Two regimes, two batchers:**
+**۱. دو حالت کاری، دو رویکرد Batching:**
 
 ```
 Single forward pass (embed, classify, score):
@@ -1189,7 +1220,8 @@ Autoregressive generation:
   decode step, finished sequences leave and queued ones join.
 ```
 
-**2. Architecture:**
+**۲. معماری سیستم:**
+<div dir="ltr">
 
 ```
 Client ──► API (auth, validation, max_tokens cap)
@@ -1216,7 +1248,9 @@ Client ──► API (auth, validation, max_tokens cap)
         completion or client disconnect
 ```
 
-**3. The binding constraint is KV memory, not the 100-slot cap:**
+</div>
+
+**۳. محدودیت اصلی حافظه KV است، نه سقف اسمی ۱۰۰ درخواست:**
 
 ```
 Llama 3.1 8B in BF16:
@@ -1228,77 +1262,77 @@ Average context 2K tokens → ~200 sequences fit: the 100 cap binds
 Average context 8K tokens → ~50 sequences fit: memory binds first
 ```
 
-So the scheduler admits by free KV blocks (PagedAttention-style paging), reserves headroom for output growth, and treats 100 per batch as a ceiling, not a target.
+بنابراین زمان‌بند بر مبنای بلوک‌های حافظه آزاد KV (مشابه تکنیک PagedAttention) درخواست‌ها را می‌پذیرد، فضایی را برای رشد توکن‌های خروجی رزرو می‌کند، و سقف ۱۰۰ درخواست در هر بچ را به عنوان سقف نهایی در نظر می‌گیرد، نه هدف.
 
-**4. Synchronous users and backpressure:**
+**۴. کاربران همگام و کنترل فشار معکوس (Backpressure):**
 
-- Stream tokens so the user's wait is TTFT, not full generation time.
-- Bound the queue by request count and by queued tokens, and shed load early with a 429. An unbounded queue turns a traffic spike into timeouts for everyone. vLLM added admission-control flags for exactly this in v0.29 (`--max-num-queued-reqs`, `--max-num-queued-tokens`).
-- Cancel on client disconnect so abandoned requests stop holding KV blocks.
-- Cap `max_tokens` per request; one runaway generation can pin memory for minutes.
+- توکن‌ها را استریم کنید تا انتظار کاربر معادل TTFT باشد، نه کل زمان تولید.
+- صف درخواست‌ها را از نظر تعداد درخواست و تعداد توکن‌های در صف محدود کنید و ترافیک مازاد را بلافاصله با خطای 429 پس بزنید. یک صف نامحدود در هنگام جهش ترافیک باعث تایم‌اوت شدن همه درخواست‌ها می‌شود. موتور vLLM فلگ‌های اختصاصی کنترل پذیرش را برای همین منظور در نسخه 0.29 اضافه کرد (`--max-num-queued-reqs` و `--max-num-queued-tokens`).
+- با قطع اتصال کلاینت، عملیات را لغو کرده و بلوک‌های حافظه KV را آزاد کنید.
+- برای هر درخواست سقف `max_tokens` تعیین کنید؛ یک درخواست سرکش می‌تواند حافظه را تا دقایق طولانی قفل کند.
 
-**5. Metrics:**
+**۵. متریک‌های کلیدی:**
 
-TTFT and inter-token latency at p50 and p99, queue wait, batch occupancy, KV utilization, preemption rate, and **goodput**: the request rate that meets both the TTFT and inter-token SLOs. Peak tokens per second at a full batch means little if p99 TTFT misses the SLO.
+متریک‌های TTFT و تاخیر بین توکن‌ها در صدک‌های p50 و p99، زمان انتظار در صف، نرخ اشغال بچ، ضریب مصرف KV، نرخ تعلیق (Preemption)، و مفهوم **توان مفید (Goodput)**: یعنی نرخ درخواستی که هم‌زمان به تعهدات سطح خدمت (SLO) در TTFT و تاخیر بین توکن‌ها پاسخ می‌دهد. ثبت رکورد توکن بر ثانیه در یک بچ پر، اگر منجر به رد شدن تعهدات p99 شود فاقد ارزش است.
 
-**6. Beyond one GPU:**
+**۶. فراتر از یک GPU:**
 
-- Replicas behind a prefix- and KV-aware router (llm-d's Endpoint Picker, NVIDIA Dynamo's router), so requests sharing a system prompt land where that prefix is already cached.
-- Disaggregated prefill and decode pools when prompts are long. The KV handoff is not free (about 3 GB for a 10K-token prompt on Llama 3.1 70B in BF16, roughly 65 ms at 400 Gb/s), so it pays only when it raises goodput.
-- Speculative decoding (EAGLE-3, MTP, block-diffusion drafters such as DFlash) to cut inter-token latency; benchmark it at your real concurrency, because the gain shrinks as batches fill.
+- استقرار کپی‌ها (Replicas) در پشت یک روتر آگاه از کش KV و پیشوند، تا درخواست‌هایی با پرامپت سیستمی مشترک به گره‌هایی بروند که پیشوند در آنجا از قبل کش شده است.
+- تفکیک استخرهای Prefill و Decode هنگامی که پرامپت‌ها طولانی هستند. البته انتقال KV cache روی شبکه رایگان نیست (حدود ۳ گیگابایت برای پرامپت ۱۰ هزار توکنی در مدل Llama 3.1 70B در فرمت BF16 حدود ۶۵ میلی‌ثانیه زمان می‌برد)، بنابراین تنها زمانی صرفه دارد که Goodput کلی را افزایش دهد.
+- رمزگشایی حدسی (Speculative decoding با روش‌هایی مثل EAGLE-3، MTP و روش‌های انتشار بلوکی نظیر DFlash) برای کاهش تاخیر بین توکن‌ها.
 
-### What Distinguishes Strong Candidates
+### ویژگی‌های متمایزکننده داوطلبان برتر
 
-- They ask whether the workload is generation or a single forward pass before drawing anything.
-- They size KV memory with numbers and admit by memory, not by slot count.
-- They bound the queue and say what the client sees under overload.
-- They report goodput at an SLO, not peak throughput.
-- They say they would run vLLM or SGLang in production, since both already implement continuous batching and paged KV, and use the interview to show they understand what those engines do.
-- They treat the engine as a shared-fate domain. Inputs get validated before they reach the GPU: one unauthenticated request with a negative token ID to vLLM's embeddings endpoint crashed the engine for every client until restart (CVE-2026-93592, fixed in v0.28.0). And a shared prefix cache is a cross-tenant side channel, so salt cache keys per tenant (vLLM's `cache_salt`) and keep the engine patched (v0.30.0 fixed a path that dropped the salt and reopened a prefix-cache membership oracle, and v0.32.0 is the current security floor, v0.33.0 for hosts that load model repositories they did not vet).
-
-**Related prompts to practice** (candidate-reported from Anthropic and OpenAI loops via the prep vendor Aced, formerly Exponent; not confirmed by the companies): a GPU credit or quota accounting system, peer-to-peer distribution of a large file (think model weights) from one bandwidth-limited source to thousands of machines, and a token-generation service at 100,000 requests per second. The same moves apply: clarify the workload, find the binding resource, bound the queue, and measure at an SLO.
+- پیش از کشیدن دیاگرام می‌پرسند آیا بار کاری از نوع تولید متن است یا یک Forward pass منفرد.
+- حافظه KV را با ارقام مشخص محاسبه کرده و پذیرش را بر مبنای حافظه مدیریت می‌کنند نه تعداد اسلات‌ها.
+- صف را محدود کرده و رفتار سیستم تحت بار شدید را شرح می‌دهند.
+- گزارش عملکرد را بر مبنای Goodput در یک SLO معین ارائه می‌دهند، نه حداکثر توان اسمی خام.
+- بیان می‌کنند که در محیط عملیاتی از vLLM یا SGLang استفاده خواهند کرد و نشان می‌دهند عملکرد درونی این موتورها را می‌فهمند.
+- با موتور استنتاج به عنوان یک محیط با سرنوشت مشترک برخورد می‌کنند؛ ورودی‌ها باید قبل از رسیدن به GPU اعتبارسنجی شوند (یک درخواست مخرب به اندپوینت embedding در vLLM موتور را تا ریستارت کرش می‌داد؛ آسیب‌پذیری CVE-2026-93592). کش اشتراکی پیشوند نیز یک کانال جانبی بین‌مستأجری است، بنابراین از کلیدهای تفکیک‌شده (مانند `cache_salt` در vLLM) استفاده کنید.
 
 ---
 
-## Tips for Whiteboard Exercises
+## نکاتی برای تمرین‌های تخته‌سفید
 
-### Drawing Tips
+### نکات رسم دیاگرام
 
-1. **Start with boxes and labels** before connecting with arrows
-2. **Use consistent notation**: rectangles for services, cylinders for databases, arrows for data flow
-3. **Label data on arrows**: what flows between components
-4. **Leave space** for additions as you discuss
+۱. **ابتدا جعبه‌ها و برچسب‌ها را رسم کنید** و سپس آن‌ها را با فلش‌ها متصل نمایید.
+۲. **از نمادهای استاندارد و منسجم استفاده کنید**: مستطیل برای سرویس‌ها، استوانه برای پایگاه‌های داده، فلش برای جریان داده‌ها.
+۳. **داده‌های عبوری روی فلش‌ها را نام‌گذاری کنید**: مشخص کنید چه داده‌ای میان اجزا جابه‌جا می‌شود.
+۴. **فضای خالی بگذارید** تا در حین بحث بتوانید اجزای جدیدی به آن اضافه کنید.
 
-### Common Patterns to Know
+### الگوهای رایج که باید بشناسید
 
-| Pattern | When to Use | Draw As |
+| الگو | زمان استفاده | نحوه رسم |
 |---------|-------------|---------|
-| Load balancer + service fleet | Any scaled service | LB → multiple boxes |
-| Queue + workers | Async processing | Queue → worker pool |
-| Cache layer | Read-heavy, latency-sensitive | Diamond before service |
-| CDC/streaming | Real-time updates | Kafka/stream icon |
-| Sidecar | Cross-cutting concerns | Small box attached to service |
+| Load Balancer + ناوگان سرویس‌ها | هر سرویس نیازمند مقیاس | LB ← چند جعبه سرویس |
+| صف + کارگران (Queue + Workers) | پردازش‌های ناهمگام (Async) | صف ← استخر کارگران |
+| لایه کش (Cache) | بارهای کاری با خواندن بالا و حساس به تاخیر | لوزی قبل از سرویس |
+| تغییر داده در لحظه (CDC / Streaming) | به‌روزرسانی‌های بلادرنگ | آیکون کافکا یا جریان |
+| سایدکار (Sidecar) | دغدغه‌های مشترک زیرساختی | جعبه کوچک متصل به سرویس |
 
-### Phrases That Signal Strong Candidates
+### عباراتی که نشانه داوطلبان مسلط است
 
-- "Before I design this, let me understand the scale..."
-- "The tradeoff here is..."
-- "In production, we would also need..."
-- "One failure mode to consider is..."
-- "Let me walk you through the latency budget..."
-- "For evaluation, I would measure..."
+- «پیش از طراحی، مایلم مقیاس سیستم را شفاف‌تر بدانم...»
+- «موازنه (Tradeoff) کلیدی در این قسمت عبارت است از...»
+- «در محیط عملیاتی (production)، به این مولفه‌ها نیز نیاز خواهیم داشت...»
+- «یکی از حالت‌های شکست مهمی که باید لحاظ کنیم این است که...»
+- «اجازه دهید بودجه تاخیر (Latency Budget) را با هم مرور کنیم...»
+- «برای ارزیابی، این متریک‌ها را اندازه‌گیری خواهم کرد...»
 
-### Time Management
+### مدیریت زمان
 
-- Do not spend more than 5 minutes on clarification
-- Draw the complete high-level picture before deep diving
-- Leave time for reliability and evaluation
-- Check in with the interviewer on focus areas
+- بیش از ۵ دقیقه را صرف سؤالات شفاف‌کننده اولیه نکنید.
+- تصویر کامل سیستم را در سطح بالا رسم کنید، سپس به سراغ بررسی عمیق بروید.
+- حتماً برای قابلیت اطمینان، پایداری و ارزیابی زمان باقی بگذارید.
+- به‌طور مداوم با مصاحبه‌کننده هماهنگ شوید و نظر او را جویا شوید.
 
-### Rehearse With Someone Else Drawing the Clock
+### تمرین با حضور فردی که زمان را مدیریت کند
 
-Solo practice catches knowledge gaps; it does not catch pacing, rambling, or the habit of defending a choice instead of weighing it. Run at least one exercise end to end with another person playing the interviewer. If you want an experienced interviewer and written feedback, book a 1:1 mock with Om on [EngineBogie](https://enginebogie.com/u/ombharatiya) or [Topmate](https://topmate.io/ombharatiya).
+تمرین انفرادی به پوشش ضعف‌های دانشی کمک می‌کند؛ اما سرعت بیان، حاشیه‌روی‌ها یا وسواس دفاع از نظر را اصلاح نمی‌کند. حداقل یک تمرین را از ابتدا تا انتها با فردی که نقش مصاحبه‌کننده را بازی می‌کند انجام دهید. اگر به دنبال یک مصاحبه‌کننده باتجربه همراه با بازخورد مکتوب هستید، می‌توانید یک جلسه مصاحبه آزمایشی با Om در [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
 
 ---
 
-*See also: [Question Bank](01-question-bank.md) | [Answer Frameworks](02-answer-frameworks.md) | [Common Pitfalls](03-common-pitfalls.md)*
+*همچنین ببینید: [بانک سؤالات](01-question-bank.md) | [چارچوب‌های پاسخ‌دهی](02-answer-frameworks.md) | [خطاهای متداول](03-common-pitfalls.md)*
+
+</div>

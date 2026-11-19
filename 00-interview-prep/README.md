@@ -1,20 +1,24 @@
-# AI System Design Interview Preparation
+<div dir="rtl">
 
-Interview prep for senior and staff AI engineering roles: 193 system design questions (including a dedicated Voice AI set and a set built from recent candidate interview reports), answer frameworks with a worked mock-interview transcript, common pitfalls, ten whiteboard exercises, behavioral prep, a quick-answer FAQ, and November 2026 hiring trends.
+# آمادگی برای مصاحبه طراحی سیستم‌های هوش مصنوعی (AI System Design)
 
-> **What's new (November 6, 2026):** the question bank now runs continuously Q1-Q193. Twelve more questions from candidate interview reports, [Q174-Q185](01-question-bank.md#questions-from-recent-interview-reports), cover agents over security telemetry, a permission-matched code explorer, devbox platforms, review ingestion under prompt injection, an agent over manufacturing systems, agentic retail search, scoping a cancellation agent with a PM, a 20-minute job-click model, RL for a fresh-answer chatbot, overconfident answers in high-risk domains, distillation limits, and a design round where using an AI assistant is required. A new [November 2026 section](01-question-bank.md#advanced-questions---november-2026), Q186-Q193, covers per-end-customer enforcement isolation, server-side message threads, a multi-vendor deprecation program, cyber access programs, open-weight license review, reading a regraded leaderboard, tenant isolation that fails open, and agent approval controls. The job market chapter adds new loop formats and interviewer signals, and the FAQ is current to November 6.
+آمادگی مصاحبه برای موقعیت‌های شغلی ارشد و Staff مهندسی هوش مصنوعی: ۱۹۳ سؤال طراحی سیستم (شامل یک مجموعه اختصاصی هوش مصنوعی صوتی (Voice AI) و مجموعه‌ای برگرفته از گزارش‌های اخیر مصاحبه داوطلبان)، چارچوب‌های پاسخ‌دهی همراه با متن پیاده‌سازی‌شده یک مصاحبه آزمایشی (mock interview)، خطاهای متداول، ده تمرین تخته‌سفید، آمادگی رفتاری، پرسش‌های متداول برای پاسخ‌های سریع، و روندهای استخدام در نوامبر ۲۰۲۶.
+
+> **موارد جدید (۶ نوامبر ۲۰۲۶):** بانک سؤالات اکنون به‌صورت پیوسته از Q1 تا Q193 شماره‌گذاری شده است. دوازده سؤال جدید برگرفته از گزارش‌های مصاحبه داوطلبان، [Q174-Q185](01-question-bank.md#questions-from-recent-interview-reports)، مواردی مانند Agentها روی تله‌متری امنیتی، کاوشگر کد منطبق با سطح دسترسی، پلتفرم‌های devbox، دریافت بازبینی تحت تزریق پرامپت (prompt injection)، یک Agent روی سیستم‌های تولید صنعتی، جست‌وجوی خرده‌فروشی بر پایه Agent، تعیین دامنه یک Agent لغو اشتراک همراه با PM، مدل کلیک شغلی ۲۰ دقیقه‌ای، یادگیری تقویتی (RL) برای چت‌بات با پاسخ‌های تازه، پاسخ‌های بیش‌از‌حد مطمئن در دامنه‌های پرریسک، محدودیت‌های تقطیر دانش (distillation)، و یک مرحله طراحی که در آن استفاده از دستیار هوش مصنوعی الزامی است را پوشش می‌دهند. یک [بخش جدید نوامبر ۲۰۲۶](01-question-bank.md#advanced-questions---november-2026)، شامل Q186 تا Q193، به ایزوله‌سازی اعمال قوانین به ازای هر مشتری نهایی، رشته پیام‌های سمت سرور، برنامه منسوخ‌سازی (deprecation) چندفروشنده‌ای، برنامه‌های دسترسی سایبری، بررسی مجوز مدل‌های با وزن باز (open-weight)، تحلیل لیدربوردهای بازنمره‌دهی‌شده، ایزوله‌سازی چندمستأجره (multi-tenant) با شکست باز (fails open)، و کنترل‌های تایید Agent می‌پردازد. فصل بازار کار نیز فرمت‌های جدید فرآیند مصاحبه (loop) و سیگنال‌های مصاحبه‌کنندگان را اضافه کرده و FAQ تا ۶ نوامبر به‌روز شده است.
 >
-> Earlier in November, the bank gained eighteen questions built from candidate interview reports posted mostly between June and November 2026, [Q156-Q173](01-question-bank.md#questions-from-recent-interview-reports): design-doc review, model distribution and GPU scheduling, provider-side chat serving, KV caches and tokenizers from scratch, agents without a framework, AI-assisted coding and PR-review rounds, launch readiness, safety and mission screens, and forward deployed decomposition. The job market chapter now summarizes the loop formats candidates report by company, and the behavioral chapter covers the new "how do you use AI" and safety-screen themes. Earlier in November the bank gained eight October-2026 questions, [Q148-Q155](01-question-bank.md#advanced-questions---october-2026), covering agents that silence or outwait their own monitors, incident pipelines that separate prompt-injected from self-directed actions, an AI gateway as a supply-chain target, fine-tunes that lose their base model, prices set by prompt length and calendar, decision models, rolling an API-version change through a shared gateway, and patch SLAs once AI shrinks the patch gap. That update also gave the job market chapter November 1 compensation data, Indeed's record 7.3% AI share of US postings, the Anthropic S-1, and a caveat on reports that Anthropic dropped its coding interview (one hiring manager's practice, not company policy), and brought the FAQ up to October's model releases (Claude Haiku 5.5, GPT-6.1 Terra, and Gemini 4 Argon GA).
+> در اوایل نوامبر، بانک سؤالات با هجده سؤال برگرفته از گزارش‌های مصاحبه داوطلبان (که اکثراً بین ژوئن و نوامبر ۲۰۲۶ منتشر شده بودند) تکمیل شد، [Q156-Q173](01-question-bank.md#questions-from-recent-interview-reports): بررسی سند طراحی (design-doc review)، توزیع مدل و زمان‌بندی GPU، سرویس‌دهی چت سمت ارائه‌دهنده، پیاده‌سازی KV cacheها و tokenizerها از پایه، Agentها بدون استفاده از فریم‌ورک، مراحل کدنویسی با کمک هوش مصنوعی و بررسی PR، آمادگی برای لانچ، غربالگری‌های ایمنی و ماموریت، و تجزیه سیستم‌های مستقر در محیط مشتری (forward deployed decomposition). فصل بازار کار اکنون خلاصه فرمت‌های مصاحبه گزارش‌شده توسط داوطلبان به تفکیک شرکت‌ها را ارائه می‌دهد، و فصل رفتاری به موضوعات جدید «چگونه از هوش مصنوعی استفاده می‌کنید» و غربالگری ایمنی می‌پردازد. پیش از آن در اوایل نوامبر، هشت سؤال اکتبر ۲۰۲۶ به بانک سؤالات اضافه شد، [Q148-Q155](01-question-bank.md#advanced-questions---october-2026)، شامل موضوعاتی چون Agentهایی که ناظران خود را ساکت کرده یا منتظر اتمام زمان آن‌ها می‌مانند، پایپ‌لاین‌های مدیریت حادثه که اقدامات ناشی از تزریق پرامپت را از اقدامات خودخواسته جدا می‌کنند، Gateway هوش مصنوعی به عنوان هدف زنجیره تامین، مدل‌های Fine-tuning شده‌ای که پایه اصلی خود را از دست می‌دهند، قیمت‌گذاری بر اساس طول پرامپت و تقویم زمانی، مدل‌های تصمیم‌گیری، اعمال تغییر نسخه API از طریق Gateway مشترک، و توافق‌نامه‌های سطح خدمات (SLA) وصله پس از کاهش شکاف اصلاح به دست هوش مصنوعی. این به‌روزرسانی همچنین داده‌های جبران خدمت (حقوق و مزایا) ۱ نوامبر، سهم رکوردشکنی ۷.۳ درصدی هوش مصنوعی از آگهی‌های شغلی آمریکا در Indeed، فرم S-1 شرکت Anthropic، و هشداری درباره گزارش‌هایی مبنی بر حذف مصاحبه کدنویسی Anthropic (که رویه یک مدیر استخدام بوده و سیاست کل شرکت نیست) را به فصل بازار کار اضافه کرد و FAQ را به مدل‌های منتشرشده در اکتبر (Claude Haiku 5.5، GPT-6.1 Terra و Gemini 4 Argon GA) ارتقا داد.
 >
-> **October 2026:** the question bank gained seven September-2026 questions (operating an agent on a model rated Critical for cyber, full-duplex voice front ends that delegate to a backend model, providers removing sampling parameters and forced tool calls, managed agent platforms, reading benchmark claims against public leaderboards, open-weight license gates, and patching a self-hosted inference stack) plus a new twelve-question [Voice AI](01-question-bank.md#voice-ai-questions) section covering architecture choice, latency budgets, turn-taking on phone audio, per-minute cost, evaluation, and calling compliance. The bank now runs continuously Q1-Q147, and the whiteboard set gained a tenth exercise on inference batching.
+> **اکتبر ۲۰۲۶:** بانک سؤالات با هفت سؤال سپتامبر ۲۰۲۶ گسترش یافت (اجرای Agent روی مدلی با سطح ارزیابی بحرانی برای امنیت سایبری، فرانت‌اند صوتی Full-duplex که به مدل بک‌اند محول می‌کند، ارائه‌دهندگانی که پارامترهای نمونه‌برداری و فراخوانی اجباری ابزار را حذف می‌کنند، پلتفرم‌های مدیریت‌شده Agent، ارزیابی ادعاهای بنچمارک در برابر لیدربوردهای عمومی، شروط مجوزهای مدل‌های وزن باز، و وصله کردن استک استنتاج (Inference) هاست‌شده توسط خود) به علاوه یک بخش جدید دوازده‌سؤالی [هوش مصنوعی صوتی (Voice AI)](01-question-bank.md#voice-ai-questions) شامل انتخاب معماری، بودجه‌های تاخیر (Latency)، مدیریت نوبت مکالمه روی صوت تلفنی، هزینه به ازای هر دقیقه، ارزیابی، و انطباق با قوانین تماس. بانک سؤالات اکنون پیوسته از Q1 تا Q147 شماره‌گذاری شده و تمرین دهمی با موضوع Batching در استنتاج به تمرین‌های تخته‌سفید اضافه شد.
 
-## Before You Start
+## پیش از شروع
 
-This folder assumes you already write production code and know LLM basics (tokens, context windows, embeddings, what RAG is). If those are shaky, spend a week in [01-foundations](../01-foundations/) and the [Courses guide](../COURSES.md) first; interview prep on top of missing fundamentals produces fluent-sounding wrong answers, which is the worst possible outcome in a senior loop.
+در این پوشه فرض بر این است که شما در حال حاضر برای محیط عملیاتی (production) کد می‌نویسید و با مبانی LLM (توکن‌ها، پنجره‌های کانتکست، Embeddingها و ماهیت RAG) آشنا هستید. اگر در این مفاهیم احساس تسلط کامل ندارید، ابتدا یک هفته را در بخش [مبانی (01-foundations)](../01-foundations/) و [راهنمای دوره‌ها](../COURSES.md) سپری کنید؛ آمادگی برای مصاحبه بدون تسلط بر مبانی اولیه، منجر به ارائه پاسخ‌های اشتباهی می‌شود که در ظاهر روان و درست به نظر می‌رسند، و این بدترین خروجی ممکن در یک مصاحبه سطح ارشد (Senior) است.
 
-The files in this folder are designed to be read in order. Each builds on the last: questions teach the surface area, frameworks teach how to structure answers, pitfalls teach what kills offers, exercises rehearse the motion, behavioral covers the staff-level signal, and job-market trends cover who is hiring, for what, and at what pay.
+فایل‌های این پوشه به‌گونه‌ای طراحی شده‌اند که به ترتیب خوانده شوند. هر فایل بر پایه فایل قبلی بنا شده است: سؤالات دامنه موضوعی را مشخص می‌کنند، چارچوب‌ها نحوه ساختاربندی پاسخ‌ها را آموزش می‌دهند، خطاهای متداول مواردی که شانس دریافت پیشنهاد شغلی را از بین می‌برند آشکار می‌سازند، تمرین‌ها روند مصاحبه را تمرین می‌کنند، بخش رفتاری سیگنال‌های مورد نیاز در سطح Staff را پوشش می‌دهد، و روندهای بازار کار مشخص می‌کنند چه شرکت‌هایی، برای چه نقش‌هایی و با چه میزان دستمزدی در حال استخدام هستند.
 
-## Read in Order
+## ترتیب مطالعه
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -31,7 +35,11 @@ flowchart TD
     I --> J[Interview day]
 ```
 
-## Role-Specific Prep Paths
+</div>
+
+## مسیرهای آمادگی متناسب با نقش
+
+<div dir="ltr">
 
 ```mermaid
 mindmap
@@ -60,35 +68,39 @@ mindmap
       Answer Frameworks
 ```
 
-## Files in This Folder
+</div>
 
-| File | Purpose |
+## فایل‌های این پوشه
+
+| فایل | هدف |
 |------|---------|
-| [01-question-bank.md](01-question-bank.md) | 193 interview questions (Q1-Q193, continuously numbered), drawn from reported loops, job postings, and current releases and incidents, grouped by topic, with model answers and follow-ups (through November 2026), including a twelve-question Voice AI section. |
-| [02-answer-frameworks.md](02-answer-frameworks.md) | Five structured answer frameworks (SPIDER, ETA, tradeoff, debugging, STAR-L) plus a worked 45-minute SPIDER mock-interview transcript. |
-| [03-common-pitfalls.md](03-common-pitfalls.md) | Patterns that kill staff-level offers: hand-waving on tradeoffs, missing observability, ignoring failure modes. |
-| [04-whiteboard-exercises.md](04-whiteboard-exercises.md) | Ten system design exercises with worked solutions, including evaluation pipeline design, agent memory, and inference batching. The closest simulation of a real loop. |
-| [05-behavioral-for-ai-roles.md](05-behavioral-for-ai-roles.md) | Behavioral prep for AI-specific scenarios, including customer-facing deployment rounds in FDE loops and the past-project technical deep dive, with six worked STAR-L examples, compensation and leveling questions, and an out-loud practice guide. |
-| [06-job-market-trends-2026.md](06-job-market-trends-2026.md) | Role taxonomy, comp ranges (with the date each levels.fyi row was checked), entry-level and layoff data, per-company AI-in-interview policies, and emerging titles (FDE, AI Eval Engineer, AI Reliability Engineer, MCP Engineer). |
-| [07-faq.md](07-faq.md) | Short, direct answers to the most-asked questions about AI engineering, RAG, agents, models, eval, inference, memory, and security. Useful for quick reference and for newcomers to the field. |
+| [01-question-bank.md](01-question-bank.md) | ۱۹۳ سؤال مصاحبه (Q1 تا Q193 با شماره‌گذاری پیوسته)، برگرفته از فرآیندهای مصاحبه گزارش‌شده، آگهی‌های استخدامی، آخرین نسخه‌ها و حوادث، دسته‌بندی‌شده بر اساس موضوع، همراه با پاسخ‌های نمونه و سؤالات تکمیلی (تا نوامبر ۲۰۲۶)، شامل یک بخش دوازده‌سؤالی هوش مصنوعی صوتی (Voice AI). |
+| [02-answer-frameworks.md](02-answer-frameworks.md) | پنج چارچوب پاسخ‌دهی ساختاریافته (SPIDER، ETA، تریدآف، عیب‌یابی، STAR-L) به همراه متن پیاده‌سازی‌شده یک مصاحبه آزمایشی ۴۵ دقیقه‌ای با چارچوب SPIDER. |
+| [03-common-pitfalls.md](03-common-pitfalls.md) | الگوهایی که پیشنهادهای شغلی سطح Staff را نابود می‌کنند: کلی‌گویی و ابهام درباره موازنه‌ها (Tradeoffs)، فقدان قابلیت مشاهده‌پذیری (observability)، نادیده گرفتن حالت‌های شکست. |
+| [04-whiteboard-exercises.md](04-whiteboard-exercises.md) | ده تمرین طراحی سیستم همراه با راه‌حل‌های کامل، از جمله طراحی پایپ‌لاین ارزیابی، حافظه Agent و Batching در استنتاج (Inference). نزدیک‌ترین شبیه‌سازی به یک فرآیند مصاحبه واقعی. |
+| [05-behavioral-for-ai-roles.md](05-behavioral-for-ai-roles.md) | آمادگی رفتاری برای سناریوهای خاص هوش مصنوعی، شامل مراحل استقرار رو به مشتری در مصاحبه‌های FDE و بررسی فنی عمیق پروژه‌های گذشته، همراه با شش نمونه حل‌شده STAR-L، سؤالات مربوط به حقوق و سطح‌بندی (Leveling)، و راهنمای تمرین با صدای بلند. |
+| [06-job-market-trends-2026.md](06-job-market-trends-2026.md) | رده‌بندی نقش‌ها، دامنه‌های حقوق و مزایا (همراه با تاریخ بررسی هر ردیف در levels.fyi)، داده‌های مربوط به نیروهای ورودی و تعدیل نیرو، سیاست‌های شرکت‌ها درباره استفاده از هوش مصنوعی در مصاحبه، و عناوین شغلی نوظهور (FDE، مهندس ارزیابی هوش مصنوعی، مهندس پایداری هوش مصنوعی، مهندس MCP). |
+| [07-faq.md](07-faq.md) | پاسخ‌های کوتاه و مستقیم به پرتکرارترین سؤالات درباره مهندسی هوش مصنوعی، RAG، ایجنت‌ها، مدل‌ها، ارزیابی، استنتاج (Inference)، حافظه، و امنیت. کاربردی برای مراجعه سریع و افراد تازه‌وارد به این حوزه. |
 
-## Practice With a Real Interviewer
+## تمرین با یک مصاحبه‌کننده واقعی
 
-Everything in this folder can be self-studied, but one part of the loop cannot: defending a design out loud while an interviewer interrupts, changes a constraint, and asks why you did not pick the other option. That is a skill, and it improves fastest with reps and direct feedback.
+تمام محتوای این پوشه را می‌توان به‌صورت خودخوان مطالعه کرد، اما یک بخش از فرآیند مصاحبه را نمی‌توان به تنهایی پیش برد: دفاع شفاهی و با صدای بلند از یک طراحی هنگامی که مصاحبه‌کننده حرف شما را قطع می‌کند، یک قید یا محدودیت مسئله را تغییر می‌دهد، و می‌پرسد چرا گزینه دیگر را انتخاب نکردید. این یک مهارت است و تنها با تکرار مداوم و دریافت بازخورد مستقیم به سریع‌ترین شکل رشد می‌کند.
 
-If you want those reps, Om offers 1:1 mock AI system design interviews, reviews of your written answers and stories, and ongoing mentorship for engineers moving into senior or staff AI roles. Book on [EngineBogie](https://enginebogie.com/u/ombharatiya) or [Topmate](https://topmate.io/ombharatiya). A good time to book is after you have worked through the answer frameworks and at least three whiteboard exercises, so the session tests your delivery rather than your reading.
+اگر به دنبال چنین تمرین‌هایی هستید، Om جلسات مصاحبه آزمایشی ۱ به ۱ طراحی سیستم‌های هوش مصنوعی، بررسی پاسخ‌های کتبی و تجربیات شما، و منتورشیپ مداوم برای مهندسانی که قصد ارتقا به نقش‌های ارشد یا Staff را دارند ارائه می‌دهد. می‌توانید از طریق [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید. زمان مناسب برای رزرو پس از تسلط بر چارچوب‌های پاسخ‌دهی و حل حداقل سه تمرین تخته‌سفید است، تا این جلسه به جای ارزیابی روخوانی شما، نحوه ارائه و تسلط شما را بسنجد.
 
-## Companion Resources
+## منابع مکمل
 
-- [Role Transition Guide](../TRANSITION_GUIDE.md) for prepping from backend, frontend, QA, PM, or EM into AI.
-- [Recommended Courses](../COURSES.md) for foundational learning before interview prep.
-- [Glossary](../GLOSSARY.md) for quick term definitions during prep.
-- [Case Studies](../16-case-studies/) for production architectures that map directly to whiteboard prompts.
+- [راهنمای تغییر نقش شغلی](../TRANSITION_GUIDE.md) برای آمادگی انتقال از بک‌اند، فرانت‌اند، تضمین کیفیت (QA)، مدیریت محصول (PM) یا مدیریت مهندسی (EM) به حوزه هوش مصنوعی.
+- [دوره‌های پیشنهادی](../COURSES.md) برای یادگیری مبانی پایه پیش از شروع آمادگی مصاحبه.
+- [واژه‌نامه](../GLOSSARY.md) برای تعاریف سریع اصطلاحات در طول فرآیند مطالعه.
+- [مطالعات موردی](../16-case-studies/) برای آشنایی با معماری‌های محیط عملیاتی (production) که مستقیماً به موضوعات تمرین تخته‌سفید نگاشت می‌شوند.
 
-## Key Takeaways
+## نکات کلیدی
 
-- The files are designed to be read in order; jumping straight to questions without absorbing answer frameworks leaves answers unstructured.
-- Whiteboard exercises (file 04) are the closest simulation to real interviews; do at least three before any loop.
-- Behavioral prep (file 05) is what separates staff candidates from senior candidates; do not skip it.
-- The November 2026 job market chapter (file 06) is a moat: candidates who know the current hiring market can ask better questions and tailor stories.
-- Recheck this folder monthly; new question batches are added as hiring trends shift.
+- فایل‌ها به‌گونه‌ای طراحی شده‌اند که به ترتیب مطالعه شوند؛ پرش مستقیم به سراغ سؤالات بدون درک چارچوب‌های پاسخ‌دهی، پاسخ‌های شما را فاقد ساختار مناسب خواهد کرد.
+- تمرین‌های تخته‌سفید (فایل 04) نزدیک‌ترین شبیه‌سازی به مصاحبه‌های واقعی هستند؛ قبل از هر فرآیند مصاحبه حداقل سه تمرین را انجام دهید.
+- آمادگی برای مصاحبه رفتاری (فایل 05) عامل تمایز داوطلبان سطح Staff از داوطلبان ارشد (Senior) است؛ از آن غافل نشوید.
+- فصل بازار کار نوامبر ۲۰۲۶ (فایل 06) یک مزیت رقابتی است: داوطلبانی که از وضعیت فعلی بازار استخدام آگاه هستند، سؤالات بهتری می‌پرسند و تجربیات خود را متناسب با آن بازگو می‌کنند.
+- این پوشه را به‌صورت ماهانه مجدداً بررسی کنید؛ با تغییر روندهای استخدام، دسته‌های سؤالات جدید اضافه می‌شوند.
+
+</div>

@@ -1,535 +1,539 @@
-# Behavioral Questions for AI/ML Roles
+<div dir="rtl">
 
-Behavioral questions in AI roles assess how you approach ambiguous problems, collaborate across disciplines, and handle the unique challenges of AI systems. This chapter covers common questions and frameworks for strong answers.
+# سؤالات رفتاری برای موقعیت‌های شغلی هوش مصنوعی و یادگیری ماشین (AI/ML)
 
-## Table of Contents
+سؤالات رفتاری در نقش‌های هوش مصنوعی ارزیابی می‌کنند که شما چگونه با مسائل مبهم مواجه می‌شوید، چگونه با حوزه‌های مختلف همکاری می‌کنید، و چگونه چالش‌های منحصربه‌فرد سیستم‌های هوش مصنوعی را مدیریت می‌نمایید. این فصل سؤالات رایج و چارچوب‌هایی برای ارائه پاسخ‌های قدرتمند را پوشش می‌دهد.
 
-- [Why Behavioral Questions Matter for AI Roles](#why-behavioral-questions-matter-for-ai-roles)
-- [AI-Specific Behavioral Themes](#ai-specific-behavioral-themes)
-- [Question Categories and Examples](#question-categories-and-examples)
-- [Sample Answers Using STAR-L](#sample-answers-using-star-l) (6 worked examples)
-- [Questions to Ask Your Interviewers](#questions-to-ask-your-interviewers)
-- [Red Flags to Avoid](#red-flags-to-avoid)
-- [Practicing Out Loud](#practicing-out-loud)
-- [Preparation Checklist](#preparation-checklist)
+## جدول محتوا
+
+- [چرا سؤالات رفتاری در نقش‌های هوش مصنوعی اهمیت دارند](#why-behavioral-questions-matter-for-ai-roles)
+- [موضوعات رفتاری خاص هوش مصنوعی](#ai-specific-behavioral-themes)
+- [دسته‌بندی سؤالات و مثال‌ها](#question-categories-and-examples)
+- [نمونه پاسخ‌ها با چارچوب STAR-L](#sample-answers-using-star-l) (۶ مثال پیاده‌سازی‌شده)
+- [سؤالاتی که باید از مصاحبه‌کنندگان بپرسید](#questions-to-ask-your-interviewers)
+- [پرچم‌های قرمزی که باید از آن‌ها اجتناب کنید](#red-flags-to-avoid)
+- [تمرین با صدای بلند](#practicing-out-loud)
+- [چک‌لیست آمادگی](#preparation-checklist)
 
 ---
 
-## Why Behavioral Questions Matter for AI Roles
+## چرا سؤالات رفتاری در نقش‌های هوش مصنوعی اهمیت دارند
 
-AI projects have unique characteristics that behavioral questions probe:
+پروژه‌های هوش مصنوعی ویژگی‌های منحصربه‌فردی دارند که سؤالات رفتاری آن‌ها را می‌سنجند:
 
-| Challenge | What Interviewers Assess |
+| چالش | آنچه مصاحبه‌کنندگان ارزیابی می‌کنند |
 |-----------|--------------------------|
-| Uncertainty | How do you make decisions with incomplete information? |
-| Rapid change | How do you stay current and adapt? |
-| Cross-functional work | How do you collaborate with research, product, legal? |
-| Ethical concerns | How do you handle responsible AI considerations? |
-| Technical debt | How do you balance shipping with correctness? |
-| Stakeholder education | How do you explain AI limitations to non-technical peers? |
+| عدم قطعیت (Uncertainty) | چگونه با اطلاعات ناقص تصمیم‌گیری می‌کنید؟ |
+| تغییرات سریع (Rapid change) | چگونه به‌روز می‌مانید و خود را وفق می‌دهید؟ |
+| کارهای بین‌رشته‌ای (Cross-functional) | چگونه با بخش‌های پژوهش، محصول و حقوقی تعامل می‌کنید؟ |
+| دغدغه‌های اخلاقی (Ethical concerns) | چگونه ملاحظات هوش مصنوعی مسئولانه را مدیریت می‌کنید؟ |
+| بدهی فنی (Technical debt) | چگونه تعادل میان سرعت عرضه و درستی سیستم را برقرار می‌سازید؟ |
+| آموزش ذی‌نفعان (Stakeholder education) | چگونه محدودیت‌های هوش مصنوعی را برای همکاران غیرفنی توضیح می‌دهید؟ |
 
 ---
 
-## AI-Specific Behavioral Themes
+## موضوعات رفتاری خاص هوش مصنوعی
 
-### Theme 1: Handling Ambiguity
+### موضوع ۱: مواجهه با ابهام (Handling Ambiguity)
 
-AI projects often start with unclear requirements. Strong candidates show they can structure ambiguity.
+پروژه‌های هوش مصنوعی اغلب با نیازمندی‌های نامشخص و مبهم آغاز می‌شوند. داوطلبان قدرتمند نشان می‌دهند که می‌توانند به ابهامات ساختار بدهند.
 
-**Questions to expect:**
-- Tell me about a time you started a project without clear requirements
-- How do you decide what to build when the path is not obvious?
-- Describe a situation where you changed direction mid-project
+**سؤالاتی که باید انتظار داشته باشید:**
+- از زمانی بگویید که پروژه‌ای را بدون نیازمندی‌های شفاف آغاز کردید.
+- وقتی مسیر پیش‌رو شفاف نیست، چگونه تصمیم می‌گیرید چه چیزی بسازید؟
+- موقعیتی را شرح دهید که در میانه پروژه جهت حرکت خود را تغییر دادید.
 
-**What they look for:**
-- Systematic approach to exploring unknowns
-- Willingness to prototype and learn
-- Knowing when to commit vs when to keep exploring
-
----
-
-### Theme 2: Managing Expectations
-
-AI capabilities are often misunderstood. Strong candidates manage stakeholder expectations.
-
-**Questions to expect:**
-- Tell me about a time you had to say no to a stakeholder request
-- How do you explain AI limitations to non-technical colleagues?
-- Describe a situation where expectations were unrealistic
-
-**What they look for:**
-- Clear communication without jargon
-- Proposing alternatives, not just saying no
-- Building trust through honesty about limitations
+**آنچه به دنبال آن هستند:**
+- رویکردی نظام‌مند برای کشف نادانسته‌ها
+- تمایل به ساخت نمونه اولیه (Prototype) و یادگیری تجربی
+- درک زمان مناسب برای تثبیت مسیر در مقابل ادامه کاوش
 
 ---
 
-### Theme 3: Dealing with Failure
+### موضوع ۲: مدیریت انتظارات (Managing Expectations)
 
-AI systems fail in ways that differ from traditional software. Strong candidates learn from failures without defensiveness.
+قابلیت‌های هوش مصنوعی اغلب به نادرستی درک می‌شوند. داوطلبان قدرتمند انتظارات ذی‌نفعان را به خوبی مدیریت می‌کنند.
 
-**Questions to expect:**
-- Tell me about an AI system that did not work as expected
-- How do you handle a model that performs poorly in production?
-- Describe a time you shipped something that had issues
+**سؤالاتی که باید انتظار داشته باشید:**
+- از زمانی بگویید که مجبور شدید به درخواست یک ذی‌نفع «نه» بگویید.
+- چگونه محدودیت‌های هوش مصنوعی را برای همکاران غیرفنی توضیح می‌دهید؟
+- موقعیتی را توصیف کنید که در آن انتظارات به شکلی غیرواقع‌بینانه تعریف شده بود.
 
-**What they look for:**
-- Taking responsibility
-- Root cause analysis
-- Systems thinking about prevention
-
----
-
-### Theme 4: Cross-Functional Collaboration
-
-AI projects require working with research, product, legal, and operations. Strong candidates navigate these relationships.
-
-**Questions to expect:**
-- How do you work with researchers who have different priorities?
-- Tell me about a conflict with a product manager over AI capabilities
-- Describe collaborating with legal on an AI feature
-
-**What they look for:**
-- Respecting different expertise
-- Finding common ground
-- Translating between technical and business language
+**آنچه به دنبال آن هستند:**
+- ارتباط شفاف و صریح بدون اصطلاحات پیچیده تخصصی
+- پیشنهاد دادن راهکارهای جایگزین، نه صرفاً مخالفت کردن
+- ایجاد حس اعتماد از طریق صداقت درباره محدودیت‌ها
 
 ---
 
-### Theme 5: Responsible AI
+### موضوع ۳: برخورد با شکست (Dealing with Failure)
 
-AI systems can cause harm. Strong candidates think proactively about ethics and safety.
+سیستم‌های هوش مصنوعی به شیوه‌هایی متفاوت از نرم‌افزارهای سنتی دچار شکست می‌شوند. داوطلبان قدرتمند از شکست‌ها بدون موضع تدافعی درس می‌گیرند.
 
-**Questions to expect:**
-- Tell me about a time you raised an ethical concern
-- How do you think about fairness in AI systems?
-- Describe a situation where you prioritized safety over speed
-- Your team's agent, or an eval run, reached a system it was never supposed to touch. What do you change, and what do you stop?
+**سؤالاتی که باید انتظار داشته باشید:**
+- از یک سیستم هوش مصنوعی بگویید که مطابق انتظار کار نکرد.
+- با مدلی که در محیط عملیاتی (production) ضعیف عمل می‌کند چگونه برخورد می‌کنید؟
+- زمانی را شرح دهید که سیستمی را عرضه کردید که دارای اشکالاتی بود.
 
-**What they look for:**
-- Awareness of AI risks
-- Willingness to slow down for safety
-- Practical approach to mitigation
-- For containment failures: pausing roadmap work with a clear exit criterion, and fixing the control (egress, credentials, kill switch) rather than only the incident
-
-The containment question is not hypothetical. In August 2026 Anthropic recapped incidents in which Claude models reached real systems through a misconfigured third-party eval environment, and said a security-hardening push begun in April had temporarily moved roughly 150 product engineers to security, reliability and privacy work and paused most new product features. In September OpenAI said tool-use training, evaluation and inference on its most capable models remained paused after internal research agents reached outside systems.
+**آنچه به دنبال آن هستند:**
+- پذیرش مسئولیت
+- تحلیل ریشه‌ای علت خرابی (Root cause analysis)
+- تفکر سیستمی در مورد اقدامات پیشگیرانه
 
 ---
 
-### Theme 6: Customer-Facing Deployment
+### موضوع ۴: همکاری بین‌رشته‌ای (Cross-Functional Collaboration)
 
-Forward deployed engineer (FDE) loops add rounds that are behavioral in form and technical in substance. Aced's description of OpenAI's FDE loop (September 2026; a prep vendor's account, not confirmed by OpenAI) includes a customer role-play with a simulated non-technical executive. Anthropic's Claude Frontier Academy, announced October 2, 2026 as a training and credential program rather than a hiring loop, walks engineers through a simulated enterprise deployment, from use-case selection through security review to handover, then grades them on a practical with new scenarios.
+پروژه‌های هوش مصنوعی نیازمند تعامل و کار با تیم‌های پژوهش (Research)، محصول (Product)، حقوقی (Legal) و عملیات (Operations) هستند. داوطلبان قدرتمند این روابط را با مهارت پیش می‌برند.
 
-**Questions to expect:**
-- You are embedded at a bank for 12 weeks to take one use case from selection to production handover. Walk through use-case selection, the security review, the eval gate, and what you leave behind so the customer can run it without you.
-- The executive sponsor wants the agent approving refunds autonomously on day one. Respond as you would in the room.
-- Tell me about a time a customer's security or compliance review changed your design.
+**سؤالاتی که باید انتظار داشته باشید:**
+- چگونه با پژوهشگرانی که اولویت‌های متفاوتی دارند همکاری می‌کنید؟
+- از اختلافی با یک مدیر محصول درباره قابلیت‌های هوش مصنوعی بگویید.
+- تعامل خود با تیم حقوقی روی یک قابلیت هوش مصنوعی را توصیف کنید.
 
-**What they look for:**
-- Picking a use case by value and measurability, not novelty
-- Treating the security review and the eval gate as design inputs, not paperwork
-- A handover the customer can operate: runbooks, eval sets, named owners, cost dashboards
-- Plain-language tradeoffs for a non-technical executive, ending in a clear recommendation
-
----
-
-### Theme 7: How You Use AI, and How You Verify It
-
-Candidates now report this as a screened competency rather than small talk. In candidate reports from September and October 2026, a Decagon behavioral round asked how you use AI tools (a prep site's write-up adds a follow-up on a time one gave a wrong answer that looked right), a Microsoft MLE project deep dive probed whether AI-built prototypes were real and which judgment was the candidate's own, a Harvey PM round asked for concrete personal AI habits and their limits, and an NVIDIA director round asked when to trust AI output. Sierra's published onsite ends with a Review stage that covers how you used AI. In a project deep dive, expect the interviewer to separate your work from the tool's.
-
-**Questions to expect:**
-- How do you use AI tools day to day, and how do you check what they produce?
-- Tell me about a time an AI tool was confidently wrong. How did you catch it?
-- In this project, what did the AI write, and which decisions were yours?
-- Who chose the success metric, and how did you run the evals?
-
-**What they look for:**
-- A specific workflow: what you delegate (boilerplate, test scaffolding, first drafts), what you keep (interfaces, security boundaries, the metric), and how you review
-- A named check, not "I reviewed it": tests written before you accepted the diff, an eval set, a comparison against the source of truth
-- A real miss: what the tool got wrong, how you caught it, and the guardrail you added afterward
-- Ownership of every line: you can explain and defend any part of the project, whoever typed it
-
-Prepare a one-sentence provenance line for each deep-dive project, such as: "I designed the retrieval and the evals, used an assistant for ingestion boilerplate and test scaffolds, and rewrote its chunker after it failed on tables." Avoid both extremes. Saying you never use AI reads as out of date at AI-native companies, and letting the tool own the story reads as no ownership.
+**آنچه به دنبال آن هستند:**
+- احترام به تخصص‌های متفاوت
+- یافتن نقاط مشترک
+- ترجمه و بازگویی مفاهیم میان زبان فنی و زبان کسب‌وکار
 
 ---
 
-### Theme 8: Safety and Mission Screens at Frontier Labs
+### موضوع ۵: هوش مصنوعی مسئولانه (Responsible AI)
 
-At frontier labs the values check can come first, and it is not only a final-round formality. Candidates report Anthropic recruiter screens of 20 to 30 minutes weighted toward AI safety (July to October 2026): what safety means to you, how your work relates to it, a conflict between your work and your own ethics, your view of the company's recent decisions, and the most important AI safety risk you see. Onsite culture rounds reportedly ask where you disagree with the company's direction and how you weigh shipping speed against safety. OpenAI candidates report mission questions in onsite rounds: why OpenAI, and how to trade speed, quality, and safety (August and October 2026). These are candidate reports, not published rubrics.
+سیستم‌های هوش مصنوعی می‌توانند آسیب‌رسان باشند. داوطلبان قدرتمند به‌صورت پیشگیرانه درباره اخلاق و ایمنی فکر می‌کنند.
 
-**Questions to expect:**
-- What does AI safety mean to you, and how does your own work connect to it?
-- What is the most important AI safety risk you see? How would it show up in a product you would build, and how would you measure it?
-- Where do you disagree with this company's direction?
-- Tell me about a time shipping speed and safety pulled in different directions.
+**سؤالاتی که باید انتظار داشته باشید:**
+- از زمانی بگویید که یک دغدغه اخلاقی را مطرح کردید.
+- دیدگاه شما درباره عدالت و عدم سوگیری (Fairness) در سیستم‌های هوش مصنوعی چیست؟
+- موقعیتی را شرح دهید که ایمنی را بر سرعت توسعه ترجیح دادید.
+- یک Agent متعلق به تیم شما یا در حین اجرای ارزیابی (Eval)، به سیستمی دسترسی پیدا کرده که هرگز نباید به آن دست می‌زد. چه چیزهایی را تغییر می‌دهید و چه مواردی را متوقف می‌سازید؟
 
-**What they look for:**
-- A view in your own words, not a recited mission statement. Read the company's recent safety publications and form an opinion on at least one
-- A risk named concretely, with a mechanism, a signal, and a control. One example of that shape, applied to a product you might build, is an over-agreeable assistant that tells users what they want to hear: the mechanism (optimizing for user approval), a signal (how often it agrees with prompts built on a known false premise), and a control (a release gate on that rate, plus product choices that do not reward compulsive use)
-- Specific, respectful disagreement. Agreeing with everything reads as unprepared, and contrarianism for effect reads worse
-- A speed-versus-safety story where you paid a real cost and set the exit criterion that let work resume ([Theme 5](#theme-5-responsible-ai) and [Example 6](#example-6-raising-a-concern-that-was-dismissed) show the shape)
+**آنچه به دنبال آن هستند:**
+- آگاهی از ریسک‌های هوش مصنوعی
+- تمایل به کاهش سرعت در جهت حفظ ایمنی
+- رویکرد عملی و کاربردی برای کاهش خطرات
+- در مواجهه با شکست ایزوله‌سازی: متوقف ساختن نقشه راه با معیارهای خروج شفاف، و اصلاح کنترل‌های ریشه‌ای (ترافیک خروجی یا Egress، گواهی‌های اعتباری، کلید قطع اضطراری) به جای اکتفا به حل مقطعی حادثه
 
-Worked spoken answers for both themes, and for the other rounds candidates reported, mostly between June and November 2026, are in the question bank's [Questions From Recent Interview Reports](01-question-bank.md#questions-from-recent-interview-reports). For the per-company loop shapes and AI-tool rules, see [What candidates reported](06-job-market-trends-2026.md#what-candidates-reported-june-to-november-2026).
-
----
-
-## Question Categories and Examples
-
-### Leadership and Influence
-
-**Q: Tell me about a time you led a technical initiative without formal authority.**
-
-Strong answer elements:
-- How you built consensus
-- How you handled disagreement
-- The outcome and what you learned
-
-**Q: Describe a situation where you had to convince others to adopt a new approach.**
-
-Strong answer elements:
-- Understanding their concerns
-- Providing evidence
-- Incremental adoption strategy
+مسئله مهار و ایزوله‌سازی یک فرض انتزاعی نیست. در اوت ۲۰۲۶ شرکت Anthropic گزارش حوادثی را منتشر کرد که در آن مدل‌های Claude از طریق یک محیط ارزیابی شخص ثالث که پیکربندی نادرستی داشت به سیستم‌های واقعی دسترسی پیدا کردند، و اعلام کرد که یک پویش امنیتی فشرده که از آوریل آغاز شده بود موقتاً حدود ۱۵۰ مهندس محصول را به کارهای امنیت، پایداری و حریم خصوصی منتقل کرده و بیشتر قابلیت‌های محصولی جدید را متوقف ساخته است. در سپتامبر نیز شرکت OpenAI اعلام کرد آموزش استفاده از ابزار، ارزیابی و استنتاج (Inference) روی توانمندترین مدل‌هایش همچنان در پی دسترسی Agentهای تحقیقاتی داخلی به سیستم‌های خارجی متوقف مانده است.
 
 ---
 
-### Technical Decision Making
+### موضوع ۶: استقرار در تعامل مستقیم با مشتری (Customer-Facing Deployment)
 
-**Q: Tell me about a difficult technical decision you made with incomplete information.**
+فرآیندهای مصاحبه مهندس استقرار در سازمان مشتری (FDE - Forward Deployed Engineer) مراحلی دارند که در فرم رفتاری اما در ماهیت کاملاً فنی هستند. گزارش موسسه Aced از فرآیند FDE شرکت OpenAI (سپتامبر ۲۰۲۶؛ گزارش یک مرکز آمادگی مصاحبه، بدون تایید رسمی OpenAI) شامل یک رول‌پلی مشتری با یک مدیر ارشد شبیه‌سازی‌شده غیرفنی است. آکادمی Claude Frontier متعلق به Anthropic که در ۲ اکتبر ۲۰۲۶ به عنوان برنامه آموزشی و اعتبارسنجی (نه فرآیند استخدام) معرفی شد، مهندسان را در یک استقرار سازمانی شبیه‌سازی‌شده از انتخاب Use-case تا بررسی امنیتی و تحویل نهایی هدایت می‌کند و سپس روی سناریوهای جدید از آن‌ها آزمون عملی می‌گیرد.
 
-Strong answer elements:
-- What information was missing
-- How you bounded the uncertainty
-- How the decision played out
+**سؤالاتی که باید انتظار داشته باشید:**
+- شما به مدت ۱۲ هفته در یک بانک مستقر می‌شوید تا یک سناریوی کاربردی (Use-case) را از مرحله انتخاب تا تحویل نهایی در محیط عملیاتی هدایت کنید. مراحل انتخاب سناریو، بررسی امنیتی، گیت ارزیابی (Eval gate)، و مواردی که تحویل می‌دهید تا مشتری بتواند بدون شما آن را اجرا کند را شرح دهید.
+- حامی اجرایی (Executive sponsor) می‌خواهد که Agent از همان روز اول به‌صورت خودکار بازپرداخت مبالغ را تایید کند. همان‌طور که در جلسه حاضر می‌شوید پاسخ دهید.
+- از زمانی بگویید که بررسی امنیتی یا انطباق قانونی مشتری موجب تغییر طراحی سیستم شما شد.
 
-**Q: Describe a time you chose a simpler solution over a more sophisticated one.**
-
-Strong answer elements:
-- How you evaluated tradeoffs
-- Stakeholder alignment
-- Whether it was the right call
-
----
-
-### Past-Project Technical Deep Dive
-
-A behavioral round can turn into a design review of your own work. Google's interview pilot (reported by Business Insider in May 2026 and confirmed by Google; junior to mid-level roles on select US teams) adds a technical design discussion of a past project to its Googleyness and Leadership round. Prepare at least one story you can defend at whiteboard depth.
-
-**Q: Walk me through the architecture of something you built. What would you change today?**
-
-Strong answer elements:
-- A diagram you can draw in two minutes, with your own part clearly marked
-- The two or three decisions that mattered, the alternatives, and why you chose as you did
-- Numbers: scale, latency, cost, and quality before and after
-- What broke in production and what you would design differently now
-- Provenance: which parts an AI tool wrote, how you verified them, and who chose the metric ([Theme 7](#theme-7-how-you-use-ai-and-how-you-verify-it))
+**آنچه به دنبال آن هستند:**
+- انتخاب سناریوی کاربردی بر مبنای ارزش تجاری و قابلیت اندازه‌گیری، نه جذابیت و تازگی تکنولوژی
+- برخورد با بررسی امنیتی و گیت ارزیابی به عنوان ورودی‌های طراحی، نه صرفاً امور اداری و تشریفاتی
+- تحویل مستنداتی که مشتری بتواند با آن‌ها کار کند: دستورالعمل‌های اجرایی (Runbooks)، مجموعه‌های ارزیابی، مالکان مشخص، و داشبوردهای هزینه
+- تبیین موازنه‌ها (Tradeoffs) با زبان ساده برای یک مدیر غیرفنی، همراه با یک پیشنهاد نهایی و صریح
 
 ---
 
-### Project Challenges
+### موضوع ۷: نحوه استفاده شما از هوش مصنوعی، و چگونگی اعتبارسنجی آن
 
-**Q: Tell me about the most complex AI project you worked on.**
+داوطلبان اکنون گزارش می‌دهند که این مورد به عنوان یک شایستگی مورد ارزیابی قرار می‌گیرد، نه صرفاً یک گپ غیررسمی. در گزارش‌های سپتامبر و اکتبر ۲۰۲۶ داوطلبان، مصاحبه رفتاری شرکت Decagon پرسیده است که چگونه از ابزارهای هوش مصنوعی استفاده می‌کنید (گزارش یک سایت آمادگی سؤال تکمیلی را ذکر می‌کند که درباره زمانی پرسیده که ابزار پاسخی غلط اما موجه ارائه کرده بود)، بررسی عمیق پروژه MLE در مایکروسافت سنجیده است که آیا پروتوتایپ‌های ساخته‌شده با هوش مصنوعی واقعی بودند و کدام قضاوت‌ها متعلق به خود داوطلب بوده است، مصاحبه PM شرکت Harvey عادات روزمره استفاده از هوش مصنوعی و محدودیت‌های آن‌ها را خواسته است، و مصاحبه با مدیر انویدیا پرسیده است که چه زمانی می‌توان به خروجی هوش مصنوعی اعتماد کرد. فرآیند حضوری شرکت Sierra با یک مرحله بررسی به پایان می‌رسد که چگونگی استفاده شما از هوش مصنوعی را پوشش می‌دهد. در بررسی عمیق پروژه‌ها، انتظار داشته باشید که مصاحبه‌کننده کار شما را از کار ابزار تفکیک کند.
 
-Strong answer elements:
-- Clear description of complexity
-- Your specific contribution
-- How you managed the complexity
+**سؤالاتی که باید انتظار داشته باشید:**
+- در کارهای روزمره چگونه از ابزارهای هوش مصنوعی استفاده می‌کنید، و چگونه خروجی‌های آن‌ها را اعتبارسنجی می‌نمایید؟
+- از زمانی بگویید که یک ابزار هوش مصنوعی با اطمینان کامل پاسخی غلط داد. چگونه متوجه آن شدید؟
+- در این پروژه، کدام بخش‌ها را هوش مصنوعی نوشت، و کدام تصمیمات متعلق به خود شما بود؟
+- چه کسی متریک موفقیت را انتخاب کرد و ارزیابی‌ها (Evals) را چگونه اجرا کردید؟
 
-**Q: Describe a project that failed. What happened and what did you learn?**
+**آنچه به دنبال آن هستند:**
+- یک جریان کاری (Workflow) مشخص: چه مواردی را واگذار می‌کنید (کدهای تکراری و Boilerplate، اسکلت تست‌ها، پیش‌نویس اولیه)، چه مواردی را خودتان نگه می‌دارید (اینترفیس‌ها، مرزهای امنیتی، انتخاب متریک)، و چگونه بررسی می‌کنید
+- یک آزمون و بررسی دقیق و مشخص، نه صرفاً جمله کلی «بررسی‌اش کردم»: تست‌هایی که پیش از پذیرش تغییرات (Diff) نوشته‌اید، یک مجموعه ارزیابی، مقایسه با مرجع معتبر (Source of truth)
+- یک اشتباه واقعی: ابزار چه چیزی را اشتباه متوجه شد، چگونه متوجه شدید، و پس از آن چه حفاظی (Guardrail) اضافه کردید
+- مالکیت کامل روی هر خط کد: بتوانید هر بخش پروژه را شرح داده و از آن دفاع کنید، صرف‌نظر از اینکه چه کسی آن را تایپ کرده است
 
-Strong answer elements:
-- Honest assessment of what went wrong
-- Your role in the failure
-- Concrete changes you made afterward
-
----
-
-### Collaboration and Conflict
-
-**Q: Tell me about a disagreement with a colleague about a technical approach.**
-
-Strong answer elements:
-- Understanding their perspective
-- How you resolved it
-- Relationship afterward
-
-**Q: Describe working with someone who had a very different working style.**
-
-Strong answer elements:
-- Specific differences
-- Adaptations you made
-- What you learned about collaboration
+یک جمله مشخص درباره منشأ و سهم کار برای هر پروژه در بررسی عمیق آماده کنید، مانند: «من بازیابی و پایپ‌لاین ارزیابی را طراحی کردم، از دستیار برای کدهای پایه‌ای ورود داده و اسکلت تست‌ها استفاده کردم، و ماژول Chunker آن را پس از شکست در مواجهه با جداول، مجدداً خودم از نو نوشتم». از هر دو حالت افراطی دوری کنید. گفتن اینکه هرگز از هوش مصنوعی استفاده نمی‌کنید در شرکت‌های AI-native نشانه‌ای از عقب ماندن است، و واگذاری کل روایت به ابزار هوش مصنوعی، نشانه عدم احساس مالکیت تلقی می‌شود.
 
 ---
 
-### Growth and Learning
+### موضوع ۸: غربالگری‌های ایمنی و ماموریت در آزمایشگاه‌های مرز فناوری (Frontier Labs)
 
-**Q: How do you stay current with the rapidly changing AI field?**
+در آزمایشگاه‌های frontier ارزیابی ارزش‌ها ممکن است در همان ابتدای کار مطرح شود و صرفاً یک تشریفات در مرحله نهایی نیست. داوطلبان گزارش می‌دهند که در غربالگری اولیه مصاحبه‌کنندگان استخدامی Anthropic مصاحبه‌های ۲۰ تا ۳۰ دقیقه‌ای با تمرکز ویژه بر ایمنی هوش مصنوعی (ژوئیه تا اکتبر ۲۰۲۶) برگزار می‌شود: ایمنی برای شما چه مفهومی دارد، کار شما چگونه با آن پیوند می‌خورد، تضاد میان کار شما و اصول اخلاقی خودتان، دیدگاه شما درباره تصمیمات اخیر شرکت، و مهم‌ترین ریسک ایمنی که مشاهده می‌کنید. جلسات سنجش فرهنگ در مراحل حضوری معمولاً می‌پرسند که در چه مواردی با مسیر حرکت شرکت مخالفید و چگونه سرعت عرضه را با ایمنی موازنه می‌کنید. داوطلبان OpenAI گزارش سؤالات ماموریت‌محور در مراحل نهایی را داده‌اند: چرا OpenAI، و چگونه میان سرعت، کیفیت و ایمنی مصالحه می‌کنید (اوت و اکتبر ۲۰۲۶). این موارد گزارش داوطلبان است، نه معیارهای منتشرشده رسمی.
 
-Strong answer elements:
-- Specific sources and practices
-- How you filter signal from noise
-- Example of applying new knowledge
+**سؤالاتی که باید انتظار داشته باشید:**
+- ایمنی هوش مصنوعی برای شما چه معنایی دارد و کار شما چگونه به آن وصل می‌شود؟
+- مهم‌ترین ریسک ایمنی هوش مصنوعی که می‌بینید چیست؟ این ریسک در محصولی که می‌سازید چگونه خود را نشان می‌دهد و آن را چگونه اندازه‌گیری می‌کنید؟
+- در چه زمینه‌هایی با جهت‌گیری این شرکت مخالف هستید؟
+- از زمانی بگویید که سرعت عرضه محصول و ایمنی در جهات مختلفی کشیده می‌شدند.
 
-**Q: Tell me about a skill you developed recently.**
+**آنچه به دنبال آن هستند:**
+- دیدگاهی با کلمات خودتان، نه تکرار طوطی‌وار بیانیه ماموریت شرکت. مقالات و انتشارات اخیر ایمنی شرکت را بخوانید و روی حداقل یک مورد دیدگاه شخصی داشته باشید
+- نام بردن از یک ریسک به‌صورت عینی و ملموس، همراه با سازوکار (Mechanism)، سیگنال و نحوه کنترل آن. یک مثال عینی از این ساختار در محصولی که ممکن است بسازید، یک دستیار بیش‌از‌حد موافق (Over-agreeable) است که آنچه کاربر می‌خواهد بشنود را به او تحویل می‌دهد: سازوکار (بهینه‌سازی برای جلب رضایت کاربر)، سیگنال (نرخ موافقت با پرامپت‌هایی که بر اساس یک پیش‌فرض اشتباه ساخته شده‌اند)، و کنترل (یک گیت انتشار برای این نرخ، به همراه ویژگی‌های محصولی که استفاده وسواس‌گونه را تشویق نمی‌کنند)
+- مخالفت محترمانه و دقیق. موافقت با همه چیز نشانه بی‌اطلاعی است و مخالفت بی‌دلیل برای خودنمایی نتیجه‌ای به مراتب بدتر دارد
+- روایتی از سرعت در برابر ایمنی که در آن هزینه واقعی پرداخت کرده‌اید و معیار خروجی برای از سرگیری کار تعیین نموده‌اید ([موضوع ۵](#theme-5-responsible-ai) و [مثال ۶](#example-6-raising-a-concern-that-was-dismissed) این ساختار را نشان می‌دهند)
 
-Strong answer elements:
-- Why you needed it
-- How you learned it
-- How you applied it
-
----
-
-## Sample Answers Using STAR-L
-
-### Example 1: Handling Ambiguity
-
-**Q: Tell me about a time you started an AI project with unclear requirements.**
-
-**Situation:**
-We wanted to add AI-powered search to our product, but stakeholders had different visions. Sales wanted "magic" search that understood everything. Engineering wanted something we could build in a quarter. Leadership wanted differentiation from competitors.
-
-**Task:**
-As the tech lead, I needed to align stakeholders and define a concrete first version we could build and learn from.
-
-**Action:**
-I started by interviewing five key stakeholders to understand their underlying needs, not just their feature requests. I found the common thread was reducing time to find information.
-
-I then built three rapid prototypes showing different levels of sophistication:
-1. Keyword search with better ranking
-2. Semantic search with embeddings
-3. Conversational search with RAG
-
-I demoed each with real queries from our support logs, showing actual performance and explaining the engineering effort for each.
-
-This reframed the conversation from "what features" to "what value at what cost." We aligned on starting with semantic search, with a plan to add conversational features in phase two.
-
-**Result:**
-We shipped semantic search in 6 weeks. User time-to-answer dropped 40%. The clear success made it easy to get buy-in for phase two.
-
-**Learning:**
-I learned that ambiguity often comes from stakeholders optimizing for different things. Showing concrete options with real tradeoffs moves conversations forward faster than abstract discussions. I now start every ambiguous project with quick prototypes.
+پاسخ‌های کلامی پیاده‌سازی‌شده برای هر دو موضوع و برای سایر مراحلی که داوطلبان (عمدتاً بین ژوئن و نوامبر ۲۰۲۶) گزارش کرده‌اند، در بخش [سؤالات برگرفته از گزارش‌های اخیر مصاحبه](01-question-bank.md#questions-from-recent-interview-reports) در بانک سؤالات موجود است. برای اطلاع از ساختار مصاحبه‌ها به تفکیک شرکت‌ها و قوانین استفاده از ابزارهای هوش مصنوعی، بخش [گزارش‌های داوطلبان](06-job-market-trends-2026.md#what-candidates-reported-june-to-november-2026) را ببینید.
 
 ---
 
-### Example 2: Managing Failed Expectations
+## دسته‌بندی سؤالات و مثال‌ها
 
-**Q: Tell me about a time an AI system did not perform as expected in production.**
+### رهبری و اثرگذاری (Leadership and Influence)
 
-**Situation:**
-We launched a content recommendation system that performed great in testing but showed 30% lower engagement in production than our heuristic baseline.
+**سؤال: از زمانی بگویید که یک ابتکار فنی را بدون داشتن اختیار رسمی رهبری کردید.**
 
-**Task:**
-As the ML engineer who built it, I needed to diagnose the issue, decide whether to roll back, and regain stakeholder trust.
+عناصر پاسخ قدرتمند:
+- چگونه اجماع و هم‌نظری ایجاد کردید
+- چگونه با مخالفت‌ها روبه‌رو شدید
+- نتیجه کار چه شد و چه آموختید
 
-**Action:**
-First, I did not hide the problem. I immediately flagged it to leadership with the data showing the gap. I proposed keeping 10% of traffic on the new system while I investigated.
+**سؤال: موقعیتی را شرح دهید که مجبور شدید دیگران را به پذیرش یک رویکرد جدید متقاعد کنید.**
 
-Investigation revealed two issues:
-1. Our test set was not representative. It was from high-engagement users.
-2. Cold start was worse than expected for new users.
-
-I implemented stratified testing that matched production user distribution and added a heuristic fallback for cold users.
-
-I also created a monitoring dashboard so stakeholders could see real-time performance. This transparency helped rebuild trust.
-
-**Result:**
-The revised system outperformed the baseline by 15% after two more weeks of iteration. More importantly, I established testing practices that caught similar issues in future projects.
-
-**Learning:**
-I learned that production is the only true test for ML systems. I now always instrument for monitoring before launch and plan for rapid iteration. I also learned that transparency during failures builds more trust than hiding problems.
+عناصر پاسخ قدرتمند:
+- درک دغدغه‌ها و نگرانی‌های آن‌ها
+- ارائه شواهد و داده‌ها
+- استراتژی پیاده‌سازی گام‌به‌گام و تدریجی
 
 ---
 
-### Example 3: Ethical Concern
+### تصمیم‌گیری فنی (Technical Decision Making)
 
-**Q: Tell me about a time you raised an ethical concern about an AI system.**
+**سؤال: از یک تصمیم‌گیری فنی دشوار بگویید که با اطلاعات ناقص انجام دادید.**
 
-**Situation:**
-We were building a resume screening system to help recruiters process high volumes of applications. During development, I noticed the training data was heavily biased toward engineers from top universities.
+عناصر پاسخ قدرتمند:
+- چه اطلاعاتی در دسترس نبود
+- چگونه عدم قطعیت را محدود و مهار کردید
+- پیامدها و نتایج آن تصمیم چگونه رقم خورد
 
-**Task:**
-I needed to raise the concern in a way that was taken seriously without being dismissed as slowing down the project.
+**سؤال: زمانی را شرح دهید که یک راه‌حل ساده‌تر را به یک راه‌حل پیچیده‌تر ترجیح دادید.**
 
-**Action:**
-I started by quantifying the problem. I showed that the model had 80% precision on Stanford graduates but only 45% on state school graduates with similar qualifications.
-
-I presented this to the team not as "we should not do this" but as "this is a business and legal risk." I cited recent cases where companies faced lawsuits over biased hiring and showed how our model could create similar exposure.
-
-I proposed two alternatives:
-1. Rebalance training data to ensure diverse representation
-2. Use the model only for matching, not ranking, with human review for all candidates
-
-The team chose option one plus adding fairness metrics to our evaluation suite.
-
-**Result:**
-We delayed launch by three weeks but shipped a system that performed consistently across demographics. Legal and HR were grateful for the proactive approach. The fairness metrics became standard for all our ML models.
-
-**Learning:**
-I learned that framing ethical concerns in terms of business risk makes them more actionable. I also learned that raising concerns early with proposed solutions is more effective than waiting until problems are entrenched.
+عناصر پاسخ قدرتمند:
+- چگونه موازنه‌ها (Tradeoffs) را ارزیابی کردید
+- هماهنگی با ذی‌نفعان
+- آیا در نهایت تصمیم درستی بود یا خیر
 
 ---
 
-### Example 4: Cross-Functional Collaboration
+### بررسی عمیق فنی پروژه گذشته (Past-Project Technical Deep Dive)
 
-**Q: Tell me about working with a team that had different priorities.**
+یک مرحله رفتاری می‌تواند به جلسه بررسی طراحی کار قبلی خودتان تبدیل شود. طرح آزمایشی مصاحبه گوگل (که بیزنس اینسایدر در مه ۲۰۲۶ گزارش کرد و توسط گوگل تایید شد؛ برای نقش‌های جونیور تا میدلول در تیم‌های منتخب ایالات متحده) یک بحث طراحی فنی از پروژه گذشته را به بخش رهبری و سازگاری با گوگل اضافه می‌کند. حداقل یک داستان و تجربه آماده کنید که بتوانید در سطح تخته‌سفید از آن دفاع کنید.
 
-**Situation:**
-Our research team had developed a novel retrieval approach that showed 20% better recall on benchmarks. They wanted to publish the paper and move on. Product wanted it shipped. I was the engineer responsible for productionizing it.
+**سؤال: معماری سیستمی که قبلاً ساخته‌اید را شرح دهید. امروز چه مواردی را در آن تغییر می‌دادید؟**
 
-**Task:**
-I needed to get the system into production while maintaining a good relationship with researchers who had different incentives.
-
-**Action:**
-I started by understanding what the researchers cared about. They wanted credit for the innovation and did not want their method "dumbed down" during productionization.
-
-I proposed a collaboration structure:
-- They would remain authors on any publications about the production system
-- I would document which of their contributions directly impacted production metrics
-- We would meet weekly to review changes and ensure scientific integrity
-
-This aligned their incentives with mine. They became invested in production success because it validated their research.
-
-When I needed to simplify their approach for latency reasons, I showed them benchmarks proving the simplification preserved their key innovations. They actually found this interesting and contributed ideas for further optimization.
-
-**Result:**
-We shipped in 8 weeks with 18% recall improvement (slightly less than their benchmark due to latency constraints). They published a follow-up paper on production learnings. We established a template for research-to-production collaboration.
-
-**Learning:**
-I learned that understanding what motivates others is the key to collaboration. Researchers want impact and credit. By making production success support those goals, I turned potential friction into partnership.
+عناصر پاسخ قدرتمند:
+- دیاگرامی که بتوانید در دو دقیقه رسم کنید و سهم کار خودتان در آن به وضوح مشخص باشد
+- دو یا سه تصمیمی که بیشترین اهمیت را داشتند، گزینه‌های جایگزین، و دلیل انتخاب شما
+- اعداد و ارقام: مقیاس، تاخیر (Latency)، هزینه، و کیفیت قبل و بعد از تغییرات
+- چه چیزی در محیط عملیاتی (production) شکست خورد و اکنون چه چیزی را متفاوت طراحی می‌کردید
+- اصالت و سهم هوش مصنوعی: کدام بخش‌ها را ابزار هوش مصنوعی نوشت، چگونه آن‌ها را اعتبارسنجی کردید، و چه کسی متریک را انتخاب کرد ([موضوع ۷](#theme-7-how-you-use-ai-and-how-you-verify-it))
 
 ---
 
-### Example 5: Being Wrong and Walking It Back
+### چالش‌های پروژه (Project Challenges)
 
-**Question:** "Tell me about a time you strongly advocated for a technical decision that turned out to be wrong."
+**سؤال: از پیچیده‌ترین پروژه هوش مصنوعی که روی آن کار کردید بگویید.**
 
-**Situation:**
-I pushed hard to replace our retrieval pipeline with a pure long-context approach: load the whole knowledge base into the prompt, drop the vector database. I argued it in two design reviews, citing recall benefits and a simpler architecture, and the team committed a quarter to the migration partly on my conviction.
+عناصر پاسخ قدرتمند:
+- شرح شفاف و روشن ابعاد پیچیدگی
+- سهم و مشارکت مشخص شخص شما
+- نحوه مدیریت و مهار پیچیدگی
 
-**Task:**
-Two months in, I owned proving the new system out before full cutover.
+**سؤال: پروژه‌ای را شرح دهید که شکست خورد. چه اتفاقی افتاد و چه درسی گرفتید؟**
 
-**Action:**
-The eval results were uncomfortable: quality matched, but cost ran four times projection because cache hit rates collapsed under our update frequency, and p95 latency doubled. My first instinct was to tune my way out. After two weeks of marginal gains, I wrote a one-page memo with the numbers, stated plainly that my recommendation had been wrong on the economics, and proposed a hybrid: long-context for the small static corpora where it shone, retrieval for everything else. I presented it to the same audience I had originally convinced.
-
-**Result:**
-We kept the hybrid, salvaged about 60% of the migration work, and the postmortem produced a new rule the team still uses: any architecture pitch must include a cost model under realistic update patterns, not just a quality benchmark.
-
-**Learning:**
-Conviction is useful for getting decisions made and dangerous for unmaking them. I now attach explicit kill criteria to my own proposals, so walking back is a checkpoint, not a confession.
+عناصر پاسخ قدرتمند:
+- ارزیابی صادقانه از اشتباهات رخ‌داده
+- نقش خود شما در آن شکست
+- تغییرات ملموسی که پس از آن در روش کار خود ایجاد کردید
 
 ---
 
-### Example 6: Raising a Concern That Was Dismissed
+### همکاری و حل تعارض (Collaboration and Conflict)
 
-**Question:** "Describe a time you raised a concern and the team decided against you. What did you do?"
+**سؤال: از اختلافی با یک همکار درباره یک رویکرد فنی بگویید.**
 
-**Situation:**
-Before a launch, I flagged that our agent's tool permissions were broader than the feature needed: it could write to systems it only needed to read. Leadership weighed the two-week delay to scope permissions against launch commitments and decided to ship as-is, with a fast-follow ticket.
+عناصر پاسخ قدرتمند:
+- درک دیدگاه طرف مقابل
+- نحوه حل و فصل موضوع
+- وضعیت روابط کاری پس از آن اتفاق
 
-**Task:**
-I disagreed with the call. My job was to make sure the decision was made with full information, then either escalate or commit.
+**سؤال: کار با فردی را توصیف کنید که سبک کاری بسیار متفاوتی با شما داشت.**
 
-**Action:**
-I wrote the risk down concretely: the specific blast radius if the agent was prompt-injected, with a realistic attack path, not a vague "this is risky." I asked for two mitigations that fit inside the launch window: an audit log on the write paths and an anomaly alert on write volume. Both were accepted. I documented my disagreement in the decision record and committed to the launch without relitigating it in hallway conversations.
-
-**Result:**
-The launch went fine. Three weeks later the alert fired on a misconfigured integration test, not an attack, but it proved the monitoring worked, and the fast-follow got prioritized off the back of that signal. The permission scoping shipped a month later.
-
-**Learning:**
-Being overruled is not the end of the job. Converting a lost argument into cheap guardrails and a written record is usually worth more than winning the argument, and it builds the credibility that makes the next concern land harder.
+عناصر پاسخ قدرتمند:
+- تفاوت‌های دقیق و مشخص
+- انعطاف‌ها و سازگاری‌هایی که نشان دادید
+- درس‌هایی که درباره کار تیمی آموختید
 
 ---
 
-## Questions to Ask Your Interviewers
+### رشد و یادگیری (Growth and Learning)
 
-Strong candidates ask thoughtful questions. Here are AI-specific questions that demonstrate depth:
+**سؤال: چگونه با تحولات سریع حوزه هوش مصنوعی همگام و به‌روز می‌مانید؟**
 
-### About the Team
+عناصر پاسخ قدرتمند:
+- منابع مشخص و رویه‌های منظم شخصی
+- نحوه فیلتر کردن اطلاعات مفید از سروصداهای بی‌ارزش
+- مثالی ملموس از به‌کارگیری یک دانش تازه
 
-- How does the team balance research exploration with production delivery?
-- What is the ratio of building new models versus improving existing systems?
-- How do ML engineers and researchers collaborate here?
+**سؤال: از مهارتی بگویید که اخیراً آن را توسعه داده‌اید.**
 
-### About the Tech
-
-- What is the biggest technical challenge the team is facing right now?
-- How do you evaluate model quality in production?
-- What does your ML infrastructure look like? What would you change?
-
-### About the Culture
-
-- How does the team handle models that do not perform as expected?
-- What is the process for raising concerns about AI safety or ethics?
-- How do you balance moving fast with responsible AI practices?
-- What happens when an agent or eval run touches a system it should not? Who can stop it, and how fast?
-
-### About Growth
-
-- What does success look like in this role after 6 months? After a year?
-- How do engineers here keep up as models and tooling change?
-- What are the paths for growth from this role?
-
-### About Compensation and Leveling (for later-stage conversations)
-
-Save these for the recruiter call or after an offer signal; asking them shows you evaluate companies the way a senior hire should.
-
-- How is compensation structured at this level: base, bonus, equity split, and the equity refresh cadence?
-- What was the last leveling calibration like for this role? Where do you see me landing and why?
-- What separates this level from the next one up here? Can you give an example of someone who made that jump?
-- How did the team handle compensation during the last market shift?
-- For private companies: how often have employees been able to sell vested shares, and on what terms?
-- For AI-specialized roles: is there a separate track or premium for AI-critical skills, and how is it reviewed as the market moves?
+عناصر پاسخ قدرتمند:
+- چرا به آن مهارت نیاز پیدا کردید
+- چگونه آن را یاد گرفتید
+- چگونه آن را در عمل به کار بستید
 
 ---
 
-## Red Flags to Avoid
+## نمونه پاسخ‌ها با چارچوب STAR-L
 
-| Behavior | Why It Is a Red Flag |
+### مثال ۱: مدیریت ابهام
+
+**سؤال: از زمانی بگویید که یک پروژه هوش مصنوعی را با نیازمندی‌های نامشخص آغاز کردید.**
+
+**موقعیت (Situation):**
+ما می‌خواستیم قابلیت جستجوی مبتنی بر هوش مصنوعی را به محصولمان اضافه کنیم، اما ذی‌نفعان دیدگاه‌های متفاوتی داشتند. تیم فروش یک جستجوی «جادویی» می‌خواست که همه چیز را بفهمد. تیم مهندسی چیزی می‌خواست که بشود در یک فصل کاری (Quarter) ساخت. مدیران ارشد به دنبال ایجاد تمایز با رقبا بودند.
+
+**وظیفه (Task):**
+به عنوان لید فنی، وظیفه داشتم ذی‌نفعان را همسو کنم و یک نسخه اولیه مشخص تعریف نمایم که بتوانیم آن را بسازیم و از آن بیاموزیم.
+
+**اقدام (Action):**
+من با مصاحبه با پنج ذی‌نفع کلیدی شروع کردم تا نیازهای بنیادین آن‌ها را بفهمم، نه فقط ویژگی‌های درخواستی‌شان را. متوجه شدم نقطه مشترک همه، کاهش زمان رسیدن به اطلاعات است.
+
+سپس سه پیش‌نمایش سریع با سطوح مختلف پیچیدگی ساختم:
+1. جستجوی کلیدواژه‌ای با رتبه‌بندی بهتر
+2. جستجوی معنایی (Semantic Search) با بردارها (Embeddings)
+3. جستجوی محاوره‌ای با RAG
+
+هر کدام را با پرسش‌های واقعی از لاگ‌های پشتیبانی دمو کردم، کارایی واقعی را نشان دادم و میزان تلاش مهندسی لازم برای هر کدام را توضیح دادم.
+
+این کار بحث را از «چه ویژگی‌هایی» به «چه ارزشی با چه هزینه‌ای» تغییر داد. ما توافق کردیم که کار را با جستجوی معنایی شروع کنیم و قابلیت‌های محاوره‌ای را در فاز دوم اضافه نماییم.
+
+**نتیجه (Result):**
+ما جستجوی معنایی را در ۶ هفته عرضه کردیم. زمان رسیدن کاربران به پاسخ ۴۰٪ کاهش یافت. موفقیت شفاف این فاز، جلب حمایت برای فاز دوم را بسیار آسان کرد.
+
+**آموخته‌ها (Learning):**
+آموختم که ابهام اغلب ناشی از این است که ذی‌نفعان معیارهای متفاوتی را بهینه‌سازی می‌کنند. نشان دادن گزینه‌های ملموس همراه با موازنه‌ها (Tradeoffs) واقعی، بسیار سریع‌تر از مباحث انتزاعی گفتگوها را به پیش می‌برد. اکنون تمام پروژه‌های مبهم را با پروتوتایپ‌های سریع شروع می‌کنم.
+
+---
+
+### مثال ۲: مدیریت انتظارات برآورده‌نشده
+
+**سؤال: از زمانی بگویید که یک سیستم هوش مصنوعی در محیط عملیاتی (production) مطابق انتظار عمل نکرد.**
+
+**موقعیت (Situation):**
+ما یک سیستم پیشنهاد محتوا لانچ کردیم که در آزمایش‌ها نتایج درخشانی داشت، اما در محیط عملیاتی ۳۰٪ تعامل (Engagement) کمتری نسبت به سیستم اکتشافی قبلی ما ثبت کرد.
+
+**وظیفه (Task):**
+به عنوان مهندس یادگیری ماشینی که آن را ساخته بودم، باید مشکل را ریشه‌یابی می‌کردم، تصمیم می‌گرفتم که آیا باید به نسخه قبل بازگردیم یا خیر، و مجدداً اعتماد ذی‌نفعان را به دست می‌آوردم.
+
+**اقدام (Action):**
+اول اینکه مشکل را مخفی نکردم. بلافاصله با ارائه داده‌هایی که شکاف عملکردی را نشان می‌دادند، موضوع را به مدیریت اطلاع دادم. پیشنهاد کردم ۱۰٪ از ترافیک روی سیستم جدید بماند تا علت را بررسی کنم.
+
+بررسی‌ها دو مشکل را آشکار کرد:
+1. مجموعه داده آزمون ما بازتاب‌دهنده واقعیت نبود؛ داده‌ها متعلق به کاربرانی با تعامل بالا بود.
+2. مشکل شروع سرد (Cold start) برای کاربران جدید بسیار بدتر از حد انتظار بود.
+
+یک سیستم ارزیابی لایه‌بندی‌شده منطبق بر توزیع واقعی کاربران پیاده کردم و برای کاربران جدید یک سیستم پشتیبان مبتنی بر قواعد اضافه نمودم.
+
+همچنین یک داشبورد مانیتورینگ ایجاد کردم تا ذی‌نفعان عملکرد لحظه‌ای را ببینند. این شفافیت به بازسازی اعتماد کمک کرد.
+
+**نتیجه (Result):**
+سیستم بازنگری‌شده پس از دو هفته ارتقا، ۱۵٪ بهتر از خط پایه اولیه عمل کرد. مهم‌تر از آن، رویه‌های آزمایشی را پایه‌گذاری کردم که در پروژه‌های بعدی از بروز مشکلات مشابه جلوگیری کرد.
+
+**آموخته‌ها (Learning):**
+آموختم که محیط عملیاتی تنها آزمون واقعی سیستم‌های ML است. اکنون همیشه پیش از لانچ، سیستم مانیتورینگ را مستقر می‌کنم و برنامه‌ای برای ارتقای سریع در نظر می‌گیرم. همچنین فهمیدم شفافیت در زمان شکست بسیار بیشتر از پنهان‌کاری اعتماد می‌سازد.
+
+---
+
+### مثال ۳: دغدغه اخلاقی
+
+**سؤال: از زمانی بگویید که یک دغدغه اخلاقی را درباره یک سیستم هوش مصنوعی مطرح کردید.**
+
+**موقعیت (Situation):**
+ما در حال ساخت یک سیستم غربالگری رزومه برای کمک به تیم استخدام بودیم تا بتوانند حجم بالای درخواست‌ها را پردازش کنند. در حین توسعه متوجه شدم داده‌های آموزشی به‌شدت به نفع فارغ‌التحصیلان دانشگاه‌های برتر سوگیری دارند.
+
+**وظیفه (Task):**
+باید این موضوع را به‌گونه‌ای مطرح می‌کردم که جدی گرفته شود و به عنوان ترمز و مانع پیشرفت پروژه تلقی نگردد.
+
+**اقدام (Action):**
+کار را با کمّی‌سازی مشکل آغاز کردم. نشان دادم که مدل برای فارغ‌التحصیلان استنفورد دقت ۸۰٪ دارد، اما برای فارغ‌التحصیلان دانشگاه‌های دولتی با شرایط و سوابق مشابه، دقت فقط ۴۵٪ است.
+
+این موضوع را نه به عنوان «نباید این کار را بکنیم»، بلکه به عنوان «یک ریسک تجاری و قانونی جدی» به تیم ارائه دادم. پرونده‌های حقوقی اخیری که شرکت‌ها به خاطر استخدام‌های مغرضانه با آن مواجه شده بودند را مثال زدم و نشان دادم مدل ما چطور می‌تواند ریسک مشابهی ایجاد کند.
+
+دو راهکار پیشنهاد کردم:
+1. متوازن کردن مجدد داده‌های آموزش برای اطمینان از بازنمایی متوازن
+2. استفاده از مدل صرفاً برای تطابق، نه رتبه‌بندی، همراه با بازبینی انسانی برای تمام داوطلبان
+
+تیم گزینه اول را به اضافه افزودن معیارهای عدالت (Fairness metrics) به پایپ‌لاین ارزیابی انتخاب کرد.
+
+**نتیجه (Result):**
+ما عرضه را سه هفته به تعویق انداختیم اما سیستمی را تحویل دادیم که روی تمام گروه‌ها عملکردی منسجم داشت. تیم حقوقی و منابع انسانی از این رویکرد پیشگیرانه قدردانی کردند. معیارهای عدالت نیز به استاندارد تمام مدل‌های یادگیری ماشین ما تبدیل شد.
+
+**آموخته‌ها (Learning):**
+یاد گرفتم که بازتعریف دغدغه‌های اخلاقی در قالب ریسک‌های تجاری، آن‌ها را قابل پیگیری‌تر می‌کند. همچنین متوجه شدم مطرح کردن زودهنگام دغدغه‌ها همراه با راه‌حل‌های پیشنهادی، بسیار اثربخش‌تر از صبر کردن تا زمان ریشه‌دار شدن مشکلات است.
+
+---
+
+### مثال ۴: همکاری بین‌رشته‌ای
+
+**سؤال: از همکاری با تیمی بگویید که اولویت‌های متفاوتی داشت.**
+
+**موقعیت (Situation):**
+تیم پژوهشی ما رویکرد بازیابی نوآورانه‌ای ارائه داده بود که فراخوانی (Recall) را روی بنچمارک‌ها ۲۰٪ بهبود می‌بخشید. آن‌ها می‌خواستند مقاله را منتشر کرده و سراغ کار بعدی بروند. تیم محصول می‌خواست سیستم هر چه سریع‌تر عرضه شود. من مهندس مسئول عملیاتی‌سازی این سیستم بودم.
+
+**وظیفه (Task):**
+باید سیستم را به محیط عملیاتی (production) می‌رساندم و در عین حال رابطه خوبی با پژوهشگرانی که انگیزه‌های متفاوتی داشتند حفظ می‌کردم.
+
+**اقدام (Action):**
+ابتدا درک کردم چه چیزهایی برای محققان اهمیت دارد. آن‌ها اعتبار نوآوری خود را می‌خواستند و نگران بودند روش آن‌ها در مسیر عملیاتی شدن ساده‌انگاری و تضعیف شود.
+
+یک ساختار همکاری پیشنهاد دادم:
+- نام آن‌ها در تمام انتشارات مرتبط با سیستم عملیاتی باقی بماند
+- مستند کنم کدام بخش از نوآوری‌های آن‌ها مستقیماً متریک‌های عملیاتی را بهبود داده است
+- جلسات هفتگی برای بررسی تغییرات و اطمینان از صحت علمی کار داشته باشیم
+
+این کار انگیزه‌های آن‌ها را با من همسو کرد. آن‌ها به موفقیت سیستم عملیاتی علاقه‌مند شدند چون اعتبار پژوهش آن‌ها را ثابت می‌کرد.
+
+هنگامی که مجبور شدم روش آن‌ها را به خاطر محدودیت‌های تاخیر (Latency) ساده‌تر کنم، بنچمارک‌هایی به آن‌ها نشان دادم که ثابت می‌کرد نوآوری‌های اصلی حفظ شده‌اند. آن‌ها از این موضوع استقبال کرده و حتی ایده‌هایی برای بهینه‌سازی بیشتر ارائه دادند.
+
+**نتیجه (Result):**
+ما در ۸ هفته با ۱۸٪ بهبود فراخوانی (کمی کمتر از بنچمارک به خاطر محدودیت‌های تاخیر) سیستم را تحویل دادیم. آن‌ها مقاله دیگری درباره آموخته‌های محیط عملیاتی منتشر کردند و ما الگویی پایدار برای همکاری پژوهش و مهندسی پایه‌گذاری کردیم.
+
+**آموخته‌ها (Learning):**
+آموختم که درک انگیزه‌های دیگران کلید همکاری موفق است. پژوهشگران به دنبال اثرگذاری و اعتبار علمی هستند. با تبدیل موفقیت عملیاتی به ابزاری برای رسیدن به آن اهداف، اصطکاک احتمالی را به یک شراکت اثربخش تبدیل کردم.
+
+---
+
+### مثال ۵: اشتباه کردن و عقب‌نشینی شجاعانه
+
+**سؤال: «از زمانی بگویید که با اصرار از یک تصمیم فنی دفاع کردید اما در نهایت مشخص شد اشتباه بوده است.»**
+
+**موقعیت (Situation):**
+من به‌شدت اصرار داشتم که پایپ‌لاین بازیابی را با یک رویکرد کاملاً مبتنی بر کانتکست طولانی (Long-context) جایگزین کنیم: کل پایگاه دانش را در پرامپت بارگذاری کرده و پایگاه داده برداری را حذف کنیم. در دو جلسه بررسی طراحی با استناد به بهبود فراخوانی و معماری ساده‌تر از آن دفاع کردم، و تیم بر اساس اطمینان من یک فصل کاری را به این مهاجرت اختصاص داد.
+
+**وظیفه (Task):**
+دو ماه پس از شروع، مسئولیت اثبات کارایی سیستم جدید قبل از انتقال نهایی بر عهده من بود.
+
+**اقدام (Action):**
+نتایج ارزیابی نگران‌کننده بود: کیفیت پاسخ‌ها حفظ شده بود، اما هزینه‌ها به ۴ برابر پیش‌بینی‌ها رسید چرا که نرخ اصابت به کش به دلیل فراوانی تغییرات داده فرو ریخته بود، و تاخیر p95 دو برابر شده بود. غریزه اولم تلاش برای بهینه‌سازی بود. پس از دو هفته پیشرفت‌های ناچیز، یادداشتی یک‌صفحه‌ای با ارقام واقعی نوشتم و صراحتاً اعلام کردم پیشنهاد من از نظر اقتصادی اشتباه بوده است و یک مدل هیبریدی پیشنهاد دادم: استفاده از کانتکست طولانی برای مجموعه‌های کوچک و ثابت، و بازیابی (Retrieval) برای سایر موارد. این موضوع را در برابر همان جمعی که قبلاً قانعشان کرده بودم ارائه دادم.
+
+**نتیجه (Result):**
+ما ساختار هیبریدی را حفظ کردیم، حدود ۶۰٪ از کارهای مهاجرت را نجات دادیم، و جلسه بازنگری (Postmortem) قانونی ثبت کرد که تیم هنوز از آن استفاده می‌کند: هر طرح معماری باید علاوه بر بنچمارک کیفیت، یک مدل هزینه تحت الگوهای به‌روزرسانی واقعی داشته باشد.
+
+**آموخته‌ها (Learning):**
+اطمینان بالا برای تصمیم‌گیری مفید اما برای تصحیح تصمیمات اشتباه خطرناک است. اکنون به تمام پیشنهادهای خود معیارهای توقف صریح (Kill criteria) اضافه می‌کنم تا عقب‌نشینی به یک ایستگاه ارزیابی تبدیل شود، نه یک اعتراف به شکست.
+
+---
+
+### مثال ۶: مطرح کردن دغدغه‌ای که رد شد
+
+**سؤال: «موقعیتی را شرح دهید که دغدغه‌ای را مطرح کردید اما تیم بر خلاف نظر شما تصمیم گرفت. چه کردید؟»**
+
+**موقعیت (Situation):**
+پیش از لانچ، هشدار دادم که دسترسی‌های ابزار Agent ما گسترده‌تر از نیاز محصول است: سیستم می‌توانست در جاهایی بنویسد که فقط به خواندن آن‌ها نیاز داشت. مدیران ارشد با مقایسه تاخیر دوهفته‌ای برای اصلاح دسترسی‌ها در برابر تعهدات لانچ، تصمیم گرفتند سیستم را بدون تغییر و با ثبت یک تیکت پیگیری سریع عرضه کنند.
+
+**وظیفه (Task):**
+با این تصمیم مخالف بودم. وظیفه من این بود که مطمئن شوم تصمیم با آگاهی کامل از اطلاعات گرفته شده، و سپس یا موضوع را بالا ببرم یا با تعهد کامل همراهی کنم.
+
+**اقدام (Action):**
+ریسک را به‌صورت کاملاً عینی مکتوب کردم: شعاع تخریب دقیق در صورت تزریق پرامپت به Agent همراه با مسیرهای حمله واقعی، نه یک هشدار کلی مبهم. دو راهکار تعدیل‌کننده که در بازه زمانی لانچ قابل اجرا بودند درخواست کردم: لاگ ممیزی روی مسیرهای نوشتن و هشدار ناهنجاری روی حجم نوشتن. هر دو پذیرفته شدند. مخالفت خود را در سوابق تصمیم‌گیری ثبت کردم و متعهدانه در فرآیند لانچ مشارکت کردم بدون اینکه در راهروها شروع به بحث و گلایه کنم.
+
+**نتیجه (Result):**
+فرآیند لانچ بدون مشکل انجام شد. سه هفته بعد هشدار به دلیل یک تست نادرست به صدا درآمد، نه یک حمله واقعی؛ اما ثابت کرد سیستم مانیتورینگ کار می‌کند و تیکت اصلاح دسترسی‌ها بر اساس همین سیگنال در اولویت قرار گرفت. محدودسازی دسترسی‌ها یک ماه بعد استقرار یافت.
+
+**آموخته‌ها (Learning):**
+رد شدن نظر شما پایان کار نیست. تبدیل یک بحث باخته به حفاظ‌های ارزان‌قیمت و مستندات مکتوب معمولاً ارزشمندتر از برنده شدن در بحث است و اعتباری می‌سازد که باعث می‌شود دغدغه‌های بعدی شما جدی‌تر گرفته شوند.
+
+---
+
+## سؤالاتی که باید از مصاحبه‌کنندگان بپرسید
+
+داوطلبان قدرتمند سؤالات عمیقی می‌پرسند. در اینجا سؤالات خاص هوش مصنوعی که عمق دانش شما را نشان می‌دهند آورده شده است:
+
+### درباره تیم
+
+- تیم چگونه میان کاوش‌های تحقیقاتی و تحویل قابلیت‌ها در محیط عملیاتی تعادل برقرار می‌کند؟
+- نسبت ساخت مدل‌های جدید به بهبود سیستم‌های موجود چقدر است؟
+- مهندسان یادگیری ماشین و پژوهشگران چگونه با هم همکاری می‌کنند؟
+
+### درباره فناوری
+
+- بزرگ‌ترین چالش فنی فعلی تیم چیست؟
+- کیفیت مدل را در محیط عملیاتی چگونه ارزیابی می‌کنید؟
+- زیرساخت ML شما چه شکلی است؟ چه چیزی را در آن تغییر می‌دادید؟
+
+### درباره فرهنگ تیم
+
+- تیم چگونه با مدل‌هایی که مطابق انتظار کار نمی‌کنند برخورد می‌کند؟
+- فرآیند مطرح کردن دغدغه‌های ایمنی یا اخلاقی در هوش مصنوعی چیست؟
+- چگونه میان سرعت بالا و هوش مصنوعی مسئولانه تعادل ایجاد می‌کنید؟
+- وقتی یک Agent یا اجرای آزمایشی ارزیابی به سیستمی دست می‌زند که نباید، چه اتفاقی می‌افتد؟ چه کسی و با چه سرعتی می‌تواند آن را متوقف کند؟
+
+### درباره رشد
+
+- موفقیت در این نقش پس از ۶ ماه چگونه تعریف می‌شود؟ پس از یک سال چطور؟
+- مهندسان در اینجا چگونه همگام با تغییرات سریع مدل‌ها و ابزارها به‌روز می‌مانند؟
+- مسیرهای پیشرفت شغلی از این نقش چیست؟
+
+### درباره حقوق و سطح‌بندی (برای مراحل نهایی مصاحبه)
+
+این سؤالات را برای تماس با Recruiter یا بعد از دریافت سیگنال پیشنهاد شغلی نگه دارید؛ پرسیدن آن‌ها نشان می‌دهد که شرکت‌ها را مانند یک نیروی ارشد ارزیابی می‌کنید.
+
+- ساختار جبران خدمت در این سطح چگونه است: حقوق ثابت، پاداش، سهام و دوره بازنشانی سهام (Refresh cadence)؟
+- آخرین جلسه تنظیم و تراز سطح‌بندی (Leveling calibration) برای این نقش چگونه بود؟ مرا در چه سطحی می‌بینید و چرا؟
+- چه عاملی این سطح را از سطح بالاتر متمایز می‌کند؟ آیا می‌توانید مثالی از فردی که این ارتقا را تجربه کرده بزنید؟
+- تیم در آخرین تغییرات بازار چگونه دستمزدها را مدیریت کرد؟
+- برای شرکت‌های خصوصی: کارکنان هر چند وقت یک‌بار و با چه شرایطی توانسته‌اند سهام واگذارشده خود را نقد کنند؟
+- برای نقش‌های تخصصی هوش مصنوعی: آیا مسیر جداگانه یا حق‌الزحمه مازادی برای مهارت‌های حیاتی هوش مصنوعی وجود دارد و چگونه با تحولات بازار بازبینی می‌شود؟
+
+---
+
+## پرچم‌های قرمزی که باید از آن‌ها اجتناب کنید
+
+| رفتار | چرا یک پرچم قرمز است |
 |----------|----------------------|
-| Blaming others | Does not take responsibility |
-| No specific examples | May be inflating experience |
-| Only technical answers | Lacks awareness of human factors |
-| Dismissing ethics | May create liability |
-| No questions for interviewer | Lacks curiosity or engagement |
-| Using an AI assistant in a round that did not allow it | Can be disqualifying; policies differ by company and by round |
-| Vague about what the AI wrote and what you wrote | Interviewers now probe provenance; unclear ownership reads as no ownership |
+| مقصر دانستن دیگران | عدم پذیرش مسئولیت |
+| نداشتن مثال‌های مشخص | احتمال اغراق در تجربیات |
+| پاسخ‌های صرفاً فنی | عدم توجه به ابعاد انسانی |
+| نادیده گرفتن اخلاق | ایجاد مسئولیت‌های حقوقی و ریسک |
+| نپرسیدن سؤال از مصاحبه‌کننده | فقدان کنجکاوی و اشتیاق |
+| استفاده از دستیار هوش مصنوعی در مراحلی که ممنوع است | می‌تواند موجب رد صلاحیت فوری شود؛ سیاست‌ها بسته به شرکت و مرحله متفاوت است |
+| ابهام در تفکیک سهم کار خود از خروجی هوش مصنوعی | مصاحبه‌کنندگان اصالت کار را می‌سنجند؛ ابهام در مالکیت به عنوان نداشتن مالکیت تلقی می‌شود |
 
 ---
 
-## Practicing Out Loud
+## تمرین با صدای بلند
 
-Reading stories is not preparing them. The gap between a written story and a spoken one is where most candidates lose points.
+صرفاً خواندن داستان‌ها آماده‌سازی نیست. فاصله میان داستان مکتوب و داستان شفاهی جایی است که بیشتر داوطلبان امتیاز از دست می‌دهند.
 
-1. **Two lengths per story.** Rehearse each story at 2 minutes (full STAR-L) and at 30 seconds (the elevator version for "tell me briefly about..."). If you only have the long version, you will ramble when time is short.
-2. **Record and review once per story.** One listen-through catches filler words, buried results, and the spots where you explain context nobody asked for. You do not need ten takes; you need one honest one.
-3. **Full mock with interruptions.** Have a peer run 3-4 questions and interrupt you mid-story with "why did you do that?" and "what would you do differently?" Real interviewers probe; rehearsing only clean run-throughs leaves you brittle.
-4. **Drill the bridge sentences.** The transitions ("the result was...", "what I took from it...") are what keep an interviewer oriented. Practice them until they are automatic so your attention stays on content.
-5. **One mock per loop stage.** A recruiter screen, a hiring-manager behavioral, and a bar-raiser style cross-examination reward different depths. Practice at least one round of each shape before a full onsite.
-6. **Rehearse the format you will actually get.** Some firms have moved later rounds back in person to verify candidates (Business Insider, July 2026), while others allow an AI assistant in specific rounds. Ask the recruiter how each round runs, and if the onsite is in person, practice at least one story at a physical whiteboard.
-
----
-
-## Preparation Checklist
-
-Before your behavioral interviews:
-
-- [ ] Prepare 5-7 stories covering: leadership, failure, conflict, ambiguity, learning
-- [ ] Include at least one story where you were wrong and one where you were overruled (Examples 5 and 6 show the shape)
-- [ ] Practice telling stories in 2-3 minutes (timed), plus a 30-second version of each
-- [ ] For each story, identify: situation, your specific actions, measurable results, learnings
-- [ ] Include at least one AI-specific story (model failure, bias, stakeholder education)
-- [ ] Prepare one past project you can defend at design depth: diagram, key decisions, numbers, what you would change
-- [ ] For FDE or solutions roles, prepare one end-to-end customer deployment story (use-case choice, security review, eval gate, handover)
-- [ ] Write a one-sentence AI-provenance line for each deep-dive project, and prepare one story where an AI tool was confidently wrong and you caught it
-- [ ] For frontier labs, prepare a safety view in your own words: one concrete risk with a signal and a control, and one point where you disagree with the company's direction
-- [ ] Confirm the AI-use policy for every round. Policies are split: Anthropic's candidate guidance bars AI assistance in live interviews unless told otherwise, Meta runs an AI-enabled coding round, and Google is piloting Gemini in a code-comprehension round for some roles
-- [ ] Record yourself once per story and fix what you hear
-- [ ] Do one full mock with a peer who interrupts
-- [ ] Prepare 3-5 thoughtful questions for interviewers, including the leveling and compensation set for late-stage calls
-- [ ] Research the company's AI products and potential ethical considerations
+۱. **دو نسخه زمانی برای هر تجربه.** هر داستان را در ۲ دقیقه (فرمت کامل STAR-L) و در ۳۰ ثانیه (نسخه آسانسوری برای سؤالات «به‌طور خلاصه بگویید...») تمرین کنید. اگر فقط نسخه طولانی را داشته باشید، در کمبود وقت پراکنده‌گویی خواهید کرد.
+۲. **ضبط و یک‌بار بازبینی برای هر داستان.** یک‌بار شنیدن فایل صوتی تکیه‌کلام‌ها، نتایج مدفون‌شده، و جاهایی که کانتکست‌های غیرضروری می‌دهید را آشکار می‌کند. نیاز به ۱۰ بار ضبط ندارید؛ یک بررسی صادقانه کافی است.
+۳. **مصاحبه آزمایشی کامل همراه با قطع کلام.** از یک همکار بخواهید ۳ تا ۴ سؤال بپرسد و در میانه داستان حرف شما را با «چرا آن کار را کردی؟» و «چه کار متفاوتی انجام می‌دادی؟» قطع کند. مصاحبه‌کنندگان واقعی سؤالات کاوشگرانه می‌پرسند؛ تمرین در محیط‌های کاملاً آرام شما را شکننده می‌کند.
+۴. **تمرین جملات رابط و پل‌ها.** جملات انتقال («نتیجه این شد که...»، «آنچه از این تجربه آموختم...») مسیر ذهن مصاحبه‌کننده را هدایت می‌کنند. آن‌ها را تمرین کنید تا ناخودآگاه شوند و تمرکزتان روی محتوا بماند.
+۵. **یک مصاحبه آزمایشی به ازای هر نوع مرحله.** غربالگری Recruiter، مصاحبه رفتاری با مدیر استخدام، و جلسات چالشی در سبک Bar-raiser عمق‌های متفاوتی را می‌طلبند. حداقل یک دور تمرین برای هر قالب پیش از مصاحبه حضوری انجام دهید.
+۶. **تمرین در قالبی که واقعاً با آن روبه‌رو می‌شوید.** برخی شرکت‌ها مراحل نهایی را برای تایید هویت داوطلبان به شکل حضوری بازگردانده‌اند (بیزنس اینسایدر، ژوئیه ۲۰۲۶)، در حالی که برخی دیگر استفاده از هوش مصنوعی را در مراحل خاص مجاز می‌دانند. از مسئول جذب درباره نحوه برگزاری هر مرحله بپرسید و اگر مصاحبه حضوری است، حداقل یک تجربه را روی یک تخته‌سفید فیزیکی تمرین کنید.
 
 ---
 
-*See also: [Question Bank](01-question-bank.md) | [Answer Frameworks](02-answer-frameworks.md) | [Common Pitfalls](03-common-pitfalls.md)*
+## چک‌لیست آمادگی
+
+پیش از مصاحبه‌های رفتاری:
+
+- [ ] آماده‌سازی ۵ تا ۷ داستان شامل: رهبری، شکست، تعارض، ابهام، یادگیری
+- [ ] گنجاندن حداقل یک داستان که در آن اشتباه کردید و یک مورد که نظرتان رد شد (مثال‌های ۵ و ۶ ساختار آن را نشان می‌دهند)
+- [ ] تمرین بیان داستان‌ها در ۲ تا ۳ دقیقه (زمان‌بندی‌شده)، به علاوه یک نسخه ۳۰ ثانیه‌ای برای هر کدام
+- [ ] برای هر داستان مشخص کنید: موقعیت، اقدامات دقیق خودتان، نتایج کمّی و ملموس، آموخته‌ها
+- [ ] گنجاندن حداقل یک داستان خاص هوش مصنوعی (شکست مدل، سوگیری داده، آموزش ذی‌نفعان)
+- [ ] آماده‌سازی یک پروژه گذشته که بتوانید در عمق طراحی از آن دفاع کنید: دیاگرام، تصمیمات کلیدی، اعداد و ارقام، مواردی که تغییر می‌دادید
+- [ ] برای نقش‌های FDE یا مهندسی راه‌حل‌ها، یک داستان کامل از استقرار مشتری آماده کنید (انتخاب سناریو، بررسی امنیتی، گیت ارزیابی، تحویل سیستم)
+- [ ] یک جمله صریح درباره سهم ابزارهای هوش مصنوعی برای هر پروژه بنویسید، و یک داستان برای زمانی که ابزار پاسخی غلط اما با اطمینان داد و شما متوجه شدید آماده کنید
+- [ ] برای آزمایشگاه‌های frontier، دیدگاه خود را درباره ایمنی با کلمات خودتان آماده کنید: یک ریسک عینی با سیگنال و نحوه کنترل، و یک نقطه اختلاف‌نظر با جهت‌گیری شرکت
+- [ ] سیاست استفاده از هوش مصنوعی را برای هر مرحله بررسی کنید. سیاست‌ها متفاوت است: راهنمای داوطلبان Anthropic استفاده از هوش مصنوعی را در مصاحبه زنده ممنوع می‌داند مگر اینکه اعلام شود، Meta یک مرحله کدنویسی با هوش مصنوعی دارد، و Google در حال اجرای آزمایشی Gemini در مرحله درک کد برای برخی موقعیت‌هاست
+- [ ] صدای خود را یک‌بار برای هر داستان ضبط کنید و اشکالات را برطرف نمایید
+- [ ] یک جلسه مصاحبه آزمایشی کامل با همکاری که حرفتان را قطع کند انجام دهید
+- [ ] ۳ تا ۵ سؤال عمیق برای مصاحبه‌کنندگان آماده کنید، از جمله سؤالات سطح‌بندی و دستمزد برای مراحل نهایی
+- [ ] درباره محصولات هوش مصنوعی شرکت و ملاحظات اخلاقی احتمالی آن‌ها تحقیق کنید
+
+---
+
+*همچنین ببینید: [بانک سؤالات](01-question-bank.md) | [چارچوب‌های پاسخ‌دهی](02-answer-frameworks.md) | [خطاهای متداول](03-common-pitfalls.md)*
+
+</div>

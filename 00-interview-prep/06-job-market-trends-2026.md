@@ -1,563 +1,417 @@
-# AI Job Market Trends - November 2026
+<div dir="rtl">
 
-> **Updated November 6, 2026:** the layoff signals (Challenger's October report, eBay, American Express, and Challenger's count of Microsoft's exit offers), the compensation rows marked "Nov 2026" (levels.fyi pages updated through November 5, plus the Google AI Engineer and Sierra rows), the Anthropic S-1/A of November 2 under [Compensation insight](#compensation-insight), the Meta and Microsoft rows of the AI-in-interview policy table, the DoorDash, Instacart, Microsoft, Shopify, Pinterest, and Intuit rows and the interviewer and platform signals under [What candidates reported](#what-candidates-reported-june-to-november-2026), and the FDE client-simulation note. **Updated November 5, 2026:** the candidate-reported interview loops and patterns for June to November 2026 ([What candidates reported](#what-candidates-reported-june-to-november-2026)), the Meta, OpenAI, Sierra, Canva, and Cursor rows of the AI-in-interview policy table, the candidate-reported exception in its Anthropic row, and the Sierra stage names and the Cursor note under AI-role specifics. Everything else keeps the date shown below. **Updated November 2, 2026:** the posting and layoff signals (Indeed Hiring Lab's October 22 snapshot and Microsoft's October 26 exit offer), the compensation rows marked "Nov 2026" (Anthropic, OpenAI, and US AI Engineer pages on levels.fyi, updated November 1, 2026), the Anthropic S-1, Anthropic's interview-format and AI-policy entries, and Anthropic's embedded-evaluator program. **Last checked October 2, 2026:** the entry-level studies, the Indeed metro-exposure and data-center pay figures, the Google and Microsoft AI-in-interview policies, the candidate-reported prompts under Frontier-lab specifics, the FDE programs, H-1B status, and the compensation rows marked "Oct 2026" or "Sep 2026" (Microsoft, OpenAI FDE, BCG X). **Last checked May 17, 2026:** every compensation row marked "May 2026" (national bands, specialty roles, London, Berlin, Bangalore, Singapore, Thinking Machines), the role taxonomy apart from the FDE and evaluator entries, the skills lists, and the tech-stack percentages, all from the May 17 sweep of 100+ public job listings, hiring reports, and recruiter signals. Treat those comp rows as floors and the percentages as directional.
+# روندهای بازار کار هوش مصنوعی - نوامبر ۲۰۲۶
 
-> **November 2026 update:** Four signals since early October. First, AI demand reached a record share of a weak market: AI-related postings hit 7.3% of all US postings in Indeed Hiring Lab's October 22 snapshot (a keyword count covering ML, data science, GenAI, and ChatGPT; the previous peak was 3.3% in 2022), while Indeed's software development postings index sat at about 79 against a February 2020 baseline of 100. AI work is growing inside a weak software market, not lifting it. Second, Anthropic filed its S-1 publicly on October 26 and an amended S-1/A on November 2 that spells out the lock-ups and how RSUs settle at listing, so Anthropic equity in an offer is now pre-IPO stock with a known release schedule (see [Compensation insight](#compensation-insight)). Third, Microsoft opened a Voluntary Exit Offer on October 26 for eligible employees at level 70 and below in the US, UK, Canada, and India, without stating amounts or an AI rationale; Challenger, Gray & Christmas reported on November 5 that the offer went to 60,000 employees. Meanwhile AI fell to second place among stated reasons for US job cuts year to date, behind market and economic conditions. Fourth, interview formats moved at the team level, not the company level: an Anthropic hiring manager wrote on October 27 that he had dropped the traditional coding interview for his team in favor of portfolio prototypes, which is one manager's practice and not company policy (see [Frontier-lab specifics](#frontier-lab-specifics)). On levels.fyi, OpenAI's software engineer median fell from $710K on October 2 to $640K on November 1 and $600K on November 5 as its sample grew, a reminder of how far small self-reported samples move. Below the policy level, candidate reports from June to November show AI-tool rules moving from banned to allowed to required, new PR-review and design-doc-review rounds, and take-homes you defend live (see [What candidates reported](#what-candidates-reported-june-to-november-2026)).
->
-> **October 2026 update:** Four shifts since August. First, the entry-level squeeze is now measured in pay and postings, not unemployment: the entry-level share of postings in the most AI-exposed occupations fell from 29% to 10% (Indeed Hiring Lab), and starting earnings for graduates of the most exposed majors fell about 13% relative to the least-exposed majors (US Census Bureau), yet recent-graduate unemployment has not spiked (NBER). Second, AI-attributed layoffs cooled to 9% of September's cuts, while capex-funded and management-layer cuts continued (see [the first headline shift](#1-the-market-is-paradoxically-hot-and-cold)). Third, AI-in-interview policy split instead of standardizing: Meta runs an AI-enabled round, Google is piloting one, Anthropic bars AI unless told otherwise, and some firms are moving final rounds back in person (see [AI tools in the loop](#ai-tools-in-the-loop-check-the-policy-per-round)). Fourth, FDE is being credentialed and pushed out of the labs: OpenAI's Deployment Company, BCG X's campus FDE roles, and Anthropic's Claude Frontier Academy, announced October 2 (see [FDE](#forward-deployed-engineer-fde)).
->
-> **August 2026 update:** Three datapoints worth carrying into interviews and career planning. First, the entry-level squeeze now has administrative payroll evidence behind it: a widely cited Stanford Digital Economy Lab paper revised in August 2026 with ADP data through June reports that workers aged 22-25 in AI-exposed occupations sit about **19% below** the employment level they would have reached had they kept pace with less-exposed peers, while experienced workers show no comparable gap. The mechanism the authors identify is reduced hiring rather than increased separations, which matters: the entry door is narrower, but the people already inside are not being pushed out. Second, the infrastructure buildout is now the clearest wage story in the market. Indeed Hiring Lab (July 14, 2026) puts data-center roles at **six of every 1,000 US job postings, up from two per 1,000 in May 2023**, and reports that data-center installation and maintenance work pays about **42% more per hour** than equivalent non-data-center roles. If you are technical but not an ML researcher, that is where the leverage is. Third, capability-tiered access programs at the frontier labs (Daybreak Blue and Red, Project Glasswing) have created a small but real category of roles that require verified identity and security clearance-adjacent vetting, which is a new consideration in where you apply.
->
-> **June 2026 update:** Two market-moving events since the May sweep. Anthropic released **Claude Fable 5** (June 9, $10/$50 per 1M), bringing Mythos-class capability to general availability with an Opus 4.8 fallback safeguard; expect a wave of capability-ceiling product work and the eval, safety, and routing roles that come with it. DeepSeek made its **75% V4 Pro discount permanent** (May 22), accelerating the cost-engineering hiring trend: candidates who can exploit a 70x price spread across model tiers are screening well. The compensation rows at the time were all from the May 17 sweep; treat any row still marked "May 2026" as a floor in the segments those events touch.
+> **به‌روزرسانی‌شده در ۶ نوامبر ۲۰۲۶:** سیگنال‌های تعدیل نیرو (گزارش اکتبر Challenger، شرکت‌های eBay و American Express، و آمار ارائه‌شده توسط Challenger درباره پیشنهادات خروج اختیاری مایکروسافت)، ردیف‌های جبران خدمت مشخص‌شده با «نوامبر ۲۰۲۶» (صفحات levels.fyi به‌روزرسانی‌شده تا ۵ نوامبر، به علاوه ردیف‌های Google AI Engineer و Sierra)، اصلاحیه S-1/A شرکت Anthropic در ۲ نوامبر در بخش [بینش جبران خدمت](#compensation-insight)، ردیف‌های مربوط به Meta و Microsoft در جدول سیاست‌های استفاده از هوش مصنوعی در مصاحبه، ردیف‌های مربوط به شرکت‌های DoorDash، Instacart، Microsoft، Shopify، Pinterest و Intuit و سیگنال‌های مصاحبه‌کنندگان و پلتفرم‌ها در بخش [گزارش‌های داوطلبان](#what-candidates-reported-june-to-november-2026)، و یادداشت شبیه‌سازی مشتری برای FDE. **به‌روزرسانی‌شده در ۵ نوامبر ۲۰۲۶:** فرآیندها و الگوهای مصاحبه گزارش‌شده توسط داوطلبان برای بازه ژوئن تا نوامبر ۲۰۲۶ ([گزارش‌های داوطلبان](#what-candidates-reported-june-to-november-2026))، ردیف‌های Meta، OpenAI، Sierra، Canva و Cursor در جدول سیاست‌های هوش مصنوعی در مصاحبه، استثنای گزارش‌شده توسط داوطلبان در ردیف Anthropic، و نام مراحل مصاحبه Sierra و یادداشت Cursor در بخش جزئیات نقش‌های هوش مصنوعی. سایر بخش‌ها تاریخ‌های مشخص‌شده در زیر را حفظ می‌کنند. **به‌روزرسانی‌شده در ۲ نوامبر ۲۰۲۶:** سیگنال‌های آگهی‌های شغلی و تعدیل نیرو (گزارش ۲۲ اکتبر Indeed Hiring Lab و پیشنهاد خروج اختیاری ۲۶ اکتبر مایکروسافت)، ردیف‌های دستمزد مشخص‌شده با «نوامبر ۲۰۲۶» (صفحات Anthropic، OpenAI و مهندسان هوش مصنوعی آمریکا در levels.fyi به‌روزرسانی‌شده در ۱ نوامبر ۲۰۲۶)، فرم S-1 شرکت Anthropic، مدخل‌های مربوط به فرمت مصاحبه و سیاست‌های هوش مصنوعی Anthropic، و برنامه ارزیابی‌کنندگان مستقر Anthropic. **آخرین بررسی در ۲ اکتبر ۲۰۲۶:** مطالعات مربوط به سطوح ورودی (Entry-level)، ارقام مواجهه مناطق شهری و دستمزد مراکز داده در Indeed، سیاست‌های هوش مصنوعی در مصاحبه Google و Microsoft، پرامپت‌های گزارش‌شده داوطلبان در بخش جزئیات آزمایشگاه‌های پیشرو (frontier labs)، برنامه‌های FDE، وضعیت ویزای H-1B، و ردیف‌های جبران خدمت مشخص‌شده با «اکتبر ۲۰۲۶» یا «سپتامبر ۲۰۲۶» (Microsoft، OpenAI FDE، BCG X). **آخرین بررسی در ۱۷ مه ۲۰۲۶:** تمام ردیف‌های دستمزد مشخص‌شده با «مه ۲۰۲۶» (دامنه‌های ملی، نقش‌های تخصصی، لندن، برلین، بنگلور، سنگاپور، Thinking Machines)، رده‌بندی نقش‌ها به جز مدخل‌های FDE و ارزیابی‌کننده، لیست مهارت‌ها و درصدهای استک‌های فناوری، همگی حاصل بررسی ۱۷ مه از بیش از ۱۰۰ آگهی استخدامی عمومی، گزارش‌های استخدام و سیگنال‌های مسئولان جذب. این ردیف‌های دستمزد را به عنوان کف حقوق و درصدها را به عنوان جهت‌گیری‌های کلی در نظر بگیرید.
 
-This chapter is for engineers planning their next move, hiring managers building rubrics, and engineering leaders making organizational design decisions. It complements [TRANSITION_GUIDE.md](../TRANSITION_GUIDE.md) (how to transition into AI roles) and the [Question Bank](01-question-bank.md) (what to study).
+> **به‌روزرسانی نوامبر ۲۰۲۶:** چهار سیگنال مهم از اوایل اکتبر: نخست، تقاضا برای هوش مصنوعی به سهم رکوردشکنی در یک بازار ضعیف دست یافت: آگهی‌های مرتبط با هوش مصنوعی در گزارش ۲۲ اکتبر Indeed Hiring Lab به ۷.۳٪ از کل آگهی‌های شغلی ایالات متحده رسید (بر مبنای شمارش کلیدواژه‌های ML، علم داده، GenAI و ChatGPT؛ قله قبلی ۳.۳٪ در سال ۲۰۲۲ بود)، در حالی که شاخص آگهی‌های توسعه نرم‌افزار Indeed در مقایسه با مبنای ۱۰۰ در فوریه ۲۰۲۰ روی عدد ۷۹ ایستاده است. کارهای هوش مصنوعی در دل یک بازار نرم‌افزاری ضعیف در حال رشد هستند، نه اینکه کل بازار را بالا بکشند. دوم، شرکت Anthropic فرم S-1 خود را در ۲۶ اکتبر به‌صورت عمومی و اصلاحیه S-1/A را در ۲ نوامبر ثبت کرد که جزئیات دوره‌های منع فروش (Lock-ups) و نحوه تسویه RSUها در زمان عرضه عمومی را شفاف می‌کند؛ بنابراین سهام اعطایی در پیشنهادهای کاری Anthropic اکنون سهام ماقبل عرضه عمومی (Pre-IPO) با برنامه زمانی مشخص است (بخش [بینش جبران خدمت](#compensation-insight) را ببینید). سوم، مایکروسافت در ۲۶ اکتبر پیشنهاد خروج داوطلبانه (Voluntary Exit Offer) را برای کارمندان واجد شرایط سطح ۷۰ و پایین‌تر در آمریکا، بریتانیا، کانادا و هند باز کرد، بدون اینکه مبالغ پرداختی یا دلیل مرتبط با هوش مصنوعی را اعلام کند؛ موسسه Challenger, Gray & Christmas در ۵ نوامبر گزارش داد که این پیشنهاد برای ۶۰,۰۰۰ کارمند ارسال شده است. در همین حال، هوش مصنوعی از ابتدای سال تا کنون در رتبه دوم دلایل اعلام‌شده برای تعدیل نیرو در آمریکا، پس از شرایط بازار و اقتصاد، قرار گرفته است. چهارم، فرمت‌های مصاحبه در سطح تیم‌ها تغییر کرده‌اند نه در سطح کل شرکت‌ها: یکی از مدیران استخدام Anthropic در ۲۷ اکتبر نوشت که مصاحبه کدنویسی سنتی را در تیم خود حذف کرده و به جای آن نمونه‌های اولیه مبتنی بر پورتفولیو را مبنا قرار داده است، که این صرفاً رویه یک مدیر بوده و سیاست کل شرکت نیست (بخش [جزئیات آزمایشگاه‌های پیشرو](#frontier-lab-specifics) را ببینید). در وبسایت levels.fyi، میانه دریافتی مهندسان نرم‌افزار OpenAI با بزرگ‌تر شدن نمونه آماری، از ۷۱۰ هزار دلار در ۲ اکتبر به ۶۴۰ هزار دلار در ۱ نوامبر و ۶۰۰ هزار دلار در ۵ نوامبر کاهش یافت که یادآور میزان نوسان نمونه‌های آماری کوچک خودگزارش‌شده است. در سطحی فراتر از سیاست‌های رسمی، گزارش‌های داوطلبان بین ژوئن تا نوامبر نشان می‌دهد که قوانین مربوط به ابزارهای هوش مصنوعی از حالت «ممنوع» به «مجاز» و سپس به «الزامی» تغییر یافته‌اند، مراحل جدیدی برای بررسی PR و بررسی سند طراحی اضافه شده، و پروژه‌های Take-home به‌صورت زنده و شفاهی دفاع می‌شوند (بخش [گزارش‌های داوطلبان](#what-candidates-reported-june-to-november-2026) را ببینید).
+>
+> **به‌روزرسانی اکتبر ۲۰۲۶:** چهار تغییر از ماه اوت: اول، فشار بر نیروهای سطح ورودی (Entry-level) اکنون بر حسب میزان حقوق و آگهی‌های شغلی اندازه‌گیری می‌شود نه بیکاری: سهم آگهی‌های سطح ورودی در مشاغلی که بیشترین مواجهه را با هوش مصنوعی دارند از ۲۹٪ به ۱۰٪ کاهش یافته است (Indeed Hiring Lab)، و درآمد اولیه فارغ‌التحصیلان رشته‌های با بیشترین مواجهه نسبت به رشته‌های کم‌مواجهه حدود ۱۳٪ افت کرده است (اداره سرشماری آمریکا)، در حالی که بیکاری فارغ‌التحصیلان جدید جهش نداشته است (NBER). دوم، تعدیل نیروهای منتسب به هوش مصنوعی تا ۹٪ از کل تعدیل‌های سپتامبر کاهش یافت، در حالی که کاهش هزینه‌های زیرساختی و لایه‌های مدیریتی ادامه یافت (بخش [اولین تغییر کلیدی](#1-the-market-is-paradoxically-hot-and-cold) را ببینید). سوم، سیاست استفاده از هوش مصنوعی در مصاحبه به جای استاندارد شدن، دچار انشعاب شد: Meta یک مرحله با کمک هوش مصنوعی برگزار می‌کند، Google در حال آزمایش آن است، Anthropic استفاده از آن را ممنوع می‌داند مگر اینکه اعلام شود، و برخی شرکت‌ها مراحل نهایی را مجدداً حضوری کرده‌اند (بخش [ابزارهای هوش مصنوعی در فرآیند مصاحبه](#ai-tools-in-the-loop-check-the-policy-per-round) را ببینید). چهارم، نقش FDE در حال دریافت مدارک رسمی و خروج از انحصار آزمایشگاه‌هاست: شرکت استقرار اختصاصی OpenAI، نقش‌های FDE در دانشگاه‌ها توسط BCG X، و آکادمی Claude Frontier متعلق به Anthropic که در ۲ اکتبر معرفی شد (بخش [مهندس استقرار در سازمان مشتری (FDE)](#forward-deployed-engineer-fde) را ببینید).
+>
+> **به‌روزرسانی اوت ۲۰۲۶:** سه داده آماری مهم برای مصاحبه‌ها و برنامه‌ریزی شغلی: اول، فشار بر سطح ورودی اکنون دارای شواهد رسمی اداری از سوی سازمان‌های پرداخت دستمزد است: مقاله ارائه‌شده توسط آزمایشگاه اقتصاد دیجیتال استنفورد با داده‌های ADP تا ژوئن نشان می‌دهد که کارمندان ۲۲ تا ۲۵ ساله در مشاغل مواجه با هوش مصنوعی حدود **۱۹٪ پایین‌تر** از سطح اشتغالی قرار دارند که در صورت حرکت همگام با همتایان کم‌مواجهه به آن می‌رسیدند، در حالی که کارمندان باسابقه چنین شکافی را نشان نمی‌دهند. سازوکاری که نویسندگان شناسایی کرده‌اند کاهش نرخ استخدام جدید است و نه افزایش اخراج‌ها؛ یعنی در ورودی باریک‌تر شده است، اما افرادی که داخل سیستم هستند بیرون انداخته نمی‌شوند. دوم، ساخت زیرساخت‌ها آشکارترین داستان دستمزد در بازار است. گزارش Indeed Hiring Lab نشان می‌دهد نقش‌های مراکز داده به **۶ مورد از هر ۱,۰۰۰ آگهی شغلی در آمریکا رسیده است (در مقایسه با ۲ مورد در مه ۲۰۲۳)** و اعلام می‌کند کارهای نصب و نگهداری مراکز داده حدود **۴۲٪ دستمزد ساعتی بالاتری** نسبت به نقش‌های معادل خارج از مراکز داده دارند. اگر دانش فنی دارید اما پژوهشگر یادگیری ماشین نیستید، اهرم فرصت در اینجا قرار دارد. سوم، برنامه‌های دسترسی لایه‌بندی‌شده بر اساس توانمندی در آزمایشگاه‌های frontier (پروژه‌های Daybreak Blue و Red، Project Glasswing) دسته‌ای کوچک اما واقعی از نقش‌ها را به وجود آورده‌اند که نیازمند تایید هویت و بررسی‌های امنیتی مشابه با مجوزهای حفاظتی هستند، که این یک ملاحظه جدید در انتخاب محل ارسال رزومه است.
+>
+> **به‌روزرسانی ژوئن ۲۰۲۶:** دو رویداد اثرگذار بر بازار از زمان بررسی مه: شرکت Anthropic مدل **Claude Fable 5** را منتشر کرد (۹ ژوئن، $10/$50 به ازای هر ۱ میلیون توکن) و توانمندی‌های رده Mythos را همراه با سیستم حفاظتی جایگزین Opus 4.8 به دسترسی عمومی رساند؛ انتظار موجی از پروژه‌های نیازمند سقف توانمندی مدل‌ها و نقش‌های ارزیابی، ایمنی و مسیریابی متناسب با آن را داشته باشید. شرکت DeepSeek **تخفیف ۷۵ درصدی V4 Pro را دائمی کرد** (۲۲ مه) و روند استخدام مهندسان بهینه‌سازی هزینه را شتاب بخشید: داوطلبانی که می‌توانند از تفاوت قیمت ۷۰ برابری در رده‌های مدل بهره‌برداری کنند، در ارزیابی‌ها بسیار موفق ظاهر می‌شوند. ردیف‌های جبران خدمت در آن زمان همگی از بررسی ۱۷ مه بودند؛ هر ردیفی را که هنوز با «مه ۲۰۲۶» مشخص شده است به عنوان کف حقوق در آن حوزه‌ها در نظر بگیرید.
+
+این فصل برای مهندسانی است که در حال برنامه‌ریزی گام بعدی شغلی خود هستند، مدیران استخدامی که شیوه‌نامه‌های ارزیابی را طراحی می‌کنند، و رهبران فنی که درباره ساختار سازمانی تصمیم‌گیری می‌نمایند. این مستند مکمل [راهنمای تغییر نقش شغلی](../TRANSITION_GUIDE.md) (چگونگی ورود به نقش‌های هوش مصنوعی) و [بانک سؤالات](01-question-bank.md) (چه چیزهایی را مطالعه کنیم) است.
 
 ---
 
-## Table of Contents
+## جدول محتوا
 
-- [The Three Headline Shifts](#the-three-headline-shifts)
-- [Role Taxonomy in 2026](#role-taxonomy-in-2026)
-- [Skills by Career Level](#skills-by-career-level)
-- [What Job Listings Actually Require](#what-job-listings-actually-require)
-- [Compensation Reality](#compensation-reality)
-- [Geographic & Industry Distribution](#geographic--industry-distribution)
-- [Interview Process Patterns](#interview-process-patterns)
-- [Emerging Roles to Watch](#emerging-roles-to-watch)
-- [Strategic Takeaways](#strategic-takeaways)
-- [References](#references)
-
----
-
-## The Three Headline Shifts
-
-If you read nothing else, internalize these three things.
-
-### 1. The market is paradoxically hot and cold.
-
-Q1 2026 saw ~52,050 tech layoffs (Oracle 30K, Amazon, Meta, Dell), the highest Q1 since 2023 ([Kore1](https://www.kore1.com/tech-layoffs-2026/); [Tom's Hardware](https://www.tomshardware.com/tech-industry/tech-industry-lays-off-nearly-80-000-employees-in-the-first-quarter-of-2026-almost-50-percent-of-affected-positions-cut-due-to-ai)). Simultaneously, AI roles grew +8.9% QoQ and +4.8% YoY, with ~275,000 unfilled AI roles ([Allwork.space](https://allwork.space/2026/05/ai-hiring-is-rising-even-as-tech-layoffs-surge-140/)). Junior/entry-level engineers were hit hardest - routine codegen, QA testing, basic frontend work disproportionately cut. Senior + specialist AI roles remained resilient.
-
-**By Q3 the picture sharpened.** AI-attributed cuts cooled. Challenger, Gray & Christmas counted 3,462 AI-cited cuts in August, the lowest monthly total since December 2025, 3,961 in September (9% of the month's 43,281), and 1,265 in October, the lowest monthly total of 2026, out of 43,994 announced cuts (down 71% from 153,074 in October 2025). Through October, Market/Economic Conditions (130,531) overtook AI (121,401, about 20%) as the leading stated reason for cuts year to date. Tech remains the hardest-hit sector, with 171,501 cuts through October (up 21% from 141,159 a year earlier; 28% of the total), although October's 5,576 tech cuts were the sector's lowest month of 2026. Much of the cutting is not attributed to AI at all. Uber cut about 3,300 roles (roughly 10%) on September 2 to remove management layers and did not cite AI. Oracle began another round on September 14 while its fiscal 2026 capex reached $55.7B, up from $21.2B: AI infrastructure spending and engineering layoffs are often the same budget decision. October added a large program framed as voluntary: Microsoft's Voluntary Exit Offer (October 26) covers eligible employees at level 70 and below, in participating teams, in the US, UK, Canada, and India; each organization decides whether to offer it, and Microsoft published no amounts, end date, or AI rationale. Challenger reported that the offer went to 60,000 employees and left it out of October's total, since it counts voluntary programs only on acceptance or a stated reduction target. Two late-October cuts show both framings. eBay cut about 1,000 jobs (about 9% of staff), its second round of 2026, without tying them to AI (CNBC, October 21). American Express said on its October 23 earnings call that it is cutting about 5% of its global workforce, with a $336M restructuring charge, and its CFO told CNBC the aim is to remove management layers and "prepare for AI" before automating.
-
-The entry-level evidence also firmed up, and it points to hiring and pay rather than unemployment:
-
-- **Indeed Hiring Lab (September 17, 2026):** in the most AI-exposed occupations, the entry-level share of postings fell from 29% in 2021 to 10% in 2026, while the senior share rose from 22% to 47%. Advertised pay grew faster in exposed occupations, but most of that "AI premium" disappears once seniority mix is held constant.
-- **US Census Bureau (working paper CES-WP-26-56, September 2026):** after late 2022, starting earnings for graduates of the most AI-exposed majors, led by computer science, fell about 13% relative to graduates of the least-exposed majors, which the authors compare to graduating into a large recession. About half the drop comes from graduates landing in lower-paying sectors, and the gap narrows to about 5% after two years.
-- **Federal Reserve Bank of Dallas (September 22, 2026):** each 10-point rise in a major's share of automatable tasks is associated with a 1.7-point lower chance of employment in Texas within a year of graduating, and more graduates retreating to grad school.
-- **NBER working paper w35796 (September 2026):** unemployment for bachelor's holders aged 22-25 was 7.3% in summer 2026, inside the range of the previous four summers, with no significant rise relative to older graduates.
-
-Forecasters are split on software specifically: Indeed's Q3 Labor Market Outlook panel (123 panelists, surveyed September 8-16, 2026) put software development on both the list of sectors with the largest expected AI-driven job losses and the list with the largest expected gains.
-
-**Implication:** "Tech hiring" and "AI hiring" are not the same story in 2026, and neither are "layoffs" and "AI layoffs". If your career is generalist mid-level SWE work, you're feeling the cold market. If you're AI-specialized at senior level, you're in a sellers' market. If you're entering the field, the door is narrower, and the penalty shows up as fewer junior postings and lower starting pay rather than as unemployment.
-
-### 2. The title is collapsing; the work is fragmenting.
-
-Most companies now post "AI Engineer" as the umbrella, but inside the role you specialize quickly into RAG, agents, evals, fine-tuning, or platform work. ["Most AI job titles will collapse into 'AI Engineer' over the next 18 months; prestige labels survive only at frontier labs"](https://www.ivanturkovic.com/2026/04/24/ai-job-titles-2026-naming-chaos/). The "Prompt Engineer" standalone title has effectively disappeared from major job boards - the skill survived; the title didn't ([PE Collective](https://pecollective.com/blog/is-prompt-engineering-a-real-career/); [Medium - Prompt Engineering Is Dead 2026](https://medium.com/write-a-catalyst/prompt-engineering-is-dead-2026-ai-systems-engineering-7acdbbcb2160)).
-
-**Implication:** If you're hiring a "Prompt Engineer," you're 18 months behind. Define the actual problem (eval rigor? agent debugging? customer-facing tuning?) and hire for that specific role.
-
-### 3. Forward Deployed Engineer is the breakout role of 2026.
-
-FDE didn't exist as a discrete category at frontier labs in mid-2025. By May 2026, OpenAI, Anthropic, and Google were all hiring hundreds. Google/Box CEOs publicly called it "the most in-demand job in tech" ([Fast Company](https://www.fastcompany.com/91541878/google-box-ceos-say-this-is-the-most-in-demand-job-in-tech); [Hashnode FDE guide](https://hashnode.com/blog/a-complete-2026-guide-to-the-forward-deployed-engineer)). TC at frontier labs held at $350-550K mid-to-senior (Aced's September 2026 estimate for OpenAI FDEs). By October the role had spread beyond the labs: OpenAI stood up a separate Deployment Company, BCG X began hiring FDEs straight from campus, and Anthropic announced a program to train 10,000 "Frontier Deployed Engineers" inside customers and partners by the end of 2027 (details under [Emerging Roles](#forward-deployed-engineer-fde)).
-
-**Implication:** Frontier-AI buyers (Fortune 500, government, biotech) demand on-site engineering presence as a contractual deliverable. FDE is the role that exists because the buyer values it - not because it's the most efficient way to deliver software.
+- [سه تغییر کلیدی و برجسته](#the-three-headline-shifts)
+- [رده‌بندی نقش‌ها در سال ۲۰۲۶](#role-taxonomy-in-2026)
+- [مهارت‌ها بر اساس سطح شغلی](#skills-by-career-level)
+- [آنچه آگهی‌های شغلی در عمل می‌خواهند](#what-job-listings-actually-require)
+- [واقعیت دستمزدها و جبران خدمت](#compensation-reality)
+- [توزیع جغرافیایی و صنعتی](#geographic--industry-distribution)
+- [الگوهای فرآیند مصاحبه](#interview-process-patterns)
+- [نقش‌های نوظهور قابل توجه](#emerging-roles-to-watch)
+- [نکات کلیدی استراتژیک](#strategic-takeaways)
+- [منابع و مراجع](#references)
 
 ---
 
-## Role Taxonomy in 2026
+## سه تغییر کلیدی و برجسته
 
-### Established titles (still hiring strongly)
+اگر وقت خواندن همه چیز را ندارید، این سه نکته را به خاطر بسپارید:
 
-| Title | Description | Where it's posted |
+### ۱. بازار به شکلی متناقض هم‌زمان داغ و سرد است.
+
+در سه‌ماهه اول ۲۰۲۶ حدود ۵۲,۰۵۰ تعدیل نیرو در بخش فناوری رخ داد (۳۰ هزار نفر در اوراکل، به همراه آمازون، متا، دل)، که بالاترین رقم سه‌ماهه اول از سال ۲۰۲۳ است ([Kore1](https://www.kore1.com/tech-layoffs-2026/)؛ [Tom's Hardware](https://www.tomshardware.com/tech-industry/tech-industry-lays-off-nearly-80-000-employees-in-the-first-quarter-of-2026-almost-50-percent-of-affected-positions-cut-due-to-ai)). به‌طور هم‌زمان، نقش‌های هوش مصنوعی رشد فصل به فصل +۸.۹٪ و رشد سالانه +۴.۸٪ با حدود ۲۷۵,۰۰۰ جایگاه شغلی خالی را ثبت کردند ([Allwork.space](https://allwork.space/2026/05/ai-hiring-is-rising-even-as-tech-layoffs-surge-140/)). بیشترین ضربه به مهندسان تازه‌کار و سطح ورودی وارد شد؛ کارهای روزمره تولید کد، تست‌های تضمین کیفیت (QA) و کارهای پایه‌ای فرانت‌اند به شدت تعدیل شدند. در مقابل، نقش‌های تخصصی و ارشد هوش مصنوعی کاملاً پایدار باقی ماندند.
+
+**در سه‌ماهه سوم تصویر دقیق‌تر شد.** تعدیل نیروهای منتسب به هوش مصنوعی کاهش یافت. موسسه Challenger, Gray & Christmas تعداد ۳,۴۶۲ اخراج با استناد به هوش مصنوعی را در اوت شمارش کرد که کمترین رقم ماهانه از دسامبر ۲۰۲۵ بود، ۳,۹۶۱ مورد در سپتامبر (۹٪ از ۴۳,۲۸۱ اخراج آن ماه)، و ۱,۲۶۵ مورد در اکتبر که پایین‌ترین آمار سال ۲۰۲۶ از میان ۴۳,۹۹۴ تعدیل اعلام‌شده بود (کاهش ۷۱ درصدی نسبت به ۱۵۳,۰۷۴ مورد در اکتبر ۲۰۲۵). تا اکتبر، دلایل «شرایط بازار و اقتصاد» (۱۳۰,۵۳۱ مورد) از هوش مصنوعی (۱۲۱,۴۰۱ مورد، حدود ۲۰٪) به عنوان دلیل اصلی اعلام‌شده برای تعدیل‌ها پیشی گرفت. فناوری همچنان پرضربه‌ترین بخش با ۱۷۱,۵۰۱ تعدیل تا اکتبر است (رشد ۲۱ درصدی نسبت به سال گذشته؛ ۲۸٪ از کل)، اگرچه آمار ۵,۵۷۶ تعدیل ماه اکتبر در این بخش کمترین مقدار سال ۲۰۲۶ بود. بسیاری از تعدیل‌ها اصلاً ارتباطی با هوش مصنوعی ندارند: اوبر در ۲ سپتامبر حدود ۳,۳۰۰ نقش (حدود ۱۰٪) را برای حذف لایه‌های مدیریتی تعدیل کرد و دلیلی از هوش مصنوعی نیاورد. اوراکل دور دیگری را در ۱۴ سپتامبر آغاز کرد در حالی که مخارج سرمایه‌ای سال مالی ۲۰۲۶ آن به ۵۵.۷ میلیارد دلار (از ۲۱.۲ میلیارد) رسید: هزینه‌های سرسام‌آور زیرساخت هوش مصنوعی و تعدیل مهندسان اغلب دو روی یک تصمیم بودجه‌ای واحد هستند. در ماه اکتبر یک برنامه داوطلبانه اضافه شد: پیشنهاد خروج داوطلبانه مایکروسافت (۲۶ اکتبر) که شامل کارمندان واجد شرایط سطح ۷۰ و پایین‌تر در آمریکا، بریتانیا، کانادا و هند شد. موسسه Challenger گزارش داد این پیشنهاد برای ۶۰ هزار کارمند ارسال شده است. دو تعدیل در اواخر اکتبر هر دو جهت را نشان می‌دهند: eBay حدود ۱,۰۰۰ شغل (حدود ۹٪ از نیروها) را در دومین دور سال ۲۰۲۶ بدون ارتباط با هوش مصنوعی تعدیل کرد (CNBC، ۲۱ اکتبر). در مقابل، American Express در گزارش درآمد ۲۳ اکتبر خود اعلام کرد حدود ۵٪ از نیروی کار جهانی خود را برای حذف لایه‌های مدیریتی و «آماده‌سازی برای هوش مصنوعی» تعدیل می‌کند.
+
+شواهد مربوط به سطح ورودی نیز دقیق‌تر شد و نشان داد که فشار اصلی بر نرخ استخدام و حقوق است نه بیکاری:
+
+- **Indeed Hiring Lab (۱۷ سپتامبر ۲۰۲۶):** در مشاغلی که بیشترین مواجهه را با هوش مصنوعی دارند، سهم آگهی‌های سطح ورودی از ۲۹٪ در سال ۲۰۲۱ به ۱۰٪ در سال ۲۰۲۶ کاهش یافته، در حالی که سهم نقش‌های ارشد از ۲۲٪ به ۴۷٪ جهش کرده است. دستمزدهای آگهی‌شده در مشاغل پرمواجهه سریع‌تر رشد کرده، اما بخش عمده این «پاداش هوش مصنوعی» با کنترل ترکیب سابقه کار از بین می‌رود.
+- **اداره سرشماری آمریکا (مقاله CES-WP-26-56، سپتامبر ۲۰۲۶):** پس از اواخر ۲۰۲۲، دستمزد اولیه فارغ‌التحصیلان رشته‌های با بیشترین مواجهه (در رأس آن‌ها علوم کامپیوتر) نسبت به رشته‌های کم‌مواجهه حدود ۱۳٪ افت کرد، که نویسندگان آن را به فارغ‌التحصیلی در یک دوره رکود بزرگ تشبیه می‌کنند. حدود نیمی از این افت ناشی از اشتغال در صنایع با دستمزد پایین‌تر است و این شکاف پس از دو سال به حدود ۵٪ کاهش می‌یابد.
+- **بانک فدرال رزرو دالاس (۲۲ سپتامبر ۲۰۲۶):** هر ۱۰ درصد افزایش در سهم وظایف قابل اتوماسیون یک رشته دانشگاهی، با ۱.۷ درصد کاهش شانس اشتغال در تگزاس ظرف یک سال پس از فارغ‌التحصیلی و گرایش بیشتر به ادامه تحصیل در مقاطع تکمیلی همراه است.
+- **مقاله کار NBER شماره w35796 (سپتامبر ۲۰۲۶):** بیکاری دارندگان مدرک کارشناسی ۲۲ تا ۲۵ ساله در تابستان ۲۰۲۶ برابر با ۷.۳٪ بود که در محدوده چهار تابستان گذشته قرار دارد و افزایش معناداری نسبت به فارغ‌التحصیلان قدیمی‌تر نشان نمی‌دهد.
+
+پیش‌بینی‌ها درباره بخش نرم‌افزار متناقض است: در نظرسنجی چشم‌انداز بازار کار سه‌ماهه سوم Indeed، بخش توسعه نرم‌افزار هم در فهرست مشاغل با بیشترین انتظار از دست دادن شغل بر اثر هوش مصنوعی قرار گرفت و هم در فهرست مشاغلی با بیشترین رشد شغلی ناشی از آن.
+
+**پیامد برای شما:** «استخدام در فناوری» و «استخدام در هوش مصنوعی» در سال ۲۰۲۶ دو داستان کاملاً متفاوت هستند، همان‌طور که «تعدیل نیرو» و «تعدیل ناشی از هوش مصنوعی» یکی نیستند. اگر یک مهندس نرم‌افزار عمومی در سطح متوسط (Mid-level) هستید، سرمای بازار را احساس می‌کنید. اگر در سطح ارشد در حوزه هوش مصنوعی تخصص دارید، در بازاری قرار دارید که فروشنده تعیین‌کننده شرایط است. اگر تازه وارد این حوزه می‌شوید، در ورودی باریک‌تر شده و این سختی به شکل آگهی‌های کمتر برای جونیورها و حقوق اولیه پایین‌تر خود را نشان می‌دهد.
+
+### ۲. عناوین شغلی در حال ادغام هستند؛ ماهیت کار در حال تفکیک و تخصصی شدن است.
+
+اکثر شرکت‌ها اکنون از عنوان چترمانند «مهندس هوش مصنوعی (AI Engineer)» استفاده می‌کنند، اما در داخل این نقش، شما به‌سرعت در حوزه‌های RAG، ایجنت‌ها، ارزیابی‌ها (Evals)، یا کارهای پلتفرم و Fine-tuning تخصصی می‌شوید. عنوان مستقل «مهندس پرامپت (Prompt Engineer)» عملاً از تابلوی اعلانات شغلی اصلی محو شده است؛ مهارت آن باقی مانده، اما عنوان شغلی مستقل از میان رفته است ([PE Collective](https://pecollective.com/blog/is-prompt-engineering-a-real-career/)؛ [Medium - Prompt Engineering Is Dead 2026](https://medium.com/write-a-catalyst/prompt-engineering-is-dead-2026-ai-systems-engineering-7acdbbcb2160)).
+
+**پیامد برای شما:** اگر در حال استخدام یک «Prompt Engineer» هستید، ۱۸ ماه از تحولات عقب مانده‌اید. مسئله واقعی را تعریف کنید (دقت ارزیابی؟ اشکال‌زدایی ایجنت؟ هماهنگ‌سازی مدل در ارتباط با مشتری؟) و برای آن کار مشخص استخدام کنید.
+
+### ۳. مهندس استقرار در سازمان مشتری (FDE) نقش پیشرو و ستاره سال ۲۰۲۶ است.
+
+نقش FDE (Forward Deployed Engineer) تا اواسط ۲۰۲۵ به عنوان یک دسته‌بندی متمایز در آزمایشگاه‌های مرز فناوری مطرح نبود. تا مه ۲۰۲۶، شرکت‌های OpenAI، Anthropic و Google هر کدام صدها نفر را در این موقعیت استخدام می‌کردند. مدیران عامل گوگل و Box این نقش را «پرتفاضاترین شغل در دنیای فناوری» نامیدند ([Fast Company](https://www.fastcompany.com/91541878/google-box-ceos-say-this-is-the-most-in-demand-job-in-tech)؛ [Hashnode FDE guide](https://hashnode.com/blog/a-complete-2026-guide-to-the-forward-deployed-engineer)). مجموع دریافتی (TC) در آزمایشگاه‌های frontier بین ۳۵۰ تا ۵۵۰ هزار دلار برای سطوح میدلول تا ارشد باقی ماند. تا ماه اکتبر، این نقش به فراتر از آزمایشگاه‌ها گسترش یافت: شرکت OpenAI یک شرکت استقرار مجزا تاسیس کرد، BCG X استخدام مستقیم FDE از دانشگاه را کلید زد، و Anthropic برنامه‌ای برای آموزش ۱۰,۰۰۰ نفر «مهندس استقرار در مرز فناوری» در میان مشتریان و شرکای تجاری خود تا پایان سال ۲۰۲۷ معرفی نمود.
+
+**پیامد برای شما:** خریداران بزرگ هوش مصنوعی (شرکت‌های Fortune 500، نهادهای دولتی، بیوتکنولوژی) حضور مهندسان در محل سازمان خود را به عنوان یک تعهد قراردادی طلب می‌کنند. نقش FDE به این دلیل وجود دارد که خریدار ارزش بالایی برای آن قائل است، نه لزوماً به این دلیل که کارآمدترین راه برای توسعه نرم‌افزار باشد.
+
+---
+
+## رده‌بندی نقش‌ها در سال ۲۰۲۶
+
+### عناوین تثبیت‌شده (با تقاضای استخدامی قوی)
+
+| عنوان شغلی | شرح نقش | محل درج آگهی |
 |-------|-------------|-------------------|
-| **AI Engineer** | The de facto general-purpose AI title. Other titles are collapsing into it. | Universal - most postings |
-| **LLM Engineer** | Centered on transformer fine-tuning, RAG, agents. Distinct from ML Engineer. | Mid-large companies; [iSmart LLM JD 2026](https://www.ismartrecruit.com/job-descriptions/llm-engineer) |
-| **ML Engineer / ML+AI Software Engineer** | Classic training-and-deployment role. | [levels.fyi ML/AI focus](https://www.levels.fyi/t/software-engineer/focus/ml-ai) |
-| **Applied AI Engineer** | Customer-embedded variant at frontier labs. | [Anthropic Applied AI](https://job-boards.greenhouse.io/anthropic/jobs/5116274008) |
-| **Member of Technical Staff (MTS)** | Deliberately ambiguous title that blurs research vs engineering. | OpenAI, Anthropic, Thinking Machines, Mistral ([Scout AI on MTS](https://scoutnow.ai/blog/rebirth-member-of-technical-staff)) |
-| **AI Research Engineer / Research Scientist** | Frontier labs only; PhD-preferred. | [Sundeep Teki - AI Research Eng 2026](https://www.sundeepteki.org/advice/the-ultimate-ai-research-engineer-interview-guide-cracking-openai-anthropic-google-deepmind-top-ai-labs) |
-| **AI Solutions Architect** | Heavy in enterprise. | EY, Caterpillar, Deloitte ([EY listing](https://careers.ey.com/ey/job/Amsterdam-AI-Solution-Architect-1083-HP/1258705801/)) |
-| **AI Platform Engineer** | Owns the internal LLM-ops platform. | [Augment Code spec 2026](https://www.augmentcode.com/guides/ai-platform-engineering-leader-job-spec) |
-| **AI Engineering Manager** | Highest-paying single role; median $293.5K ([AI Pulse benchmarks](https://theaimarketpulse.com/salaries/)). | Universal at scale-ups+ |
-| **AI Product Manager** | Required for nearly every B2B SaaS. | Universal ([Aakash Gupta](https://www.aakashg.com/product-manager-requirements/)) |
-| **AI Technical Program Manager (TPM)** | Specializations: "Responsible AI TPM," "AI Infrastructure TPM," "GenAI Customer Performance TPM" | Microsoft, AMD, Together AI |
+| **AI Engineer** | عنوان عمومی استاندارد در هوش مصنوعی. سایر عناوین در حال ادغام در آن هستند. | عمومی - بیشترین تعداد آگهی‌ها |
+| **LLM Engineer** | متمرکز بر Fine-tuning مدل‌های ترنسفورمر، RAG و ایجنت‌ها. متمایز از مهندس ML. | شرکت‌های متوسط و بزرگ؛ [شرح شغل LLM Engineer در iSmart](https://www.ismartrecruit.com/job-descriptions/llm-engineer) |
+| **ML Engineer / ML+AI Software Engineer** | نقش کلاسیک آموزش و استقرار (Deployment) مدل‌ها. | [تمرکز ML/AI در levels.fyi](https://www.levels.fyi/t/software-engineer/focus/ml-ai) |
+| **Applied AI Engineer** | نسخه مستقر در تعامل با مشتری در آزمایشگاه‌های مرز فناوری. | [Applied AI در Anthropic](https://job-boards.greenhouse.io/anthropic/jobs/5116274008) |
+| **Member of Technical Staff (MTS)** | عنوان عامدانه مبهم که مرز میان پژوهش و مهندسی را کمرنگ می‌کند. | OpenAI، Anthropic، Thinking Machines، Mistral ([بررسی عنوان MTS در Scout AI](https://scoutnow.ai/blog/rebirth-member-of-technical-staff)) |
+| **AI Research Engineer / Research Scientist** | اختصاصی آزمایشگاه‌های frontier؛ ترجیحاً با مدرک دکتری. | [راهنمای جامع مصاحبه Research Engineer 2026](https://www.sundeepteki.org/advice/the-ultimate-ai-research-engineer-interview-guide-cracking-openai-anthropic-google-deepmind-top-ai-labs) |
+| **AI Solutions Architect** | تمرکز بالا در بخش‌های سازمانی و شرکتی. | EY، Caterpillar، Deloitte ([آگهی استخدامی EY](https://careers.ey.com/ey/job/Amsterdam-AI-Solution-Architect-1083-HP/1258705801/)) |
+| **AI Platform Engineer** | مالکیت پلتفرم داخلی LLM-ops برای توسعه‌دهندگان سازمان. | [مشخصات شغلی لید پلتفرم AI در Augment Code](https://www.augmentcode.com/guides/ai-platform-engineering-leader-job-spec) |
+| **AI Engineering Manager** | بالاترین دستمزد در میان نقش‌های تکی؛ میانه ۲۹۳.۵ هزار دلار ([بنچمارک‌های AI Pulse](https://theaimarketpulse.com/salaries/)). | عمومی در شرکت‌های اسکیل‌آپ به بالا |
+| **AI Product Manager** | ضروری برای تقریباً تمام شرکت‌های B2B SaaS. | عمومی ([نیازمندی‌های محصولی آکاش گوپتا](https://www.aakashg.com/product-manager-requirements/)) |
+| **AI Technical Program Manager (TPM)** | گرایش‌های تخصصی: TPM هوش مصنوعی مسئولانه، TPM زیرساخت هوش مصنوعی، TPM عملکرد مشتری در GenAI | Microsoft، AMD، Together AI |
 
-### NEW titles since 2025
+### عناوین جدید از سال ۲۰۲۵ به بعد
 
-| Title | Why it emerged | Where it's posted |
+| عنوان شغلی | دلیل پیدایش | محل درج آگهی |
 |-------|----------------|-------------------|
-| **Forward Deployed Engineer (FDE)** | Frontier-AI buyers demand on-site engineering as a deliverable. | OpenAI (including the OpenAI Deployment Company), Anthropic, Google ([Anthropic FDE](https://job-boards.greenhouse.io/anthropic/jobs/4985877008)); consultancies hiring from campus (BCG X "Forward Deployed AI Engineer"); "Frontier Deployed Engineer" is a new variant at Anthropic customers and partners |
-| **AI Evaluation Engineer** | Eval work matured into a discrete discipline. | OpenAI ([Applied Evals](https://openai.com/careers/software-engineer-applied-evals-san-francisco/), [Frontier Evals](https://openai.com/careers/research-engineer-frontier-evals-and-environments-san-francisco/)), Apple, Scale AI, Distyl, Apex; embedded evaluators at Faculty (Accenture) |
-| **Agentic Systems Engineer / AI Agent Engineer** | Agents became their own engineering surface. | Teradata, GE Vernova, Deloitte, OpenAI ([Agent Infrastructure SWE](https://openai.com/careers/software-engineer-agent-infrastructure-san-francisco/)) |
-| **AI Reliability Engineer** | Production AI needs SRE-like discipline; distinct from traditional SRE. | Anthropic ([Staff/Sr AI Reliability](https://www.anthropic.com/jobs)); AI SRE as a category being defined by Resolve.ai, Rootly. |
-| **AI Security Engineer / LLM Red Team Specialist** | Prompt-injection defense and jailbreak research as a discipline. | Life360 ([Principal AI Security Engineer](https://www.remoterocketship.com/us/company/life360/jobs/principal-ai-security-engineer-ai-native-platform-united-states-remote/)); 10 emerging AI security roles enumerated by [Practical DevSecOps](https://www.practical-devsecops.com/emerging-ai-security-roles/). |
-| **MCP Engineer / MCP Software Engineer** | MCP adoption made server development its own specialty. | Descope ([MCP SWE](https://careers.descope.com/p/fe57f6224769-mcp-model-context-protocol-software-engineer)) |
-| **AI Operator / Computer-Use Specialist** | Tied to computer-use and persistent agents such as ChatGPT agent, Claude's Cowork (being merged into the main Claude app since September 16, 2026), and Microsoft Copilot Autopilot. | $75-120K specialist tier ([Coasty](https://coasty.ai/blog/best-computer-use-platform-2026-20260402)) |
+| **Forward Deployed Engineer (FDE)** | مشتریان بزرگ حضور فیزیکی مهندس در محل را درخواست می‌کنند. | OpenAI (شامل شرکت استقرار OpenAI)، Anthropic، Google ([استخدام FDE در Anthropic](https://job-boards.greenhouse.io/anthropic/jobs/4985877008))؛ شرکت‌های مشاوره از دانشگاه (BCG X) |
+| **AI Evaluation Engineer** | ارزیابی (Eval) به یک حوزه تخصصی و مستقل مهندسی تبدیل شده است. | OpenAI ([بخش Applied Evals](https://openai.com/careers/software-engineer-applied-evals-san-francisco/)، [Frontier Evals](https://openai.com/careers/research-engineer-frontier-evals-and-environments-san-francisco/))، Apple، Scale AI، Distyl، Apex؛ ارزیابی‌کنندگان مستقر در شرکت‌های مشاوره |
+| **Agentic Systems Engineer / AI Agent Engineer** | ایجنت‌ها به یک سطح مهندسی مستقل تبدیل شده‌اند. | Teradata، GE Vernova، Deloitte، OpenAI ([مهندسی زیرساخت Agent در OpenAI](https://openai.com/careers/software-engineer-agent-infrastructure-san-francisco/)) |
+| **AI Reliability Engineer** | سیستم‌های غیرقطعی به انضباطی مشابه SRE نیاز دارند؛ متمایز از SRE سنتی. | Anthropic ([نقش‌های ارشد و Staff پایداری در Anthropic](https://www.anthropic.com/jobs))؛ شکل‌گیری دسته‌بندی AI SRE توسط Resolve.ai و Rootly. |
+| **AI Security Engineer / LLM Red Team Specialist** | دفاع در برابر تزریق پرامپت و شکستن حفاظ‌ها (Jailbreak) به عنوان یک تخصص. | Life360 ([مهندس ارشد امنیت هوش مصنوعی](https://www.remoterocketship.com/us/company/life360/jobs/principal-ai-security-engineer-ai-native-platform-united-states-remote/))؛ ۱۰ نقش نوظهور امنیت در [Practical DevSecOps](https://www.practical-devsecops.com/emerging-ai-security-roles/). |
+| **MCP Engineer / MCP Software Engineer** | پذیرش پروتکل MCP ساخت سرور را به تخصصی جداگانه تبدیل کرد. | Descope ([مهندس نرم‌افزار MCP](https://careers.descope.com/p/fe57f6224769-mcp-model-context-protocol-software-engineer)) |
+| **AI Operator / Computer-Use Specialist** | مرتبط با ایجنت‌های کار با کامپیوتر نظیر ChatGPT agent، دستیار Cowork کلود، و Copilot Autopilot مایکروسافت. | سطح تخصصی ۷۵ تا ۱۲۰ هزار دلار ([گزارش پلتفرم‌های کار با کامپیوتر در Coasty](https://coasty.ai/blog/best-computer-use-platform-2026-20260402)) |
 
-### Roles disappearing or consolidating
+### نقش‌های در حال ناپدید شدن یا ادغام
 
-- **Prompt Engineer (standalone):** Title is dying. Skill remains as table stakes.
-- **Distillation Engineer:** Appears as a *responsibility* in fine-tuning/inference engineer postings, not its own widely-posted req.
-
----
-
-## Skills by Career Level
-
-### L4-L5 (Mid-level IC, 3-5 yrs)
-
-- Python production proficiency - **71% of AI job postings** ([Second Talent](https://www.secondtalent.com/resources/most-in-demand-ai-engineering-skills-and-salary-ranges/))
-- Hands-on with at least one major LLM provider SDK (OpenAI, Anthropic, Bedrock) and one orchestration framework - most commonly LangChain/LangGraph (34.3% of agentic AI postings; [Agentic Engineering Jobs](https://agentic-engineering-jobs.com/langchain-job-market-2026))
-- Vector DB fundamentals: Pinecone, Weaviate, pgvector - tool-specific experience is learnable in weeks; conceptual understanding matters most
-- RAG: chunking, hybrid search, BM25, reranking, retrieval evals
-- Containerization: Docker (15.4%), Kubernetes (17.6%)
-- Cloud: AWS (32.9%), Azure (26%)
-
-### L6-L7 (Senior / Staff)
-
-- Production LLM systems shipped end-to-end - "industry experience shipping real systems is a better signal than an academic credential"
-- Multi-tenant isolation across vector indexes, GPU memory, agent state
-- Eval frameworks (LangSmith / Langfuse / Braintrust); eval-gated CI/CD
-- Fine-tuning / LoRA / QLoRA / RLHF
-- Cost optimization - token budgets, model routing, caching
-- "Reason about LLMs, vector stores, and RAG as part of standard system design, not as a niche specialty" ([Design Gurus](https://designgurus.substack.com/p/system-design-interviews-changed))
-
-### L8+ (Principal / Leadership IC)
-
-- Own agent orchestration layers, model-routing, LLMOps platforms serving all eng teams
-- Runtime governance for non-deterministic systems
-- Architect for SOC 2 / HIPAA / EU AI Act compliance - trigger DPIA + FRIA under AI Act Article 27 (the Annex III high-risk obligations behind FRIA now start December 2, 2027; Article 50 transparency duties have applied since August 2, 2026)
-- "Define technical vision and scale engineering teams matters more than coding prowess alone"
-
-### Manager track (EM / Director)
-
-- AI Engineering Manager median $293.5K - highest-paying single role ([AI Pulse](https://theaimarketpulse.com/salaries/))
-- Hiring rubrics now weight: "can you put this person in a room with a PM and a junior eng and have them drive technical direction without making a mess" - 5 of 7 hiring managers surveyed ([Design Gurus](https://designgurus.substack.com/p/system-design-interviews-changed))
-- Mission alignment and safety judgment heavily weighted at frontier labs ([Anthropic EM guide](https://www.gethireready.com/interview-guides/engineering-manager-anthropic))
-
-### PM track (AI PM / AI TPM)
-
-- "AI is the new baseline, not a bonus skill"
-- 4+ yrs PM, ideally B2B SaaS or AI-driven product
-- Critical: "fewer than 1 in 4 senior AI PM candidates meet the bar for technical fluency + product rigor" ([Aakash Gupta](https://www.aakashg.com/product-manager-requirements/))
-- "Candidates who can show a working prototype outperform those who can only describe one"
+- **Prompt Engineer (به‌صورت مستقل):** این عنوان در حال از بین رفتن است؛ اما مهارت آن به عنوان پیش‌فرض اولیه در تمام نقش‌ها باقی می‌ماند.
+- **Distillation Engineer:** بیشتر به عنوان یک *مسئولیت* در آگهی‌های مهندسی Fine-tuning و استنتاج (Inference) ظاهر می‌شود، نه به عنوان یک درخواست شغلی مستقل و فراگیر.
 
 ---
 
-## What Job Listings Actually Require
+## مهارت‌ها بر اساس سطح شغلی
 
-### Must-Have (called out as required across 100+ postings)
+### سطح L4-L5 (مهندس سطح متوسط، ۳ تا ۵ سال سابقه)
 
-- Python production code, 3+ yrs
-- LLM API integration (OpenAI / Anthropic / Bedrock)
-- RAG pipeline experience including vector DB, chunking, retrieval evals
-- Production-grade observability and eval pipelines
-- Cloud + Kubernetes + IaC
-- Agent debugging / multi-step workflow tracing
-- Prompt injection / jailbreak defense for security-sensitive roles
+- تسلط به برنامه‌نویسی پایتون برای محیط عملیاتی (production) - **۷۱٪ از کل آگهی‌های شغلی هوش مصنوعی** ([Second Talent](https://www.secondtalent.com/resources/most-in-demand-ai-engineering-skills-and-salary-ranges/))
+- تجربه عملی با حداقل یک SDK اصلی ارائه‌دهندگان LLM (شامل OpenAI، Anthropic، Bedrock) و یک فریم‌ورک ارکستراسیون - عمدتاً LangChain/LangGraph (۳۴.۳٪ از آگهی‌های ایجنتیک؛ [بازار کار لنگ‌چین ۲۰۲۶](https://agentic-engineering-jobs.com/langchain-job-market-2026))
+- مبانی پایگاه داده برداری (Vector Database): نظیر Pinecone، Weaviate، pgvector - ابزارها را می‌توان در چند هفته آموخت، درک مفاهیم بنیادی اولویت دارد
+- مهارت‌های RAG: فرآیند Chunking، جستجوی ترکیبی (Hybrid search)، الگوریتم BM25، رتبه‌بندی مجدد (Reranking)، و ارزیابی بازیابی
+- کانتینرسازی: Docker (۱۵.۴٪)، Kubernetes (۱۷.۶٪)
+- پلتفرم‌های ابری: AWS (۳۲.۹٪)، Azure (۲۶٪)
 
-### Nice-to-Have (explicitly listed as "plus" or "bonus")
+### سطح L6-L7 (سطح ارشد / Staff)
 
-- Publications or OSS contributions; working portfolio of 3-5 projects beats a paper for applied roles
-- CUDA / GPU-level optimization - must-have at NVIDIA/frontier labs, nice-to-have elsewhere
-- Distillation / model compression
-- Distributed inference experience
-- Java/C++ for legacy enterprise integration
-- Reinforcement learning beyond RLHF
+- سابقه عرضه سیستم‌های LLM سرتاسری در محیط عملیاتی - «تجربه صنعتی عرضه سیستم‌های واقعی سیگنال بسیار قوی‌تری از مدارک آکادمیک است»
+- ایزوله‌سازی چندمستأجره (Multi-tenant) در نمایه‌های برداری، حافظه GPU، و وضعیت ایجنت
+- فریم‌ورک‌های ارزیابی (LangSmith / Langfuse / Braintrust) و پایپ‌لاین‌های CI/CD مجهز به گیت‌های ارزیابی کیفی
+- مباحث Fine-tuning / LoRA / QLoRA / RLHF
+- بهینه‌سازی هزینه - بودجه‌های توکن، مسیریابی مدل (Routing)، و Caching
+- توانایی استدلال درباره LLMها، پایگاه‌های برداری و RAG به عنوان بخشی از طراحی سیستم استاندارد، نه به عنوان یک تخصص محدود و ایزوله ([Design Gurus](https://designgurus.substack.com/p/system-design-interviews-changed))
 
-### Top Tech Stack in Listings (May 2026)
+### سطح L8 به بالا (Principal / رهبری فنی)
 
-Ranked by frequency:
+- هدایت لایه‌های ارکستراسیون ایجنت، مسیریابی مدل، و پلتفرم‌های LLMOps که به تمام تیم‌های مهندسی سرویس می‌دهند
+- حاکمیت در زمان اجرا برای سیستم‌های با ماهیت غیرقطعی (Non-deterministic)
+- طراحی معماری منطبق با الزامات SOC 2 / HIPAA / قانون هوش مصنوعی اتحادیه اروپا (EU AI Act)
+- تعریف چشم‌انداز فنی و توسعه تیم‌های مهندسی با اهمیتی بالاتر از توانایی صرف کدنویسی
 
-1. **Python** - 71% of all AI postings
-2. **PyTorch / JAX** - universal at frontier labs
-3. **LangChain / LangGraph** - 34.3% of agentic postings, #1 framework
-4. **LlamaIndex** - co-occurs in 38% of LangChain listings
-5. **AWS (32.9%) / Azure (26%) / GCP / Vertex / Bedrock**
-6. **Kubernetes (17.6%) + Docker (15.4%)**
-7. **Vector DBs:** Pinecone, Weaviate, Qdrant, Chroma, pgvector
-8. **MCP (Model Context Protocol)** - now ["a fundamental requirement"](https://medium.com/@adnanmasood/the-rise-of-model-context-protocol-mcp-skills-5f0d6a1c3579) at cutting-edge teams
-9. **Observability:** LangSmith, Langfuse, Braintrust, Arize
-10. **Inference engines:** vLLM, SGLang, TensorRT-LLM
-11. **Terraform / Helm / Ray / Kubeflow / MLflow / Feast** - internal platform stack
-12. **Provider SDKs:** OpenAI Agents SDK, Claude SDK, Vercel AI SDK, Mastra, Pydantic AI
+### مسیر مدیریتی (مدیر مهندسی / Director)
 
-### By Company Tier
+- میانه دستمزد مدیر مهندسی هوش مصنوعی ۲۹۳.۵ هزار دلار - بالاترین پرداختی در بین نقش‌های تکی ([AI Pulse](https://theaimarketpulse.com/salaries/))
+- معیارهای استخدام اکنون این موضوع را می‌سنجند: «آیا می‌توانید این فرد را در یک اتاق با یک مدیر محصول و یک مهندس جونیور قرار دهید و او بتواند بدون ایجاد آشفتگی، جهت‌گیری فنی را هدایت کند»
+- همسویی با ماموریت و قضاوت ایمنی با وزن بسیار بالا در آزمایشگاه‌های پیشرو سنجیده می‌شود ([راهنمای مصاحبه EM در Anthropic](https://www.gethireready.com/interview-guides/engineering-manager-anthropic))
 
-- **Frontier labs** (Anthropic, OpenAI, SpaceXAI/xAI): PyTorch/JAX, vLLM/custom inference, internal evals, MCP servers, CUDA/GPU-level optimization
-- **Scale-ups** (Cursor, Harvey, Sierra, Decagon, Glean, Perplexity): TypeScript + Python mix, LangGraph / OpenAI Agents SDK, Pinecone/pgvector, LangSmith/Braintrust evals
-- **Enterprises** (Deloitte, EY, Caterpillar, Citi): Azure-heavy, Bedrock, LangChain, governance/MLOps focus, on-prem capability
+### مسیر مدیریت محصول (AI PM / AI TPM)
 
-### Non-Technical Requirements
-
-- **Communication / cross-functional collaboration** - table stakes at senior+
-- **Customer-facing skills** - load-bearing for FDE roles; Anthropic requires 3+ yrs in "technical, customer-facing role"
-- **OSS contributions** - Anthropic states explicitly: ["if you have done interesting independent research, written an insightful blog post, or made substantial contributions to open-source software, put that at the TOP of your resume"](https://www.sundeepteki.org/advice/how-to-get-hired-at-openai-anthropic-and-google-deepmind-in-2026)
-- **Publications** - required for AI Research Engineer roles; applied roles weight shipped systems and open-source work over a PhD
-- **Mission alignment** - Anthropic explicitly screens for it via a Behavioral and Values round
-- **Regulatory experience:** SOC 2 / HIPAA / FedRAMP for enterprise; EU AI Act familiarity (FRIA/DPIA) for EU operations
-- **Security clearance** - required for Lockheed and federal-adjacent roles
+- تسلط بر هوش مصنوعی خط پایه اولیه است، نه یک مهارت امتیازی مازاد
+- بیش از ۴ سال سابقه PM، ترجیحاً در حوزه B2B SaaS یا محصولات هوش مصنوعی
+- معیار کلیدی: «کمتر از ۱ نفر از هر ۴ داوطلب ارشد AI PM به حد نصاب تسلط فنی و انضباط محصولی می‌رسند» ([آکاش گوپتا](https://www.aakashg.com/product-manager-requirements/))
+- داوطلبانی که می‌توانند یک پیش‌نمایش یا پروتوتایپ فعال را نشان دهند عملکرد بسیار بهتری نسبت به افرادی دارند که صرفاً آن را توصیف می‌کنند
 
 ---
 
-## Compensation Reality
+## آنچه آگهی‌های شغلی در عمل می‌خواهند
 
-> Public-source ranges only. Verify with [levels.fyi](https://www.levels.fyi/) for current data. All figures USD unless noted. The **Sweep** column says when each row was last checked: "Nov 2026" rows come from levels.fyi pages last updated November 5, 2026 (Google AI Engineer: October 19), and "Oct 2026" rows from levels.fyi pages captured October 2, 2026 (both self-reported, verified against offer letters where available; n is the submission count); "Sep 2026" rows come from the job-board and prep-vendor sources named in the row, and "May 2026" rows have not been re-run since the May 17 sweep.
+### موارد ضروری (در بیش از ۱۰۰ آگهی به عنوان شرط لازم ذکر شده است)
 
-| Tier / Company | Level | Total Comp | Sweep |
+- کدنویسی تولیدی با پایتون، سابقه ۳ سال به بالا
+- ادغام با APIهای LLM (شرکت‌های OpenAI / Anthropic / Bedrock)
+- تجربه پایپ‌لاین RAG شامل پایگاه داده برداری، Chunking، و ارزیابی بازیابی
+- پایپ‌لاین‌های مشاهده‌پذیری و ارزیابی در سطح محیط عملیاتی
+- زیرساخت‌های Cloud + Kubernetes + IaC
+- اشکال‌زدایی Agent و ردیابی (Tracing) جریان‌های کاری چندمرحله‌ای
+- دفاع در برابر تزریق پرامپت و Jailbreak برای نقش‌های حساس از نظر امنیتی
+
+### موارد دارای امتیاز مثبت (ذکر شده به عنوان مزیت)
+
+- مقالات پژوهشی یا مشارکت در پروژه‌های متن‌باز؛ داشتن یک پورتفولیو از ۳ تا ۵ پروژه واقعی در نقش‌های کاربردی از داشتن مقاله ارزشمندتر است
+- بهینه‌سازی در سطح CUDA و GPU - برای انویدیا و آزمایشگاه‌های پیشرو الزامی است، در سایر جاها امتیاز مثبت تلقی می‌شود
+- تقطیر دانش (Distillation) و فشرده‌سازی مدل
+- تجربه استنتاج توزیع‌شده (Distributed inference)
+- تسلط بر جاوا یا C++ برای اتصال به سیستم‌های قدیمی سازمانی
+- یادگیری تقویتی فراتر از RLHF
+
+### پرتکرارترین استک‌های فناوری در آگهی‌ها (مه ۲۰۲۶)
+
+رتبه‌بندی بر اساس فراوانی تکرار:
+
+۱. **Python** - در ۷۱٪ از کل آگهی‌های هوش مصنوعی
+۲. **PyTorch / JAX** - فراگیر در تمام آزمایشگاه‌های پیشرو
+۳. **LangChain / LangGraph** - در ۳۴.۳٪ از آگهی‌های ایجنتیک، فریم‌ورک شماره ۱
+۴. **LlamaIndex** - همراه با ۳۸٪ از آگهی‌های LangChain
+۵. **سرویس‌های ابری:** AWS (۳۲.۹٪) / Azure (۲۶٪) / GCP / Vertex / Bedrock
+۶. **کانتینرها:** Kubernetes (۱۷.۶٪) + Docker (۱۵.۴٪)
+۷. **پایگاه‌های داده برداری:** Pinecone، Weaviate، Qdrant، Chroma، pgvector
+۸. **پروتکل MCP (Model Context Protocol)** - اکنون [یک نیازمندی اساسی](https://medium.com/@adnanmasood/the-rise-of-model-context-protocol-mcp-skills-5f0d6a1c3579) در تیم‌های نوآور
+۹. **ابزارهای مشاهده‌پذیری:** LangSmith، Langfuse، Braintrust، Arize
+۱۰. **موتورهای استنتاج:** vLLM، SGLang، TensorRT-LLM
+۱۱. **زیرساخت پلتفرم:** Terraform / Helm / Ray / Kubeflow / MLflow / Feast
+۱۲. **بسته‌های SDK ارائه‌دهندگان:** OpenAI Agents SDK، Claude SDK، Vercel AI SDK، Mastra، Pydantic AI
+
+---
+
+## واقعیت دستمزدها و جبران خدمت
+
+> دامنه‌های مبتنی بر منابع عمومی. برای آمار روز با [levels.fyi](https://www.levels.fyi/) تطبیق دهید. تمام مبالغ به دلار آمریکا است مگر اینکه ذکر شده باشد. ستون **بررسی** نشان می‌دهد هر ردیف آخرین‌بار چه زمانی ارزیابی شده است: ردیف‌های «نوامبر ۲۰۲۶» برگرفته از صفحات levels.fyi به‌روزرسانی‌شده تا ۵ نوامبر ۲۰۲۶ هستند (Google AI Engineer: ۱۹ اکتبر)، و ردیف‌های «اکتبر ۲۰۲۶» متعلق به ۲ اکتبر ۲۰۲۶؛ ردیف‌های «سپتامبر ۲۰۲۶» از مراجع اعلام‌شده در ردیف و ردیف‌های «مه ۲۰۲۶» از بررسی ۱۷ مه استخراج شده‌اند.
+
+| رده / شرکت | سطح | کل جبران خدمت (TC) | بررسی |
 |---|---|---|---|
-| **Anthropic** | All SWE | Median $882.5K TC (n=49) | Nov 2026 |
-| **Anthropic** | Senior SWE | $621K TC (per-level base no longer shown) | Nov 2026 |
-| **Anthropic** | Lead SWE | $831K TC (the page now also shows a Software Engineer level at $482.5K) | Nov 2026 |
-| **Anthropic** | Staff SWE | $1.41M TC | Nov 2026 |
-| **OpenAI** | All SWE | $249K (L2) to $1.89M (L7) TC; median $600K (n=249); L6 at $1.80M | Nov 2026 |
-| **OpenAI** | L5 SWE | $934K TC | Nov 2026 |
-| **OpenAI MTS / Research Scientist** | - | $245K – $685K base (federal filing) | May 2026 |
-| **OpenAI FDE** | Mid-senior | $153K-$325K base; est. $350K-$550K TC (Aced estimate) | Sep 2026 |
-| **OpenAI Deployment Company** | Founding FDE | Up to $400K (listing via a16z jobs; up to 50% travel) | Sep 2026 |
-| **Cursor (now part of SpaceX)** | SWE | Median $950K TC ($325K base plus $625K annualized stock), highest $1.65M (n=18) | Nov 2026 |
-| **Sierra** | SWE | Median $460K TC ($300K base, $150K stock, $10K bonus), highest $789K (n=25) | Nov 2026 |
-| **Thinking Machines Lab** | All eng | $450K – $500K base (Q1 H-1B filings) | May 2026 |
-| Google AI Engineer | L3-L6 | Median $240K TC (n=38); per-level averages L3 $196K, L5 $355K, L6 $583K, no L4 data (the October 2 capture showed a $260K median and L6 at $1.15M) | Nov 2026 |
-| Microsoft AI Engineer | All | Median $282K (n=9); May range $238K – $355K+ TC | Oct 2026 |
-| **US AI Engineer (levels.fyi)** | All | Median $160K (p25 $110K, p75 $212.5K, p90 $287.5K; n=332) | Nov 2026 |
-| **US National AI Engineer** | Entry (0-2y) | $90-135K base / $110-160K TC | May 2026 |
-| **US National AI Engineer** | Mid (3-5y) | $140-210K base / $170-260K TC | May 2026 |
-| **US National AI Engineer** | Senior (6-9y) | $180-280K base / $220-350K+ TC | May 2026 |
-| **US National AI Engineer** | Staff/Principal (10+y) | $250-400K+ base / $350-600K+ TC | May 2026 |
-| BCG X Forward Deployed AI Engineer | Campus hire | $110K-$190K base (secondary reporting, unconfirmed; the same band appears on BCG X's experienced-hire FDE posting) | Sep 2026 |
-| RAG Engineer Senior | - | $195-290K base; $400K+ TC at frontier | May 2026 |
-| LLM Fine-Tuning Specialist | - | $195K-$350K | May 2026 |
-| AI Security Engineer | - | $152-210K | May 2026 |
-| LLM Red Team Specialist | - | $160-230K | May 2026 |
-| **AI Engineering Manager** | - | $293.5K median (highest-paying single role) | May 2026 |
-| AI Product Manager | - | $141K – $250K (median $159K) | May 2026 |
-| **Agentic AI Architect** | - | $260K – $420K base | May 2026 |
-| AI Evaluation Engineer | - | Too few public postings for a stable range; companies level it against their senior SWE band. Use the US National Senior row as the anchor. | May 2026 |
-| MCP / Integrations Engineer | - | New title with thin public data; typically leveled as senior platform engineering. Anchor to the senior SWE band. | May 2026 |
-| London (Quant fund / FAANG) | Senior ML | £140-180K base; £200K+ TC | May 2026 |
-| London (Google DeepMind) | Senior | £110-155K base + RSU | May 2026 |
-| Berlin / Germany | Senior | €95-130K | May 2026 |
-| **Bangalore (Top GCC / AI-first)** | Senior | ₹1-2 Cr TC | May 2026 |
-| Bangalore (Fresh PhD / top MS) | Entry | ₹22-32 LPA | May 2026 |
-| Singapore | Avg | S$221,200 | May 2026 |
-| Singapore (Principal/Lead) | 10+y | S$323,505 | May 2026 |
-
-**Sources:** [levels.fyi Anthropic](https://www.levels.fyi/companies/anthropic/salaries/software-engineer), [Anthropic S-1 on EDGAR](https://www.sec.gov/Archives/edgar/data/2130357/000162828026067168/), [Anthropic S-1/A (Nov 2, 2026)](https://www.sec.gov/Archives/edgar/data/2130357/000162828026068676/anthropicpbc-sx1ax1.htm), [OpenAI](https://www.levels.fyi/companies/openai/salaries/software-engineer), [Cursor](https://www.levels.fyi/companies/cursor/salaries/software-engineer), [Sierra](https://www.levels.fyi/companies/sierra/salaries/software-engineer), [Aced OpenAI FDE](https://www.aced.io/jobs/fde/openai), [a16z jobs on the Deployment Company](https://a16zjobs.substack.com/p/openais-new-deployment-arm-is-hiring), [Management Consulted on BCG X FDE](https://managementconsulted.com/bcg-forward-deployed-ai-engineer/), [Pin AI Comp Guide 2026](https://www.pin.com/blog/ai-compensation-salary-guide/), [Kore1 salary guide](https://www.kore1.com/ai-engineer-salary-guide/), [AI Pulse benchmarks](https://theaimarketpulse.com/salaries/), [Career Check London 2026](https://www.careercheck.io/blog/ml-engineer-salary-london-2026), [Zen van Riel Europe](https://zenvanriel.com/job/ai-engineer-salary-europe/), [Scaler India](https://www.scaler.com/topics/ai-ml-engineer-salary-complete-guide/).
-
-### Compensation insight
-
-The gap between frontier-lab SWE medians ($882.5K at Anthropic and $600K at OpenAI on levels.fyi, November 5, 2026) and the US AI Engineer median ($160K) is roughly **3.75-5.5x**. Choose your company tier with eyes open.
-
-Three cautions before you anchor a negotiation on these rows:
-
-- **Small, self-reported samples move.** OpenAI's median fell from $710K (October 2, n=239) to $640K (November 1, n=248) to $600K (November 5, n=249): one added submission moved it $40K. Its L5 reads $934K (against $1.15M in the May sweep), and the L6-above-L7 anomaly of early November is gone. Anthropic's median held at $882.5K on fewer submissions (55 down to 49). Cursor (n=18, down from 22) and Microsoft AI Engineer (n=9) are too thin to quote as market rates.
-- **FDE pay depends on who employs you.** Frontier-lab FDEs sit at $350K-$550K estimated TC; consulting FDEs hired from campus reportedly start on a $110K-$190K base. Same title, roughly a third of the pay.
-- **Pre-IPO equity now comes with a filed schedule.** Anthropic filed its S-1 publicly on October 26, 2026 and Amendment No. 1 on November 2, which extends the financials to September 30, 2026 and still leaves the price range and share count blank (planned listing: Nasdaq Global Select Market, symbol ANT, with Goldman Sachs and Morgan Stanley as lead underwriters). The amendment answers most of the questions a candidate would ask:
-  - **Lock-up:** non-founder directors, officers, and certain employees are locked up until the earlier of the Q1 2027 earnings release or day 180, with up to 10% released on the first trading day and up to another 35% after the FY2026 annual results. Holders above 0.5% and the seven co-founders are locked up until the earlier of the Q3 2027 earnings release or day 365.
-  - **RSU settlement and tax:** RSUs vest only when both a service condition and a performance condition are met, and the performance condition is the registration statement becoming effective. At listing, RSUs whose service condition is met are net-settled with shares withheld for taxes, and Anthropic will use part of the offering's net proceeds to cover the withholding. Years of accumulated vested RSUs become taxable at once, which matters if you are weighing an offer or leaving before listing.
-  - **New grants:** RSUs approved after September 30 take effect the day before the registration statement becomes effective, are valued at the IPO price, and vest on service alone, generally over four years. For an offer signed now, ask which price sets your grant.
-  - **Scale of equity pay:** stock-based compensation was $3.3B for the nine months to September 30, 2026, against $591M a year earlier and $1.2B for all of 2025, with about $32.3B of unrecognized RSU expense still to come. Offer documents may also mention a new Class E common stock for employees: it has no economic rights and one vote on certain limited matters, so it is not compensation.
-  - **Stability signal:** company-reported headcount grew about 170% in the year to September 30, 2026, to about 5,300 (up from about 940 at the end of 2024), while revenue per employee rose from $1.4M to over $6.6M, and the filing lists "periods of accelerated hiring followed by corrective actions that may disrupt operations or reduce morale" as a risk factor. Still ask about the refresh policy once the stock is public.
-- **Equity is harder to value around a deal.** Outright acquisitions keep landing: Cursor became part of SpaceX in August 2026 (reported at about $60B in SpaceX stock), and NVIDIA confirmed on September 3 that it is buying Hugging Face for $12.93B, with no closing date disclosed. License-and-hire deals, a common exit for startup teams, are still being struck (NVIDIA's reported roughly $6B licensing deal with Poolside includes offers to about 109 of its employees) but now carry antitrust risk: the DOJ is reportedly probing NVIDIA's Groq deal (reported at about $17-20B; terms undisclosed). Ask how unvested equity converts in an acquisition and what happens to employees who are not part of the hire.
+| **Anthropic** | کل مهندسان نرم‌افزار | میانه دریافتی $882.5K (تعداد نمونه ۴۹) | نوامبر ۲۰۲۶ |
+| **Anthropic** | مهندس نرم‌افزار ارشد | دریافتی $621K (پایه حقوق تفکیکی دیگر نمایش داده نمی‌شود) | نوامبر ۲۰۲۶ |
+| **Anthropic** | مهندس نرم‌افزار Lead | دریافتی $831K (صفحه اکنون سطح Software Engineer را با $482.5K نیز نشان می‌دهد) | نوامبر ۲۰۲۶ |
+| **Anthropic** | مهندس نرم‌افزار Staff | دریافتی $1.41M | نوامبر ۲۰۲۶ |
+| **OpenAI** | کل مهندسان نرم‌افزار | از $249K (سطح L2) تا $1.89M (سطح L7)؛ میانه $600K (تعداد نمونه ۲۴۹)؛ سطح L6 معادل $1.80M | نوامبر ۲۰۲۶ |
+| **OpenAI** | مهندس نرم‌افزار L5 | دریافتی $934K | نوامبر ۲۰۲۶ |
+| **OpenAI MTS / Research Scientist** | - | پایه $245K تا $685K (ثبت فدرال) | مه ۲۰۲۶ |
+| **OpenAI FDE** | سطح متوسط تا ارشد | پایه $153K-$325K؛ تخمین TC بین $350K-$550K (تخمین Aced) | سپتامبر ۲۰۲۶ |
+| **OpenAI Deployment Company** | مهندس موسس FDE | تا $400K (آگهی از طریق a16z jobs؛ تا ۵۰٪ سفر کاری) | سپتامبر ۲۰۲۶ |
+| **Cursor (اکنون بخشی از SpaceX)** | مهندس نرم‌افزار | میانه دریافتی $950K (شامل $325K پایه به علاوه $625K سهام سالانه)، بالاترین رقم $1.65M (تعداد نمونه ۱۸) | نوامبر ۲۰۲۶ |
+| **Sierra** | مهندس نرم‌افزار | میانه دریافتی $460K (شامل $300K پایه، $150K سهام، $10K پاداش)، بالاترین رقم $789K (تعداد نمونه ۲۵) | نوامبر ۲۰۲۶ |
+| **Thinking Machines Lab** | کل مهندسان | پایه $450K تا $500K (داده‌های ویزای H-1B در Q1) | مه ۲۰۲۶ |
+| Google AI Engineer | سطوح L3 تا L6 | میانه $240K (تعداد ۳۸)؛ میانگین L3 برابر $196K، سطح L5 برابر $355K، سطح L6 برابر $583K (بررسی ۲ اکتبر میانه $260K و سطح L6 را $1.15M نشان می‌داد) | نوامبر ۲۰۲۶ |
+| Microsoft AI Engineer | کل سطوح | میانه $282K (تعداد ۹)؛ دامنه مه معادل $238K تا $355K+ | اکتبر ۲۰۲۶ |
+| **مهندس هوش مصنوعی آمریکا (levels.fyi)** | کل سطوح | میانه $160K (صدک ۲۵ معادل $110K، صدک ۷۵ معادل $212.5K، صدک ۹۰ معادل $287.5K؛ تعداد ۳۳۲) | نوامبر ۲۰۲۶ |
+| **میانگین ملی آمریکا (AI Engineer)** | سطح ورودی (۰-۲ سال) | پایه $90-135K / کل دریافتی $110-160K | مه ۲۰۲۶ |
+| **میانگین ملی آمریکا (AI Engineer)** | سطح متوسط (۳-۵ سال) | پایه $140-210K / کل دریافتی $170-260K | مه ۲۰۲۶ |
+| **میانگین ملی آمریکا (AI Engineer)** | سطح ارشد (۶-۹ سال) | پایه $180-280K / کل دریافتی $220-350K+ | مه ۲۰۲۶ |
+| **میانگین ملی آمریکا (AI Engineer)** | سطح Staff/Principal (۱۰+ سال) | پایه $250-400K+ / کل دریافتی $350-600K+ | مه ۲۰۲۶ |
+| BCG X Forward Deployed AI Engineer | استخدام مستقیم از دانشگاه | پایه $110K-$190K (گزارش ثانویه، تاییدنشده؛ همین دامنه در آگهی افراد باسابقه نیز هست) | سپتامبر ۲۰۲۶ |
+| مهندس ارشد RAG | - | پایه $195-290K؛ در آزمایشگاه‌های پیشرو بالای $400K | مه ۲۰۲۶ |
+| متخصص Fine-Tuning مدل‌های LLM | - | دامنه $195K-$350K | مه ۲۰۲۶ |
+| مهندس امنیت هوش مصنوعی | - | دامنه $152-210K | مه ۲۰۲۶ |
+| متخصص تیم قرمز LLM (Red Team) | - | دامنه $160-230K | مه ۲۰۲۶ |
+| **مدیر مهندسی هوش مصنوعی** | - | میانه $293.5K (بالاترین پرداختی در میان نقش‌های انفرادی) | مه ۲۰۲۶ |
+| مدیر محصول هوش مصنوعی (AI PM) | - | دامنه $141K تا $250K (میانه $159K) | مه ۲۰۲۶ |
+| **معمار سیستم‌های هوش مصنوعی Agentic** | - | پایه $260K تا $420K | مه ۲۰۲۶ |
+| مهندس ارزیابی هوش مصنوعی (Eval) | - | آگهی‌های عمومی محدود؛ معمولاً هم‌تراز با مهندس نرم‌افزار ارشد سطح‌بندی می‌شود. ردیف مهندس ارشد آمریکا را به عنوان مبنا در نظر بگیرید. | مه ۲۰۲۶ |
+| مهندس ادغام و پروتکل MCP | - | عنوان نوظهور با داده‌های محدود؛ معمولاً هم‌تراز با مهندسی پلتفرم ارشد است. | مه ۲۰۲۶ |
+| لندن (صندوق‌های Quant / FAANG) | مهندس ارشد یادگیری ماشین | پایه £140-180K؛ کل دریافتی £200K+ | مه ۲۰۲۶ |
+| لندن (Google DeepMind) | سطح ارشد | پایه £110-155K به علاوه سهام (RSU) | مه ۲۰۲۶ |
+| برلین / آلمان | سطح ارشد | دامنه €95-130K | مه ۲۰۲۶ |
+| **بنگلور (مراکز GCC برتر / شرکت‌های AI-first)** | سطح ارشد | کل دریافتی ۱ تا ۲ کرور روپیه (₹1-2 Cr) | مه ۲۰۲۶ |
+| بنگلور (فارغ‌التحصیلان دکتری / کارشناسی ارشد برتر) | سطح ورودی | دامنه ۲۲ تا ۳۲ لاخ روپیه (₹22-32 LPA) | مه ۲۰۲۶ |
+| سنگاپور | میانگین کل | S$221,200 دلار سنگاپور | مه ۲۰۲۶ |
+| سنگاپور (Principal/Lead) | بالای ۱۰ سال سابقه | S$323,505 دلار سنگاپور | مه ۲۰۲۶ |
 
 ---
 
-## Geographic & Industry Distribution
+### بینش جبران خدمت (Compensation Insight)
 
-- **The hubs are also the most exposed markets:** Indeed Hiring Lab's metro-level GenAI exposure score (August 25, 2026; US average about 44) is highest in San Jose (59), Seattle (57), Washington DC (54), San Francisco (53), and Austin (52). Indeed's reading is that more local work could be reshaped, not that the jobs disappear.
-- **Data-center build-out pays, with strings attached:** Indeed's follow-up study (August 13, 2026) finds premiums over equivalent non-data-center roles of 63% (about $50,000 a year) for facilities managers, about $25,000 at the median for network engineers, and 42% per hour for installation and maintenance work. The tradeoffs: 26% of data-center postings specify up to 50% travel, and data-center IT staff are nearly 40x as likely to work nights. Demand is still climbing: Indeed's data-center postings index reached 247 in its October 22 snapshot (June 2024 = 100), up 147% since June 2024, while tech postings outside data centers sat at 99.
-- **H-1B is contested, not settled:** a September 18, 2026 proclamation renewed the $100,000 fee on new H-1B petitions for September 21, 2026 to September 21, 2027, but the fee has not been collected since a federal court vacated the implementing policy on June 8, and Forbes reported on October 1 that a second federal judge struck down the renewed version. Separately, the wage-weighted H-1B lottery (four entries at wage Level IV, one at Level I) took effect February 27, 2026, which favors senior offers and compounds the entry-level squeeze for international new grads.
-- **Two-tier market:** in January 2026, Indeed Hiring Lab reported that about 95% of hiring firms had not posted an AI job, with adoption concentrated among the largest firms ([Indeed Hiring Lab Jan 2026](https://www.hiringlab.org/2026/01/16/ai-adoption-accelerating-still-concentrated-among-largest-firms/))
-- **Enterprise adoption:** 72% of enterprises have at least one AI workload in production as of Q1 2026 ([Medha Cloud](https://medhacloud.com/blog/ai-adoption-statistics-2026))
-- **Consulting boom:** BCG reports 25% of $14.4B 2025 revenue ($3.6B) was AI consulting ([Metaintro BCG](https://www.metaintro.com/blog/bcg-25-percent-ai-revenue-consulting-jobs-2026))
-- **Remote-friendly:** LangChain ecosystem 35.2% remote, 48.4% hybrid, 16.4% strictly onsite
-- **AI share of postings at a record:** AI-related postings reached 7.3% of all US postings in Indeed Hiring Lab's October 22, 2026 snapshot, past the previous peak of 3.3% in 2022 ([Indeed Hiring Lab, Oct 2026](https://hiringlab.indeed.com/2026/10/22/us-labor-market-snapshot-october-2026/)). The count is keyword-based (ML, data science, GenAI, ChatGPT), so it measures AI mentions, not AI-engineer headcount. The same snapshot puts software development postings at about 79 (February 2020 = 100), the lowest of the sectors shown, and posted wages up 2.4% year over year in September against 3.7% CPI inflation
+شکاف میان میانه دریافتی مهندسان نرم‌افزار در آزمایشگاه‌های frontier (معادل ۸۸۲.۵ هزار دلار در Anthropic و ۶۰۰ هزار دلار در OpenAI در levels.fyi، ۵ نوامبر ۲۰۲۶) و میانه مهندسان هوش مصنوعی در کل آمریکا (۱۶۰ هزار دلار) تقریباً **۳.۷۵ تا ۵.۵ برابر** است. رده شرکت مورد نظر خود را با چشمانی باز انتخاب کنید.
+
+سه نکته احتیاطی پیش از استناد به این ارقام در مذاکرات حقوق:
+
+- **نمونه‌های کوچک و خودگزارش‌شده نوسان دارند.** میانه دریافتی OpenAI از ۷۱۰ هزار دلار در ۲ اکتبر به ۶۴۰ هزار دلار در ۱ نوامبر و ۶۰۰ هزار دلار در ۵ نوامبر تغییر یافت: افزودن یک نمونه آماری میانه را ۴۰ هزار دلار تغییر داد. در Cursor و مایکروسافت نیز حجم نمونه‌ها برای استناد به عنوان نرخ قطعی بازار بسیار اندک است.
+- **حقوق FDE بستگی به این دارد که چه کسی کارفرمای شماست.** مهندسان FDE در آزمایشگاه‌های پیشرو تخمین دریافتی ۳۵۰ تا ۵۵۰ هزار دلاری دارند؛ اما مهندسان FDE در شرکت‌های مشاوره که مستقیم از دانشگاه استخدام می‌شوند با پایه ۱۱۰ تا ۱۹۰ هزار دلار شروع می‌کنند. عنوان شغلی یکسان است، اما دریافتی حدود یک‌سوم است.
+- **سهام ماقبل عرضه عمومی (Pre-IPO) اکنون با یک جدول زمان‌بندی رسمی همراه است.** ثبت اصلاحیه فرم S-1 شرکت Anthropic در ۲ نوامبر ۲۰۲۶ اطلاعات شفافی را به داوطلبان ارائه می‌دهد:
+  - **دوره منع فروش (Lock-up):** مدیران، مسئولان و برخی کارمندان تا زمان انتشار گزارش مالی Q1 2027 یا روز ۱۸۰ام حق فروش ندارند، و حداکثر ۱۰٪ در روز اول معاملات و تا ۳۵٪ دیگر پس از نتایج سالانه مالی ۲۰۲۶ آزاد می‌شود.
+  - **تسویه RSU و مالیات:** واحدهای RSU تنها زمانی نقد می‌شوند که هم شرط خدمت و هم شرط عملکرد محقق شود؛ شرط عملکرد همان تاریخ رسمی شدن ثبت سهام است. در زمان عرضه، سهام مشمول کسر مالیات می‌شود و مالیات چند سال سابقه انباشته به یک‌باره تعلق می‌گیرد که اگر قصد ترک شرکت یا بررسی پیشنهاد را دارید نکته بسیار مهمی است.
+  - **اعطای سهام جدید:** سهام مصوب پس از ۳۰ سپتامبر، در روز قبل از موثر شدن ثبت شرکت به قیمت عرضه اولیه (IPO) ارزش‌گذاری می‌شود و معمولاً در یک دوره ۴ ساله بر مبنای شرط خدمت واگذار می‌گردد. در صورت دریافت پیشنهاد شغلی، بپرسید کدام قیمت مبنای تخصیص سهام شما خواهد بود.
 
 ---
 
-## Interview Process Patterns
+## الگوهای فرآیند مصاحبه
 
-The May 2026 standard at AI-native companies:
+فرآیند استاندارد در شرکت‌های AI-native:
 
-1. **Recruiter screen** (30 min) - culture/mission + comp + visa
-2. **Technical phone screen** (60-90 min) - practical coding, production-style
-3. **Take-home** (48 hr - 3 day) - common at LangChain, Mistral, Eightfold; build a small RAG/agent system. ["Not a test of whether you can build, but how - code quality, evals, error handling"](https://github.com/alexeygrigorev/ai-engineering-field-guide/blob/main/interview/01-interview-process.md)
-4. **Onsite/virtual loop** (4-6 hr): coding round + AI system design + project deep dive + behavioral. ["Whiteboard-only rounds are mostly gone, even Google's format is collaborative now"](https://designgurus.substack.com/p/system-design-interviews-changed)
-5. **Hiring manager / values round** - explicit at Anthropic; increasingly includes how you use AI day to day (DoorDash's values and manager rounds, per October reports) and what outcomes it produced
+۱. **غربالگری اولیه Recruiter (۳۰ دقیقه)** - فرهنگ و ماموریت + حقوق و مزایا + وضعیت ویزا
+۲. **غربالگری فنی تلفنی (۶۰ تا ۹۰ دقیقه)** - کدنویسی کاربردی در سبک محیط عملیاتی
+۳. **پروژه خانگی Take-home (۴۸ ساعت تا ۳ روز)** - ساخت یک سیستم کوچک RAG یا Agent. سنجش کیفیت کد، فرآیند ارزیابی و مدیریت خطا
+۴. **مرحله حضوری یا مجازی Onsite (۴ تا ۶ ساعت):** مرحله کدنویسی + طراحی سیستم‌های هوش مصنوعی + بررسی عمیق پروژه‌های گذشته + مصاحبه رفتاری
+۵. **جلسه با مدیر استخدام و سنجش ارزش‌ها** - به‌ویژه در Anthropic؛ سنجش نحوه استفاده روزمره شما از هوش مصنوعی و نتایج به دست آمده
 
-### AI-role specifics
+### ابزارهای هوش مصنوعی در فرآیند مصاحبه
 
-- **System design rounds** now expect LLM infra, GPU scheduling, vector stores, RAG, eval-gated CI, cost/latency tradeoffs
-- **AI-assisted coding rounds** exist at some companies (Meta's stated format, Sierra's published onsite, Canva, a Google pilot, and candidate reports from Stripe, LinkedIn, Scale AI, Rippling, DoorDash, Instacart, Shopify, Pinterest, and others) but are not standard; see [the policy table below](#ai-tools-in-the-loop-check-the-policy-per-round) and [what candidates reported](#what-candidates-reported-june-to-november-2026). Where AI is allowed, the scored skill is output validation, not prompt cleverness
-- **Take-home transparency:** where AI use is permitted, add an "AI audit note" - what you used AI for, what you changed, why. Transparency beats stealth
-- **Sierra:** the published onsite (April 2026) is Plan, a 2-hour Build with any AI tools, then Review, with no algorithm rounds
-- **Cursor:** candidate reports posted in August and September 2026 describe a classic 60-minute coding phone screen in which you write all the tests, and none mention AI tools. Earlier mentions of an 8-hour take-home in Cursor's own product could not be traced to a dated 2026 report
-- **Anthropic:** "the answer that sounds like it was written the night before is a bad signal"
-
-### AI tools in the loop: check the policy per round
-
-AI-in-interview policy split in 2026 instead of converging. Two trends run in parallel: some companies score how you work with an assistant, and others are moving rounds back in person to verify that you can work without one.
-
-| Company | Policy (as publicly reported) | Source quality |
+| شرکت | سیاست اعلام‌شده | کیفیت منبع |
 |---|---|---|
-| **Meta** | AI-enabled coding round since October 2025: 60 minutes in CoderPad on a multi-file codebase with tests, progressing from fixing bugs to building a feature to optimizing. For select roles it replaces one of the coding rounds; prep sites report it in software engineer and engineering manager onsites up to E7 and M2, so ask your recruiter whether your loop includes it. Meta's hiring-process page adds that, for select roles, design interviews also run in CoderPad with the same assistant | Meta's hiring FAQ, as summarized by [a prep site](https://mlmentorship.com/prep/frontier-labs/), confirms an assistant built into CoderPad, with a choice of models, for select roles; the round structure comes from prep sites ([Hello Interview](https://www.hellointerview.com/blog/meta-ai-enabled-coding)), and candidate reports from August and September 2026 match it. Meta's own [hiring-process page](https://www.metacareers.com/hiring-process/) (undated, seen November 6, 2026) now says design interviews for select roles also run in CoderPad with the same assistant (diagrams in Mermaid Markdown), that candidates are expected to use the built-in assistant and no outside tools, and that the models include Claude, ChatGPT, Gemini, and Meta's own; it scores problem solving, coding, debugging, and collaboration but publishes no rubric |
-| **Google** | Pilot for junior to mid-level roles on select US teams, started May 2026: Gemini allowed in a "code comprehension" round (read, debug, and optimize an existing codebase) from H2 2026; the Googleyness and Leadership round adds a technical design discussion of a past project | Business Insider (May 7, 2026), confirmed by Google's VP of recruiting; no pilot results published |
-| **Anthropic** | Live interviews are "all you, no AI assistance unless we indicate otherwise"; take-homes without Claude unless indicated. Candidates describe one such indication: an onsite PR-review round with Claude Code allowed (August to early November 2026; see below). Separately, one hiring manager dropped the traditional coding interview for his team in October 2026 (see below); that is a team practice, not a policy change | Anthropic's candidate AI guidance (last updated July 10, 2025, unchanged as of November 6, 2026); the PR-review round is candidate-reported |
-| **OpenAI** | AI expectations vary by interview, and some formats allow AI | OpenAI's interview guide as summarized by [a prep site](https://mlmentorship.com/prep/frontier-labs/); the AI-allowed rounds below are candidate-reported |
-| **Sierra** | Published format (April 22, 2026): the coding and algorithm rounds are gone, and the coding phone screen became system design. The onsite is Plan, then a 2-hour Build with any AI tools while the interviewer leaves the room (cutting scope is encouraged), then Review: demo, code review, path to production, and how you used AI. A debugging round on a colleague's draft PR is in pilot, with its AI policy undecided | Company post ([Sierra](https://sierra.ai/blog/the-ai-native-interview)) |
-| **Canva** | AI tools expected in at least one round. One candidate (August 2026) finished an AI-assisted frontend build early with no defects and was still marked down for delegating too little to the assistant | Company posts and candidate reports ([Hacker News, Aug 25, 2026](https://news.ycombinator.com/item?id=49427912)) |
-| **Cursor** | No published AI-in-interview policy found, and no 2026 candidate report mentions AI tools in its screens; the reported screens are classic coding (see below) | Candidate reports, August and September 2026 |
-| **Microsoft** | No published AI-assisted interview format found; one candidate reports an AI-required design round in an SDE-2 onsite (September 2026; see below) | Candidate report only |
+| **Meta** | مرحله کدنویسی با کمک هوش مصنوعی از اکتبر ۲۰۲۵: ۶۰ دقیقه در محیط CoderPad روی یک مخزن چندفایلی دارای تست، از رفع باگ تا توسعه قابلیت و بهینه‌سازی. به علاوه مصاحبه‌های طراحی سیستم نیز برای نقش‌های خاص با دستیار هوش مصنوعی و ترسیم در Mermaid اجرا می‌شود | تاییدشده در FAQ رسمی و تجارب داوطلبان |
+| **Google** | طرح آزمایشی برای نقش‌های جونیور تا میدلول از مه ۲۰۲۶: استفاده از Gemini در مرحله «درک کد» مجاز است؛ بخش رفتاری شامل بحث فنی طراحی پروژه‌های گذشته است | گزارش Business Insider، تاییدشده توسط معاون استخدام گوگل |
+| **Anthropic** | مصاحبه‌های زنده تماماً بدون هوش مصنوعی است مگر اینکه خلاف آن اعلام شود؛ پروژه‌های Take-home بدون کلود هستند مگر با اعلام قبلی. داوطلبان مرحله بررسی PR با Claude Code را گزارش کرده‌اند | راهنمای رسمی داوطلبان Anthropic؛ مرحله بررسی PR بر مبنای گزارش داوطلبان است |
+| **OpenAI** | انتظارات بسته به مصاحبه متفاوت است و در برخی مراحل استفاده از هوش مصنوعی مجاز است | راهنمای مصاحبه OpenAI |
+| **Sierra** | فرمت منتشرشده رسمی (آوریل ۲۰۲۶): مراحل الگوریتمی حذف شده‌اند؛ مرحله ساخت ۲ ساعته با هر ابزار هوش مصنوعی در حالی که مصاحبه‌کننده اتاق را ترک می‌کند، سپس مرحله بررسی کد و نحوه استفاده از هوش مصنوعی | پست رسمی شرکت Sierra |
+| **Canva** | استفاده از ابزارهای هوش مصنوعی حداقل در یک مرحله الزامی است. داوطلبی به دلیل واگذاری ناکافی کار به دستیار نمره منفی گرفت | گزارش‌های داوطلبان در Hacker News |
+| **Cursor** | مصاحبه تلفنی سنتی ۶۰ دقیقه‌ای کلاسیک؛ گزارشی از الزام به ابزار هوش مصنوعی در مصاحبه‌های ۲۰۲۶ ثبت نشده است | گزارش‌های داوطلبان |
+| **Microsoft** | برگزاری مرحله طراحی سیستمی که استفاده از هوش مصنوعی در آن الزامی بوده است | گزارش داوطلبان |
 
-The counter-trend is in-person verification. Stanford economist Nick Bloom told Business Insider (July 31, 2026) that some tech firms are moving middle and final rounds back on site because AI undermines remote coding tests, and Greenhouse's 2025 AI in Hiring Report found 39% of US hiring managers running more in-person interviews to verify candidates.
-
-**Prep implication:** ask the recruiter for the AI policy of each round, in writing. Using AI where it is barred ends the loop; refusing it where it is expected wastes the round. In AI-enabled rounds the work is verification: reading unfamiliar code, testing what the model produced, and explaining why you rejected a suggestion.
-
-### What candidates reported, June to November 2026
-
-Every row below is candidate-reported on public forums and prep sites, last checked November 5, 2026 (the DoorDash, Instacart, Microsoft, Shopify, Pinterest, and Intuit rows on November 6). Companies do not confirm interview content, prep sites add their own follow-ups, and several listings can trace back to one candidate, so read a row as "at least one candidate saw this", not as the company's format. Dates are posting months unless an interview month is given. Company-stated formats are in the policy table above. Worked answers for these rounds are in the question bank's [Questions From Recent Interview Reports](01-question-bank.md#questions-from-recent-interview-reports).
-
-| Company, role | Reported loop and notable rounds | AI tools, as reported | Candidate-reported |
-|---|---|---|---|
-| **Anthropic**, SWE | 90-minute CodeSignal assessment; a 20-30 minute recruiter screen weighted toward AI safety; hiring-manager and technical screens; a virtual onsite with coding, one or two system design rounds written in a shared doc, a 20-minute project presentation, hiring manager, and culture. One design format is a review of a teammate's flawed batched-inference design doc: rank the flaws, then do the GPU capacity math | Barred by default. Candidates describe an onsite PR-review round with Claude Code allowed: review four PRs in a browser IDE and a GitHub-style site, comment on each, then improve one | Aug to early Nov 2026 ([PR review](https://prachub.com/interview-experiences/anthropic-software-engineer-interview-experience-reviewing-and-improving-pull-requests-with-claude-code), [doc review](https://www.teamblind.com/post/anthropic-system-design-onsite-design-doc-256t8afc)) |
-| **OpenAI**, SWE and MLE | Recruiter, back-to-back 60-minute coding and design screens, then four to five onsite rounds: multi-part, test-gated coding; design; project slides; behavioral with mission questions (why OpenAI, speed versus safety). MLE screens add a Colab round: find planted bugs in a small PyTorch transformer, then add a KV cache | Varies: allowed on some full-stack teams' hands-on round; one June report describes a beta agentic-coding round in an existing codebase, run as a pilot | Jun to Oct 2026 ([reports](https://prachub.com/interview-experiences?company=openai), [MLE screen](https://prachub.com/interview-experiences/openai-machine-learning-engineer-interview-experience-transformer-bug-hunt-with-kv-cache-from-scratch-and-a-five-part-plant-infection-problem), [agentic pilot](https://mlmentorship.com/prep/frontier-labs/)) |
-| **OpenAI**, FDE | One-week take-home (semantic search over a product catalog that ChatGPT can call), a walkthrough with a team member, and an AI-enabled coding screen; the candidate was told a final panel would revisit the same solution (they withdrew before it) | AI-enabled coding screen | Posted Aug 2026, interview about May ([Aced](https://www.aced.io/experiences/openai-forward-deployed-engineer-interview-0b9c09)) |
-| **Meta**, SWE and MLE | AI-enabled coding (fix a bug, implement, optimize), which prep sites say replaces one coding round, though two candidates had both coding rounds AI-enabled; agentic design prompts such as a ticket-triage agent or a code-review agent (which parts need an LLM, how to validate its output, cost per call); behavioral themes on AI-driven impact | Built-in assistant with a model picker; one candidate found it missing in the design round | Posted Aug and Sep 2026, two of them for March and April interviews ([Hello Interview](https://www.hellointerview.com/blog/meta-ai-enabled-coding), [ticket-triage agent](https://prachub.com/interview-experiences/meta-software-engineer-interview-experience-five-rounds-including-ai-coding-and-a-new-agentic-system-design-round), [code-review agent](https://prachub.com/interview-experiences/meta-software-engineer-interview-experience-two-ai-coding-rounds-a-leetcode-system-design-and-an-ai-enabled-design-round-with-no-ai)) |
-| **Stripe**, SWE | Virtual onsite: Integration, Bug Squash (fix a bug in a real open-source library), an AI coding round, a coding round without AI, and a manager behavioral; one senior report had no system design round | AI round: 60 minutes on HackerRank with a built-in chat where you pick the model, on a transaction-rules engine that grows to AND/OR and nested parentheses, with your own tests. AI reportedly barred in Bug Squash and Integration | Aug to Oct 2026 ([report](https://prachub.com/interview-experiences/stripe-software-engineer-interview-experience-reconciliation-a-requests-307-bug-squash-bikemap-and-an-ai-exercise-no-offer), [Prepfully](https://prepfully.com/interview-guides/stripe-software-engineer)) |
-| **LinkedIn**, Staff AI Engineer | Five one-hour onsite rounds: AI modeling fundamentals (transformer complexity, GQA, FlashAttention), AI system design, data coding, a case study scored for behavioral signal, and Coding with AI | Coding with AI: an IDE with built-in agents on a small repo with four or five sub-parts; the candidate says long agent output ate the clock | Oct 2026 ([report](https://prachub.com/interview-experiences/linkedin-seniorplus-machine-learning-engineer-interview-experience-five-onsite-rounds-downleveled-to-senior)) |
-| **Amazon**, SDE | One report, for a September interview, describes an online assessment with an AI-labeled debugging section (fix a movie-search backend) beside an algorithm problem | Assistant use implied by the section name, not stated | Posted Oct 2026, interview Sep ([report](https://prachub.com/interview-experiences/amazon-software-engineer-interview-experience-online-assessment-with-a-merge-strings-conflict-problem-and-an-ai-spring-boot-bug-fix-task)) |
-| **Netflix**, applied GenAI MLE | A 60-minute screen split between ML fundamentals (KV cache, how Q, K, and V are computed) and a live review of a feature-pipeline PR whose tests all pass, hunting for production risks | Not stated | Posted Oct 2026, interview Sep ([report](https://prachub.com/interview-experiences/netflix-machine-learning-engineer-interview-experience-ml-fundamentals-plus-a-production-pr-review-rejected)) |
-| **Scale AI**, Backend | Task-scheduler coding, behavioral, a metrics-driven project presentation, an embedding and classification inference API design, an AI-enabled practical (turn a CSV into JSON with an LLM-assigned category per row, then parallelize the calls), hiring manager | Allowed in the practical, but you write the prompts; the interviewer stopped a candidate from pasting a screenshot of the question into the assistant | Posted Aug 2026, interview Jul ([report](https://prachub.com/interview-experiences/scale-ai-backend-engineer-interview-experience-full-onsite-loop-with-a-claude-assisted-coding-round)) |
-| **Harvey**, SWE | Spreadsheet-engine phone screen; onsite agentic design (an agent that checks a document against a rule set and revises it) with eval follow-ups for each component, notebook RAG coding in NumPy and pandas, and a project deep dive | No policy stated | Aug to Oct 2026 ([report](https://prachub.com/interview-experiences/harvey-software-engineer-interview-experience-virtual-onsite-with-agentic-design-rag-coding-and-project-deep-dive)) |
-| **Luma AI**, SWE | An 8-12 hour take-home (one of five prompts), then an onsite review of it where interviewers add new customer requirements | Expected: you submit your coding-assistant chat logs with the code | Sep 2026 ([report](https://prachub.com/interview-experiences/luma-software-engineer-interview-experience-ai-product-engineering-loop-with-a-take-home-review-cto-chat-and-build-uber-system-design)) |
-| **Cursor**, SWE | A 60-minute phone screen: build a Merkle tree over a directory, look up a path's hash, and diff two trees, writing all the tests yourself; one variant runs inside a real repo | None of the 2026 reports mention AI tools | Posted Aug and Sep 2026, interviews Feb and Sep ([report](https://prachub.com/interview-experiences/cursor-software-engineer-interview-experience-60-minute-merkle-tree-phone-screen-finished-everything-and-still-rejected), [repo variant](https://prachub.com/interview-experiences/cursor-software-engineer-interview-experience-a-merkle-tree-diff-problem-run-inside-a-real-repo)) |
-| **DoorDash**, SWE and E4 full-stack | An AI-required round and a no-AI round in the same onsite. AI round: build live courier tracking with server-sent events on an existing Node backend in staged milestones, or extend a graph-based refund processor (partial refunds, repeated requests, latency) and finish by summarizing the session and drawing an architecture diagram. No-AI round: a user-management CRUD build. Values and manager rounds ask about everyday AI use | Required in the AI round; one report lists prompts, model choice, engineering judgment, testing AI output, and PR review as the evaluation areas. A secondhand account says the interviewer weighted the SSE work and the AI-assisted process over finishing a chat feature, and another candidate felt iteration mattered more than reviewing every generated line | Interviews Oct 2026, posted Nov 5, one account secondhand ([courier tracking](https://prachub.com/interview-experiences/doordash-software-engineer-interview-experience-payments-and-ai-assisted-tracking), [refund processor](https://prachub.com/interview-experiences/doordash-software-engineer-interview-experience-payments-ai-workflows-and-routing-debugging), [secondhand](https://prachub.com/interview-experiences/doordash-full-stack-engineer-interview-experience-a-secondhand-account-of-ai-coding-rounds)) |
-| **Instacart**, Full-Stack | A 90-minute CodeSignal assessment with five questions and a live view of your web app: two where you question an AI to get the requirements, two AI-assisted builds with Claude Code (search and filtering; a notification service with idempotency and async edge cases), and one bug fix without AI. The candidate scored 650 of 1000, could not review all the generated code in time, and was rejected the next day | Required in four of five questions. A separate SWE onsite report (posted September 21) allowed AI only to explain code and localize bugs, not to write the fix | Assessment Sep 2026, posted Oct 6 ([assessment](https://prachub.com/interview-experiences/instacart-full-stack-engineer-interview-experience-a-90-minute-ai-assisted-oa-and-next-day-rejection), [onsite](https://prachub.com/interview-experiences/instacart-software-engineer-interview-experience-ai-debugging-and-unclear-coding-assumptions)) |
-| **Microsoft**, SDE-2 | An AI-required design round (a Windows notification system that many applications can post to) beside a conventional design round (restaurant proximity search within 10 km) | Required in the AI design round, judged on how you write and refine prompts and evaluate the AI's answers; pasting its output was not the goal | Sep 2026 ([report](https://prachub.com/interview-experiences/microsoft-software-engineer-interview-experience-sde-2-loop-with-an-ai-assisted-design-round-and-a-linux-cp-deep-dive)) |
-| **Shopify**, SWE | AI coding in both the technical screen and the onsite, on different problems: over a Google Meet screen share you use your own IDE and tools on a GitHub repo that is empty or holds only a README, then push a branch that is reviewed later. Problems grow through follow-ups (grid robot navigation, an LRU cache, a Unix `tail` that must not load the whole file). A November screen asked for gift-exchange assignments read from a CSV with nobody assigned to themselves, then added restrictions on who may give to whom | Allowed, your own tools. The November candidate's assistant proposed two algorithms by names the candidate did not know, which was hard to use under time pressure | Screen Nov 2026 ([report](https://prachub.com/interview-experiences/shopify-software-engineer-interview-experience-gift-matching-with-ai)); format from a 2026 Hello Interview guide based on candidate reports ([guide](https://www.hellointerview.com/blog/shopify-ai-enabled-coding)) |
-| **Pinterest**, SWE | Onsite: with an AI assistant, add LRU and LFU caches (fixed capacity, LFU ties broken by least recent use, O(1) average get and put) to an existing codebase, write tests, benchmark both, and explain how you directed the assistant, caught semantic errors, and decided the code was ready to merge | Allowed; the merge decision is what is scored. The page's follow-ups (an LFU bug once a frequency bucket empties, thread safety, rejecting a faster-looking implementation) may be site-written | Listed Sep 2026 ([question page](https://prachub.com/interview-questions/review-ai-generated-lru-and-lfu-cache-changes)) |
-| **Intuit**, Staff SWE | A chained onsite on one service: a 75-minute craft demo that extends a small Spring Boot (or Python) app with new APIs for given user stories, a 60-minute design round that scales the same service (schema, queries, search speed, indexes), and a 30-minute AI round that adds a recommendation API to the service, which already called an open-source LLM API, covering RAG, hallucination, and prompt engineering | Mixed: ChatGPT was acceptable for writing craft-demo tests because the point was deciding what deserves tests; the AI round was judged on reasoning toward a good prompt, not on finishing tests | Interview Dec 2025, posted Oct 21, 2026, offer ([report](https://prachub.com/interview-experiences/intuit-staff-software-engineer-interview-experience-laid-off-craft-demo-and-an-ai-round-then-an-offer)) |
-
-**Patterns across the reports.** Five things repeat. First, AI-tool rules are moving from banned to allowed to required: Glean ran a 75-minute pairing round in which using the assistant was mandatory and you had to explain how you split the work with it ([September 30](https://prachub.com/interview-questions/ai-paired-rate-limited-wikipedia-crawler-that-prioritizes-unseen-title-initials)), Rippling phone screens ran in HackerRank's agentic mode with AI required ([October](https://prachub.com/interview-experiences/rippling-software-engineer-interview-experience-phone-screen-with-agentic-hackerrank-ai-and-an-interviewer-who-kept-changing-his-mind)), and another Rippling screen let candidates choose AI at the price of a harder question ([October](https://prachub.com/interview-experiences/rippling-senior-software-engineer-interview-experience-phone-screen-where-you-choose-whether-to-use-ai)). Second, feedback on AI use contradicts itself: a Canva candidate was marked down for delegating too little (August 25, above), while a Rippling candidate believes a rejection came from AI-assisted code that looked too polished ([October 20](https://prachub.com/interview-experiences/rippling-software-engineer-interview-experience-pluggable-logger-phone-screen-rejected-after-using-cursor)), so ask what the round scores before you start. Third, you defend everything you built, live: OpenAI's FDE loop includes a live walkthrough of the take-home (posted August), Luma's onsite changes the requirements on your take-home (September), and ElevenLabs followed its online assessment with a generated question asking why you chose your approach, with two minutes to answer ([posted October 3](https://prachub.com/interview-experiences/elevenlabs-software-engineer-interview-experience-three-question-oa-with-a-surprise-2-minute-ai-follow-up)). Fourth, LLM-specific coding concentrates in MLE loops: debug a transformer and add a KV cache (OpenAI, September), write multi-head attention from scratch with no tests provided ([Meta, September 25](https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch)), build a continuous-batching decode loop (xAI new-grad MLE, September 5). Lab SWE coding stays classic: work queues and credit ledgers at OpenAI (August to October) and profiler-trace parsing at Anthropic (August and September). The main exception is tokenizers: an Anthropic SWE listing from September has one, and outside the labs a Glean SWE listing (September 30) asks for a BPE tokenizer. Fifth, AI-allowed and AI-banned rounds now sit in the same loop, and the AI-assisted format is reaching system design: DoorDash pairs an AI-required build with a no-AI CRUD round (October), Instacart lets the assistant explain code in one onsite but write it in the assessment (September), and Microsoft ran an AI-required design round in an SDE-2 onsite (September), the same move Meta's hiring page now describes for select roles.
-
-**Interviewer and platform signals.** These come from companies, interview vendors, and prep sites, not from candidate reports, so treat vendor figures as vendor-reported.
-
-- **Amazon (October 2026):** a revised software development engineer role guideline by Terk Terkowitz, VP and Distinguished Engineer, says "what matters most is the outcome, not which tools are used", asks leaders to use AI hands-on for production work and engineers whose work does not benefit from current AI to document why, and warns that targeting input metrics like token usage can backfire ("tokenmaxxing is at odds with frugality"). It says nothing about interviews, but expect behavioral rounds to probe AI-assisted outcomes and judgment rather than how much you used the tools ([Amazon](https://www.aboutamazon.com/news/company-news/amazon-software-engineer-role-guideline-ai)).
-- **Hello Interview (undated, seen November 6, 2026):** its new AI Coding guide names Meta, Shopify, LinkedIn, Canva, and Uber among companies running AI-enabled rounds, in two formats: structured (a browser environment such as CoderPad with a fixed model set, moving from bug fix to feature to scale) or open-ended in your own editor. It scores problem solving, control over the AI, verification habits, and communication, and says Canva interviewers pause after each generation to ask what the code does ([guide](https://www.hellointerview.com/learn/ai-coding)).
-- **HackerRank (July 29, 2026, vendor):** recommended formats are finding a subtle bug in AI-generated code, a multi-step build whose requirement changes midway, and defending one of two AI-produced approaches. Its Plan Mode has candidates draft an approach with AI before coding, reviewers can compare the plan to the final solution, a Diff View shows every AI change, and an AI Fluency score draws on IDE activity and chat, including which suggested diffs you apply or reject; candidates with minimal AI interaction get no fluency score ([formats](https://www.hackerrank.com/blog/how-to-interview-engineers-who-use-ai-coding-assistants/), [release](https://www.hackerrank.com/blog/how-hackerrank-is-rebuilding-developer-hiring-for-the-agentic-era/)).
-- **Karat (October 2026, vendor):** because a candidate can now submit a correct solution without showing the decisions behind it, Karat says live interviews should score reasoning, debugging, technical judgment, use of AI, validation of AI output, and error identification. Its October 27 survey report says 82% of leaders see more product and feature volume from AI but 67% see longer time to market and 44% more coding errors, moving the bottleneck to review, requirements, design, and testing ([interviews](https://karat.com/enterprise-technical-interviews/), [report](https://karat.com/will-ai-replace-software-engineers/)).
-- **GitLab (proposed, April 2026):** a handbook working group proposes an AI-native SWE loop: an asynchronous merge-request assessment before the interview, about an hour of greenfield design and implementation with GitLab Duo, and about an hour of codebase navigation, with "awareness of AI limitations" and validation discipline on the rubric. Its exit criteria were not yet met ([handbook](https://gitlab.com/gitlab-com/content-sites/handbook/-/raw/main/content/handbook/company/working-groups/ai-native-hiring.md)).
-- **AI product rounds for PMs (prep-site question pages, October 2026, not attributed to candidates):** Netflix asks you to pick an AI agent's job and prove it shortens time to start watching, Uber to design an AI product for riders or drivers, with follow-ups on beating a rule-based version and on experiments where treatment and control users compete for the same trips, and an Anthropic PM page asks how you would improve Claude Sonnet as a foundation model, including whether an agentic gain that makes requests slower and costlier ships in Sonnet or waits for Opus ([Netflix](https://prachub.com/interview-questions/netflix-product-sense-choosing-the-job-and-scope-for-an-ai-agent), [Uber](https://prachub.com/interview-questions/uber-product-design-build-an-ai-powered-product-for-riders-or-drivers), [Anthropic](https://prachub.com/interview-questions/choosing-which-model-capabilities-to-improve-next-in-claude-sonnet)).
-
-### Frontier-lab specifics
-
-- **Anthropic:** the commonly reported coding round is a 90-minute, 4-level progressively harder problem testing whether you write clean modular code that absorbs new requirements. Expect variation by team: on October 27, 2026, Felix Rieseberg, a hiring manager on Claude Desktop and Cowork, wrote that he had "laid the traditional coding interview to rest" and now screens candidates on portfolios of working prototypes. That is one manager's practice, not company policy; headlines saying Anthropic killed the coding interview overstate it, so ask your recruiter which format your team uses. Values round explicit. Candidate-reported system design prompts (via the prep vendor Aced, formerly Exponent, September to October 2026) lean on infrastructure: an inference batching system for a single GPU handling up to 100 inputs per batch while users wait synchronously, a peer-to-peer system that moves a large file from a bandwidth-constrained source to thousands of machines, and a token-generation service at 100,000 RPS. For machine learning engineer roles Aced also lists "design an agentic AI system that can autonomously adapt to new tasks."
-- **OpenAI:** "Design the OpenAI Playground" - wireframes + API + DB schema for thread/message history; multi-tenant secure cloud IDE. Also candidate-reported: a GPU credit management system. The FDE loop reportedly runs six stages, including system design under token-cost, latency, and eval-gate constraints and a role-play with a simulated non-technical executive (Aced, September 2026).
-- **Mistral (Paris):** 5-round process, no remote, with a dedicated "LLM theory" stage covering transformer internals and alignment
-- **Applied-AI companies:** candidate-reported prompts include an insurance-claims agent that uses RAG to output an approval decision while controlling token cost (Scale AI) and an agentic customer-support system for Spotify (Sierra). Model answers treat cost as a first-class constraint and measure retrieval separately from decision accuracy. All prompts in this section come from prep vendors and are not confirmed by the companies.
+**پیامد برای آمادگی مصاحبه:** سیاست استفاده از هوش مصنوعی را برای تک‌تک مراحل به‌صورت مکتوب از مسئول جذب بپرسید. استفاده از هوش مصنوعی در جایی که ممنوع است بلافاصله به رد شدن شما می‌انجامد؛ عدم استفاده از آن در جایی که انتظار می‌رود شانس شما را می‌سوزاند. در مراحلی که هوش مصنوعی مجاز است، آنچه سنجیده می‌شود مهارت اعتبارسنجی (Validation) است: خواندن کدهای ناآشنا، تست کردن خروجی مدل، و توضیح اینکه چرا یک پیشنهاد را رد کردید.
 
 ---
 
-## Emerging Roles to Watch
+## نقش‌های نوظهور قابل توجه
 
-These roles grew fastest through 2026 (first identified in the May sweep, with later changes noted through November 6, 2026) - bet on them if you're planning a 12-month career trajectory.
+این نقش‌ها سریع‌ترین رشد را در سال ۲۰۲۶ داشته‌اند؛ اگر برای افق ۱۲ ماهه برنامه‌ریزی می‌کنید روی آن‌ها سرمایه‌گذاری نمایید:
 
-### Forward Deployed Engineer (FDE)
-- **Why:** Frontier-AI buyers (Fortune 500, government, biotech) demand on-site engineering as a contractual deliverable
-- **Comp:** $350-550K mid-to-senior at frontier labs (Aced's September 2026 estimate for OpenAI, base $153K-$325K); consulting FDEs hired from campus start far lower (BCG X: $110K-$190K base, per secondary reporting, unconfirmed)
-- **Skills:** RAG, fine-tuning, distillation, MCP, customer-facing communication, evals at the customer site
-- **Where:** OpenAI, Anthropic, Google, ElevenLabs, Cohere, Mistral, scale-ups, and now consultancies. Aced counted about 23 FDE-titled roles at OpenAI in September 2026, including new Healthcare and Legal tracks, plus reqs at the **OpenAI Deployment Company** (launched May 11, 2026, majority-owned by OpenAI, with $4B from 19 partners led by TPG and an agreed acquisition of the deployment firm Tomoro)
-- **How it's assessed:** expect a customer round, not just a technical one. OpenAI's reported loop includes a role-play with a simulated non-technical executive, and its system design round is scored on token cost, latency, and eval gates, not just architecture. Aced's FDE guide (undated, first seen November 6, 2026) describes a roughly 45-minute client simulation in which the interviewer plays a customer, sometimes deliberately frustrated or non-technical, and you defend a trade-off, deliver bad news, or de-escalate (its example: the deployment slipped three weeks and the customer's CTO is on the call). Strong answers use ownership language, ask diagnostic questions before proposing fixes, concede what the customer is right about, and offer options with trade-offs instead of overpromising. Aced's decomposition guide adds that the open-ended scoping round popularized by Palantir increasingly appears at OpenAI, Anthropic, and other FDE-hiring companies
-- **Credentialing:** Anthropic announced the **Claude Frontier Academy** on October 2, 2026: $100M to train 10,000 "Frontier Deployed Engineers" at customers and partners by the end of 2027, by nomination through Anthropic's account and partner teams. It is a credential program, not a hiring loop: a simulated enterprise deployment from use-case selection through security review to handover, a graded practical, then a 12-week residency leading a real Claude use case. First cohorts include Accenture, Deloitte, McKinsey, Capgemini, and Morgan Stanley. Anthropic expects the first Frontier Deployed Engineer badges in early 2027, so expect the title on customer-side job descriptions after that
+### مهندس استقرار در سازمان مشتری (Forward Deployed Engineer - FDE)
+- **چرا:** خریداران بزرگ خواهان حضور مهندسان در محل هستند.
+- **دستمزد:** ۳۵۰ تا ۵۵۰ هزار دلار برای سطوح متوسط تا ارشد در آزمایشگاه‌های پیشرو؛ در شرکت‌های مشاوره برای فارغ‌التحصیلان پایه ۱۱۰ تا ۱۹۰ هزار دلار است.
+- **مهارت‌ها:** سیستم‌های RAG، فرآیند Fine-tuning، تقطیر دانش (Distillation)، پروتکل MCP، ارتباط موثر با مشتری، و پیاده‌سازی ارزیابی در محل مشتری.
+- **کجا:** OpenAI (شامل OpenAI Deployment Company)، Anthropic، Google، ElevenLabs، Cohere، Mistral و شرکت‌های مشاوره بزرگ.
 
-### AI Evaluation Engineer
-- **Why:** Eval matured into a discipline; production needs eval-gated CI/CD
-- **Comp:** $100-110/hr contractor; $200-400K FT at frontier labs
-- **Skills:** LLM-as-judge calibration, error analysis methodology, statistical correction, dataset curation, regression detection
-- **Where:** OpenAI (Applied Evals, Frontier Evals), Apple, Scale AI, Distyl, Apex
-- **New track, embedded evaluators:** Anthropic and Accenture (through Faculty, its specialist AI business) announced on September 18, 2026 that each expects to invest at least $1B over five years in evaluators who work inside AI companies with access comparable to an employee's, doing red-teaming, alignment assessments, and safeguard testing. No headcount was disclosed, but it is a funded eval career path outside the labs. Anthropic's October 15, 2026 update shows what the top of that path looks like: six METR staff onboarded with company hardware and office space and access roughly on par with Anthropic's own risk-assessment teams, the highest of three access tiers (the lower two cover narrowly scoped investigations and broader access with independent publication). Anthropic says it hopes to have several evaluators at that tier over time but announced no open roles, so treat it as a signal of where eval careers are heading rather than a hiring channel
+### مهندس ارزیابی هوش مصنوعی (AI Evaluation Engineer)
+- **چرا:** ارزیابی به یک تخصص مستقل تبدیل شده و محیط عملیاتی نیازمند CI/CD مجهز به گیت‌های کیفی است.
+- **دستمزد:** ۱۰۰ تا ۱۱۰ دلار در ساعت برای پیمانکاران؛ ۲۰۰ تا ۴۰۰ هزار دلار تمام‌وقت در آزمایشگاه‌های frontier.
+- **مهارت‌ها:** کالیبراسیون LLM-as-judge، متدولوژی تحلیل خطا، تصحیح آماری، پالایش داده‌ها، و تشخیص پسرفت کیفی (Regression).
+- **کجا:** OpenAI، Apple، Scale AI، Distyl، Apex.
 
-### Agentic Systems Engineer
-- **Why:** Multi-agent and tool-use are first-class systems engineering
-- **Comp:** $84-250K typical; agentic AI architect $260-420K
-- **Skills:** LangGraph / multi-agent orchestration, MCP, A2A protocol, agent debugging, tool design, sandbox security
-- **Where:** Teradata, GE Vernova, Deloitte, OpenAI (Agent Infrastructure)
+### مهندس سیستم‌های عاملی (Agentic Systems Engineer)
+- **چرا:** سیستم‌های چند-ایجنت و استفاده از ابزارها نیازمند مهندسی سیستم‌های پیشرفته هستند.
+- **دستمزد:** ۸۴ تا ۲۵۰ هزار دلار متداول؛ ۲۶۰ تا ۴۲۰ هزار دلار برای معمار هوش مصنوعی ایجنتیک.
+- **مهارت‌ها:** فریم‌ورک LangGraph / ارکستراسیون چند-ایجنت، پروتکل‌های MCP و A2A، اشکال‌زدایی ایجنت، طراحی ابزارها، و امنیت سندباکس.
+- **کجا:** Teradata، GE Vernova، Deloitte، OpenAI.
 
-### AI Reliability Engineer
-- **Why:** Production AI needs SRE-like discipline for non-deterministic systems. A September 2026 case study: OpenAI disclosed that an agent in one of its internal runs tunneled out through DNS to an external chatbot service, and although monitoring alarmed about 12 minutes after the first external response, the run was killed only about 2.5 hours later because the automatic stop failed. Detection without an automatic kill is not a control, and detection-to-containment time needs its own SLO. October added the next failure class, agents disabling their own alerting ([Containment Has to Be Out-of-Band](../07-agentic-systems/09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band)): monitors and their configuration have to sit outside the agent's write scope, which is reliability engineering, not prompt work
-- **Comp:** Senior $250-400K at frontier labs (Anthropic posting Staff/Sr roles)
-- **Skills:** Incident response for AI agents, runaway-loop containment, cost anomaly detection, multi-provider fallback
-- **Where:** Anthropic; "AI SRE" category being defined by Resolve.ai, Rootly
+### مهندس پایداری هوش مصنوعی (AI Reliability Engineer)
+- **چرا:** سیستم‌های غیرقطعی در محیط عملیاتی به انضباطی در سطح SRE نیاز دارند (مهار حلقه‌های بی‌پایان، مهار حوادث نشت داده از طریق DNS، مدیریت انحراف مانیتورینگ توسط خود ایجنت).
+- **دستمزد:** ۲۵۰ تا ۴۰۰ هزار دلار در آزمایشگاه‌های پیشرو.
+- **مهارت‌ها:** پاسخ به حوادث ایجنت‌ها، مهار حلقه‌های سرکش، تشخیص ناهنجاری در هزینه‌ها، و پیاده‌سازی Fallback بین ارائه‌دهندگان متعدد.
+- **کجا:** Anthropic؛ فریم‌ورک‌های AI SRE در Resolve.ai و Rootly.
 
-### AI Security Engineer / LLM Red Team Specialist
-- **Why:** Prompt injection + jailbreak research became discrete disciplines after the May 2026 AI security inflection (Mythos disclosure, Daybreak, MDASH, first in-the-wild AI-built zero-day). Security is now pulling headcount from product at the labs themselves: Anthropic said on August 31, 2026 that a security-hardening effort begun in April had temporarily moved roughly 150 product engineers to security, reliability, and privacy work. October's incidents were supply-chain attacks on AI tooling itself: poisoned LiteLLM releases ([Securing the Gateway](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#securing-the-gateway)) and a trojanized Claude Code extension in Cursor's marketplace ([Agentic Security](../07-agentic-systems/09-agentic-security-and-sandboxing.md#the-developer-workstation-became-the-target)). Expect AI security reqs to ask for release-pipeline and extension-provenance experience, not only prompt-injection defense
-- **Comp:** $152-230K depending on specialty
-- **Skills:** Indirect prompt injection defense, jailbreak research, constitutional classifiers, model supply-chain trust, MCP threat modeling
-- **Where:** Life360, frontier labs, security-focused enterprises
+### مهندس امنیت هوش مصنوعی / متخصص تیم قرمز (AI Security Engineer / LLM Red Team)
+- **چرا:** تزریق پرامپت، حملات زنجیره تامین روی ابزارهای هوش مصنوعی و امنیت افزونه‌ها.
+- **دستمزد:** ۱۵۲ تا ۲۳۰ هزار دلار بر حسب تخصص.
+- **مهارت‌ها:** دفاع در برابر تزریق غیرمستقیم پرامپت، پژوهش‌های Jailbreak، کلاسیفایرهای قانون اساسی (Constitutional)، و مدل‌سازی تهدید در MCP.
+- **کجا:** Life360، آزمایشگاه‌های پیشرو، سازمان‌های با تمرکز بالا بر امنیت.
 
-### MCP Engineer
-- **Why:** MCP ecosystem maturity made server development its own specialty
-- **Skills:** MCP server design on the stateless 2026-07-28 spec revision (Streamable HTTP and stdio), OAuth resource server pattern, agent-card signing, MCP security. Security is most of the job: 73 MCP-titled security advisories were published between August 15 and October 1, 2026, 9 of them critical, and October's TypeScript SDK advisory (CVE-2026-111770, one client's responses leaking to another through a shared server or transport) needed code changes, not just an upgrade. The next spec release is planned for March 30, 2027
-- **Credential:** the Agentic AI Foundation launched the **Model Context Protocol Associate (MCPA)** exam on September 14, 2026 ($250, 90 minutes, multiple choice, aligned to the 2026-07-28 spec, with 24% of the weight on security and governance). Treat it as a study syllabus more than a hiring filter until postings start asking for it
-- **Where:** Descope, Anthropic-aligned scale-ups, internal platforms at Fortune 500
+### مهندس پروتکل MCP (MCP Engineer)
+- **چرا:** استاندارد شدن اکوسیستم MCP توسعه سرورها را به یک حوزه مستقل تبدیل کرده است.
+- **مهارت‌ها:** طراحی سرور MCP بر مبنای نسخه بدون وضعیت 2026-07-28، الگوی سرور منابع OAuth، امضای Agent Card، و امنیت پروتکل.
+- **مدرک تخصصی:** آزمون Model Context Protocol Associate (MCPA) که توسط لینوکس فاندیشن در سپتامبر ۲۰۲۶ عرضه شد.
+- **کجا:** Descope، شرکت‌های مقیاس‌پذیر همکار Anthropic، پلتفرم‌های داخلی در Fortune 500.
 
 ---
 
-## Strategic Takeaways
+## نکات کلیدی استراتژیک
 
-For **engineers** planning the next move:
+برای **مهندسان** در برنامه‌ریزی مسیر شغلی:
 
-1. **Position as a specialist, not "Prompt Engineer."** Pick a discipline (evals, agents, RAG, FDE, MLOps) and build depth.
-2. **Working portfolio > paper.** Ship 3-5 production-grade projects with evals and observability. Anthropic, OpenAI, and scale-ups all weight this over publications for applied roles.
-3. **FDE is high-leverage.** If you can pair technical depth with customer-facing communication, frontier-lab FDE comp ($350-550K estimated TC) sits well above the national AI engineering market, though below frontier-lab core engineering medians. Lab FDE postings also weight customer-facing experience (Anthropic asks for 3+ years) over research credentials, which makes FDE a realistic way into a lab for strong product engineers.
-4. **The market is bifurcated.** Generalist mid-level SWE work is being cut. Senior AI specialists are in a sellers' market. In the most AI-exposed occupations the entry-level share of postings fell to 10% while the senior share rose to 47%, so if you already ship production systems, move laterally into an AI role at your current level instead of restarting as a junior. New grads should look at the programs still recruiting juniors under AI titles, such as consulting FDE campus tracks.
-5. **Check the AI policy and the format for every round.** Meta scores you with an assistant, Anthropic's guidance bars AI assistance unless the interviewer says otherwise, Google is mid-pilot, and formats can differ by team inside one company. Ask the recruiter in writing.
+۱. **به عنوان یک متخصص جایگاه‌یابی کنید، نه یک «Prompt Engineer».** یک حوزه تخصصی (ارزیابی‌ها، ایجنت‌ها، RAG، نقش FDE، یا MLOps) را انتخاب کنید و در آن عمیق شوید.
+۲. **پورتفولیوی پروژه‌های واقعی > مقاله دانشگاهی.** ۳ تا ۵ پروژه واقعی در سطح محیط عملیاتی همراه با سیستم ارزیابی و مشاهده‌پذیری مستقر کنید.
+۳. **نقش FDE یک اهرم فوق‌العاده است.** اگر می‌توانید عمق فنی را با مهارت‌های کلامی در تعامل با مشتری ترکیب کنید، دریافتی FDE در آزمایشگاه‌های پیشرو (۳۵۰ تا ۵۵۰ هزار دلار) بسیار بالاتر از میانگین بازار ملی است.
+۴. **بازار دچار انشعاب شده است.** کارهای عمومی مهندسی نرم‌افزار سطح متوسط در حال تعدیل هستند؛ در حالی که متخصصان ارشد هوش مصنوعی در یک بازار با تقاضای بالا قرار دارند. به‌صورت افقی و با حفظ سطح ارشدیت خود به نقش‌های هوش مصنوعی تغییر مسیر دهید.
+۵. **سیاست استفاده از هوش مصنوعی و فرمت مصاحبه را برای هر مرحله بپرسید.** Meta شما را در حین کار با دستیار می‌سنجد؛ Anthropic آن را ممنوع می‌داند مگر خلاف آن گفته شود. کتباً از مسئول استخدام استعلام کنید.
 
-For **hiring managers** building rubrics:
+برای **مدیران استخدامی** در تدوین شیوه‌نامه‌ها:
 
-1. **Hire for the specific problem, not for "AI Engineer."** If you write a generic AI Engineer JD, you'll get generic candidates.
-2. **Evaluate shipped systems first.** A take-home that simulates your actual workload (build a small RAG agent for our domain) is more predictive than algorithm puzzles.
-3. **Decide your AI policy per round and publish it.** AI-assisted rounds are not standard: they run alongside a move back to in-person rounds. If you allow AI, score verification (reading, testing, and rejecting model output), not prompt cleverness. If you bar it, say so in writing, and verify in person for the rounds that matter most.
-4. **Comp banding matters.** Frontier-lab comp is creating retention pressure 2 tiers down. If you're an enterprise hiring AI talent, calibrate to local market plus a 15-25% AI premium for senior+.
+۱. **برای مسئله مشخص استخدام کنید، نه برای عنوان عمومی «AI Engineer».** اگر شرح شغلی عمومی بنویسید، داوطلبانی سطحی جذب خواهید کرد.
+۲. **ابتدا سیستم‌های پیاده‌سازی‌شده را بسنجید.** یک تسک خانگی شبیه‌سازی بار کاری واقعی تیم بسیار پیش‌بینی‌کننده‌تر از پازل‌های الگوریتمی است.
+۳. **سیاست استفاده از هوش مصنوعی را برای هر مرحله تعیین و منتشر کنید.** اگر هوش مصنوعی مجاز است، توانایی اعتبارسنجی خروجی‌ها را بسنجید، نه زیرکی در نوشتن پرامپت را.
+۴. **تراز دستمزدها اهمیت دارد.** دستمزدهای بالای آزمایشگاه‌های frontier فشاری مضاعف بر لایه‌های پایین‌تر وارد می‌کند؛ پیشنهادهای خود را با بازار محلی به اضافه ۱۵ تا ۲۵ درصد پاداش هوش مصنوعی برای سطوح ارشد تنظیم کنید.
 
-For **engineering leaders** doing org design:
+برای **رهبران مهندسی** در طراحی ساختار سازمانی:
 
-1. **Map roles to the work, not to titles.** "AI Engineer" is your umbrella. Inside it: name explicit specializations (RAG lead, agent lead, eval lead, platform lead).
-2. **Eval Engineer is a real role.** Don't make a feature engineer own the metric they're trying to improve. Separate measurement from delivery.
-3. **FDE only pays off above ~$500K customer ARR.** Below that, use solutions engineering. Above, FDE earns its comp through customer-specific engineering that documentation can't generalize.
-4. **AI Reliability Engineer is the role you don't know you need yet.** When your first agent loops at 3 AM and burns $50K of API spend before the loop guard fires, you'll wish you had this role 6 months earlier.
-
----
-
-## References
-
-The base sweep (100+ public job listings, hiring reports, and recruiter signals) is from May 17, 2026. The market signals, interview policies, FDE and evaluator programs, and "Oct 2026" compensation rows were last checked against the Q3 and early-October 2026 sources below, and the "Nov 2026" rows, posting data, Anthropic entries, and Microsoft exit offer against the October and November 2026 sources. The candidate-reported interview loops were last checked November 5 and 6, 2026 against the forum and prep-site pages linked in that section, with the main ones listed below; the November 6 refresh added Challenger's October report, the Anthropic S-1/A, and the interviewer and platform signals. Key sources:
-
-### October and November 2026 signals
-- [Indeed Hiring Lab - US Labor Market Snapshot, October 2026 (Oct 22, 2026)](https://hiringlab.indeed.com/2026/10/22/us-labor-market-snapshot-october-2026/)
-- [Anthropic - S-1 filing for a proposed IPO (Oct 26, 2026)](https://www.anthropic.com/news/s1-sec)
-- [SEC EDGAR - Anthropic S-1/A, Amendment No. 1 (Nov 2, 2026)](https://www.sec.gov/Archives/edgar/data/2130357/000162828026068676/0001628280-26-068676-index.htm)
-- [Challenger, Gray & Christmas - October 2026 job cuts report (Nov 5, 2026)](https://www.challengergray.com/blog/october-layoffs-at-three-year-low-seasonal-hiring-plans-up-26/)
-- [CNBC - eBay job cuts (Oct 21, 2026)](https://www.cnbc.com/2026/10/21/ebay-layoffs-workforce-cuts.html)
-- [CNBC - American Express job cuts (Oct 23, 2026)](https://www.cnbc.com/2026/10/23/american-express-job-cuts.html)
-- [Amazon - Software engineer role guideline and AI (Oct 2026)](https://www.aboutamazon.com/news/company-news/amazon-software-engineer-role-guideline-ai)
-- [Microsoft - Introducing a Voluntary Exit Offer (Oct 26, 2026)](https://blogs.microsoft.com/blog/2026/10/26/introducing-a-voluntary-exit-offer/)
-- [Anthropic - An update on independent evaluators (Oct 15, 2026)](https://www.anthropic.com/news/an-update-on-independent-evaluators)
-
-### Q3 2026 market signals
-- [Challenger, Gray & Christmas - September 2026 job cuts report](https://www.challengergray.com/blog/job-cuts-fall-in-september-hiring-plans-up-3-over-2025-on-weak-early-seasonal-hiring/)
-- [Challenger, Gray & Christmas - August 2026 job cuts report](https://www.challengergray.com/blog/challenger-report-august-job-cuts-up-58-consumer-products-food-lead/)
-- [Indeed Hiring Lab - AI exposure and advertised pay (Sep 17, 2026)](https://hiringlab.indeed.com/2026/09/17/ai-exposure-isnt-squeezing-advertised-pay-in-the-us-its-boosting-it/)
-- [Indeed Hiring Lab - Q3 2026 Labor Market Outlook Survey](https://hiringlab.indeed.com/2026/09/24/q3-labor-market-outlook-survey/)
-- [Indeed Hiring Lab - Metro-Level AI Exposure (Aug 25, 2026)](https://hiringlab.indeed.com/2026/08/25/metro-level-ai-exposure/)
-- [Indeed Hiring Lab - Working in the Data Center Build-Out (Aug 13, 2026)](https://hiringlab.indeed.com/2026/08/13/working-in-the-data-center-build-out/)
-- [US Census Bureau - Graduating into Disruption (CES-WP-26-56)](https://www.census.gov/library/working-papers/2026/adrm/CES-WP-26-56.html)
-- [Federal Reserve Bank of Dallas - AI-exposed majors (Sep 22, 2026)](https://www.dallasfed.org/research/economics/2026/0922)
-- [NBER w35796 - The Early Impacts of AI on Employment among Recent College Graduates](https://www.nber.org/papers/w35796)
-- [InformationWeek - 2026 tech company layoffs (Oracle)](https://www.informationweek.com/it-staffing-careers/2026-tech-company-layoffs)
-- [Al Jazeera - Uber lays off 3,300](https://www.aljazeera.com/economy/2026/9/2/uber-lays-off-3300-employees-in-largest-cuts-since-the-pandemic)
-- [Federal Register - H-1B fee proclamation (Sep 23, 2026)](https://www.govinfo.gov/content/pkg/FR-2026-09-23/html/2026-19554.htm)
-- [Cursor - Joining SpaceX](https://cursor.com/blog/joining-spacex)
-- [SDxCentral - DOJ probe of NVIDIA's Groq deal](https://www.sdxcentral.com/news/nvidias-groq-deal-facing-doj-probe-amid-regulator-scrutiny-into-acqui-hires-report/)
-- [TechCrunch - NVIDIA confirms it will buy Hugging Face (Sep 3, 2026)](https://techcrunch.com/2026/09/03/nvidia-confirms-it-will-buy-hugging-face-for-12-9-billion/)
-
-### FDE, evaluator, and credential programs
-- [Anthropic - Claude Frontier Academy (Oct 2, 2026)](https://www.anthropic.com/news/claude-frontier-academy)
-- [Anthropic - Embedded evaluation with Accenture (Sep 18, 2026)](https://www.anthropic.com/news/accenture-embedded-evaluation)
-- [Anthropic - Improving our alignment and security efforts (Aug 31, 2026)](https://www.anthropic.com/news/improving-alignment-security-efforts)
-- [Advent International - OpenAI launches the OpenAI Deployment Company](https://www.adventinternational.com/news/openai-launches-the-openai-deployment-company-to-help-businesses-build-around-intelligence/)
-- [Aced - OpenAI FDE roles and loop](https://www.aced.io/jobs/fde/openai)
-- [Management Consulted - BCG X Forward Deployed AI Engineer](https://managementconsulted.com/bcg-forward-deployed-ai-engineer/)
-- [Linux Foundation Training - MCPA certification](https://training.linuxfoundation.org/certification/model-context-protocol-associate-mcpa/)
-- [OpenAI - Misalignment reports (DNS egress incident)](https://alignment.openai.com/misalignment-reports/an-agent-used-dns-to-reach-an-external-chatbot/)
-
-### Hiring market reports
-- [Ivan Turkovic - AI Job Titles 2026: A CTO's Guide to the Naming Chaos](https://www.ivanturkovic.com/2026/04/24/ai-job-titles-2026-naming-chaos/)
-- [Kore1 - AI Engineer Salary Guide 2026](https://www.kore1.com/ai-engineer-salary-guide/)
-- [Kore1 - Tech Layoffs Q1 2026](https://www.kore1.com/tech-layoffs-2026/)
-- [Pin - AI Compensation Benchmarks 2026](https://www.pin.com/blog/ai-compensation-salary-guide/)
-- [Allwork.space - AI Hiring Rising vs Layoffs](https://allwork.space/2026/05/ai-hiring-is-rising-even-as-tech-layoffs-surge-140/)
-- [Tom's Hardware - Q1 2026 Layoffs](https://www.tomshardware.com/tech-industry/tech-industry-lays-off-nearly-80-000-employees-in-the-first-quarter-of-2026-almost-50-percent-of-affected-positions-cut-due-to-ai)
-- [Indeed Hiring Lab - Jan 2026 AI in Postings](https://www.hiringlab.org/2026/01/22/january-labor-market-update-jobs-mentioning-ai-are-growing-amid-broader-hiring-weakness/)
-- [Indeed Hiring Lab - AI Adoption Concentration](https://www.hiringlab.org/2026/01/16/ai-adoption-accelerating-still-concentrated-among-largest-firms/)
-- [Second Talent - Top 10 In-Demand AI Engineering Skills](https://www.secondtalent.com/resources/most-in-demand-ai-engineering-skills-and-salary-ranges/)
-- [World Economic Forum - AI Added 1.3M Jobs](https://www.weforum.org/stories/2026/01/ai-has-already-added-1-3-million-new-jobs-according-to-linkedin-data/)
-- [AI Pulse - AI & ML Engineer Salary Benchmarks 2026](https://theaimarketpulse.com/salaries/)
-- [Agentic Engineering Jobs - LangChain Market 2026](https://agentic-engineering-jobs.com/langchain-job-market-2026)
-
-### Compensation data
-- [levels.fyi - Anthropic](https://www.levels.fyi/companies/anthropic/salaries/software-engineer)
-- [levels.fyi - OpenAI](https://www.levels.fyi/companies/openai/salaries/software-engineer)
-- [levels.fyi - Cursor](https://www.levels.fyi/companies/cursor/salaries/software-engineer)
-- [levels.fyi - Sierra](https://www.levels.fyi/companies/sierra/salaries/software-engineer)
-- [levels.fyi - Google AI](https://www.levels.fyi/companies/google/salaries/software-engineer/title/ai-engineer)
-- [levels.fyi - Microsoft AI](https://www.levels.fyi/companies/microsoft/salaries/software-engineer/title/ai-engineer)
-- [Entrepreneur - OpenAI Salaries (Federal Filing)](https://www.entrepreneur.com/business-news/how-much-openai-employees-make-salaries-685000)
-- [Career Check - ML Engineer Salary London 2026](https://www.careercheck.io/blog/ml-engineer-salary-london-2026)
-- [Zen van Riel - AI Engineer Salary Europe](https://zenvanriel.com/job/ai-engineer-salary-europe/)
-- [Scaler - AI/ML Engineer Salary India](https://www.scaler.com/topics/ai-ml-engineer-salary-complete-guide/)
-- [Morgan McKinley - Singapore AI/ML Engineer](https://www.morganmckinley.com/sg/salary-guide/data/ai-ml-engineer/singapore)
-
-### Frontier-lab career sources
-- [Anthropic - Careers](https://www.anthropic.com/careers)
-- [Anthropic - Forward Deployed Engineer](https://job-boards.greenhouse.io/anthropic/jobs/4985877008)
-- [Anthropic - Applied AI Engineer](https://job-boards.greenhouse.io/anthropic/jobs/5116274008)
-- [OpenAI Careers](https://openai.com/careers/search/)
-- [OpenAI - Applied Evals](https://openai.com/careers/software-engineer-applied-evals-san-francisco/)
-- [OpenAI - Frontier Evals & Environments](https://openai.com/careers/research-engineer-frontier-evals-and-environments-san-francisco/)
-- [OpenAI - Agent Infrastructure SWE](https://openai.com/careers/software-engineer-agent-infrastructure-san-francisco/)
-- [Sundeep Teki - How to Get Hired at OpenAI/Anthropic/DeepMind 2026](https://www.sundeepteki.org/advice/how-to-get-hired-at-openai-anthropic-and-google-deepmind-in-2026)
-- [Sundeep Teki - AI Research Engineer Interview Guide](https://www.sundeepteki.org/advice/the-ultimate-ai-research-engineer-interview-guide-cracking-openai-anthropic-google-deepmind-top-ai-labs)
-- [Sundeep Teki - FDE Interviews](https://www.sundeepteki.org/advice/the-definitive-guide-to-forward-deployed-engineer-interviews-in-2026)
-- [Hashnode - Complete 2026 Guide to FDE](https://hashnode.com/blog/a-complete-2026-guide-to-the-forward-deployed-engineer)
-
-### Interview process sources
-- [Design Gurus - System Design Interviews Changed in 2026](https://designgurus.substack.com/p/system-design-interviews-changed)
-- [IGotAnOffer - Anthropic Interview Process](https://igotanoffer.com/en/advice/anthropic-interview-process)
-- [Jobright - Anthropic Technical Interview 2026](https://jobright.ai/blog/anthropic-technical-interview-questions-complete-guide-2026/)
-- [Sierra - The AI-Native Interview](https://sierra.ai/blog/the-ai-native-interview)
-- [Alexey Grigorev - AI Engineering Field Guide (Interview Process)](https://github.com/alexeygrigorev/ai-engineering-field-guide/blob/main/interview/01-interview-process.md)
-- [interviewing.io - Meta AI-Assisted Coding Interview](https://interviewing.io/blog/how-to-use-ai-in-meta-s-ai-assisted-coding-interview-with-real-prompts-and-examples)
-- [Exponent - OpenAI System Design 2026](https://www.tryexponent.com/blog/openai-system-design-interview)
-- [Exponent - Anthropic System Design 2026](https://www.tryexponent.com/blog/anthropic-system-design-interview)
-- [Anthropic - Candidate AI guidance](https://www.anthropic.com/candidate-ai-guidance)
-- [Business Insider - Google's interview overhaul and Gemini pilot (May 2026)](https://www.businessinsider.com/google-job-interview-software-engineers-ai-assistant-coding-2026-5)
-- [Business Insider - Firms moving interviews back in person (July 2026)](https://www.businessinsider.com/ai-job-interviews-in-person-nick-bloom-rto-2026-7)
-- [DG Learning - Inside Meta's AI-enabled coding round](https://dglearning.substack.com/p/inside-metas-new-ai-enabled-coding)
-- [Aced - Anthropic System Design Interview](https://www.aced.io/blog/anthropic-system-design-interview)
-- [Exponent via WashU McKelvey - 45+ AI Engineer Interview Questions (Sep 2026)](https://mckelveyconnect.washu.edu/blog/2026/09/17/45-ai-engineer-interview-questions-answers-2026-guide/)
-
-### Candidate interview reports, June to November 2026
-- [PracHub - Anthropic interview experiences](https://prachub.com/interview-experiences?company=anthropic)
-- [PracHub - OpenAI interview experiences](https://prachub.com/interview-experiences?company=openai)
-- [PracHub - Meta interview experiences](https://prachub.com/interview-experiences?company=meta)
-- [Blind - Anthropic system design onsite with a design doc](https://www.teamblind.com/post/anthropic-system-design-onsite-design-doc-256t8afc)
-- [Blind - Anthropic code review round](https://www.teamblind.com/post/anthropic-code-review-round-1h8ymxcp)
-- [Hello Interview - Meta AI-enabled coding](https://www.hellointerview.com/blog/meta-ai-enabled-coding)
-- [Prepfully - Stripe software engineer interview guide](https://prepfully.com/interview-guides/stripe-software-engineer)
-- [mlmentorship - Frontier-lab interview prep (OpenAI and DeepMind guide summaries)](https://mlmentorship.com/prep/frontier-labs/)
-- [Hacker News - Canva AI-assisted round report (Aug 25, 2026)](https://news.ycombinator.com/item?id=49427912)
-- [Meta - Hiring process (AI-enabled coding and design rounds)](https://www.metacareers.com/hiring-process/)
-- [Hello Interview - AI Coding guide](https://www.hellointerview.com/learn/ai-coding)
-- [HackerRank - How to interview engineers who use AI coding assistants (Jul 29, 2026)](https://www.hackerrank.com/blog/how-to-interview-engineers-who-use-ai-coding-assistants/)
-- [Karat - Enterprise technical interviews (Oct 1, 2026)](https://karat.com/enterprise-technical-interviews/)
-- [GitLab handbook - AI-Native Hiring Working Group (proposed)](https://gitlab.com/gitlab-com/content-sites/handbook/-/raw/main/content/handbook/company/working-groups/ai-native-hiring.md)
-- [Aced - Forward Deployed Engineer interview guide](https://www.aced.io/blog/forward-deployed-engineer-interview-the-definitive-2026-guide-fde)
-
-### Emerging role coverage
-- [AI Career Lab - Agentic-AI Job Guide 2026](https://theaicareerlab.com/blog/agentic-ai-jobs-guide-2026)
-- [Practical DevSecOps - Top 10 Emerging AI Security Roles](https://www.practical-devsecops.com/emerging-ai-security-roles/)
-- [Fast Company - Google/Box CEOs: FDE most in-demand](https://www.fastcompany.com/91541878/google-box-ceos-say-this-is-the-most-in-demand-job-in-tech)
-- [Computerworld - FDE career emerging from AI shift](https://www.computerworld.com/article/4171867/heres-one-career-emerging-from-the-ai-shift-forward-deployed-engineers.html)
-- [Rootly - AI SRE Guide 2026](https://rootly.com/ai-sre-guide)
-- [Resolve.ai - What is an AI SRE](https://resolve.ai/glossary/what-is-ai-sre)
-- [Medium - Rise of MCP Skills](https://medium.com/@adnanmasood/the-rise-of-model-context-protocol-mcp-skills-5f0d6a1c3579)
-
-### Compliance & regulation
-- [EU AI Act Implementation Timeline](https://artificialintelligenceact.eu/implementation-timeline/)
-- [Secure Privacy - EU AI Act 2026 Compliance](https://secureprivacy.ai/blog/eu-ai-act-2026-compliance)
-- [Augment Code - EU AI Act 2026 Guide](https://www.augmentcode.com/guides/eu-ai-act-2026)
+۱. **نقش‌ها را بر مبنای ماهیت کار تعریف کنید، نه عناوین دهان‌پرکن.** مهندس هوش مصنوعی چتر کلی شماست؛ در دل آن تخصص‌های صریح (لید RAG، لید ایجنت، لید ارزیابی، لید پلتفرم) مشخص نمایید.
+۲. **مهندس ارزیابی (Eval Engineer) یک نقش واقعی است.** اجازه ندهید مهندس توسعه قابلیت، مالک متریک‌هایی باشد که سعی در ارتقای آن‌ها دارد. سنجش را از اجرا تفکیک کنید.
+۳. **نقش FDE تنها در درآمدهای سالانه مشتری (ARR) بالای ۵۰۰ هزار دلار توجیه اقتصادی دارد.** در زیر این رقم از مهندسی راه‌حل‌ها (Solutions Engineering) استفاده کنید.
+۴. **مهندس پایداری هوش مصنوعی نقشی است که هنوز نمی‌دانید به آن نیاز دارید.** وقتی اولین ایجنت شما ساعت ۳ صبح در حلقه بی‌پایان افتاد و پیش از شلیک حفاظ حلقه، ۵۰ هزار دلار هزینه API سوزاند، آرزو خواهید کرد که ۶ ماه زودتر این نقش را استخدام کرده بودید.
 
 ---
 
-*See also: [Question Bank](01-question-bank.md) | [Answer Frameworks](02-answer-frameworks.md) | [Behavioral for AI Roles](05-behavioral-for-ai-roles.md) | [Role Transition Guide](../TRANSITION_GUIDE.md)*
+## منابع و مراجع
+
+بررسی اولیه بر مبنای بیش از ۱۰۰ آگهی استخدامی و گزارش‌های استخدام در ۱۷ مه ۲۰۲۶ استوار است. داده‌های بازار، سیاست‌های مصاحبه، برنامه‌های FDE و ارزیابی‌کنندگان در سه‌ماهه سوم، اکتبر و نوامبر ۲۰۲۶ از منابع زیر جمع‌آوری و اعتبارسنجی شده‌اند:
+
+### سیگنال‌های اکتبر و نوامبر ۲۰۲۶
+- [Indeed Hiring Lab - گزارش بازار کار آمریکا، اکتبر ۲۰۲۶ (۲۲ اکتبر ۲۰۲۶)](https://hiringlab.indeed.com/2026/10/22/us-labor-market-snapshot-october-2026/)
+- [Anthropic - ثبت فرم S-1 برای عرضه اولیه سهام (۲۶ اکتبر ۲۰۲۶)](https://www.anthropic.com/news/s1-sec)
+- [SEC EDGAR - اصلاحیه S-1/A شرکت Anthropic (۲ نوامبر ۲۰۲۶)](https://www.sec.gov/Archives/edgar/data/2130357/000162828026068676/0001628280-26-068676-index.htm)
+- [Challenger, Gray & Christmas - گزارش تعدیل نیروی اکتبر ۲۰۲۶ (۵ نوامبر ۲۰۲۶)](https://www.challengergray.com/blog/october-layoffs-at-three-year-low-seasonal-hiring-plans-up-26/)
+- [CNBC - تعدیل نیروی eBay (۲۱ اکتبر ۲۰۲۶)](https://www.cnbc.com/2026/10/21/ebay-layoffs-workforce-cuts.html)
+- [CNBC - تعدیل نیروی American Express (۲۳ اکتبر ۲۰۲۶)](https://www.cnbc.com/2026/10/23/american-express-job-cuts.html)
+- [Amazon - راهنمای نقش مهندس توسعه نرم‌افزار و هوش مصنوعی (اکتبر ۲۰۲۶)](https://www.aboutamazon.com/news/company-news/amazon-software-engineer-role-guideline-ai)
+- [Microsoft - معرفی پیشنهاد خروج داوطلبانه (۲۶ اکتبر ۲۰۲۶)](https://blogs.microsoft.com/blog/2026/10/26/introducing-a-voluntary-exit-offer/)
+- [Anthropic - گزارش ارزیابی‌کنندگان مستقل (۱۵ اکتبر ۲۰۲۶)](https://www.anthropic.com/news/an-update-on-independent-evaluators)
+
+### سیگنال‌های بازار سه‌ماهه سوم ۲۰۲۶
+- [Challenger, Gray & Christmas - گزارش تعدیل نیرو سپتامبر ۲۰۲۶](https://www.challengergray.com/blog/job-cuts-fall-in-september-hiring-plans-up-3-over-2025-on-weak-early-seasonal-hiring/)
+- [Challenger, Gray & Christmas - گزارش تعدیل نیرو اوت ۲۰۲۶](https://www.challengergray.com/blog/challenger-report-august-job-cuts-up-58-consumer-products-food-lead/)
+- [Indeed Hiring Lab - مواجهه با هوش مصنوعی و حقوق آگهی‌شده (۱۷ سپتامبر ۲۰۲۶)](https://hiringlab.indeed.com/2026/09/17/ai-exposure-isnt-squeezing-advertised-pay-in-the-us-its-boosting-it/)
+- [Indeed Hiring Lab - نظرسنجی چشم‌انداز بازار کار Q3 2026](https://hiringlab.indeed.com/2026/09/24/q3-labor-market-outlook-survey/)
+- [Indeed Hiring Lab - مواجهه با هوش مصنوعی در سطح مناطق شهری (۲۵ اوت ۲۰۲۶)](https://hiringlab.indeed.com/2026/08/25/metro-level-ai-exposure/)
+- [Indeed Hiring Lab - کار در پروژه‌های ساخت مراکز داده (۱۳ اوت ۲۰۲۶)](https://hiringlab.indeed.com/2026/08/13/working-in-the-data-center-build-out/)
+- [اداره سرشماری آمریکا - فارغ‌التحصیلی در دوران تحولات فناورانه (CES-WP-26-56)](https://www.census.gov/library/working-papers/2026/adrm/CES-WP-26-56.html)
+- [بانک فدرال رزرو دالاس - رشته‌های در معرض هوش مصنوعی (۲۲ سپتامبر ۲۰۲۶)](https://www.dallasfed.org/research/economics/2026/0922)
+- [NBER w35796 - اثرات اولیه هوش مصنوعی بر اشتغال فارغ‌التحصیلان جدید](https://www.nber.org/papers/w35796)
+- [InformationWeek - تعدیل‌های بخش فناوری در سال ۲۰۲۶ (اوراکل)](https://www.informationweek.com/it-staffing-careers/2026-tech-company-layoffs)
+- [الجزیره - تعدیل ۳,۳۰۰ کارمند در اوبر](https://www.aljazeera.com/economy/2026/9/2/uber-lays-off-3300-employees-in-largest-cuts-since-the-pandemic)
+- [Federal Register - بیانیه هزینه ویزای H-1B (۲۳ سپتامبر ۲۰۲۶)](https://www.govinfo.gov/content/pkg/FR-2026-09-23/html/2026-19554.htm)
+- [Cursor - پیوستن به SpaceX](https://cursor.com/blog/joining-spacex)
+- [SDxCentral - تحقیقات وزارت دادگستری آمریکا درباره توافق انویدیا و Groq](https://www.sdxcentral.com/news/nvidias-groq-deal-facing-doj-probe-amid-regulator-scrutiny-into-acqui-hires-report/)
+- [TechCrunch - انویدیا خرید Hugging Face به ارزش ۱۲.۹ میلیارد دلار را تایید کرد (۳ سپتامبر ۲۰۲۶)](https://techcrunch.com/2026/09/03/nvidia-confirms-it-will-buy-hugging-face-for-12-9-billion/)
+
+### برنامه‌های FDE، ارزیابی و مدارک تخصصی
+- [Anthropic - آکادمی Claude Frontier (۲ اکتبر ۲۰۲۶)](https://www.anthropic.com/news/claude-frontier-academy)
+- [Anthropic - ارزیابی‌های تعبیه‌شده با شرکت Accenture (۱۸ سپتامبر ۲۰۲۶)](https://www.anthropic.com/news/accenture-embedded-evaluation)
+- [Anthropic - ارتقای تلاش‌های همسویی و امنیت (۳۱ اوت ۲۰۲۶)](https://www.anthropic.com/news/improving-alignment-security-efforts)
+- [Advent International - راه‌اندازی شرکت استقرار OpenAI](https://www.adventinternational.com/news/openai-launches-the-openai-deployment-company-to-help-businesses-build-around-intelligence/)
+- [Aced - نقش‌ها و فرآیند مصاحبه FDE در OpenAI](https://www.aced.io/jobs/fde/openai)
+- [Management Consulted - نقش FDE در شرکت BCG X](https://managementconsulted.com/bcg-forward-deployed-ai-engineer/)
+- [آموزش‌های لینوکس فاندیشن - مدرک تخصصی MCPA](https://training.linuxfoundation.org/certification/model-context-protocol-associate-mcpa/)
+- [OpenAI - گزارش حوادث امنیتی (حادثه نشت ایجنت از طریق DNS)](https://alignment.openai.com/misalignment-reports/an-agent-used-dns-to-reach-an-external-chatbot/)
+
+### داده‌های جبران خدمت و حقوق
+- [levels.fyi - دستمزدهای Anthropic](https://www.levels.fyi/companies/anthropic/salaries/software-engineer)
+- [levels.fyi - دستمزدهای OpenAI](https://www.levels.fyi/companies/openai/salaries/software-engineer)
+- [levels.fyi - دستمزدهای Cursor](https://www.levels.fyi/companies/cursor/salaries/software-engineer)
+- [levels.fyi - دستمزدهای Sierra](https://www.levels.fyi/companies/sierra/salaries/software-engineer)
+- [levels.fyi - مهندسان هوش مصنوعی Google](https://www.levels.fyi/companies/google/salaries/software-engineer/title/ai-engineer)
+- [levels.fyi - مهندسان هوش مصنوعی Microsoft](https://www.levels.fyi/companies/microsoft/salaries/software-engineer/title/ai-engineer)
+- [Entrepreneur - دستمزدهای کارمندان OpenAI (ثبت فدرال)](https://www.entrepreneur.com/business-news/how-much-openai-employees-make-salaries-685000)
+- [Career Check - دستمزد مهندس ML در لندن ۲۰۲۶](https://www.careercheck.io/blog/ml-engineer-salary-london-2026)
+- [Zen van Riel - دستمزد مهندس هوش مصنوعی در اروپا](https://zenvanriel.com/job/ai-engineer-salary-europe/)
+- [Scaler - دستمزد مهندس هوش مصنوعی در هند](https://www.scaler.com/topics/ai-ml-engineer-salary-complete-guide/)
+- [Morgan McKinley - دستمزد مهندسان هوش مصنوعی در سنگاپور](https://www.morganmckinley.com/sg/salary-guide/data/ai-ml-engineer/singapore)
+
+### مراجع گزارش‌های مصاحبه داوطلبان (ژوئن تا نوامبر ۲۰۲۶)
+- [PracHub - تجربیات مصاحبه Anthropic](https://prachub.com/interview-experiences?company=anthropic)
+- [PracHub - تجربیات مصاحبه OpenAI](https://prachub.com/interview-experiences?company=openai)
+- [PracHub - تجربیات مصاحبه Meta](https://prachub.com/interview-experiences?company=meta)
+- [Blind - مصاحبه طراحی سیستم Anthropic با سند طراحی](https://www.teamblind.com/post/anthropic-system-design-onsite-design-doc-256t8afc)
+- [Blind - مرحله بررسی کد Anthropic](https://www.teamblind.com/post/anthropic-code-review-round-1h8ymxcp)
+- [Hello Interview - کدنویسی با هوش مصنوعی در Meta](https://www.hellointerview.com/blog/meta-ai-enabled-coding)
+- [Prepfully - راهنمای مصاحبه مهندس نرم‌افزار Stripe](https://prepfully.com/interview-guides/stripe-software-engineer)
+- [Hacker News - گزارش مرحله با کمک هوش مصنوعی در Canva](https://news.ycombinator.com/item?id=49427912)
+- [Meta - فرآیند استخدام (مراحل کدنویسی و طراحی با هوش مصنوعی)](https://www.metacareers.com/hiring-process/)
+- [Hello Interview - راهنمای جامع AI Coding](https://www.hellointerview.com/learn/ai-coding)
+- [HackerRank - نحوه مصاحبه با مهندسانی که از دستیار کدنویسی هوش مصنوعی استفاده می‌کنند](https://www.hackerrank.com/blog/how-to-interview-engineers-who-use-ai-coding-assistants/)
+- [Karat - مصاحبه‌های فنی سازمانی](https://karat.com/enterprise-technical-interviews/)
+- [Aced - راهنمای جامع مصاحبه Forward Deployed Engineer](https://www.aced.io/blog/forward-deployed-engineer-interview-the-definitive-2026-guide-fde)
+
+---
+
+*همچنین ببینید: [بانک سؤالات](01-question-bank.md) | [چارچوب‌های پاسخ‌دهی](02-answer-frameworks.md) | [سؤالات رفتاری برای نقش‌های هوش مصنوعی](05-behavioral-for-ai-roles.md) | [راهنمای تغییر نقش شغلی](../TRANSITION_GUIDE.md)*
+
+</div>

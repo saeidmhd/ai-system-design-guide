@@ -1,25 +1,29 @@
-# Answer Frameworks for AI System Design Interviews
+<div dir="rtl">
 
-Five structured frameworks for AI system design interviews: SPIDER for design questions, ETA for concepts, tradeoff analysis, debugging, and STAR-L for behavioral.
+# چارچوب‌های پاسخ‌دهی برای مصاحبه‌های طراحی سیستم‌های هوش مصنوعی (AI System Design)
 
-Strong interview answers follow consistent structures. This chapter provides frameworks for different question types, with examples and anti-patterns. Pair these frameworks with worked examples from the [Question Bank](01-question-bank.md) and rehearse with [Whiteboard Exercises](04-whiteboard-exercises.md).
+پنج چارچوب ساختاریافته برای مصاحبه‌های طراحی سیستم‌های هوش مصنوعی: SPIDER برای سؤالات طراحی سیستم، ETA برای تشریح مفاهیم، تحلیل موازنه‌ها (Tradeoffs)، عیب‌یابی و اشکال‌زدایی، و STAR-L برای سؤالات رفتاری.
 
-## Table of Contents
+پاسخ‌های قدرتمند در مصاحبه از ساختارهای منسجم و یکپارچه‌ای پیروی می‌کنند. این فصل چارچوب‌هایی را برای انواع مختلف سؤالات، همراه با مثال‌ها و الگوهای ضدالگو (Anti-patterns) ارائه می‌دهد. این چارچوب‌ها را با نمونه‌های حل‌شده در [بانک سؤالات](01-question-bank.md) تطبیق دهید و با [تمرین‌های تخته‌سفید](04-whiteboard-exercises.md) تمرین کنید.
 
-- [System Design Framework (SPIDER)](#system-design-framework-spider)
-- [Worked Example: SPIDER in a 45-Minute Session](#worked-example-spider-in-a-45-minute-session)
-- [Concept Explanation Framework (ETA)](#concept-explanation-framework-eta)
-- [Tradeoff Analysis Framework](#tradeoff-analysis-framework)
-- [Debugging and Troubleshooting Framework](#debugging-and-troubleshooting-framework)
-- [Behavioral Questions Framework (STAR-L)](#behavioral-questions-framework-star-l)
-- [Handling Unknown Topics](#handling-unknown-topics)
-- [Common Mistakes and How to Avoid Them](#common-mistakes-and-how-to-avoid-them)
+## جدول محتوا
+
+- [چارچوب طراحی سیستم (SPIDER)](#system-design-framework-spider)
+- [نمونه پیاده‌سازی‌شده: SPIDER در یک جلسه ۴۵ دقیقه‌ای](#worked-example-spider-in-a-45-minute-session)
+- [چارچوب توضیح مفاهیم (ETA)](#concept-explanation-framework-eta)
+- [چارچوب تحلیل موازنه‌ها](#tradeoff-analysis-framework)
+- [چارچوب اشکال‌زدایی و عیب‌یابی](#debugging-and-troubleshooting-framework)
+- [چارچوب سؤالات رفتاری (STAR-L)](#behavioral-questions-framework-star-l)
+- [مدیریت مباحث ناشناخته](#handling-unknown-topics)
+- [اشتباهات رایج و نحوه اجتناب از آن‌ها](#common-mistakes-and-how-to-avoid-them)
 
 ---
 
-## System Design Framework (SPIDER)
+## چارچوب طراحی سیستم (SPIDER)
 
-Use this framework for any system design question involving AI components. The full motion with rough time budget per phase:
+از این چارچوب برای هر سؤال طراحی سیستمی که شامل مولفه‌های هوش مصنوعی است استفاده کنید. حرکت کامل همراه با بودجه زمانی تقریبی برای هر فاز:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -30,19 +34,21 @@ flowchart LR
     E --> F[R Reliability and scale<br/>5 min]
 ```
 
-### S - Scope and Clarify
+</div>
 
-**Purpose:** Narrow the problem space and show you think before you build.
+### S - مشخص کردن دامنه و شفاف‌سازی (Scope and Clarify)
 
-**Questions to ask:**
-- What is the scale? (users, requests, data volume)
-- What are the latency requirements?
-- What accuracy or quality bar must we meet?
-- Are there compliance or security requirements?
-- What is the existing infrastructure?
-- What is the budget constraint?
+**هدف:** محدود کردن فضای مسئله و نشان دادن اینکه شما پیش از ساخت، فکر می‌کنید.
 
-**Example:**
+**سؤالاتی که باید بپرسید:**
+- مقیاس سیستم چقدر است؟ (کاربران، درخواست‌ها، حجم داده)
+- الزامات تاخیر (Latency) چیست؟
+- چه سطحی از دقت یا کیفیت مورد انتظار است؟
+- آیا الزامات امنیتی یا انطباق قانونی (Compliance) وجود دارد؟
+- زیرساخت موجود چیست؟
+- محدودیت بودجه چقدر است؟
+
+**مثال:**
 ```
 Interviewer: Design a customer support chatbot.
 
@@ -54,24 +60,24 @@ You: Before I dive in, I want to clarify a few things:
 - What is our accuracy target for resolved vs escalated?
 ```
 
-**Anti-pattern:** Jumping straight into architecture without understanding requirements.
+**ضدالگو (Anti-pattern):** پریدن مستقیم به سراغ معماری بدون درک نیازمندی‌ها.
 
 ---
 
-### P - Prioritize Requirements
+### P - اولویت‌بندی نیازمندی‌ها (Prioritize Requirements)
 
-**Purpose:** Identify what matters most and design toward it.
+**هدف:** شناسایی مواردی که بیشترین اهمیت را دارند و طراحی بر اساس آن‌ها.
 
-**Create a priority matrix:**
+**یک ماتریس اولویت‌بندی ایجاد کنید:**
 
-| Requirement | Priority | Implication |
+| نیازمندی | اولویت | پیامد طراحی |
 |-------------|----------|-------------|
-| Low latency | High | May limit model size |
-| High accuracy | High | Need good retrieval + eval |
-| Cost efficiency | Medium | Optimize with caching |
-| Multi-language | Medium | Affects embedding choice |
+| تاخیر کم (Low latency) | بالا | ممکن است اندازه مدل را محدود کند |
+| دقت بالا (High accuracy) | بالا | نیاز به بازیابی قوی + پایپ‌لاین ارزیابی (Eval) |
+| کارایی هزینه (Cost efficiency) | متوسط | بهینه‌سازی از طریق Caching |
+| چندزبانه بودن (Multi-language) | متوسط | انتخاب مدل Embedding را تحت تاثیر قرار می‌دهد |
 
-**State your priorities explicitly:**
+**اولویت‌های خود را به‌صورت شفاف بیان کنید:**
 ```
 "Given these requirements, I will prioritize latency and accuracy. 
 Cost optimization will be a second-order concern once we have the basic system working."
@@ -79,11 +85,13 @@ Cost optimization will be a second-order concern once we have the basic system w
 
 ---
 
-### I - Initial Architecture
+### I - معماری اولیه (Initial Architecture)
 
-**Purpose:** Draw the high-level system before diving into details.
+**هدف:** ترسیم نمای کلی سیستم در سطح بالا پیش از ورود به جزئیات.
 
-**Standard components for AI systems:**
+**مولفه‌های استاندارد برای سیستم‌های هوش مصنوعی:**
+<div dir="ltr">
+
 ```
 ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
 │  Client  │────▶│  API GW  │────▶│ AI Layer │────▶│  LLM(s)  │
@@ -95,76 +103,78 @@ Cost optimization will be a second-order concern once we have the basic system w
                                   └──────────┘
 ```
 
-**Explain each component briefly:**
-- What it does
-- Why it is needed
-- What alternatives exist
+</div>
+
+**هر مولفه را به‌صورت مختصر شرح دهید:**
+- چه کاری انجام می‌دهد
+- چرا به آن نیاز است
+- چه جایگزین‌هایی برای آن وجود دارد
 
 ---
 
-### D - Deep Dive into Critical Paths
+### D - ورود عمیق به مسیرهای حیاتی (Deep Dive into Critical Paths)
 
-**Purpose:** Show depth on the most important parts.
+**هدف:** نشان دادن عمق دانش فنی روی مهم‌ترین بخش‌های سیستم.
 
-**Choose 2-3 areas to deep dive based on:**
-- What the interviewer seems most interested in
-- What is novel or complex about this system
-- Where the biggest risks lie
+**۲ تا ۳ بخش را بر این اساس برای تحلیل عمیق انتخاب کنید:**
+- مصاحبه‌کننده به چه چیزی بیشترین تمایل و علاقه را نشان می‌دهد
+- چه چیزی در این سیستم جدید، منحصر‌به‌فرد یا پیچیده است
+- بزرگ‌ترین ریسک‌ها در کجا قرار دارند
 
-**Example deep dives:**
-- RAG pipeline: chunking, embedding, retrieval, reranking
-- Agent loop: tool selection, error handling, termination
-- Data pipeline: ingestion, processing, indexing
-- Security: isolation, permissions, audit
+**نمونه‌هایی از بخش‌های نیازمند ورود عمیق:**
+- پایپ‌لاین RAG: فرآیند Chunking، ساخت Embedding، بازیابی، رتبه‌بندی مجدد (Reranking)
+- حلقه Agent: انتخاب ابزار، مدیریت خطا، شرایط پایان (Termination)
+- پایپ‌لاین داده: دریافت (Ingestion)، پردازش و نمایه‌سازی (Indexing)
+- امنیت: ایزوله‌سازی، دسترسی‌ها و ممیزی (Audit)
 
-**Signal your intent:**
+**قصد خود را اعلام کنید:**
 ```
 "I will now go deeper on the RAG pipeline since retrieval quality is critical to this system."
 ```
 
 ---
 
-### E - Evaluation and Observability
+### E - ارزیابی و مشاهده‌پذیری (Evaluation and Observability)
 
-**Purpose:** Show you think about production operations.
+**هدف:** نشان دادن اینکه شما به عملیات استقرار در محیط عملیاتی (production) فکر می‌کنید.
 
-**Cover:**
-1. **Metrics:** What do you measure?
-2. **Evaluation:** How do you know it works?
-3. **Monitoring:** How do you detect problems?
-4. **Alerting:** When do humans get paged?
+**پوشش موارد:**
+1. **متریک‌ها (Metrics):** چه چیزی را اندازه‌گیری می‌کنید؟
+2. **ارزیابی (Evaluation):** چگونه متوجه می‌شوید که سیستم به‌درستی کار می‌کند؟
+3. **مانیتورینگ (Monitoring):** چگونه مشکلات را تشخیص می‌دهید؟
+4. **هشداردهی (Alerting):** در چه زمانی به مهندسان پیجر (Page) ارسال می‌شود؟
 
-**Standard metrics for AI systems:**
-- Latency (p50, p95, p99)
-- Token usage / cost
-- Quality scores (offline and sampled online)
-- Error rates by type
-- Cache hit rates
-
----
-
-### R - Reliability and Scale
-
-**Purpose:** Address failure modes and growth.
-
-**Failure modes to discuss:**
-- LLM provider outage (a fallback model from the same vendor usually shares the outage)
-- Rate limiting
-- Bad model outputs
-- Model retirement, or a provider-side change shipped under the same model ID
-- Data pipeline failures
-- Cache invalidation
-
-**Scaling considerations:**
-- Where are the bottlenecks?
-- What scales horizontally vs vertically?
-- What costs scale with usage?
+**متریک‌های استاندارد برای سیستم‌های هوش مصنوعی:**
+- تاخیر (Latency) شامل صدک‌های p50، p95 و p99
+- مصرف Token / هزینه
+- امتیازات کیفیت (آفلاین و نمونه‌برداری آنلاین)
+- نرخ خطا به تفکیک نوع خطا
+- نرخ اصابت به کش (Cache hit rate)
 
 ---
 
-## Worked Example: SPIDER in a 45-Minute Session
+### R - پایداری و مقیاس‌پذیری (Reliability and Scale)
 
-A condensed transcript showing how the framework sounds in a real loop. The prompt: "Design a document Q&A system for a 10,000-employee company." Notes in brackets mark the framework step and the clock.
+**هدف:** بررسی حالت‌های شکست و نحوه رشد سیستم.
+
+**حالت‌های شکستی که باید درباره آن‌ها بحث کنید:**
+- قطعی ارائه‌دهنده LLM (یک مدل Fallback از همان ارائه‌دهنده معمولاً در قطعی شریک است)
+- محدودیت نرخ درخواست (Rate limiting)
+- خروجی‌های نامطلوب یا اشتباه مدل
+- بازنشستگی مدل یا تغییراتی از سمت ارائه‌دهنده که تحت همان شناسه مدل اعمال می‌شود
+- شکست‌های پایپ‌لاین داده
+- باطل‌سازی کش (Cache invalidation)
+
+**ملاحظات مقیاس‌پذیری (Scaling):**
+- گلوگاه‌ها (Bottlenecks) کجا هستند؟
+- چه بخش‌هایی به‌صورت افقی و چه بخش‌هایی به‌صورت عمودی مقیاس‌پذیر هستند؟
+- چه هزینه‌هایی همگام با افزایش استفاده رشد می‌کنند؟
+
+---
+
+## نمونه پیاده‌سازی‌شده: SPIDER در یک جلسه ۴۵ دقیقه‌ای
+
+یک متن گفت‌وگوی فشرده که نشان می‌دهد این چارچوب در یک مصاحبه واقعی چگونه به نظر می‌رسد. موضوع: «طراحی سیستم پرسش و پاسخ اسناد برای شرکتی با ۱۰,۰۰۰ کارمند». یادداشت‌های درون براکت مراحل چارچوب و زمان‌سنج را نشان می‌دهند.
 
 ```
 [0:00 - S: Scope]
@@ -232,27 +242,26 @@ gives me ~400ms retrieval, ~150ms rerank (worth it for quality),
 second. Anything else you'd like me to go deeper on?"
 ```
 
-**What this transcript demonstrates:**
-- Scope took five minutes and produced numbers the whole design referenced.
-- The candidate narrated while drawing and invited steering at each phase.
-- Deep-dive answers led with the decision, then the reason, then the failure mode.
-- The candidate critiqued their own design before the interviewer had to.
-- Evaluation was part of the design, not an afterthought.
+**آنچه این سناریو نشان می‌دهد:**
+- تعیین دامنه (Scope) پنج دقیقه زمان برد و اعدادی را تولید کرد که کل طراحی به آن‌ها ارجاع داد.
+- داوطلب هم‌زمان با رسم نقشه صحبت کرد و در هر فاز مصاحبه‌کننده را به هدایت بحث دعوت نمود.
+- پاسخ‌های ورود عمیق با خود تصمیم شروع شدند، سپس دلیل آن و در نهایت حالت‌های شکست بیان شد.
+- داوطلب پیش از آنکه مصاحبه‌کننده ایرادی بگیرد، طراحی خود را نقد کرد.
+- ارزیابی بخشی از طراحی بود، نه موضوعی که در انتها به آن فکر شود.
 
-
-To rehearse this under real conditions, run the same prompt with a partner who plays the interviewer and is allowed to interrupt. If you want an experienced interviewer for that, Om runs 1:1 mock sessions on [EngineBogie](https://enginebogie.com/u/ombharatiya) and [Topmate](https://topmate.io/ombharatiya).
+برای تمرین این فرآیند تحت شرایط واقعی، همین مسئله را با همکاری فردی که نقش مصاحبه‌کننده را بازی می‌کند و اجازه دارد صحبت شما را قطع کند، اجرا کنید. اگر به دنبال یک مصاحبه‌کننده باتجربه برای این کار هستید، Om جلسات آزمایشی ۱ به ۱ را در [EngineBogie](https://enginebogie.com/u/ombharatiya) و [Topmate](https://topmate.io/ombharatiya) برگزار می‌کند.
 
 ---
 
-## Concept Explanation Framework (ETA)
+## چارچوب توضیح مفاهیم (ETA)
 
-Use this for conceptual questions like "Explain RAG" or "What is speculative decoding?"
+از این چارچوب برای سؤالات مفهومی مانند «RAG را توضیح دهید» یا «Speculative Decoding چیست؟» استفاده کنید.
 
-### E - Explain Simply
+### E - توضیح ساده (Explain Simply)
 
-Start with a one-sentence definition anyone could understand.
+با یک تعریف یک‌جمله‌ای که برای هر کسی قابل فهم باشد شروع کنید.
 
-**Example for KV Cache:**
+**مثال برای KV Cache:**
 ```
 "KV cache stores intermediate computations during LLM generation so we 
 do not have to redo work for previous tokens when generating each new token."
@@ -260,11 +269,11 @@ do not have to redo work for previous tokens when generating each new token."
 
 ---
 
-### T - Technical Details
+### T - جزئیات فنی (Technical Details)
 
-Add the technical depth appropriate for the interviewer.
+عمق فنی مناسب متناسب با سطح مصاحبه‌کننده را اضافه کنید.
 
-**Example for KV Cache:**
+**مثال برای KV Cache:**
 ```
 "Specifically, for each layer in the transformer, we cache the Key and 
 Value tensors for all positions. On each new token, we only compute K 
@@ -279,11 +288,11 @@ For Llama 3.1 70B (80 layers, 8 KV heads, head_dim 128, BF16), that is
 
 ---
 
-### A - Applications and Tradeoffs
+### A - کاربردها و موازنه‌ها (Applications and Tradeoffs)
 
-Connect to practical usage and discuss tradeoffs.
+مفهوم را به کاربردهای عملی پیوند دهید و درباره موازنه‌ها (Tradeoffs) صحبت کنید.
 
-**Example for KV Cache:**
+**مثال برای KV Cache:**
 ```
 "This is critical for production serving. Without it, generation would be 
 quadratic in sequence length.
@@ -302,11 +311,11 @@ reads bill at 0.1x the input price or less on current models."
 
 ---
 
-## Tradeoff Analysis Framework
+## چارچوب تحلیل موازنه‌ها (Tradeoff Analysis)
 
-When asked to compare options or justify a decision, use this structure.
+هنگامی که از شما خواسته می‌شود گزینه‌ها را با هم مقایسه کنید یا تصمیمی را توجیه نمایید، از این ساختار استفاده کنید.
 
-### Step 1: State the Options Clearly
+### گام ۱: گزینه‌ها را به‌صورت شفاف بیان کنید
 
 ```
 "For embedding models, we have three main options:
@@ -317,28 +326,28 @@ When asked to compare options or justify a decision, use this structure.
    BGE variant): full control, operational overhead"
 ```
 
-### Step 2: Define Evaluation Criteria
+### گام ۲: معیارهای ارزیابی را مشخص کنید
 
-Pick criteria that matter for this specific decision:
+معیارهایی را انتخاب کنید که برای این تصمیم خاص اهمیت دارند:
 
-| Criteria | Weight | Reasoning |
+| معیار | وزن | دلیل |
 |----------|--------|-----------|
-| Quality | High | Search accuracy is key feature |
-| Cost at scale | High | 100M embeddings/month |
-| Latency | Medium | Batch indexing, not real-time |
-| Ops overhead | Medium | Small team |
+| کیفیت (Quality) | بالا | دقت جستجو ویژگی کلیدی سیستم است |
+| هزینه در مقیاس بالا (Cost at scale) | بالا | ۱۰۰ میلیون Embedding در ماه |
+| تاخیر (Latency) | متوسط | نمایه‌سازی دسته‌ای (Batch)، نه بلادرنگ |
+| سربار عملیاتی (Ops overhead) | متوسط | تیم کوچک |
 
-### Step 3: Analyze Each Option
+### گام ۳: هر گزینه را تحلیل کنید
 
-Create a comparison matrix (score is the weighted mean, with High criteria counted double):
+یک ماتریس مقایسه بسازید (امتیاز میانگین وزنی است که معیارهای «بالا» دو برابر شمرده می‌شوند):
 
-| Option | Quality | Cost | Latency | Ops | Score |
+| گزینه | کیفیت | هزینه | تاخیر | عملیات | امتیاز |
 |--------|---------|------|---------|-----|-------|
 | OpenAI | ★★★★ | ★★★ | ★★★★ | ★★★★★ | 3.8 |
 | Cohere | ★★★★★ | ★★★★ | ★★★★ | ★★★★★ | 4.5 |
-| Self-hosted | ★★★★ | ★★★★★ | ★★★ | ★★ | 3.8 |
+| هاست‌شده توسط خود (Self-hosted) | ★★★★ | ★★★★★ | ★★★ | ★★ | 3.8 |
 
-### Step 4: Make a Recommendation with Reasoning
+### گام ۴: یک پیشنهاد مستدل ارائه دهید
 
 ```
 "I would recommend Cohere Embed 5 for this use case because:
@@ -360,9 +369,11 @@ keeping the raw chunks so a re-embed is a batch job, not a project."
 
 ---
 
-## Debugging and Troubleshooting Framework
+## چارچوب اشکال‌زدایی و عیب‌یابی (Debugging)
 
-When asked "How would you debug X?" or "The system is doing Y, how do you fix it?" The 4-step diagnostic motion:
+هنگامی که پرسیده می‌شود «چگونه X را عیب‌یابی می‌کنید؟» یا «سیستم در حال انجام Y است، چگونه آن را برطرف می‌سازید؟» از فرآیند تشخیصی ۴ مرحله‌ای زیر استفاده کنید:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -374,7 +385,9 @@ flowchart TD
     E -->|Yes| F[Ship fix with monitoring]
 ```
 
-### Step 1: Gather Information
+</div>
+
+### گام ۱: جمع‌آوری اطلاعات
 
 ```
 "First, I would ask:
@@ -384,7 +397,7 @@ flowchart TD
 - Are there patterns (time of day, user segment, query type)?"
 ```
 
-### Step 2: Form Hypotheses
+### گام ۲: صورت‌بندی فرضیه‌ها
 
 ```
 "Based on the symptoms, my top hypotheses are:
@@ -394,7 +407,7 @@ flowchart TD
 4. Rate limiting causing timeouts"
 ```
 
-### Step 3: Describe Diagnostic Approach
+### گام ۳: شرح رویکرد تشخیصی
 
 ```
 "To isolate the cause:
@@ -404,7 +417,7 @@ flowchart TD
 4. Review metrics for any correlated changes"
 ```
 
-### Step 4: Propose Fixes and Verification
+### گام ۴: ارائه راهکار و تایید اعتبار
 
 ```
 "If it is retrieval quality, I would:
@@ -416,31 +429,31 @@ flowchart TD
 
 ---
 
-## Behavioral Questions Framework (STAR-L)
+## چارچوب سؤالات رفتاری (STAR-L)
 
-For behavioral questions in AI roles, use STAR-L (STAR + Learnings).
+برای سؤالات رفتاری در نقش‌های هوش مصنوعی، از STAR-L (شامل STAR به اضافه آموخته‌ها یا Learnings) استفاده کنید.
 
-### S - Situation
+### S - موقعیت (Situation)
 
-Set the context briefly.
+بستر و زمینه ماجرا را به‌صورت خلاصه تعریف کنید.
 
 ```
 "We had just launched our RAG-powered search feature and were getting 
 complaints about incorrect answers for technical queries."
 ```
 
-### T - Task
+### T - وظیفه (Task)
 
-What was your specific responsibility?
+مسئولیت دقیق شما چه بود؟
 
 ```
 "As the tech lead, I needed to diagnose the issue and ship a fix quickly 
 while maintaining user trust."
 ```
 
-### A - Action
+### A - اقدام (Action)
 
-What did YOU do? Use "I" not "we."
+شما چه کاری انجام دادید؟ از ضمیر «من» استفاده کنید، نه «ما».
 
 ```
 "I first instrumented detailed tracing to understand where failures occurred.
@@ -449,18 +462,18 @@ I designed a code-aware chunking approach that preserved semantic units.
 I also added a confidence score display so users could calibrate trust."
 ```
 
-### R - Result
+### R - نتیجه (Result)
 
-Quantify if possible.
+در صورت امکان نتایج را کمّی و عددی بیان کنید.
 
 ```
 "Answer quality on technical queries improved from 65% to 89% in our 
 evaluation suite. User complaints dropped 70% within two weeks."
 ```
 
-### L - Learnings
+### L - آموخته‌ها (Learnings)
 
-What would you do differently?
+اگر دوباره با آن مواجه می‌شدید چه کاری را متفاوت انجام می‌دادید؟
 
 ```
 "I learned that chunking strategies need to be content-aware from the start.
@@ -470,11 +483,11 @@ launching. I also build evaluation suites earlier in the process."
 
 ---
 
-## Handling Unknown Topics
+## مدیریت مباحث ناشناخته
 
-It is acceptable to not know everything. Handle unknowns professionally.
+ندانستن همه چیز کاملاً طبیعی و پذیرفته‌شده است. مباحث ناشناخته را به‌صورت حرفه‌ای مدیریت کنید.
 
-### If You Do Not Know At All
+### اگر اصلاً در مورد موضوع چیزی نمی‌دانید
 
 ```
 "I am not familiar with [X]. Based on the name, I would guess it is related 
@@ -482,7 +495,7 @@ to [Y]. Can you tell me more about what it does, and I can discuss how
 I would approach the problem it solves?"
 ```
 
-### If You Know Partially
+### اگر تا حدی با آن آشنایی دارید
 
 ```
 "I have read about [X] but have not used it in production. My understanding 
@@ -490,7 +503,7 @@ is that it [description]. In practice, I would need to read the documentation
 and likely prototype before making architectural decisions."
 ```
 
-### If You Know the Concept but Not Details
+### اگر مفهوم کلی را می‌دانید اما جزئیات را نه
 
 ```
 "I understand the general approach of [X] - [brief explanation]. I do not 
@@ -500,17 +513,17 @@ find them and what questions to ask when evaluating it."
 
 ---
 
-## Common Mistakes and How to Avoid Them
+## اشتباهات رایج و نحوه اجتناب از آن‌ها
 
-### Mistake 1: Jumping to Solutions
+### اشتباه ۱: پریدن سریع به سراغ راه‌حل‌ها
 
-**Wrong:**
+**غلط:**
 ```
 Interviewer: "How would you design a document Q&A system?"
 You: "I would use LangChain with Pinecone and GPT-6.1 Sol."
 ```
 
-**Right:**
+**درست:**
 ```
 "Before defining the solution, I want to understand the requirements.
 What types of documents? What volume? What accuracy is needed?"
@@ -518,14 +531,14 @@ What types of documents? What volume? What accuracy is needed?"
 
 ---
 
-### Mistake 2: Ignoring Cost
+### اشتباه ۲: نادیده گرفتن هزینه‌ها
 
-**Wrong:**
+**غلط:**
 ```
 "I would always use the biggest frontier model for the best quality."
 ```
 
-**Right:**
+**درست:**
 ```
 "Model selection depends on the quality bar and volume. For high-volume, 
 lower-stakes queries, I might use GPT-6 Luna or Claude Haiku 5.5 
@@ -539,14 +552,14 @@ cheap tier holds the bar on that 70%."
 
 ---
 
-### Mistake 3: Not Discussing Failure Modes
+### اشتباه ۳: عدم بحث درباره حالت‌های شکست
 
-**Wrong:**
+**غلط:**
 ```
 "The system retrieves documents, sends them to the LLM, and returns the answer."
 ```
 
-**Right:**
+**درست:**
 ```
 "The happy path is straightforward. But let me discuss failure modes:
 - What if retrieval returns no relevant documents?
@@ -558,16 +571,16 @@ For each, we need detection and fallback strategies."
 
 ---
 
-### Mistake 4: Overcomplicating
+### اشتباه ۴: بیش از حد پیچیده کردن طراحی
 
-**Wrong:**
+**غلط:**
 ```
 "We need a separate service for chunking, another for embedding, 
 a message queue between them, a stream processor for real-time, 
 three different vector databases for redundancy..."
 ```
 
-**Right:**
+**درست:**
 ```
 "Let me start with the simplest architecture that could work, 
 then add complexity only where justified by requirements.
@@ -578,57 +591,59 @@ If we need higher throughput, we can add message queues at that point."
 
 ---
 
-### Mistake 5: Not Asking for Feedback
+### اشتباه ۵: درخواست نکردن بازخورد از مصاحبه‌کننده
 
-**Wrong:**
+**غلط:**
 ```
 *Talks for 10 minutes without checking in*
 ```
 
-**Right:**
+**درست:**
 ```
 "I have covered the high-level architecture. Would you like me to dive 
-deeper into any specific component, or should I move on to evaluation?"
+deepere into any specific component, or should I move on to evaluation?"
 ```
 
 ---
 
-## Quick Reference: Signals of Strong Answers
+## مرجع سریع: سیگنال‌های پاسخ‌های قدرتمند
 
-| Signal | Example |
+| سیگنال | مثال |
 |--------|---------|
-| Asks clarifying questions | "What is the latency requirement?" |
-| Uses concrete numbers | "This adds ~50ms latency" |
-| Discusses tradeoffs | "We gain X but lose Y" |
-| Mentions failure modes | "If this fails, we need to..." |
-| References real systems | "Similar to how Notion does..." |
-| Acknowledges uncertainty | "I would need to benchmark this" |
-| Checks in with interviewer | "Should I go deeper here?" |
-| Connects to experience | "In my experience with X..." |
+| پرسیدن سؤالات شفاف‌کننده | «الزامات تاخیر (Latency) چیست؟» |
+| استفاده از اعداد مشخص و ملموس | «این کار حدود ۵۰ میلی‌ثانیه به تاخیر اضافه می‌کند» |
+| بحث پیرامون موازنه‌ها (Tradeoffs) | «ما X را به دست می‌آوریم اما Y را از دست می‌دهیم» |
+| اشاره به حالت‌های شکست | «اگر این قسمت شکست بخورد، باید...» |
+| ارجاع به سیستم‌های واقعی | «مشابه با آنچه در Notion پیاده شده است...» |
+| اعتراف به عدم قطعیت در صورت نیاز | «برای این مورد نیاز به اجرای بنچمارک دارم» |
+| همگام شدن مداوم با مصاحبه‌کننده | «آیا تمایل دارید در این بخش عمیق‌تر شوم؟» |
+| اتصال به تجربیات واقعی | «بر اساس تجربه من در مورد X...» |
 
 ---
 
-## Anti-Patterns to Avoid
+## ضدالگوهایی که باید از آن‌ها اجتناب کنید
 
-| Anti-Pattern | Better Approach |
+| ضدالگو | رویکرد بهتر |
 |--------------|-----------------|
-| Buzzword dropping | Explain what you mean |
-| Name dropping without depth | Only mention what you can discuss |
-| "It depends" without elaboration | Explain what it depends on |
-| Absolute statements | Use hedging language when appropriate |
-| Dismissing valid options | Acknowledge tradeoffs |
-| Not knowing when to stop | Read interviewer cues |
+| ردیف کردن کلمات تخصصی پر زرق‌وبرق (Buzzwords) | توضیح دهید دقیقاً چه منظوری دارید |
+| نام بردن از ابزارها بدون عمق فنی | فقط مواردی را نام ببرید که می‌توانید درباره‌شان صحبت کنید |
+| گفتن «بستگی دارد» بدون توضیح بیشتر | توضیح دهید به چه عواملی بستگی دارد |
+| بیان گزاره‌های مطلق و قطعی | در صورت لزوم از عبارات منعطف استفاده کنید |
+| رد کردن بی‌دلیل گزینه‌های معتبر | موازنه‌ها (Tradeoffs) را به رسمیت بشناسید |
+| ندانستن اینکه چه زمانی باید صحبت را متوقف کرد | به نشانه‌ها و اشارات مصاحبه‌کننده توجه کنید |
 
 ---
 
-## Key Takeaways
+## نکات کلیدی
 
-- Frameworks are scaffolding, not scripts; interviewers can tell when a candidate is reciting vs. thinking, so internalize the structure then make it conversational.
-- SPIDER works for any 45-minute system design loop; if the interviewer cuts you off, you have still hit the highest-signal phases.
-- "It depends" is fine ONLY when followed by "it depends on X, Y, Z, and here is how each changes the answer"; otherwise it reads as hedging.
-- Always end deep dives with one sentence on observability and one on failure modes; this is the single biggest gap between senior and staff answers.
-- Behavioral answers without quantified results (STAR-L's R) get scored as anecdotal; bring numbers even if approximate.
+- چارچوب‌ها اسکلت و ساختار هستند، نه متنی برای روخوانی و حفظ کردن؛ مصاحبه‌کنندگان متوجه می‌شوند چه زمانی داوطلب مشغول از حفظ خواندن است یا واقعاً فکر می‌کند، بنابراین ساختار را درونی کرده و مکالمه را طبیعی پیش ببرید.
+- چارچوب SPIDER برای هر جلسه مصاحبه ۴۵ دقیقه‌ای طراحی سیستم پاسخگو است؛ حتی اگر مصاحبه‌کننده حرف شما را قطع کند، فازهای با بالاترین سیگنال را ارائه کرده‌اید.
+- گفتن عبارت «بستگی دارد» تنها و تنها زمانی مناسب است که بلافاصله با «به X، Y و Z بستگی دارد و اثر هر کدام بر پاسخ این‌گونه است» همراه شود؛ در غیر این صورت به عنوان طفره رفتن تلقی می‌شود.
+- همیشه بررسی‌های عمیق را با یک جمله درباره قابلیت مشاهده‌پذیری (observability) و یک جمله درباره حالت‌های شکست به پایان برسانید؛ این مهم‌ترین تفاوت بین پاسخ‌های سطح Senior و Staff است.
+- پاسخ‌های بخش رفتاری بدون نتایج عددی و کمّی (حرف R در STAR-L) صرفاً به عنوان خاطره‌گویی ارزیابی می‌شوند؛ حتی اگر تقریبی است، آمار و ارقام بیاورید.
 
 ---
 
-*See also: [Question Bank](01-question-bank.md) | [Common Pitfalls](03-common-pitfalls.md) | [Whiteboard Exercises](04-whiteboard-exercises.md)*
+*همچنین ببینید: [بانک سؤالات](01-question-bank.md) | [خطاهای متداول](03-common-pitfalls.md) | [تمرین‌های تخته‌سفید](04-whiteboard-exercises.md)*
+
+</div>
