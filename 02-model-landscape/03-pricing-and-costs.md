@@ -1,55 +1,57 @@
-# Pricing and Costs
+<div dir="rtl">
 
-Understanding the cost structure of LLM systems is essential for production planning. This chapter covers pricing models, cost optimization strategies, and total cost of ownership analysis.
+# قیمت‌گذاری و هزینه‌ها (Pricing and Costs)
 
-## Table of Contents
+درک ساختار هزینه سیستم‌های LLM برای برنامه‌ریزی محیط عملیاتی (production planning) ضروری است. این فصل به بررسی مدل‌های قیمت‌گذاری، استراتژی‌های بهینه‌سازی هزینه و تحلیل هزینه کل مالکیت (Total Cost of Ownership یا TCO) می‌پردازد.
 
-- [Pricing Models](#pricing-models)
-- [Current API Pricing](#current-api-pricing)
-- [Cost Calculation](#cost-calculation)
-- [Cost Optimization Strategies](#cost-optimization-strategies)
-- [Context Caching Economics](#context-caching-economics)
-- [Self-Hosting & GPU Cloud Arbitrage](#self-hosting--gpu-cloud-arbitrage)
-- [Total Cost of Ownership](#total-cost-of-ownership)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [مدل‌های قیمت‌گذاری](#pricing-models)
+- [قیمت‌گذاری فعلی API](#current-api-pricing)
+- [محاسبه هزینه](#cost-calculation)
+- [استراتژی‌های بهینه‌سازی هزینه](#cost-optimization-strategies)
+- [اقتصاد کش‌گذاری کانتکست](#context-caching-economics)
+- [میزبانی شخصی و آربیتراژ ابری GPU](#self-hosting--gpu-cloud-arbitrage)
+- [هزینه کل مالکیت](#total-cost-of-ownership)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Pricing Models
+## مدل‌های قیمت‌گذاری (Pricing Models)
 
-### Token-Based Pricing
+### قیمت‌گذاری مبتنی بر Token (Token-Based Pricing)
 
-Most LLM APIs charge per token:
+بیشتر APIهای LLM بر اساس هر Token هزینه دریافت می‌کنند:
 
 ```
 Cost = (input_tokens × input_rate) + (output_tokens × output_rate)
 ```
 
-**Key observations:**
-- Output tokens usually cost 2-8x more than input tokens (5x on Claude Opus 5.5, Sonnet 5.5 and Haiku 5.5, GPT-6 Sol, GPT-6.1 Terra, Gemini 4 Argon and Gemini 3.8 Flash; 3x on Grok 4.7; 6x on GPT-5.6 Sol and Terra at list; about 8x on Gemini 3.5 Flash-Lite; 2x on hosted MiMo-V2.6), and some open-weight hosts charge the same for both (Together AI's Llama 3.3 70B at $1.04 / $1.04), so output-heavy workloads should be priced on the output column first
-- Reasoning tokens bill as output, and on the newest Claude models thinking can no longer be fully switched off
-- The rate card is only the base: long-context cliffs, cache terms, speed tiers, residency and promotions multiply it
+**نکات کلیدی:**
+- هزینه Tokenهای خروجی معمولاً ۲ تا ۸ برابر بیشتر از Tokenهای ورودی است (۵ برابر در Claude Opus 5.5،‏ Sonnet 5.5 و Haiku 5.5،‏ GPT-6 Sol،‏ GPT-6.1 Terra،‏ Gemini 4 Argon و Gemini 3.8 Flash؛ ۳ برابر در Grok 4.7؛ ۶ برابر در GPT-5.6 Sol و Terra با نرخ رسمی؛ حدود ۸ برابر در Gemini 3.5 Flash-Lite؛ ۲ برابر در MiMo-V2.6 میزبانی‌شده)، و برخی ارائه‌دهندگان مدل‌های با وزن باز هزینه یکسانی برای هر دو دریافت می‌کنند (مدل Llama 3.3 70B در Together AI با قیمت ۱.۰۴ دلار / ۱.۰۴ دلار)؛ از این رو، بارهای کاری خروجی‌محور (output-heavy) باید ابتدا بر اساس ستون خروجی قیمت‌گذاری شوند.
+- Tokenهای استدلال (Reasoning tokens) به‌عنوان خروجی محاسبه می‌شوند و در جدیدترین مدل‌های Claude، قابلیت تفکر (thinking) دیگر نمی‌تواند به‌طور کامل خاموش شود.
+- جدول نرخ‌ها (Rate card) تنها پایه هزینه است: پرتگاه‌های کانتکست طولانی (long-context cliffs)، شرایط کش، سطوح سرعت، ماندگاری داده‌ها (residency) و طرح‌های تبلیغاتی (promotions) این هزینه را چند برابر می‌کنند.
 
-### The Multipliers on Top of the Rate Card (November 2026)
+### ضرایب افزایشی روی جدول نرخ‌ها (نوامبر ۲۰۲۶)
 
-Two requests with the same token counts on the same model can differ in price by more than 10x. These are the dimensions to model explicitly:
+دو درخواست با تعداد Tokenهای یکسان روی یک مدل مشابه می‌توانند در قیمت بیش از ۱۰ برابر با یکدیگر تفاوت داشته باشند. این ابعاد را باید به‌طور صریح مدل‌سازی کرد:
 
-| Dimension | How it bills | Current examples |
-|-----------|--------------|------------------|
-| **Long-context cliff** | The **whole request** moves to a higher rate once the prompt crosses a threshold, not just the excess | Claude Haiku 5.5 above a 100K-token prompt: 5x on every token type, with cache reads and writes counted toward the threshold. OpenAI above 272K input: 2x input and cache, 1.5x output (Batch and Flex too, and Fast on the GPT-6 and GPT-5.6 families). xAI Grok 4.6/4.7 at or above 200K: all tokens doubled. Gemini 3.1 Pro Preview above 200K. Other Anthropic Claude 4.6-and-later models: flat to 1M. Gemini 4 Argon: no prompt-length tiers |
-| **Cache write / read** | Premium to write a prefix, discount to reread it within the TTL | OpenAI GPT-5.6 and later: write 1.25x (30-minute TTL) or 2.5x (12-hour TTL, Responses API only, since October 20); read 0.1x for both, 0.05x on GPT-6.1 Sol and GPT-6.1 Terra. Anthropic: write 1.25x (5 min) or 2x (1 h); read 0.1x, 0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1. Gemini: read 0.1x plus hourly storage; Gemini 4 Argon caches implicitly only (hits at 0.05x, no explicit caches) |
-| **Service tier** | Pay less to wait, more to go first or faster | Batch 0.5x at OpenAI, Anthropic and the Gemini API; Flex 0.5x where offered (OpenAI, Gemini API, Bedrock for most models; Anthropic has no Flex tier, and GPT-6 Astra on Bedrock supports neither Flex nor Priority). OpenAI Fast (renamed from Priority on July 30) 2x, 2.5x on GPT-5.5; Ultrafast 6x on GPT-6 Astra and, since October 8, GPT-6.1 Sol for all API users. Gemini Priority about 1.8x. Bedrock Priority 1.75x. Anthropic fast mode on Opus (2x; out of preview on Opus 5.5 since October 15); Anthropic no longer sells Priority Tier |
-| **Data residency** | Region-pinned processing costs about 10% more | Anthropic `inference_geo: "us"` 1.1x on all token types (Claude 4.6+, stacking on Haiku 5.5's over-100K prices). OpenAI residency endpoints for models released from March 5, 2026. Bedrock and Google Cloud regional Claude (on Google Cloud, Google managed, current models such as Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 run only on the global or `us`/`eu` multi-region endpoints, 10% over global; single-region endpoints stop at Sonnet 4.6). Bedrock regional GPT-6 Astra ($11/$55). Mistral EU inference |
-| **Promotional window** | Temporary rate with an end date, or only a floor date | Gemini 4 Argon at $2/$10 through November 30, 2026, then $4/$20. Gemini 3.6/3.7/3.8 Flash at half price through December 31, 2026. GPT-5.6 Sol $4/$20, which OpenAI says is available until November 30, 2026, with no price stated after it |
-| **Time of day** | Off-peak discount | DeepSeek off-peak is 50% of peak; peak is 01:00-04:00 and 06:00-10:00 UTC on weekdays only, excluding Chinese public holidays |
-| **Per-minute** | Session or audio time instead of tokens | `gpt-live-1` $0.05/min plus backend tokens; `gpt-transcribe` $0.0045/min |
-| **Billed refusals** | Safety stops that cost money | Anthropic bills pre-output refusals in the `bio`, `frontier_llm` and `reasoning_extraction` categories from September 24, 2026; other categories stay unbilled |
-| **Data for discount** | Cheaper if the vendor may use your traffic | Meta `muse-spark-1.3-contributor` at $0.10/$0.20 versus $1.25/$4.25 |
-| **Input-only billing** | Typed answers instead of text, with output free | OpenAI Decisions API (GA October 22, on `gpt-6-luna`): 1 to 400 questions per request, $0.10 per 1M uncached input, output not charged |
-| **Runtime meters** | Session or sandbox time on top of tokens | Claude Managed Agents $0.08 per running session-hour (idle free). OpenAI Agents API container rates: small $0.03, medium $0.12, large $0.48 per 20-minute session, billed by the minute with a 5-minute minimum |
+| بعد (Dimension) | نحوه محاسبه صورت‌حساب | نمونه‌های فعلی |
+|-----------------|----------------------|----------------|
+| **پرتگاه کانتکست طولانی (Long-context cliff)** | به محض اینکه Prompt از یک آستانه عبور کند، **کل درخواست** به یک نرخ بالاتر منتقل می‌شود، نه فقط مقدار مازاد | مدل Claude Haiku 5.5 برای Promptهای بالای ۱۰۰ هزار Token: ضریب 5x روی تمام انواع Token، با احتساب خواندن و نوشتن از کش در محاسبه آستانه. مدل‌های OpenAI برای ورودی‌های بالای ۲۷۲ هزار: ضریب 2x برای ورودی و کش، 1.5x برای خروجی (در حالت‌های Batch و Flex نیز اعمال می‌شود، و در حالت Fast برای خانواده‌های GPT-6 و GPT-5.6). مدل‌های xAI Grok 4.6/4.7 در ۲۰۰ هزار Token یا بالاتر: هزینه تمام Tokenها دو برابر می‌شود. مدل Gemini 3.1 Pro Preview برای بالای ۲۰۰ هزار Token. سایر مدل‌های Claude 4.6 و جدیدتر Anthropic: نرخ ثابت تا ۱ میلیون Token. مدل Gemini 4 Argon: فاقد سطح‌بندی بر اساس طول Prompt |
+| **نوشتن / خواندن در کش (Cache write / read)** | هزینه اضافی (پرمیوم) برای نوشتن یک پیشوند، تخفیف برای بازخوانی آن در بازه زمانی ماندگاری (TTL) | مدل‌های OpenAI GPT-5.6 و جدیدتر: نوشتن با ضریب 1.25x (با TTL سی‌دقیقه‌ای) یا 2.5x (با TTL دوازده‌ساعته، فقط در Responses API، از ۲۰ اکتبر)؛ خواندن با ضریب 0.1x برای هر دو، و 0.05x در GPT-6.1 Sol و GPT-6.1 Terra. شرکت Anthropic: نوشتن با ضریب 1.25x (۵ دقیقه) یا 2x (۱ ساعت)؛ خواندن با ضریب 0.1x، و 0.05x در Opus 5.5 و Sonnet 5.5، و 0.025x در Fable 5.1. گوگل Gemini: خواندن با ضریب 0.1x به‌علاوه هزینه ساعتی ذخیره‌سازی؛ Gemini 4 Argon فقط کش‌گذاری ضمنی دارد (اصابت‌ها یا hits با ضریب 0.05x، بدون کش صریح) |
+| **سطح سرویس (Service tier)** | پرداخت کمتر در ازای انتظار، پرداخت بیشتر برای اولویت بالا یا سرعت بیشتر | حالت Batch با ضریب 0.5x در OpenAI،‏ Anthropic و Gemini API؛ حالت Flex با ضریب 0.5x در صورت ارائه (OpenAI،‏ Gemini API، و Bedrock برای بیشتر مدل‌ها؛ Anthropic سطح Flex ندارد، و GPT-6 Astra در Bedrock نه از Flex و نه از Priority پشتیبانی می‌کند). حالت OpenAI Fast (که در ۳۰ ژوئیه از Priority تغییر نام یافت) با ضریب 2x و 2.5x در GPT-5.5؛ حالت Ultrafast با ضریب 6x روی GPT-6 Astra و از ۸ اکتبر روی GPT-6.1 Sol برای تمام کاربران API. حالت Gemini Priority حدود 1.8x. حالت Bedrock Priority با ضریب 1.75x. حالت Anthropic fast mode روی Opus (ضریب 2x؛ خروج از پیش‌نمایش در Opus 5.5 از ۱۵ اکتبر)؛ Anthropic دیگر تعهدات Priority Tier را نمی‌فروشد |
+| **ماندگاری داده‌ها (Data residency)** | پردازش مقید به منطقه جغرافیایی خاص (Region-pinned) حدود ۱۰٪ بیشتر هزینه دارد | پارامتر `inference_geo: "us"` در Anthropic با ضریب 1.1x روی تمام انواع Token (مدل‌های Claude 4.6 به بعد، که با نرخ‌های بالای ۱۰۰ هزار Token مدل Haiku 5.5 نیز ترکیب می‌شود). اندپوینت‌های ماندگاری داده OpenAI برای مدل‌های عرضه‌شده از ۵ مارس ۲۰۲۶. سرویس‌های منطقه‌ای Claude در Bedrock و Google Cloud (در Google Cloud با مدیریت گوگل، مدل‌های فعلی نظیر Opus 5.5،‏ Sonnet 5.5،‏ Haiku 5.5 و Fable 5.1 فقط روی اندپوینت‌های چندمنطقه‌ای سراسری یا `us`/`eu` با ۱۰٪ هزینه بیشتر نسبت به سراسری اجرا می‌شوند؛ اندپوینت‌های تک‌منطقه‌ای تا Sonnet 4.6 متوقف شده‌اند). نسخه منطقه‌ای GPT-6 Astra در Bedrock (۱۱ دلار / ۵۵ دلار). استنتاج (Inference) اتحادیه اروپا در Mistral |
+| **بازه تبلیغاتی (Promotional window)** | نرخ موقت با یک تاریخ پایان معین، یا فقط دارای حداقل تاریخ انقضا | مدل Gemini 4 Argon با نرخ ۲ دلار / ۱۰ دلار تا ۳۰ نوامبر ۲۰۲۶، و پس از آن ۴ دلار / ۲۰ دلار. مدل‌های Gemini 3.6/3.7/3.8 Flash با نصف قیمت تا ۳۱ دسامبر ۲۰۲۶. مدل GPT-5.6 Sol با قیمت ۴ دلار / ۲۰ دلار که طبق اعلام OpenAI تا ۳۰ نوامبر ۲۰۲۶ در دسترس است و قیمتی برای پس از آن ذکر نشده است |
+| **زمان از روز (Time of day)** | تخفیف ساعات غیرپیک (کم‌مصرف) | ساعات غیرپیک DeepSeek معادل ۵۰٪ نرخ ساعات پیک است؛ ساعات پیک تنها در روزهای کاری هفته (به‌جز تعطیلات رسمی چین) از 01:00 تا 04:00 و 06:00 تا 10:00 به وقت UTC است |
+| **بر اساس دقیقه (Per-minute)** | زمان نشست (session) یا صوت به‌جای Tokenها | مدل `gpt-live-1` با نرخ ۰.۰۵ دلار بر دقیقه به‌علاوه Tokenهای بک‌اند؛ مدل `gpt-transcribe` با نرخ ۰.۰۰۴۵ دلار بر دقیقه |
+| **رد درخواست‌های صورت‌حساب‌پذیر (Billed refusals)** | توقف‌های امنیتی که هزینه در بر دارند | شرکت Anthropic از ۲۴ سپتامبر ۲۰۲۶ برای رد درخواست‌های پیش از خروجی در دسته‌های `bio`،‏ `frontier_llm` و `reasoning_extraction` هزینه دریافت می‌کند؛ سایر دسته‌ها بدون دریافت هزینه باقی می‌مانند |
+| **ارائه داده در ازای تخفیف (Data for discount)** | ارزان‌تر در صورتی که ارائه‌دهنده مجاز به استفاده از ترافیک داده شما باشد | مدل `muse-spark-1.3-contributor` از متا با قیمت ۰.۱۰ دلار / ۰.۲۰ دلار در مقایسه با ۱.۲۵ دلار / ۴.۲۵ دلار |
+| **صورت‌حساب فقط بر اساس ورودی (Input-only billing)** | پاسخ‌های تایپ‌شده (Typed answers) به‌جای متن، با خروجی رایگان | سرویس OpenAI Decisions API (عرضه عمومی یا GA در ۲۲ اکتبر، روی `gpt-6-luna`): ۱ تا ۴۰۰ سوال در هر درخواست، ۰.۱۰ دلار به ازای هر ۱ میلیون ورودی کش‌نشده، بدون هزینه برای خروجی |
+| **سنجش‌گرهای زمان اجرا (Runtime meters)** | زمان نشست یا محیط ایزوله (Sandbox) علاوه‌بر Tokenها | سرویس Claude Managed Agents با هزینه ۰.۰۸ دلار به ازای هر ساعت نشست فعال (زمان بیکاری رایگان است). نرخ کانتینرهای OpenAI Agents API: کوچک ۰.۰۳ دلار، متوسط ۰.۱۲ دلار، بزرگ ۰.۴۸ دلار به ازای هر نشست ۲۰ دقیقه‌ای، محاسبه به‌صورت دقیقه‌ای با حداقل ۵ دقیقه |
 
-A request's effective price is therefore:
+بنابراین، قیمت موثر یک درخواست برابر است با:
 
 ```
 effective_cost = residency_mult × tier_mult × (
@@ -61,268 +63,270 @@ effective_cost = residency_mult × tier_mult × (
 # rate(prompt_size) jumps for the WHOLE request past the vendor's long-context threshold
 ```
 
-### Volume and Commitment Pricing
+### قیمت‌گذاری بر اساس حجم و تعهد (Volume and Commitment Pricing)
 
-Public list prices carry no automatic volume discount. Discounts come from negotiated commitments, and the figures below are illustrative of enterprise deals, not public terms:
+قیمت‌های رسمی عمومی شامل تخفیف حجمی خودکار نمی‌شوند. تخفیف‌ها از طریق تعهدات مذاکره‌شده حاصل می‌گردند، و ارقام زیر صرفاً نمایانگر قراردادهای سازمانی بوده و شرایط عمومی محسوب نمی‌شوند:
 
-| Tier | Monthly Spend | Typical negotiated discount |
-|------|---------------|-----------------------------|
-| Standard | $0 - $5K | 0% |
-| Growth | $5K - $50K | 10-20% |
-| Enterprise | $50K+ | Custom negotiation |
+| سطح (Tier) | هزینه ماهانه | تخفیف مذاکره‌شده متداول |
+|------------|--------------|-------------------------|
+| استاندارد (Standard) | ۰ تا ۵ هزار دلار | ۰٪ |
+| رشد (Growth) | ۵ تا ۵۰ هزار دلار | ۱۰ تا ۲۰٪ |
+| سازمانی (Enterprise) | بیش از ۵۰ هزار دلار | مذاکره اختصاصی |
 
 ```
 Standard: $2.50 / 1M input tokens
 Committed (1-year): $2.00 / 1M input tokens (20% savings)
 ```
 
-**Capacity is now bought separately from price.** Anthropic no longer sells Priority Tier commitments (existing contracts run to term, and Claude Haiku 5.5 is not supported on Priority Tier, so a Haiku 4.5 commitment does not carry over to it), so guaranteed capacity comes from custom agreements or cloud reservations such as Bedrock Reserved (1- or 3-month terms). Anthropic's self-serve tiers (Start, Build, Scale) carry hard monthly spend caps of $500, $1,000 and $200,000; hitting one returns HTTP 429 with `enforced_spend_limit_reached` and no `retry-after` until 00:00 UTC on the 1st of the next month. A budget cap is now an availability risk, so alert well before it.
+**ظرفیت اکنون جدا از قیمت خریداری می‌شود.** شرکت Anthropic دیگر تعهدات سطح اولویت (Priority Tier) را نمی‌فروشد (قراردادهای موجود تا پایان دوره خود ادامه می‌یابند، و Claude Haiku 5.5 در Priority Tier پشتیبانی نمی‌شود، بنابراین تعهد Haiku 4.5 به آن منتقل نمی‌گردد)؛ در نتیجه ظرفیت تضمین‌شده از طریق توافق‌نامه‌های سفارشی یا رزروهای ابری نظیر Bedrock Reserved (دوره‌های ۱ یا ۳ ماهه) حاصل می‌شود. سطوح سلف‌سرویس Anthropic (شامل Start،‏ Build و Scale) دارای سقف‌های هزینه ماهانه قطعی به میزان ۵۰۰ دلار، ۱,۰۰۰ دلار و ۲۰۰,۰۰۰ دلار هستند؛ رسیدن به این سقف‌ها خطای HTTP 429 با کد `enforced_spend_limit_reached` را برمی‌گرداند و فاقد هدر `retry-after` تا ساعت 00:00 به وقت UTC روز اول ماه بعد است. سقف بودجه اکنون یک ریسک در دسترس‌پذیری (availability risk) محسوب می‌شود، بنابراین بسیار پیش از رسیدن به آن سیستم‌های هشدار را تنظیم کنید.
 
 ---
 
-## Current API Pricing
+## قیمت‌گذاری فعلی API (Current API Pricing)
 
-### November 2026 Pricing
+### قیمت‌گذاری نوامبر ۲۰۲۶
 
-> **Last verified: November 6, 2026.** Prices change frequently. Always re-check: [OpenAI](https://developers.openai.com/api/docs/pricing), [Anthropic](https://platform.claude.com/docs/en/about-claude/pricing), [Google](https://ai.google.dev/gemini-api/docs/pricing), [xAI](https://docs.x.ai/developers/models), [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing), [Mistral](https://mistral.ai/pricing/api). Rows for models launched or repriced since October 1 were checked against vendor pages for this date; other first-party rows reflect the October 1 check, with no change found to xAI text, DeepSeek token, Gemini 3.8 Flash, GPT-6 Astra, Opus or Fable prices. Rows marked "carried over" reflect the August 15, 2026 check. Third-party host prices (OpenRouter, Together AI, Fireworks) are each host's own list price and vary by provider.
+> **آخرین بررسی و اعتبارسنجی: ۶ نوامبر ۲۰۲۶.** قیمت‌ها مکرراً تغییر می‌کنند. همواره قیمت‌ها را مجدداً بررسی کنید: [OpenAI](https://developers.openai.com/api/docs/pricing)، [Anthropic](https://platform.claude.com/docs/en/about-claude/pricing)، [Google](https://ai.google.dev/gemini-api/docs/pricing)، [xAI](https://docs.x.ai/developers/models)، [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing)، [Mistral](https://mistral.ai/pricing/api). سطرهای مربوط به مدل‌های عرضه‌شده یا بازقیمت‌گذاری‌شده از ۱ اکتبر بر اساس صفحات ارائه‌دهندگان در این تاریخ بررسی شده‌اند؛ سایر سطرهای ارائه‌دهندگان دست اول (first-party) منعکس‌کننده بررسی ۱ اکتبر هستند و تغییری در قیمت‌های متن xAI،‏ Tokenهای DeepSeek،‏ Gemini 3.8 Flash،‏ GPT-6 Astra،‏ Opus یا Fable مشاهده نشد. سطرهای دارای برچسب «انتقال‌یافته» (carried over) منعکس‌کننده بررسی ۱۵ اوت ۲۰۲۶ هستند. قیمت‌های میزبان‌های شخص ثالث (OpenRouter،‏ Together AI،‏ Fireworks) قیمت‌های رسمی هر میزبان بوده و بسته به ارائه‌دهنده متغیر است.
 >
-> **What changed between November 2 and November 6, 2026:**
-> - **A new top of the gated ladder.** GPT-6-Cyber (November 5) is $20 / $100 ($2 cached), twice GPT-6 Astra, with no Batch, Flex or Fast rates.
-> - **MAI-Thinking-1 has a price:** from $2 / $8 per 1M on Foundry, but a default quota of 0 TPM.
-> - **Open-weight prices to add:** Kimi K3.1 Pro at $2 / $10 on Moonshot's API (weights published November 4), and the full Tencent Hy4 at $0.417 / $1.251 on OpenRouter.
-> - **Lifecycle with a price effect:** Gemini 2.5 Pro and 2.5 Flash were deprecated on November 2 and from December 1 bill at Gemini 3.8 Flash and 3.5 Flash-Lite rates; GPT-5.6 Sol's promotion is now dated to November 30; Lambda's on-demand GPU prices rise about 15% on November 16 (scheduled).
+> **تغییرات میان ۲ نوامبر تا ۶ نوامبر ۲۰۲۶:**
+> - **صدرنشین جدید در نردبان مدل‌های کنترل‌شده (Gated):** مدل GPT-6-Cyber (عرضه در ۵ نوامبر) با قیمت ۲۰ دلار / ۱۰۰ دلار (۲ دلار برای کش) است که دو برابر قیمت GPT-6 Astra بوده و فاقد نرخ‌های Batch،‏ Flex یا Fast است.
+> - **مدل MAI-Thinking-1 قیمت‌گذاری شد:** از ۲ دلار / ۸ دلار به ازای هر ۱ میلیون Token در پلتفرم Foundry، اما با سهمیه پیش‌فرض 0 TPM.
+> - **افزودن قیمت‌های مدل‌های با وزن باز:** مدل Kimi K3.1 Pro با نرخ ۲ دلار / ۱۰ دلار روی API شرکت Moonshot (انتشار وزن‌ها در ۴ نوامبر)، و نسخه کامل Tencent Hy4 با نرخ ۰.۴۱۷ دلار / ۱.۲۵۱ دلار در OpenRouter.
+> - **چرخه عمر همراه با تاثیر قیمتی:** مدل‌های Gemini 2.5 Pro و 2.5 Flash در ۲ نوامبر منسوخ (deprecated) شدند و از ۱ دسامبر با نرخ‌های Gemini 3.8 Flash و 3.5 Flash-Lite محاسبه می‌شوند؛ طرح تبلیغاتی GPT-5.6 Sol اکنون تاریخ ۳۰ نوامبر را دارد؛ قیمت‌های GPUهای درخواستی (on-demand) در Lambda حدود ۱۵٪ در ۱۶ نوامبر افزایش می‌یابند (طبق برنامه‌ریزی).
 >
-> **What changed between October 1 and November 2, 2026:**
-> - **Anthropic's fast tier fell 90%, with a cliff.** Claude Haiku 5.5 (October 7) lists at $0.10 / $0.50 for prompts up to 100,000 tokens and $0.50 / $2.50 above, on the whole request, with cache reads and writes counted toward the threshold. It is the first Claude 4.6-or-later model that is not flat to 1M.
-> - **OpenAI filled the middle and the top.** GPT-6.1 Terra (October 26) is $1 / $5, half of GPT-5.6 Terra; GPT-6 Rosalind (October 30, trusted access) is $15 / $75; GPT-6.1 Sol Ultrafast opened to all API users on October 8 at $12 / $60.
-> - **Meta priced a closed flagship at the frontier.** Muse Wonder (October 12) is $4 / $20 ($0.20 cached) on the Meta Model API, Opus 5.5's list price; the stronger Muse Wonder Full is sold only inside Muse Code subscriptions.
-> - **Cache terms moved again.** Sonnet 5.5 cache reads fell from $0.20 to $0.10 (0.05x) on October 7, and OpenAI added a 12-hour TTL on October 20 with writes at 2.5x input.
-> - **Gemini 4 Argon went GA with a dated price rise:** $2 / $10 through November 30, then $4 / $20 from December 1, with implicit caching only.
-> - **Speed tiers matured.** Opus 5.5 fast mode ($8 / $40) left research preview on October 15; Opus 4.8 fast mode is removed November 30.
-> - **A new billing shape:** OpenAI's Decisions API (GA October 22) bills only uncached input, at $0.10 per 1M, for typed answers.
-> - **Increases to plan for:** Argon doubles December 1; Mistral Large 3 users moving to Large 4 ($0.70 / $2.10) pay 40% more; and Google now serves `gemini-3.5-flash` requests with 3.6 Flash without saying how they bill.
+> **تغییرات میان ۱ اکتبر تا ۲ نوامبر ۲۰۲۶:**
+> - **سطح سریع Anthropic با ۹۰٪ کاهش قیمت و یک پرتگاه روبه‌رو شد:** مدل Claude Haiku 5.5 (عرضه در ۷ اکتبر) با قیمت رسمی ۰.۱۰ دلار / ۰.۵۰ دلار برای Promptهای تا ۱۰۰,۰۰۰ Token و ۰.۵۰ دلار / ۲.۵۰ دلار برای مقادیر بالاتر، روی کل درخواست محاسبه می‌شود، که در آن خواندن و نوشتن از کش نیز جزء آستانه لحاظ می‌گردند. این اولین مدل Claude 4.6 یا جدیدتر است که نرخ ثابت تا ۱ میلیون Token ندارد.
+> - **OpenAI رده میانی و صدر را تکمیل کرد:** مدل GPT-6.1 Terra (عرضه در ۲۶ اکتبر) با قیمت ۱ دلار / ۵ دلار، نصف قیمت GPT-5.6 Terra است؛ مدل GPT-6 Rosalind (عرضه در ۳۰ اکتبر، دسترسی معتمد یا trusted access) با قیمت ۱۵ دلار / ۷۵ دلار است؛ سطح GPT-6.1 Sol Ultrafast در ۸ اکتبر با قیمت ۱۲ دلار / ۶۰ دلار به روی تمام کاربران API باز شد.
 
-#### OpenAI (GPT-6 Generation)
-| Model | Input / 1M | Output / 1M | Notes |
-|-------|------------|-------------|-------|
-| **GPT-6 Astra** | $10.00 | $50.00 | Staged release from September 3, 2026 (Daybreak program first), in the API by September 5. Cached $1.00, cache write $12.50 (30-minute) or $25.00 (12-hour). Above 272K input the whole request bills at $20 / $75. Batch and Flex $5 / $25; Fast $20 / $100; Ultrafast $60 / $300 (GA September 29). 1.05M context, 128K output. No `none` effort, temperature, top_p or logprobs; tool calling requires the Responses API. Bedrock GA September 8 ($11 / $55 for In-Region and Geo inference); also GA on Microsoft Foundry. |
-| **GPT-6 Rosalind** (`gpt-6-rosalind`) | $15.00 | $75.00 | October 30, 2026, trusted-access program only. Cached $1.50; above 272K $30 / $112.50. No Batch, Flex or Fast rates listed. |
-| **GPT-6-Cyber** (`gpt-6-cyber`) | $20.00 | $100.00 | November 5, 2026, Daybreak Red plus a separate model approval, `access_programs.cyber: "daybreak_red"` and IP allowlisting. Cached $2; cache write $25 (30-minute) or $50 (12-hour). 1,050,000-token context (922,000 max input, 128,000 max output). Chat Completions and Responses only; no Batch, long-context, Flex or Fast rates. |
-| **GPT-6.1 Sol** | $2.00 | $10.00 | September 29, 2026. Cached $0.10 (0.05x), cache write $2.50 (30-minute) or $5.00 (12-hour); above 272K $4 / $15. Batch and Flex $1 / $5; Fast $4 / $20; Ultrafast $12 / $60 ($24 / $90 above 272K) for all API users since October 8. Default effort `medium`. On Bedrock under OpenAI's own lifecycle terms. |
-| **GPT-6.1 Terra** | $1.00 | $5.00 | October 26, 2026. Cached $0.05 (0.05x), cache write $1.25 (30-minute) or $2.50 (12-hour); above 272K the whole request bills $2 / $7.50. Batch and Flex $0.50 / $2.50; Fast $2 / $10; no Ultrafast. Effort `none` to `max`, default `medium`. Also on Bedrock. |
-| **GPT-6 Sol** | $2.00 | $10.00 | September 22, 2026. Cached $0.20, cache write $2.50; above 272K $4 / $15; Batch and Flex $1 / $5. An image-understanding bug was fixed on September 25 under the same model ID: rerun image evals. Bedrock GA September 22. |
-| **GPT-6 Luna** | $0.10 | $0.50 | September 22, 2026. Cached $0.01, cache write $0.125; above 272K $0.20 / $0.75; Batch and Flex $0.05 / $0.25. Same September 25 image fix. Also the model behind the Decisions API ($0.10 per 1M uncached input, output not charged). |
-| **GPT-5.6 Sol** | $4.00 promo ($5.00 list) | $20.00 promo ($30.00 list) | Promotional since August 21, 2026; OpenAI's pricing and model pages say it is "available until November 30, 2026" and state no price after it. The $5 / $30 list is inferred from the stated 20% and 33% cuts; budget on it from December 1. Above 272K $8 / $30 at the promo rate. Cached $0.40, cache write $5.00. No longer in OpenAI's Ultrafast table. Superseded by GPT-6 Sol. |
-| **GPT-5.6 Terra** | $2.00 | $12.00 | Above 272K $4 / $18. Superseded by GPT-6.1 Terra at half the input price and well under half the output price. |
-| **GPT-5.6 Luna** | $0.20 | $1.20 | Above 272K $0.40 / $1.80. Superseded by GPT-6 Luna at roughly half the price. |
-| **GPT-5.6-Cyber** | $12.50 | $75.00 | August 10, 2026. Cached $1.25. 400K context, no long-context tier. Daybreak Red tier only (identity verification, legal attestations, Responses API only; requests set `access_programs.cyber: "daybreak_red"`). |
-| **GPT-Rosalind** (`gpt-rosalind-research`) | $5.00 | $25.00 | Life-sciences reasoning model, GA September 8, 2026 through a trusted-access program. Cached $0.50. Still listed at this rate beside `gpt-6-rosalind`. |
-| **GPT-5.5** | $5.00 | $30.00 | April 23, 2026. Cached $0.50; above 272K $10 / $45. Fast is 2.5x on this model. |
-| **GPT-5.5 Pro / GPT-5.4 Pro** | $30.00 | $180.00 | No cached-input discount; above 272K about $60 / $270. Pro is also `reasoning.mode: "pro"` on the GPT-5.6 and GPT-6 families at the selected model's standard rates. |
-| **GPT-5.4** | $2.50 | $15.00 | Cached $0.25 (0.1x). Above 272K $5 / $22.50. |
-| **GPT-5.4-mini** | $0.75 | $4.50 | Cached $0.075. |
-| **GPT-5.4-nano** | $0.20 | $1.25 | Cached $0.02. Shuts down April 1, 2027 (to GPT-6 Luna). |
-| **GPT-4.1** | $2.00 | $8.00 | Cached $0.50. `gpt-4.1-2025-04-14`, `gpt-4.1-mini-2025-04-14` and fine-tunes of them shut down January 14, 2027 (to `gpt-6-luna`, which cannot be fine-tuned). |
-| **GPT-4o** | $2.50 | $10.00 | Cached $1.25. The original `gpt-4o-2024-05-13` snapshot shut down on the OpenAI API October 23, 2026; `gpt-4o-2024-08-06`, `gpt-4o-2024-11-20` and their fine-tunes shut down January 14, 2027 (to `gpt-6-luna`), on about three months' notice. On Azure Foundry, gpt-4o 2024-05-13 retires January 14, 2027, and its Global Standard and Data Zone Standard deployments auto-upgrade to gpt-5.1 (2025-11-13). |
-| **GPT-4o-mini** | $0.15 | $0.60 | Cached $0.075. `gpt-4o-mini-2024-07-18` and its fine-tunes shut down January 14, 2027 (to `gpt-6-luna`). |
+> - **شرکت Meta مدل پرچم‌دار اختصاصی (closed) جدیدی در لبه مرز دانش (frontier) قیمت‌گذاری کرد.** مدل Muse Wonder (۱۲ اکتبر) در Meta Model API با نرخ ۴ دلار / ۲۰ دلار (۰.۲۰ دلار برای حالت Cacheشده) عرضه می‌شود که معادل قیمت رسمی Opus 5.5 است؛ نسخه قدرتمندتر Muse Wonder Full فقط در قالب اشتراک‌های Muse Code به فروش می‌رسد.
+> - **شرایط Cache مجدداً دستخوش تغییر شد.** هزینه خواندن از Cache در Sonnet 5.5 در ۷ اکتبر از ۰.۲۰ دلار به ۰.۱۰ دلار (۰.۰۵ برابر) کاهش یافت، و OpenAI در ۲۰ اکتبر یک زمان اعتبار (TTL) دوازده‌ساعته با هزینه نوشتن معادل ۲.۵ برابر ورودی اضافه کرد.
+> - **مدل Gemini 4 Argon با یک افزایش قیمت زمان‌بندی‌شده به عرضه عمومی (GA) رسید:** ۲ دلار / ۱۰ دلار تا ۳۰ نوامبر، و سپس ۴ دلار / ۲۰ دلار از ۱ دسامبر، تنها با امکان Caching ضمنی (implicit caching).
+> - **سطوح مختلف سرعت به بلوغ رسیدند.** حالت سریع (fast mode) در Opus 5.5 با قیمت ۸ دلار / ۴۰ دلار در ۱۵ اکتبر از پیش‌نمایش تحقیقاتی خارج شد؛ حالت سریع در Opus 4.8 از ۳۰ نوامبر حذف می‌شود.
+> - **یک ساختار صورت‌حساب جدید:** سرویس Decisions API شرکت OpenAI (عرضه عمومی در ۲۲ اکتبر) برای پاسخ‌های دارای ساختار تایپ‌شده، فقط ورودی‌های Cacheنشده را با نرخ ۰.۱۰ دلار به ازای هر ۱ میلیون Token محاسبه می‌کند.
+> - **افزایش‌های قیمتی که باید برای آن‌ها برنامه‌ریزی کرد:** هزینه Argon از ۱ دسامبر دو برابر می‌شود؛ کاربرانی که از Mistral Large 3 به Large 4 (با قیمت ۰.۷۰ دلار / ۲.۱۰ دلار) مهاجرت می‌کنند ۴۰٪ بیشتر می‌پردازند؛ و شرکت Google در حال حاضر درخواست‌های `gemini-3.5-flash` را با مدل 3.6 Flash پاسخ می‌دهد بدون اینکه نحوه محاسبه صورت‌حساب آن‌ها را اعلام کند.
 
-#### Anthropic (Claude 5.x Generation)
-| Model | Input / 1M | Output / 1M | Context | Notes |
-|-------|------------|-------------|---------|-------|
-| **Claude Opus 5.5** | $4.00 | $20.00 | 1M | September 22, 2026 (`claude-opus-5-5`) on Claude API, Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS. Anthropic's "start here" default. Cache write $5 (5 min) / $8 (1 h); cache read $0.20 (0.05x); Batch $2 / $10; fast mode $8 / $40, out of research preview since October 15, on the Claude API, Claude Models on Google Cloud (Anthropic managed) and Foundry's Azure-hosted deployments. 128K output (300K on Batch with a beta header). Default effort `medium` (Opus 5 defaulted to `high`); thinking cannot be disabled. ZDR available. Retirement not before September 22, 2027. |
-| **Claude Sonnet 5.5** | $2.00 | $10.00 | 1M | September 28, 2026 (`claude-sonnet-5-5`), same five platforms, price unchanged from Sonnet 5. Cache write $2.50 / $4.00; cache read $0.10 (0.05x, cut from $0.20 on October 7); Batch $1 / $5. 128K output. API default effort `high` (medium in Claude Code and the Claude apps). `thinking: {type: "disabled"}` returns 400; the lowest setting is `between_tools`. ZDR available. Retirement not before September 28, 2027. |
-| **Claude Fable 5.1** | $10.00 | $50.00 | 1M | September 1, 2026 (`claude-fable-5-1`), GA on all five platforms. Cache read $0.25 (0.025x, down from $1.00 on Fable 5); cache write $12.50 / $20.00; Batch $5 / $25. 128K output, default effort `high`. 30-day data retention; ZDR only where Anthropic expressly authorizes it (customers eligible for Enterprise Frontier Safeguards, until EFS is ready). Safeguard refusals can fall back server-side (`fallbacks: "default"`, beta) to Opus 4.8 or Opus 5. Retirement not before September 1, 2027. |
-| **Claude Mythos 5.1** | $10.00 | $50.00 | 1M | Same model as Fable 5.1 with looser safeguards. Limited availability: every tier of the Cyber Verification Program (expanded October 6, with Project Glasswing folded in); data retention required. |
-| **Claude Haiku 5.5** | $0.10 (prompt up to 100K) / $0.50 (over 100K) | $0.50 / $2.50 | 1M | October 7, 2026 (`claude-haiku-5-5`). Up to a 100K-token prompt: cache write $0.125 (5 min) / $0.20 (1 h), cache read $0.01, Batch $0.05 / $0.25. Over 100K: cache write $0.625 / $1.00, cache read $0.05, Batch $0.25 / $1.25. The higher prices apply to the **whole request**, and prompt length counts cache reads and writes, so a cache hit does not keep a long prompt in the cheap tier. 128K output. About 30% more tokens than Haiku 4.5 for the same text, and the high-resolution image tier bills a 2000x1500 image at about 2.5x Haiku 4.5's visual tokens. Not supported on Priority Tier. Retirement not before October 7, 2027. |
-| **Claude Haiku 4.5** | $1.00 | $5.00 | 200K | Superseded by Haiku 5.5, which costs a tenth as much below 100K tokens. Still Active on the Claude API with no deprecation notice as of November 6; its "not sooner than October 15, 2026" floor has passed, and under Anthropic's 60-day notice policy it cannot retire there before about January 2027. Claude's consumer apps dropped it for Free, Pro and Max users on October 29. Foundry still lists November 15, nine days out. |
-| **Claude Opus 5** | $5.00 | $25.00 | 1M | July 24, 2026. Legacy, still available. Fast mode $10 / $50. |
-| **Claude Sonnet 5** | $2.00 | $10.00 | 1M | June 30, 2026. Legacy, still available. Its introductory price was made permanent on August 10, 2026. |
-| **Claude Fable 5** | $10.00 | $50.00 | 1M | June 9, 2026. Legacy, still available. Cache read $1.00 (0.1x), four times the Fable 5.1 rate. |
-| **Claude Opus 4.8** | $5.00 | $25.00 | 1M | May 28, 2026. Legacy. Fast mode $10 / $50 until November 30, 2026, when it is removed (deprecated October 30). |
-| **Claude Opus 4.7 / 4.6** | $5.00 | $25.00 | 1M | Legacy. Fast mode is no longer offered (4.7 errors; 4.6 runs at standard speed and rates). |
-| **Claude Sonnet 4.6** | $3.00 | $15.00 | 1M | Legacy; Sonnet 5.5 is newer and cheaper. |
-| **Claude Sonnet 4.5** | $3.00 | $15.00 | 200K | Deprecated September 30, 2026; retires November 30, 2026 on the Claude API and Foundry (`claude-sonnet-4-5-20250929` to `claude-sonnet-5-5`). Bedrock: Legacy since October 8, public extended access (higher provider-set pricing) from January 8, 2027, end of life April 8, 2027. |
-| **Claude Opus 4.5** | $5.00 | $25.00 | 200K | Retirement "not sooner than November 24, 2026" on the Claude API, but with no notice issued as of November 2 it cannot retire there before about January 2027. Foundry still lists November 24. |
+#### شرکت OpenAI (نسل GPT-6)
+| مدل | ورودی / 1M | خروجی / 1M | یادداشت‌ها |
+|---|---|---|---|
+| **GPT-6 Astra** | $10.00 | $50.00 | انتشار مرحله‌ای از ۳ سپتامبر ۲۰۲۶ (ابتدا در برنامه Daybreak)، و ورود به API تا ۵ سپتامبر. نرخ ورودی Cacheشده ۱.۰۰ دلار، نوشتن در Cache معادل ۱۲.۵۰ دلار (۳۰ دقیقه‌ای) یا ۲۵.۰۰ دلار (۱۲ ساعته). برای ورودی‌های بالای 272K کل درخواست با نرخ ۲۰ دلار / ۷۵ دلار محاسبه می‌شود. نرخ‌های Batch و Flex معادل ۵ دلار / ۲۵ دلار؛ حالت Fast معادل ۲۰ دلار / ۱۰۰ دلار؛ حالت Ultrafast معادل ۶۰ دلار / ۳۰۰ دلار (عرضه عمومی در ۲۹ سپتامبر). کانتکست ۱.۰۵ میلیون Token، حداکثر خروجی 128K. فاقد سطح تلاش `none`، پارامترهای دما (temperature)، top_p یا logprobs؛ فراخوانی ابزار (tool calling) نیازمند Responses API است. عرضه عمومی در Bedrock در ۸ سپتامبر (۱۱ دلار / ۵۵ دلار برای استنتاج In-Region و Geo)؛ همچنین عرضه عمومی روی Microsoft Foundry. |
+| **GPT-6 Rosalind** (`gpt-6-rosalind`) | $15.00 | $75.00 | ۳۰ اکتبر ۲۰۲۶، فقط در برنامه دسترسی معتمد (trusted-access program). نرخ Cacheشده ۱.۵۰ دلار؛ بالای 272K با نرخ ۳۰ دلار / ۱۱۲.۵۰ دلار. نرخ‌های Batch، Flex یا Fast ارائه نشده است. |
+| **GPT-6-Cyber** (`gpt-6-cyber`) | $20.00 | $100.00 | ۵ نوامبر ۲۰۲۶، سطح Daybreak Red به همراه تأییدیه مجزای مدل، پارامتر `access_programs.cyber: "daybreak_red"` و افزودن IP به لیست مجاز (IP allowlisting). نرخ Cacheشده ۲ دلار؛ نوشتن در Cache معادل ۲۵ دلار (۳۰ دقیقه‌ای) یا ۵۰ دلار (۱۲ ساعته). کانتکست ۱,۰۵۰,۰۰۰ Token (حداکثر ورودی ۹۲۲,۰۰۰، حداکثر خروجی ۱۲۸,۰۰۰). فقط Chat Completions و Responses؛ بدون نرخ‌های Batch، کانتکست طولانی، Flex یا Fast. |
+| **GPT-6.1 Sol** | $2.00 | $10.00 | ۲۹ سپتامبر ۲۰۲۶. نرخ Cacheشده ۰.۱۰ دلار (۰.۰۵ برابر)، نوشتن در Cache معادل ۲.۵۰ دلار (۳۰ دقیقه‌ای) یا ۵.۰۰ دلار (۱۲ ساعته)؛ بالای 272K با نرخ ۴ دلار / ۱۵ دلار. نرخ‌های Batch و Flex معادل ۱ دلار / ۵ دلار؛ حالت Fast معادل ۴ دلار / ۲۰ دلار؛ حالت Ultrafast معادل ۱۲ دلار / ۶۰ دلار (بالای 272K معادل ۲۴ دلار / ۹۰ دلار) برای همه کاربران API از ۸ اکتبر. تلاش (effort) پیش‌فرض `medium`. در دسترس روی Bedrock طبق شرایط چرخه حیات اختصاصی OpenAI. |
+| **GPT-6.1 Terra** | $1.00 | $5.00 | ۲۶ اکتبر ۲۰۲۶. نرخ Cacheشده ۰.۰۵ دلار (۰.۰۵ برابر)، نوشتن در Cache معادل ۱.۲۵ دلار (۳۰ دقیقه‌ای) یا ۲.۵۰ دلار (۱۲ ساعته)؛ بالای 272K کل درخواست با نرخ ۲ دلار / ۷.۵۰ دلار محاسبه می‌شود. نرخ‌های Batch و Flex معادل ۰.۵۰ دلار / ۲.۵۰ دلار؛ حالت Fast معادل ۲ دلار / ۱۰ دلار؛ فاقد Ultrafast. سطح تلاش از `none` تا `max`، پیش‌فرض `medium`. همچنین در دسترس روی Bedrock. |
+| **GPT-6 Sol** | $2.00 | $10.00 | ۲۲ سپتامبر ۲۰۲۶. نرخ Cacheشده ۰.۲۰ دلار، نوشتن در Cache معادل ۲.۵۰ دلار؛ بالای 272K معادل ۴ دلار / ۱۵ دلار؛ نرخ‌های Batch و Flex معادل ۱ دلار / ۵ دلار. یک باگ در درک تصویر در ۲۵ سپتامبر تحت همان شناسه مدل (model ID) برطرف شد: ارزیابی‌های تصویر را مجدداً اجرا کنید. عرضه عمومی روی Bedrock در ۲۲ سپتامبر. |
+| **GPT-6 Luna** | $0.10 | $0.50 | ۲۲ سپتامبر ۲۰۲۶. نرخ Cacheشده ۰.۰۱ دلار، نوشتن در Cache معادل ۰.۱۲۵ دلار؛ بالای 272K معادل ۰.۲۰ دلار / ۰.۷۵ دلار؛ نرخ‌های Batch و Flex معادل ۰.۰۵ دلار / ۰.۲۵ دلار. اصلاحیه مشابه باگ تصویر در ۲۵ سپتامبر. همچنین مدل پشتیبان سرویس Decisions API (معادل ۰.۱۰ دلار به ازای هر ۱ میلیون Token ورودی Cacheنشده، خروجی بدون هزینه محاسبه می‌شود). |
+| **GPT-5.6 Sol** | ۴.۰۰ دلار تخفیف تبلیغاتی (۵.۰۰ دلار قیمت رسمی) | ۲۰.۰۰ دلار تخفیف تبلیغاتی (۳۰.۰۰ دلار قیمت رسمی) | دارای تخفیف تبلیغاتی (promotional) از ۲۱ اوت ۲۰۲۶؛ صفحات قیمت‌گذاری و مدل‌های OpenAI ذکر کرده‌اند که این مدل «تا ۳۰ نوامبر ۲۰۲۶ در دسترس است» و قیمتی پس از آن قید نکرده‌اند. قیمت رسمی ۵ دلار / ۳۰ دلار از تخفیف‌های اعلام‌شده ۲۰٪ و ۳۳٪ استنباط شده است؛ از ۱ دسامبر بودجه را بر اساس آن در نظر بگیرید. بالای 272K با نرخ تخفیف تبلیغاتی برابر با ۸ دلار / ۳۰ دلار. نرخ Cacheشده ۰.۴۰ دلار، نوشتن در Cache معادل ۵.۰۰ دلار. دیگر در جدول Ultrafast شرکت OpenAI قرار ندارد. مدل GPT-6 Sol جایگزین آن شده است. |
+| **GPT-5.6 Terra** | $2.00 | $12.00 | بالای 272K معادل ۴ دلار / ۱۸ دلار. مدل GPT-6.1 Terra با نیمی از قیمت ورودی و بسیار کمتر از نصف قیمت خروجی، جایگزین آن شده است. |
+| **GPT-5.6 Luna** | $0.20 | $1.20 | بالای 272K معادل ۰.۴۰ دلار / ۱.۸۰ دلار. مدل GPT-6 Luna با تقریباً نصف قیمت، جایگزین آن شده است. |
+| **GPT-5.6-Cyber** | $12.50 | $75.00 | ۱۰ اوت ۲۰۲۶. نرخ Cacheشده ۱.۲۵ دلار. کانتکست 400K، فاقد رده کانتکست طولانی. فقط در سطح Daybreak Red (تأیید هویت، تعهدات قانونی، فقط Responses API؛ در درخواست‌ها پارامتر `access_programs.cyber: "daybreak_red"` تنظیم می‌شود). |
+| **GPT-Rosalind** (`gpt-rosalind-research`) | $5.00 | $25.00 | مدل استدلال علوم زیستی (life-sciences)، عرضه عمومی در ۸ سپتامبر ۲۰۲۶ از طریق برنامه دسترسی معتمد. نرخ Cacheشده ۰.۵۰ دلار. همچنان با همین نرخ در کنار `gpt-6-rosalind` فهرست شده است. |
+| **GPT-5.5** | $5.00 | $30.00 | ۲۳ آوریل ۲۰۲۶. نرخ Cacheشده ۰.۵۰ دلار؛ بالای 272K معادل ۱۰ دلار / ۴۵ دلار. حالت Fast در این مدل با ضریب ۲.۵ برابر محاسبه می‌شود. |
+| **GPT-5.5 Pro / GPT-5.4 Pro** | $30.00 | $180.00 | فاقد تخفیف ورودی Cacheشده؛ بالای 272K حدود ۶۰ دلار / ۲۷۰ دلار. حالت Pro همچنین به عنوان `reasoning.mode: "pro"` در خانواده‌های GPT-5.6 و GPT-6 با نرخ‌های استاندارد مدل انتخابی در دسترس است. |
+| **GPT-5.4** | $2.50 | $15.00 | نرخ Cacheشده ۰.۲۵ دلار (۰.۱ برابر). بالای 272K معادل ۵ دلار / ۲۲.۵۰ دلار. |
+| **GPT-5.4-mini** | $0.75 | $4.50 | نرخ Cacheشده ۰.۰۷۵ دلار. |
+| **GPT-5.4-nano** | $0.20 | $1.25 | نرخ Cacheشده ۰.۰۲ دلار. توقف فعالیت (Shutdown) در ۱ آوریل ۲۰۲۷ (انتقال به GPT-6 Luna). |
+| **GPT-4.1** | $2.00 | $8.00 | نرخ Cacheشده ۰.۵۰ دلار. مدل‌های `gpt-4.1-2025-04-14`، `gpt-4.1-mini-2025-04-14` و نسخه‌های Fine-tuning شده آن‌ها در ۱۴ ژانویه ۲۰۲۷ از کار متوقف می‌شوند (انتقال به `gpt-6-luna` که قابلیت Fine-tuning ندارد). |
+| **GPT-4o** | $2.50 | $10.00 | نرخ Cacheشده ۱.۲۵ دلار. اسنپ‌شات اصلی `gpt-4o-2024-05-13` در OpenAI API در ۲۳ اکتبر ۲۰۲۶ متوقف شد؛ `gpt-4o-2024-08-06`، `gpt-4o-2024-11-20` و نسخه‌های Fine-tuning شده آن‌ها با یک اعلامیه حدوداً سه‌ماهه، در ۱۴ ژانویه ۲۰۲۷ متوقف می‌شوند (انتقال به `gpt-6-luna`). در Azure Foundry، مدل gpt-4o نسخه 2024-05-13 در ۱۴ ژانویه ۲۰۲۷ بازنشسته می‌شود و استقرارهای (deployments) نوع Global Standard و Data Zone Standard آن به‌طور خودکار به gpt-5.1 نسخه (2025-11-13) ارتقا می‌یابند. |
+| **GPT-4o-mini** | $0.15 | $0.60 | نرخ Cacheشده ۰.۰۷۵ دلار. مدل `gpt-4o-mini-2024-07-18` و نسخه‌های Fine-tuning شده آن در ۱۴ ژانویه ۲۰۲۷ متوقف می‌شوند (انتقال به `gpt-6-luna`). |
+
+#### شرکت Anthropic (نسل Claude 5.x)
+| مدل | ورودی / 1M | خروجی / 1M | کانتکست | یادداشت‌ها |
+|---|---|---|---|---|
+| **Claude Opus 5.5** | $4.00 | $20.00 | 1M | ۲۲ سپتامبر ۲۰۲۶ (`claude-opus-5-5`) روی Claude API، Bedrock، Google Cloud، Microsoft Foundry و Claude Platform روی AWS. گزینه پیش‌فرض و پیشنهادی («از اینجا شروع کنید») در Anthropic. نوشتن در Cache معادل ۵ دلار (۵ دقیقه) / ۸ دلار (۱ ساعت)؛ خواندن از Cache معادل ۰.۲۰ دلار (۰.۰۵ برابر)؛ حالت Batch معادل ۲ دلار / ۱۰ دلار؛ حالت سریع (fast mode) معادل ۸ دلار / ۴۰ دلار، خارج‌شده از پیش‌نمایش تحقیقاتی از ۱۵ اکتبر، روی Claude API، مدل‌های Claude در Google Cloud (مدیریت‌شده توسط Anthropic) و استقرارهای میزبانی‌شده روی Azure در Foundry. حداکثر خروجی 128K (در حالت Batch با هدر بتا، 300K). تلاش (effort) پیش‌فرض `medium` (پیش‌فرض Opus 5 برابر با `high` بود)؛ فرایند تفکر (thinking) قابل غیرفعال‌سازی نیست. قابلیت ZDR در دسترس است. بازنشستگی زودتر از ۲۲ سپتامبر ۲۰۲۷ رخ نخواهد داد. |
+| **Claude Sonnet 5.5** | $2.00 | $10.00 | 1M | ۲۸ سپتامبر ۲۰۲۶ (`claude-sonnet-5-5`)، همان پنج پلتفرم، قیمت بدون تغییر نسبت به Sonnet 5. نوشتن در Cache معادل ۲.۵۰ دلار / ۴.۰۰ دلار؛ خواندن از Cache معادل ۰.۱۰ دلار (۰.۰۵ برابر، کاهش‌یافته از ۰.۲۰ دلار در ۷ اکتبر)؛ حالت Batch معادل ۱ دلار / ۵ دلار. حداکثر خروجی 128K. تلاش پیش‌فرض در API برابر با `high` (در Claude Code و برنامه‌های کاربردی Claude معادل medium). مقدار `thinking: {type: "disabled"}` خطای 400 برمی‌گرداند؛ پایین‌ترین مقدار ممکن `between_tools` است. قابلیت ZDR در دسترس است. بازنشستگی زودتر از ۲۸ سپتامبر ۲۰۲۷ رخ نخواهد داد. |
+| **Claude Fable 5.1** | $10.00 | $50.00 | 1M | ۱ سپتامبر ۲۰۲۶ (`claude-fable-5-1`)، عرضه عمومی در تمام پنج پلتفرم. خواندن از Cache معادل ۰.۲۵ دلار (۰.۰۲۵ برابر، کاهش‌یافته از ۱.۰۰ دلار در Fable 5)؛ نوشتن در Cache معادل ۱۲.۵۰ دلار / ۲۰.۰۰ دلار؛ حالت Batch معادل ۵ دلار / ۲۵ دلار. حداکثر خروجی 128K، تلاش پیش‌فرض `high`. نگهداری ۳۰ روزه داده‌ها (data retention)؛ ZDR فقط در صورتی که Anthropic صراحتاً اجازه دهد (مشتریان واجد شرایط Enterprise Frontier Safeguards، تا زمان آماده‌سازی EFS). امتناع‌های ناشی از تدابیر ایمنی (safeguard refusals) می‌توانند در سمت سرور به‌صورت بازگشت خودکار (`fallbacks: "default"`، نسخه بتا) به Opus 4.8 یا Opus 5 منتقل شوند. بازنشستگی زودتر از ۱ سپتامبر ۲۰۲۷ رخ نخواهد داد. |
+| **Claude Mythos 5.1** | $10.00 | $50.00 | 1M | همان مدل Fable 5.1 با تدابیر ایمنی منعطف‌تر. دسترسی محدود: تمام سطوح برنامه تأیید سایبری (Cyber Verification Program که در ۶ اکتبر گسترش یافت و پروژه Glasswing در آن ادغام شد)؛ نگهداری داده‌ها الزامی است. |
+| **Claude Haiku 5.5** | ۰.۱۰ دلار (Prompt تا 100K) / ۰.۵۰ دلار (بیش از 100K) | $0.50 / $2.50 | 1M | ۷ اکتبر ۲۰۲۶ (`claude-haiku-5-5`). برای Prompt تا سقف ۱۰۰ هزار Token: نوشتن در Cache معادل ۰.۱۲۵ دلار (۵ دقیقه) / ۰.۲۰ دلار (۱ ساعت)، خواندن از Cache معادل ۰.۰۱ دلار، حالت Batch معادل ۰.۰۵ دلار / ۰.۲۵ دلار. بیش از ۱۰۰ هزار: نوشتن در Cache معادل ۰.۶۲۵ دلار / ۱.۰۰ دلار، خواندن از Cache معادل ۰.۰۵ دلار، حالت Batch معادل ۰.۲۵ دلار / ۱.۲۵ دلار. قیمت‌های بالاتر برای **کل درخواست** اعمال می‌شوند، و طول Prompt شامل خواندن‌ها و نوشتن‌های Cache نیز می‌شود، بنابراین اصابت به Cache (Cache hit) یک Prompt طولانی را در رده ارزان نگه نمی‌دارد. حداکثر خروجی 128K. برای متن یکسان، حدود ۳۰٪ بیشتر از Haiku 4.5 مصرف Token دارد، و رده تصویر با وضوح بالا هزینه یک تصویر 2000x1500 را تقریباً با ۲.۵ برابر Tokenهای بصری Haiku 4.5 محاسبه می‌کند. در Priority Tier پشتیبانی نمی‌شود. بازنشستگی زودتر از ۷ اکتبر ۲۰۲۷ رخ نخواهد داد. |
+| **Claude Haiku 4.5** | $1.00 | $5.00 | 200K | مدل Haiku 5.5 که برای کمتر از ۱۰۰ هزار Token یک‌دهم قیمت دارد جایگزین آن شده است. تا ۶ نوامبر همچنان روی Claude API فعال است و هیچ اعلان منسوخ‌شدنی ندارد؛ کف زمانی «زودتر از ۱۵ اکتبر ۲۰۲۶ نباشد» آن سپری شده است، و بر اساس خط‌مشی اعلان ۶۰ روزه Anthropic، بازنشستگی آن در آنجا زودتر از حدود ژانویه ۲۰۲۷ نخواهد بود. برنامه‌های مصرف‌کننده Claude آن را برای کاربران Free، Pro و Max در ۲۹ اکتبر حذف کردند. Foundry همچنان تاریخ ۱۵ نوامبر را نشان می‌دهد که ۹ روز دیگر است. |
+| **Claude Opus 5** | $5.00 | $25.00 | 1M | ۲۴ ژوئیه ۲۰۲۶. قدیمی (Legacy)، همچنان در دسترس است. حالت سریع معادل ۱۰ دلار / ۵۰ دلار. |
+| **Claude Sonnet 5** | $2.00 | $10.00 | 1M | ۳۰ ژوئن ۲۰۲۶. قدیمی (Legacy)، همچنان در دسترس است. قیمت معرفی اولیه آن در ۱۰ اوت ۲۰۲۶ دائمی شد. |
+| **Claude Fable 5** | $10.00 | $50.00 | 1M | ۹ ژوئن ۲۰۲۶. قدیمی (Legacy)، همچنان در دسترس است. خواندن از Cache معادل ۱.۰۰ دلار (۰.۱ برابر)، چهار برابر نرخ Fable 5.1. |
+| **Claude Opus 4.8** | $5.00 | $25.00 | 1M | ۲۸ مه ۲۰۲۶. قدیمی (Legacy). حالت سریع معادل ۱۰ دلار / ۵۰ دلار تا ۳۰ نوامبر ۲۰۲۶ که در آن تاریخ حذف می‌شود (در ۳۰ اکتبر منسوخ شده است). |
+| **Claude Opus 4.7 / 4.6** | $5.00 | $25.00 | 1M | قدیمی (Legacy). حالت سریع دیگر ارائه نمی‌شود (در نسخه 4.7 با خطا مواجه می‌شود؛ نسخه 4.6 با سرعت و نرخ‌های استاندارد اجرا می‌شود). |
+| **Claude Sonnet 4.6** | $3.00 | $15.00 | 1M | قدیمی (Legacy)؛ مدل Sonnet 5.5 جدیدتر و ارزان‌تر است. |
+| **Claude Sonnet 4.5** | $3.00 | $15.00 | 200K | در ۳۰ سپتامبر ۲۰۲۶ منسوخ شد؛ در ۳۰ نوامبر ۲۰۲۶ در Claude API و Foundry بازنشسته می‌شود (`claude-sonnet-4-5-20250929` به `claude-sonnet-5-5`). در Bedrock: از ۸ اکتبر جزو Legacy قرار گرفته، دسترسی تمدیدیافته عمومی (با قیمت‌گذاری بالاتر تعیین‌شده توسط ارائه‌دهنده) از ۸ ژانویه ۲۰۲۷، و پایان عمر در ۸ آوریل ۲۰۲۷. |
+| **Claude Opus 4.5** | $5.00 | $25.00 | 200K | بازنشستگی «زودتر از ۲۴ نوامبر ۲۰۲۶ نباشد» در Claude API، اما تا ۲ نوامبر هیچ اعلانی صادر نشده است، بنابراین بازنشستگی آن در آنجا زودتر از حدود ژانویه ۲۰۲۷ امکان‌پذیر نیست. Foundry همچنان تاریخ ۲۴ نوامبر را فهرست کرده است. |
 
 > [!NOTE]
-> **Anthropic billing rules worth memorizing (November 2026):**
-> - **Flat long context, with one exception.** Claude 4.6 and later bill the full 1M window at standard rates, with fast-mode premiums flat across it too. The exception is Claude Haiku 5.5: a prompt over 100,000 tokens (cache reads and writes included) moves the whole request to 5x.
-> - **Cache reads differ by model:** 0.1x on most models (including Haiku 5.5), 0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1. Batch is 50% and stacks with caching.
-> - **Fast mode** runs on Opus 5.5 ($8 / $40, out of research preview since October 15, on the Claude API, Claude Models on Google Cloud (Anthropic managed) and Foundry's Azure-hosted deployments) and, in research preview, on Opus 5 ($10 / $50). Opus 4.8 fast mode is removed November 30, 2026. It stacks with caching and residency multipliers but is not available on the Batch API.
-> - **Residency:** `inference_geo: "us"` costs 1.1x on input, output, cache writes and cache reads for Claude 4.6 and later, including Haiku 5.5's over-100K prices; older models return 400 if the parameter is set.
-> - **Refusals:** from September 24, 2026, pre-output refusals with `stop_details.category` of `bio`, `frontier_llm` or `reasoning_extraction` are billed; other categories are not. Break refusal spend out by category on cost dashboards.
-> - **Breaking changes that touch cost code:** API version `2026-10-21`, which the new SDK majors send by default, returns 400 on `temperature`, `top_p` and `top_k` at any value on every model. Fable 5.1, Opus 5.5 and Sonnet 5.5 return 400 on `tool_choice` of `any` or `tool`; Haiku 5.5 accepts a forced `tool_choice` but answers that turn without thinking. Thinking blocks are bound to the producing model and conversation, and on Sonnet 5.5 and Haiku 5.5 to the producing account too. Bedrock and Google Cloud (Google managed) set their own retirement schedules for Claude. Anthropic says its dates apply to the Claude API, Claude Platform on AWS, Claude Models on Google Cloud (Anthropic managed) and Foundry, but Microsoft's Foundry retirement schedule still lists earlier Foundry dates for claude-haiku-4-5 (November 15) and claude-opus-4-5 (November 24) than Anthropic's notice policy allows, and it also retires claude-opus-4-6 on February 2, 2027 and claude-sonnet-4-6 on February 10, 2027, a few days before Anthropic's own floors (February 5 and February 17); plan for the earlier date on Foundry and confirm with both vendors.
+> **قوانین صورت‌حساب Anthropic که ارزش به خاطر سپردن دارند (نوامبر ۲۰۲۶):**
+> - **کانتکست طولانی با نرخ یکنواخت (Flat)، با یک استثنا.** مدل Claude 4.6 و نسخه‌های پس از آن، کل پنجره ۱ میلیون Token را با نرخ‌های استاندارد محاسبه می‌کنند و اضافه هزینه‌های حالت سریع (fast-mode premiums) نیز در سراسر آن یکنواخت است. تنها استثنا Claude Haiku 5.5 است: اگر یک Prompt از ۱۰۰,۰۰۰ Token فراتر رود (با احتساب خواندن‌ها و نوشتن‌های Cache)، کل درخواست با ضریب ۵ برابر محاسبه می‌شود.
+> - **هزینه خواندن از Cache در مدل‌های مختلف متفاوت است:** ۰.۱ برابر در اکثر مدل‌ها (از جمله Haiku 5.5)، ۰.۰۵ برابر در Opus 5.5 و Sonnet 5.5، و ۰.۰۲۵ برابر در Fable 5.1. حالت Batch تخفیف ۵۰ درصدی دارد و با Caching تجمیع‌پذیر است.
+> - **حالت سریع (Fast mode)** روی Opus 5.5 (با قیمت ۸ دلار / ۴۰ دلار، خارج‌شده از پیش‌نمایش تحقیقاتی از ۱۵ اکتبر، روی Claude API، مدل‌های Claude در Google Cloud (مدیریت‌شده توسط Anthropic) و استقرارهای میزبانی‌شده روی Azure در Foundry) و به‌صورت پیش‌نمایش تحقیقاتی روی Opus 5 (با قیمت ۱۰ دلار / ۵۰ دلار) اجرا می‌شود. حالت سریع Opus 4.8 در ۳۰ نوامبر ۲۰۲۶ حذف می‌شود. این حالت با ضرایب Caching و مقیم‌بودن داده‌ها (residency) تجمیع می‌شود اما در Batch API در دسترس نیست.
+> - **مقیم‌بودن داده‌ها (Residency):** تنظیم پارامتر `inference_geo: "us"` هزینه‌ای معادل ۱.۱ برابر برای ورودی، خروجی، نوشتن در Cache و خواندن از Cache در Claude 4.6 و نسخه‌های جدیدتر به همراه دارد که شامل قیمت‌های بالای 100K در Haiku 5.5 نیز می‌شود؛ مدل‌های قدیمی‌تر در صورت تنظیم این پارامتر، خطای 400 برمی‌گردانند.
+> - **امتناع‌ها (Refusals):** از ۲۴ سپتامبر ۲۰۲۶، امتناع‌های پیش از خروجی با مقدار `stop_details.category` برابر با `bio`، `frontier_llm` یا `reasoning_extraction` مشمول هزینه می‌شوند؛ سایر دسته‌بندی‌ها هزینه‌ای ندارند. در داشبوردهای هزینه، مخارج امتناع‌ها را به تفکیک دسته‌بندی تفکیک کنید.
+> - **تغییرات شکسته‌کننده (Breaking changes) که بر کدهای هزینه تأثیر می‌گذارند:** نسخه API مورخ `2026-10-21`، که نسخه‌های اصلی جدید SDK به‌طور پیش‌فرض ارسال می‌کنند، برای هر مقداری از `temperature`، `top_p` و `top_k` در تمام مدل‌ها خطای 400 بازمی‌گرداند. مدل‌های Fable 5.1، Opus 5.5 و Sonnet 5.5 در برابر مقدار `any` یا `tool` در پارامتر `tool_choice` خطای 400 برمی‌گردانند؛ Haiku 5.5 مقدار اجباری `tool_choice` را می‌پذیرد اما آن نوبت (turn) را بدون فرایند تفکر پاسخ می‌دهد. بلوک‌های تفکر (Thinking blocks) وابسته به مدل و مکالمه تولیدکننده هستند، و در Sonnet 5.5 و Haiku 5.5 به حساب کاربری تولیدکننده نیز وابسته می‌باشند. سرویس‌های Bedrock و Google Cloud (مدیریت‌شده توسط Google) جدول‌های زمانی بازنشستگی اختصاصی خود را برای Claude تعیین می‌کنند. شرکت Anthropic اعلام کرده که تاریخ‌هایش برای Claude API، Claude Platform روی AWS، مدل‌های Claude در Google Cloud (مدیریت‌شده توسط Anthropic) و Foundry اعمال می‌شود، اما برنامه بازنشستگی Foundry متعلق به مایکروسافت همچنان تاریخ‌های زودتری را در Foundry برای claude-haiku-4-5 (۱۵ نوامبر) و claude-opus-4-5 (۲۴ نوامبر) نسبت به سیاست اعلامیه Anthropic ذکر می‌کند، و همچنین claude-opus-4-6 را در ۲ فوریه ۲۰۲۷ و claude-sonnet-4-6 را در ۱۰ فوریه ۲۰۲۷ بازنشسته می‌کند که چند روز قبل از کف‌های زمانی خود Anthropic (۵ فوریه و ۱۷ فوریه) است؛ برای تاریخ زودتر در Foundry برنامه‌ریزی کنید و آن را با هر دو ارائه‌دهنده تأیید نمایید.
 
-#### Google (Gemini 3.x and 4)
-| Model | Input / 1M | Output / 1M | Context | Notes |
-|-------|------------|-------------|---------|-------|
-| **Gemini 3.8 Flash** | $0.75 intro ($1.50 from Jan 1, 2027) | $3.75 intro ($7.50 from Jan 1, 2027) | 1M (65K out) | GA September 2, 2026. Output price includes thinking tokens. Batch and Flex $0.375 / $1.875 intro ($0.75 / $3.75 from January 1); Priority $1.35 / $6.75 intro ($2.70 / $13.50 from January 1); cache read $0.075 intro ($0.15 from January 1) plus storage $0.50 per 1M tokens per hour intro ($1.00 from January 1). Thinking levels low, medium, high. Coverage notes it spends more reasoning tokens per task, which offsets part of the low rate. |
-| **Gemini 3.7 Flash / 3.6 Flash** | $0.75 intro | $3.75 intro | 1M | Same introductory price and January 1, 2027 doubling. Superseded by 3.8 Flash; since October 8, `gemini-3.7-flash` requests are served by 3.8 Flash. On Vertex AI, `gemini-3.6-flash` retires November 19, 2026 and `gemini-3.7-flash` January 28, 2027 (replacement `gemini-3.8-flash`, no routing described). |
-| **Gemini 4 Argon** (`gemini-4-argon`) | $2.00 through Nov 30, 2026; $4.00 from Dec 1 | $10.00 through Nov 30; $20.00 from Dec 1 | 1M shared (65,536 default output) | GA October 13, 2026, paid tier only. Output price includes thinking. Implicit caching only (hits $0.10, then $0.20); explicit caching is not supported. Batch and Flex half of Standard; Priority $3.60 / $18, then $7.20 / $36. No prompt-length tiers. Output beyond 65,536 tokens, up to about 1M, needs the long-decode continuation protocol. Budget at the December price. |
-| **Gemini 3.1 Pro Preview** | $2.00 | $12.00 | 1M | Above 200K: $4.00 / $18.00. Still a preview with no shutdown date; Gemini 4 Argon is the GA model above it, and there is no Gemini 3.5 Pro. |
-| **Gemini 3.5 Flash** | $1.50 | $9.00 | 1M | Requests route to `gemini-3.6-flash` since October 8; Google has not said how rerouted requests bill. Move off the ID rather than guess. |
-| **Gemini 3.5 Flash-Lite** | $0.30 | $2.50 | 1M | Google's recommended target for new projects that would have used 2.5 Flash-Lite. |
-| **Gemini 3.1 Flash-Lite** | $0.25 | $1.50 | 1M | Shutdown May 7, 2027 (to 3.5 Flash-Lite). |
-| **Gemini 3 Flash Preview** | $0.50 | $3.00 | 1M | Preview. |
-| **Gemini 2.5 Pro** | $1.25 | $10.00 | 1M | Above 200K: $2.50 / $15.00. Deprecated November 2, 2026; from December 1 requests route to `gemini-3.8-flash` and bill at 3.8 Flash rates (see below). |
-| **Gemini 2.5 Flash-Lite** | $0.10 | $0.40 | 1M | Restricted to existing users; not deprecated. |
+#### شرکت Google (Gemini 3.x و 4)
+| مدل | ورودی / 1M | خروجی / 1M | کانتکست | یادداشت‌ها |
+|---|---|---|---|---|
+| **Gemini 3.8 Flash** | ۰.۷۵ دلار معرفی (۱.۵۰ دلار از ۱ ژانویه ۲۰۲۷) | ۳.۷۵ دلار معرفی (۷.۵۰ دلار از ۱ ژانویه ۲۰۲۷) | 1M (خروجی 65K) | عرضه عمومی در ۲ سپتامبر ۲۰۲۶. قیمت خروجی شامل Tokenهای تفکر است. نرخ Batch و Flex معادل ۰.۳۷۵ دلار / ۱.۸۷۵ دلار معرفی (۰.۷۵ دلار / ۳.۷۵ دلار از ۱ ژانویه)؛ نرخ Priority معادل ۱.۳۵ دلار / ۶.۷۵ دلار معرفی (۲.۷۰ دلار / ۱۳.۵۰ دلار از ۱ ژانویه)؛ خواندن از Cache معادل ۰.۰۷۵ دلار معرفی (۰.۱۵ دلار از ۱ ژانویه) به اضافه هزینه ذخیره‌سازی ۰.۵۰ دلار به ازای هر ۱ میلیون Token در ساعت برای دوره معرفی (۱.۰۰ دلار از ۱ ژانویه). سطوح تفکر شامل low، medium و high. گزارش‌ها نشان می‌دهند که به ازای هر تسک، Tokenهای استدلال بیشتری مصرف می‌کند که بخشی از مزیت نرخ پایین آن را خنثی می‌سازد. |
+| **Gemini 3.7 Flash / 3.6 Flash** | ۰.۷۵ دلار معرفی | ۳.۷۵ دلار معرفی | 1M | قیمت معرفی اولیه یکسان و دو برابر شدن از ۱ ژانویه ۲۰۲۷. مدل 3.8 Flash جایگزین آن شده است؛ از ۸ اکتبر، درخواست‌های `gemini-3.7-flash` توسط 3.8 Flash پاسخ داده می‌شوند. در Vertex AI، مدل `gemini-3.6-flash` در ۱۹ نوامبر ۲۰۲۶ و مدل `gemini-3.7-flash` در ۲۸ ژانویه ۲۰۲۷ بازنشسته می‌شوند (مدل جایگزین `gemini-3.8-flash` است و هیچ مسیریابی خاصی تشریح نشده است). |
+| **Gemini 4 Argon** (`gemini-4-argon`) | ۲.۰۰ دلار تا ۳۰ نوامبر ۲۰۲۶؛ ۴.۰۰ دلار از ۱ دسامبر | ۱۰.۰۰ دلار تا ۳۰ نوامبر؛ ۲۰.۰۰ دلار از ۱ دسامبر | 1M اشتراکی (خروجی پیش‌فرض ۶۵,۵۳۶) | عرضه عمومی در ۱۳ اکتبر ۲۰۲۶، فقط در رده پولی. قیمت خروجی شامل تفکر است. فقط Caching ضمنی (اصابت‌ها ۰.۱۰ دلار، سپس ۰.۲۰ دلار)؛ Caching صریح پشتیبانی نمی‌شود. نرخ Batch و Flex نصف حالت استاندارد؛ نرخ Priority معادل ۳.۶۰ دلار / ۱۸ دلار، سپس ۷.۲۰ دلار / ۳۶ دلار. فاقد رده‌بندی بر اساس طول Prompt. خروجی فراتر از ۶۵,۵۳۶ Token، تا حدود ۱ میلیون Token، نیازمند پروتکل ادامه رمزگشایی طولانی (long-decode continuation protocol) است. بودجه‌بندی را بر اساس قیمت دسامبر انجام دهید. |
+| **Gemini 3.1 Pro Preview** | $2.00 | $12.00 | 1M | بالای 200K: معادل ۴.۰۰ دلار / ۱۸.۰۰ دلار. همچنان یک پیش‌نمایش بدون تاریخ توقف فعالیت؛ Gemini 4 Argon مدل عمومی عرضه‌شده بالاتر از آن است، و مدلی به نام Gemini 3.5 Pro وجود ندارد. |
+| **Gemini 3.5 Flash** | $1.50 | $9.00 | 1M | از ۸ اکتبر درخواست‌ها به `gemini-3.6-flash` هدایت می‌شوند؛ Google نحوه صدور صورت‌حساب درخواست‌های بازهدایت‌شده را مشخص نکرده است. به‌جای حدس زدن، از این شناسه مدل مهاجرت کنید. |
+| **Gemini 3.5 Flash-Lite** | $0.30 | $2.50 | 1M | گزینه پیشنهادی Google برای پروژه‌های جدیدی که قبلاً قصد استفاده از 2.5 Flash-Lite را داشتند. |
+| **Gemini 3.1 Flash-Lite** | $0.25 | $1.50 | 1M | توقف فعالیت در ۷ مه ۲۰۲۷ (انتقال به 3.5 Flash-Lite). |
+| **Gemini 3 Flash Preview** | $0.50 | $3.00 | 1M | نسخه پیش‌نمایش (Preview). |
+| **Gemini 2.5 Pro** | $1.25 | $10.00 | 1M | بالای 200K: معادل ۲.۵۰ دلار / ۱۵.۰۰ دلار. در ۲ نوامبر ۲۰۲۶ منسوخ شد؛ از ۱ دسامبر درخواست‌ها به `gemini-3.8-flash` هدایت شده و با نرخ‌های 3.8 Flash محاسبه می‌شوند (در ادامه مشاهده کنید). |
+| **Gemini 2.5 Flash-Lite** | $0.10 | $0.40 | 1M | محدود به کاربران فعلی؛ منسوخ نشده است. |
 
-Google Search grounding: 5,000 free requests per month shared across Gemini 3 and newer models, then $14 per 1,000. A governance change rides alongside the prices: from October 26, new paid Gemini API projects store requests by default (`store=true`); existing projects keep their setting.
+مبتنی‌سازی با جستجوی گوگل (Google Search grounding): ۵,۰۰۰ درخواست رایگان در ماه به‌صورت اشتراکی میان مدل‌های Gemini 3 و مدل‌های جدیدتر، و سپس ۱۴ دلار به ازای هر ۱,۰۰۰ درخواست. تغییری در حاکمیت داده نیز همراه با این قیمت‌ها اعمال شده است: از ۲۶ اکتبر، پروژه‌های پولی جدید Gemini API به‌طور پیش‌فرض درخواست‌ها را ذخیره می‌کنند (`store=true`)؛ پروژه‌های موجود تنظیمات قبلی خود را حفظ می‌کنند.
 
 > [!WARNING]
-> **Gemini 2.5 lifecycle (price effect):** `gemini-2.5-pro` and `gemini-2.5-flash` were deprecated on the Gemini API on November 2, 2026. From December 1, `gemini-2.5-pro` requests route to and bill at Gemini 3.8 Flash rates ($0.75 / $3.75 intro, doubling January 1, 2027), and `gemini-2.5-flash` requests route to and bill at Gemini 3.5 Flash-Lite rates ($0.30 / $2.50). `gemini-2.5-flash-lite` is not deprecated. Pinned code keeps returning 200s, so the bill and the model's behavior change together. For the breaking changes on the routed targets and the Vertex AI status, see [Model Taxonomy](01-model-taxonomy.md#gemini-31-pro-preview-google---february-2026).
+> **چرخه حیات Gemini 2.5 (اثر بر قیمت):** مدل‌های `gemini-2.5-pro` و `gemini-2.5-flash` در تاریخ ۲ نوامبر ۲۰۲۶ در Gemini API منسوخ شدند. از ۱ دسامبر، درخواست‌های `gemini-2.5-pro` به Gemini 3.8 Flash هدایت شده و با نرخ‌های آن محاسبه می‌شوند (۰.۷۵ دلار / ۳.۷۵ دلار قیمت معرفی، با افزایش دو برابری از ۱ ژانویه ۲۰۲۷)، و درخواست‌های `gemini-2.5-flash` به Gemini 3.5 Flash-Lite هدایت شده و با نرخ‌های آن صورت‌حساب صادر می‌شود (۰.۳۰ دلار / ۲.۵۰ دلار). مدل `gemini-2.5-flash-lite` منسوخ نشده است. کدهای قفل‌شده روی این نسخه‌ها همچنان پاسخ‌های 200 بازمی‌گردانند، بنابراین صورت‌حساب و رفتار مدل به‌طور همزمان تغییر خواهند کرد. برای بررسی تغییرات شکسته‌کننده (breaking changes) روی مقاصد بازهدایت‌شده و وضعیت Vertex AI، بخش [دسته‌بندی مدل‌ها](01-model-taxonomy.md#gemini-31-pro-preview-google---february-2026) را ببینید.
 
-#### xAI (Grok)
-| Model | Input / 1M | Output / 1M | Context | Notes |
-|-------|------------|-------------|---------|-------|
-| **Grok 4.7** | $2.00 | $6.00 | 500K | September 21, 2026. Cached $0.50. At or above a 200K prompt the rate becomes $4 / $12 (cached $1) **for every token in the request**. A fast variant (2x speed, 2x price) is offered only in Cursor and Grok Build, not on the public API. New, larger base model than 4.6; Artificial Analysis Index v5.0 scores it 35 (high), about 20 points below the $2/$10 models. Still xAI's newest text model: no Grok 5 as of November 6. |
-| **Grok 4.6** | $2.00 | $6.00 | 500K | August 12, 2026. Superseded by 4.7 at the same price and long-prompt rule. |
-| **grok-4.3** | $1.25 | $2.50 | - | Redirect target for the text slugs xAI retired on May 15, 2026 (`grok-4-0709`, `grok-4-fast`, `grok-4-1-fast`, `grok-3`). Old slugs still resolve but bill at grok-4.3 rates and behavior. Azure Foundry still lists `grok-4` and `grok-4-1-fast` as GA. |
+#### شرکت xAI (مدل Grok)
+| مدل | ورودی / 1M | خروجی / 1M | کانتکست | یادداشت‌ها |
+|---|---|---|---|---|
+| **Grok 4.7** | $2.00 | $6.00 | 500K | ۲۱ سپتامبر ۲۰۲۶. نرخ Cacheشده ۰.۵۰ دلار. در صورت رسیدن Prompt به 200K یا فراتر رفتن از آن، نرخ صورت‌حساب **برای تک‌تک Tokenهای موجود در درخواست** به ۴ دلار / ۱۲ دلار (نرخ Cacheشده ۱ دلار) تغییر می‌کند. یک گونه سریع (سرعت ۲ برابر، قیمت ۲ برابر) تنها در Cursor و Grok Build ارائه می‌شود، نه در API عمومی. مدل پایه‌ای جدیدتر و بزرگ‌تر از 4.6؛ شاخص Artificial Analysis Index v5.0 به آن امتیاز ۳۵ (سطح تلاش high) داده است که حدود ۲۰ امتیاز پایین‌تر از مدل‌های ۲ دلاری / ۱۰ دلاری است. همچنان جدیدترین مدل متنی xAI است: تا ۶ نوامبر خبری از Grok 5 نیست. |
+| **Grok 4.6** | $2.00 | $6.00 | 500K | ۱۲ اوت ۲۰۲۶. مدل 4.7 با قیمت و قاعده Prompt طولانی مشابه، جایگزین آن شده است. |
+| **grok-4.3** | $1.25 | $2.50 | - | مقصد بازهدایت برای شناسه‌های متنی که xAI در ۱۵ مه ۲۰۲۶ بازنشسته کرد (`grok-4-0709`، `grok-4-fast`، `grok-4-1-fast`، `grok-3`). شناسه‌های قدیمی همچنان کار می‌کنند اما صورت‌حساب و رفتار آن‌ها با نرخ‌های grok-4.3 محاسبه می‌شود. سرویس Azure Foundry همچنان `grok-4` و `grok-4-1-fast` را در وضعیت عرضه عمومی (GA) فهرست کرده است. |
 
-#### Open-Weight, Challenger, and Value-Tier Models via API
-| Model | Input / 1M | Output / 1M | Context | Provider and License Notes |
-|-------|------------|-------------|---------|----------------------------|
-| **DeepSeek V4.1-Flash** (`deepseek-flash`) | $0.30 peak / $0.15 off-peak | $1.20 peak / $0.60 off-peak | 1M (384K out) | DeepSeek API from September 10, 2026; served by the V4.1-Flash-1017 build (MIT) since October 17 at the same token prices. AA Index v5.0.1: 33 at max (29 at high), the top released-weight score AA labels open; the max run cost $0.60 per index task. Concurrency limit 2,500. DeepSeek's Search & Fetch API (October 17) adds $0.75 per 1,000 successful requests for each of Search and Fetch. Cache-hit input $0.006 / $0.003. MIT weights; 552B backbone (763B checkpoint), 8B active on prefill and 16B on decode. Legacy `deepseek-v4-flash` names route here at these rates. Together AI and Fireworks list the same $0.30 / $1.20. |
-| **DeepSeek V4-Pro** (`deepseek-v4-pro`, build 0813) | $1.32 peak / $0.66 off-peak | $3.96 peak / $1.98 off-peak | 1M | Unchanged since the August 16 repricing. Cache-hit input $0.044 / $0.022. DeepSeek announced on September 10 that all V4-Pro traffic would route to V4.1-Flash from September 14, then reversed that on September 11. V4.1-Pro has not launched. Concurrency limit 500, which caps fan-out. |
-| **Xiaomi MiMo-V2.6-Pro** | $0.435 | $0.87 | 1M | September 21, 2026, MIT, 1.02T total / 42B active. OpenRouter price. Artificial Analysis Index v5.0.1: 30, three points behind DeepSeek V4.1-Flash-1017. |
-| **Xiaomi MiMo-V2.6-Flash** | $0.14 | $0.28 | 1M | 309B / 15B active, MIT. OpenRouter price; the same numbers DeepSeek V4 Flash charged before August. |
-| **Z.ai GLM-5.3** | $1.40 | $4.40 | 1M | Cached $0.26. Weights released August 28, 2026 under MIT plus a Z.ai security-review clause for Model-as-a-Service operators above US$10B revenue over 12 months. Also GA on Mistral La Plateforme (September 28; GLM 5.2 was listed to retire there October 31) and on Amazon Bedrock (October 5, US and Global profiles; AWS says inference data is not shared with the model provider). AA Index v5.0.1: 32 at max, 23 at low. |
-| **Z.ai GLM-5.3-Flash** | $0.15 | $0.50 | 1M | August 26, 2026, plain MIT, 320B / 18B active. Cached $0.03. |
-| **Moonshot Kimi K3** | $3.00 | $15.00 | 1M | Cached $0.30 (Fireworks lists the same $3 / $0.30 / $15). Custom license: a separate agreement is required for MaaS operators above US$20M revenue over 12 months. Not scored on AA Index v5.0; earlier scores (including the widely quoted 57.1) are on non-comparable versions. On Amazon Bedrock since September 18 with explicit prompt caching (breakpoints after at least 1,024 tokens, entries persist at least 30 minutes, cache hits do not count against input-TPM quotas); the global cross-Region profile is about 10% cheaper than the US one. |
-| **Moonshot Kimi K3.1 Pro** | $2.00 | $10.00 | 1M | API October 23, 2026; weights November 4 under the custom Kimi K3.1-Pro License (separate agreement for MaaS above US$20M revenue over 12 months; UI credit above 100M MAU or US$20M monthly revenue). `kimi-k3.1-pro-highspeed` $4 / $20 for 2-3x speed (Moonshot); batch at 60% of standard. Artificial Analysis measured about 36 minutes per index task on standard versus 16.7 on High Speed. First-party prices as listed by AA, because Moonshot's tables rendered empty. AA Index v5.0.1: 46. GPT-6.1 Sol's list price at 9 fewer AA points, with weights you can take elsewhere. |
-| **Qwen3.8-Max / -0902** | $2.00 | $6.00 | 1M | Alibaba Model Studio international price for both `qwen3.8-max` and the September 2 `-0902` snapshot, which is API-only. The open 2.4T / 95B-active checkpoint is still the August 12 build and has a MaaS and assistant-product gate above US$50M revenue over 12 months: self-hosters fall behind the API model within weeks. |
-| **Qwen3.8-Flash** (hosted Flash-Next) | $0.15 | $0.47 | 1M | Qwen Cloud. Open weights (Qwen3.8-Flash-Next, a Qwen4 architecture preview) use Qwen Community License 1.0, which requires a separate license for any MaaS or coding/office-assistant business regardless of revenue. Qwen4 itself had not shipped as of November 6 (no date, model card or license), so do not price it in. |
-| **Tencent Hy4 preview** | $0.834 | $2.501 | 1M | August 28, 2026, Apache 2.0, 770B / 49B active. Tencent TokenHub list (cache hit $0.042); third-party OpenRouter hosts match. |
-| **Tencent Hy4** (full, `tencent/hy4`) | $0.417 | $1.251 | - | November 4, 2026; adds image input and computer use. OpenRouter price; Tencent TokenHub lists 6 yuan / 18 yuan per 1M (reported at half price until December 31). No weights or license yet (Tencent promises both, undated), so the preview's Apache 2.0 terms do not carry over. AA Index v5.0.1: 35, labeled proprietary. |
-| **Meta Muse Wonder** (closed, `muse-wonder-1.0`) | $4.00 | $20.00 | 1M | October 12, 2026, Meta Model API and Muse Code. Cached $0.20. Opus 5.5's list price at a lower AA Index v5.0 score (43 vs 58, both max effort). Muse Wonder Full has no API price: it is available only through Muse Code subscriptions ($50 and $200 monthly plans). |
-| **Meta Muse Spark 1.3** (closed) | $1.25 | $4.25 | 1M | September 2, 2026, Meta Model API and Muse Code. Cached $0.15. `muse-spark-1.3-contributor` costs $0.10 / $0.20 because Meta may use the traffic: check policy before enabling. More verbose than 1.2, so cost per task rose at flat per-token prices. |
-| **StepFun Step 5 Preview** | $1.00 | $2.70 | 1M | Cache hit $0.05. 600B / 27B active; weights released around October 15 under StepFun Model License 1.0 (separate agreement for MaaS above US$20M revenue and for any branded device). AA Index v5.0: 29. Verbose: about 160M output tokens on Artificial Analysis's earlier suite against an 81M median. |
-| **Mistral Large 4** | $0.70 | $2.10 | 1M | Cached $0.07. Public preview October 6, 2026; open weights October 29 (about 1T total, 49B active) under the Mistral Ecosystem Open-Weight License, which requires a separate commercial license for any MaaS business, with no revenue threshold. Reasoning modes Low, Medium and High, with **High as the default** (the preview's `None` mode is gone), so unset effort spends more tokens; AA scores 26 at High and 23 at Medium. Named replacement for Medium 3.5 and Large 3. |
-| **Mistral Medium 3.5** | $1.50 | $7.50 | 256K | Deprecated October 31, 2026; retires April 30, 2027 (to Large 4). Weights under a modified MIT license that withdraws all rights from organizations above US$20M monthly revenue. EU regional inference +10%. |
-| **Mistral Large 3** | $0.50 | $1.50 | 256K | Mistral API, AWS Bedrock. Deprecated on the Mistral API October 31, 2026; retires there April 30, 2027. Large 4 costs 40% more. |
-| **Microsoft MAI-Thinking-1** | From $2.00 | From $8.00 | 256K total (64K max output) | August 12, 2026, Foundry public preview; price in Microsoft's Foundry blog (updated August 12). About 1T total / 35B active. Global Standard only, no PTU; default quota 0 TPM and 0 RPM, so request capacity first. |
-| **MAI-Code-1.1-Flash** | $0.20 | $1.20 | check latest | Microsoft, August 11, 2026. Carried over. |
-| **Inception Mercury 2.5** (diffusion) | $0.20 list ($0.04 launch promo) | $0.75 list ($0.15 launch promo) | - | 1,107 tokens/s (vendor-reported). A speed option, not a frontier-quality one. |
-| **Llama 3.3 70B** | $1.04 | $1.04 | 128K | Together AI list. Groq shut down `llama-3.3-70b-versatile` for free and developer tiers on August 16, 2026. |
-| **Llama 4 Scout / Maverick** | check latest | check latest | 10M / 1M | Groq retired Scout for free and developer tiers on July 17, 2026, and fast-inference hosts now center on gpt-oss, Qwen, GLM and DeepSeek. Scout's effective context degrades fast past 32K. |
-| **Gemma 4 / Qwen3.8-27B** | self-host | self-host | 256K / - | Apache 2.0. |
-| **Meta Muse Spark Open** | $1.25 (Fireworks) or self-host | $4.25 (Fireworks) or self-host | 1M (1,040K on Fireworks) | October 15, 2026, 816B / 42B active. Fireworks serverless (blog post October 20): cached $0.15, US-only capacity with no US premium, LoRA training through its Serverless Training API. Also on Microsoft Foundry managed compute (since October 15) and GroqCloud preview (131,072 context, contact sales). The same price as the closed Muse Spark 1.3, so choose on license and data terms. Muse Model License: "Built with Muse Spark Open" attribution, and a separate Meta agreement for MaaS operators above US$20M revenue. AA Index v5.0.1: 25. |
-| **MiniMax-M3.1-Flash** | self-host | self-host | 1M | Weights October 23, 2026 (hosted service from October 19); about 428B / 23B active per the model card. MiniMax Community License: commercial use only under conditions (one-time notice to MiniMax, prior written authorization above US$20M yearly revenue, "Built with MiniMax M3.1-Flash" display). AA Index v5.0: 29. |
+#### مدل‌های با وزن باز (Open-Weight)، مدعی و رده اقتصادی از طریق API
+| مدل | ورودی / 1M | خروجی / 1M | کانتکست | یادداشت‌های ارائه‌دهنده و مجوز |
+|---|---|---|---|---|
+| **DeepSeek V4.1-Flash** (`deepseek-flash`) | ۰.۳۰ دلار ساعات اوج / ۰.۱۵ دلار ساعات غیر اوج | ۱.۲۰ دلار ساعات اوج / ۰.۶۰ دلار ساعات غیر اوج | 1M (خروجی 384K) | سرویس DeepSeek API از ۱۰ سپتامبر ۲۰۲۶؛ از ۱۷ اکتبر توسط بیلد V4.1-Flash-1017 (تحت مجوز MIT) با همان قیمت Tokenها ارائه می‌شود. امتیاز AA Index v5.0.1: معادل ۳۳ در حالت max (۲۹ در حالت high)، بالاترین امتیاز میان وزن‌های منتشرشده که شاخص AA آن را متن‌باز می‌نامد؛ هزینه اجرای حالت max معادل ۰.۶۰ دلار به ازای هر تسک شاخص است. محدودیت همزمانی (concurrency limit) برابر با ۲,۵۰۰. سرویس Search & Fetch API در DeepSeek (۱۷ اکتبر) به ازای هر ۱,۰۰۰ درخواست موفق برای هر یک از عملیات Search و Fetch مبلغ ۰.۷۵ دلار اضافه می‌کند. ورودی اصابت به Cache معادل ۰.۰۰۶ دلار / ۰.۰۰۳ دلار. وزن‌های MIT؛ ستون فقرات (backbone) با ۵۵۲ میلیارد پارامتر (چک‌پوینت ۷۶۳ میلیارد پارامتر)، ۸ میلیارد پارامتر فعال در فاز پیش‌پر کردن (prefill) و ۱۶ میلیارد در رمزگشایی (decode). نام‌های قدیمی `deepseek-v4-flash` با همین نرخ‌ها به اینجا هدایت می‌شوند. پلتفرم‌های Together AI و Fireworks نیز همین نرخ ۰.۳۰ دلار / ۱.۲۰ دلار را فهرست کرده‌اند. |
+| **DeepSeek V4-Pro** (`deepseek-v4-pro`، بیلد 0813) | ۱.۳۲ دلار ساعات اوج / ۰.۶۶ دلار ساعات غیر اوج | ۳.۹۶ دلار ساعات اوج / ۱.۹۸ دلار ساعات غیر اوج | 1M | بدون تغییر از زمان قیمت‌گذاری مجدد در ۱۶ اوت. ورودی اصابت به Cache معادل ۰.۰۴۴ دلار / ۰.۰۲۲ دلار. شرکت DeepSeek در ۱۰ سپتامبر اعلام کرد که تمام ترافیک V4-Pro از ۱۴ سپتامبر به V4.1-Flash هدایت خواهد شد، اما در ۱۱ سپتامبر این تصمیم را لغو کرد. مدل V4.1-Pro هنوز عرضه نشده است. محدودیت همزمانی ۵۰۰ است که باعث محدود شدن انشعاب پردازش‌ها (fan-out) می‌شود. |
+| **Xiaomi MiMo-V2.6-Pro** | $0.435 | $0.87 | 1M | ۲۱ سپتامبر ۲۰۲۶، مجوز MIT، در مجموع ۱.۰۲ تریلیون پارامتر / ۴۲ میلیارد فعال. قیمت در OpenRouter. شاخص Artificial Analysis Index v5.0.1: امتیاز ۳۰، سه امتیاز عقب‌تر از DeepSeek V4.1-Flash-1017. |
+| **Xiaomi MiMo-V2.6-Flash** | $0.14 | $0.28 | 1M | ۳۰۹ میلیارد پارامتر / ۱۵ میلیارد فعال، مجوز MIT. قیمت در OpenRouter؛ همان اعدادی که DeepSeek V4 Flash قبل از اوت دریافت می‌کرد. |
+| **Z.ai GLM-5.3** | $1.40 | $4.40 | 1M | نرخ Cacheشده ۰.۲۶ دلار. وزن‌ها در ۲۸ اوت ۲۰۲۶ تحت مجوز MIT به اضافه یک بند بررسی امنیتی Z.ai برای اپراتورهای «مدل به عنوان سرویس» (Model-as-a-Service یا MaaS) با درآمد بالای ۱۰ میلیارد دلار در دوره ۱۲ ماهه منتشر شد. همچنین عرضه عمومی روی Mistral La Plateforme (۲۸ سپتامبر؛ طبق فهرست قرار بود GLM 5.2 در ۳۱ اکتبر در آنجا بازنشسته شود) و روی Amazon Bedrock (۵ اکتبر، پروفایل‌های US و Global؛ به گفته AWS داده‌های استنتاج (inference) با ارائه‌دهنده مدل به اشتراک گذاشته نمی‌شود). امتیاز AA Index v5.0.1: معادل ۳۲ در حالت max، و ۲۳ در حالت low. |
+| **Z.ai GLM-5.3-Flash** | $0.15 | $0.50 | 1M | ۲۶ اوت ۲۰۲۶، مجوز MIT خالص، ۳۲۰ میلیارد پارامتر / ۱۸ میلیارد فعال. نرخ Cacheشده ۰.۰۳ دلار. |
+| **Moonshot Kimi K3** | $3.00 | $15.00 | 1M | نرخ Cacheشده ۰.۳۰ دلار (پلتفرم Fireworks نیز همان قیمت ۳ دلار / ۰.۳۰ دلار / ۱۵ دلار را فهرست کرده است). مجوز سفارشی: توافق‌نامه مجزا برای اپراتورهای MaaS با درآمد بالای ۲۰ میلیون دلار در دوره ۱۲ ماهه الزامی است. در AA Index v5.0 ارزیابی نشده است؛ امتیازات پیشین (از جمله امتیاز ۵۷.۱ که به وفور نقل شده) مربوط به نسخه‌های غیرقابل مقایسه‌اند. در Amazon Bedrock از ۱۸ سپتامبر همراه با Caching صریح Prompt (نقاط شکست بعد از حداقل ۱,۰۲۴ Token، ماندگاری ورودی‌ها حداقل به مدت ۳۰ دقیقه، اصابت‌های Cache در سهمیه TPM ورودی محاسبه نمی‌شوند) در دسترس است؛ پروفایل جهانی میان‌منطقه‌ای (cross-Region) حدود ۱۰٪ ارزان‌تر از پروفایل US است. |
+| **Moonshot Kimi K3.1 Pro** | $2.00 | $10.00 | 1M | سرویس API در ۲۳ اکتبر ۲۰۲۶؛ وزن‌ها در ۴ نوامبر تحت مجوز اختصاصی Kimi K3.1-Pro License (توافق‌نامه مجزا برای MaaS با درآمد بالای ۲۰ میلیون دلار در دوره ۱۲ ماهه؛ درج اعتبار در رابط کاربری برای بالای ۱۰۰ میلیون کاربر فعال ماهانه (MAU) یا ۲۰ میلیون دلار درآمد ماهانه). نسخه `kimi-k3.1-pro-highspeed` با قیمت ۴ دلار / ۲۰ دلار برای سرعت ۲ تا ۳ برابری (در Moonshot)؛ حالت batch با ۶۰٪ قیمت استاندارد. موسسه Artificial Analysis حدود ۳۶ دقیقه برای هر تسک شاخص در حالت استاندارد در برابر ۱۶.۷ دقیقه در حالت High Speed را اندازه‌گیری کرده است. قیمت‌های دست‌اول به همان صورتی که توسط AA فهرست شده آورده شده، زیرا جداول Moonshot خالی رندر شدند. امتیاز AA Index v5.0.1: برابر با ۴۶. با قیمتی معادل قیمت رسمی GPT-6.1 Sol و ۹ امتیاز کمتر در شاخص AA، همراه با وزن‌هایی که می‌توانید به هر جای دیگری انتقال دهید. |
+| **Qwen3.8-Max / -0902** | $2.00 | $6.00 | 1M | قیمت بین‌المللی Alibaba Model Studio برای هر دو مدل `qwen3.8-max` و اسنپ‌شات ۲ سپتامبر `-0902` که تنها از طریق API ارائه می‌شود. چک‌پوینت باز ۲.۴ تریلیون پارامتر / ۹۵ میلیارد فعال همچنان بیلد ۱۲ اوت است و برای ارائه‌دهندگان MaaS و محصولات دستیار با درآمد بیش از ۵۰ میلیون دلار در دوره ۱۲ ماهه محدودیت مجوز دارد: کسانی که مدل را به‌صورت محلی میزبانی می‌کنند (self-hosters) ظرف چند هفته از مدل API عقب می‌افتند. |
+| **Qwen3.8-Flash** (نسخه میزبانی‌شده Flash-Next) | $0.15 | $0.47 | 1M | سرویس Qwen Cloud. وزن‌های باز (Qwen3.8-Flash-Next، یک پیش‌نمایش از معماری Qwen4) از مجوز Qwen Community License 1.0 استفاده می‌کنند که فارغ از میزان درآمد، نیازمند مجوز مجزا برای هرگونه کسب‌وکار MaaS یا دستیار کدنویسی/اداری است. خود Qwen4 تا ۶ نوامبر هنوز منتشر نشده بود (بدون تاریخ، کارت مدل یا مجوز)، بنابراین آن را در محاسبات قیمت لحاظ نکنید. |
+| **Tencent Hy4 preview** | $0.834 | $2.501 | 1M | ۲۸ اوت ۲۰۲۶، مجوز Apache 2.0، با ۷۷۰ میلیارد پارامتر / ۴۹ میلیارد فعال. فهرست Tencent TokenHub (اصابت به Cache معادل ۰.۰۴۲ دلار)؛ میزبان‌های ارائه‌دهنده شخص ثالث در OpenRouter نیز همین قیمت را ارائه می‌دهند. |
+| **Tencent Hy4** (کامل، `tencent/hy4`) | $0.417 | $1.251 | - | ۴ نوامبر ۲۰۲۶؛ قابلیت ورودی تصویر و استفاده از کامپیوتر (computer use) به آن افزوده شده است. قیمت OpenRouter؛ لیست Tencent TokenHub معادل ۶ یوان / ۱۸ یوان به ازای هر ۱ میلیون Token است (گزارش شده که تا ۳۱ دسامبر با نصف قیمت محاسبه می‌شود). هنوز هیچ وزن یا مجوزی ارائه نشده است (Tencent قول هر دو را بدون تاریخ مشخص داده است)، بنابراین شرایط Apache 2.0 نسخه پیش‌نمایش به آن منتقل نمی‌شود. امتیاز AA Index v5.0.1: برابر با ۳۵، با برچسب انحصاری (proprietary). |
+| **Meta Muse Wonder** (بسته، `muse-wonder-1.0`) | $4.00 | $20.00 | 1M | ۱۲ اکتبر ۲۰۲۶، پلتفرم Meta Model API و Muse Code. نرخ Cacheشده ۰.۲۰ دلار. قیمتی معادل قیمت رسمی Opus 5.5 اما با امتیاز پایین‌تر در AA Index v5.0 (امتیاز ۴۳ در برابر ۵۸، هر دو در حالت حداکثر تلاش). مدل Muse Wonder Full قیمت API ندارد: تنها از طریق اشتراک‌های Muse Code (پلن‌های ماهانه ۵۰ دلار و ۲۰۰ دلار) در دسترس است. |
 
-OpenRouter added a Batch API on September 22, 2026: generally 50% off on 70+ models, median batch completion 7 minutes in beta. That brings the batch discount to providers that do not offer one directly.
+| **Meta Muse Spark 1.3** (بسته/closed) | ۱.۲۵ دلار | ۴.۲۵ دلار | ۱M | ۲ سپتامبر ۲۰۲۶، در Meta Model API و Muse Code. خواندن از Cache معادل ۰.۱۵ دلار. نسخه `muse-spark-1.3-contributor` معادل ۰.۱۰ دلار / ۰.۲۰ دلار هزینه دارد، زیرا متا ممکن است از ترافیک داده استفاده کند: پیش از فعال‌سازی، خط‌مشی‌ها (policy) بررسی شود. اطناب (verboseness) بیشتری نسبت به 1.2 دارد، بنابراین هزینه به ازای هر تسک با وجود ثابت بودن قیمت بر حسب Token، افزایش یافته است. |
+| **StepFun Step 5 Preview** | ۱.۰۰ دلار | ۲.۷۰ دلار | ۱M | اصابت به Cache معادل ۰.۰۵ دلار. دارای ۶۰۰ میلیارد پارامتر کل / ۲۷ میلیارد فعال؛ انتشار وزن‌ها در حدود ۱۵ اکتبر تحت مجوز StepFun Model License 1.0 (توافق‌نامه جداگانه برای ارائه‌دهندگان MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا و برای هرگونه دستگاه دارای برند). شاخص AA Index v5.0: امتیاز ۲۹. پرحرف و طولانی (Verbose): حدود ۱۶۰ میلیون Token خروجی در مجموعه آزمون‌های اولیه Artificial Analysis در مقایسه با میانه ۸۱ میلیونی. |
+| **Mistral Large 4** | ۰.۷۰ دلار | ۲.۱۰ دلار | ۱M | خواندن از Cache معادل ۰.۰۷ دلار. پیش‌نمایش عمومی در ۶ اکتبر ۲۰۲۶؛ انتشار وزن‌های باز در ۲۹ اکتبر (حدود ۱ تریلیون کل، ۴۹ میلیارد فعال) تحت مجوز Mistral Ecosystem Open-Weight License، که نیازمند مجوز تجاری جداگانه برای هرگونه کسب‌وکار MaaS بدون هیچ آستانه درآمدی است. حالت‌های استدلال Low،‏ Medium و High که **High حالت پیش‌فرض است** (حالت `None` در نسخه پیش‌نمایش حذف شده است)، بنابراین تعیین نکردن effort باعث مصرف Tokenهای بیشتری می‌شود؛ امتیاز AA برابر با ۲۶ در حالت High و ۲۳ در حالت Medium است. به‌عنوان جایگزین رسمی برای Medium 3.5 و Large 3 نام‌گذاری شده است. |
+| **Mistral Medium 3.5** | ۱.۵۰ دلار | ۷.۵۰ دلار | ۲۵۶K | از رده خارج شده (Deprecated) در ۳۱ اکتبر ۲۰۲۶؛ بازنشستگی در ۳۰ آوریل ۲۰۲۷ (مهاجرت به Large 4). وزن‌ها تحت یک مجوز تغییریافته MIT قرار دارند که تمام حقوق را از سازمان‌هایی با درآمد ماهانه بیش از ۲۰ میلیون دلار آمریکا سلب می‌کند. استنتاج (Inference) منطقه‌ای اتحادیه اروپا ۱۰٪+ هزینه بیشتر دارد. |
+| **Mistral Large 3** | ۰.۵۰ دلار | ۱.۵۰ دلار | ۲۵۶K | در Mistral API و AWS Bedrock. از رده خارج شده در Mistral API در ۳۱ اکتبر ۲۰۲۶؛ بازنشستگی در آنجا در ۳۰ آوریل ۲۰۲۷. مدل Large 4 حدود ۴۰٪ گران‌تر است. |
+| **Microsoft MAI-Thinking-1** | از ۲.۰۰ دلار | از ۸.۰۰ دلار | ۲۵۶K کل (حداکثر خروجی ۶۴K) | ۱۲ اوت ۲۰۲۶، پیش‌نمایش عمومی Foundry؛ قیمت‌گذاری در وبلاگ Foundry مایکروسافت (به‌روزرسانی‌شده در ۱۲ اوت). حدود ۱ تریلیون پارامتر کل / ۳۵ میلیارد فعال. فقط Global Standard، بدون PTU؛ سهمیه پیش‌فرض 0 TPM و 0 RPM است، بنابراین ابتدا باید درخواست ظرفیت دهید. |
+| **MAI-Code-1.1-Flash** | ۰.۲۰ دلار | ۱.۲۰ دلار | بررسی آخرین وضعیت | مایکروسافت، ۱۱ اوت ۲۰۲۶. منتقل‌شده از قبل. |
+| **Inception Mercury 2.5** (diffusion) | ۰.۲۰ دلار قیمت رسمی (۰.۰۴ دلار تخفیف راه‌اندازی) | ۰.۷۵ دلار قیمت رسمی (۰.۱۵ دلار تخفیف راه‌اندازی) | - | ۱,۱۰۷ Token بر ثانیه (گزارش‌شده توسط ارائه‌دهنده). گزینه‌ای متمرکز بر سرعت، نه کیفیتی در سطح مدل‌های پیشرو (frontier). |
+| **Llama 3.3 70B** | ۱.۰۴ دلار | ۱.۰۴ دلار | ۱۲۸K | فهرست رسمی Together AI. شرکت Groq در ۱۶ اوت ۲۰۲۶ مدل `llama-3.3-70b-versatile` را برای سطوح رایگان و توسعه‌دهندگان خاموش کرد. |
+| **Llama 4 Scout / Maverick** | بررسی آخرین وضعیت | بررسی آخرین وضعیت | ۱۰M / ۱M | شرکت Groq مدل Scout را در ۱۷ ژوئیه ۲۰۲۶ برای سطوح رایگان و توسعه‌دهنده بازنشسته کرد، و میزبان‌های استنتاج سریع اکنون روی gpt-oss،‏ Qwen،‏ GLM و DeepSeek تمرکز دارند. کانتکست موثر Scout پس از ۳۲K به‌سرعت افت می‌کند. |
+| **Gemma 4 / Qwen3.8-27B** | میزبانی شخصی | میزبانی شخصی | ۲۵۶K / - | مجوز Apache 2.0. |
+| **Meta Muse Spark Open** | ۱.۲۵ دلار (Fireworks) یا میزبانی شخصی | ۴.۲۵ دلار (Fireworks) یا میزبانی شخصی | ۱M (معادل ۱,۰۴۰K در Fireworks) | ۱۵ اکتبر ۲۰۲۶،‏ ۸۱۶ میلیارد کل / ۴۲ میلیارد فعال. سرویس سرورلس Fireworks (پست وبلاگ ۲۰ اکتبر): خواندن از Cache معادل ۰.۱۵ دلار، ظرفیت اختصاصی ایالات متحده بدون هزینه مازاد (premium)، آموزش LoRA از طریق Serverless Training API. همچنین روی محاسبات مدیریت‌شده Microsoft Foundry (از ۱۵ اکتبر) و پیش‌نمایش GroqCloud (کانتکست ۱۳۱,۰۷۲، تماس با فروش). قیمتی مشابه با نسخه اختصاصی Muse Spark 1.3، بنابراین انتخاب بر اساس شرایط مجوز و داده‌ها انجام شود. مجوز Muse Model License: الزام به ذکر انتساب "Built with Muse Spark Open" و توافق‌نامه جداگانه با متا برای ارائه‌دهندگان MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا. شاخص AA Index v5.0.1: امتیاز ۲۵. |
+| **MiniMax-M3.1-Flash** | میزبانی شخصی | میزبانی شخصی | ۱M | انتشار وزن‌ها در ۲۳ اکتبر ۲۰۲۶ (سرویس میزبانی‌شده از ۱۹ اکتبر)؛ حدود ۴۲۸ میلیارد کل / ۲۳ میلیارد فعال بر اساس کارت مدل (model card). مجوز MiniMax Community License: استفاده تجاری تنها تحت شرایط خاص (اطلاع‌رسانی یک‌باره به MiniMax، مجوز کتبی قبلی برای درآمد سالانه بالای ۲۰ میلیون دلار آمریکا، و نمایش "Built with MiniMax M3.1-Flash"). شاخص AA Index v5.0: امتیاز ۲۹. |
 
-#### Voice and Transcription (Per-Minute Billing)
+سرویس OpenRouter در ۲۲ سپتامبر ۲۰۲۶ یک Batch API اضافه کرد: معمولاً ۵۰٪ تخفیف برای بیش از ۷۰ مدل، با میانه زمان تکمیل ۷ دقیقه‌ای برای پردازش دسته‌ای در نسخه بتا. این قابلیت، تخفیف حالت Batch را برای ارائه‌دهندگانی که مستقیماً آن را ارائه نمی‌دهند به ارمغان می‌آورد.
 
-Voice moved off pure token billing in 2026. A voice agent's cost is now **minutes × session rate + backend model tokens**, so call duration and idle time matter as much as tokens. Close idle sessions: `gpt-live-1` bills silence and backend wait time.
+#### صوت و پیاده‌سازی متنی (صورت‌حساب بر اساس دقیقه) (Voice and Transcription (Per-Minute Billing))
 
-| Model | Price | Notes |
-|-------|-------|-------|
-| **`gpt-live-1`** | $0.05 per session minute, billed per second, plus backend model and tool tokens | GA September 10, 2026. Full duplex; delegates reasoning and tools to a Responses model or your own backend. Creating a WebRTC session bills 15 seconds up front, credited once the session runs. |
-| **`gpt-realtime-2.1`** | Audio $32 in / $0.40 cached / $64 out per 1M; text $4 / $0.40 / $24 | About $0.019 per minute of caller audio and $0.077 per minute of agent audio before context growth (derived). The whole conversation is re-sent on every response, so long calls get more expensive per minute. |
-| **`gpt-realtime-2.1-mini`** | Audio $10 / $0.30 / $20 per 1M; text $0.60 / $0.06 / $2.40 | Replacement for `gpt-realtime-mini`. |
-| **`gpt-realtime-translate`** | $0.034/min | One session per target language. |
-| **`gpt-transcribe`** | $0.0045/min | Files and committed turns. Replaces `whisper-1` and the `gpt-4o-*-transcribe` models, which shut down February 26, 2027. |
-| **`gpt-live-transcribe`** | $0.017/min | Streaming, about 3.8x the batch rate. |
-| **Gemini 3.8 Live** | Audio $3 in / $12 out per 1M (about $0.005 / $0.018 per min); text $0.75 / $4.50 | GA September 15, 2026. Same rates for the Extended Thinking variant. |
-| **Gemini 3.8 Flash TTS** | $0.50 in / $9 out per 1M promotional through December 31; $1 / $18 from January 1, 2027 | GA September 22, 2026. Flash-Lite TTS is $6 per 1M audio tokens, also doubling January 1. |
-| **Gemini 3.5 Transcribe Live** | About $0.009/min blended | GA August 26, 2026. |
-| **Microsoft MAI-Transcribe-2** | $0.10 per audio hour (about $0.0017/min), limited-time | Launched September 3, 2026. Budget for a higher rate once the offer ends. |
-| **OpenAI TTS** (`gpt-4o-mini-tts`) | $12 per 1M audio tokens | No new OpenAI TTS model shipped in August or September. `tts-1`, `tts-1-hd` and the `gpt-4o-mini-tts` snapshots shut down January 6, 2027. |
-| **xAI Grok voice** | $0.08/min plus $0.004 per text input | Flat per-minute speech-to-speech; the `grok-voice-latest` alias moved from `grok-voice-2.0` to `grok-voice-3.0` in October at the same price. xAI speech-to-text is $0.10 per hour (REST) or $0.20 per hour (streaming); TTS is $15 per 1M characters. |
-| **Mistral Voxtral 3** (public preview, October 20) | TTS 3 $13 per 1M characters; Mini Transcribe 3 $0.0035/min; Mini Transcribe Realtime 3 $0.008/min; Small Transcribe 3 $0.004/min | Cached input at 10% of each rate. Streaming STT at about half `gpt-live-transcribe`'s price. Voxtral TTS 26.03 on the Mistral API retires April 30, 2027. |
-| **Bundled voice-agent platforms** | About $0.04-0.14/min plus telephony | Mistral Voice Agents $0.04 with Mistral Small 4 and $0.08 with larger models (October 20, the cheapest bundled rate here), Telnyx about $0.06 (vendor-reported), Deepgram Voice Agent $0.075 ($0.05 with your own LLM and TTS), ElevenLabs Agents $0.08 ($0.16 burst), Vapi $0.05 plus providers at cost (about $0.08-0.13 in total), Retell about $0.13 in a worked example, Bland $0.12-0.14. ElevenLabs' Eleven Realtime models (rolled out to every workspace by November 2) are not flat: connected audio is $0.080 per additional minute ($0.160 burst above the concurrency limit) plus tokens at $0.20 / $6.00 per 1M for Mini and $1.80 / $9.00 for Max. Cartesia stops hosting Line SDK agents on December 1, 2026. This is the bar a self-assembled pipeline has to beat. |
+در سال ۲۰۲۶، قیمت‌گذاری صوت از محاسبه صرفاً مبتنی بر Token فاصله گرفت. اکنون هزینه یک ایجنت صوتی برابر است با: **دقیقه × نرخ نشست + Tokenهای مدل بک‌اند**؛ بنابراین مدت تماس و زمان بیکاری (idle time) به اندازه Tokenها اهمیت دارند. نشست‌های بیکار را ببندید: مدل `gpt-live-1` برای سکوت و زمان انتظار بک‌اند نیز صورت‌حساب صادر می‌کند.
 
-For architecture tradeoffs between these options, see [Realtime Voice Agents](../18-voice-and-audio-agents/01-realtime-voice-agents.md).
+| مدل (Model) | قیمت (Price) | نکات (Notes) |
+|---|---|---|
+| **`gpt-live-1`** | ۰.۰۵ دلار به ازای هر دقیقه نشست، محاسبه بر حسب ثانیه، به‌علاوه Tokenهای ابزار و مدل بک‌اند | عرضه عمومی (GA) در ۱۰ سپتامبر ۲۰۲۶. عملکرد دوطرفه هم‌زمان (Full duplex)؛ واگذاری استدلال و ابزارها به یک مدل Responses یا بک‌اند اختصاصی شما. ایجاد یک نشست WebRTC به‌میزان ۱۵ ثانیه پیش‌پرداخت صورت‌حساب دارد که پس از اجرای نشست به حساب بستانکار می‌شود. |
+| **`gpt-realtime-2.1`** | صوت: ۳۲ دلار ورودی / ۰.۴۰ دلار Cache / ۶۴ دلار خروجی به ازای هر ۱ میلیون Token؛ متن: ۴ دلار / ۰.۴۰ دلار / ۲۴ دلار | حدود ۰.۰۱۹ دلار به ازای هر دقیقه صدای تماس‌گیرنده و ۰.۰۷۷ دلار به ازای هر دقیقه صدای ایجنت پیش از رشد کانتکست (محاسبه‌شده). کل مکالمه در هر پاسخ مجدداً ارسال می‌شود، بنابراین تماس‌های طولانی به ازای هر دقیقه گران‌تر تمام می‌شوند. |
+| **`gpt-realtime-2.1-mini`** | صوت: ۱۰ دلار / ۰.۳۰ دلار / ۲۰ دلار به ازای هر ۱ میلیون Token؛ متن: ۰.۶۰ دلار / ۰.۰۶ دلار / ۲.۴۰ دلار | جایگزین برای `gpt-realtime-mini`. |
+| **`gpt-realtime-translate`** | ۰.۰۳۴ دلار بر دقیقه | یک نشست به ازای هر زبان مقصد. |
+| **`gpt-transcribe`** | ۰.۰۰۴۵ دلار بر دقیقه | برای فایل‌ها و نوبت‌های ثبت‌شده (committed turns). جایگزین `whisper-1` و مدل‌های `gpt-4o-*-transcribe` که در ۲۶ فوریه ۲۰۲۷ خاموش می‌شوند. |
+| **`gpt-live-transcribe`** | ۰.۰۱۷ دلار بر دقیقه | جریانی (Streaming)، حدود ۳.۸ برابر نرخ Batch. |
+| **Gemini 3.8 Live** | صوت: ۳ دلار ورودی / ۱۲ دلار خروجی به ازای هر ۱ میلیون Token (حدود ۰.۰۰۵ دلار / ۰.۰۱۸ دلار بر دقیقه)؛ متن: ۰.۷۵ دلار / ۴.۵۰ دلار | عرضه عمومی در ۱۵ سپتامبر ۲۰۲۶. نرخ‌های یکسان برای نسخه تفکر گسترش‌یافته (Extended Thinking). |
+| **Gemini 3.8 Flash TTS** | ۰.۵۰ دلار ورودی / ۹ دلار خروجی به ازای هر ۱ میلیون Token تبلیغاتی تا ۳۱ دسامبر؛ ۱ دلار / ۱۸ دلار از ۱ ژانویه ۲۰۲۷ | عرضه عمومی در ۲۲ سپتامبر ۲۰۲۶. نرخ Flash-Lite TTS معادل ۶ دلار به ازای هر ۱ میلیون Token صوتی است که از ۱ ژانویه دو برابر می‌شود. |
+| **Gemini 3.5 Transcribe Live** | حدود ۰.۰۰۹ دلار بر دقیقه ترکیبی (blended) | عرضه عمومی در ۲۶ اوت ۲۰۲۶. |
+| **Microsoft MAI-Transcribe-2** | ۰.۱۰ دلار به ازای هر ساعت صوت (حدود ۰.۰۰۱۷ دلار بر دقیقه)، مدت محدود | راه‌اندازی‌شده در ۳ سپتامبر ۲۰۲۶. پس از پایان پیشنهاد، برای نرخ بالاتری بودجه‌بندی کنید. |
+| **OpenAI TTS** (`gpt-4o-mini-tts`) | ۱۲ دلار به ازای هر ۱ میلیون Token صوتی | هیچ مدل جدید OpenAI TTS در اوت یا سپتامبر عرضه نشد. مدل‌های `tts-1`،‏ `tts-1-hd` و اسنپ‌شات‌های `gpt-4o-mini-tts` در ۶ ژانویه ۲۰۲۷ خاموش می‌شوند. |
+| **xAI Grok voice** | ۰.۰۸ دلار بر دقیقه به‌علاوه ۰.۰۰۴ دلار به ازای هر ورودی متنی | گفتار-به-گفتار (speech-to-speech) با نرخ ثابت بر حسب دقیقه؛ نام مستعار (alias) مدل `grok-voice-latest` در ماه اکتبر با حفظ همان قیمت از `grok-voice-2.0` به `grok-voice-3.0` منتقل شد. تبدیل گفتار به متن در xAI معادل ۰.۱۰ دلار بر ساعت (REST) یا ۰.۲۰ دلار بر ساعت (جریانی) است؛ TTS معادل ۱۵ دلار به ازای هر ۱ میلیون کاراکتر است. |
+| **Mistral Voxtral 3** (پیش‌نمایش عمومی، ۲۰ اکتبر) | مدل TTS 3 معادل ۱۳ دلار به ازای هر ۱ میلیون کاراکتر؛ Mini Transcribe 3 معادل ۰.۰۰۳۵ دلار بر دقیقه؛ Mini Transcribe Realtime 3 معادل ۰.۰۰۸ دلار بر دقیقه؛ Small Transcribe 3 معادل ۰.۰۰۴ دلار بر دقیقه | ورودی Cacheشده با ۱۰٪ هر نرخ محاسبه می‌شود. تبدیل گفتار به متن جریانی (Streaming STT) با حدود نصف قیمت `gpt-live-transcribe`. مدل Voxtral TTS 26.03 در Mistral API در ۳۰ آوریل ۲۰۲۷ بازنشسته می‌شود. |
+| **پلتفرم‌های تجمیعی ایجنت صوتی (Bundled voice-agent platforms)** | حدود ۰.۰۴ تا ۰.۱۴ دلار بر دقیقه به‌علاوه هزینه تلفن (telephony) | سرویس Mistral Voice Agents معادل ۰.۰۴ دلار با Mistral Small 4 و ۰.۰۸ دلار با مدل‌های بزرگ‌تر (۲۰ اکتبر، ارزان‌ترین نرخ تجمیعی در اینجا)، Telnyx حدود ۰.۰۶ دلار (گزارش‌شده توسط ارائه‌دهنده)، Deepgram Voice Agent معادل ۰.۰۷۵ دلار (۰.۰۵ دلار با LLM و TTS اختصاصی شما)، ElevenLabs Agents معادل ۰.۰۸ دلار (۰.۱۶ دلار در اوج مصرف یا burst)، پلتفرم Vapi معادل ۰.۰۵ دلار به‌علاوه ارائه‌دهندگان به قیمت تمام‌شده (در مجموع حدود ۰.۰۸ تا ۰.۱۳ دلار)، Retell حدود ۰.۱۳ دلار در یک نمونه محاسبه‌شده، Bland حدود ۰.۱۲ تا ۰.۱۴ دلار. مدل‌های Eleven Realtime از ElevenLabs (که تا ۲ نوامبر در تمام فضاهای کاری فعال شد) نرخ ثابت ندارند: صوت متصل معادل ۰.۰۸۰ دلار به ازای هر دقیقه اضافی (۰.۱۶۰ دلار در شرایط burst فراتر از سقف هم‌زمانی) به‌علاوه Tokenها با نرخ ۰.۲۰ دلار / ۶.۰۰ دلار به ازای هر ۱ میلیون برای Mini و ۱.۸۰ دلار / ۹.۰۰ دلار برای Max است. سرویس Cartesia میزبانی ایجنت‌های Line SDK را در ۱ دسامبر ۲۰۲۶ متوقف می‌کند. این همان معیاری است که یک پایپ‌لاین سرهم‌بندی‌شده توسط خودتان باید آن را شکست دهد. |
 
-#### Embedding Models
-| Model | Cost / 1M tokens | Notes |
-|-------|------------------|-------|
-| **Cohere embed-v5.0-pro / -fast** | $0.12 / $0.08 | September 30, 2026. Shared embedding space across both, 128K input. |
-| **voyage-4-large / voyage-4 / voyage-4-lite** | $0.12 / $0.06 / $0.02 | January 15, 2026. Shared space, 32K input. |
-| **voyage-context-4, voyage-code-4** | $0.12 | voyage-code-4 reports +27.54% over voyage-code-3 (vendor-reported). |
-| **text-embedding-3-large** | $0.13 | 3072 dims, 8,192-token input. Unchanged. |
-| **text-embedding-3-small** | $0.02 | 1536 dims. Carried over. |
-| **gemini-embedding-2** | $0.20 (text; Batch $0.10) | Multimodal, stable since April 2026; image $0.45, audio $6.50, video $12.00 per 1M (Google pricing page). |
-| **Cohere Embed 4** | $0.10 | Previous Cohere generation; Matryoshka dims 256 / 512 / 1024 / 1536. Carried over. |
+برای بررسی مصالحه‌های معماری (architecture tradeoffs) بین این گزینه‌ها، به [ایجنت‌های صوتی Realtime](../18-voice-and-audio-agents/01-realtime-voice-agents.md) مراجعه کنید.
 
-Rerankers: Voyage rerank-3 at $0.05 and rerank-3-lite at $0.02 per 1M tokens (September 30, 2026, 32K context); Cohere Rerank 5 GA October 21, 2026 at $0.05 (Pro) and $0.02 (Fast) per 1M tokens.
+#### مدل‌های Embedding (Embedding Models)
+| مدل (Model) | هزینه / ۱ میلیون Token | نکات (Notes) |
+|---|---|---|
+| **Cohere embed-v5.0-pro / -fast** | ۰.۱۲ دلار / ۰.۰۸ دلار | ۳۰ سپتامبر ۲۰۲۶. فضای embedding مشترک در هر دو، ورودی ۱۲۸K. |
+| **voyage-4-large / voyage-4 / voyage-4-lite** | ۰.۱۲ دلار / ۰.۰۶ دلار / ۰.۰۲ دلار | ۱۵ ژانویه ۲۰۲۶. فضای مشترک، ورودی ۳۲K. |
+| **voyage-context-4, voyage-code-4** | ۰.۱۲ دلار | مدل voyage-code-4 افزایش ۲۷.۵۴٪+ را نسبت به voyage-code-3 گزارش می‌کند (گزارش‌شده توسط ارائه‌دهنده). |
+| **text-embedding-3-large** | ۰.۱۳ دلار | ۳۰۷۲ بعد، ورودی ۸,۱۹۲ Token. بدون تغییر. |
+| **text-embedding-3-small** | ۰.۰۲ دلار | ۱۵۳۶ بعد. منتقل‌شده از قبل. |
+| **gemini-embedding-2** | ۰.۲۰ دلار (متن؛ در حالت Batch معادل ۰.۱۰ دلار) | چندحالته (Multimodal)، پایدار از آوریل ۲۰۲۶؛ تصویر ۰.۴۵ دلار، صوت ۶.۵۰ دلار، ویدیو ۱۲.۰۰ دلار به ازای هر ۱ میلیون (صفحه قیمت‌گذاری گوگل). |
+| **Cohere Embed 4** | ۰.۱۰ دلار | نسل قبلی Cohere؛ ابعاد ماتریوشکا (Matryoshka dims) شامل ۲۵۶ / ۵۱۲ / ۱۰۲۴ / ۱۵۳۶. منتقل‌شده از قبل. |
+
+مدل‌های رتبه‌بندی مجدد (Rerankers): مدل Voyage rerank-3 با قیمت ۰.۰۵ دلار و rerank-3-lite با قیمت ۰.۰۲ دلار به ازای هر ۱ میلیون Token (۳۰ سپتامبر ۲۰۲۶، کانتکست ۳۲K)؛ عرضه عمومی Cohere Rerank 5 در ۲۱ اکتبر ۲۰۲۶ با نرخ ۰.۰۵ دلار (Pro) و ۰.۰۲ دلار (Fast) به ازای هر ۱ میلیون Token.
 
 > [!IMPORTANT]
-> **Reasoning tokens are output tokens.** On models with always-on or adaptive thinking (Claude Fable 5.1, Opus 5.5 and Sonnet 5.5; GPT-6 Astra, which has no `none` effort), you pay the output rate for thinking that never appears in the response. This can increase total request cost by 2x-10x on logic-heavy tasks. Thinking cannot be disabled on Opus 5.5, and Sonnet 5.5's lowest setting is `between_tools`, so the cost control is the **effort** setting plus a `max_tokens` cap, not a thinking toggle. Watch silent default changes: Opus 5.5 and Haiku 5.5 default to `medium` (Opus 5 used `high`), GPT-6.1 Sol and GPT-6.1 Terra to `medium`, and Sonnet 5.5 to `high` on the API. Effort is also the biggest lever on quality per dollar: Artificial Analysis scores GPT-6.1 Terra 51 at `max` and 38 at `medium`. Set effort explicitly on every request.
+> **Tokenهای استدلال جزو Tokenهای خروجی هستند.** در مدل‌هایی با تفکر همیشه‌روشن یا تطبیقی (Claude Fable 5.1،‏ Opus 5.5 و Sonnet 5.5؛ GPT-6 Astra که فاقد سطح تلاش `none` است)، شما نرخ خروجی را برای تفکری پرداخت می‌کنید که هرگز در پاسخ ظاهر نمی‌شود. این امر می‌تواند هزینه کل درخواست را در تسک‌های مبتنی بر منطق سنگین ۲ تا ۱۰ برابر افزایش دهد. در Opus 5.5 تفکر قابل غیرفعال‌سازی نیست، و پایین‌ترین تنظیمات در Sonnet 5.5 برابر با `between_tools` است؛ بنابراین ابزار کنترل هزینه، تنظیم **تلاش (effort)** به‌علاوه یک سقف `max_tokens` است، نه یک کلید قطع و وصل برای تفکر. مراقب تغییرات بی‌سروصدای مقادیر پیش‌فرض باشید: در Opus 5.5 و Haiku 5.5 مقدار پیش‌فرض `medium` است (در Opus 5 از `high` استفاده می‌شد)، در GPT-6.1 Sol و GPT-6.1 Terra برابر با `medium`، و در Sonnet 5.5 در API برابر با `high` است. سطح تلاش همچنین بزرگ‌ترین اهرم روی کیفیت به ازای هر دلار است: Artificial Analysis به مدل GPT-6.1 Terra در حالت `max` امتیاز ۵۱ و در حالت `medium` امتیاز ۳۸ می‌دهد. در هر درخواست، مقدار effort را به‌طور صریح تنظیم کنید.
 
-### Retirement and Price-Change Calendar: November 2026 to Mid-2027
+### تقویم بازنشستگی و تغییرات قیمت: نوامبر ۲۰۲۶ تا اواسط ۲۰۲۷ (Retirement and Price-Change Calendar: November 2026 to Mid-2027)
 
-Lifecycle is now tracked per **(model, platform)** pair: the same model can retire months apart on the vendor API, Bedrock, Google Cloud and Foundry. Minimum notice differs too, and the stated minimums are not guarantees: OpenAI states 6 months for GA models, 3 months for specialized variants and as little as 2 weeks for previews, yet gave about 3 months for the GA GPT-4o and GPT-4.1 snapshots on October 14 (and 20 days for `gpt-5.4-cyber`); Anthropic gives 60 days; Bedrock promises at least 6 months of Legacy for older models but gave several Claude 3.x regions about a month (Legacy October 10 to 15, end of life November 13), models launched from September 7, 2026 carry a 6-month or 45-day Legacy period, and in Legacy, existing customers can lose access after 15 days of inactivity; Foundry gives Fireworks per-token models 15 days.
+چرخه حیات مدل‌ها اکنون به ازای هر جفت **(مدل، پلتفرم)** ردیابی می‌شود: یک مدل مشابه می‌تواند با اختلاف چند ماه در API ارائه‌دهنده، Bedrock،‏ Google Cloud و Foundry بازنشسته شود. حداقل زمان اعلام قبلی (Minimum notice) نیز متفاوت است و حداقل‌های اعلام‌شده تضمین قطعی نیستند: OpenAI برای مدل‌های با عرضه عمومی (GA) مدت ۶ ماه، برای نسخه‌های تخصصی ۳ ماه و برای پیش‌نمایش‌ها تا ۲ هفته زمان اعلام می‌کند، اما در ۱۴ اکتبر برای اسنپ‌شات‌های GA مدل‌های GPT-4o و GPT-4.1 حدود ۳ ماه مهلت داد (و ۲۰ روز برای `gpt-5.4-cyber`)؛ شرکت Anthropic مهلت ۶۰ روزه می‌دهد؛ پلتفرم Bedrock برای مدل‌های قدیمی‌تر حداقل ۶ ماه وضعیت موروثی (Legacy) را وعده می‌دهد اما برای چندین منطقه از Claude 3.x حدود یک ماه فرصت داد (دوره Legacy از ۱۰ تا ۱۵ اکتبر، پایان چرخه حیات یا end of life در ۱۳ نوامبر)، مدل‌هایی که از ۷ سپتامبر ۲۰۲۶ عرضه شده‌اند دارای دوره Legacy معادل ۶ ماه یا ۴۵ روز هستند، و در دوره Legacy، مشتریان فعلی پس از ۱۵ روز عدم فعالیت ممکن است دسترسی خود را از دست بدهند؛ Foundry برای مدل‌های مبتنی بر Token سرویس Fireworks مهلت ۱۵ روزه در نظر می‌گیرد.
 
-**Executed between October 1 and November 6, 2026:** Google deprecated `gemini-2.5-pro` and `gemini-2.5-flash` on the Gemini API on November 2 (billing at 3.8 Flash and 3.5 Flash-Lite rates from December 1). xAI retired `grok-imagine-image-quality` in November: it and `grok-imagine-image-pro` are now served by `grok-imagine-image-2.0-low` at a lower per-image price, so set quality explicitly if you need more than low. Moonshot stopped offering K2 series models to newly registered users on October 31, and Mistral deprecated the Voxtral TTS 26.03 API model the same day. OpenAI's legacy snapshots shut down on October 23 as scheduled (`gpt-4o-2024-05-13`, `gpt-4-turbo`, `o1`, `o3-mini`, `o4-mini`, `gpt-image-1` and the others announced April 22, plus their fine-tunes), following `gpt-3.5-turbo-instruct`, `babbage-002` and `davinci-002` on September 28. Bedrock lists Claude 3 Haiku (September 10), Nova Sonic v1 (September 14), Nova Canvas and Nova Reel (September 30) and Claude Sonnet 4 (October 14) as reached end of life; Claude Opus 4.1 entered higher-priced public extended access on Bedrock October 8. Anthropic API version `2026-10-21` (October 21) made sampling parameters a 400 on every model for anyone who upgrades to the new SDK majors, and Google began serving `gemini-3.7-flash` with 3.8 Flash and `gemini-3.5-flash` with 3.6 Flash (October 8).
+**موارد اجراشده بین ۱ اکتبر و ۶ نوامبر ۲۰۲۶:** گوگل مدل‌های `gemini-2.5-pro` و `gemini-2.5-flash` را در ۲ نوامبر در Gemini API از رده خارج (deprecated) کرد (محاسبه صورت‌حساب با نرخ‌های 3.8 Flash و 3.5 Flash-Lite از ۱ دسامبر). شرکت xAI مدل `grok-imagine-image-quality` را در نوامبر بازنشسته کرد: اکنون این مدل و `grok-imagine-image-pro` توسط `grok-imagine-image-2.0-low` با قیمت پایین‌تری به ازای هر تصویر ارائه می‌شوند، بنابراین اگر به کیفیتی فراتر از low نیاز دارید، کیفیت را به‌طور صریح مشخص کنید. شرکت Moonshot از ۳۱ اکتبر ارائه مدل‌های سری K2 را به کاربران تازه ثبت‌نام‌شده متوقف کرد، و Mistral نیز در همان روز مدل API تحت عنوان Voxtral TTS 26.03 را از رده خارج نمود. اسنپ‌شات‌های قدیمی OpenAI طبق برنامه در ۲۳ اکتبر خاموش شدند (`gpt-4o-2024-05-13`،‏ `gpt-4-turbo`،‏ `o1`،‏ `o3-mini`،‏ `o4-mini`،‏ `gpt-image-1` و سایر موارد اعلام‌شده در ۲۲ آوریل، به‌علاوه Fine-tuningهای آن‌ها)، که پس از خاموشی مدل‌های `gpt-3.5-turbo-instruct`،‏ `babbage-002` و `davinci-002` در ۲۸ سپتامبر صورت گرفت. سرویس Bedrock مدل‌های Claude 3 Haiku (۱۰ سپتامبر)،‏ Nova Sonic v1 (۱۴ سپتامبر)،‏ Nova Canvas و Nova Reel (۳۰ سپتامبر) و Claude Sonnet 4 (۱۴ اکتبر) را به‌عنوان پایان‌یافته در چرخه حیات (end of life) فهرست کرده است؛ مدل Claude Opus 4.1 در ۸ اکتبر در Bedrock وارد دسترسی تمدیدشده عمومی (extended access) با قیمت بالاتر شد. نسخه API شرکت Anthropic با شناسه `2026-10-21` (۲۱ اکتبر) برای هر کاربری که به نسخه‌های اصلی (major) جدید SDK ارتقا دهد، پارامترهای نمونه‌برداری (sampling parameters) را تبدیل به خطای 400 کرد، و گوگل ارائه `gemini-3.7-flash` با 3.8 Flash و `gemini-3.5-flash` با 3.6 Flash را آغاز کرد (۸ اکتبر).
 
-**Moved:** `gemini-2.5-flash-image` to March 15, 2027 (from October 2); Foundry `gpt-4.1-nano` to April 14, 2027 (from October 14); the Foundry gpt-4o 2024-05-13 auto-upgrade to January 14, 2027, now targeting gpt-5.1 instead of gpt-5.6-sol on December 9.
+**موارد جابه‌جاشده (Moved):** مدل `gemini-2.5-flash-image` به ۱۵ مارس ۲۰۲۷ منتقل شد (از ۲ اکتبر)؛ مدل `gpt-4.1-nano` در Foundry به ۱۴ آوریل ۲۰۲۷ (از ۱۴ اکتبر)؛ ارتقای خودکار gpt-4o 2024-05-13 در Foundry به ۱۴ ژانویه ۲۰۲۷ موکول شد که اکنون به‌جای gpt-5.6-sol در ۹ دسامبر، مدل gpt-5.1 را هدف قرار می‌دهد.
 
-**Not executed:** the Claude Haiku 4.5 floor (October 15) passed with no deprecation notice; it is still Active on the Claude API as of November 6.
+**موارد اجرا‌نشده (Not executed):** کف تاریخی Claude Haiku 4.5 (۱۵ اکتبر) بدون اعلامیه از رده خارج شدن سپری شد؛ این مدل تا ۶ نوامبر همچنان در Claude API فعال (Active) است.
 
-**Not confirmed:** Google Cloud's Vertex retirement of `gemini-2.5-pro`, `-flash` and `-flash-lite` (October 20); Foundry `gpt-4o-transcribe` and `gpt-4o-mini-transcribe` 2025-03-20 (October 15, still listed as GA); the start of GPT-Rosalind billing (October 5); OpenAI Evals going read-only (October 31); `antigravity-preview-05-2026` (October 5); Mistral's GLM 5.2 (October 31) and OCR 4.0 and Leanstral 1.5 (September 30), past their listed dates with no extension; and Bedrock Nova Premier (September 14). Treat any of these still in your code as broken until you have tested them.
+**موارد تایید‌نشده (Not confirmed):** بازنشستگی مدل‌های `gemini-2.5-pro`،‏ `-flash` و `-flash-lite` در Vertex AI گوگل کلاد (۲۰ اکتبر)؛ مدل‌های `gpt-4o-transcribe` و `gpt-4o-mini-transcribe` نسخه 2025-03-20 در Foundry (۱۵ اکتبر، که همچنان در وضعیت GA فهرست شده‌اند)؛ شروع صدور صورت‌حساب GPT-Rosalind (۵ اکتبر)؛ تغییر وضعیت OpenAI Evals به حالت فقط‌خواندنی (۳۱ اکتبر)؛ مدل `antigravity-preview-05-2026` (۵ اکتبر)؛ مدل‌های GLM 5.2 (۳۱ اکتبر) و OCR 4.0 و Leanstral 1.5 (۳۰ سپتامبر) در Mistral که با وجود عبور از تاریخ‌های اعلام‌شده تمدیدی دریافت نکرده‌اند؛ و Bedrock Nova Premier (۱۴ سپتامبر). تا زمانی که این موارد را آزمایش نکرده‌اید، هر یک از آن‌ها را که هنوز در کد شما هستند شکسته و ازکارافتاده تلقی کنید.
 
-| Date | Kind | Platform | What changes | Move to |
-|------|------|----------|--------------|---------|
-| Nov 13, 2026 | Retirement | Bedrock | Claude 3 Haiku, 3 Sonnet, 3.5 Sonnet, 3.5 Sonnet v2, 3.7 Sonnet in the remaining listed regions | A current Claude model |
-| Nov 15, 2026 | Retirement | Foundry | `claude-haiku-4-5`, `codex-mini` | Claude Haiku 5.5 |
-| Nov 16, 2026 | Price | Lambda | On-demand GPU prices rise about 15% at 00:00 UTC: 8x HGX H100 $4.59 and 8x HGX B200 $7.69 per GPU-hour | Re-run self-host break-even |
-| Nov 17, 2026 | Retirement | Gemini API | Preview speech models `gemini-3.1-flash-live-preview`, `gemini-2.5-flash-native-audio-preview-12-2025`, `gemini-2.5-flash-preview-tts`, `gemini-2.5-pro-preview-tts`, `gemini-3.1-flash-tts-preview` (earliest-possible date, no routing) | `gemini-3.8-live`; `gemini-3.8-flash-tts` or `gemini-3.8-flash-lite-tts` |
-| Nov 19, 2026 | Retirement | Foundry | o1, o1-pro, o3, o3-pro, o3-deep-research; o3-mini, o4-mini | gpt-5.6-sol; gpt-5.6-terra |
-| Nov 19, 2026 | Retirement | Vertex AI | `gemini-3.6-flash` (no auto-upgrade described; a Vertex-only date) | `gemini-3.8-flash` |
-| Nov 24, 2026 | Retirement | Foundry | `claude-opus-4-5` (the Claude API floor passes the same day with no notice, so not before about January 2027 there) | Opus 5.5 |
-| Nov 26, 2026 | Retirement | Bedrock | AI21 Jamba 1.5 | - |
-| Nov 27, 2026 | Retirement | Bedrock | Claude 3 Haiku and Claude 3 Sonnet in `ca-central-1` | A current Claude model |
-| Nov 30, 2026 | Retirement | Claude API, Foundry | `claude-sonnet-4-5-20250929` | `claude-sonnet-5-5` |
-| Nov 30, 2026 | Feature removal | Claude API | Opus 4.8 fast mode (deprecated October 30); `speed: "fast"` errors afterward | Opus 5.5 fast mode ($8 / $40) |
-| Nov 30, 2026 | Retirement | OpenAI | Evals, Agent Builder, Reusable Prompts shut down | Promptfoo; Agents SDK |
-| Nov 30, 2026 | Price | OpenAI | Last day of GPT-5.6 Sol's $4 / $20 promotion; no later price is stated, so budget the inferred $5 / $30 list | GPT-6 Sol or GPT-6.1 Sol |
-| Dec 1, 2026 | Price | Gemini API | Gemini 4 Argon doubles to $4 / $20 (cache hits $0.20; Priority $7.20 / $36) | Budget at the December price |
-| Dec 1, 2026 | Routing / price | Gemini API | `gemini-2.5-pro` requests route to `gemini-3.8-flash`, `gemini-2.5-flash` to `gemini-3.5-flash-lite`, billed at the target's rates | Migrate deliberately; retest tool calls |
-| Dec 1, 2026 | Retirement | OpenAI | `gpt-image-1.5`, `gpt-image-1-mini`, `chatgpt-image-latest` | `gpt-image-2.5-sunburst` or `-flare`, or `gpt-image-2.6-sunburst` or `-flare` (November 4, same $8 image input / $30 image output / $5 text input per 1M; no Batch rate listed for 2.6, so batch-heavy pipelines stay on 2.5) |
-| Dec 1, 2026 | Hosting | Cartesia | Line SDK agent hosting ends | Self-host the agents |
-| Dec 11, 2026 | Retirement | OpenAI | `gpt-5-2025-08-07` (and mini, nano), `gpt-5-pro-2025-10-06`, `o3-2025-04-16`, `o3-pro-2025-06-10` | gpt-5.6-sol / terra / luna; pro via `reasoning.mode: "pro"` |
-| Dec 13, 2026 | Retirement | Vertex AI | `gemini-live-2.5-flash-native-audio` | `gemini-3.8-live` |
-| Dec 15, 2026 | Retirement | Foundry | whisper, tts, tts-hd | - |
-| End of Dec 2026 | Retirement | Moonshot | All Kimi K2 series models, including K2.6 and K2.7 Code (planned) | Kimi K3.1 Pro |
-| Dec 31, 2026 | Price | Gemini API | Last day of Gemini 3.6 / 3.7 / 3.8 Flash and 3.8 Flash TTS promotional pricing (2x from January 1) | Budget at list |
-| Jan 6, 2027 | Retirement | OpenAI | `tts-1`, `tts-1-hd`, dated `gpt-4o-mini-tts` snapshots; fine-tuning job creation ends for existing customers | `gpt-realtime-2.1-mini`; open weights, Azure or Bedrock for tuning |
-| Jan 8, 2027 | Retirement / price | Bedrock | Claude Opus 4.1 end of life; Claude Sonnet 4.5 enters public extended access at higher provider-set pricing | Claude 4.6+ |
-| Jan 14, 2027 | Retirement | OpenAI | `gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`, `gpt-4o-mini-2024-07-18`, `gpt-4.1-2025-04-14`, `gpt-4.1-mini-2025-04-14`, and fine-tunes of them (announced October 14) | `gpt-6-luna`, which cannot be fine-tuned |
-| Jan 14, 2027 | Auto-upgrade | Foundry | gpt-4o 2024-05-13 retires; Global Standard and Data Zone Standard deployments move to gpt-5.1 (2025-11-13); Provisioned deployments do not | gpt-5.1 (latency, cost and style change with no code change) |
-| Jan 20, 2027 | Retirement | OpenAI | `gpt-realtime`, `gpt-audio`, `gpt-4o-realtime`, `gpt-4o-audio` families | `gpt-realtime-2.1`, `-2.1-mini`, `gpt-audio-1.5` |
-| Jan 28, 2027 | Retirement | Vertex AI | `gemini-3.7-flash` | `gemini-3.8-flash` |
-| Feb 2, 2027 | Retirement | Foundry | `claude-opus-4-6` (Anthropic's floor is February 5) | Opus 5.5 |
-| Feb 10, 2027 | Retirement | Foundry | `claude-sonnet-4-6` (Anthropic's floor is February 17) | Sonnet 5.5 |
-| Feb 26, 2027 | Retirement | OpenAI | `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe-diarize` | `gpt-transcribe`, `gpt-live-transcribe` |
-| Mar 15, 2027 | Retirement | Gemini API | `gemini-2.5-flash-image` | A current Gemini image model |
-| Mar 30, 2027 | Retirement | Bedrock | Legacy batch: Llama 3.x, Llama 4 Scout and Maverick, DeepSeek-R1 and V3.1, Gemma 3, Qwen3-Coder, GLM 4.7, MiniMax M2 and M2.1, Kimi K2 Thinking, Devstral 2, Voxtral, Nemotron Nano | A current Bedrock model or self-host |
-| Apr 1, 2027 | Retirement | OpenAI | `gpt-5.1`, `gpt-5.3-codex`, `gpt-5.4-nano` | GPT-6 Sol, GPT-6 Luna |
-| Apr 8, 2027 | Retirement | Bedrock | Claude Sonnet 4.5 end of life | Sonnet 5.5 |
-| Apr 14, 2027 | Retirement | Foundry | gpt-4o (2024-08-06, 2024-11-20), gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano | A current OpenAI model on Foundry |
-| Apr 30, 2027 | Retirement | Mistral | Mistral Medium 3.5, Mistral Large 3 and Voxtral TTS 26.03 (all deprecated October 31) | Mistral Large 4 (+40% for Large 3 users); Voxtral TTS 3 |
-| May 7, 2027 | Retirement | Gemini API | `gemini-3.1-flash-lite` | Gemini 3.5 Flash-Lite |
+| تاریخ (Date) | نوع رویداد (Kind) | پلتفرم (Platform) | چه چیزی تغییر می‌کند (What changes) | انتقال به (Move to) |
+|---|---|---|---|---|
+| ۱۳ نوامبر ۲۰۲۶ | بازنشستگی | Bedrock | مدل‌های Claude 3 Haiku،‏ 3 Sonnet،‏ 3.5 Sonnet،‏ 3.5 Sonnet v2 و 3.7 Sonnet در مناطق فهرست‌شده باقی‌مانده | یک مدل فعلی Claude |
+| ۱۵ نوامبر ۲۰۲۶ | بازنشستگی | Foundry | مدل‌های `claude-haiku-4-5` و `codex-mini` | Claude Haiku 5.5 |
+| ۱۶ نوامبر ۲۰۲۶ | قیمت | Lambda | افزایش حدود ۱۵ درصدی قیمت‌های درخواستی (On-demand) پردازنده گرافیکی (GPU) در ساعت 00:00 زمان UTC: مدل 8x HGX H100 به ۴.۵۹ دلار و 8x HGX B200 به ۷.۶۹ دلار به ازای هر ساعت کارکرد هر GPU | بازسنجی نقطه سر‌به‌سر میزبانی شخصی |
+| ۱۷ نوامبر ۲۰۲۶ | بازنشستگی | Gemini API | مدل‌های پیش‌نمایش گفتار `gemini-3.1-flash-live-preview`،‏ `gemini-2.5-flash-native-audio-preview-12-2025`،‏ `gemini-2.5-flash-preview-tts`،‏ `gemini-2.5-pro-preview-tts` و `gemini-3.1-flash-tts-preview` (اولین تاریخ ممکن، بدون مسیریابی خودکار) | مدل `gemini-3.8-live`؛ مدل‌های `gemini-3.8-flash-tts` یا `gemini-3.8-flash-lite-tts` |
+| ۱۹ نوامبر ۲۰۲۶ | بازنشستگی | Foundry | مدل‌های o1،‏ o1-pro،‏ o3،‏ o3-pro،‏ o3-deep-research؛ o3-mini،‏ o4-mini | مدل‌های gpt-5.6-sol؛ gpt-5.6-terra |
+| ۱۹ نوامبر ۲۰۲۶ | بازنشستگی | Vertex AI | مدل `gemini-3.6-flash` (بدون اعلام ارتقای خودکار؛ تاریخی مخصوص به Vertex) | `gemini-3.8-flash` |
+| ۲۴ نوامبر ۲۰۲۶ | بازنشستگی | Foundry | مدل `claude-opus-4-5` (کف تاریخی Claude API در همان روز بدون اعلامیه سپری می‌شود، بنابراین در آنجا زودتر از ژانویه ۲۰۲۷ نخواهد بود) | Opus 5.5 |
+| ۲۶ نوامبر ۲۰۲۶ | بازنشستگی | Bedrock | مدل AI21 Jamba 1.5 | - |
+| ۲۷ نوامبر ۲۰۲۶ | بازنشستگی | Bedrock | مدل‌های Claude 3 Haiku و Claude 3 Sonnet در منطقه `ca-central-1` | یک مدل فعلی Claude |
+| ۳۰ نوامبر ۲۰۲۶ | بازنشستگی | Claude API، Foundry | مدل `claude-sonnet-4-5-20250929` | `claude-sonnet-5-5` |
+| ۳۰ نوامبر ۲۰۲۶ | حذف قابلیت | Claude API | حالت سریع (fast mode) در Opus 4.8 (از رده خارج شده در ۳۰ اکتبر)؛ پس از آن پارامتر `speed: "fast"` با خطا مواجه می‌شود | حالت سریع در Opus 5.5 (معادل ۸ دلار / ۴۰ دلار) |
+| ۳۰ نوامبر ۲۰۲۶ | بازنشستگی | OpenAI | خاموشی ابزارهای Evals،‏ Agent Builder و Reusable Prompts | ابزار Promptfoo؛ Agents SDK |
+| ۳۰ نوامبر ۲۰۲۶ | قیمت | OpenAI | آخرین روز قیمت تبلیغاتی ۴ دلار / ۲۰ دلار برای GPT-5.6 Sol؛ قیمت بعدی اعلام نشده است، بنابراین بر اساس قیمت رسمی پیش‌بینی‌شده ۵ دلار / ۳۰ دلار بودجه‌بندی کنید | GPT-6 Sol یا GPT-6.1 Sol |
+| ۱ دسامبر ۲۰۲۶ | قیمت | Gemini API | دو برابر شدن قیمت Gemini 4 Argon به ۴ دلار / ۲۰ دلار (اصابت به Cache معادل ۰.۲۰ دلار؛ حالت Priority معادل ۷.۲۰ دلار / ۳۶ دلار) | بودجه‌بندی بر اساس قیمت دسامبر |
+| ۱ دسامبر ۲۰۲۶ | مسیریابی / قیمت | Gemini API | درخواست‌های `gemini-2.5-pro` به `gemini-3.8-flash` و درخواست‌های `gemini-2.5-flash` به `gemini-3.5-flash-lite` هدایت شده و با نرخ‌های مدل مقصد محاسبه می‌شوند | مهاجرت هدفمند؛ آزمایش مجدد فراخوانی ابزارها (tool calls) |
+| ۱ دسامبر ۲۰۲۶ | بازنشستگی | OpenAI | مدل‌های `gpt-image-1.5`،‏ `gpt-image-1-mini` و `chatgpt-image-latest` | مدل‌های `gpt-image-2.5-sunburst` یا `-flare`، یا `gpt-image-2.6-sunburst` یا `-flare` (۴ نوامبر، با همان نرخ ۸ دلار ورودی تصویر / ۳۰ دلار خروجی تصویر / ۵ دلار ورودی متن به ازای ۱ میلیون؛ نرخ Batch برای 2.6 ذکر نشده است، بنابراین پایپ‌لاین‌های با پردازش دسته‌ای سنگین روی 2.5 باقی می‌مانند) |
+| ۱ دسامبر ۲۰۲۶ | میزبانی | Cartesia | پایان میزبانی ایجنت‌های Line SDK | میزبانی شخصی ایجنت‌ها |
+| ۱۱ دسامبر ۲۰۲۶ | بازنشستگی | OpenAI | مدل‌های `gpt-5-2025-08-07` (و نسخه‌های mini و nano)،‏ `gpt-5-pro-2025-10-06`،‏ `o3-2025-04-16` و `o3-pro-2025-06-10` | مدل‌های gpt-5.6-sol / terra / luna؛ حالت pro از طریق `reasoning.mode: "pro"` |
+| ۱۳ دسامبر ۲۰۲۶ | بازنشستگی | Vertex AI | مدل `gemini-live-2.5-flash-native-audio` | `gemini-3.8-live` |
+| ۱۵ دسامبر ۲۰۲۶ | بازنشستگی | Foundry | مدل‌های whisper،‏ tts و tts-hd | - |
+| پایان دسامبر ۲۰۲۶ | بازنشستگی | Moonshot | تمام مدل‌های سری Kimi K2، شامل K2.6 و K2.7 Code (برنامه‌ریزی‌شده) | Kimi K3.1 Pro |
+| ۳۱ دسامبر ۲۰۲۶ | قیمت | Gemini API | آخرین روز قیمت‌های تبلیغاتی Gemini 3.6 / 3.7 / 3.8 Flash و 3.8 Flash TTS (دو برابر شدن قیمت از ۱ ژانویه) | بودجه‌بندی بر اساس قیمت رسمی |
+| ۶ ژانویه ۲۰۲۷ | بازنشستگی | OpenAI | مدل‌های `tts-1`،‏ `tts-1-hd`، اسنپ‌شات‌های تاریخ‌دار `gpt-4o-mini-tts`؛ پایان ایجاد تسک‌های Fine-tuning برای مشتریان فعلی | مدل `gpt-realtime-2.1-mini`؛ وزن‌های باز، Azure یا Bedrock برای تیونینگ |
+| ۸ ژانویه ۲۰۲۷ | بازنشستگی / قیمت | Bedrock | پایان چرخه حیات Claude Opus 4.1؛ ورود Claude Sonnet 4.5 به دسترسی تمدیدشده عمومی با قیمت‌های بالاتر تعیین‌شده توسط ارائه‌دهنده | نسخه Claude 4.6 به بعد |
+| ۱۴ ژانویه ۲۰۲۷ | بازنشستگی | OpenAI | مدل‌های `gpt-4o-2024-08-06`،‏ `gpt-4o-2024-11-20`،‏ `gpt-4o-mini-2024-07-18`،‏ `gpt-4.1-2025-04-14`،‏ `gpt-4.1-mini-2025-04-14` و نسخه‌های Fine-tuning آنها (اعلام‌شده در ۱۴ اکتبر) | مدل `gpt-6-luna` که قابل Fine-tuning نیست |
+| ۱۴ ژانویه ۲۰۲۷ | ارتقای خودکار | Foundry | بازنشستگی gpt-4o 2024-05-13؛ استقرارهای (deployments) Global Standard و Data Zone Standard به gpt-5.1 (نسخه 2025-11-13) منتقل می‌شوند؛ استقرارهای Provisioned منتقل نمی‌شوند | مدل gpt-5.1 (تغییر در تاخیر (Latency)، هزینه و لحن بدون تغییر در کد) |
+| ۲۰ ژانویه ۲۰۲۷ | بازنشستگی | OpenAI | خانواده‌های `gpt-realtime`،‏ `gpt-audio`،‏ `gpt-4o-realtime` و `gpt-4o-audio` | مدل‌های `gpt-realtime-2.1`،‏ `-2.1-mini` و `gpt-audio-1.5` |
+| ۲۸ ژانویه ۲۰۲۷ | بازنشستگی | Vertex AI | مدل `gemini-3.7-flash` | `gemini-3.8-flash` |
+| ۲ فوریه ۲۰۲۷ | بازنشستگی | Foundry | مدل `claude-opus-4-6` (کف تاریخی Anthropic معادل ۵ فوریه است) | Opus 5.5 |
+| ۱۰ فوریه ۲۰۲۷ | بازنشستگی | Foundry | مدل `claude-sonnet-4-6` (کف تاریخی Anthropic معادل ۱۷ فوریه است) | Sonnet 5.5 |
+| ۲۶ فوریه ۲۰۲۷ | بازنشستگی | OpenAI | مدل‌های `whisper-1`،‏ `gpt-4o-transcribe`،‏ `gpt-4o-mini-transcribe` و `gpt-4o-transcribe-diarize` | مدل‌های `gpt-transcribe` و `gpt-live-transcribe` |
+| ۱۵ مارس ۲۰۲۷ | بازنشستگی | Gemini API | مدل `gemini-2.5-flash-image` | یک مدل تصویر فعلی Gemini |
+| ۳۰ مارس ۲۰۲۷ | بازنشستگی | Bedrock | دسته مدل‌های قدیمی (Legacy batch): مدل‌های Llama 3.x،‏ Llama 4 Scout و Maverick،‏ DeepSeek-R1 و V3.1،‏ Gemma 3،‏ Qwen3-Coder،‏ GLM 4.7،‏ MiniMax M2 و M2.1،‏ Kimi K2 Thinking،‏ Devstral 2،‏ Voxtral و Nemotron Nano | یک مدل فعلی Bedrock یا میزبانی شخصی |
+| ۱ آوریل ۲۰۲۷ | بازنشستگی | OpenAI | مدل‌های `gpt-5.1`،‏ `gpt-5.3-codex` و `gpt-5.4-nano` | GPT-6 Sol و GPT-6 Luna |
+| ۸ آوریل ۲۰۲۷ | بازنشستگی | Bedrock | پایان چرخه حیات Claude Sonnet 4.5 | Sonnet 5.5 |
+| ۱۴ آوریل ۲۰۲۷ | بازنشستگی | Foundry | مدل‌های gpt-4o (نسخه‌های 2024-08-06 و 2024-11-20)،‏ gpt-4o-mini،‏ gpt-4.1،‏ gpt-4.1-mini و gpt-4.1-nano | یک مدل فعلی OpenAI در Foundry |
+| ۳۰ آوریل ۲۰۲۷ | بازنشستگی | Mistral | مدل‌های Mistral Medium 3.5،‏ Mistral Large 3 و Voxtral TTS 26.03 (همگی از رده خارج شده در ۳۱ اکتبر) | مدل Mistral Large 4 (۴۰٪+ برای کاربران Large 3)؛ Voxtral TTS 3 |
+| ۷ مه ۲۰۲۷ | بازنشستگی | Gemini API | مدل `gemini-3.1-flash-lite` | Gemini 3.5 Flash-Lite |
 
-**Same model, different dates:** Claude Sonnet 4.5 retires on the Claude API November 30, 2026 but runs on Bedrock until April 8, 2027 (at higher extended-access prices from January 8). Claude Opus 4.1 retired on the Claude API August 5, 2026 but runs on Bedrock until January 8, 2027. `gpt-4o-2024-08-06` and its fine-tunes shut down on the OpenAI API January 14, 2027, while Foundry keeps the base model until April 14, 2027 and fine-tuned deployments until October 1, 2027. Grok 4 was retired by xAI on May 15 but Foundry lists it as GA until January 31, 2027. Gemini 3.6 Flash retires on Vertex AI November 19 on a different lifecycle from the same ID on the Gemini API, and Bedrock's Claude 3 Haiku and 3 Sonnet reach end of life November 13 in most regions but November 27 in `ca-central-1`, so the registry needs a date per (model, platform, region). A multi-cloud failover chain can quietly land on a model already retired on your primary, so the model registry needs a date per platform.
+**یک مدل مشابه، تاریخ‌های متفاوت:** مدل Claude Sonnet 4.5 در ۳۰ نوامبر ۲۰۲۶ در Claude API بازنشسته می‌شود اما تا ۸ آوریل ۲۰۲۷ در Bedrock اجرا خواهد شد (با قیمت‌های بالاتر دسترسی تمدیدشده از ۸ ژانویه). مدل Claude Opus 4.1 در ۵ اوت ۲۰۲۶ در Claude API بازنشسته شد اما تا ۸ ژانویه ۲۰۲۷ در Bedrock اجرا می‌شود. مدل `gpt-4o-2024-08-06` و Fine-tuningهای آن در ۱۴ ژانویه ۲۰۲۷ در OpenAI API خاموش می‌شوند، در حالی که Foundry مدل پایه را تا ۱۴ آوریل ۲۰۲۷ و استقرارهای (deployments) Fine-tune شده را تا ۱ اکتبر ۲۰۲۷ نگه می‌دارد. مدل Grok 4 در ۱۵ مه توسط xAI بازنشسته شد اما Foundry آن را تا ۳۱ ژانویه ۲۰۲۷ در وضعیت GA فهرست کرده است. مدل Gemini 3.6 Flash در ۱۹ نوامبر در Vertex AI با چرخه حیاتی متفاوت از همان شناسه در Gemini API بازنشسته می‌شود، و مدل‌های Claude 3 Haiku و 3 Sonnet در Bedrock در اکثر مناطق در ۱۳ نوامبر به پایان چرخه حیات می‌رسند اما در منطقه `ca-central-1` این تاریخ ۲۷ نوامبر است؛ بنابراین رجیستری (registry) نیازمند ثبت تاریخ به ازای هر ترکیب (مدل، پلتفرم، منطقه) است. یک زنجیره تغییر مسیر خودکار پس از خرابیِ چندابری (multi-cloud failover chain) می‌تواند بدون جلب توجه به مدلی منتقل شود که پیش‌تر در پلتفرم اولیه شما بازنشسته شده است، بنابراین رجیستری مدل باید به ازای هر پلتفرم یک تاریخ داشته باشد.
 
-### Earlier 2026 Price History
+### پیشینه قیمت‌ها در اوایل سال ۲۰۲۶ (Earlier 2026 Price History)
 
-Kept for context; these explain how current prices were reached.
+این بخش برای ارائه بستر و درک زمینه‌ای حفظ شده است؛ این موارد چگونگی رسیدن به قیمت‌های فعلی را توضیح می‌دهند.
 
-- **September 2026, in one line.** The ceiling held at $10 / $50 (Claude Fable 5.1 flat to 1M, GPT-6 Astra $20 / $75 above 272K), the mid tier converged on $2 / $10 (Sonnet 5.5, GPT-6 Sol, GPT-6.1 Sol), Opus fell to $4 / $20 with Opus 5.5, GPT-6 Luna set a $0.10 / $0.50 floor, cache reads split into 0.1x, 0.05x and 0.025x by model, and DeepSeek V4.1-Flash cut Flash to $0.30 / $1.20 at peak.
+- **سپتامبر ۲۰۲۶ در یک خط:** سقف قیمت روی ۱۰ دلار / ۵۰ دلار ثابت ماند (مدل Claude Fable 5.1 نرخ ثابت تا ۱ میلیون، مدل GPT-6 Astra معادل ۲۰ دلار / ۷۵ دلار برای بالای ۲۷۲K)، رده میانی روی ۲ دلار / ۱۰ دلار همگرا شد (Sonnet 5.5،‏ GPT-6 Sol و GPT-6.1 Sol)، قیمت Opus با مدل Opus 5.5 به ۴ دلار / ۲۰ دلار کاهش یافت، مدل GPT-6 Luna کف قیمت را روی ۰.۱۰ دلار / ۰.۵۰ دلار تعیین کرد، خواندن از Cache بر حسب مدل به ضرایب 0.1x،‏ 0.05x و 0.025x تفکیک شد، و DeepSeek V4.1-Flash قیمت رده Flash را در ساعات اوج مصرف به ۰.۳۰ دلار / ۱.۲۰ دلار رساند.
 
-- **Anthropic.** Claude Fable 5 launched June 9 at $10 / $50 (Mythos-class with safeguards; Claude Mythos 5, the same model with safeguards lifted, shared the price for Glasswing partners). Claude Opus 4.8 launched May 28 at $5 / $25 with a $10 / $50 fast mode (the Opus 4.7 fast tier had been $30 / $150). Claude Sonnet 5's introductory $2 / $10 became permanent on August 10, and the scheduled September 1 rise to $3 / $15 was canceled. Claude Sonnet 4 and Opus 4 retired June 15 and Opus 4.1 retired August 5 on the Claude API.
-- **OpenAI.** GPT-5.5 launched April 23 at $5 / $30. GPT-5.6 Sol, Terra and Luna went GA July 9; on July 30 Terra was cut to $2 / $12 and Luna to $0.20 / $1.20, and Priority was renamed Fast. GPT-5.6-Cyber launched August 10. GPT-4o, GPT-4.1, GPT-4.1-mini and o4-mini left ChatGPT February 13; the Realtime API Beta was removed May 12; the Sora app shut down April 26.
-- **DeepSeek.** The 75% V4 Pro discount was made permanent on May 22 ($0.435 / $0.87 from June 1), and cache-hit input was cut to 1/10 of launch price on April 26. On August 16 DeepSeek moved to peak and off-peak billing and raised V4 prices 3x to 12x depending on token type, ending its run as the unambiguous cheap option.
-- **Google.** Vertex retired `gemini-3-pro-preview` on March 26; Project Mariner shut down May 4. Gemini 3.7 Flash launched August 13 at the half-price introductory rate.
+- **Anthropic:** مدل Claude Fable 5 در ۹ ژوئن با قیمت ۱۰ دلار / ۵۰ دلار عرضه شد (کلاس Mythos به همراه تدابیر ایمنی؛ مدل Claude Mythos 5 که همان مدل با حذف تدابیر ایمنی بود، قیمتی یکسان برای شرکای تجاری Glasswing داشت). مدل Claude Opus 4.8 در ۲۸ مه با قیمت ۵ دلار / ۲۵ دلار به همراه حالت سریع با نرخ ۱۰ دلار / ۵۰ دلار معرفی شد (سطح سریع Opus 4.7 قیمتی معادل ۳۰ دلار / ۱۵۰ دلار داشت). قیمت اولیه و معرفی ۲ دلار / ۱۰ دلار مدل Claude Sonnet 5 در ۱۰ اوت دائمی شد و افزایش قیمت برنامه‌ریزی‌شده اول سپتامبر به ۳ دلار / ۱۵ دلار لغو گردید. مدل‌های Claude Sonnet 4 و Opus 4 در ۱۵ ژوئن و Opus 4.1 در ۵ اوت در Claude API بازنشسته شدند.
+- **OpenAI:** مدل GPT-5.5 در ۲۳ آوریل با قیمت ۵ دلار / ۳۰ دلار راه‌اندازی شد. مدل‌های GPT-5.6 Sol،‏ Terra و Luna در ۹ ژوئیه به عرضه عمومی (GA) رسیدند؛ در ۳۰ ژوئیه قیمت Terra به ۲ دلار / ۱۲ دلار و Luna به ۰.۲۰ دلار / ۱.۲۰ دلار کاهش یافت، و سطح Priority به Fast تغییر نام داد. مدل GPT-5.6-Cyber در ۱۰ اوت عرضه شد. مدل‌های GPT-4o،‏ GPT-4.1،‏ GPT-4.1-mini و o4-mini در ۱۳ فوریه از سرویس ChatGPT کنار گذاشته شدند؛ نسخه بتای Realtime API در ۱۲ مه حذف شد؛ اپلیکیشن Sora در ۲۶ آوریل خاموش گردید.
+- **DeepSeek:** تخفیف ۷۵ درصدی V4 Pro در ۲۲ مه دائمی شد (۰.۴۳۵ دلار / ۰.۸۷ دلار از ۱ ژوئن)، و ورودی حاصل از اصابت به Cache در ۲۶ آوریل به یک‌دهم قیمت زمان عرضه کاهش یافت. در ۱۶ اوت، DeepSeek به مدل صدور صورت‌حساب بر اساس ساعات اوج (peak) و غیراوج (off-peak) روی آورد و قیمت‌های V4 را بسته به نوع Token بین ۳ تا ۱۲ برابر افزایش داد که به دوران آن به‌عنوان گزینه ارزان بی‌چون‌وچرا پایان داد.
+- **Google:** پلتفرم Vertex مدل `gemini-3-pro-preview` را در ۲۶ مارس بازنشسته کرد؛ پروژه Mariner در ۴ مه متوقف شد. مدل Gemini 3.7 Flash در ۱۳ اوت با نرخ معرفی نیم‌بها عرضه گردید.
 
 ---
 
-## Cost Calculation
+## محاسبه هزینه (Cost Calculation)
 
-### Basic Cost Formula
+### فرمول پایه محاسبه هزینه (Basic Cost Formula)
 
-The function below models the two things a naive `tokens × rate` calculation misses: cache splits and the whole-request long-context cliff, which now exists at Anthropic (Haiku 5.5) as well as OpenAI and xAI.
+تابع زیر دو موردی را مدل‌سازی می‌کند که محاسبات ساده‌لوحانه `tokens × rate` از قلم می‌اندازند: تفکیک‌های Cache و پرتگاه کانتکست طولانی برای کل درخواست (whole-request long-context cliff) که اکنون علاوه بر OpenAI و xAI در Anthropic (مدل Haiku 5.5) نیز وجود دارد.
 
 ```python
 # USD per 1M tokens, Standard tier, list prices as of November 6, 2026.
@@ -376,11 +380,11 @@ def request_cost(
     return cost * tier_mult * residency_mult
 ```
 
-**The cliff in numbers (GPT-6 Sol, 2K output):** a 270K-token prompt costs (270,000 × $2 + 2,000 × $10) / 1M = **$0.56**. A 275K-token prompt costs (275,000 × $4 + 2,000 × $15) / 1M = **$1.13**. Five thousand extra tokens doubled the bill. Claude Haiku 5.5's line is lower and steeper: a 99K-token prompt with 2K output costs (99,000 × $0.10 + 2,000 × $0.50) / 1M = **$0.0109**, and a 101K-token prompt costs (101,000 × $0.50 + 2,000 × $2.50) / 1M = **$0.0555**, about 5x for 2K more tokens. Because cached tokens count toward Haiku's threshold, caching a long prefix does not avoid the jump. On Claude Fable 5.1 a 900K-token prompt is billed at the same $10 per 1M as a 9K one; on GPT-6 Astra the same prompt bills at $20 per 1M. Long-context RAG decisions are now partly pricing decisions.
+**پرتگاه هزینه در قالب ارقام (مدل GPT-6 Sol با ۲ هزار Token خروجی):** یک Prompt با ۲۷۰ هزار Token هزینه‌ای معادل ۱M / (۱۰ دلار × ۲,۰۰۰ + ۲ دلار × ۲۷۰,۰۰۰) = **۰.۵۶ دلار** دارد. یک Prompt با ۲۷۵ هزار Token هزینه‌ای معادل ۱M / (۱۵ دلار × ۲,۰۰۰ + ۴ دلار × ۲۷۵,۰۰۰) = **۱.۱۳ دلار** خواهد داشت. پنج هزار Token اضافی، صورت‌حساب را دو برابر کرد. این نمودار برای Claude Haiku 5.5 پایین‌تر و شیب‌دارتر است: یک Prompt با ۹۹ هزار Token با ۲ هزار Token خروجی هزینه‌ای معادل ۱M / (۰.۵۰ دلار × ۲,۰۰۰ + ۰.۱۰ دلار × ۹۹,۰۰۰) = **۰.۰۱۰۹ دلار** دارد، و یک Prompt با ۱۰۱ هزار Token هزینه‌ای معادل ۱M / (۲.۵۰ دلار × ۲,۰۰۰ + ۰.۵۰ دلار × ۱۰۱,۰۰۰) = **۰.۰۵۵۵ دلار** به همراه دارد، یعنی حدود ۵ برابر هزینه تنها برای ۲ هزار Token بیشتر. از آنجا که Tokenهای Cacheشده نیز در محاسبه آستانه Haiku لحاظ می‌شوند، Cache کردن یک پیشوند طولانی مانع از این جهش قیمتی نمی‌شود. در مدل Claude Fable 5.1 برای یک Prompt با ۹۰۰ هزار Token همان نرخ ۱۰ دلار به ازای هر ۱ میلیون Token محاسبه می‌شود که برای یک Prompt با ۹ هزار Token دریافت می‌گردد؛ اما در GPT-6 Astra همین Prompt با نرخ ۲۰ دلار به ازای هر ۱ میلیون Token صورت‌حساب صادر می‌کند. تصمیم‌گیری‌ها پیرامون RAG با کانتکست طولانی، اکنون تا حدی تصمیماتی در زمینه قیمت‌گذاری به شمار می‌آیند.
 
-### Example Cost Calculations
+### نمونه محاسبات هزینه (Example Cost Calculations)
 
-**Scenario 1: RAG Chatbot**
+**سناریوی ۱: چت‌بات RAG (RAG Chatbot)**
 ```
 Per request:
 - System prompt: 500 tokens
@@ -399,7 +403,7 @@ Monthly: $2,460
 (GPT-6 Luna: $4.10/day, $123/month, if quality holds on your evals)
 ```
 
-**Scenario 2: Document Summarization**
+**سناریوی ۲: خلاصه‌سازی اسناد (Document Summarization)**
 ```
 Per document:
 - Document: 8,000 tokens
@@ -411,7 +415,7 @@ GPT-6 Sol cost: (8000 × $2 + 500 × $10) / 1M = $0.021
 10,000 documents: $210 (Batch API: $105)
 ```
 
-### Monthly Cost Projection
+### برآورد هزینه ماهانه (Monthly Cost Projection)
 
 ```python
 def project_monthly_cost(
@@ -448,11 +452,11 @@ costs = project_monthly_cost(
 
 ---
 
-## Cost Optimization Strategies
+## استراتژی‌های بهینه‌سازی هزینه (Cost Optimization Strategies)
 
-### Strategy 1: Model Routing
+### استراتژی ۱: مسیریابی مدل (Model Routing)
 
-Route requests to appropriate model tiers:
+مسیریابی درخواست‌ها به رده‌های مناسب مدل:
 
 ```python
 class ModelRouter:
@@ -480,11 +484,11 @@ class ModelRouter:
         return self.try_model("gpt-6.1-sol", query, context)
 ```
 
-**Potential savings:** 50-70% with minimal quality impact. The tier spread is now 20x on both input and output between GPT-6 Luna and GPT-6.1 Sol, with GPT-6.1 Terra at half of Sol's price, so routing pays more than it did a year ago. The same three rungs exist on Anthropic (Haiku 5.5, Sonnet 5.5, Opus 5.5) as long as Haiku traffic stays under 100K-token prompts.
+**صرفه‌جویی بالقوه:** ۵۰ تا ۷۰ درصد با کمترین اثر بر کیفیت. شکاف قیمتی میان سطوح مختلف، اکنون بین GPT-6 Luna و GPT-6.1 Sol در هر دو بخش ورودی و خروجی برابر با 20x است و GPT-6.1 Terra نیز نصف قیمت Sol هزینه دارد؛ بنابراین مسیریابی نسبت به یک سال پیش سودمندی بسیار بیشتری به همراه دارد. همین سه پله در شرکت Anthropic نیز وجود دارند (Haiku 5.5،‏ Sonnet 5.5 و Opus 5.5)، تا زمانی که ترافیک مدل Haiku زیر آستانه Promptهای ۱۰۰ هزار Token باقی بماند.
 
-### Strategy 2: Prompt Optimization
+### استراتژی ۲: بهینه‌سازی Prompt (Prompt Optimization)
 
-Reduce token count without losing quality:
+کاهش تعداد Tokenها بدون از دست دادن کیفیت:
 
 ```python
 # Before: 2,500 tokens
@@ -511,9 +515,9 @@ Rules:
 # At 10K requests/day: $34/day = $1,020/month (before caching, which shrinks this further)
 ```
 
-### Strategy 3: Caching
+### استراتژی ۳: کش‌گذاری (Caching)
 
-Cache responses for repeated or similar queries:
+کش‌گذاری پاسخ‌ها برای پرس‌وجوهای (queries) تکراری یا مشابه:
 
 ```python
 class ResponseCache:
@@ -545,9 +549,9 @@ class ResponseCache:
 # Savings: $900/month
 ```
 
-### Strategy 4: Batch Processing and Service Tiers
+### استراتژی ۴: پردازش دسته‌ای و سطوح سرویس (Batch Processing and Service Tiers)
 
-Anything no human is waiting on belongs in a cheaper tier:
+هر کاری که انسانی منتظر نتیجه آن نیست، به رده ارزان‌تر تعلق دارد:
 
 ```python
 # Real-time: pay full price
@@ -562,11 +566,11 @@ batch_responses = model.batch_generate(queries)
 # for slower, lower-priority processing
 ```
 
-The ladder now runs from 0.5x (Batch, Flex) through Standard to 2x (OpenAI Fast, Anthropic fast mode) and 6x (OpenAI Ultrafast). A latency SLO is a cost decision: map each workload class (interactive, agent inner loop, offline) to a tier and report the blended rate.
+این نردبان اکنون از ضریب 0.5x (حالت‌های Batch و Flex) از مسیر استاندارد (Standard) تا ضریب 2x (حالت OpenAI Fast و حالت سریع Anthropic) و ضریب 6x (حالت OpenAI Ultrafast) امتداد می‌یابد. یک هدف سطح سرویس در زمینه تاخیر (latency SLO)، در واقع یک تصمیم‌گیری در مورد هزینه است: هر کلاس از بار کاری (تعاملی، حلقه داخلی ایجنت، آفلاین) را به یک سطح نگاشت کرده و نرخ ترکیبی (blended rate) را گزارش دهید.
 
-### Strategy 5: Output Length Control
+### استراتژی ۵: کنترل طول خروجی (Output Length Control)
 
-Limit response length appropriately:
+محدود کردن مناسب طول پاسخ:
 
 ```python
 # Reduce unnecessary output
@@ -582,88 +586,88 @@ response = model.generate(
 # Savings: 50% on output costs
 ```
 
-### Strategy 6: Prompt-Length Routing
+### استراتژی ۶: مسیریابی بر اساس طول Prompt (Prompt-Length Routing)
 
-Keep Claude Haiku 5.5 prompts at or under 100K (cached tokens count), OpenAI prompts at or under 272K and xAI prompts under 200K, or route long prompts to a flat-priced model (Claude Sonnet 5.5, Opus 5.5 or Fable 5.1). Trimming retrieved context by a few thousand tokens near the threshold halves the request cost on OpenAI and cuts it by 80% on Haiku 5.5; above the line, compaction, RAG, or a different model usually beats paying 2x to 5x on every token. Measure prompt length with the target model's tokenizer: Haiku 5.5 counts about 30% more tokens than Haiku 4.5 for the same text.
+طول Promptهای Claude Haiku 5.5 را در ۱۰۰K یا کمتر نگه دارید (Tokenهای Cacheشده نیز به حساب می‌آیند)، Promptهای OpenAI را در ۲۷۲K یا کمتر و Promptهای xAI را زیر ۲۰۰K حفظ کنید، یا اینکه Promptهای طولانی را به مدلی با نرخ ثابت (Claude Sonnet 5.5،‏ Opus 5.5 یا Fable 5.1) هدایت نمایید. پیرایش و کاهش کانتکست بازیابی‌شده (retrieved context) به اندازه چند هزار Token در نزدیکی آستانه، هزینه درخواست را در OpenAI نصف کرده و در Haiku 5.5 آن را تا ۸۰٪ کاهش می‌دهد؛ فراتر از این خط آستانه، فشرده‌سازی (compaction)،‏ RAG یا استفاده از مدلی دیگر، معمولاً نسبت به پرداخت ۲ تا ۵ برابری برای تک‌تک Tokenها به‌صرفه‌تر است. طول Prompt را با Tokenizer مدل مقصد اندازه‌گیری کنید: مدل Haiku 5.5 برای متنی مشابه، حدود ۳۰٪ بیشتر از Haiku 4.5 تعداد Token می‌شمارد.
 
-### Cost Optimization Summary
+### خلاصه‌سازی بهینه‌سازی هزینه (Cost Optimization Summary)
 
-| Strategy | Effort | Potential Savings |
-|----------|--------|-------------------|
-| Model routing | Medium | 50-70% |
-| **Context Caching** | Low | **90-97.5% (cached input)** |
-| Prompt optimization | Low | 20-40% |
-| Response caching | Medium | 20-40% |
-| Batch / Flex tiers | Low | 50% (OpenAI, Anthropic, Google, OpenRouter) |
-| Prompt-length routing | Low | Up to 50% on requests near OpenAI's or xAI's threshold, up to 80% near Haiku 5.5's |
-| Off-peak scheduling | Low | 50% (DeepSeek) |
+| استراتژی (Strategy) | میزان تلاش (Effort) | صرفه‌جویی بالقوه (Potential Savings) |
+|---|---|---|
+| مسیریابی مدل (Model routing) | متوسط | ۵۰ تا ۷۰ درصد |
+| **کش‌گذاری کانتکست (Context Caching)** | کم | **۹۰ تا ۹۷.۵ درصد (ورودی Cacheشده)** |
+| بهینه‌سازی Prompt (Prompt optimization) | کم | ۲۰ تا ۴۰ درصد |
+| کش‌گذاری پاسخ (Response caching) | متوسط | ۲۰ تا ۴۰ درصد |
+| سطوح Batch / Flex | کم | ۵۰ درصد (OpenAI،‏ Anthropic،‏ Google،‏ OpenRouter) |
+| مسیریابی بر اساس طول Prompt | کم | تا ۵۰ درصد در درخواست‌های نزدیک به آستانه OpenAI یا xAI، تا ۸۰ درصد نزدیک به آستانه Haiku 5.5 |
+| زمان‌بندی در ساعات غیراوج (Off-peak scheduling) | کم | ۵۰ درصد (DeepSeek) |
 
 ---
 
-## Context Caching Economics
+## اقتصاد کش‌گذاری کانتکست (Context Caching Economics)
 
-**The rule still holds:** if a stable prefix (system prompt, tool definitions, a shared corpus) is more than a few thousand tokens and gets reused within the TTL, cache it. What changed in 2026 is that cache terms differ by model, so the math must be done per model.
+**قاعده کلی همچنان برقرار است:** اگر یک پیشوند پایدار (Prompt سیستم، تعاریف ابزار، یا یک بدنه متنی مشترک) بیش از چند هزار Token بوده و در بازه زمانی ماندگاری (TTL) مجدداً استفاده می‌شود، آن را Cache کنید. آنچه در سال ۲۰۲۶ تغییر کرده این است که شرایط Cache بسته به هر مدل متفاوت است، بنابراین محاسبات ریاضی باید به ازای هر مدل به‌طور مستقل انجام شود.
 
-**Break-even:** caching costs a write premium of `(write_mult - 1)` once and saves `(1 - read_mult)` on every reread, so
+**نقطه سر‌به‌سر (Break-even):** کش‌گذاری هزینه اضافی نوشتن (write premium) برابر با `(write_mult - 1)` را یک بار در بر دارد و در هر بازخوانی به اندازه `(1 - read_mult)` صرفه‌جویی می‌کند؛ بنابراین:
 
 `break-even rereads = (write_mult - 1) / (1 - read_mult)`
 
-| Model | Input | Cache write | Cache read | TTL | Break-even rereads |
-|-------|-------|-------------|------------|-----|--------------------|
-| Claude Fable 5.1 | $10.00 | $12.50 (5 min) / $20.00 (1 h) | $0.25 (0.025x) | 5 min or 1 h | 0.26 / 1.03 |
-| Claude Opus 5.5 | $4.00 | $5.00 / $8.00 | $0.20 (0.05x) | 5 min or 1 h | 0.26 / 1.05 |
-| Claude Sonnet 5.5 | $2.00 | $2.50 / $4.00 | $0.10 (0.05x) | 5 min or 1 h | 0.26 / 1.05 |
-| Claude Haiku 5.5 (prompt up to 100K) | $0.10 | $0.125 / $0.20 | $0.01 (0.1x) | 5 min or 1 h | 0.28 / 1.11 |
-| GPT-6.1 Sol | $2.00 | $2.50 (30 min) / $5.00 (12 h) | $0.10 (0.05x) | 30 min or 12 h | 0.26 / 1.58 |
-| GPT-6.1 Terra | $1.00 | $1.25 / $2.50 | $0.05 (0.05x) | 30 min or 12 h | 0.26 / 1.58 |
-| GPT-6 Sol | $2.00 | $2.50 / $5.00 | $0.20 (0.1x) | 30 min or 12 h | 0.28 / 1.67 |
-| GPT-6 Astra | $10.00 | $12.50 / $25.00 | $1.00 (0.1x) | 30 min or 12 h | 0.28 / 1.67 |
-| Gemini 4 Argon | $2.00 intro ($4.00 from Dec 1) | None (implicit only) | $0.10 ($0.20 from Dec 1), 0.05x | Implicit; not controllable | No write premium, but no control over hits |
-| Gemini 3.8 Flash | $0.75 intro | - | $0.075 intro ($0.15 from Jan 1, 2027) + $0.50 per 1M tokens per hour of storage intro ($1.00 from Jan 1, 2027) | Explicit caches billed per hour stored | Depends on storage time |
+| مدل (Model) | ورودی (Input) | نوشتن در Cache | خواندن از Cache | مدت ماندگاری (TTL) | بازخوانی‌های سر‌به‌سر (Break-even rereads) |
+|---|---|---|---|---|---|
+| Claude Fable 5.1 | ۱۰.۰۰ دلار | ۱۲.۵۰ دلار (۵ دقیقه) / ۲۰.۰۰ دلار (۱ ساعت) | ۰.۲۵ دلار (0.025x) | ۵ دقیقه یا ۱ ساعت | ۰.۲۶ / ۱.۰۳ |
+| Claude Opus 5.5 | ۴.۰۰ دلار | ۵.۰۰ دلار / ۸.۰۰ دلار | ۰.۲۰ دلار (0.05x) | ۵ دقیقه یا ۱ ساعت | ۰.۲۶ / ۱.۰۵ |
+| Claude Sonnet 5.5 | ۲.۰۰ دلار | ۲.۵۰ دلار / ۴.۰۰ دلار | ۰.۱۰ دلار (0.05x) | ۵ دقیقه یا ۱ ساعت | ۰.۲۶ / ۱.۰۵ |
+| Claude Haiku 5.5 (Prompt تا ۱۰۰K) | ۰.۱۰ دلار | ۰.۱۲۵ دلار / ۰.۲۰ دلار | ۰.۰۱ دلار (0.1x) | ۵ دقیقه یا ۱ ساعت | ۰.۲۸ / ۱.۱۱ |
+| GPT-6.1 Sol | ۲.۰۰ دلار | ۲.۵۰ دلار (۳۰ دقیقه) / ۵.۰۰ دلار (۱۲ ساعت) | ۰.۱۰ دلار (0.05x) | ۳۰ دقیقه یا ۱۲ ساعت | ۰.۲۶ / ۱.۵۸ |
+| GPT-6.1 Terra | ۱.۰۰ دلار | ۱.۲۵ دلار / ۲.۵۰ دلار | ۰.۰۵ دلار (0.05x) | ۳۰ دقیقه یا ۱۲ ساعت | ۰.۲۶ / ۱.۵۸ |
+| GPT-6 Sol | ۲.۰۰ دلار | ۲.۵۰ دلار / ۵.۰۰ دلار | ۰.۲۰ دلار (0.1x) | ۳۰ دقیقه یا ۱۲ ساعت | ۰.۲۸ / ۱.۶۷ |
+| GPT-6 Astra | ۱۰.۰۰ دلار | ۱۲.۵۰ دلار / ۲۵.۰۰ دلار | ۱.۰۰ دلار (0.1x) | ۳۰ دقیقه یا ۱۲ ساعت | ۰.۲۸ / ۱.۶۷ |
+| Gemini 4 Argon | ۲.۰۰ دلار معرفی (۴.۰۰ دلار از ۱ دسامبر) | ندارد (فقط ضمنی) | ۰.۱۰ دلار (۰.۲۰ دلار از ۱ دسامبر)، 0.05x | ضمنی؛ غیرقابل کنترل | بدون هزینه اضافی نوشتن، اما بدون کنترل روی اصابت‌ها (hits) |
+| Gemini 3.8 Flash | ۰.۷۵ دلار معرفی | - | ۰.۰۷۵ دلار معرفی (۰.۱۵ دلار از ۱ ژانویه ۲۰۲۷) + ۰.۵۰ دلار به ازای هر ۱ میلیون Token در هر ساعت ذخیره‌سازی معرفی (۱.۰۰ دلار از ۱ ژانویه ۲۰۲۷) | Cacheهای صریح بر حسب ساعت ذخیره‌سازی محاسبه می‌شوند | وابسته به مدت‌زمان ذخیره‌سازی |
 
-A break-even below 1 means **one reuse inside the TTL pays for the write**. Anthropic's 1-hour write and OpenAI's 12-hour write both need at least two rereads, so buy the long TTL only for prefixes reused across idle gaps longer than the short one.
+نقطه سر‌به‌سر زیر ۱ به این معنی است که **تنها یک بار استفاده مجدد در بازه TTL، هزینه نوشتن را جبران می‌کند**. نوشتن ۱ ساعته Anthropic و نوشتن ۱۲ ساعته OpenAI هر دو حداقل به دو بار بازخوانی نیاز دارند، بنابراین TTL طولانی را تنها برای پیشوندهایی خریداری کنید که در فواصل بیکاریِ طولانی‌تر از دوره کوتاه مجدداً استفاده می‌شوند.
 
-**Where caching now changes model choice.** Take a 50-turn agent loop with a 100K-token stable prefix (tool definitions plus repository context) on a 5-minute or 30-minute TTL, counting only the prefix:
+**جایی که کش‌گذاری اکنون انتخاب مدل را تغییر می‌دهد:** یک حلقه ایجنت ۵۰ نوبته (50-turn agent loop) با پیشوند پایدار ۱۰۰ هزار Token (تعاریف ابزار به‌علاوه کانتکست مخزن کد) روی TTL پنج دقیقه‌ای یا ۳۰ دقیقه‌ای را با احتساب تنها هزینه پیشوند در نظر بگیرید:
 
-| Model | Prefix cost uncached (50 turns) | Prefix cost cached (1 write + 49 reads) |
-|-------|---------------------------------|-----------------------------------------|
-| Claude Fable 5.1 | $50.00 | $1.25 + 49 × $0.025 = $2.48 |
-| GPT-6 Astra | $50.00 | $1.25 + 49 × $0.10 = $6.15 |
-| Claude Opus 5.5 | $20.00 | $0.50 + 49 × $0.02 = $1.48 |
-| Claude Sonnet 5.5 | $10.00 | $0.25 + 49 × $0.01 = $0.74 |
-| GPT-6.1 Sol | $10.00 | $0.25 + 49 × $0.01 = $0.74 |
-| GPT-6.1 Terra | $5.00 | $0.125 + 49 × $0.005 = $0.37 |
-| Claude Haiku 5.5 (every turn over 100K) | $2.50 | $0.0625 + 49 × $0.005 = $0.31 |
+| مدل (Model) | هزینه پیشوند بدون Cache (۵۰ نوبت) | هزینه پیشوند با Cache (۱ نوشتن + ۴۹ خواندن) |
+|---|---|---|
+| Claude Fable 5.1 | ۵۰.۰۰ دلار | ۱.۲۵ دلار + ۴۹ × ۰.۰۲۵ دلار = ۲.۴۸ دلار |
+| GPT-6 Astra | ۵۰.۰۰ دلار | ۱.۲۵ دلار + ۴۹ × ۰.۱۰ دلار = ۶.۱۵ دلار |
+| Claude Opus 5.5 | ۲۰.۰۰ دلار | ۰.۵۰ دلار + ۴۹ × ۰.۰۲ دلار = ۱.۴۸ دلار |
+| Claude Sonnet 5.5 | ۱۰.۰۰ دلار | ۰.۲۵ دلار + ۴۹ × ۰.۰۱ دلار = ۰.۷۴ دلار |
+| GPT-6.1 Sol | ۱۰.۰۰ دلار | ۰.۲۵ دلار + ۴۹ × ۰.۰۱ دلار = ۰.۷۴ دلار |
+| GPT-6.1 Terra | ۵.۰۰ دلار | ۰.۱۲۵ دلار + ۴۹ × ۰.۰۰۵ دلار = ۰.۳۷ دلار |
+| Claude Haiku 5.5 (هر نوبت بالای ۱۰۰K) | ۲.۵۰ دلار | ۰.۰۶۲۵ دلار + ۴۹ × ۰.۰۰۵ دلار = ۰.۳۱ دلار |
 
-Three lessons. First, with caching the prefix stops being the cost driver: cached Opus 5.5 costs about 74 cents more than cached Sonnet 5.5 over 50 turns and far less than uncached Sonnet, so the real difference between them is output and reasoning tokens. Second, identical list prices hide different cached costs: Fable 5.1 and Astra both list at $10 input, but Astra's 0.1x read makes the same cached prefix about 2.5x as expensive. Third, Haiku 5.5's cliff interacts with caching: a 100K prefix plus any user turn crosses the line, so every turn bills at the high rate even when it is almost all cache hits. Trim the same prefix to 95K and keep turns small, and the cached cost falls to about $0.06; let an agent's history grow past 100K, and Haiku stops being the cheap tier.
+سه درس مهم: نخست، با کش‌گذاری، پیشوند دیگر عامل اصلی افزایش هزینه نخواهد بود: هزینه پیشوند Cacheشده در Opus 5.5 در طول ۵۰ نوبت تنها حدود ۷۴ سنت بیشتر از Sonnet 5.5 با Cache است و بسیار کمتر از Sonnet بدون Cache تمام می‌شود؛ بنابراین تفاوت واقعی بین آنها در Tokenهای خروجی و استدلال نهفته است. دوم، قیمت‌های رسمی یکسان هزینه‌های پنهان متفاوتی در حالت Cache دارند: Fable 5.1 و Astra هر دو نرخ ورودی ۱۰ دلاری دارند، اما ضریب خواندن 0.1x در Astra همان پیشوند Cacheشده را حدود ۲.۵ برابر گران‌تر می‌کند. سوم، پرتگاه قیمتی Haiku 5.5 با کش‌گذاری برهم‌کنش دارد: یک پیشوند ۱۰۰K به‌همراه نوبت کاربر از خط آستانه عبور می‌کند، بنابراین تک‌تک نوبت‌ها با نرخ بالا محاسبه می‌شوند حتی زمانی که تقریباً تمام آن حاصل اصابت به Cache باشد. اگر همان پیشوند را به ۹۵K کاهش دهید و نوبت‌ها را کوتاه نگه دارید، هزینه Cacheشده به حدود ۰.۰۶ دلار کاهش می‌یابد؛ اما اگر تاریخچه ایجنت از ۱۰۰K فراتر رود، Haiku دیگر رده ارزان‌قیمت نخواهد بود.
 
-**Caveats that bite in production:**
-- **OpenAI** (GPT-5.6 and later): minimum cacheable prompt 1,024 tokens; `prompt_cache_options.ttl` accepts `"30m"` (the default) or `"12h"` (Responses API only, since October 20), and reads cost the same for both. Earlier OpenAI models have no write charge and use `prompt_cache_retention`. The 272K long-context rate applies to cached tokens too.
-- **Anthropic**: Opus 5.5's minimum cacheable prompt is 512 tokens. On Fable 5.1, Opus 5.5 and Sonnet 5.5, thinking blocks are bound to the conversation prefix: editing the system prompt, tools or earlier messages drops the block or, for accounts created on or after August 31, 2026, returns a 400. Treat history as append-only, the same discipline that keeps caches warm. The `inline-tools-2026-09-15` beta adds tools mid-conversation without losing the cache.
-- **Gemini** explicit caches accrue storage per hour, so a cache that is written and then idles can cost more than it saves. Gemini 4 Argon supports implicit caching only, so explicit-cache code written for earlier Gemini models does nothing there; track its reported cached tokens instead.
-- **Anthropic Haiku 5.5**: cache reads and writes count toward the 100K-token threshold, so caching lowers the per-token rate but never keeps a long prompt in the cheap tier.
-- **Observe it.** OpenAI's Prompt Cache Diagnostics went GA on September 8, 2026 and Anthropic's cache diagnostics on September 23. Track hit rate as an SLO; prompt rewrites and model bumps silently zero it.
+**هشدارهایی که در محیط عملیاتی به مشکل منجر می‌شوند:**
+- **OpenAI** (مدل‌های GPT-5.6 و جدیدتر): حداقل طول Prompt قابل Cache معادل ۱,۰۲۴ Token است؛ گزینه `prompt_cache_options.ttl` مقادیر `"30m"` (پیش‌فرض) یا `"12h"` (فقط در Responses API، از ۲۰ اکتبر) را می‌پذیرد و هزینه خواندن برای هر دو یکسان است. مدل‌های قبلی OpenAI هزینه نوشتن ندارند و از `prompt_cache_retention` استفاده می‌کنند. نرخ کانتکست طولانی ۲۷۲K برای Tokenهای Cacheشده نیز اعمال می‌شود.
+- **Anthropic:** حداقل Prompt قابل Cache در Opus 5.5 معادل ۵۱۲ Token است. در Fable 5.1،‏ Opus 5.5 و Sonnet 5.5، بلوک‌های تفکر به پیشوند گفتگو مقید هستند: ویرایش Prompt سیستم، ابزارها یا پیام‌های پیشین باعث از دست رفتن بلوک تفکر می‌شود یا برای حساب‌های ایجادشده در ۳۱ اوت ۲۰۲۶ یا پس از آن، خطای 400 برمی‌گرداند. با تاریخچه مکالمه به‌عنوان ساختار فقط-افزودنی (append-only) رفتار کنید؛ همان نظمی که Cacheها را گرم نگه می‌دارد. بتای `inline-tools-2026-09-15` ابزارها را در میانه مکالمه بدون از دست رفتن Cache اضافه می‌کند.
+- **Gemini:** در Cacheهای صریح Gemini، هزینه ذخیره‌سازی ساعتی انباشته می‌شود، بنابراین Cacheای که نوشته شده و سپس بلااستفاده بماند می‌تواند بیش از صرفه‌جویی حاصله هزینه بتراشد. مدل Gemini 4 Argon فقط از کش‌گذاری ضمنی پشتیبانی می‌کند، بنابراین کدهای کش‌گذاری صریحِ نوشته‌شده برای مدل‌های قبلی Gemini در اینجا هیچ کاری انجام نمی‌دهند؛ به‌جای آن، Tokenهای Cacheشده گزارش‌شده آن را ردیابی کنید.
+- **Anthropic Haiku 5.5:** خواندن و نوشتن از Cache جزو آستانه ۱۰۰ هزار Token شمرده می‌شوند، بنابراین کش‌گذاری نرخ هر Token را کاهش می‌دهد اما هرگز یک Prompt طولانی را در رده ارزان‌قیمت نگه نمی‌دارد.
+- **آن را پایش کنید:** ابزار Prompt Cache Diagnostics در OpenAI در ۸ سپتامبر ۲۰۲۶ و ابزار تشخیص Cache شرکت Anthropic در ۲۳ سپتامبر به عرضه عمومی (GA) رسیدند. نرخ اصابت (hit rate) را به‌عنوان یک هدف سطح سرویس (SLO) رصد کنید؛ بازنویسی‌های Prompt و ارتقای نسخه‌های مدل می‌توانند بدون هیچ هشداری آن را به صفر برسانند.
 
-Batch discounts (50%) stack with caching at both OpenAI and Anthropic. For how these discounts map to KV reuse inside the serving stack, see [KV Cache and Context Caching](../04-inference-optimization/02-kv-cache-and-context-caching.md).
+تخفیف‌های پردازش دسته‌ای (Batch discounts معادل ۵۰٪) با کش‌گذاری در هر دو ارائه‌دهنده OpenAI و Anthropic هم‌پوشانی داشته و ترکیب می‌شوند. برای درک چگونگی نگاشت این تخفیف‌ها به استفاده مجدد از KV در پشته سرویس‌دهی، به [KV Cache و کش‌گذاری کانتکست](../04-inference-optimization/02-kv-cache-and-context-caching.md) مراجعه کنید.
 
 ---
 
-## Self-Hosting & GPU Cloud Arbitrage
+## میزبانی شخصی و آربیتراژ ابری GPU (Self-Hosting & GPU Cloud Arbitrage)
 
-**The Reserved vs. Serverless Tradeoff:**
+**مصالحه بین ظرفیت رزروشده و سرورلس (The Reserved vs. Serverless Tradeoff):**
 
-| Model Size | Serverless (RunPod/Together) | Reserved (Lambda/AWS) |
-|------------|-----------------------------|-----------------------|
-| **Burst Capacity** | Infinite (cold starts) | Fixed |
-| **Utilization** | Pay only for compute time | 24/7 fixed cost |
-| **TCO Break-even**| **Cost-effective < 40% util** | **Cost-effective > 40% util** |
+| اندازه مدل (Model Size) | سرورلس (RunPod/Together) | رزروشده (Lambda/AWS) |
+|---|---|---|
+| **ظرفیت پاسخ به جهش بار (Burst Capacity)** | نامحدود (با راه‌اندازی سرد یا cold starts) | ثابت |
+| **میزان بهره‌وری (Utilization)** | پرداخت تنها به ازای زمان محاسبات | هزینه ثابت به‌صورت ۲۴/۷ |
+| **سر‌به‌سر هزینه کل مالکیت (TCO Break-even)** | **مقرون‌به‌صرفه در بهره‌وری کمتر از ۴۰٪** | **مقرون‌به‌صرفه در بهره‌وری بیش از ۴۰٪** |
 
-**Principal-level Nuance:**
-"GPU Cloud Arbitrage" involves moving production workloads between providers based on **spot instance availability**. Tools like **Skypilot** automate this, saving up to 60% on self-hosting costs by following "low-demand" regions globally. MoE models cut the active compute per token, but not the memory needed to hold the weights: Llama 4 Scout (109B total) fits one H100 at INT4, Maverick (about 400B total) needs an 8x H100 node, and Xiaomi says MiMo-V2.6-Flash (309B / 15B active) fits one 8-GPU node.
+**نکته ظریف در سطح مهندس ارشد (Principal-level Nuance):**
+«آربیتراژ ابری GPU» شامل جابه‌جایی بارهای کاری عملیاتی بین ارائه‌دهندگان مختلف بر اساس **در دسترس بودن نمونه‌های اسپات (spot instance availability)** است. ابزارهایی مانند **Skypilot** این فرآیند را خودکار می‌کنند و با ردیابی مناطق «کم‌تقاضا» در سطح جهان، تا ۶۰٪ در هزینه‌های میزبانی شخصی صرفه‌جویی می‌نمایند. مدل‌های MoE محاسبات فعال به ازای هر Token را کاهش می‌دهند، اما حافظه مورد نیاز برای نگهداری وزن‌ها را کم نمی‌کنند: مدل Llama 4 Scout (با ۱۰۹ میلیارد پارامتر کل) با کوانتیزاسیون INT4 در یک H100 جا می‌شود، Maverick (حدود ۴۰۰ میلیارد پارامتر کل) به یک نود 8x H100 نیاز دارد، و شیائومی اعلام کرده که MiMo-V2.6-Flash (با ۳۰۹ میلیارد کل / ۱۵ میلیارد فعال) در یک نود ۸ پردازنده‌ای (8-GPU node) جا می‌گیرد.
 
-**GPU prices moved the other way from API prices in 2026, and kept rising into November.** The Silicon Data rental index on November 5 put B200 at $6.70 (from $6.50 on November 1 and $5.88 on October 7, about 14% in four weeks), H200 at $3.51, H100 at $2.97 and B300 flat at $7.56 per GPU-hour; read the daily table, because each index page's FAQ shows stale "current" prices. On-demand list prices: Lambda H100 SXM $3.99 and B200 $6.69 per GPU-hour on 8-GPU instances until November 16, when its posted prices take effect at 00:00 UTC (scheduled): 8x HGX H100 $4.59 and 8x HGX B200 $7.69, about 15% more, with single-GPU H100 SXM at $4.89 and B200 SXM6 at $7.99. RunPod (updated November 4) lists H100 SXM $2.69 (community) / $3.99 (secure), B200 $5.98 / $7.99, B300 $6.94 / $8.99; its secure-cloud prices rose 14 to 18% during October. Longer terms are cheaper: on September 7, a 12-month B200 averaged $5.39 against $5.73 for 3 months.
+**قیمت‌های پردازنده گرافیکی (GPU) در سال ۲۰۲۶ در جهتی مخالف قیمت‌های API حرکت کردند و تا نوامبر به افزایش خود ادامه دادند.** شاخص اجاره Silicon Data در ۵ نوامبر، قیمت B200 را ۶.۷۰ دلار (از ۶.۵۰ دلار در ۱ نوامبر و ۵.۸۸ دلار در ۷ اکتبر، حدود ۱۴٪ افزایش طی چهار هفته)، قیمت H200 را ۳.۵۱ دلار، H100 را ۲.۹۷ دلار و B300 را ثابت روی ۷.۵۶ دلار به ازای هر ساعت کارکرد هر GPU ثبت کرد؛ جدول روزانه را بررسی کنید، چرا که بخش سوالات متداول (FAQ) در صفحات شاخص‌ها قیمت‌های «فعلیِ» قدیمی و نامعتبر را نشان می‌دهد. قیمت‌های رسمی درخواستی (On-demand): در پلتفرم Lambda نرخ H100 SXM برابر ۳.۹۹ دلار و B200 برابر ۶.۶۹ دلار به ازای هر ساعت GPU روی نمونه‌های دارای ۸ پردازنده تا ۱۶ نوامبر است، زمانی که قیمت‌های اعلام‌شده آن در ساعت 00:00 زمان UTC اجرایی می‌شوند (طبق برنامه): مدل 8x HGX H100 معادل ۴.۵۹ دلار و 8x HGX B200 معادل ۷.۶۹ دلار (حدود ۱۵٪ افزایش)، همراه با تک‌پردازنده H100 SXM به قیمت ۴.۸۹ دلار و B200 SXM6 به قیمت ۷.۹۹ دلار. پلتفرم RunPod (به‌روزرسانی‌شده در ۴ نوامبر) نرخ H100 SXM را ۲.۶۹ دلار (عمومی یا community) / ۳.۹۹ دلار (امن یا secure)، مدل B200 را ۵.۹۸ دلار / ۷.۹۹ دلار و B300 را ۶.۹۴ دلار / ۸.۹۹ دلار فهرست کرده است؛ قیمت‌های ابر امن آن در طول ماه اکتبر بین ۱۴ تا ۱۸ درصد افزایش یافت. قراردادهای بلندمدت‌تر ارزان‌تر هستند: در ۷ سپتامبر، میانگین اجاره ۱۲ ماهه B200 معادل ۵.۳۹ دلار در مقایسه با ۵.۷۳ دلار برای قراردادهای ۳ ماهه بود.
 
-### When Self-Hosting Makes Sense
+### چه زمانی میزبانی شخصی توجیه‌پذیر است (When Self-Hosting Makes Sense)
 
 ```
 API cost at scale (1M requests/month, 2,000 input + 500 output tokens each):
@@ -683,33 +687,33 @@ Self-hosted MiMo-V2.6-Flash (309B / 15B active, MIT) on one 8x H100 node:
 - Total: ~$24,300 to $33,800/month, before N+1 redundancy
 ```
 
-At this volume self-hosting loses to **every** API row, including Opus. The old rule of thumb ("self-host above roughly 500K requests per month") assumed frontier-only APIs; it does not survive a $0.10 / $0.50 closed tier and hosted open weights at $0.14 / $0.28. Break-even is now about utilization: the node has to displace roughly $24K of API spend per month (about $34K at Lambda's on-demand rate from November 16). At this request shape that is about 2.7M requests per month against Sonnet 5.5 or GPT-6 Sol, about 5.4M against GPT-6.1 Terra, but about 54M requests (roughly 134B tokens, or about 52K tokens per second around the clock) against GPT-6 Luna. Measure your own throughput on the target model before believing either number.
+در این حجم کاری، خودمیزبانی (Self-Hosting) در برابر **تمام** ردیف‌های API، از جمله Opus، بازنده است (هزینه بیشتری دارد). قاعده سرانگشتی قدیمی («خودمیزبانی بالاتر از تقریباً ۵۰۰ هزار درخواست در ماه») بر پایه APIهای صرفاً پیشتاز (frontier-only) فرض شده بود؛ این قاعده در برابر پلن تجاری اختصاصی با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار و وزن‌های متن‌باز میزبانی‌شده با قیمت ۰.۱۴ دلار / ۰.۲۸ دلار دیگر دوام نمی‌آورد. نقطه سربه‌سر (Break-even) اکنون به میزان بهره‌وری وابسته است: هر نود باید تقریباً ۲۴ هزار دلار از هزینه ماهانه API را جبران کند (حدود ۳۴ هزار دلار بر اساس نرخ on-demand پلتفرم Lambda در ۱۶ نوامبر). با این الگوی درخواست (request shape)، این مقدار در مقایسه با Sonnet 5.5 یا GPT-6 Sol حدود ۲.۷ میلیون درخواست در ماه است، در برابر GPT-6.1 Terra حدود ۵.۴ میلیون، اما در مقایسه با GPT-6 Luna حدود ۵۴ میلیون درخواست (تقریباً ۱۳۴ میلیارد Token، یا حدود ۵۲ هزار Token در ثانیه به‌صورت شبانه‌روزی) است. پیش از پذیرش هر یک از این اعداد، توان عملیاتی (Throughput) خود را روی مدل هدف اندازه‌گیری کنید.
 
-### Self-Hosting Cost Components
+### مؤلفه‌های هزینه خودمیزبانی (Self-Hosting)
 
-| Component | Monthly Cost | Notes |
+| مؤلفه | هزینه ماهانه | توضیحات |
 |-----------|--------------|-------|
-| GPU compute | $5K-50K | One 8x H100 node is $17K-27K; HA doubles it |
-| Storage | $200-500 | Model weights, logs |
-| Networking | $100-500 | Egress, load balancing |
-| Engineering | $5K-15K | Partial FTE for ops |
-| Monitoring | $100-500 | Observability tools |
+| پردازش GPU | $5K-50K | یک نود 8x H100 بین ۱۷ تا ۲۷ هزار دلار است؛ دسترس‌پذیری بالا (HA) آن را دو برابر می‌کند |
+| ذخیره‌سازی (Storage) | $200-500 | وزن‌های مدل، لاگ‌ها |
+| شبکه (Networking) | $100-500 | ترافیک خروجی (Egress)، توزیع بار (Load Balancing) |
+| مهندسی | $5K-15K | معادل پاره‌وقت FTE برای عملیات (Ops) |
+| مانیتورینگ | $100-500 | ابزارهای مشاهده‌پذیری (Observability) |
 
-### GPU Requirements by Model Size
+### نیازمندی‌های GPU بر اساس اندازه مدل
 
-| Model Size | GPU Config | Estimated Cost/Month |
+| اندازه مدل | پیکربندی GPU | هزینه تخمینی / ماه |
 |------------|------------|---------------------|
 | 7B (INT4) | 1x A10G | $500-800 |
 | 7B (FP16) | 1x A100 40GB | $1,500-2,500 |
 | 70B (INT4) | 2x A100 80GB | $5,000-8,000 |
 | 70B (FP16) | 4x A100 80GB | $10,000-15,000 |
-| 405B dense (INT4), e.g. Llama 3.1 405B | 8x H100 | $17,000-27,000 |
-| ~300B MoE, ~15B active (MiMo-V2.6-Flash) | 1x 8-GPU node | $17,000-27,000 (H100) |
-| ~1T MoE, ~42B active (MiMo-V2.6-Pro) | 2x 8-GPU nodes (16-way tensor parallel in Xiaomi's SGLang recipe) | $35,000-54,000 (H100) |
+| 405B متراکم (INT4)، مانند Llama 3.1 405B | 8x H100 | $17,000-27,000 |
+| ~300B با ساختار MoE، با ~15B فعال (MiMo-V2.6-Flash) | یک نود 8-GPU | $17,000-27,000 (H100) |
+| ~1T با ساختار MoE، با ~42B فعال (MiMo-V2.6-Pro) | دو نود 8-GPU (موازی‌سازی تانسوری ۱۶ مسیره در دستورالعمل SGLang شیائومی) | $35,000-54,000 (H100) |
 
-H100 rows assume $2.97-4.59 per GPU-hour (Silicon Data index to Lambda's November 16 on-demand rate). Extreme quantization changes the small end: Ternary Bonsai 2 27B packs a Qwen3.8-27B base into 5.95 GB at 1.72 bits per weight (Apache 2.0), but needs PrismML's inference forks.
+ردیف‌های H100 نرخ ۲.۹۷ تا ۴.۵۹ دلار به ازای هر ساعت کارکرد GPU را فرض می‌کنند (شاخص Silicon Data بر اساس نرخ on-demand پلتفرم Lambda در ۱۶ نوامبر). کوانتیزاسیون شدید (Extreme quantization) بخش مدل‌های کوچک را متحول می‌کند: مدل Ternary Bonsai 2 27B پایه Qwen3.8-27B را در ۵.۹۵ گیگابایت با ۱.۷۲ بیت به ازای هر وزن (لایسنس Apache 2.0) جای می‌دهد، اما به فورک‌های استنتاج (Inference) ارائه‌شده توسط PrismML نیاز دارد.
 
-### Decision Framework
+### فریم‌ورک تصمیم‌گیری
 
 ```
 Choose API when:
@@ -738,9 +742,9 @@ Before either, check the license:
 
 ---
 
-## Total Cost of Ownership
+## هزینه کل مالکیت (TCO)
 
-### TCO Components
+### مؤلفه‌های TCO
 
 ```python
 def calculate_tco(scenario: dict) -> dict:
@@ -779,47 +783,47 @@ def calculate_tco(scenario: dict) -> dict:
     }
 ```
 
-### Example TCO Comparison
+### نمونه مقایسه TCO
 
-**Scenario: Customer Support Bot (50K requests/month, 3,000 input + 400 output tokens on Claude Sonnet 5.5)**
+**سناریو: بات پشتیبانی مشتریان (۵۰ هزار درخواست در ماه، ۳,۰۰۰ Token ورودی + ۴۰۰ Token خروجی روی Claude Sonnet 5.5)**
 
-| Cost Component | API-Based | Self-Hosted |
+| مؤلفه هزینه | مبتنی بر API | خودمیزبانی (Self-Hosted) |
 |----------------|-----------|-------------|
-| LLM costs | $500 | $2,000 (one H100) |
-| Vector DB | $70 | $200 |
-| Engineering (monthly) | $500 | $3,000 |
-| Monitoring | $100 | $200 |
-| **Monthly Total** | **$1,170** | **$5,400** |
+| هزینه‌های LLM | $500 | $2,000 (یک H100) |
+| پایگاه داده برداری (Vector DB) | $70 | $200 |
+| مهندسی (ماهانه) | $500 | $3,000 |
+| مانیتورینگ | $100 | $200 |
+| **مجموع ماهانه** | **$1,170** | **$5,400** |
 
-*At this scale, API is cheaper by a wide margin.*
+*در این مقیاس، API با اختلاف زیادی ارزان‌تر است.*
 
-**Scenario: Large-Scale RAG (2M requests/month, 4,000 input + 500 output tokens)**
+**سناریو: RAG در مقیاس بزرگ (۲ میلیون درخواست در ماه، ۴,۰۰۰ Token ورودی + ۵۰۰ Token خروجی)**
 
-| Cost Component | API (all mid-tier) | API (routed: 70% GPT-6 Luna, 30% GPT-6 Sol) | Self-Hosted (one 8x H100 node) |
+| مؤلفه هزینه | API (تماماً رده میانی) | API (مسیریابی‌شده: ۷۰٪ GPT-6 Luna، ۳۰٪ GPT-6 Sol) | خودمیزبانی (یک نود 8x H100) |
 |----------------|--------------------|---------------------------------------------|--------------------------------|
-| LLM costs | $26,000 | $8,710 | $17,100 |
-| Vector DB | $500 | $500 | $1,000 |
-| Engineering (monthly) | $1,000 | $1,500 | $8,000 |
-| Monitoring | $200 | $200 | $500 |
-| **Monthly Total** | **$27,700** | **$10,910** | **$26,600** |
+| هزینه‌های LLM | $26,000 | $8,710 | $17,100 |
+| پایگاه داده برداری (Vector DB) | $500 | $500 | $1,000 |
+| مهندسی (ماهانه) | $1,000 | $1,500 | $8,000 |
+| مانیتورینگ | $200 | $200 | $500 |
+| **مجموع ماهانه** | **$27,700** | **$10,910** | **$26,600** |
 
-*Self-hosting only beats the naive all-mid-tier API bill, and only before you add a second node for redundancy. A routed API bill beats it by more than 2x. At 2M requests per month, self-host for control, residency, licensing or fine-tuned weights, not for cost.*
+*خودمیزبانی فقط فاکتور ساده‌لوحانه APIهای تماماً رده میانی را شکست می‌دهد، آن هم تنها قبل از اینکه نود دومی را برای افزونگی (Redundancy) اضافه کنید. صورت‌حساب API مسیریابی‌شده بیش از ۲ برابر آن را شکست می‌دهد (ارزان‌تر است). در حجم ۲ میلیون درخواست در ماه، خودمیزبانی را به‌خاطر کنترل، محل استقرار داده (Residency)، لایسنس یا وزن‌های Fine-tune شده انتخاب کنید، نه به‌خاطر هزینه.*
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: How would you optimize costs for a high-volume RAG application?
+### سوال: چگونه هزینه‌ها را برای یک کاربرد RAG با حجم بالا بهینه‌سازی می‌کنید؟
 
-**Strong answer:**
-I would approach cost optimization in layers:
+**پاسخ قوی:**
+من بهینه‌سازی هزینه را در چند لایه پیش می‌برم:
 
-**1. Architecture optimization:**
-- Model routing: Use cheap model for simple queries
-- Caching: provider prefix caching on the stable prefix, plus exact and semantic response caching (30-40% of queries may be cacheable)
-- Prompt compression: Minimize system prompt tokens, and keep prompts under long-context thresholds (272K on OpenAI, 100K on Claude Haiku 5.5)
+**۱. بهینه‌سازی معماری:**
+- مسیریابی مدل (Model routing): استفاده از مدل ارزان برای پرس‌وجوهای ساده
+- کشینگ: کش پیشوند ارائه‌دهنده (Provider prefix caching) روی پیشوندهای ثابت، به‌علاوه کش پاسخ دقیق و معنایی (۳۰ تا ۴۰ درصد از پرس‌وجوها ممکن است قابل کش‌شدن باشند)
+- فشرده‌سازی Prompt: به حداقل رساندن Tokenهای System Prompt و نگه داشتن Promptها زیر آستانه‌های زمینه طولانی (Long-context) (۲۷۲ هزار در OpenAI، ۱۰۰ هزار در Claude Haiku 5.5)
 
-**2. Model selection:**
+**۲. انتخاب مدل:**
 ```
 Request shape: 2,600 input + 300 output tokens
 Simple queries (60%): GPT-6 Luna at $0.00041/request
@@ -828,80 +832,82 @@ Weighted avg: $0.0035/request (vs $0.0082 all GPT-6 Sol)
 Savings: 57%
 ```
 
-**3. Infrastructure:**
-- Batch or Flex for embedding refreshes and offline evals (50% cheaper)
-- Right-size vector DB
-- Use spot instances where possible
+**۳. زیرساخت:**
+- استفاده از Batch یا Flex برای به‌روزرسانی امبدینگ‌ها و ارزیابی‌های آفلاین (۵۰٪ ارزان‌تر)
+- اندازه‌بندی متناسب پایگاه داده برداری (Vector DB)
+- استفاده از Spot Instanceها در صورت امکان
 
-**4. Monitoring:**
-- Track cost per query type and per task, not just per token
-- Track cache hit rate as an SLO
-- Alert on anomalies and on spend caps before they hard-stop traffic
+**۴. مانیتورینگ:**
+- رهگیری هزینه به ازای هر نوع پرس‌وجو و هر تسک، نه صرفاً به ازای هر Token
+- رهگیری نرخ اصابت به کش (Cache hit rate) به‌عنوان یک SLO
+- هشداردهی درباره ناهنجاری‌ها و سقف‌های هزینه، پیش از آنکه ترافیک را متوقف کنند
 
-### Q: When would you recommend self-hosting vs using APIs?
+### سوال: چه زمانی خودمیزبانی (Self-Hosting) را در مقایسه با استفاده از APIها توصیه می‌کنید؟
 
-**Strong answer:**
-Decision depends on multiple factors:
+**پاسخ قوی:**
+تصمیم‌گیری به عوامل متعددی بستگی دارد:
 
-**Utilization, not request count:**
-- A GPU node costs $17K-23K a month whether it is busy or not, so the question is whether my sustained traffic would displace that much API spend
-- Against a mid-tier API ($2 / $10) that happens at a few million requests a month; against GPT-6 Luna ($0.10 / $0.50) it takes tens of millions
-- I compare against a routed API bill, never against the frontier list price
+**میزان بهره‌وری، نه تعداد درخواست:**
+- یک نود GPU بین ۱۷ تا ۲۳ هزار دلار در ماه هزینه دارد، چه مشغول کار باشد چه بیکار؛ بنابراین سوال اصلی این است که آیا ترافیک مداوم من به اندازه این مبلغ از هزینه‌های API می‌کاهد یا خیر
+- در برابر یک API رده میانی (۲ دلار / ۱۰ دلار) این نقطه سربه‌سر در چند میلیون درخواست در ماه رخ می‌دهد؛ اما در برابر GPT-6 Luna (۰.۱۰ دلار / ۰.۵۰ دلار) این کار به ده‌ها میلیون درخواست نیاز دارد
+- من مقایسه را همیشه با صورت‌حساب APIهای مسیریابی‌شده انجام می‌دهم، هرگز با قیمت رسمی مدل‌های پیشتاز (Frontier) مقایسه نمی‌کنم
 
-**Team capabilities:**
-- No ML ops: API regardless of scale
-- Strong infra team: Consider self-hosting earlier
+**توانمندی‌های تیم:**
+- نبود تخصص MLOps: استفاده از API صرف‌نظر از مقیاس
+- تیم زیرساخت قوی: بررسی زودهنگام‌تر خودمیزبانی
 
-**Quality and license:**
-- Need absolute best: APIs (frontier models)
-- Good enough works: Self-hosted open models, after checking the license (Mistral Large 4, Muse Spark Open, Kimi K3 and K3.1 Pro, MiniMax-M3.1-Flash, GLM-5.3, Qwen and Mistral Medium 3.5 all carry commercial gates)
+**کیفیت و مجوز (License):**
+- نیاز به بهترین عملکرد مطلق: APIها (مدل‌های پیشتاز)
+- عملکرد در حد «به اندازه کافی خوب» پاسخگو است: مدل‌های متن‌باز خودمیزبانی‌شده، پس از بررسی مجوز (Mistral Large 4، Muse Spark Open، Kimi K3 و K3.1 Pro، MiniMax-M3.1-Flash، GLM-5.3، Qwen و Mistral Medium 3.5 همگی دارای محدودیت‌های تجاری هستند)
 
-**Other factors:**
-- Data privacy: May force self-hosting, though ZDR-eligible APIs (Opus 5.5, Sonnet 5.5) cover many cases
-- Latency control: Self-hosting gives more control
-- Fine-tuning needs: OpenAI ends new fine-tuning jobs for existing customers on January 6, 2027, which pushes customization toward open weights
+**سایر عوامل:**
+- حریم خصوصی داده‌ها: ممکن است خودمیزبانی را اجتناب‌ناپذیر کند، هرچند APIهای واجد شرایط ZDR (مانند Opus 5.5 و Sonnet 5.5) بسیاری از سناریوها را پوشش می‌دهند
+- کنترل تاخیر (Latency): خودمیزبانی کنترل بیشتری فراهم می‌کند
+- نیازمندی‌های Fine-tuning: شرکت OpenAI پذیرش تسک‌های جدید Fine-tuning را برای مشتریان فعلی در ۶ ژانویه ۲۰۲۷ متوقف می‌کند، که این امر سفارشی‌سازی را به سمت وزن‌های متن‌باز سوق می‌دهد
 
-**My recommendation process:**
-1. Start with APIs for fastest iteration
-2. Build abstraction layer for model switching
-3. Evaluate self-hosting when one stable workload's API spend approaches the cost of two nodes (one plus redundancy)
-4. Pilot with shadow deployment before committing
+**فرآیند پیشنهادی من:**
+۱. شروع با APIها برای سریع‌ترین تکرار و توسعه اولیه
+۲. ایجاد یک لایه انتزاع (Abstraction layer) برای تعویض مدل‌ها
+۳. ارزیابی خودمیزبانی زمانی که هزینه API یک بار کاری پایدار به هزینه دو نود (یکی اصلی به‌علاوه افزونگی) نزدیک می‌شود
+۴. اجرای پایلوت با استقرار در سایه (Shadow Deployment) پیش از تصمیم نهایی
 
-### Q: Your cost model for next year uses today's per-token prices. What will it get wrong?
+### سوال: مدل هزینه شما برای سال آینده از قیمت‌های فعلی به ازای هر Token استفاده می‌کند. این مدل چه مواردی را اشتباه محاسبه خواهد کرد؟
 
-**Strong answer:**
-Per-token list prices are the least stable input in the model. I would check eight things:
+**پاسخ قوی:**
+قیمت‌های رسمی به ازای هر Token ناپایدارترین ورودی در این مدل هستند. من هشت مورد را بررسی خواهم کرد:
 
-1. **Promotions expire.** Gemini 4 Argon doubles to $4 / $20 on December 1, Gemini 3.8 Flash to $1.50 / $7.50 on January 1, 2027, and OpenAI dates GPT-5.6 Sol's $4 / $20 to November 30, 2026 without stating the price after it. I budget on list prices and treat promos as upside.
-2. **Long-context cliffs.** On OpenAI, a prompt one token over 272K bills the entire request at roughly 2x input and 1.5x output. On xAI the line is 200K. On Claude Haiku 5.5 it is 100K and the jump is 5x on every token, cache reads included. I model the prompt-size distribution, not the mean.
-3. **Cache multipliers differ by model.** Reads are 0.1x, 0.05x or 0.025x depending on the model, OpenAI's writes cost 1.25x for 30 minutes or 2.5x for 12 hours, and Gemini 4 Argon caches only implicitly. A model swap changes cached cost even at the same list price.
-4. **Speed tiers.** If product wants lower latency, Fast is 2x and Ultrafast 6x. Each workload class gets an explicit tier.
-5. **Residency.** Region-pinned processing is about 1.1x at Anthropic, OpenAI, Bedrock, Google Cloud and Mistral. I apply it only to tenants that need it.
-6. **Tokens per task, not tokens per call.** Models differ several-fold in tokens per task (Artificial Analysis measured GPT-6 Astra using about a third of GPT-5.6 Sol's tokens per coding task, and Step 5 Preview about twice the median output). Thinking tokens bill as output.
-7. **Non-token meters.** Per-minute voice billing, managed-agent session hours, sandbox minutes, and billed refusals in some Anthropic safety categories.
-8. **Forced migrations.** Retirements move traffic to new models with new prices and defaults (Sonnet 4.5 on November 30, the GPT-5 and o3 snapshots on December 11, GPT-4o and GPT-4.1 and their fine-tunes on January 14, 2027 on about three months' notice, the audio stack in early 2027), and auto-upgrades such as Foundry's gpt-4o 2024-05-13 to gpt-5.1 change cost with no code change.
+۱. **انقضای تخفیف‌های دوره‌ای (Promotions):** قیمت Gemini 4 Argon در ۱ دسامبر به دو برابر یعنی ۴ دلار / ۲۰ دلار افزایش می‌یابد، Gemini 3.8 Flash در ۱ ژانویه ۲۰۲۷ به ۱.۵۰ دلار / ۷.۵۰ دلار می‌رسد، و OpenAI قیمت ۴ دلار / ۲۰ دلار را برای GPT-5.6 Sol تا ۳۰ نوامبر ۲۰۲۶ تعیین کرده بدون اینکه قیمت پس از آن را مشخص کند. من بودجه‌بندی را بر اساس قیمت‌های رسمی انجام می‌دهم و تخفیف‌ها را به عنوان سود مازاد در نظر می‌گیرم.
+۲. **پرتگاه‌های زمینه طولانی (Long-context cliffs):** در OpenAI، اگر یک Prompt حتی یک Token بیش از ۲۷۲ هزار باشد، کل درخواست تقریباً با نرخ ۲ برابری برای ورودی و ۱.۵ برابری برای خروجی محاسبه می‌شود. در xAI این مرز ۲۰۰ هزار است. در Claude Haiku 5.5 این آستانه ۱۰۰ هزار است و جهش هزینه به ازای هر Token ۵ برابر می‌شود، حتی برای خواندن از کش. من توزیع اندازه Promptها را مدل‌سازی می‌کنم، نه مقدار میانگین را.
+۳. **ضرایب کش بسته به مدل متفاوت است:** خواندن از کش بسته به مدل 0.1x، 0.05x یا 0.025x است؛ نوشتن در کش در OpenAI برای ۳۰ دقیقه با ضریب 1.25x یا برای ۱۲ ساعت با ضریب 2.5x هزینه دارد؛ و Gemini 4 Argon فقط به‌صورت ضمنی (Implicit) کش می‌کند. تعویض مدل حتی با قیمت رسمی یکسان، هزینه کش را تغییر می‌دهد.
+۴. **سطوح سرعت (Speed tiers):** اگر تیم محصول تاخیر (Latency) کمتری بخواهد، حالت Fast با ضریب 2x و حالت Ultrafast با ضریب 6x محاسبه می‌شود. هر کلاس بار کاری باید سطح مشخصی دریافت کند.
+۵. **محل استقرار داده (Residency):** پردازش مقید به منطقه (Region-pinned) در Anthropic، OpenAI، Bedrock، Google Cloud و Mistral حدود 1.1x هزینه دارد. من آن را فقط برای مستأجرانی (multi-tenant) اعمال می‌کنم که به آن نیاز دارند.
+۶. **Tokenها به ازای هر تسک، نه Tokenها به ازای هر فراخوانی:** مدل‌ها در تعداد Token مصرفی به ازای هر تسک چندین برابر با یکدیگر تفاوت دارند (Artificial Analysis نشان داد که GPT-6 Astra حدود یک‌سوم Tokenهای GPT-5.6 Sol را به ازای هر تسک کدنویسی مصرف می‌کند، و Step 5 Preview حدود دو برابر میانه خروجی تولید می‌کند). Tokenهای تفکر (Thinking tokens) نیز به عنوان خروجی صورت‌حساب می‌شوند.
+۷. **سنجه‌های غیر وابسته به Token:** صورت‌حساب صوتی دقیقه‌ای، ساعات نشست‌های ایجنت‌های مدیریت‌شده (Managed Agents)، دقایق Sandbox، و پاسخ‌های رد شده (Refusals) که در برخی دسته‌بندی‌های ایمنی Anthropic محاسبه می‌شوند.
+۸. **مهاجرت‌های اجباری:** بازنشستگی مدل‌ها باعث انتقال ترافیک به مدل‌های جدید با قیمت‌ها و مقادیر پیش‌فرض جدید می‌شود (Sonnet 4.5 در ۳۰ نوامبر، نسخه‌های اسنپ‌شات GPT-5 و o3 در ۱۱ دسامبر، GPT-4o و GPT-4.1 و Fine-tuneهای آن‌ها در ۱۴ ژانویه ۲۰۲۷ با اطلاع‌رسانی حدوداً ۳ ماهه، و پشته صوتی در اوایل ۲۰۲۷)؛ همچنین ارتقاهای خودکار نظیر ارتقای gpt-4o 2024-05-13 به gpt-5.1 در Foundry بدون هیچ تغییر کدی، هزینه را تغییر می‌دهند.
 
-The deliverable is a model with a price schedule per (model, platform) and a scenario for each date in the calendar, not a single blended rate.
-
----
-
-## References
-
-- OpenAI Pricing: https://developers.openai.com/api/docs/pricing
-- OpenAI Deprecations: https://developers.openai.com/api/docs/deprecations
-- OpenAI Prompt Caching: https://developers.openai.com/api/docs/guides/prompt-caching
-- Anthropic Pricing: https://platform.claude.com/docs/en/about-claude/pricing
-- Anthropic Model Deprecations: https://platform.claude.com/docs/en/about-claude/model-deprecations
-- Google AI Pricing: https://ai.google.dev/gemini-api/docs/pricing
-- xAI Pricing: https://docs.x.ai/developers/models
-- DeepSeek Pricing: https://api-docs.deepseek.com/quick_start/pricing
-- Mistral Pricing: https://mistral.ai/pricing/api
-- Amazon Bedrock Model Lifecycle: https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html
-- Microsoft Foundry Model Retirement Schedule: https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/model-retirement-schedule
-- Lambda GPU Pricing: https://lambda.ai/pricing
-- RunPod Pricing: https://www.runpod.io/pricing
-- LLM Pricing Comparison: https://pricepertoken.com/
+خروجی نهایی، مدلی با جدول زمان‌بندی قیمت به ازای هر (مدل، پلتفرم) و یک سناریو برای هر تاریخ در تقویم است، نه یک نرخ ترکیبی واحد.
 
 ---
 
-*Previous: [Capability Assessment](02-capability-assessment.md) | Next: [Model Selection Guide](04-model-selection-guide.md)*
+## مراجع
+
+- قیمت‌گذاری OpenAI: https://developers.openai.com/api/docs/pricing
+- موارد منسوخ‌شده در OpenAI: https://developers.openai.com/api/docs/deprecations
+- کشینگ Prompt در OpenAI: https://developers.openai.com/api/docs/guides/prompt-caching
+- قیمت‌گذاری Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
+- موارد منسوخ‌شده مدل‌های Anthropic: https://platform.claude.com/docs/en/about-claude/model-deprecations
+- قیمت‌گذاری Google AI: https://ai.google.dev/gemini-api/docs/pricing
+- قیمت‌گذاری xAI: https://docs.x.ai/developers/models
+- قیمت‌گذاری DeepSeek: https://api-docs.deepseek.com/quick_start/pricing
+- قیمت‌گذاری Mistral: https://mistral.ai/pricing/api
+- چرخه حیات مدل در Amazon Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html
+- برنامه بازنشستگی مدل در Microsoft Foundry: https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/model-retirement-schedule
+- قیمت‌گذاری GPU در Lambda: https://lambda.ai/pricing
+- قیمت‌گذاری RunPod: https://www.runpod.io/pricing
+- مقایسه قیمت‌گذاری LLMها: https://pricepertoken.com/
+
+---
+
+*قبلی: [ارزیابی قابلیت‌ها](02-capability-assessment.md) | بعدی: [راهنمای انتخاب مدل](04-model-selection-guide.md)*
+
+</div>

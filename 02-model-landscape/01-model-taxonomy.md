@@ -1,114 +1,117 @@
-# Model Taxonomy
+<div dir="rtl">
 
-This chapter provides a comprehensive guide to the model landscape as of **November 6, 2026**, covering model families, capabilities, and selection criteria for production systems.
+# طبقه‌بندی مدل‌ها (Model Taxonomy)
 
-> **Last verified: November 6, 2026.** The model landscape evolves rapidly. Always cross-check with provider pricing pages and release notes.
+این فصل یک راهنمای جامع درباره چشم‌انداز مدل‌ها تا تاریخ **۶ نوامبر ۲۰۲۶** ارائه می‌دهد و به بررسی خانواده‌های مدل، قابلیت‌ها و معیارهای انتخاب برای سیستم‌های محیط عملیاتی (production systems) می‌پردازد.
+
+> **آخرین بررسی و اعتبارسنجی: ۶ نوامبر ۲۰۲۶.** چشم‌انداز مدل‌ها با سرعت بالایی تحول می‌یابد. همواره اطلاعات را با صفحات قیمت‌گذاری و یادداشت‌های انتشار (release notes) ارائه‌دهندگان تطبیق دهید.
 >
-> **November 2026 headline (October 1 to November 2):** October filled the gaps September left, and most of the new risk sits in billing rules rather than benchmarks. **Anthropic** shipped **Claude Haiku 5.5** (October 7, `claude-haiku-5-5`) at $0.10/$0.50 per 1M, GPT-6 Luna's list price, but any request whose prompt passes 100,000 tokens pays 5x on every token, cache reads included: the first exception to "Claude 4.6 and later are flat to 1M". It also cut **Sonnet 5.5 cache reads to $0.10** (0.05x), took **Opus 5.5 fast mode** out of research preview (October 15; Opus 4.8 fast mode is removed November 30), launched **Claude Models on Google Cloud (Anthropic managed)** as a sixth platform, and shipped **API version `2026-10-21`**, under which `temperature`, `top_p`, and `top_k` return a 400 at any value on every model; the new SDK majors send it by default. **OpenAI** shipped **GPT-6.1 Terra** (October 26, $1/$5), which brings back three-tier Luna/Terra/Sol routing, the trusted-access **GPT-6 Rosalind** (October 30, $15/$75), **12-hour prompt caching** (October 20, writes at 2.5x input), and the **Decisions API** (GA October 22). It also gave about three months' notice that the remaining GPT-4o, GPT-4o-mini, GPT-4.1, and GPT-4.1-mini snapshots, and fine-tunes of them, shut down January 14, 2027. **Google** made **Gemini 4 Argon** GA (October 13, `gemini-4-argon`) at $2/$10 through November 30 and $4/$20 from December 1, with implicit caching only; announced **Gemini 4 Carbon** (October 28) for a subset of Fairwind cyber defenders, with no model ID; and rerouted `gemini-3.7-flash` to 3.8 Flash and `gemini-3.5-flash` to 3.6 Flash (October 8, posted in its changelog), so a pinned model string kept working while the model behind it changed. **Meta** shipped **Muse Wonder** (October 12, `muse-wonder-1.0`), a closed flagship at $4/$20 per 1M on the Meta Model API, Opus 5.5's list price; the stronger Muse Wonder Full is sold only through Muse Code subscriptions, with no API. There is still no Grok 5. Open weights got a new license gate: **Mistral Large 4** (weights October 29) requires a separate commercial license for any Model-as-a-Service business, at any revenue, and **Meta Muse Spark Open** (October 15) gates MaaS above US$20M; StepFun's Step 5 Preview weights (around October 15), MiniMax-M3.1-Flash (October 23), and DeepSeek V4.1-Flash-1017 (October 17, MIT) also landed. Benchmarks reset again: **Artificial Analysis Intelligence Index v5.0** (October 27) is not comparable with v4.x, puts Gemini 4 Carbon (59, not publicly available) and Claude Opus 5.5 (58) on top, and has the best open-weight models at about 32. On the tbench.ai Terminal-Bench 4.0 leaderboard (entries added October 6), Opus 5.5 (64.85%) and Sonnet 5.5 (61.82%) now sit above GPT-6 Astra and GPT-6.1 Sol (tied at 58.18%). OpenAI's October 23 legacy shutdown happened on schedule, and Claude Sonnet 4.5 still retires November 30 on the Claude API (Bedrock keeps it to April 8, 2027).
+> **سرخط خبرهای نوامبر ۲۰۲۶ (۱ اکتبر تا ۲ نوامبر):** اکتبر شکاف‌های به‌جامانده از سپتامبر را پر کرد، و بیشتر ریسک‌های جدید به‌جای بنچمارک‌ها در قوانین صورت‌حساب (billing rules) نهفته است. **Anthropic** مدل **Claude Haiku 5.5** را (۷ اکتبر، `claude-haiku-5-5`) با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار به ازای هر ۱ میلیون Token عرضه کرد که برابر با قیمت رسمی (list price) مدل GPT-6 Luna است؛ اما هر درخواستی که Prompt آن از ۱۰۰,۰۰۰ Token فراتر رود، ۵ برابر به ازای هر Token هزینه خواهد داشت (شامل خواندن از کش نیز می‌شود): این نخستین استثنا بر قاعده «قیمت ثابت برای مدل‌های Claude 4.6 و بالاتر تا سقف ۱ میلیون Token» است. این شرکت همچنین **هزینه خواندن از کش مدل Sonnet 5.5 را به ۰.۱۰ دلار** (کاهش تا 0.05x) رساند، **حالت سریع (fast mode) مدل Opus 5.5** را از مرحله پیش‌نمایش پژوهشی (research preview) خارج کرد (۱۵ اکتبر؛ حالت سریع Opus 4.8 در ۳۰ نوامبر حذف می‌شود)، پلتفرم **Claude Models on Google Cloud (مدیریت‌شده توسط Anthropic)** را به‌عنوان ششمین پلتفرم راه‌اندازی نمود، و **نسخه API موسوم به `2026-10-21`** را عرضه کرد که تحت آن پارامترهای `temperature`، `top_p` و `top_k` برای هر مقداری در تمام مدل‌ها خطای 400 برمی‌گردانند؛ نسخه‌های اصلی (major) جدید SDK به‌طور پیش‌فرض این نسخه را ارسال می‌کنند. **OpenAI** مدل **GPT-6.1 Terra** را عرضه کرد (۲۶ اکتبر، ۱ دلار / ۵ دلار) که مسیریابی سه‌سطحی Luna/Terra/Sol را بازمی‌گرداند، مدل با دسترسی معتمد (trusted-access) **GPT-6 Rosalind** را معرفی نمود (۳۰ اکتبر، ۱۵ دلار / ۷۵ دلار)، قابلیت **کش‌گذاری Prompt دوازده‌ساعته (12-hour prompt caching)** را ارائه داد (۲۰ اکتبر، نوشتن با ضریب 2.5x نرخ ورودی)، و **Decisions API** را منتشر کرد (عرضه عمومی یا GA در ۲۲ اکتبر). این شرکت همچنین اعلام کرد که اسنپ‌شات‌های باقی‌مانده از مدل‌های GPT-4o،‏ GPT-4o-mini،‏ GPT-4.1 و GPT-4.1-mini و نسخه‌های Fine-tuning شده آن‌ها حدود سه ماه دیگر در ۱۴ ژانویه ۲۰۲۷ خاموش خواهند شد. **گوگل** مدل **Gemini 4 Argon** را به وضعیت GA رساند (۱۳ اکتبر، `gemini-4-argon`) با نرخ ۲ دلار / ۱۰ دلار تا ۳۰ نوامبر و ۴ دلار / ۲۰ دلار از ۱ دسامبر، و تنها با کش‌گذاری ضمنی (implicit caching)؛ از **Gemini 4 Carbon** (در ۲۸ اکتبر) برای زیرمجموعه‌ای از مدافعان سایبری Fairwind و بدون شناسه مدل رونمایی کرد؛ و مسیر `gemini-3.7-flash` را به 3.8 Flash و `gemini-3.5-flash` را به 3.6 Flash بازهدایت (reroute) نمود (۸ اکتبر، ثبت‌شده در changelog آن)، به‌گونه‌ای که رشته شناسه مدلِ ثابت به کار خود ادامه داد در حالی که مدل پشت آن تغییر کرد. **متا** مدل **Muse Wonder** را عرضه کرد (۱۲ اکتبر، `muse-wonder-1.0`) که یک پرچم‌دار اختصاصی (closed) با قیمت ۴ دلار / ۲۰ دلار به ازای هر ۱ میلیون Token روی Meta Model API است (برابر با قیمت رسمی Opus 5.5)؛ نسخه قوی‌تر یعنی Muse Wonder Full فقط از طریق اشتراک‌های Muse Code به فروش می‌رسد و فاقد API است. هنوز خبری از Grok 5 نیست. وزن‌های باز با یک دروازه مجوزی جدید مواجه شدند: **Mistral Large 4** (انتشار وزن‌ها در ۲۹ اکتبر) برای هرگونه کسب‌وکار مدل به‌عنوان سرویس (Model-as-a-Service یا MaaS)، در هر سطحی از درآمد، نیازمند مجوز تجاری جداگانه است، و **Meta Muse Spark Open** (در ۱۵ اکتبر) استفاده از MaaS را برای درآمدهای بالای ۲۰ میلیون دلار مشروط به اخذ مجوز کرده است؛ وزن‌های پیش‌نمایش Step 5 از شرکت StepFun (حدود ۱۵ اکتبر)، مدل MiniMax-M3.1-Flash (در ۲۳ اکتبر) و مدل DeepSeek V4.1-Flash-1017 (در ۱۷ اکتبر، با مجوز MIT) نیز عرضه شدند. بنچمارک‌ها مجدداً بازتنظیم شدند: شاخص هوش **Artificial Analysis Intelligence Index v5.0** (در ۲۷ اکتبر) با نسخه‌های v4.x قابل مقایسه نیست، Gemini 4 Carbon (با امتیاز ۵۹، غیرقابل دسترسی عمومی) و Claude Opus 5.5 (با امتیاز ۵۸) را در صدر قرار می‌دهد، و بهترین مدل‌های با وزن باز امتیازی در حدود ۳۲ کسب کرده‌اند. در جدول رده‌بندی Terminal-Bench 4.0 در tbench.ai (با ورودی‌های اضافه‌شده در ۶ اکتبر)، مدل‌های Opus 5.5 (با ۶۴.۸۵٪) و Sonnet 5.5 (با ۶۱.۸۲٪) اکنون بالاتر از GPT-6 Astra و GPT-6.1 Sol (مشترکاً در ۵۸.۱۸٪) قرار دارند. خاموش شدن سرویس‌های قدیمی OpenAI در ۲۳ اکتبر طبق برنامه انجام شد، و Claude Sonnet 4.5 همچنان در ۳۰ نوامبر در Claude API بازنشسته می‌شود (Bedrock آن را تا ۸ آوریل ۲۰۲۷ حفظ می‌کند).
 >
-> **Update (November 2 to 6):** On November 2, Google deprecated `gemini-2.5-pro` and `gemini-2.5-flash` on the Gemini API, reversing September's "not deprecated"; from December 1 (scheduled) they route to `gemini-3.8-flash` and `gemini-3.5-flash-lite` and bill at those rates. Anthropic released message threads in beta the same day and on November 3 extended its text watermark to Claude Mythos 5, Opus 4.7, and Sonnet 4.6. On November 5, OpenAI launched **GPT-6-Cyber** ($20/$100, Daybreak Red plus a separate model approval and IP allowlisting), a day after shipping `gpt-image-2.6-sunburst` and `-flare` at GPT Image 2.5 prices. Moonshot published the **Kimi K3.1 Pro** weights on November 4 under a custom license with a MaaS clause, Tencent released the full Hy4 the same day with weights promised but no date or license, and Ricursive's Apache 2.0 Ripple-65B Preview landed with no independent score yet. Artificial Analysis shipped **Intelligence Index v5.0.1** on November 3: Gemini 4 Carbon 60, Claude Opus 5.5 59, GPT-6 Astra 57, GPT-6.1 Sol 55, and DeepSeek V4.1 Flash 1017 (33) now tops AA's open-weights ranking alone only because AA still labels K3.1 Pro (46) proprietary despite its released weights. OpenAI's pricing page now dates GPT-5.6 Sol's promotional price to November 30, and Alibaba has not shipped Qwen4.
+> **به‌روزرسانی (۲ تا ۶ نوامبر):** در ۲ نوامبر، گوگل مدل‌های `gemini-2.5-pro` و `gemini-2.5-flash` را در Gemini API منسوخ (deprecated) اعلام کرد و موضع «منسوخ‌نشده» در سپتامبر را تغییر داد؛ از ۱ دسامبر (طبق برنامه‌ریزی) ترافیک آن‌ها به `gemini-3.8-flash` و `gemini-3.5-flash-lite` هدایت شده و با نرخ‌های این مدل‌ها محاسبه می‌شود. Anthropic در همان روز رشته‌پیام‌ها (message threads) را به‌صورت بتا منتشر کرد و در ۳ نوامبر واترمارک متنی خود را به Claude Mythos 5،‏ Opus 4.7 و Sonnet 4.6 تعمیم داد. در ۵ نوامبر، OpenAI مدل **GPT-6-Cyber** را راه‌اندازی کرد (۲۰ دلار / ۱۰۰ دلار، سطح Daybreak Red به همراه تاییدیه مدل جداگانه و لیست سفید IP یا IP allowlisting)، یک روز پس از عرضه `gpt-image-2.6-sunburst` و `-flare` با قیمت‌های GPT Image 2.5. شرکت Moonshot در ۴ نوامبر وزن‌های مدل **Kimi K3.1 Pro** را تحت مجوزی اختصاصی با یک بند مربوط به MaaS منتشر کرد، Tencent در همان روز نسخه کامل Hy4 را با وعده انتشار وزن‌ها اما بدون تاریخ یا مجوز معرفی کرد، و نسخه پیش‌نمایش Ripple-65B از شرکت Ricursive با مجوز Apache 2.0 بدون امتیاز مستقل عرضه شد. موسسه Artificial Analysis در ۳ نوامبر نسخه **Intelligence Index v5.0.1** را منتشر کرد: Gemini 4 Carbon امتیاز ۶۰، Claude Opus 5.5 امتیاز ۵۹، GPT-6 Astra امتیاز ۵۷، GPT-6.1 Sol امتیاز ۵۵، و DeepSeek V4.1 Flash 1017 با امتیاز ۳۳ اکنون در صدر رتبه‌بندی وزن‌های باز AA به‌تنهایی قرار دارد، صرفاً به این دلیل که AA با وجود عرضه وزن‌های K3.1 Pro (امتیاز ۴۶)، آن را همچنان مالکیتی (proprietary) برچسب‌گذاری می‌کند. صفحه قیمت‌گذاری OpenAI اکنون قیمت تبلیغاتی (promotional price) مدل GPT-5.6 Sol را تا ۳۰ نوامبر ثبت کرده است، و Alibaba هنوز Qwen4 را عرضه نکرده است.
 
-## Table of Contents
+## فهرست مطالب
 
-- [Model Categories](#model-categories)
-- [Frontier Models (November 2026)](#frontier-models-november-2026)
-- [Reasoning Models](#reasoning--math)
-- [Open Source Models](#open-source-models)
-- [Specialized Models](#specialized-models)
-- [Embedding Models](#embedding-models)
-- [Model Selection Framework & Semantic Routing](#model-selection-framework)
-- [Sovereign AI & Data Residency](#sovereign-ai-and-data-residency)
-- [Capability Comparison](#capability-comparison)
-- [Interview Questions](#interview-questions)
-- [Release History (2026)](#release-history-2026)
-- [References](#references)
+- [دسته‌بندی‌های مدل](#model-categories)
+- [مدل‌های مرزی (نوامبر ۲۰۲۶)](#frontier-models-november-2026)
+- [مدل‌های استدلالی](#reasoning--math)
+- [مدل‌های متن‌باز](#open-source-models)
+- [مدل‌های تخصصی](#specialized-models)
+- [مدل‌های Embedding](#embedding-models)
+- [فریم‌ورک انتخاب مدل و مسیریابی معنایی](#model-selection-framework)
+- [هوش مصنوعی حاکمیتی و ماندگاری داده‌ها](#sovereign-ai-and-data-residency)
+- [مقایسه قابلیت‌ها](#capability-comparison)
+- [سوالات مصاحبه](#interview-questions)
+- [تاریخچه انتشار (۲۰۲۶)](#release-history-2026)
+- [منابع](#references)
 
 ---
 
-## Model Categories
+## دسته‌بندی‌های مدل (Model Categories)
 
-### By Capability Level (November 2026)
+### بر اساس سطح توانمندی (نوامبر ۲۰۲۶)
 
-| Tier | Characteristics | Examples | Use Case |
+| سطح (Tier) | ویژگی‌ها | نمونه‌ها | مورد کاربرد (Use Case) |
 |------|-----------------|----------|----------|
-| **Frontier** | Highest capability ceiling; $4/$20 to $10/$50, or gated | Claude Fable 5.1, GPT-6 Astra, Claude Opus 5.5 ($4/$20), Gemini 4 Argon ($4/$20 from December 1), Meta Muse Wonder ($4/$20); gated: Gemini 4 Carbon, GPT-6 Rosalind, GPT-6-Cyber, Claude Mythos 5.1; subscription only: Muse Wonder Full | Hardest reasoning, long-horizon agents, ceiling-bound coding |
-| **Workhorse ($1 to $2 input)** | Near-frontier agentic quality at mid-tier price | Claude Sonnet 5.5, GPT-6.1 Sol, GPT-6 Sol ($2/$10), GPT-6.1 Terra ($1/$5), Grok 4.7 ($2/$6), Muse Spark 1.3 ($1.25/$4.25) | Production agents, coding at scale, the default routing tier |
-| **Fast/Efficient** | Lowest cost per token, high volume | GPT-6 Luna, Claude Haiku 5.5 (under 100K-token prompts), Gemini 3.8 Flash, DeepSeek V4.1-Flash | Classification, extraction, routing, high-volume streaming |
-| **Previous Generation (still served)** | Well characterized, often superseded within weeks | Claude Opus 5 / Sonnet 5 / Fable 5, Claude Haiku 4.5, GPT-5.6 Sol / Terra / Luna, Claude Opus 4.8, Gemini 3.6 Flash | Workloads that value stable, already-evaluated behavior |
-| **Small/Edge** | Private, edge, single GPU | Gemma 4 (12B, E4B), Qwen3.8-27B, IBM Granite 4.2, Muse Glimmer 30B | Local privacy, on-device, single-GPU serving |
-| **Reasoning-Heavy** | Extended internal reasoning at high effort | GPT-6 Astra (xhigh/max), Claude Fable 5.1, Claude Opus 5.5 at high effort, DeepSeek V4.1-Flash (effort 1-100) | Math, code debugging, multi-step logic |
+| **مرزی (Frontier)** | بالاترین سقف توانمندی؛ ۴ دلار / ۲۰ دلار تا ۱۰ دلار / ۵۰ دلار، یا با دسترسی کنترل‌شده (gated) | Claude Fable 5.1،‏ GPT-6 Astra،‏ Claude Opus 5.5 (۴ دلار / ۲۰ دلار)، Gemini 4 Argon (۴ دلار / ۲۰ دلار از ۱ دسامبر)، Meta Muse Wonder (۴ دلار / ۲۰ دلار)؛ کنترل‌شده: Gemini 4 Carbon،‏ GPT-6 Rosalind،‏ GPT-6-Cyber،‏ Claude Mythos 5.1؛ فقط با اشتراک: Muse Wonder Full | پیچیده‌ترین استدلال، ایجنت‌های افق‌بلند (long-horizon agents)، کدنویسی در بالاترین سطح توانمندی |
+| **اسب کاری (Workhorse - ورودی ۱ تا ۲ دلار)** | کیفیت ایجنتی نزدیک به مدل‌های مرزی با قیمت میان‌رده | Claude Sonnet 5.5،‏ GPT-6.1 Sol،‏ GPT-6 Sol (۲ دلار / ۱۰ دلار)، GPT-6.1 Terra (۱ دلار / ۵ دلار)، Grok 4.7 (۲ دلار / ۶ دلار)، Muse Spark 1.3 (۱.۲۵ دلار / ۴.۲۵ دلار) | ایجنت‌های محیط عملیاتی (production agents)، کدنویسی در مقیاس بالا، سطح مسیریابی پیش‌فرض |
+| **سریع/کارآمد (Fast/Efficient)** | کمترین هزینه به ازای هر Token، حجم بالای پردازش | GPT-6 Luna،‏ Claude Haiku 5.5 (برای Promptهای زیر ۱۰۰ هزار Token)، Gemini 3.8 Flash،‏ DeepSeek V4.1-Flash | دسته‌بندی، استخراج، مسیریابی، استریمینگ در حجم بالا |
+| **نسل قبلی (همچنان فعال)** | کاملاً شناخته‌شده و آزموده‌شده، اغلب ظرف چند هفته جایگزین می‌شوند | Claude Opus 5 / Sonnet 5 / Fable 5،‏ Claude Haiku 4.5،‏ GPT-5.6 Sol / Terra / Luna،‏ Claude Opus 4.8،‏ Gemini 3.6 Flash | بارهای کاری که نیازمند رفتار پایدار و از قبل ارزیابی‌شده هستند |
+| **کوچک/لبه (Small/Edge)** | خصوصی، لبه (edge)، تک‌GPU | Gemma 4 (12B, E4B)،‏ Qwen3.8-27B،‏ IBM Granite 4.2،‏ Muse Glimmer 30B | حریم خصوصی محلی، پردازش روی دستگاه (on-device)، سرویس‌دهی روی تک‌GPU |
+| **استدلال‌محور (Reasoning-Heavy)** | استدلال درونی گسترده با سطح تلاش بالا | GPT-6 Astra (در سطوح xhigh/max)،‏ Claude Fable 5.1،‏ Claude Opus 5.5 با تلاش بالا، DeepSeek V4.1-Flash (سطح تلاش ۱ تا ۱۰۰) | ریاضیات، اشکال‌زدایی کد، منطق چندمرحله‌ای |
 
-The fast tier now has two prices to watch on the Anthropic side: Claude Haiku 5.5 matches GPT-6 Luna at $0.10/$0.50 below a 100,000-token prompt and costs 5x on the whole request above it, so prompt length decides which tier it really belongs to.
+رده سریع اکنون در سمت Anthropic دو قیمت دارد که باید به آن‌ها توجه کرد: Claude Haiku 5.5 برای Promptهای زیر ۱۰۰,۰۰۰ Token با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار با GPT-6 Luna برابری می‌کند، اما برای بیش از این مقدار، هزینه کل درخواست ۵ برابر می‌شود؛ بنابراین طول Prompt تعیین می‌کند که این مدل در عمل به کدام رده تعلق دارد.
 
-### By Reasoning Mode (November 2026)
+### بر اساس حالت استدلال (نوامبر ۲۰۲۶)
 
-| Mode | Capability | Models | Use Case |
+| حالت (Mode) | توانمندی | مدل‌ها | مورد کاربرد (Use Case) |
 |------|------------|--------|----------|
-| **Minimal reasoning** | The fastest path the model allows | GPT-6.1 Terra at `none`, GPT-6.1 Sol at `low`, GPT-6 Luna at its lowest effort, Gemini 3.8 Flash at `low`, Claude Haiku 5.5 at `low`, Claude Sonnet 5.5 at `between_tools` | Chat, simple extraction |
-| **Always-on reasoning** | Thinking cannot be switched off | Claude Opus 5.5 and Fable 5.1 (adaptive thinking always on), GPT-6 Astra (no `none` effort; `low` to `max`) | Math, code debugging, planning |
-| **Dial-controlled** | Effort or thinking level per request | GPT-6.1 Terra (`none` to `max`, default `medium`), GPT-6.1 Sol (`low` to `max`, default `medium`), Claude Opus 5.5 and Haiku 5.5 (default `medium`), Gemini 3.8 Flash (`thinking_level`), DeepSeek V4.1-Flash (1-100) | Variable-complexity tasks |
+| **استدلال حداقلی (Minimal reasoning)** | سریع‌ترین مسیری که مدل اجازه می‌دهد | GPT-6.1 Terra در حالت `none`،‏ GPT-6.1 Sol در حالت `low`،‏ GPT-6 Luna در پایین‌ترین سطح تلاش، Gemini 3.8 Flash در حالت `low`،‏ Claude Haiku 5.5 در حالت `low`،‏ Claude Sonnet 5.5 در حالت `between_tools` | گفتگو (Chat)، استخراج ساده |
+| **استدلال همیشه‌روشن (Always-on reasoning)** | تفکر (thinking) قابل خاموش کردن نیست | Claude Opus 5.5 و Fable 5.1 (تفکر تطبیقی همواره روشن)، GPT-6 Astra (فاقد سطح تلاش `none`؛ از `low` تا `max`) | ریاضیات، اشکال‌زدایی کد، برنامه‌ریزی |
+| **قابل تنظیم (Dial-controlled)** | سطح تلاش یا تفکر به ازای هر درخواست قابل تغییر است | GPT-6.1 Terra (از `none` تا `max`، پیش‌فرض `medium`)،‏ GPT-6.1 Sol (از `low` تا `max`، پیش‌فرض `medium`)،‏ Claude Opus 5.5 و Haiku 5.5 (پیش‌فرض `medium`)،‏ Gemini 3.8 Flash (پارامتر `thinking_level`)،‏ DeepSeek V4.1-Flash (از ۱ تا ۱۰۰) | وظایف با پیچیدگی متغیر |
 
-**The off switch is going away on Anthropic's side.** Sonnet 5.5 returns a 400 on `thinking: {type: "disabled"}`, Opus 5.5 cannot disable thinking, and Haiku 5.5 rejects `budget_tokens`. OpenAI is split: Astra has no `none` effort, but GPT-6.1 Terra does. Sampling knobs are gone almost everywhere: under Claude API version `2026-10-21` (October 21), `temperature`, `top_p`, and `top_k` return a 400 at any value, even the default, on every model (earlier versions reject non-default values on Claude 4.7 and later), and the eight new SDK and CLI majors (Python 2.0.0, TypeScript 1.0.0, Go 2.0.0, Java 3.0.0, C# 13.0.0, PHP 1.0.0, Ruby 2.0.0, and the `ant` CLI 2.0.0, all now Apache 2.0 instead of MIT) send that version by default, so a routine SDK upgrade in any language can break sampling code on older models too. Astra accepts no `temperature`, `top_p`, or logprobs, and Google deprecated those parameters in the Gemini API on July 21. Effort is now the control surface, and defaults move between versions (Opus 5 defaulted to `high`, Opus 5.5 to `medium`), so set it explicitly on every route.
+**کلید خاموش‌سازی در سمت Anthropic در حال از بین رفتن است.** Sonnet 5.5 با دریافت `thinking: {type: "disabled"}` خطای 400 برمی‌گرداند، در Opus 5.5 نمی‌توان تفکر را غیرفعال کرد، و Haiku 5.5 پارامتر `budget_tokens` را رد می‌کند. رویکرد OpenAI دوگانه است: Astra هیچ سطح تلاش `none` ندارد، اما GPT-6.1 Terra از آن پشتیبانی می‌کند. پیچ‌های تنظیم نمونه‌برداری (sampling knobs) تقریباً همه‌جا حذف شده‌اند: تحت نسخه `2026-10-21` در Claude API (مورخ ۲۱ اکتبر)، پارامترهای `temperature`، `top_p` و `top_k` برای هر مقداری، حتی مقدار پیش‌فرض، در تمام مدل‌ها خطای 400 بازمی‌گردانند (نسخه‌های قبلی مقادیر غیرپیش‌فرض را در Claude 4.7 و بالاتر رد می‌کردند)، و هشت نسخه اصلی (major) جدید SDK و CLI (شامل Python 2.0.0،‏ TypeScript 1.0.0،‏ Go 2.0.0،‏ Java 3.0.0،‏ C# 13.0.0،‏ PHP 1.0.0،‏ Ruby 2.0.0 و ابزار CLI به نام `ant` نسخه 2.0.0، که همگی اکنون به‌جای MIT تحت مجوز Apache 2.0 هستند) این نسخه API را به‌طور پیش‌فرض ارسال می‌کنند؛ بنابراین ارتقای معمول SDK در هر زبانی می‌تواند کدهای نمونه‌برداری روی مدل‌های قدیمی‌تر را نیز دچار شکست کند. Astra هیچ‌یک از پارامترهای `temperature`، `top_p` یا logprobs را نمی‌پذیرد، و گوگل نیز این پارامترها را در ۲۱ ژوئیه در Gemini API منسوخ اعلام کرد. اکنون میزان تلاش (Effort) سطح کنترل اصلی است و مقادیر پیش‌فرض نیز بین نسخه‌ها تغییر می‌کنند (پیش‌فرض Opus 5 مقدار `high` بود، اما Opus 5.5 به `medium` تغییر یافت)، بنابراین آن را در هر مسیر (route) به‌طور صریح تنظیم کنید.
 
 ---
+## مدل‌های پیشرو (Frontier Models) - نوامبر ۲۰۲۶
 
-## Frontier Models (November 2026)
+### Claude Opus 5.5 (Anthropic) - سپتامبر ۲۰۲۶
 
-### Claude Opus 5.5 (Anthropic) - September 2026
+| ویژگی (Attribute) | مقدار (Value) |
+|---|---|
+| شناسه مدل (Model ID) | `claude-opus-5-5` (در Bedrock: `anthropic.claude-opus-5-5`) |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token؛ حداکثر خروجی ۱۲۸ هزار Token (در حالت Batch با هدر بتا، ۳۰۰ هزار) |
+| هزینه ورودی / خروجی | ۴.۰۰ دلار / ۲۰.۰۰ دلار به ازای هر ۱ میلیون Token (در Opus 5: ۵ دلار / ۲۵ دلار) |
+| Cache / Batch | نوشتن در Cache معادل ۵.۰۰ دلار (۵ دقیقه) یا ۸.۰۰ دلار (۱ ساعت)؛ خواندن از Cache معادل ۰.۲۰ دلار (۰.۰۵ برابر ورودی)؛ حالت Batch معادل ۲ دلار / ۱۰ دلار؛ حداقل Prompt قابل Cache معادل ۵۱۲ Token |
+| حالت سریع (Fast mode) | ۸ دلار / ۴۰ دلار به ازای هر ۱ میلیون Token، از ۱۵ اکتبر از حالت پیش‌نمایش تحقیقاتی خارج شده است؛ در Claude API، Claude Models روی Google Cloud (مدیریت‌شده توسط Anthropic)، و استقرارهای (deployments) میزبانی‌شده روی Azure در Foundry؛ در حالت Batch در دسترس نیست. کاهش یافته از ۱۰ دلار / ۵۰ دلار در Opus 5 و Opus 4.8 |
+| تفکر (Thinking) | تفکر تطبیقی (Adaptive thinking) همیشه فعال است (غیرقابل غیرفعال‌سازی)؛ تلاش (effort) پیش‌فرض `medium` (در Opus 5 پیش‌فرض `high` بود) |
+| دسترسی‌پذیری (Availability) | Claude API، Amazon Bedrock، Google Cloud (مدیریت‌شده توسط Google یا مدیریت‌شده توسط Anthropic)، Microsoft Foundry، Claude Platform روی AWS؛ قابلیت عدم ذخیره‌سازی داده (Zero Data Retention یا ZDR) در دسترس است |
+| بنچمارک‌ها | گزارش‌شده توسط Anthropic: در Terminal-Bench 4.0 امتیاز %۶۶.۴ در حالت xhigh (با خطای استاندارد ±۲.۶) در برابر Fable 5.1 با %۵۵.۸ (اجرای Anthropic) و GPT-6 Astra با %۵۷.۹ (آمار OpenAI، در effort بالا)؛ در OSWorld 2.1 امتیاز partial برابر با %۸۱.۸؛ در GDPval-AA v2.1 امتیاز 1846 Elo؛ در HLE با ابزارها %۶۷.۷. مستقل: لیدربورد Terminal-Bench 4.0 امتیاز %۶۴.۸۵ در حالت max، رتبه اول (tbench.ai، ورودی‌های اضافه‌شده در ۶ اکتبر)؛ شاخص هوش Artificial Analysis Intelligence Index v5.0.1 امتیاز ۵۹ (حالت max؛ امتیاز ۵۸ در v5.0، همراه با fallback)، رتبه دوم تنها پس از Gemini 4 Carbon (با امتیاز ۶۰) که توسعه‌دهندگان امکان فراخوانی آن را ندارند |
+| تاریخ عرضه | ۲۲ سپتامبر ۲۰۲۶ (محدوده داده‌های آموزشی تا ژوئن ۲۰۲۶؛ بازنشستگی زودتر از ۲۲ سپتامبر ۲۰۲۷ نخواهد بود) |
 
-| Attribute | Value |
-|-----------|-------|
-| Model ID | `claude-opus-5-5` (Bedrock: `anthropic.claude-opus-5-5`) |
-| Context Window | 1M tokens; 128K max output (300K on Batch with the beta header) |
-| Input / Output Cost | $4.00 / $20.00 per 1M (Opus 5: $5 / $25) |
-| Cache / Batch | Cache write $5.00 (5 min) or $8.00 (1 hr); cache read $0.20 (0.05x input); Batch $2 / $10; minimum cacheable prompt 512 tokens |
-| Fast mode | $8 / $40 per 1M, out of research preview since October 15; on the Claude API, Claude Models on Google Cloud (Anthropic managed), and Foundry's Azure-hosted deployments; not on Batch. Down from $10 / $50 on Opus 5 and Opus 4.8 |
-| Thinking | Adaptive thinking always on (cannot be disabled); default effort `medium` (Opus 5 defaulted to `high`) |
-| Availability | Claude API, Amazon Bedrock, Google Cloud (Google managed or Anthropic managed), Microsoft Foundry, Claude Platform on AWS; zero data retention available |
-| Benchmarks | Anthropic-reported: Terminal-Bench 4.0 66.4% at xhigh (SE ±2.6) vs Fable 5.1 55.8% (Anthropic's run) and GPT-6 Astra 57.9% (OpenAI's figure, high effort); OSWorld 2.1 partial 81.8%; GDPval-AA v2.1 1846 Elo; HLE with tools 67.7%. Independent: Terminal-Bench 4.0 leaderboard 64.85% at max, first (tbench.ai, entries added October 6); Artificial Analysis Intelligence Index v5.0.1 59 (max; 58 on v5.0, with fallback), second only to Gemini 4 Carbon (60), which developers cannot call |
-| Released | September 22, 2026 (knowledge cutoff June 2026; retirement not sooner than September 22, 2027) |
+**ماهیت مدل:** این دومین کاهش قیمت برای Opus است (پس از آنکه قیمت Opus 4.5 از ۱۵/۷۵ دلار کاهش یافت) و مدلی است که مستندات Anthropic اکنون توصیه می‌کنند برای اکثر بارهای کاری (workloads) کار خود را با آن آغاز کنید. مدل Fable 5.1 برای استدلال‌های سنگین، کارهای ایجنتی با افق زمانی طولانی (long-horizon agentic work)، یا مواردی که Opus 5.5 در effort بالاتر همچنان در ارزیابی‌های (evals) شما کم می‌آورد، در نظر گرفته شده است. یک مدل ارزان‌تر که در بیشتر بنچمارک‌های ایجنتی خودِ Anthropic مدل گران‌تر Fable 5.1 را شکست می‌دهد، منطق همیشگی مسیریابیِ «پرداخت هزینه بیشتر برای دسترسی به حداکثر توان (ceiling)» را معکوس می‌کند. شرکت Anthropic ادعا می‌کند هزینه این مدل در بارهای کاری معمول حدود %۴۰ کمتر از Opus 5 است (گزارش‌شده توسط ارائه‌دهنده).
 
-**What it is:** The second Opus price cut (after Opus 4.5 came down from $15/$75), and the model Anthropic's docs now tell you to start with for most workloads. Fable 5.1 is reserved for demanding reasoning, long-horizon agentic work, or cases where Opus 5.5 at higher effort still falls short in your evals. A cheaper model that beats the more expensive Fable 5.1 on most of Anthropic's own agentic benchmarks inverts the usual "pay more for the ceiling" routing logic. Anthropic claims about 40% lower cost than Opus 5 on typical workloads (vendor-reported).
+**دام‌های مهاجرت از Opus 5:** مقدار تلاش (effort) پیش‌فرض از `high` به `medium` کاهش یافته است، بنابراین ارتقای نسخه بدون پین کردن (unpinned) هم تاخیر (Latency) و هم کیفیت را تغییر می‌دهد؛ اجبار در `tool_choice` (مقادیر `any` یا `tool`) خطای 400 برمی‌گرداند؛ بلوک‌های تفکر (thinking blocks) مقید به مدل و مکالمه تولیدکننده هستند؛ و در Claude API و Google Cloud برای استفاده از کامپیوتر (computer use) فقط `computer_toolset_20260801` پذیرفته می‌شود. مدل Opus 5.5 یک دسته‌بند ایمنی زیستی را در کنار دسته‌بند سایبری اضافه کرده است. هنگامی که محافظ‌ها (safeguards) در طول ارزیابی‌های Anthropic مداخله کردند، تسک‌های سایبری توسط Opus 4.8 و تسک‌های زیست‌شناسی و توسعه LLMهای پیشرو (frontier-LLM-development) توسط Opus 5 تکمیل شدند؛ بنابراین امتیازهای اعلام‌شده در سرخط خبرها متعلق به یک سیستم مسیریابی‌شده (routed system) هستند، نه یک مجموعه واحد از وزن‌ها.
 
-**Migration traps from Opus 5:** the default effort dropped from `high` to `medium`, so an unpinned upgrade changes both latency and quality; forced `tool_choice` (`any` or `tool`) returns a 400; thinking blocks are bound to the producing model and conversation; and on the Claude API and Google Cloud only `computer_toolset_20260801` is accepted for computer use. Opus 5.5 adds a biology safety classifier alongside the cyber one. When safeguards intervened during Anthropic's evals, cyber tasks were completed by Opus 4.8 and biology and frontier-LLM-development tasks by Opus 5, so the headline scores belong to a routed system, not one set of weights.
+### Claude Sonnet 5.5 (Anthropic) - سپتامبر ۲۰۲۶
 
-### Claude Sonnet 5.5 (Anthropic) - September 2026
+| ویژگی (Attribute) | مقدار (Value) |
+|---|---|
+| شناسه مدل (Model ID) | `claude-sonnet-5-5` |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token؛ حداکثر خروجی ۱۲۸ هزار Token |
+| هزینه ورودی / خروجی | ۲.۰۰ دلار / ۱۰.۰۰ دلار به ازای هر ۱ میلیون Token (بدون تغییر نسبت به Sonnet 5) |
+| Cache / Batch | نوشتن در Cache معادل ۲.۵۰ دلار (۵ دقیقه) یا ۴.۰۰ دلار (۱ ساعت)؛ خواندن از Cache معادل ۰.۱۰ دلار (۰.۰۵ برابر، کاهش‌یافته از ۰.۲۰ دلار در ۷ اکتبر)؛ حالت Batch معادل ۱ دلار / ۵ دلار |
+| تفکر (Thinking) | تفکر تطبیقی به‌طور پیش‌فرض فعال است؛ پایین‌ترین تنظیمات `between_tools` است (در effort سطح `high` یا پایین‌تر پذیرفته می‌شود)، و ارسال `thinking: {type: "disabled"}` خطای 400 برمی‌گرداند. مقدار پیش‌فرض effort در API برابر با `high` و در Claude Code و اپلیکیشن‌های Claude برابر با medium است |
+| دسترسی‌پذیری (Availability) | Claude API، Bedrock، Google Cloud، Foundry، Claude Platform روی AWS؛ عدم ذخیره‌سازی داده (ZDR) در دسترس است |
+| بنچمارک‌ها | گزارش‌شده توسط Anthropic (با نمرات Opus 5.5 در پرانتز): در Terminal-Bench 4.0 امتیاز %۷۰.۶ (%۶۶.۴)، در CursorBench 4.0 امتیاز %۵۵.۵ (%۵۷.۸)، در GDPval-AA v2.1 امتیاز 1844 (1846)، در OSWorld 2.1 امتیاز partial برابر با %۸۰.۱ (%۸۱.۸)، در HLE با ابزارها %۶۴.۵ (%۶۷.۷)، در FrontierCode 1.1 در حداکثر effort امتیاز %۴۶.۲ (%۵۴.۴)؛ شرکت Anthropic اشاره می‌کند که Sonnet 5.5 در این آزمون در سطح max امتیازی کمتر از xhigh کسب کرده است. مستقل: لیدربورد Terminal-Bench 4.0 امتیاز %۶۱.۸۲ در حالت max، رتبه دوم پس از Opus 5.5 (سایت tbench.ai، ورودی‌های اضافه‌شده در ۶ اکتبر)؛ شاخص هوش AA Intelligence Index v5.0 امتیاز ۵۴ (در حالت max، همراه با fallback)، و امتیاز ۵۰ در xhigh |
+| تاریخ عرضه | ۲۸ سپتامبر ۲۰۲۶ (محدوده داده‌های آموزشی تا ژوئن ۲۰۲۶؛ بازنشستگی زودتر از ۲۸ سپتامبر ۲۰۲۷ نخواهد بود) |
 
-| Attribute | Value |
-|-----------|-------|
-| Model ID | `claude-sonnet-5-5` |
-| Context Window | 1M tokens; 128K max output |
-| Input / Output Cost | $2.00 / $10.00 per 1M (unchanged from Sonnet 5) |
-| Cache / Batch | Cache write $2.50 (5 min) or $4.00 (1 hr); cache read $0.10 (0.05x, cut from $0.20 on October 7); Batch $1 / $5 |
-| Thinking | Adaptive thinking on by default; the lowest setting is `between_tools` (accepted at `high` effort or below), and `thinking: {type: "disabled"}` returns a 400. Default effort `high` on the API, medium in Claude Code and the Claude apps |
-| Availability | Claude API, Bedrock, Google Cloud, Foundry, Claude Platform on AWS; zero data retention available |
-| Benchmarks | Anthropic-reported, with Opus 5.5 in parentheses: Terminal-Bench 4.0 70.6% (66.4%), CursorBench 4.0 55.5% (57.8%), GDPval-AA v2.1 1844 (1846), OSWorld 2.1 partial 80.1% (81.8%), HLE with tools 64.5% (67.7%), FrontierCode 1.1 46.2% at max effort (54.4%); Anthropic notes Sonnet 5.5 scored lower at max than at xhigh on this test. Independent: Terminal-Bench 4.0 leaderboard 61.82% at max, second behind Opus 5.5 (tbench.ai, entries added October 6); AA Intelligence Index v5.0 54 (max, with fallback), 50 at xhigh |
-| Released | September 28, 2026 (knowledge cutoff June 2026; retirement not sooner than September 28, 2027) |
+**ماهیت مدل:** یک مدل ۲/۱۰ دلاری که در بیشتر ارزیابی‌های ایجنتی گزارش‌شده توسط خودِ Anthropic تنها چند امتیاز با مدل پرچمدار فاصله دارد (حدود ۸ امتیاز عقب‌تر در FrontierCode 1.1)؛ موضوعی که توجیه ارسال بخش عمده ترافیک ایجنت به Opus را از بین می‌برد. تصویر حاصل از ارزیابی‌های مستقل یکنواختی کمتری دارد: در شاخص AA v5.0 این مدل در حداکثر effort حدود ۴ امتیاز عقب‌تر از Opus 5.5 است، و این شکاف در effort پایین‌تر عمیق‌تر می‌شود (۴۱ در برابر ۵۲ در سطح high)، بنابراین سطح effort ارائه‌شده در سرویس شما اهمیت بیشتری نسبت به قیمت مندرج در فهرست قیمت‌ها دارد. محیط اجرای بنچمارک (runner) نیز ترتیب را معکوس می‌کند: اجراهای خود Anthropic در Terminal-Bench 4.0 مدل Sonnet 5.5 را جلوتر از Opus 5.5 قرار می‌دهد (%۷۰.۶ در برابر %۶۶.۴)، در حالی که لیدربورد tbench.ai آن را در رتبه پایین‌تر می‌گذارد (%۶۱.۸۲ در برابر %۶۴.۸۵). شرکت Anthropic ادعا می‌کند خروجی مدل بیش از %۳۰ سریع‌تر از Sonnet 5 بوده و هزینه هر تسک تا %۳۰ کاهش یافته است (گزارش‌شده توسط ارائه‌دهنده)، و کاهش هزینه خواندن Cache به 0.05x در ۷ اکتبر، حلقه‌های طولانی ایجنتی را باز هم ارزان‌تر می‌کند. جدول Sonnet 5.5 در مستندات Anthropic امتیاز Sonnet 5 در Terminal-Bench 4.0 را %۱۰.۳ ذکر می‌کند، در حالی که جدول Opus 5.5 آن امتیاز Opus 5 را %۵۲.۳ ثبت کرده است؛ با عدد Sonnet 5 به عنوان یک داده پرت (outlier) برخورد کنید و از آن به عنوان خط مبنا (baseline) استفاده نکنید.
 
-**What it is:** A $2/$10 model within a few points of the flagship on most of Anthropic's own vendor-reported agentic evals (about 8 points behind on FrontierCode 1.1), which collapses the case for sending most agent traffic to Opus. The independent picture is less flat: AA v5.0 has it 4 points behind Opus 5.5 at max effort, and the gap widens at lower effort (41 vs 52 at high), so the effort you serve matters more than the list price. The runner flips the order too: Anthropic's own Terminal-Bench 4.0 runs put Sonnet 5.5 ahead of Opus 5.5 (70.6% vs 66.4%), while the tbench.ai leaderboard puts it behind (61.82% vs 64.85%). Anthropic claims 30%+ faster output than Sonnet 5 and up to 30% lower cost per task (vendor-reported), and the October 7 cache-read cut to 0.05x makes long agent loops cheaper still. Anthropic's Sonnet 5.5 table puts Sonnet 5 at 10.3% on Terminal-Bench 4.0, while its Opus 5.5 table puts Opus 5 at 52.3%; treat the Sonnet 5 figure as an outlier and do not use it as a baseline.
+**تغییرات ساختارشکن نسبت به Sonnet 5:** غیرفعال‌سازی تفکر خطای 400 برمی‌گرداند (به‌جای آن `between_tools` را ارسال کنید)؛ استفاده اجباری از ابزار خطای 400 برمی‌گرداند؛ بلوک‌های تفکر مقید به مدل، مکالمه و اکانت تولیدکننده هستند (بلوک‌های ارسالی از یک اکانت متصل‌نشده حذف شده و به عنوان `organization_binding_mismatch` ثبت می‌شوند)؛ ابزار `computer_20251124` در Claude API و Google Cloud رد می‌شود؛ و پارامترهای `temperature`، `top_p` و `top_k` خطای 400 برمی‌گردانند (در مقادیر غیرپیش‌فرض در نسخه‌های قدیمی‌تر API، و در هر مقداری در نسخه `2026-10-21`). مدل Sonnet 5 تنها سه ماه پس از عرضه به یک مدل قدیمی و منسوخ (legacy) تبدیل شد.
 
-**Breaking changes vs Sonnet 5:** disabling thinking returns a 400 (send `between_tools` instead); forced tool use returns a 400; thinking blocks are bound to the model, the conversation, and the producing account (blocks sent from an unlinked account are dropped and recorded as `organization_binding_mismatch`); `computer_20251124` is rejected on the Claude API and Google Cloud; and `temperature`, `top_p`, and `top_k` return a 400 (at non-default values on older API versions, at any value on `2026-10-21`). Sonnet 5 became a legacy model three months after launch.
+### Claude Fable 5.1 و Mythos 5.1 (Anthropic) - سپتامبر ۲۰۲۶
 
-### Claude Fable 5.1 and Mythos 5.1 (Anthropic) - September 2026
+| ویژگی (Attribute) | مقدار (Value) |
+|---|---|
+| شناسه‌های مدل (Model IDs) | `claude-fable-5-1` (دسترسی عمومی یا GA؛ در Bedrock به صورت `anthropic.claude-fable-5-1`)؛ `claude-mythos-5-1` (دسترسی محدود از طریق Cyber Verification Program، که در ۶ اکتبر پروژه Glasswing را جذب کرد) |
+| رابطه بین دو مدل | وزن‌های یکسان، اما محافظ‌های (safeguards) متفاوت؛ Mythos 5.1 نسخه مجازتر (permissive) است |
+| هزینه ورودی / خروجی | ۱۰.۰۰ دلار / ۵۰.۰۰ دلار به ازای هر ۱ میلیون Token (بدون تغییر نسبت به Fable 5) |
+| Cache / Batch | نوشتن در Cache معادل ۱۲.۵۰ دلار (۵ دقیقه) یا ۲۰.۰۰ دلار (۱ ساعت)؛ خواندن از Cache معادل ۰.۲۵ دلار (۰.۰۲۵ برابر ورودی، کاهش‌یافته از ۱.۰۰ دلار در Fable 5)؛ حالت Batch معادل ۵ دلار / ۲۵ دلار |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token با قیمت‌گذاری استاندارد؛ حداکثر خروجی ۱۲۸ هزار Token |
+| تفکر (Thinking) | تفکر تطبیقی همیشه فعال است؛ تلاش (effort) پیش‌فرض `high` |
+| مدیریت داده (Data handling) | الزام به نگهداری ۳۰ روزه داده‌ها (30-day retention)؛ تحت خط‌مشی عدم ذخیره‌سازی داده (ZDR) در دسترس نیست مگر اینکه Anthropic صراحتاً مجوز آن را صادر کند (مشتریانی که واجد شرایط Enterprise Frontier Safeguards هستند می‌توانند از Fable 5.1 و Fable 5 با ZDR استفاده کنند تا زمانی که EFS آماده شود) |
+| اصالت‌سنجی (Provenance) | واترمارک آماری متن Anthropic روی خروجی‌ها در تمامی پلتفرم‌ها؛ شناسه اعتبارسنجی محتوای امضاشده C2PA روی رسانه‌های تولیدشده دریافت‌شده از طریق Files API. از ۳ نوامبر، متن‌های تولیدشده از Claude Mythos 5، Opus 4.7 و Sonnet 4.6 نیز این واترمارک را حمل می‌کنند، اما در Sonnet 4.6 متن‌های تولیدشده با مقادیر غیرپیش‌فرض `temperature`، `top_p` یا `top_k` ممکن است فاقد آن باشند، بنابراین پیش از اتکا به نشانه‌گذاری ارائه‌دهنده برای الزامات افشاسازی (disclosure duties)، تنظیمات مدل و نمونه‌برداری (sampling) را بررسی کنید |
+| بنچمارک‌ها | در Terminal-Bench 4.0: امتیاز %۵۷.۸۸ در حالت max در لیدربورد tbench.ai، و %۵۵.۸ در اجرای خود Anthropic. در شاخص هوش AA Intelligence Index v5.0: امتیاز ۵۰ (در xhigh با fallback)، و ۴۹ در max، پایین‌تر از امتیاز ۵۸ در Opus 5.5 |
+| تاریخ عرضه | ۱ سپتامبر ۲۰۲۶ (محدوده داده‌های آموزشی تا ژوئن ۲۰۲۶؛ بازنشستگی زودتر از ۱ سپتامبر ۲۰۲۷ نخواهد بود) |
 
-| Attribute | Value |
-|-----------|-------|
-| Model IDs | `claude-fable-5-1` (GA; Bedrock `anthropic.claude-fable-5-1`); `claude-mythos-5-1` (limited availability through the Cyber Verification Program, which absorbed Project Glasswing on October 6) |
-| Relationship | Same weights, different safeguards; Mythos 5.1 is the more permissive variant |
-| Input / Output Cost | $10.00 / $50.00 per 1M (unchanged from Fable 5) |
-| Cache / Batch | Cache write $12.50 (5 min) or $20.00 (1 hr); cache read $0.25 (0.025x input, down from $1.00 on Fable 5); Batch $5 / $25 |
-| Context Window | 1M tokens at standard pricing; 128K max output |
-| Thinking | Adaptive thinking always on; default effort `high` |
-| Data handling | 30-day retention required; not available under zero data retention unless Anthropic expressly authorizes it (customers eligible for Enterprise Frontier Safeguards can use Fable 5.1 and Fable 5 with ZDR until EFS is ready) |
-| Provenance | Anthropic's statistical text watermark on outputs on every platform; signed C2PA Content Credentials on generated media retrieved via the Files API. Since November 3, text from Claude Mythos 5, Opus 4.7, and Sonnet 4.6 carries the watermark too, but on Sonnet 4.6 text generated with a non-default `temperature`, `top_p`, or `top_k` might not, so check model and sampling settings before relying on vendor marking for disclosure duties |
-| Benchmarks | Terminal-Bench 4.0: 57.88% at max on the tbench.ai leaderboard, 55.8% in Anthropic's own run. AA Intelligence Index v5.0: 50 (xhigh, with fallback), 49 at max, below Opus 5.5's 58 |
-| Released | September 1, 2026 (knowledge cutoff June 2026; retirement not sooner than September 1, 2027) |
+**آنچه تغییر کرده است:** هزینه ماندن روی قدرتمندترین مدل رده‌بالا (ceiling model) برای حلقه‌های طولانی ایجنتی. شرکت Anthropic اعلام کرده است که کاهش %۷۵ در هزینه خواندن Cache، صورت‌حساب‌های معمول را حدود %۲۵ و صورت‌حساب‌های شدیداً ایجنتی را تا %۴۵ کاهش می‌دهد، و جدیدترین محافظ‌های سایبری آن حدود %۶۰ مثبت کاذب (false positive) کمتری نسبت به نسخه‌های اولیه Fable 5 ایجاد می‌کنند (هر دو مورد گزارش‌شده توسط ارائه‌دهنده). اکنون می‌توان از Fable 5.1 برای کشف آسیب‌پذیری‌ها استفاده کرد اما نمی‌توان از آن برای توسعه اکسپلویت‌ها (exploits) بهره گرفت. مدل Fable 5 همچنان در دسترس است.
 
-**What changed:** the cost of staying on the ceiling model for long agent loops. Anthropic says the 75% cache-read cut lowers typical bills about 25% and highly agentic ones up to 45%, and that its newest cyber safeguards produce about 60% fewer false positives than Fable 5's earlier ones (both vendor-reported). Fable 5.1 may now be used to discover vulnerabilities but not to develop exploits. Fable 5 remains available.
+**دسترسی به Mythos 5.1:** در ۶ اکتبر، Anthropic برنامه «تأیید سایبری» (Cyber Verification Program) را به سه سطح (Defense، Red Team و Specialized) گسترش داد، پروژه Glasswing را در آن ادغام کرد و Mythos 5.1 را در همه سطوح در دسترس قرار داد. نگهداری داده‌ها الزامی است؛ مشتریانی که از قبل دسترسی عدم نگهداری داده (zero-retention) به Fable 5.1 یا Mythos 5.1 داشتند، آن را تا زمان عرضه Enterprise Frontier Safeguards حفظ خواهند کرد. شرکت Anthropic همچنین در ماه سپتامبر اعلام کرد که Mythos 5.1 از طریق برنامه تأیید علوم زیستی (Life Sciences Verification Program) ارائه خواهد شد (نخستین شرکت‌کنندگان با همکاری دولت ایالات متحده ثبت‌نام شدند). پیامد طراحی معماری: نسخه مجازتر اکنون محصولی در رده تأیید صلاحیت‌شده (verification-tier) با شرایط نگهداری داده مختص به خود است، نه صرفاً یک فهرست از شرکای تجاری.
 
-**Mythos 5.1 access:** on October 6 Anthropic expanded the Cyber Verification Program into three tiers (Defense, Red Team, Specialized), folded Project Glasswing into it, and made Mythos 5.1 available in every tier. Data retention is required; customers who already hold zero-retention access to Fable 5.1 or Mythos 5.1 keep it until Enterprise Frontier Safeguards ships. Anthropic also said in September that Mythos 5.1 would be offered through the Life Sciences Verification Program (first participants enrolled with the US government). The design consequence: the permissive variant is now a verification-tier product with its own retention terms, not a partner list.
+**مکانیزم بازگشت محافظ (Safeguard fallback) اکنون یک قرارداد در سطح API است.** در Fable 5، فعال شدن دسته‌بند امنیتی به‌طور خودکار درخواست را به Opus 4.8 واگذار می‌کرد. در Fable 5.1 این رفتار صریح و قابل‌پیکربندی است:
 
-**Safeguard fallback is now an API contract.** On Fable 5 a classifier hit handed the request to Opus 4.8 automatically. On Fable 5.1 it is explicit and configurable:
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -119,1014 +122,1018 @@ flowchart LR
     D -->|"SDK middleware or custom retry"| F["Your router picks the model"]
 ```
 
-From September 24, refusals that arrive before any output in the `bio`, `frontier_llm`, and `reasoning_extraction` categories are billed on all platforms (other categories stay unbilled); mid-stream refusals bill the input plus the output already streamed; and fallback credit refunds the prompt-cache cost of switching models. Budget for refusals, and route on `stop_reason`, not HTTP status.
+</div>
 
-### Claude 5.5 / 5.1 Migration Checklist
+از ۲۴ سپتامبر، امتناع‌هایی (refusals) که قبل از هرگونه خروجی در دسته‌بندی‌های `bio`، `frontier_llm` و `reasoning_extraction` رخ می‌دهند، در تمامی پلتفرم‌ها مشمول هزینه می‌شوند (سایر دسته‌بندی‌ها بدون هزینه باقی می‌مانند)؛ امتناع‌های حین استریم (mid-stream refusals)، هزینه ورودی به‌علاوه خروجی استریم‌شده تا آن لحظه را دریافت می‌کنند؛ و اعتبار fallback هزینه prompt-cache ناشی از تغییر مدل را بازپرداخت می‌کند. برای امتناع‌ها بودجه در نظر بگیرید و مسیریابی را بر اساس `stop_reason` انجام دهید، نه کد وضعیت HTTP.
 
-| Change | Applies to | What breaks | Do this instead |
+### چک‌لیست مهاجرت به Claude 5.5 / 5.1
+
+| تغییر | اعمال بر روی | چه چیزی از کار می‌افتد | به‌جای آن چه کنید |
 |---|---|---|---|
-| Forced `tool_choice` (`any` or `tool`) returns 400 | Fable 5.1, Mythos 5.1, Opus 5.5, Sonnet 5.5 (Haiku 5.5 accepts it, but the response starts with the tool call and has no thinking block) | Structured extraction that forces a tool call | `auto` plus strict tool use, or structured outputs |
-| Thinking blocks bound to model and conversation | Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5 (Mythos 5.1 skips the prefix check); Sonnet 5.5 and Haiku 5.5 also bind blocks to the producing account | Replaying history to another model silently drops reasoning (Haiku 5.5 drops blocks from Opus 5, Opus 5.5, Sonnet 5.5, Fable, and Mythos without an error); editing anything before a thinking block returns 400 for accounts created on or after August 31, 2026 | Treat history as append-only and replay it through the producing account; opt into `prefix_mismatch_behavior: "drop_block"` with the `thinking-binding-controls-2026-08-01` beta header |
-| Thinking cannot be disabled | Opus 5.5; Sonnet 5.5's floor is `between_tools` | Latency budgets that assumed thinking off | Set effort explicitly and re-measure latency |
-| Default effort changed | Opus 5.5 is `medium` (Opus 5 was `high`) | Silent quality and latency shift on upgrade | Pin effort on every request |
-| `computer_20251124` rejected | Opus 5.5 and Sonnet 5.5 on the Claude API and Google Cloud (Bedrock still accepts it) | Computer-use agents on the old tool version | Move to `computer_toolset_20260801` |
-| Pre-output refusals billed in three categories | All platforms since September 24 | Cost models that treat refusals as free | Track `stop_reason: "refusal"` as a cost line |
-| Sampling parameters return 400 at any value; `document` blocks in assistant messages and `citations` on user text blocks return 400 | Every model under API version `2026-10-21`, which all eight new SDK and CLI majors (Python 2.0.0, TypeScript 1.0.0, Go 2.0.0, Java 3.0.0, C# 13.0.0, PHP 1.0.0, Ruby 2.0.0, `ant` CLI 2.0.0) send by default; on Bedrock the version works only for Claude 4.7 and later | Code that set `temperature` or `top_p` explicitly, even to defaults, on any Claude model | Drop the parameters, then pin the SDK major and API version so the upgrade is a deliberate change |
-| Haiku 4.5 to Haiku 5.5 | Fast-tier migrations | `budget_tokens`, sampling parameters, and assistant prefill return 400; about 30% more tokens for the same text, and earlier turns' thinking blocks now stay in context as input; the high-resolution image tier bills a 2000x1500 image at about 2.5x the visual tokens; prompts over 100K tokens bill 5x on the whole request; thinking blocks are account-bound and prefix-checked (Haiku 4.5 ran neither check); no Priority Tier | Replace prefill with structured outputs, re-count text and image tokens with the new model, route long prompts elsewhere, keep history append-only, and plan capacity separately from any Haiku 4.5 Priority Tier commitment |
+| اجبار در `tool_choice` (مقادیر `any` یا `tool`) خطای 400 برمی‌گرداند | Fable 5.1، Mythos 5.1، Opus 5.5، Sonnet 5.5 (مدل Haiku 5.5 آن را می‌پذیرد، اما پاسخ با فراخوانی ابزار آغاز شده و فاقد بلوک تفکر است) | استخراج ساختاریافته که فراخوانی ابزار را اجباری می‌کند | استفاده از `auto` همراه با strict tool use، یا استفاده از structured outputs |
+| بلوک‌های تفکر مقید به مدل و مکالمه هستند | Fable 5.1، Opus 5.5، Sonnet 5.5، Haiku 5.5 (مدل Mythos 5.1 بررسی پیشوند را نادیده می‌گیرد)؛ مدل‌های Sonnet 5.5 و Haiku 5.5 بلوک‌ها را به اکانت تولیدکننده نیز مقید می‌کنند | بازپخش تاریخچه (history) برای مدلی دیگر، استدلال را بدون هشدار حذف می‌کند (Haiku 5.5 بلوک‌های حاصل از Opus 5، Opus 5.5، Sonnet 5.5، Fable و Mythos را بدون خطا کنار می‌گذارد)؛ ویرایش هر چیزی قبل از یک بلوک تفکر، برای اکانت‌های ایجادشده در ۳۱ اوت ۲۰۲۶ یا پس از آن، خطای 400 برمی‌گرداند | با تاریخچه به صورت فقط-افزودنی (append-only) رفتار کنید و آن را از طریق اکانت تولیدکننده بازپخش نمایید؛ از طریق هدر بتای `thinking-binding-controls-2026-08-01` گزینه `prefix_mismatch_behavior: "drop_block"` را فعال کنید |
+| تفکر غیرقابل غیرفعال‌سازی است | Opus 5.5؛ حداقل سطح در Sonnet 5.5 برابر با `between_tools` است | بودجه‌های تاخیر (Latency) که فرض را بر خاموش بودن تفکر گذاشته بودند | مقدار effort را صراحتاً تنظیم کنید و تاخیر (Latency) را مجدداً اندازه‌گیری نمایید |
+| مقدار پیش‌فرض effort تغییر کرده است | در Opus 5.5 برابر با `medium` است (در Opus 5 برابر با `high` بود) | تغییر نامحسوس کیفیت و تاخیر (Latency) هنگام ارتقا | مقدار effort را در هر درخواست پین کنید |
+| رد شدن `computer_20251124` | Opus 5.5 و Sonnet 5.5 در Claude API و Google Cloud (سرویس Bedrock همچنان آن را می‌پذیرد) | ایجنت‌های مبتنی بر کار با کامپیوتر (computer-use) که روی نسخه ابزار قدیمی هستند | مهاجرت به `computer_toolset_20260801` |
+| اعمال هزینه برای امتناع‌های پیش از خروجی در سه دسته‌بندی | تمامی پلتفرم‌ها از ۲۴ سپتامبر | مدل‌های هزینه‌ای که امتناع‌ها را رایگان در نظر می‌گرفتند | ردیابی `stop_reason: "refusal"` به عنوان یک ردیف هزینه |
+| پارامترهای نمونه‌برداری در هر مقداری خطای 400 برمی‌گردانند؛ بلوک‌های `document` در پیام‌های دستیار و `citations` در بلوک‌های متنی کاربر خطای 400 برمی‌گردانند | تمامی مدل‌ها تحت نسخه API معادل `2026-10-21`، که هر هشت نسخه اصلی جدید SDK و CLI (شامل Python 2.0.0، TypeScript 1.0.0، Go 2.0.0، Java 3.0.0، C# 13.0.0، PHP 1.0.0، Ruby 2.0.0 و `ant` CLI 2.0.0) آن را به‌طور پیش‌فرض ارسال می‌کنند؛ در Bedrock این نسخه فقط برای Claude 4.7 و نسخه‌های بعدی کار می‌کند | کدهایی که `temperature` یا `top_p` را صراحتاً (حتی روی مقادیر پیش‌فرض) روی هر مدل Claude تنظیم می‌کردند | این پارامترها را حذف کنید، سپس نسخه اصلی SDK و نسخه API را پین کنید تا ارتقا یک تغییر آگاهانه و کنترل‌شده باشد |
+| از Haiku 4.5 به Haiku 5.5 | مهاجرت‌های رده سریع (Fast-tier) | پارامترهای `budget_tokens`، پارامترهای نمونه‌برداری و assistant prefill خطای 400 برمی‌گردانند؛ حدود %۳۰ Token بیشتر برای متن مشابه مصرف می‌شود، و بلوک‌های تفکر نوبت‌های قبلی اکنون به عنوان ورودی در کانتکست باقی می‌مانند؛ سطح تصویر با وضوح بالا برای یک تصویر ۲۰۰۰x۱۵۰۰ حدود ۲.۵ برابر Token بصری هزینه دریافت می‌کند؛ Promptهای بیش از ۱۰۰ هزار Token معادل ۵ برابر روی کل درخواست هزینه دارند؛ بلوک‌های تفکر مقید به اکانت بوده و پیشوند آن‌ها بررسی می‌شود (Haiku 4.5 هیچ‌کدام را بررسی نمی‌کرد)؛ عدم وجود Priority Tier | جایگزینی prefill با structured outputs، شمارش مجدد Tokenهای متنی و تصویری با مدل جدید، هدایت Promptهای طولانی به مقصدی دیگر، حفظ تاریخچه به صورت فقط-افزودنی (append-only)، و برنامه‌ریزی ظرفیت به‌طور جداگانه از تعهدات Priority Tier در Haiku 4.5 |
 
-Two smaller changes trip harnesses: text between tool calls now arrives in `thinking` blocks that are empty at the default `display: "omitted"` (the `display: "updates"` beta returns the text), and supporting betas shipped for per-message effort and turn-scoped system messages (September 1), compaction on demand (`compact-2026-09-04`, September 14), and inline tool definitions mid-conversation without cache loss (`inline-tools-2026-09-15`, September 22). On November 2 Anthropic added **message threads** (beta, `message-threads-2026-08-12`): the server stores the conversation, system prompt, and tools, and later requests send only new messages. Threads are best-effort, expire 5 minutes after the last request, can return 404 `thread_not_found`, are not ZDR eligible, and do not run on Bedrock or Google-managed Vertex, so keep your own copy of history and replay it; the thread is a cache, not the system of record.
+دو تغییر کوچک‌تر ممکن است فریم‌ورک‌های آزمون و اجرا (harnesses) را دچار خطا کند: متن‌های مابین فراخوانی ابزارها اکنون در بلوک‌های `thinking` وارد می‌شوند که در حالت پیش‌فرض `display: "omitted"` خالی هستند (نسخه بتای `display: "updates"` متن را بازمی‌گرداند)، و نسخه‌های بتای پشتیبان برای effort به ازای هر پیام و پیام‌های سیستمی محدود به هر نوبت (۱ سپتامبر)، فشرده‌سازی در صورت تقاضا (`compact-2026-09-04`، ۱۴ سپتامبر) و تعاریف ابزار درون‌خطی (inline) در میانه مکالمه بدون از دست رفتن Cache عرضه شدند (`inline-tools-2026-09-15`، ۲۲ سپتامبر). در ۲ نوامبر، شرکت Anthropic ویژگی **message threads** (رشته‌پیام‌ها در فاز بتا، `message-threads-2026-08-12`) را اضافه کرد: سرور مکالمه، Prompt سیستمی و ابزارها را ذخیره می‌کند و درخواست‌های بعدی فقط پیام‌های جدید را ارسال می‌نمایند. این رشته‌ها مبتنی بر تلاش حداکثری (best-effort) هستند، ۵ دقیقه پس از آخرین درخواست منقضی می‌شوند، می‌توانند خطای 404 با عنوان `thread_not_found` را بازگردانند، واجد شرایط عدم ذخیره‌سازی داده (ZDR) نیستند و روی Bedrock یا Vertex مدیریت‌شده توسط گوگل اجرا نمی‌شوند؛ بنابراین نسخه اختصاصی خود از تاریخچه را حفظ کرده و آن را بازپخش کنید؛ رشته‌پیام (thread) صرفاً یک Cache است، نه منبع اصلی و مرجع داده‌ها (system of record).
 
-### Claude Haiku 5.5 (Anthropic) - October 2026 NEW
+### Claude Haiku 5.5 (Anthropic) - اکتبر ۲۰۲۶ جدید
 
-| Attribute | Value |
+| ویژگی (Attribute) | مقدار (Value) |
+|---|---|
+| شناسه مدل (Model ID) | `claude-haiku-5-5` (در Bedrock: `anthropic.claude-haiku-5-5`) |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token؛ حداکثر خروجی ۱۲۸ هزار Token |
+| قیمت، Prompt تا ۱۰۰,۰۰۰ Token | ۰.۱۰ دلار / ۰.۵۰ دلار به ازای هر ۱ میلیون Token؛ نوشتن در Cache معادل ۰.۱۲۵ دلار (۵ دقیقه) یا ۰.۲۰ دلار (۱ ساعت)؛ خواندن از Cache معادل ۰.۰۱ دلار؛ حالت Batch معادل ۰.۰۵ دلار / ۰.۲۵ دلار |
+| قیمت، Prompt بیش از ۱۰۰,۰۰۰ Token | ۰.۵۰ دلار / ۲.۵۰ دلار به ازای هر ۱ میلیون Token؛ نوشتن در Cache معادل ۰.۶۲۵ دلار یا ۱.۰۰ دلار؛ خواندن از Cache معادل ۰.۰۵ دلار؛ حالت Batch معادل ۰.۲۵ دلار / ۱.۲۵ دلار. برای **کل درخواست** اعمال می‌شود، و طول Prompt خواندن‌ها و نوشتن‌های Cache را نیز به حساب می‌آورد |
+| تفکر (Thinking) | تفکر تطبیقی، تلاش (effort) از `low` تا `max`، پیش‌فرض `medium`؛ ارسال `budget_tokens` خطای 400 برمی‌گرداند. برخلاف Opus 5.5 و Sonnet 5.5، این مدل `tool_choice` اجباری را می‌پذیرد، اما در این حالت پاسخ با فراخوانی ابزار آغاز شده و فاقد بلوک تفکر خواهد بود |
+| تغییرات ساختارشکن نسبت به Haiku 4.5 | پارامترهای `budget_tokens`، `temperature`، `top_p`، `top_k` و assistant prefill خطای 400 برمی‌گردانند؛ Tokenizer جدیدتر برای متن یکسان حدود %۳۰ Token بیشتری تولید می‌کند؛ سطح تصویر با وضوح بالا برای یک تصویر ۲۰۰۰x۱۵۰۰ حدود ۲.۵ برابر Token بصری هزینه دارد؛ بلوک‌های تفکر مقید به اکانت تولیدکننده هستند و پیشوند آن‌ها بررسی می‌شود؛ قابلیت Priority Tier پشتیبانی نمی‌شود |
+| دسترسی‌پذیری (Availability) | Claude API، Bedrock، Google Cloud، Microsoft Foundry، Claude Platform روی AWS |
+| بنچمارک‌ها | گزارش‌شده توسط Anthropic: در Terminal-Bench 4.0 امتیاز %۳۹.۲؛ در زیرمجموعه آفلاین OSWorld 2.1 امتیاز %۷۲.۴ (امتیاز نسبی/partial credit). مستقل: شاخص هوش AA Intelligence Index v5.0 امتیاز ۳۶ (حالت max) |
+| ایمنی (Safety) | کارت سیستم (System card): میزان موفقیت حمله تزریق Prompt گِری سوان (Gray Swan prompt-injection attack) ظرف ۱۵ تلاش، در مجموع %۷.۱ و در استفاده از کامپیوتر با رابط کاربری گرافیکی (GUI computer use) برابر با %۲۴.۴ |
+| تاریخ عرضه | ۷ اکتبر ۲۰۲۶ (بازنشستگی زودتر از ۷ اکتبر ۲۰۲۷ نخواهد بود) |
+
+**ماهیت مدل:** رده سریع (fast tier) شرکت Anthropic با قیمت رسمی معادل GPT-6 Luna، همراه با امتیازی مستقل که بسیار بالاتر از Luna است (در AA v5.0: ۳۶ در برابر ۲۸، هر دو در حداکثر effort). همچنین این نخستین مدل از نسل Claude 4.6 یا بالاتر است که دارای پرتگاه قیمتی در کانتکست طولانی (long-context price cliff) است و این پرتگاه شدیدتر از نمونه مشابه در OpenAI است. در GPT-6 Luna عبور ورودی از ۲۷۲ هزار Token هزینه ورودی را دو برابر کرده و خروجی را ۱.۵ برابر می‌کند؛ اما در Haiku 5.5 عبور از ۱۰۰ هزار Token هزینه هر نوع Token را ۵ برابر افزایش می‌دهد. یک Prompt با ۹۹ هزار Token به همراه ۱ هزار Token خروجی حدود ۰.۰۱۰۴ دلار هزینه دارد؛ در حالی که یک Prompt با ۱۰۱ هزار Token با همان میزان خروجی حدود ۰.۰۵۳ دلار هزینه برمی‌دارد. از آنجا که خواندن از Cache نیز در محاسبه این آستانه لحاظ می‌شود، یک پیشوند ۱۲۰ هزار Token کش‌شده همچنان تمام درخواست‌ها را با نرخ بالاتر محاسبه خواهد کرد.
+
+**سه پیامد برای طراحی معماری.** اول، مسیریابی بر اساس طول Prompt اکنون به یک ابزار کنترل هزینه در Anthropic تبدیل شده است، نه فقط در OpenAI و xAI: ترافیک Haiku 5.5 را زیر ۱۰۰ هزار Token نگه دارید و Promptهای طولانی‌تر را به Sonnet 5.5 (نرخ ثابت ۲/۱۰ دلار تا ۱ میلیون Token) یا GPT-6 Luna (کانتکست طولانی با نرخ ۰.۲۰/۰.۷۵ دلار) هدایت کنید. دوم، Tokenizer این مرز را جابه‌جا می‌کند: یک Prompt که در Haiku 4.5 معادل ۸۰ هزار Token بود، در Haiku 5.5 تقریباً ۱۰۴ هزار Token محاسبه می‌شود، و بلوک‌های تفکر از نوبت‌های پیشین اکنون به عنوان ورودی در کانتکست باقی می‌مانند (Haiku 4.5 فقط بلوک‌های آخرین نوبت را نگه می‌داشت)، بنابراین مکالمات چندنوبتی زودتر به پرتگاه قیمتی می‌رسند. پیش از اعتماد به داشبوردهای قدیمی اندازه Prompt، ارزیابی مجدد را با مدل جدید انجام دهید. سوم، آمار تزریق Prompt برای مدلی که ممکن است آن را در مرورگر یا دسکتاپ به کار بگیرید بالاست: تقریباً از هر چهار حمله کار با کامپیوتر مبتنی بر رابط گرافیکی (GUI computer use)، یک حمله ظرف ۱۵ تلاش به موفقیت می‌رسد؛ بنابراین ایجنت‌های Haiku 5.5 را پشت همان گیت‌های ایزوله‌سازی و تایید انسانیِ مدل‌های بزرگ‌تر نگه دارید.
+
+### Claude Haiku 4.5 (Anthropic) - اکتبر ۲۰۲۵، جایگزین‌شده توسط Haiku 5.5
+
+تا تاریخ ۶ نوامبر هنوز روی Claude API فعال است و هیچ اطلاعیه منسوخ‌شدنی برای آن صادر نشده است. کف زمانی آن («زودتر از ۱۵ اکتبر ۲۰۲۶ نباشد») سپری شده است و با حداقل اطلاع‌رسانی ۶۰ روزه Anthropic، بازنشستگی آن در آنجا زودتر از حدود ژانویه ۲۰۲۷ نخواهد بود. اپلیکیشن‌های مصرف‌کننده زودتر اقدام کردند: در ۲۹ اکتبر، شرکت Anthropic مدل Haiku 4.5 را از منوی انتخاب مدل در گفتگوی Claude، Cowork و Design برای کاربران Free، Pro و Max حذف کرد و این چت‌ها را به Haiku 5.5 منتقل ساخت، در حالی که Claude Code، پلن‌های Team و Enterprise و همچنین API همچنان آن را حفظ کرده‌اند. زمان‌بندی Microsoft Foundry همچنان `claude-haiku-4-5` را برای ۱۵ نوامبر ۲۰۲۶ (۹ روز دیگر) در لیست دارد، هرچند Anthropic اعلام کرده تاریخ‌هایش برای Foundry نیز صدق می‌کند؛ بنابراین هم‌اکنون برای تاریخ زودتر در Foundry برنامه‌ریزی کنید و موضوع را با هر دو ارائه‌دهنده بررسی نمایید. این مدل با قیمت ۱/۵ دلار و پنجره ۲۰۰ هزار Token، هزینه‌ای معادل ۱۰ برابر Haiku 5.5 برای زیر ۱۰۰ هزار Token دارد؛ دلایل باقی‌مانده برای ماندن روی این مدل رفتاری هستند (مانند assistant prefill، `budget_tokens`، Tokenizer قدیمی‌تر) یا قراردادی (تعهد به سرویس Priority Tier، که Haiku 5.5 از آن پشتیبانی نمی‌کند)؛ بنابراین با آن‌ها به عنوان موارد کاری مهاجرت برخورد کنید نه دلیلی برای ادامه پرداخت هزینه ۱۰ برابری.
+
+### Claude Opus 5 (Anthropic) - ژوئیه ۲۰۲۶، جایگزین‌شده توسط Opus 5.5
+
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`) |
-| Context Window | 1M tokens; 128K max output |
-| Price, prompt up to 100,000 tokens | $0.10 / $0.50 per 1M; cache write $0.125 (5 min) or $0.20 (1 hr); cache read $0.01; Batch $0.05 / $0.25 |
-| Price, prompt over 100,000 tokens | $0.50 / $2.50 per 1M; cache write $0.625 or $1.00; cache read $0.05; Batch $0.25 / $1.25. Applies to the **whole request**, and prompt length counts cache reads and cache writes |
-| Thinking | Adaptive thinking, effort `low` to `max`, default `medium`; `budget_tokens` returns a 400. Unlike Opus 5.5 and Sonnet 5.5, it accepts a forced `tool_choice`, but the response then starts with the tool call and has no thinking block |
-| Breaking changes vs Haiku 4.5 | `budget_tokens`, `temperature`, `top_p`, `top_k`, and assistant prefill return 400; the newer tokenizer produces about 30% more tokens for the same text; the high-resolution image tier costs about 2.5x the visual tokens for a 2000x1500 image; thinking blocks are bound to the producing account and prefix-checked; Priority Tier is not supported |
-| Availability | Claude API, Bedrock, Google Cloud, Microsoft Foundry, Claude Platform on AWS |
-| Benchmarks | Anthropic-reported: Terminal-Bench 4.0 39.2%; OSWorld 2.1 offline subset 72.4% (partial credit). Independent: AA Intelligence Index v5.0 36 (max) |
-| Safety | System card: Gray Swan prompt-injection attack success within 15 attempts 7.1% overall and 24.4% on GUI computer use |
-| Released | October 7, 2026 (retirement not sooner than October 7, 2027) |
+| شناسه مدل (Model ID) | `claude-opus-5` |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token (پیش‌فرض و حداکثر؛ حداکثر خروجی 128K) |
+| هزینه ورودی / خروجی | ۵.۰۰ دلار / ۲۵.۰۰ دلار به ازای هر ۱ میلیون Token (بدون تغییر نسبت به Opus 4.8) |
+| حالت سریع (Fast mode) | ۱۰.۰۰ دلار / ۵۰.۰۰ دلار به ازای هر ۱ میلیون Token، حدود ۲.۵ برابر سریع‌تر |
+| بنچمارک‌ها (Benchmarks) | پست معرفی آنتروپیک بنچمارک پیش از عرضه را گزارش کرد که آن را Frontier-Bench v0.1 نامید (که بعدها به Terminal-Bench 3.0 تغییر یافت و خود آن نیز در ۲۸ اوت با Terminal-Bench 4.0 جایگزین شد؛ امتیازات قابل انتقال نیستند): ۴۳.۳٪ در حداکثر تلاش (max effort) در مقایسه با ۳۴.۴٪ برای GPT-5.6 Sol، ‏۳۳.۷٪ برای Fable 5 و ۱۸.۷٪ برای Opus 4.8؛ با اختلاف کمتر از ۰.۵٪ نسبت به Fable 5 در CursorBench 3.2 با حدود نصف هزینه به ازای هر تسک. گزارش‌شده توسط ارائه‌دهنده. از آن زمان: لیدربورد Terminal-Bench 4.0 با امتیاز ۵۳.۹۴٪ در سطح xhigh؛ بنچمارک SWE-Bench Pro v2 (شرکت Scale، ۲۲ سپتامبر) با ۹۹.۴٪ در بخش اشباع‌شده عمومی (public split) و ۸۱.۶٪ (۲۲۲/۲۷۲) در مجموعه خصوصی، که بالاترین امتیاز خصوصی منتشرشده توسط Scale است |
+| تاریخ انتشار | ۲۴ ژوئیه ۲۰۲۶ (Claude API، Claude Code، Claude Cowork؛ پیش‌فرض جدید در Claude Max) |
 
-**What it is:** Anthropic's fast tier at GPT-6 Luna's list price, with an independent score well above Luna's (AA v5.0: 36 vs 28, both at max effort). It is also the first Claude 4.6-or-later model with a long-context price cliff, and the cliff is harsher than OpenAI's. On GPT-6 Luna, crossing 272K input doubles input and multiplies output by 1.5; on Haiku 5.5, crossing 100K multiplies every token type by 5. A 99K-token prompt with 1K of output costs about $0.0104; a 101K-token prompt with the same output costs about $0.053. Because cache reads count toward the threshold, a cached 120K-token prefix still bills every request at the higher rate.
+**ماهیت مدل:** جانشین نسلی سری Opus با قیمت بدون تغییر، با هدف برنامه‌نویسی ایجنتیک بلندمدت و کار با کامپیوتر (Computer Use). قابلیت‌های بتا شامل تغییر ابزار در میانه گفتگو و مسیریابی بازگشتی خودکار (automatic fallback routing) است. حالت سریع با قیمت دوگانه، همان الگوی معرفی‌شده در Opus 4.8 را ادامه می‌دهد: یک مدل، دو سطح تاخیر (Latency).
 
-**Three design consequences.** First, prompt-length routing is now a cost control on Anthropic, not just on OpenAI and xAI: keep Haiku 5.5 traffic under 100K, and send longer prompts to Sonnet 5.5 (flat $2/$10 to 1M) or GPT-6 Luna (long-context $0.20/$0.75). Second, the tokenizer moves the line: a prompt that measured 80K tokens on Haiku 4.5 is roughly 104K on Haiku 5.5, and thinking blocks from earlier turns now stay in context as input (Haiku 4.5 kept only the latest turn's), so multi-turn conversations reach the cliff sooner. Re-count with the new model before trusting old prompt-size dashboards. Third, the prompt-injection numbers are high for a model you might put on a browser or desktop: about one GUI computer-use attack in four succeeds within 15 attempts, so keep Haiku 5.5 agents behind the same isolation and human-approval gates as larger models.
+**وضعیت:** در ۲۲ سپتامبر با مدل Opus 5.5 با قیمتی پایین‌تر (۴ دلار / ۲۰ دلار در برابر ۵ دلار / ۲۵ دلار) جایگزین شد. همچنان به عنوان یک مدل قدیمی (legacy) در دسترس است و یکی از دو مقصد مجاز برای بازگشت محافظتی (safeguard fallback) مدل Fable 5.1 به شمار می‌رود (در کنار Opus 4.8).
 
-### Claude Haiku 4.5 (Anthropic) - October 2025, Superseded by Haiku 5.5
+### Claude Sonnet 5 (Anthropic) - ژوئن ۲۰۲۶، جایگزین‌شده توسط Sonnet 5.5
 
-Still Active on the Claude API with no deprecation notice as of November 6. Its floor ("not sooner than October 15, 2026") has passed, and with Anthropic's 60-day minimum notice it cannot retire there before about January 2027. The consumer apps moved first: on October 29 Anthropic removed Haiku 4.5 from the model selector in Claude chat, Cowork, and Design for Free, Pro, and Max users and moved those chats to Haiku 5.5, while Claude Code, Team and Enterprise plans, and the API keep it. Microsoft's Foundry schedule still lists `claude-haiku-4-5` for November 15, 2026, nine days out, although Anthropic says its dates apply to Foundry, so plan for the earlier date on Foundry now and confirm with both vendors. At $1/$5 with a 200K window it costs 10x Haiku 5.5 below 100K tokens; the remaining reasons to stay are behavioral (assistant prefill, `budget_tokens`, the older tokenizer) or contractual (a Priority Tier commitment, which Haiku 5.5 does not support), so treat them as migration work rather than a reason to keep paying 10x.
-
-### Claude Opus 5 (Anthropic) - July 2026, SUPERSEDED by Opus 5.5
-
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `claude-opus-5` |
-| Context Window | 1M tokens (default and max; 128K max output) |
-| Input / Output Cost | $5.00 / $25.00 per 1M (unchanged from Opus 4.8) |
-| Fast mode | $10.00 / $50.00 per 1M, about 2.5x faster |
-| Benchmarks | Anthropic's launch post reported the pre-release benchmark it called Frontier-Bench v0.1 (later Terminal-Bench 3.0, itself replaced by Terminal-Bench 4.0 on August 28; scores do not carry over): 43.3% at max effort vs GPT-5.6 Sol's 34.4%, Fable 5's 33.7%, and Opus 4.8's 18.7%; within 0.5% of Fable 5 on CursorBench 3.2 at about half the cost per task. Vendor-reported. Since then: Terminal-Bench 4.0 leaderboard 53.94% at xhigh; SWE-Bench Pro v2 (Scale, September 22) 99.4% on the saturated public split and 81.6% (222/272) on the private set, the top private score Scale published |
-| Released | July 24, 2026 (Claude API, Claude Code, Claude Cowork; new default on Claude Max) |
+| شناسه مدل (Model ID) | `claude-sonnet-5` |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token طبق گزارش‌های شخص ثالث (در پست معرفی ذکر نشد) |
+| هزینه ورودی / خروجی | ۲.۰۰ دلار / ۱۰.۰۰ دلار به ازای هر ۱ میلیون Token (دائمی از ۱۰ اوت ۲۰۲۶) |
+| کش / بچ (Batch) | نوشتن کش ۲.۵۰ دلار به ازای هر ۱ میلیون Token (۵ دقیقه) یا ۴.۰۰ دلار (۱ ساعت)؛ برخورد کش ۰.۲۰ دلار؛ در Batch API معادل ۱.۰۰ دلار / ۵.۰۰ دلار |
+| جایگاه در بازار | ایجنتیک‌ترین مدل Sonnet در زمان عرضه: برنامه‌ریزی، استفاده از ابزارهای مرورگر و ترمینال، عملکرد خودمختار نزدیک به Opus 4.8 با هزینه کمتر |
+| رویکرد ایمنی | نرده‌های محافظ سایبری به‌طور پیش‌فرض فعال است؛ قابلیت‌های امنیت سایبری در مقایسه با مدل‌های کلاس Opus به‌طور عمدی کاهش یافته است |
+| تاریخ انتشار | ۳۰ ژوئن ۲۰۲۶ (مدل پیش‌فرض در تمام محصولات کاربری و توسعه‌دهندگان در همان روز) |
 
-**What it is:** The Opus line's generational successor at unchanged pricing, aimed at long-horizon agentic coding and computer use. Beta features include mid-conversation tool changes and automatic fallback routing. The dual-price Fast mode continues the pattern Opus 4.8 introduced: one model, two latency tiers.
+**ماهیت مدل:** اسب کاری محیط عملیاتی که جایگزین Sonnet 4.6 به عنوان مدل پیش‌فرض شد. در ۱۰ اوت ۲۰۲۶ آنتروپیک نرخ اولیه ۲ دلار / ۱۰ دلار را دائمی کرد و افزایش اول سپتامبر به ۳ دلار / ۱۵ دلار را لغو نمود، بنابراین Sonnet 5 به‌طور دائمی ارزان‌تر از مدل قبلی خود یعنی Sonnet 4.6 است (که همچنان ۳ دلار / ۱۵ دلار باقی مانده است).
 
-**Status:** Superseded by Opus 5.5 on September 22 at a lower price ($4/$20 vs $5/$25). Still available as a legacy model, and one of Fable 5.1's two permitted safeguard fallback targets (with Opus 4.8).
+**وضعیت:** در ۲۸ سپتامبر با مدل Sonnet 5.5 با همان قیمت جایگزین شد؛ همچنان به عنوان مدل قدیمی (legacy) در دسترس است. به‌طور جداگانه، آنتروپیک در ۳۰ سپتامبر مدل Claude Sonnet 4.5 (با شناسه `claude-sonnet-4-5-20250929`) را منسوخ اعلام کرد و بازنشستگی آن را در ۳۰ نوامبر ۲۰۲۶ در Claude API و Foundry با جایگزینی اعلام‌شده `claude-sonnet-5-5` تعیین نمود. پلتفرم Bedrock زمان‌بندی ویژه خود را اجرا می‌کند: Sonnet 4.5 را در ۸ اکتبر به وضعیت Legacy منتقل کرد، با دسترسی عمومی تمدیدیافته از ۸ ژانویه ۲۰۲۷ و پایان عمر در ۸ آوریل ۲۰۲۷.
 
-### Claude Sonnet 5 (Anthropic) - June 2026, SUPERSEDED by Sonnet 5.5
+### Claude Fable 5 (Anthropic) - ژوئن ۲۰۲۶، جایگزین‌شده توسط Fable 5.1
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `claude-sonnet-5` |
-| Context Window | 1M tokens per third-party coverage (not stated in the launch post) |
-| Input / Output Cost | $2.00 / $10.00 per 1M (permanent since August 10, 2026) |
-| Cache / Batch | Cache write $2.50 per 1M (5 min) or $4.00 (1 hr); cache hit $0.20; Batch API $1.00 / $5.00 |
-| Positioning | The most agentic Sonnet at launch: planning, browser and terminal tool use, autonomous operation approaching Opus 4.8 at lower cost |
-| Safety posture | Cyber safeguards on by default; deliberately reduced cybersecurity capability relative to Opus-class models |
-| Released | June 30, 2026 (default model across consumer and developer products same day) |
+| شناسه مدل (Model ID) | `claude-fable-5` |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token (مبتنی بر Tokenizer مدل Opus 4.7؛ تقریباً ۳۰٪ Token بیشتر نسبت به مدل‌های قبل از 4.7 برای همان متن مشابه) |
+| حداکثر خروجی | ۱۲۸ هزار Token |
+| هزینه ورودی | ۱۰.۰۰ دلار / ۱ میلیون Token |
+| هزینه خروجی | ۵۰.۰۰ دلار / ۱ میلیون Token |
+| تفکر (Thinking) | تفکر تطبیقی، همواره فعال (فاقد کلید تغییر وضعیت مجزا برای تفکر گسترش‌یافته) |
+| چندوجهی (Multimodal) | متن + بینایی (طبق اعلام آنتروپیک، سطح جدید پیشرفته‌ترین یا State of the art در تسک‌های بینایی) |
+| بنچمارک‌ها (Benchmarks) | طبق اعلام آنتروپیک، پیشرفته‌ترین در تقریباً تمام بنچمارک‌های آزمایش‌شده؛ بالاترین امتیاز مرزی در FrontierCode متعلق به Cognition، بالاترین در Hebbia Finance Benchmark، ViBench و CursorBench. امتیازات عددی استاندارد (SWE-bench، GPQA) در پست معرفی منتشر نشدند. |
+| تاریخ انتشار | ۹ ژوئن ۲۰۲۶ (عرضه عمومی یا GA روی Claude API، Claude Platform در AWS، Amazon Bedrock، Vertex AI، Microsoft Foundry) |
 
-**What it is:** The production workhorse that replaced Sonnet 4.6 as the default. On August 10, 2026 Anthropic made the introductory $2/$10 rate permanent and canceled the September 1 increase to $3/$15, so Sonnet 5 is permanently cheaper than the Sonnet 4.6 it succeeded (still $3/$15).
+**ماهیت مدل:** مدلی در کلاس Mythos که برای عرضه عمومی ایمن‌سازی شده است. تا پیش از آن، سری Mythos (با امتیاز ۹۳.۹٪ در SWE-bench Verified روی Mythos Preview) به دلیل نگرانی‌های استفاده دوگانه در امنیت سایبری، صرفاً به حدود ۱۱ شریک در پروژه Glasswing محدود بود. مدل Fable 5 با ترکیب این سطح توانمندی با نرده‌های محافظ محافظه‌کارانه، آن را در دسترس همگان قرار داد.
 
-**Status:** Superseded by Sonnet 5.5 on September 28 at the same price; still available as legacy. Separately, Anthropic deprecated Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`) on September 30, with retirement on November 30, 2026 on the Claude API and Foundry and `claude-sonnet-5-5` as the named replacement. Bedrock runs its own clock: it moved Sonnet 4.5 to Legacy on October 8, with public extended access from January 8, 2027 and end of life April 8, 2027.
+**مکانیزم محافظتی بازگشت به Opus 4.8:** هنگامی که طبقه‌بندهای Fable 5 درخواستی را در یکی از سه دسته (تکنیک‌های تهاجمی سایبری، زیست‌شناسی و شیمی مرتبط با سلاح‌های بیولوژیکی، یا تلاش برای تقطیر مدل) تشخیص می‌دادند، پاسخ به **Claude Opus 4.8** واگذار می‌شد و به کاربر اطلاع داده می‌شد. آنتروپیک اعلام کرد این رویداد در کمتر از ۵٪ نشست‌ها فعال می‌شد و از آنجا که عمداً محافظه‌کارانه تنظیم شده بود، برخی درخواست‌های بی‌ضرر نیز مشمول آن شدند. از منظر معماری، این یک نمونه عملیاتی از **مسیریابی در سطوح مدل به عنوان یک کنترل ایمنی** است، نه صرفاً کنترلی بر هزینه‌ها. مدل Fable 5.1 آن را به قرارداد صریح و قابل صورت‌حساب در API که در بالا تشریح شد تبدیل کرد.
 
-### Claude Fable 5 (Anthropic) - June 2026, SUPERSEDED by Fable 5.1
+**ملاحظات:** قیمت هر Token دو برابر Opus 4.8 است (۱۰ دلار / ۵۰ دلار در برابر ۵ دلار / ۲۵ دلار). ترافیک کلاس Mythos مشمول الزام نگهداری ۳۰ روزه داده‌ها است (برای آموزش استفاده نمی‌شود؛ لاگ‌های دسترسی ثبت می‌شوند؛ در تقریباً تمام موارد پس از ۳۰ روز حذف می‌گردد)، که برای بررسی‌های انطباق اهمیت دارد. در پلن‌های اشتراکی، از ۹ تا ۲۲ ژوئن بدون هزینه اضافه گنجانده شده بود و سپس به اعتبارات مصرفی منتقل شد. خواندن از کش در Fable 5 برابر ۱.۰۰ دلار به ازای هر ۱ میلیون Token بود؛ Fable 5.1 آن را با همان قیمت پایه به ۰.۲۵ دلار کاهش داد، بنابراین دلیل اندکی برای شروع کار جدید روی Fable 5 وجود دارد.
 
-| Attribute | Value |
+### Claude Mythos 5 (Anthropic) - ژوئن ۲۰۲۶، جایگزین‌شده توسط Mythos 5.1
+
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `claude-fable-5` |
-| Context Window | 1M tokens (Opus 4.7 tokenizer; roughly 30% more tokens than pre-4.7 models for the same text) |
-| Max Output | 128K tokens |
-| Input Cost | $10.00 / 1M tokens |
-| Output Cost | $50.00 / 1M tokens |
-| Thinking | Adaptive thinking, always on (no separate extended-thinking toggle) |
-| Multimodal | Text + Vision (new state of the art on vision tasks per Anthropic) |
-| Benchmarks | State of the art on nearly all tested benchmarks per Anthropic; highest frontier score on Cognition's FrontierCode, highest on the Hebbia Finance Benchmark, ViBench, and CursorBench. Standard numeric scores (SWE-bench, GPQA) were not published in the launch post. |
-| Released | June 9, 2026 (GA on Claude API, Claude Platform on AWS, Amazon Bedrock, Vertex AI, Microsoft Foundry) |
+| شناسه مدل (Model ID) | `claude-mythos-5` |
+| وضعیت | دسترسی محدود در زمان عرضه: شرکای پروژه Glasswing و محققان منتخب زیست‌شناسی |
+| رابطه | مدل پایه یکسان با Fable 5 همراه با برداشته شدن نرده‌های محافظ در برخی حوزه‌ها |
+| قیمت‌گذاری | ۱۰ دلار / ۵۰ دلار به ازای هر ۱ میلیون Token (کمتر از نصف قیمت Mythos Preview) |
+| تاریخ انتشار | ۹ ژوئن ۲۰۲۶ |
 
-**What it is:** A Mythos-class model made safe for general availability. Until then the Mythos line (SWE-bench Verified 93.9% on Mythos Preview) was restricted to ~11 Project Glasswing partners over dual-use cybersecurity concerns. Fable 5 brought that capability tier to everyone by pairing it with conservative safeguards.
+**دلیل اهمیت:** جانشین Claude Mythos Preview با توانمندی قابل مقایسه یا اندکی قوی‌تر و قیمتی بسیار پایین‌تر شد. تفکیک Fable و Mythos یک الگوی عرضه دو مسیری را رسمیت بخشید: یک عرضه عمومی محافظت‌شده، و یک عرضه بدون محدودیت برای مدافعان تاییدصلاحیت‌شده. مدل Mythos 5.1 این رویه را ادامه می‌دهد.
 
-**The Opus 4.8 fallback safeguard:** When Fable 5's classifiers detected a request in one of three categories (offensive cyber techniques, bioweapon-adjacent biology and chemistry, or attempts to distill the model), the response was delegated to **Claude Opus 4.8** and the user was informed. Anthropic said this triggered in under 5% of sessions and was deliberately tuned conservative, so some harmless requests got caught. Architecturally this is a production example of **model-tier routing as a safety control**, not just a cost control. Fable 5.1 turned it into the explicit, billable API contract described above.
+### Claude Opus 4.8 (Anthropic) - مه ۲۰۲۶، قدیمی (Legacy)
 
-**Considerations:** 2x the per-token price of Opus 4.8 ($10/$50 vs $5/$25). Mythos-class traffic carries a 30-day data retention requirement (not used for training; access-logged; deleted after 30 days in almost all cases), which matters for compliance reviews. On subscription plans it was included at no extra cost June 9-22, then moved to usage credits. Fable 5 cache reads were $1.00 per 1M; Fable 5.1 cut them to $0.25 at the same list price, so there is little reason to start new work on Fable 5.
-
-### Claude Mythos 5 (Anthropic) - June 2026, SUPERSEDED by Mythos 5.1
-
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `claude-mythos-5` |
-| Status | Limited availability at launch: Project Glasswing partners and select biology researchers |
-| Relationship | Same underlying model as Fable 5 with safeguards lifted in some areas |
-| Pricing | $10 / $50 per 1M (less than half of Mythos Preview) |
-| Released | June 9, 2026 |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token (قیمت‌گذاری استاندارد در سراسر کل پنجره) |
+| هزینه ورودی | ۵.۰۰ دلار / ۱ میلیون Token (مشابه 4.7) |
+| هزینه خروجی | ۲۵.۰۰ دلار / ۱ میلیون Token (مشابه 4.7) |
+| کش: نوشتن ۵ دقیقه‌ای | ۶.۲۵ دلار / ۱ میلیون Token |
+| کش: نوشتن ۱ ساعته | ۱۰.۰۰ دلار / ۱ میلیون Token |
+| کش: برخورد / تازه‌سازی | ۰.۵۰ دلار / ۱ میلیون Token |
+| ای‌پی‌آی بچ (Batch API) | ۲.۵۰ دلار / ۱۲.۵۰ دلار به ازای ۱ میلیون Token (۵۰٪ تخفیف) |
+| حالت سریع (Fast mode) | ۱۰ دلار / ۵۰ دلار به ازای هر ۱ میلیون Token در پیش‌نمایش تحقیقاتی (حدود ۲.۵ برابر سریع‌تر؛ ۳ برابر ارزان‌تر از حالت سریع Opus 4.7 که ۳۰ دلار / ۱۵۰ دلار بود). در ۳۰ اکتبر منسوخ شد؛ در ۳۰ نوامبر ۲۰۲۶ حذف می‌شود و پس از آن مقدار `speed: "fast"` خطا بازمی‌گرداند |
+| تفکر گسترش‌یافته (Extended Thinking) | بومی، حالت تطبیقی |
+| چندوجهی (Multimodal) | متن + بینایی با وضوح بالاتر |
+| بنچمارک SWE-bench Verified | ۸۸.۶٪ |
+| بنچمارک SWE-Bench Pro | ۶۹.۲٪ (افزایش از ۶۴.۳٪ در Opus 4.7) |
+| بنچمارک Terminal-Bench 2.1 | ۷۴.۶٪ (مدل GPT-5.5 با ۷۸.۲٪ در زمان عرضه پیشتاز بود) |
+| بنچمارک GDPval-AA | ۱۸۹۰ اِلو (Elo) (افزایش از ۱۷۵۳ در Opus 4.7) |
+| بنچمارک OSWorld-Verified | ۸۲.۳٪ |
+| بنچمارک Online-Mind2Web | ۸۴٪ |
+| تاریخ انتشار | ۲۸ مه ۲۰۲۶ (عرضه عمومی یا GA روی Claude API، AWS Bedrock، Vertex AI) |
 
-**Why it matters:** Succeeded Claude Mythos Preview at comparable or somewhat stronger capability and much lower price. The Fable/Mythos split formalized a two-track release pattern: one safeguarded general release, one unrestricted release for vetted defenders. Mythos 5.1 continues it.
+**بهترین کاربرد برای:** پروژه‌های کدنویسی خودمختار طولانی‌مدت در Claude Code، مهاجرت‌ها در مقیاس پایگاه کد (codebase-scale migrations)، ورک‌فلوهای ایجنتیک نیازمند زیرایجنت‌های موازی، و بارهای کاری که در آن‌ها بهبود همسویی و صداقت اهمیت دارد. این مدل همچنین یکی از دو مقصد مجاز برای بازگشت محافظتی (safeguard fallback) مدل Fable 5.1 است (در کنار Opus 5)، و ارزیابی‌های Opus 5.5 آنتروپیک در هنگام مداخله نرده‌های محافظ، تسک‌های سایبری را به آن هدایت می‌کردند؛ بنابراین حتی برای تیم‌هایی که هرگز مستقیماً آن را فراخوانی نمی‌کنند، در مسیرهای پروداکشن باقی می‌ماند.
 
-### Claude Opus 4.8 (Anthropic) - May 2026, Legacy
+**قابلیت‌های کلیدی نسبت به Opus 4.7:**
+- **ورک‌فلوهای پویا (Dynamic Workflows)** (پیش‌نمایش تحقیقاتی): Claude کار را برنامه‌ریزی کرده و صدها زیرایجنت موازی را در یک نشست واحد Claude Code اجرا می‌کند، خروجی‌های آن‌ها را راستی‌آزمایی کرده و گزارش می‌دهد. مناسب برای مهاجرت‌های پایگاه کد با صدها هزار خط کد.
+- **پیام‌های سیستمی در میانه تسک (Mid-task system messages):** اکنون Messages API پیام‌های سیستمی را در میانه گفتگو می‌پذیرد که برای هدایت اجراهای طولانی ایجنت بدون بستن نشست مفید است.
+- **حالت سریع اختیاری (Optional fast mode)** با سرعت تقریبی ۲.۵ برابر با قیمت ۱۰ دلار / ۵۰ دلار به ازای هر ۱ میلیون Token، با قیمتی ۳ برابر ارزان‌تر از حالت سریع Opus 4.7 (در ۳۰ نوامبر ۲۰۲۶ حذف می‌شود؛ حالت سریع Opus 5.5 با ۸ دلار / ۴۰ دلار جایگزین آن است).
+- **کلید تنظیم میزان تلاش (Effort-control toggle)** در `claude.ai` و Cowork به کاربران امکان می‌دهد عمق استدلال را به ازای هر نوبت تنظیم کنند.
+- **افزایش محدودیت‌های نرخ مصرف (Rate limits) در Claude Code.**
 
-| Attribute | Value |
-|-----------|-------|
-| Context Window | 1M tokens (standard pricing across the full window) |
-| Input Cost | $5.00 / 1M tokens (same as 4.7) |
-| Output Cost | $25.00 / 1M tokens (same as 4.7) |
-| Cache: 5m write | $6.25 / 1M tokens |
-| Cache: 1h write | $10.00 / 1M tokens |
-| Cache: hit / refresh | $0.50 / 1M tokens |
-| Batch API | $2.50 / $12.50 per 1M (50% discount) |
-| Fast mode | $10 / $50 per 1M in research preview (about 2.5x faster; 3x cheaper than the Opus 4.7 fast mode, which was $30 / $150). Deprecated October 30; removed November 30, 2026, after which `speed: "fast"` returns an error |
-| Extended Thinking | Native, adaptive mode |
-| Multimodal | Text + Higher-resolution Vision |
-| SWE-bench Verified | 88.6% |
-| SWE-Bench Pro | 69.2% (up from 64.3% on Opus 4.7) |
-| Terminal-Bench 2.1 | 74.6% (GPT-5.5 led at 78.2% at release) |
-| GDPval-AA | 1890 Elo (up from 1753 on Opus 4.7) |
-| OSWorld-Verified | 82.3% |
-| Online-Mind2Web | 84% |
-| Released | May 28, 2026 (GA on Claude API, AWS Bedrock, Vertex AI) |
-
-**Best for:** Long-running autonomous coding work in Claude Code, codebase-scale migrations, agentic workflows that need parallel subagents, and workloads where the alignment and honesty gains matter. It is also one of Fable 5.1's two permitted safeguard fallback targets (with Opus 5), and Anthropic's Opus 5.5 evals routed cyber tasks to it when safeguards intervened, so it stays in production paths even for teams that never call it directly.
-
-**Key features over Opus 4.7:**
-- **Dynamic Workflows** (research preview): Claude plans the work and runs hundreds of parallel subagents in a single Claude Code session, verifies their outputs, and reports back. Suited for codebase-scale migrations across hundreds of thousands of lines.
-- **Mid-task system messages**: The Messages API now accepts system messages mid-conversation, useful for steering long agent runs without ending the session.
-- **Optional fast mode** at roughly 2.5x speed for $10 / $50 per 1M, priced 3x lower than the Opus 4.7 fast mode (removed November 30, 2026; Opus 5.5 fast mode at $8 / $40 is the replacement).
-- **Effort-control toggle** in `claude.ai` and Cowork lets users tune reasoning depth per turn.
-- **Expanded Claude Code rate limits**.
-
-**Considerations:** Tokenizer is the same one introduced in Opus 4.7: roughly 30% more tokens than the pre-4.7 tokenizer for the same text, per Anthropic's token-counting docs, with the exact increase depending on content (the Opus 4.7 launch post gave a range of 1.0x to 1.35x). At release, GPT-5.5 held the SWE-Bench Verified leaderboard at 88.7% and led Terminal-Bench 2.1 at 78.2%. GPQA Diamond slipped 0.6 pts versus Opus 4.7. Anthropic's tokenizer change means token counts and bills for the same text are not directly comparable to pre-4.7 models. There was no Claude Sonnet 4.8; the line jumped to **Claude Sonnet 5** on June 30, 2026, which replaced Sonnet 4.6 as the production workhorse. For new work, Opus 5.5 is cheaper ($4/$20) and stronger.
+**ملاحظات:** ابزار Tokenizer همان نسخه‌ای است که در Opus 4.7 معرفی شد: طبق اسناد شمارش Token آنتروپیک، تقریباً ۳۰٪ Token بیشتر نسبت به Tokenizerهای پیش از 4.7 برای همان متن تولید می‌کند که میزان دقیق افزایش به محتوا بستگی دارد (پست معرفی Opus 4.7 بازه 1.0x تا 1.35x را ارائه داد). در زمان عرضه، GPT-5.5 با ۸۸.۷٪ صدرنشین لیدربورد SWE-Bench Verified بود و در Terminal-Bench 2.1 با ۷۸.۲٪ پیشتازی می‌کرد. بنچمارک GPQA Diamond در مقایسه با Opus 4.7 به میزان ۰.۶ واحد افت کرد. تغییر Tokenizer آنتروپیک بدین معناست که تعداد Tokenها و صورت‌حساب‌ها برای متن یکسان، مستقیماً با مدل‌های پیش از 4.7 قابل مقایسه نیست. مدلی به نام Claude Sonnet 4.8 عرضه نشد؛ این شاخه در ۳۰ ژوئن ۲۰۲۶ مستقیماً به **Claude Sonnet 5** ارتقا یافت که جایگزین Sonnet 4.6 به عنوان اسب کاری محیط عملیاتی شد. برای پروژه‌های جدید، Opus 5.5 ارزان‌تر (۴ دلار / ۲۰ دلار) و قدرتمندتر است.
 
 > [!NOTE]
-> **Retired August 5, 2026:** `claude-opus-4-1-20250805` was removed from the Claude API, closing out the last $15/$75 per 1M Opus tier. At that point every first-party Opus SKU was $5/$25 ($10/$50 in Fast mode); Opus 5.5 later cut the current Opus to $4/$20. Amazon Bedrock and Google Cloud set their own schedules: on Bedrock, Opus 4.1 moved into higher-priced public extended access on October 8, 2026 and reaches end of life on January 8, 2027. Code pinned to that ID fails on the first-party API while still working on the partner clouds.
+> **بازنشسته‌شده در ۵ اوت ۲۰۲۶:** مدل `claude-opus-4-1-20250805` از Claude API حذف شد و پرونده آخرین سطح قیمتی ۱۵ دلار / ۷۵ دلار به ازای هر ۱ میلیون Token در سری Opus بسته شد. در آن مقطع، قیمت تمام مدل‌های دست‌اول Opus برابر ۵ دلار / ۲۵ دلار بود (۱۰ دلار / ۵۰ دلار در حالت سریع)؛ پس از آن Opus 5.5 قیمت نسخه فعلی Opus را به ۴ دلار / ۲۰ دلار کاهش داد. پلتفرم‌های Amazon Bedrock و Google Cloud زمان‌بندی‌های اختصاصی خود را تعیین می‌کنند: در Bedrock، مدل Opus 4.1 در ۸ اکتبر ۲۰۲۶ به بخش دسترسی تمدیدیافته عمومی با قیمت بالاتر منتقل شد و در ۸ ژانویه ۲۰۲۷ به پایان عمر خود می‌رسد. کدهایی که روی این شناسه مدل فیکس شده باشند، در API دست‌اول با خطا مواجه می‌شوند، در حالی که در ابرهای شریک همچنان کار می‌کنند.
 
-### Claude Opus 4.7 (Anthropic) - April 2026, Legacy
+### Claude Opus 4.7 (Anthropic) - آوریل ۲۰۲۶، قدیمی (Legacy)
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Context Window | 1M tokens |
-| Max Output | 128K tokens |
-| Input Cost | $5.00 / 1M tokens (same as 4.6) |
-| Output Cost | $25.00 / 1M tokens (same as 4.6) |
-| Extended Thinking | Native, Adaptive mode |
-| Multimodal | Text + Higher-resolution Vision |
-| SWE-bench Verified (Adaptive) | 87.6% (May 13, 2026) |
-| Released | April 16, 2026 (GA on API, Bedrock, Vertex, Microsoft Foundry) |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token |
+| حداکثر خروجی | ۱۲۸ هزار Token |
+| هزینه ورودی | ۵.۰۰ دلار / ۱ میلیون Token (مشابه 4.6) |
+| هزینه خروجی | ۲۵.۰۰ دلار / ۱ میلیون Token (مشابه 4.6) |
+| تفکر گسترش‌یافته (Extended Thinking) | بومی، حالت تطبیقی |
+| چندوجهی (Multimodal) | متن + بینایی با وضوح بالاتر |
+| بنچمارک SWE-bench Verified (تطبیقی) | ۸۷.۶٪ (۱۳ مه ۲۰۲۶) |
+| تاریخ انتشار | ۱۶ آوریل ۲۰۲۶ (عرضه عمومی یا GA روی API، Bedrock، Vertex، Microsoft Foundry) |
 
-**Status:** Still available as a legacy model. It powered Claude Code at release; Claude Code's default Opus has been Opus 5.5 since 2.1.280. Prefer Opus 5.5 for new work: it is cheaper and stronger.
+**وضعیت:** همچنان به عنوان یک مدل قدیمی (legacy) در دسترس است. این مدل در زمان عرضه قدرت‌بخش Claude Code بود؛ مدل پیش‌فرض Opus در Claude Code از نسخه 2.1.280 به Opus 5.5 تغییر یافته است. برای کارهای جدید، Opus 5.5 را ترجیح دهید: هم ارزان‌تر است و هم قدرتمندتر.
 
-### Claude Mythos Preview (Anthropic) - SUCCEEDED BY MYTHOS 5 AND 5.1
+### Claude Mythos Preview (Anthropic) - جانشین‌شده با MYTHOS 5 و 5.1
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Status | Restricted research preview, Project Glasswing partners only (~11 orgs: AWS, Apple, Cisco, Google, Microsoft, NVIDIA, Palo Alto, etc.); deprecated since June 9, 2026, retirement date to be announced |
-| Reason for restriction | Dual-use cybersecurity capabilities |
-| SWE-bench Verified | 93.9% (May 13, 2026; the published SOTA before the Fable 5 / Mythos 5 launch) |
-| Released | April 7, 2026 (restricted partner preview); succeeded by Claude Mythos 5 on June 9, 2026 at less than half the price |
+| وضعیت | پیش‌نمایش تحقیقاتی محدود، صرفاً برای شرکای پروژه Glasswing (حدود ۱۱ سازمان: AWS، Apple، Cisco، Google، Microsoft، NVIDIA، Palo Alto و غیره)؛ از ۹ ژوئن ۲۰۲۶ منسوخ شده است، تاریخ بازنشستگی متعاقباً اعلام خواهد شد |
+| دلیل محدودیت | قابلیت‌های دارای استفاده دوگانه (dual-use) در امنیت سایبری |
+| بنچمارک SWE-bench Verified | ۹۳.۹٪ (۱۳ مه ۲۰۲۶؛ سطح پیشرفته یا SOTA منتشرشده قبل از عرضه Fable 5 / Mythos 5) |
+| تاریخ انتشار | ۷ آوریل ۲۰۲۶ (پیش‌نمایش محدود شرکا)؛ در ۹ ژوئن ۲۰۲۶ با قیمتی کمتر از نصف، Claude Mythos 5 جانشین آن شد |
 
-**Best for:** Historical reference. Its capability tier reached general availability as Claude Fable 5 on June 9, 2026; new gated security work should target Mythos 5.1 through the Cyber Verification Program, which absorbed Glasswing on October 6.
+**بهترین کاربرد برای:** ارجاع تاریخی. سطح توانمندی آن در ۹ ژوئن ۲۰۲۶ تحت عنوان Claude Fable 5 به عرضه عمومی رسید؛ پروژه‌های امنیتی نیازمند دسترسی کنترل‌شده باید مدل Mythos 5.1 را از طریق برنامه تایید صلاحیت سایبری (Cyber Verification Program) هدف قرار دهند که در ۶ اکتبر پروژه Glasswing را در خود جذب کرد.
 
-### Claude Opus 4.6 (Anthropic) - February 2026, Legacy
+### Claude Opus 4.6 (Anthropic) - فوریه ۲۰۲۶، قدیمی (Legacy)
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Context Window | 1M tokens |
-| Max Output | 128K tokens |
-| Input Cost | $5.00 / 1M tokens |
-| Output Cost | $25.00 / 1M tokens |
-| Extended Thinking | Native adaptive thinking (configurable budget_tokens) |
-| Multimodal | Text + Vision |
-| Highlights | Anthropic's flagship at release; now legacy |
-| Released | February 2026 |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token |
+| حداکثر خروجی | ۱۲۸ هزار Token |
+| هزینه ورودی | ۵.۰۰ دلار / ۱ میلیون Token |
+| هزینه خروجی | ۲۵.۰۰ دلار / ۱ میلیون Token |
+| تفکر گسترش‌یافته (Extended Thinking) | تفکر تطبیقی بومی (با امکان تنظیم budget_tokens) |
+| چندوجهی (Multimodal) | متن + بینایی |
+| نکات برجسته | پرچم‌دار آنتروپیک در زمان عرضه؛ اکنون قدیمی (legacy) |
+| تاریخ انتشار | فوریه ۲۰۲۶ |
 
-**Status:** Still available. Opus 5.5 is cheaper ($4/$20 vs $5/$25) and stronger, so there is no cost reason to stay on it.
+**وضعیت:** همچنان در دسترس است. مدل Opus 5.5 ارزان‌تر (۴ دلار / ۲۰ دلار در برابر ۵ دلار / ۲۵ دلار) و قدرتمندتر است، بنابراین هیچ دلیل اقتصادی برای ماندن روی آن وجود ندارد.
 
-### Claude Sonnet 4.6 (Anthropic) - February 2026, Legacy
+### Claude Sonnet 4.6 (Anthropic) - فوریه ۲۰۲۶، قدیمی (Legacy)
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Context Window | 1M tokens |
-| Input Cost | $3.00 / 1M tokens |
-| Output Cost | $15.00 / 1M tokens |
-| Extended Thinking | Supported |
-| Multimodal | Text + Vision |
-| Highlights | Handled tasks that previously required the Opus tier; the cost/quality default through mid-2026 |
-| Released | February 2026 |
+| پنجره کانتکست (Context Window) | ۱ میلیون Token |
+| هزینه ورودی | ۳.۰۰ دلار / ۱ میلیون Token |
+| هزینه خروجی | ۱۵.۰۰ دلار / ۱ میلیون Token |
+| تفکر گسترش‌یافته (Extended Thinking) | پشتیبانی می‌شود |
+| چندوجهی (Multimodal) | متن + بینایی |
+| نکات برجسته | مدیریت تسک‌هایی که پیش‌تر به سطح Opus نیاز داشتند؛ گزینه پیش‌فرض از نظر نسبت هزینه/کیفیت تا اواسط سال ۲۰۲۶ |
+| تاریخ انتشار | فوریه ۲۰۲۶ |
 
-**Status:** Still available, but at $3/$15 it now costs more than Sonnet 5.5 ($2/$10). Migrate unless your evals say otherwise.
+**وضعیت:** همچنان در دسترس است، اما با قیمت ۳ دلار / ۱۵ دلار اکنون گران‌تر از Sonnet 5.5 (برابر ۲ دلار / ۱۰ دلار) است. مهاجرت کنید مگر اینکه ارزیابی‌های شما خلاف آن را نشان دهند.
 
-### GPT-6 Astra (OpenAI) - September 2026
+### GPT-6 Astra (OpenAI) - سپتامبر ۲۰۲۶
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `gpt-6-astra` |
-| Context Window | 1.05M tokens; 128K max output; knowledge cutoff April 30, 2026 |
-| Input / Output Cost | $10.00 / $50.00 per 1M; above 272K input the whole request bills at $20 / $75 |
-| Cache | Cached input $1.00; cache write $12.50 (30-minute TTL) or $25.00 (12-hour TTL, Responses API, since October 20) |
-| Service tiers | Batch and Flex 50% off; Fast 2x ($20 / $100); Ultrafast 6x ($60 / $300, GA September 29, Responses API) |
-| Reasoning | Efforts `low`, `medium`, `high`, `xhigh`, `max`; no `none`; no custom `temperature`, `top_p`, or logprobs; tool calling requires the Responses API |
-| Availability | Staged rollout from September 3 (Daybreak organizations first), in the API by September 5; Amazon Bedrock GA September 8 (In-Region and Geo inference $11 / $55, 10% over Global); Microsoft Foundry GA; Google Cloud Model Garden private preview for select enterprise customers since October 22 (no GA date or per-token prices published) |
-| Safety rating | First OpenAI model rated Critical for cybersecurity under its Preparedness Framework; High for biological and chemical capability. OpenAI says covert sandbagging is likely not reliably caught |
-| Benchmarks | Terminal-Bench 4.0 leaderboard 58.18% at max, tied with GPT-6.1 Sol behind Claude Opus 5.5 (64.85%) and Sonnet 5.5 (61.82%) (tbench.ai, entries added October 6). ARC-AGI-3 (ARC Prize): 62.7% on the provider-neutral Standard harness (max, $26,098) vs 99.9% on ARC Prize's Provider Adapter harness (high, $18,817), which uses OpenAI's own context-management features. AA Intelligence Index v5.0 and v5.0.1: 57 (max) |
-| Released | September 3, 2026 |
+| شناسه مدل | `gpt-6-astra` |
+| پنجره کانتکست | ۱.۰۵M Token؛ حداکثر خروجی ۱۲۸K؛ پایان داده‌های آموزشی (knowledge cutoff) ۳۰ آوریل ۲۰۲۶ |
+| هزینه ورودی / خروجی | $10.00 / $50.00 به ازای هر 1M Token؛ برای ورودی‌های بالاتر از 272K کل درخواست با نرخ $20 / $75 محاسبه می‌شود |
+| کش (Cache) | ورودی کش‌شده $1.00؛ نوشتن در کش $12.50 (با TTL سی‌دقیقه‌ای) یا $25.00 (با TTL دوازده‌ساعته، Responses API، از ۲۰ اکتبر) |
+| سطوح سرویس | حالت‌های Batch و Flex با ۵۰٪ تخفیف؛ حالت Fast با ۲ برابر قیمت ($20 / $100)؛ حالت Ultrafast با ۶ برابر قیمت ($60 / $300، عرضه عمومی یا GA در ۲۹ سپتامبر، Responses API) |
+| استدلال (Reasoning) | سطوح تلاش (Effort) شامل `low`، `medium`، `high`، `xhigh` و `max`؛ فاقد حالت `none`؛ بدون پشتیبانی از `temperature`، `top_p` یا logprobهای سفارشی؛ فراخوانی ابزار نیازمند Responses API است |
+| قابلیت دسترسی | عرضه مرحله‌ای از ۳ سپتامبر (ابتدا برای سازمان‌های برنامه Daybreak)، در API تا ۵ سپتامبر؛ عرضه عمومی (GA) در Amazon Bedrock در ۸ سپتامبر (استنتاج درون‌منطقه‌ای و جغرافیایی یا Geo inference با قیمت $11 / $55، یعنی ۱۰٪ بالاتر از Global)؛ عرضه عمومی در Microsoft Foundry؛ پیش‌نمایش خصوصی در Google Cloud Model Garden برای مشتریان سازمانی منتخب از ۲۲ اکتبر (هیچ تاریخ عرضه عمومی یا قیمت به ازای هر Token منتشر نشده است) |
+| رتبه‌بندی ایمنی | نخستین مدل OpenAI با رتبه بحرانی (Critical) در امنیت سایبری ذیل چارچوب آمادگی (Preparedness Framework) این شرکت؛ دارای رتبه بالا (High) برای توانمندی بیولوژیکی و شیمیایی. OpenAI اعلام کرده که خرابکاری پنهان (covert sandbagging) احتمالاً به‌صورت قابل اتکا شناسایی نمی‌شود |
+| بنچمارک‌ها | جدول لیدربورد Terminal-Bench 4.0 برابر با ۵۸.۱۸٪ در حالت max، هم‌تراز با GPT-6.1 Sol و پشت سر Claude Opus 5.5 (با ۶۴.۸۵٪) و Sonnet 5.5 (با ۶۱.۸۲٪) (سایت tbench.ai، ورودی‌های اضافه‌شده در ۶ اکتبر). بنچمارک ARC-AGI-3 (جایزه ARC Prize): برابر با ۶۲.۷٪ روی بستر آزمون استاندارد و مستقل از ارائه‌دهنده (Standard harness) (در حالت max، هزینه $26,098) در مقایسه با ۹۹.۹٪ روی بستر آزمون Provider Adapter متعلق به ARC Prize (در حالت high، هزینه $18,817) که از قابلیت‌های مدیریت کانتکست اختصاصی OpenAI استفاده می‌کند. شاخص هوش AA Intelligence Index نسخه v5.0 و v5.0.1: برابر با ۵۷ (در حالت max) |
+| تاریخ انتشار | ۳ سپتامبر ۲۰۲۶ |
 
-**What it is:** OpenAI's new ceiling model, at the same $10/$50 as Claude Fable 5.1. Three things change cost models. First, speed is a priced axis with three rungs (Standard, Fast at 2x, Ultrafast at 6x), so a latency SLO is a budget decision. Second, the 272K cliff applies to the entire request, so a prompt just over the line costs roughly twice one just under it: prompt-length routing is a cost control. Third, token efficiency: Artificial Analysis measured Astra using about a third of GPT-5.6 Sol's tokens per coding task, so its cost per task sits closer to the mid tier than the list price suggests.
+**ماهیت مدل:** بالاترین مدل جدید OpenAI (مدل سقف توانمندی)، با همان قیمت $10/$50 مشابه Claude Fable 5.1. سه عامل، مدل‌های هزینه را تغییر می‌دهند: نخست، سرعت به یک متغیر قیمت‌گذاری‌شده با سه پله تبدیل شده است (Standard، حالت Fast با ۲ برابر قیمت، و Ultrafast با ۶ برابر قیمت)؛ بنابراین رعایت SLO تاخیر (Latency SLO) به یک تصمیم‌گیری بودجه‌ای تبدیل می‌شود. دوم، پرتگاه کانتکست 272K Token برای کل درخواست اعمال می‌شود؛ بنابراین یک Prompt که کمی بالاتر از این مرز قرار گیرد، تقریباً دو برابر یک Prompt درست زیر این خط هزینه برمی‌دارد: از این رو، مسیریابی بر اساس طول Prompt یک ابزار کنترل هزینه به شمار می‌رود. سوم، بهره‌وری مصرف Token: بر اساس سنجش Artificial Analysis، مدل Astra در هر وظیفه کدنویسی حدود یک‌سوم Tokenهای GPT-5.6 Sol را مصرف می‌کند، بنابراین هزینه آن به ازای هر وظیفه، بسیار نزدیک‌تر از آن چیزی است که قیمت رسمی نشان می‌دهد و در محدوده لایه میانی قرار می‌گیرد.
 
-**Read the harness:** the 37-point ARC-AGI-3 swing on the same model and test set comes from whether the scaffold preserves opaque reasoning state between requests. Quote Astra's numbers with harness, effort, and who ran them.
+**بستر آزمون (Harness) را بررسی کنید:** اختلاف ۳۷ امتیازی در ARC-AGI-3 روی یک مدل و مجموعه آزمون یکسان، ناشی از این است که آیا داربست نرم‌افزاری (scaffold) وضعیت استدلال مات (opaque reasoning state) را میان درخواست‌ها حفظ می‌کند یا خیر. ارقام Astra را همواره به همراه نوع بستر آزمون (harness)، سطح تلاش (effort) و مجری ارزیابی نقل کنید.
 
-### GPT-6 Sol and GPT-6 Luna (OpenAI) - September 2026
+### GPT-6 Sol و GPT-6 Luna (OpenAI) - سپتامبر ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model IDs | `gpt-6-sol`, `gpt-6-luna` (text and image in, text out; Responses and Chat Completions) |
-| Context Window | 1.05M tokens; 128K max output |
-| Sol pricing | $2.00 / $10.00 per 1M; cached input $0.20; cache write $2.50; above 272K $4 / $15 |
-| Luna pricing | $0.10 / $0.50 per 1M; cached input $0.01; cache write $0.125; above 272K $0.20 / $0.75 |
-| Batch / Flex | Sol $1 / $5; Luna $0.05 / $0.25 |
-| Lineage | Same types of data and training as GPT-6 Astra, per OpenAI. They replace GPT-5.6 Sol and Luna at about half the price; the Terra tier followed as GPT-6.1 Terra on October 26 |
-| Availability | API and Amazon Bedrock GA September 22, 2026; GPT-6 Luna (not Sol) is also in Google Cloud Model Garden private preview since October 22 |
-| Known issue | An image-encoding bug degraded image understanding and computer use until a September 25 fix shipped under the same model IDs; OpenAI told customers to rerun image evals |
-| Released | September 22, 2026 |
+| شناسه مدل‌ها | `gpt-6-sol`، `gpt-6-luna` (ورودی متن و تصویر، خروجی متن؛ پشتیبانی از APIهای Responses و Chat Completions) |
+| پنجره کانتکست | ۱.۰۵M Token؛ حداکثر خروجی ۱۲۸K |
+| قیمت‌گذاری Sol | برابر با $2.00 / $10.00 به ازای هر 1M Token؛ ورودی کش‌شده $0.20؛ نوشتن در کش $2.50؛ بالای 272K با نرخ $4 / $15 |
+| قیمت‌گذاری Luna | برابر با $0.10 / $0.50 به ازای هر 1M Token؛ ورودی کش‌شده $0.01؛ نوشتن در کش $0.125؛ بالای 272K با نرخ $0.20 / $0.75 |
+| حالت‌های Batch / Flex | مدل Sol برابر با $1 / $5؛ مدل Luna برابر با $0.05 / $0.25 |
+| تبار و پیشینه (Lineage) | طبق اعلام OpenAI، داده‌ها و فرایند آموزشی مشابه با GPT-6 Astra دارند. این مدل‌ها با حدود نصف قیمت جایگزین GPT-5.6 Sol و Luna می‌شوند؛ لایه Terra نیز در ۲۶ اکتبر در قالب GPT-6.1 Terra عرضه شد |
+| قابلیت دسترسی | عرضه عمومی (GA) در API و Amazon Bedrock در ۲۲ سپتامبر ۲۰۲۶؛ مدل GPT-6 Luna (و نه Sol) از ۲۲ اکتبر در پیش‌نمایش خصوصی Google Cloud Model Garden نیز قرار دارد |
+| مشکل شناخته‌شده | یک باگ در انکودینگ تصویر، درک تصویر و قابلیت استفاده از کامپیوتر (computer use) را تضعیف کرده بود تا اینکه در ۲۵ سپتامبر یک اصلاحیه با همان شناسه‌های مدل منتشر شد؛ OpenAI از مشتریان خواست تا ارزیابی‌های (evals) مربوط به تصویر را مجدداً اجرا کنند |
+| تاریخ انتشار | ۲۲ سپتامبر ۲۰۲۶ |
 
-**Why it matters:** Luna at $0.10/$0.50 is OpenAI's cheapest current-generation model, and since October 7 Claude Haiku 5.5 matches that list price below a 100K-token prompt (AA v5.0 scores Luna 28 and Haiku 5.5 36, both at max). The retiring gpt-5-nano ($0.05/$0.40) stays cheaper until it shuts down December 11, and OpenAI names gpt-5.6-luna ($0.20/$1.20) as its replacement, so moving to Luna instead avoids a price rise. Luna undercuts DeepSeek V4.1-Flash even off-peak ($0.15/$0.60). Gemini 2.5 Flash-Lite ($0.10/$0.40, existing users only) and Meta's Muse Spark contributor tier ($0.10/$0.20) are cheaper, and some hosted open models are cheaper on output (MiMo-V2.6-Flash $0.14/$0.28, Qwen3.8-Flash $0.15/$0.47). GPT-6.1 Terra (October 26, $1/$5) restored the middle rung, so three-tier Luna, Terra, Sol routing is back. The image bug is the operational lesson: a provider-side fix changed behavior under a stable ID, so evals must rerun on vendor changelog events, not only on model-ID changes. OpenAI's Sol post reports GPT-6 Sol at xhigh 60.5% vs Claude Opus 5 at medium 60.3% on its offline OSWorld 2.0 set (vendor-reported).
+**چرا اهمیت دارد:** مدل Luna با قیمت $0.10/$0.50 ارزان‌ترین مدل نسل فعلی OpenAI است و از ۷ اکتبر، مدل Claude Haiku 5.5 برای Promptهای زیر 100K Token با این قیمت رسمی برابری می‌کند (در شاخص AA v5.0 امتیاز Luna برابر ۲۸ و Haiku 5.5 برابر ۳۶ در حداکثر تلاش است). مدل رو به بازنشستگی gpt-5-nano ($0.05/$0.40) تا زمان توقف فعالیت در ۱۱ دسامبر ارزان‌تر باقی می‌ماند و OpenAI مدل gpt-5.6-luna ($0.20/$1.20) را به عنوان جایگزین آن معرفی کرده است، بنابراین مهاجرت به Luna مانع از افزایش هزینه‌ها می‌شود. قیمت Luna حتی از تعرفه غیرپیک (off-peak) مدل DeepSeek V4.1-Flash ($0.15/$0.60) نیز پایین‌تر است. مدل Gemini 2.5 Flash-Lite ($0.10/$0.40، فقط برای کاربران فعلی) و لایه مشارکت‌کنندگان Muse Spark شرکت متا ($0.10/$0.20) ارزان‌تر هستند و برخی مدل‌های متن‌بازِ میزبانی‌شده نیز در خروجی قیمت کمتری دارند (مدل MiMo-V2.6-Flash با $0.14/$0.28 و Qwen3.8-Flash با $0.15/$0.47). عرضه GPT-6.1 Terra در ۲۶ اکتبر ($1/$5) پله میانی را احیا کرد، بنابراین مسیریابی سه‌لایه‌ای Luna، Terra و Sol مجدداً برقرار شده است. باگ پردازش تصویر یک درس عملیاتی مهم بود: اصلاحیه‌ای از سمت ارائه‌دهنده، رفتار سیستم را ذیل یک شناسه ثابت (stable ID) تغییر داد؛ در نتیجه ارزیابی‌ها (evals) باید با هر رویدادی در گزارش تغییرات (changelog) ارائه‌دهنده دوباره اجرا شوند، نه صرفاً هنگام تغییر شناسه مدل. پست وبلاگی OpenAI در مورد Sol امتیاز GPT-6 Sol را در تلاش xhigh برابر با ۶۰.۵٪ در مقایسه با ۶۰.۳٪ برای Claude Opus 5 در تلاش medium روی مجموعه آفلاین OSWorld 2.0 گزارش کرده است (گزارش‌شده توسط ارائه‌دهنده).
 
-### GPT-6.1 Terra (OpenAI) - October 2026 NEW
+### GPT-6.1 Terra (OpenAI) - اکتبر ۲۰۲۶ (جدید)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gpt-6.1-terra` (on Bedrock, call it through the `us.openai.gpt-6.1-terra` or `global.openai.gpt-6.1-terra` inference profile) |
-| Context Window | 1.05M tokens |
-| Input / Output Cost | $1.00 / $5.00 per 1M; above 272K input the whole request bills at $2.00 / $7.50 |
-| Cache | Cached input $0.05 (0.05x); cache write $1.25 (30-minute TTL) or $2.50 (12-hour) |
-| Service tiers | Batch and Flex $0.50 / $2.50; Fast $2 / $10; no Ultrafast |
-| Reasoning | `none` through `max`, default `medium` (Astra has no `none`) |
-| Availability | API; Amazon Bedrock |
-| Safety rating | System card: Critical for cybersecurity, High for biological capability |
-| Benchmarks | AA Intelligence Index v5.0: 51 (max), 38 at the default `medium` |
-| Released | October 26, 2026 |
+| شناسه مدل | `gpt-6.1-terra` (در Bedrock، از طریق پروفایل استنتاج (inference profile) با شناسه `us.openai.gpt-6.1-terra` یا `global.openai.gpt-6.1-terra` فراخوانی شود) |
+| پنجره کانتکست | ۱.۰۵M Token |
+| هزینه ورودی / خروجی | $1.00 / $5.00 به ازای هر 1M Token؛ برای ورودی‌های بالای 272K کل درخواست با نرخ $2.00 / $7.50 محاسبه می‌شود |
+| کش (Cache) | ورودی کش‌شده $0.05 (معادل 0.05x)؛ نوشتن در کش $1.25 (با TTL سی‌دقیقه‌ای) یا $2.50 (با TTL دوازده‌ساعته) |
+| سطوح سرویس | حالت‌های Batch و Flex با قیمت $0.50 / $2.50؛ حالت Fast با قیمت $2 / $10؛ فاقد لایه Ultrafast |
+| استدلال (Reasoning) | از `none` تا `max`، مقدار پیش‌فرض `medium` (مدل Astra فاقد گزینه `none` است) |
+| قابلیت دسترسی | ارائه در API و Amazon Bedrock |
+| رتبه‌بندی ایمنی | بر اساس شناسنامه سیستم (System card): بحرانی (Critical) برای امنیت سایبری، بالا (High) برای توانمندی بیولوژیکی |
+| بنچمارک‌ها | شاخص هوش AA Intelligence Index v5.0: برابر با ۵۱ (در حالت max)، ۳۸ در مقدار پیش‌فرض `medium` |
+| تاریخ انتشار | ۲۶ اکتبر ۲۰۲۶ |
 
-**What it is:** the middle rung OpenAI skipped in September, at half the price of GPT-6.1 Sol and Claude Sonnet 5.5 and half the GPT-5.6 Terra ($2/$12) it replaces. On AA v5.0 it sits 4 points behind GPT-6.1 Sol and 3 behind Sonnet 5.5, all at max effort. The catch is effort: AA scores it 38 at the default `medium` and 51 at `max`, so the headline number costs max-effort reasoning tokens. Like Astra, it is rated Critical for cybersecurity under OpenAI's Preparedness Framework, so check its usage terms before routing security work to it. For routers it is the obvious "try Terra before Sol" step, and a cheaper default than Sol for most agent traffic if it passes your evals.
+**ماهیت مدل:** پله میانی که OpenAI در سپتامبر از آن صرف‌نظر کرده بود؛ با نصف قیمت GPT-6.1 Sol و Claude Sonnet 5.5 و نصف قیمت GPT-5.6 Terra ($2/$12) که جایگزین آن می‌شود. در بنچمارک AA v5.0 با ۴ امتیاز اختلاف پشت سر GPT-6.1 Sol و با ۳ امتیاز پشت سر Sonnet 5.5 قرار می‌گیرد (همگی در حداکثر تلاش استدلال یا max effort). نکته کلیدی در سطح تلاش (effort) نهفته است: شاخص AA به این مدل در مقدار پیش‌فرض `medium` امتیاز ۳۸ و در `max` امتیاز ۵۱ می‌دهد؛ بنابراین دستیابی به بالاترین نمره نیازمند مصرف Tokenهای استدلال در سطح تلاش حداکثری است. این مدل نیز همانند Astra ذیل چارچوب آمادگی (Preparedness Framework) شرکت OpenAI دارای رتبه بحرانی (Critical) برای امنیت سایبری است، بنابراین پیش از هدایت وظایف امنیتی به آن، شرایط استفاده از آن را بررسی کنید. برای مسیریاب‌ها (routers)، این مدل مرحله شفاف و منطقیِ «آزمودن Terra پیش از Sol» محسوب می‌شود و در صورتی که ارزیابی‌های شما (evals) را با موفقیت پشت سر بگذارد، گزینه‌ای پیش‌فرض و بسیار ارزان‌تر از Sol برای بخش عمده ترافیک ایجنت‌ها به شمار می‌رود.
 
-### GPT-6.1 Sol (OpenAI) - September 2026
+### GPT-6.1 Sol (OpenAI) - سپتامبر ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gpt-6.1-sol` |
-| Context Window | 1.05M tokens; 128K max output; knowledge cutoff April 30, 2026 |
-| Input / Output Cost | $2.00 / $10.00 per 1M; above 272K $4 / $15 |
-| Cache | Cached input $0.10 (0.05x, half of GPT-6 Sol's rate); cache write $2.50 (30-minute) or $5.00 (12-hour) |
-| Speed tiers | Fast $4 / $20; Ultrafast $12 / $60 ($24 / $90 above 272K), for all API users since October 8 |
-| Reasoning | `low`, `medium` (default), `high`, `xhigh`, `max` |
-| Features | Hosted shell, computer use, MCP, multi-agent delegation (beta, Responses API) |
-| Availability | API; Amazon Bedrock, where it follows OpenAI's lifecycle and deprecation terms rather than a Bedrock minimum-availability date; Google Cloud Model Garden private preview since October 22 |
-| Benchmarks | Terminal-Bench 4.0 leaderboard 58.18%, tied with GPT-6 Astra (tbench.ai, entries added October 6). AA Intelligence Index v5.0 and v5.0.1: 55 (max) |
-| Released | September 29, 2026 |
+| شناسه مدل | `gpt-6.1-sol` |
+| پنجره کانتکست | ۱.۰۵M Token؛ حداکثر خروجی ۱۲۸K؛ پایان داده‌های آموزشی (knowledge cutoff) ۳۰ آوریل ۲۰۲۶ |
+| هزینه ورودی / خروجی | $2.00 / $10.00 به ازای هر 1M Token؛ بالای 272K با نرخ $4 / $15 |
+| کش (Cache) | ورودی کش‌شده $0.10 (معادل 0.05x، نصف نرخ GPT-6 Sol)؛ نوشتن در کش $2.50 (با TTL سی‌دقیقه‌ای) یا $5.00 (با TTL دوازده‌ساعته) |
+| سطوح سرعت | حالت Fast با قیمت $4 / $20؛ حالت Ultrafast با قیمت $12 / $60 (بالای 272K با قیمت $24 / $90)، در دسترس برای تمام کاربران API از ۸ اکتبر |
+| استدلال (Reasoning) | سطوح `low`، `medium` (پیش‌فرض)، `high`، `xhigh` و `max` |
+| قابلیت‌ها | شل میزبانی‌شده (hosted shell)، استفاده از کامپیوتر (computer use)، پروتکل MCP و واگذاری چندایجنت (multi-agent delegation) (به‌صورت بتا در Responses API) |
+| قابلیت دسترسی | ارائه در API؛ در Amazon Bedrock (که در آن به جای پنجره زمانی حداقل دسترسی Bedrock، از چرخه عمر و شرایط منسوخ‌سازی OpenAI پیروی می‌کند)؛ پیش‌نمایش خصوصی در Google Cloud Model Garden از ۲۲ اکتبر |
+| بنچمارک‌ها | جدول لیدربورد Terminal-Bench 4.0 برابر با ۵۸.۱۸٪، هم‌تراز با GPT-6 Astra (سایت tbench.ai، ورودی‌های اضافه‌شده در ۶ اکتبر). شاخص AA Intelligence Index نسخه v5.0 و v5.0.1: برابر با ۵۵ (در حالت max) |
+| تاریخ انتشار | ۲۹ سپتامبر ۲۰۲۶ |
 
-**What it is:** OpenAI's model for complex coding and professional work at a lower cost than Astra, shipped one week after GPT-6 Sol at the same list price. On AA v5.0.1 it trails Astra by 2 points and Opus 5.5 by 4, all at max effort, and it ties Astra on the Terminal-Bench 4.0 leaderboard, at a fifth of Astra's list price. Codex CLI switched its default to GPT-6.1 Sol in rust-v0.159.1 the same day, a silent default swap for anyone who had not pinned a model. Note the Bedrock terms: cross-cloud availability no longer implies a cloud-guaranteed support window. With Google Cloud's October 22 private preview of GPT-6 Astra, GPT-6.1 Sol, and GPT-6 Luna (billed through Google Cloud Marketplace and drawing down existing commitments), all three hyperscalers now resell OpenAI frontier models, so committed-spend drawdown becomes a routing input; a preview carries no SLA, and Google lists Confidential Compute as "coming soon".
+**ماهیت مدل:** مدل OpenAI برای کدنویسی پیچیده و کارهای حرفه‌ای با هزینه‌ای کمتر از Astra، که تنها یک هفته پس از GPT-6 Sol و با همان قیمت رسمی عرضه شد. در بنچمارک AA v5.0.1 تنها ۲ امتیاز با Astra و ۴ امتیاز با Opus 5.5 فاصله دارد (همگی در حداکثر تلاش استدلال)، و در جدول لیدربورد Terminal-Bench 4.0 با یک‌پنجُم قیمت رسمی Astra، با آن هم‌تراز شده است. ابزار Codex CLI در نسخه rust-v0.159.1 در همان روز مدل پیش‌فرض خود را به GPT-6.1 Sol تغییر داد؛ تغییری خاموش برای هر کاربری که مدل خاصی را پین نکرده بود. به شرایط Bedrock توجه داشته باشید: در دسترس بودن در میان ابرهای مختلف (cross-cloud availability) دیگر به معنای ضمانت دوره پشتیبانی توسط ارائه‌دهنده ابری نیست. با آغاز پیش‌نمایش خصوصی Google Cloud در ۲۲ اکتبر برای مدل‌های GPT-6 Astra، GPT-6.1 Sol و GPT-6 Luna (که از طریق Google Cloud Marketplace فاکتور شده و از تعهدات مالی مصرف موجود کسر می‌شود)، اکنون هر سه ارائه‌دهنده بزرگ ابری (hyperscalerها) مدل‌های پیشرو OpenAI را بازفروش می‌کنند؛ بنابراین استهلاک تعهدات مالی (committed-spend drawdown) به یک پارامتر ورودی در تصمیم‌گیری‌های مسیریابی تبدیل می‌شود. نسخه پیش‌نمایش فاقد توافق‌نامه سطح خدمات (SLA) است و گوگل ویژگی محاسبات محرمانه (Confidential Compute) را در وضعیت «به‌زودی» درج کرده است.
 
-### GPT-5.4 (OpenAI) - March 2026
+### GPT-5.4 (OpenAI) - مارس ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Context Window | 272K tokens (standard); extended available |
-| Input Cost | $2.50 / 1M tokens (cached $0.25) |
-| Output Cost | $15.00 / 1M tokens |
-| Multimodal | Text, Vision, native computer use |
-| Highlights | Built-in computer-use capabilities; 33% fewer factual errors vs GPT-5.2; combines coding + agentic strengths |
-| Released | March 2026 |
+| پنجره کانتکست | ۲۷۲K Token (استاندارد)؛ نسخه گسترش‌یافته موجود است |
+| هزینه ورودی | $2.50 به ازای هر 1M Token (ورودی کش‌شده $0.25) |
+| هزینه خروجی | $15.00 به ازای هر 1M Token |
+| چندحالته (Multimodal) | متن، بینایی ماشین، استفاده بومی از کامپیوتر (native computer use) |
+| نکات برجسته | قابلیت‌های داخلی استفاده از کامپیوتر؛ ۳۳٪ خطای واقعی کمتر در مقایسه با GPT-5.2؛ ترکیب نقاط قوت در کدنویسی و رفتارهای ایجنتیک |
+| تاریخ انتشار | مارس ۲۰۲۶ |
 
-**Best for:** Existing agentic workflows already validated on it.
-**Considerations:** Above 272K input tokens the whole request bills at long-context rates ($5 / $22.50). GPT-6 Sol is cheaper ($2/$10) for new builds.
+**مناسب‌ترین کاربرد:** جریان‌های کاری ایجنتیکِ فعلی که قبلاً روی این مدل اعتبارسنجی شده‌اند.
+**ملاحظات:** برای ورودی‌های بالای 272K Token، کل درخواست با نرخ‌های کانتکست طولانی محاسبه می‌شود ($5 / $22.50). برای پروژه‌های جدید، مدل GPT-6 Sol با قیمت $2/$10 گزینه‌ای اقتصادی‌تر است.
 
-### GPT-5.4-mini (OpenAI) - March 2026
+### GPT-5.4-mini (OpenAI) - مارس ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Context Window | 272K tokens |
-| Input Cost | $0.75 / 1M tokens |
-| Output Cost | $4.50 / 1M tokens |
-| Highlights | Cost/performance option for high-volume GPT-5 tier workloads |
-| Released | March 2026 |
+| پنجره کانتکست | ۲۷۲K Token |
+| هزینه ورودی | $0.75 به ازای هر 1M Token |
+| هزینه خروجی | $4.50 به ازای هر 1M Token |
+| نکات برجسته | گزینه‌ای با تعادل هزینه و کارایی برای بارهای کاری پرحجم در لایه GPT-5 |
+| تاریخ انتشار | مارس ۲۰۲۶ |
 
-**Best for:** High-volume API calls already tuned on it. For new volume tiers, GPT-6 Luna ($0.10/$0.50) is far cheaper. GPT-5.4-nano is $0.20 / $1.25 and retires April 1, 2027.
+**مناسب‌ترین کاربرد:** فراخوانی‌های پرحجم API که از قبل روی آن تنظیم شده‌اند. برای لایه‌های پرحجم جدید، مدل GPT-6 Luna با قیمت $0.10/$0.50 بسیار مقرون‌به‌صرفه‌تر است. مدل GPT-5.4-nano با نرخ $0.20 / $1.25 در ۱ آوریل ۲۰۲۷ بازنشسته می‌شود.
 
-### GPT-5.4 Pro (OpenAI) - March 2026
+### GPT-5.4 Pro (OpenAI) - مارس ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Context Window | 272K tokens |
-| Input Cost | $30.00 / 1M tokens |
-| Output Cost | $180.00 / 1M tokens |
-| Highlights | Maximum reasoning power; premium tier for hardest tasks |
-| Released | March 2026 |
+| پنجره کانتکست | ۲۷۲K Token |
+| هزینه ورودی | $30.00 به ازای هر 1M Token |
+| هزینه خروجی | $180.00 به ازای هر 1M Token |
+| نکات برجسته | حداکثر قدرت استدلال؛ لایه ویژه (premium) برای دشوارترین وظایف |
+| تاریخ انتشار | مارس ۲۰۲۶ |
 
-**Best for:** Competition-level math, complex multi-step reasoning.
-**Considerations:** Very expensive. GPT-5.4 Pro is still listed at $30 / $180, the same as GPT-5.5 Pro, the newer dedicated Pro ID. On the GPT-5.6 and GPT-6 families Pro is a mode (`reasoning.mode: "pro"`) billed at the selected model's standard rates.
+**مناسب‌ترین کاربرد:** ریاضیات در سطح مسابقات، استدلال‌های پیچیده چندمرحله‌ای.
+**ملاحظات:** بسیار گران‌قیمت. مدل GPT-5.4 Pro همچنان با نرخ $30 / $180 فهرست شده است که با نرخ GPT-5.5 Pro (شناسه اختصاصی جدیدتر Pro) یکسان است. در خانواده‌های GPT-5.6 و GPT-6، قابلیت Pro به صورت یک حالت استدلال (`reasoning.mode: "pro"`) با نرخ‌های استاندارد همان مدل انتخابی محاسبه می‌شود.
 
-### GPT-5.6 Sol / Terra / Luna (OpenAI) - GA July 9, 2026 (superseded by GPT-6 and GPT-6.1)
+### GPT-5.6 Sol / Terra / Luna (OpenAI) - عرضه عمومی در ۹ ژوئیه ۲۰۲۶ (جایگزین‌شده توسط GPT-6 و GPT-6.1)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Variants | Sol (flagship), Terra (balanced), Luna (fast, low cost) |
-| Context Window | 1.05M tokens (all three); 128K max output; knowledge cutoff February 16, 2026 |
-| Sol pricing | Promotional $4 / $20 per 1M since August 21, 2026; OpenAI's pricing and model pages say the promotion is "available until November 30, 2026" and state no price after it. The prior $5 / $30 list is inferred from the stated 20% and 33% cuts, so budget on $5 / $30 from December 1 |
-| Terra pricing | $2.00 / $12.00 per 1M (cut 20% from $2.50/$15 on July 30) |
-| Luna pricing | $0.20 / $1.20 per 1M (cut 80% from $1/$6 on July 30) |
-| Long context | Above 272K input the whole request bills at Sol $8 / $30 (promotional), Terra $4 / $18, Luna $0.40 / $1.80 |
-| Speed tiers | Fast (renamed from Priority on July 30) at 2x. Sol had an Ultrafast preview; OpenAI's current Ultrafast table lists only GPT-6 Astra and GPT-6.1 Sol |
-| Reasoning | "max" reasoning effort plus an "ultra" mode that uses subagents to accelerate complex work |
-| API features at GA | Programmatic tool calling, multi-agent support, explicit prompt-cache breakpoints |
-| Benchmarks | Sol: 53.6 on Agents' Last Exam (13.1 points ahead of Claude Fable 5) and a Terminal-Bench 2.1 record. Claude Fable 5 led SWE-Bench Pro (80 vs Sol's 64.6), a benchmark OpenAI publicly disputes. Vendor-reported. On the Terminal-Bench 4.0 leaderboard, Sol scores 37.27% at max |
-| Released | Limited preview June 26, 2026; general availability July 9, 2026 |
+| انواع | مدل Sol (پرچمدار)، Terra (متعادل)، Luna (سریع، کم‌هزینه) |
+| پنجره کانتکست | ۱.۰۵M Token (هر سه مدل)؛ حداکثر خروجی ۱۲۸K؛ پایان داده‌های آموزشی ۱۶ فوریه ۲۰۲۶ |
+| قیمت‌گذاری Sol | نرخ تبلیغاتی $4 / $20 به ازای هر 1M از ۲۱ اوت ۲۰۲۶؛ صفحات قیمت‌گذاری و مدل‌های OpenAI اعلام کرده‌اند که این پروموشن «تا ۳۰ نوامبر ۲۰۲۶ در دسترس است» و قیمتی پس از آن ذکر نکرده‌اند. نرخ پیشین $5 / $30 بر اساس کاهش اعلام‌شده ۲۰٪ و ۳۳٪ برآورد شده است، بنابراین برای بودجه‌بندی از ۱ دسامبر نرخ $5 / $30 را مبنا قرار دهید |
+| قیمت‌گذاری Terra | برابر با $2.00 / $12.00 به ازای هر 1M (۲۰٪ کاهش از $2.50/$15 در ۳۰ ژوئیه) |
+| قیمت‌گذاری Luna | برابر با $0.20 / $1.20 به ازای هر 1M (۸۰٪ کاهش از $1/$6 در ۳۰ ژوئیه) |
+| کانتکست طولانی | برای ورودی‌های بالای 272K کل درخواست برای Sol با نرخ $8 / $30 (تبلیغاتی)، برای Terra با نرخ $4 / $18 و برای Luna با نرخ $0.40 / $1.80 محاسبه می‌شود |
+| سطوح سرعت | حالت Fast (تغییر نام‌یافته از Priority در ۳۰ ژوئیه) با ۲ برابر قیمت. مدل Sol دارای یک پیش‌نمایش Ultrafast بود؛ جدول فعلی Ultrafast در OpenAI فقط مدل‌های GPT-6 Astra و GPT-6.1 Sol را فهرست کرده است |
+| استدلال | تلاش استدلالی "max" به همراه حالت "ultra" که از زیرایجنت‌ها (subagents) برای تسریع کارهای پیچیده استفاده می‌کند |
+| قابلیت‌های API در زمان عرضه عمومی | فراخوانی برنامه‌نویسی‌شده ابزار (programmatic tool calling)، پشتیبانی از چندایجنت (multi-agent)، نقاط شکست صریح در کش Prompt (explicit prompt-cache breakpoints) |
+| بنچمارک‌ها | مدل Sol: کسب نمره ۵۳.۶ در Agents' Last Exam (۱۳.۱ امتیاز جلوتر از Claude Fable 5) و یک رکورد در Terminal-Bench 2.1. مدل Claude Fable 5 در SWE-Bench Pro پیشتاز بود (۸۰ در برابر ۶۴.۶ برای Sol) که بنچمارکی مورد مناقشه عمومی از سوی OpenAI است. گزارش‌شده توسط ارائه‌دهنده. در جدول لیدربورد Terminal-Bench 4.0، مدل Sol نمره ۳۷.۲۷٪ را در حالت max به دست می‌آورد |
+| تاریخ انتشار | پیش‌نمایش محدود در ۲۶ ژوئن ۲۰۲۶؛ عرضه عمومی (GA) در ۹ ژوئیه ۲۰۲۶ |
 
-**What it is:** OpenAI's first flagship line shipped as three models. The June 26 preview was gated at the request of the US government over dual-use cybersecurity capability; GA followed a 13-day review. The three-tier structure plus the July 30 cuts reset routing math for tiered model selection.
+**ماهیت مدل:** نخستین خط تولید پرچمدار OpenAI که در قالب سه مدل عرضه شد. پیش‌نمایش ۲۶ ژوئن به درخواست دولت ایالات متحده به دلیل توانمندی‌های امنیت سایبری با کاربرد دوگانه محدود (gate) شد؛ عرضه عمومی پس از یک بازبینی ۱۳ روزه انجام گرفت. ساختار سه‌لایه‌ای در کنار کاهش قیمت‌های ۳۰ ژوئیه، محاسبات مسیریابی را برای انتخاب لایه‌ای مدل‌ها بازتعریف کرد.
 
-**Status (November 2026):** GPT-6 Sol and Luna replace Sol and Luna at about half the price, and GPT-6.1 Terra (October 26, $1/$5) replaces Terra at half its price. This family will stay in production for a while anyway: Foundry moves its retiring o-series deployments to GPT-5.6 Sol and Terra on November 19, and OpenAI's December 11 retirement of the dated GPT-5 and o3 snapshots points to the GPT-5.6 models.
+**وضعیت (نوامبر ۲۰۲۶):** مدل‌های GPT-6 Sol و Luna با حدود نصف قیمت جایگزین Sol و Luna می‌شوند، و GPT-6.1 Terra (در ۲۶ اکتبر، $1/$5) با نصف قیمت جایگزین Terra می‌گردد. با این حال این خانواده تا مدتی در محیط‌های عملیاتی باقی خواهد ماند: سرویس Foundry در ۱۹ نوامبر استقرارهای (deployments) رو به بازنشستگی سری o را به GPT-5.6 Sol و Terra منتقل می‌کند، و بازنشستگی اسنپ‌شات‌های تاریخ‌گذشته GPT-5 و o3 توسط OpenAI در ۱۱ دسامبر نیز کاربران را به سوی مدل‌های GPT-5.6 هدایت می‌نماید.
 
-### GPT-5.6-Cyber (OpenAI) - August 2026 (restricted)
+### GPT-5.6-Cyber (OpenAI) - اوت ۲۰۲۶ (دسترسی محدود)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gpt-5.6-cyber` |
-| Context Window | 400K total (272K max input, 128K max output) |
-| Input / Output Cost | $12.50 / $75.00 per 1M; cached input $1.25 |
-| Access | Daybreak Red tier only, with identity verification, legal attestations, and approved use cases. Responses API only. Requests take `access_programs.cyber: "daybreak_red"`, and every Daybreak Red organization must require SSO for its API organization and enforce MFA through its identity provider |
-| Refusal posture | Trained for a lower refusal rate on dual-use security work: 95.0% completion on OpenAI's internal Advanced Cybersecurity Completion Rate eval versus 1.5% for GPT-5.6 Sol |
-| Released | August 10, 2026 (the Daybreak Blue and Red tier split appears in the API changelog dated August 7) |
+| شناسه مدل | `gpt-5.6-cyber` |
+| پنجره کانتکست | مجموعاً ۴۰۰K Token (حداکثر ورودی ۲۷۲K، حداکثر خروجی ۱۲۸K) |
+| هزینه ورودی / خروجی | $12.50 / $75.00 به ازای هر 1M Token؛ ورودی کش‌شده $1.25 |
+| دسترسی | فقط لایه Daybreak Red، همراه با احراز هویت، تعهدنامه‌های حقوقی و موارد استفاده تاییدشده. منحصراً در Responses API. درخواست‌ها نیازمند پارامتر `access_programs.cyber: "daybreak_red"` هستند و هر سازمان در سطح Daybreak Red باید ورود یکپارچه (SSO) را برای سازمان API خود الزامی کرده و احراز هویت چندعاملی (MFA) را از طریق ارائه‌دهنده هویت خود اعمال کند |
+| موضع امتناع (Refusal posture) | آموزش‌دیده برای نرخ امتناع پایین‌تر در وظایف امنیتی با کاربرد دوگانه: نرخ تکمیل ۹۵.۰٪ در ارزیابی داخلی Advanced Cybersecurity Completion Rate شرکت OpenAI در برابر ۱.۵٪ برای GPT-5.6 Sol |
+| تاریخ انتشار | ۱۰ اوت ۲۰۲۶ (تقسیم لایه‌های Daybreak Blue و Red در گزارش تغییرات API با تاریخ ۷ اوت ذکر شده است) |
 
-**What it is:** A cybersecurity model built on GPT-5.6 Sol, shipped alongside a split of the Daybreak program into two tiers. **Daybreak Blue** gives approved defenders access to general-purpose frontier models for vulnerability discovery, secure code review, detection engineering, and incident response. **Daybreak Red** is separately approved and gates `gpt-5.6-cyber` for vulnerability reproduction, exploit validation, penetration testing, and red teaming.
+**ماهیت مدل:** یک مدل امنیت سایبری بر پایه GPT-5.6 Sol که هم‌زمان با تفکیک برنامه Daybreak به دو لایه عرضه شد. **لایه Daybreak Blue** به مدافعان تاییدشده امکان دسترسی به مدل‌های پیشرو عمومی را برای کشف آسیب‌پذیری، بررسی امنیتی کد، مهندسی تشخیص و پاسخ به حوادث می‌دهد. **لایه Daybreak Red** نیازمند تایید جداگانه است و دسترسی به مدل `gpt-5.6-cyber` را برای بازتولید آسیب‌پذیری، اعتبارسنجی اکسپلویت، تست نفوذ و ارزیابی‌های تیم قرمز (red teaming) کنترل می‌کند.
 
-**Why it matters architecturally:** A model that is deliberately *more* permissive than the frontier default, priced at 2.5x Sol's list price, restricted to a single API surface, and fenced behind identity verification is a reference design for how labs operationalize dual-use access. Gated models also retire fast: OpenAI deprecated the earlier `gpt-5.4-cyber` on September 11 and shut it down October 1, about 20 days' notice against its stated 3-month minimum for specialized variants.
+**چرا از نظر معماری اهمیت دارد:** مدلی که عامدانه بسیار *آسان‌گیرتر* (permissive) از پیش‌فرض مدل‌های پیشرو عمل می‌کند، قیمتی ۲.۵ برابر نرخ رسمی Sol دارد، به یک سطح API اختصاصی محدود شده و پشت سد احراز هویت قرار گرفته است، یک طرح مرجع (reference design) برای نحوه عملیاتی‌سازی دسترسی به مدل‌های با کاربرد دوگانه توسط آزمایشگاه‌های هوش مصنوعی محسوب می‌شود. همچنین مدل‌های دارای دسترسی محدود (gated) با سرعت بالایی بازنشسته می‌شوند: OpenAI مدل پیشین `gpt-5.4-cyber` را در ۱۱ سپتامبر منسوخ کرد و در ۱ اکتبر متوقف ساخت؛ مهلتی در حدود ۲۰ روز که بسیار کمتر از حداقل مهلت سه‌ماهه اعلام‌شده برای نسخه‌های تخصصی است.
 
-### GPT-6-Cyber (OpenAI) - November 2026 NEW (restricted)
+### GPT-6-Cyber (OpenAI) - نوامبر ۲۰۲۶ (جدید، دسترسی محدود)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gpt-6-cyber` |
-| Context Window | 1,050,000 tokens (922,000 max input, 128,000 max output) |
-| Input / Output Cost | $20.00 / $100.00 per 1M; cached input $2.00; cache write $25 (30-minute) or $50 (12-hour). No long-context, Flex, or Fast rates; no Batch |
-| API | Chat Completions and Responses only |
-| Access | Daybreak Red approval plus a separate model approval, `access_programs.cyber: "daybreak_red"`, and IP allowlisting; rolling out to a select group first, widening over the following weeks |
-| Benchmarks | OpenAI-reported: outperforms GPT-6 Astra on most cyber tasks; used to find 81 previously unknown high-severity Firefox vulnerabilities and to develop working exploits for 948 Linux kernel vulnerabilities, 588 of them previously unknown |
-| Released | November 5, 2026 |
+| شناسه مدل | `gpt-6-cyber` |
+| پنجره کانتکست | ۱,۰۵۰,۰۰۰ Token (حداکثر ورودی ۹۲۲,۰۰۰، حداکثر خروجی ۱۲۸,۰۰۰) |
+| هزینه ورودی / خروجی | $20.00 / $100.00 به ازای هر 1M Token؛ ورودی کش‌شده $2.00؛ نوشتن در کش $25 (سی‌دقیقه‌ای) یا $50 (دوازده‌ساعته). فاقد تعرفه‌های کانتکست طولانی، Flex یا Fast؛ بدون حالت Batch |
+| API | فقط Chat Completions و Responses |
+| دسترسی | تاییدیه لایه Daybreak Red به همراه تاییدیه مجزا برای خود مدل، پارامتر `access_programs.cyber: "daybreak_red"` و تعریف لیست سفید IP (IP allowlisting)؛ عرضه ابتدا به گروهی منتخب و گسترش آن طی هفته‌های بعد |
+| بنچمارک‌ها | گزارش‌شده توسط OpenAI: برتری بر GPT-6 Astra در اکثر وظایف سایبری؛ استفاده‌شده برای کشف ۸۱ آسیب‌پذیری ناشناخته با شدت بالا در فایرفاکس و توسعه اکسپلویت‌های عملیاتی برای ۹۴۸ آسیب‌پذیری در کرنل لینوکس که ۵۸۸ مورد از آن‌ها پیش‌تر ناشناخته بودند |
+| تاریخ انتشار | ۵ نوامبر ۲۰۲۶ |
 
-**What it is:** the new top of the gated price ladder, at twice GPT-6 Astra's list price. The integration design changes more than the price: network egress (IP allowlisting) and identity (SSO and MFA at the organization level) become part of the contract, so plan a dedicated egress path and a separate API organization for it.
+**ماهیت مدل:** قله جدید نردبان قیمت‌گذاری مدل‌های با دسترسی محدود، با قیمتی معادل دو برابر نرخ رسمی GPT-6 Astra. طراحی یکپارچه‌سازی فراتر از تغییرات قیمتی دستخوش تحول شده است: ترافیک خروجی شبکه (لیست سفید IP) و هویت (SSO و MFA در سطح سازمانی) به بخشی از قرارداد خدمات تبدیل می‌شوند؛ بنابراین باید یک مسیر خروجی اختصاصی (egress path) و یک سازمان API مجزا برای آن برنامه‌ریزی کنید.
 
-**Gated access is now a request parameter.** OpenAI's Daybreak guide documents a per-request `access_programs.cyber` field with values `standard`, `daybreak_blue`, and `daybreak_red`. GPT-5.6-Cyber and GPT-6-Cyber take `daybreak_red`; GPT-5.5-Cyber, GPT-6 Astra, and GPT-6.1 Sol take `daybreak_blue` but need Red approval for reduced refusals. The default changed with `gpt-6.1-terra`: from that model on, omitting the field gives standard treatment, while on older mainline models omission selects Blue if available (and `daybreak_red` on Red models). ZDR projects must use Private Safety Processing, and misconfigured requests fail with `invalid_access_program` (400), `unsupported_access_program` (400), or `access_program_not_enabled` (403). Set the field explicitly at the gateway on every route, so a model swap cannot silently change refusal behavior.
+**دسترسی محدود اکنون یک پارامتر درخواست است.** راهنمای Daybreak شرکت OpenAI فیلد `access_programs.cyber` را در سطح درخواست با مقادیر `standard`، `daybreak_blue` و `daybreak_red` مستند کرده است. مدل‌های GPT-5.6-Cyber و GPT-6-Cyber مقدار `daybreak_red` را می‌پذیرند؛ مدل‌های GPT-5.5-Cyber، GPT-6 Astra و GPT-6.1 Sol مقدار `daybreak_blue` را دریافت می‌کنند اما برای کاهش امتناع‌ها به تاییدیه سطح Red نیاز دارند. رفتار پیش‌فرض با مدل `gpt-6.1-terra` تغییر کرد: از این مدل به بعد، حذف فیلد منجر به رفتار استاندارد (standard) می‌شود، در حالی که در مدل‌های اصلی قدیمی‌تر حذف فیلد در صورت در دسترس بودن حالت Blue را انتخاب می‌کرد (و در مدل‌های Red مقدار `daybreak_red`). پروژه‌های ZDR (عدم حفظ داده یا Zero Data Retention) باید از قابلیت Private Safety Processing استفاده کنند، و درخواست‌های با پیکربندی نادرست با خطاهای `invalid_access_program` (کد 400)، `unsupported_access_program` (کد 400) یا `access_program_not_enabled` (کد 403) مواجه می‌شوند. این فیلد را به‌طور صریح در درگاه (gateway) روی تک‌تک مسیرها تنظیم کنید تا جابه‌جایی یا ارتقای مدل نتواند رفتار امتناع را بدون سر و صدا تغییر دهد.
 
-### Capability-Tiered Access Programs (November 2026)
+### برنامه‌های دسترسی لایه‌بندی‌شده بر اساس توانمندی (نوامبر ۲۰۲۶)
 
-| Lab | Program | Gated model(s) | Who gets in |
+| آزمایشگاه | برنامه | مدل(های) با دسترسی محدود | چه کسانی پذیرفته می‌شوند |
 |---|---|---|---|
-| Anthropic | Cyber Verification Program, expanded October 6 to three tiers (Defense, Red Team, Specialized) with Project Glasswing folded in; Life Sciences Verification Program | Claude Mythos 5.1 (same weights as Fable 5.1, looser safeguards), available in every CVP tier | Verified security organizations, with data retention required; life-sciences participants enrolled with the US government |
-| OpenAI | Daybreak Blue / Daybreak Red (selected per request with `access_programs.cyber`) | Blue: general frontier models such as GPT-6 Astra and GPT-6.1 Sol, plus `gpt-5.5-cyber` (Daybreak organizations got Astra first); Red: `gpt-5.6-cyber` and `gpt-6-cyber` (November 5, $20 / $100; separate model approval and IP allowlisting) | Approved defenders; Red is separately approved and requires SSO and MFA for the API organization |
-| OpenAI | Trusted access | `gpt-rosalind-research` (life sciences; GA September 8 at $5 / $25 per 1M) and `gpt-6-rosalind` (October 30; $15 / $75, cached $1.50; $30 / $112.50 above 272K) | Approved life-sciences organizations |
-| Google | Fairwind Program | Gemini 3.8 Flash Cyber; Gemini 4 Carbon (announced October 28, a subset of cyber defenders, no model ID). Fairwind also got Gemini 4 Argon first, before its October 13 GA | Government authorities, critical infrastructure operators, software maintainers |
+| Anthropic | برنامه Cyber Verification Program که در ۶ اکتبر به سه سطح (Defense، Red Team و Specialized) با ادغام پروژه Glasswing گسترش یافت؛ برنامه Life Sciences Verification Program | مدل Claude Mythos 5.1 (با وزن‌های مشابه Fable 5.1، اما با تدابیر محافظتی آسان‌گیرتر)، قابل دسترس در تمام لایه‌های CVP | سازمان‌های امنیتی تاییدشده با الزام نگهداری داده؛ شرکت‌کنندگان بخش علوم زیستی ثبت‌نام‌شده نزد دولت ایالات متحده |
+| OpenAI | برنامه‌های Daybreak Blue / Daybreak Red (انتخاب در هر درخواست با پارامتر `access_programs.cyber`) | لایه Blue: مدل‌های پیشرو عمومی نظیر GPT-6 Astra و GPT-6.1 Sol به همراه `gpt-5.5-cyber` (سازمان‌های برنامه Daybreak نخستین دریافت‌کنندگان Astra بودند)؛ لایه Red: مدل‌های `gpt-5.6-cyber` و `gpt-6-cyber` (عرضه‌شده در ۵ نوامبر، $20 / $100؛ نیازمند تاییدیه مجزای مدل و لیست سفید IP) | مدافعان تاییدشده؛ سطح Red نیازمند تایید جداگانه بوده و اعمال SSO و MFA را برای سازمان API الزامی می‌سازد |
+| OpenAI | دسترسی مطمئن (Trusted access) | مدل‌های `gpt-rosalind-research` (علوم زیستی؛ عرضه عمومی ۸ سپتامبر با قیمت $5 / $25 به ازای هر 1M) و `gpt-6-rosalind` (۳۰ اکتبر؛ $15 / $75، ورودی کش‌شده $1.50؛ بالای 272K با نرخ $30 / $112.50) | سازمان‌های تاییدشده حوزه علوم زیستی |
+| Google | برنامه Fairwind Program | مدل Gemini 3.8 Flash Cyber؛ مدل Gemini 4 Carbon (معرفی‌شده در ۲۸ اکتبر برای گروه منتخبی از مدافعان سایبری، بدون شناسه مدل). اعضای Fairwind همچنین Gemini 4 Argon را پیش از عرضه عمومی ۱۳ اکتبر دریافت کردند | نهادهای دولتی، اپراتورهای زیرساخت‌های حیاتی، نگهداشت‌کنندگان نرم‌افزارهای کلیدی |
 
-**Design implication:** capability-tiered access is now an industry pattern, not a one-off, and the gated tier is increasingly where each lab's strongest model lives first: Carbon tops the AA index while no developer can call it, GPT-6 Rosalind costs 7.5x GPT-6.1 Sol per input token, and GPT-6-Cyber 10x. Treat a gated tier as a separate model with its own identity requirements, API surface, retention terms, and a much shorter retirement runway.
+**پیامد طراحی سیستم:** دسترسی لایه‌بندی‌شده بر اساس توانمندی، اکنون به یک الگوی فراگیر در صنعت تبدیل شده است و نه یک استثنای موقت؛ لایه با دسترسی محدود به‌طور فزاینده‌ای به جایگاهی تبدیل می‌شود که قوی‌ترین مدل هر آزمایشگاه ابتدا در آنجا عرضه می‌گردد: مدل Carbon در صدر شاخص AA قرار دارد در حالی که هیچ توسعه‌دهنده‌ای نمی‌تواند آن را فراخوانی کند؛ هزینه GPT-6 Rosalind به ازای هر Token ورودی ۷.۵ برابر GPT-6.1 Sol است و GPT-6-Cyber ۱۰ برابر آن هزینه دارد. لایه‌های دارای دسترسی محدود را همانند یک مدل مجزا با الزامات هویتی، سطح API، شرایط نگهداری داده و دوره بازنشستگی بسیار کوتاه‌تر اختصاصی خود در نظر بگیرید.
 
-### GPT-5.5 (OpenAI) - April 2026
+### GPT-5.5 (OpenAI) - آوریل ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Context Window | 1M tokens |
-| Input Cost | $5.00 / 1M tokens (cached $0.50) |
-| Output Cost | $30.00 / 1M tokens |
-| Long context / Fast | Above 272K input: $10 / $45. Fast is 2.5x ($12.50 / $75), not 2x as on newer models |
-| Multimodal | Text, Image, Audio, Video |
-| ARC-AGI-2 | 85.0% (leader as of May 13, 2026) |
-| Released | April 23, 2026 |
+| پنجره کانتکست | 1M Token |
+| هزینه ورودی | $5.00 به ازای هر 1M Token (ورودی کش‌شده $0.50) |
+| هزینه خروجی | $30.00 به ازای هر 1M Token |
+| کانتکست طولانی / حالت Fast | ورودی بالای 272K با نرخ $10 / $45. حالت Fast با ۲.۵ برابر قیمت ($12.50 / $75)، بر خلاف ۲ برابر در مدل‌های جدیدتر |
+| چندحالته (Multimodal) | متن، تصویر، صدا، ویدیو |
+| ARC-AGI-2 | نمره ۸۵.۰٪ (پیشتاز تا ۱۳ مه ۲۰۲۶) |
+| تاریخ انتشار | ۲۳ آوریل ۲۰۲۶ |
 
-**Best for:** Multimodal workloads already validated on it. Pitched at launch as a "new class of intelligence for real work", it replaced GPT-5.4 for top-tier reasoning and multimodal work.
-**Considerations:** ~2× the input cost of GPT-5.4 ($2.50 → $5.00) and ~2× output ($15 → $30). For new builds, GPT-6 Sol ($2/$10) is cheaper and newer.
+**مناسب‌ترین کاربرد:** بارهای کاری چندحالته که پیش‌تر روی آن اعتبارسنجی شده‌اند. در زمان عرضه به عنوان «کلاس جدیدی از هوش برای کارهای واقعی» معرفی شد و جایگزین GPT-5.4 در وظایف استدلالی رده‌بالا و چندحالته گردید.
+**ملاحظات:** حدود ۲ برابر هزینه ورودی GPT-5.4 (از $2.50 به $5.00) و حدود ۲ برابر خروجی (از $15 به $30). برای پیاده‌سازی‌های جدید، مدل GPT-6 Sol با قیمت $2/$10 هم ارزان‌تر و هم جدیدتر است.
 
-### GPT-5.5 Instant (OpenAI) - May 2026
+### GPT-5.5 Instant (OpenAI) - مه ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Status | Became the ChatGPT default and `chat-latest` in the API on May 5, 2026 |
-| Hallucination Reduction | 52.5% fewer on high-stakes prompts (medicine/law/finance) vs GPT-5.3 Instant |
-| AIME 2025 | 81.2% (up from 65.4% on GPT-5.3 Instant) |
-| Response Length | ~30% fewer words/lines than predecessor |
-| Released | May 5, 2026 |
+| وضعیت | تبدیل به مدل پیش‌فرض ChatGPT و شناسه `chat-latest` در API در تاریخ ۵ مه ۲۰۲۶ |
+| کاهش توهم (Hallucination) | ۵۲.۵٪ توهم کمتر در Promptهای حساس و حیاتی (پزشکی/حقوقی/مالی) در مقایسه با GPT-5.3 Instant |
+| AIME 2025 | نمره ۸۱.۲٪ (افزایش‌یافته از ۶۵.۴٪ در GPT-5.3 Instant) |
+| طول پاسخ | حدود ۳۰٪ کلمات/خطوط کمتر نسبت به مدل پیشین |
+| تاریخ انتشار | ۵ مه ۲۰۲۶ |
 
-**Best for:** ChatGPT-equivalent chat workloads, high-stakes domains where hallucination reduction matters.
-**Considerations:** Replaced GPT-5.3 Instant as the chat default. GPT-5.2-chat-latest and GPT-5.3-chat-latest deprecated May 8, 2026.
+**مناسب‌ترین کاربرد:** بارهای کاری گفتگومحور معادل ChatGPT، حوزه‌های پرریسک و حساس که کاهش توهم در آن‌ها اهمیت حیاتی دارد.
+**ملاحظات:** جایگزین GPT-5.3 Instant به عنوان مدل پیش‌فرض چت شد. شناسه‌های GPT-5.2-chat-latest و GPT-5.3-chat-latest در ۸ مه ۲۰۲۶ منسوخ شدند.
 
-### OpenAI Voice Models: GPT-Live-1, GPT-Realtime-2.1, Transcription (November 2026)
+### مدل‌های صوتی OpenAI: مدل‌های GPT-Live-1، GPT-Realtime-2.1 و رونویسی (نوامبر ۲۰۲۶)
 
-| Model | Shape | Pricing | Status |
+| مدل | ساختار معماری (Shape) | قیمت‌گذاری | وضعیت |
 |---|---|---|---|
-| `gpt-live-1` | Full-duplex voice front end that delegates reasoning and tools to a backend (an OpenAI Responses model or your own) on `v1/live/sessions` | $0.05 per session minute, billed per second, plus backend model tokens | GA September 10, 2026 |
-| `gpt-realtime-2.1` / `gpt-realtime-2.1-mini` | Single speech-to-speech model on the Realtime API; turn-based with `server_vad` or `semantic_vad`; configurable reasoning effort | 2.1: audio $32 in / $0.40 cached / $64 out per 1M; mini: $10 / $0.30 / $20 | July 6, 2026 (succeeds `gpt-realtime-2`, May 7) |
-| `gpt-realtime-translate` | Streaming translation, one session per target language | $0.034 per minute | Current |
-| `gpt-transcribe` / `gpt-live-transcribe` | Batch / streaming speech-to-text | $0.0045 / $0.017 per minute | July 28, 2026 |
-| `gpt-realtime`, `gpt-realtime-mini`, `gpt-4o-realtime`, `gpt-audio` | Legacy speech-to-speech and audio | - | Shut down January 20, 2027 (to `gpt-realtime-2.1`, `-2.1-mini`, or `gpt-audio-1.5`) |
-| `whisper-1`, `gpt-4o-transcribe` family | Legacy speech-to-text | - | Shut down February 26, 2027 (to `gpt-transcribe` or `gpt-live-transcribe`) |
-| `tts-1`, `tts-1-hd`, `gpt-4o-mini-tts` snapshots | Legacy text-to-speech | - | Shut down January 6, 2027 (announced October 1; to `gpt-realtime-2.1-mini`) |
+| `gpt-live-1` | فرانت‌اند صوتی تمام‌دوطرفه (Full-duplex) که استدلال و ابزارها را به یک بک‌اند (مدل Responses در OpenAI یا مدل اختصاصی خودتان) روی اندپوینت `v1/live/sessions` واگذار می‌کند | $0.05 به ازای هر دقیقه نشست، محاسبه بر حسب ثانیه، به علاوه Tokenهای مدل بک‌اند | عرضه عمومی (GA) در ۱۰ سپتامبر ۲۰۲۶ |
+| `gpt-realtime-2.1` / `gpt-realtime-2.1-mini` | مدل یکپارچه صوت-به-صوت (speech-to-speech) در Realtime API؛ نوبت‌محور با مکانیزم‌های `server_vad` یا `semantic_vad`؛ قابلیت تنظیم تلاش استدلال | نسخه 2.1: صوت ورودی $32 / کش‌شده $0.40 / خروجی $64 به ازای هر 1M Token؛ نسخه mini برابر با $10 / $0.30 / $20 | ۶ ژوئیه ۲۰۲۶ (جانشین `gpt-realtime-2` عرضه شده در ۷ مه) |
+| `gpt-realtime-translate` | ترجمه استریمینگ (Streaming translation)، یک نشست به ازای هر زبان مقصد | $0.034 به ازای هر دقیقه | جاری (فعال) |
+| `gpt-transcribe` / `gpt-live-transcribe` | تبدیل گفتار به متن (speech-to-text) به‌صورت دسته‌ای (Batch) / استریمینگ | $0.0045 / $0.017 به ازای هر دقیقه | ۲۸ ژوئیه ۲۰۲۶ |
+| `gpt-realtime`، `gpt-realtime-mini`، `gpt-4o-realtime`، `gpt-audio` | مدل‌های قدیمی صوت-به-صوت و صوتی | - | توقف سرویس در ۲۰ ژانویه ۲۰۲۷ (مهاجرت به `gpt-realtime-2.1`، `-2.1-mini` یا `gpt-audio-1.5`) |
+| `whisper-1`، خانواده `gpt-4o-transcribe` | مدل‌های قدیمی گفتار به متن | - | توقف سرویس در ۲۶ فوریه ۲۰۲۷ (مهاجرت به `gpt-transcribe` یا `gpt-live-transcribe`) |
+| اسنپ‌شات‌های `tts-1`، `tts-1-hd`، `gpt-4o-mini-tts` | مدل‌های قدیمی متن به گفتار | - | توقف سرویس در ۶ ژانویه ۲۰۲۷ (اعلام‌شده در ۱ اکتبر؛ مهاجرت به `gpt-realtime-2.1-mini`) |
 
-**Three architectures, not two.** OpenAI's docs now describe full-duplex-plus-delegation (GPT-Live), a single speech-to-speech model (Realtime API), and a chained STT, LLM, TTS pipeline. GPT-Live separates the voice layer from the reasoning layer, so business rules and authoritative task state belong in the backend. Once its 128K context passes 90% full, it restarts the voice engine with the instructions plus at most 8,192 tokens of history (including a summary of older turns), so keep slots and bookings in application state. Realtime sessions cap at 60 minutes and re-send the conversation on every response, so cost grows with call length. OpenAI reports GPT-Live turn-taking latency of 0.798 s vs 1.41 s for `gpt-realtime-2.1` (vendor-reported, and dependent on the backend you pick). The Realtime API beta interface was removed May 12, 2026.
+**سه معماری، و نه دو معماری.** مستندات OpenAI اکنون سه الگو را شرح می‌دهند: تمام‌دوطرفه به همراه واگذاری وظایف (GPT-Live)، مدل یکپارچه گفتار-به-گفتار (Realtime API)، و پایپ‌لاین زنجیره‌ای متشکل از STT، LLM و TTS. سیستم GPT-Live لایه صوتی را از لایه استدلال جدا می‌سازد، بنابراین منطق کسب‌وکار و وضعیت معتبر وظایف (authoritative task state) در لایه بک‌اند قرار می‌گیرند. به محض اینکه کانتکست ۱۲۸K آن به بیش از ۹۰٪ ظرفیت برسد، موتور صوتی را با دستورالعمل‌ها به همراه حداکثر ۸,۱۹۲ Token از تاریخچه (شامل خلاصه‌ای از نوبت‌های قبلی) راه‌اندازی مجدد می‌کند؛ از این رو متغیرها، مقادیر فیلدها و رزروها را در وضعیت برنامه (application state) نگهداری کنید. نشست‌های Realtime حداکثر به ۶۰ دقیقه محدود می‌شوند و در هر پاسخ کل تاریخچه مکالمه را مجدداً ارسال می‌کنند؛ در نتیجه هزینه با طولانی شدن تماس افزایش می‌یابد. OpenAI تاخیر نوبت‌گیری (turn-taking latency) در GPT-Live را برابر با 0.798 ثانیه در برابر 1.41 ثانیه برای `gpt-realtime-2.1` گزارش کرده است (گزارش‌شده توسط ارائه‌دهنده، و وابسته به بک‌اندی که انتخاب می‌کنید). رابط بتای Realtime API در ۱۲ مه ۲۰۲۶ حذف شد.
 
-**Other vendors:** Google's `gemini-3.8-live` and `gemini-3.8-live-extended-thinking` went GA September 15 (audio $3 in / $12 out per 1M; asynchronous tool calls by default, and the Extended Thinking variant reasons in the background while it talks). Google reports tau-Voice 68.6% for Extended Thinking against 30.1% for the base model (vendor-reported), which is the pattern to design for: voice task success tracks the reasoning attached to the voice layer, and that reasoning has to fit the turn latency budget. `gemini-3.8-flash-tts` went GA September 22 at a promotional $0.50 / $9 per 1M through December 31 ($1 / $18 from January 1, 2027). Voice stacks still on Google preview IDs face hard shutdowns: on November 17 (scheduled, an earliest-possible date with no routing described) the Gemini API shuts down `gemini-3.1-flash-live-preview` and `gemini-2.5-flash-native-audio-preview-12-2025` (replacement `gemini-3.8-live`) and the TTS previews `gemini-2.5-flash-preview-tts`, `gemini-2.5-pro-preview-tts`, and `gemini-3.1-flash-tts-preview` (replacement `gemini-3.8-flash-tts` or `gemini-3.8-flash-lite-tts`); on Vertex AI, `gemini-live-2.5-flash-native-audio` retires December 13 (to `gemini-3.8-live`). xAI bills voice at $0.08 per minute, and in October its `grok-voice-latest` alias moved from `grok-voice-2.0` to `grok-voice-3.0` at the same price: an alias upgrade that changes the model under unchanged code. Anthropic has no speech API: Claude can only be the text backend in a voice stack, for example behind GPT-Live client delegation. See [Realtime Voice Agents](../18-voice-and-audio-agents/01-realtime-voice-agents.md).
+**سایر ارائه‌دهندگان:** مدل‌های `gemini-3.8-live` و `gemini-3.8-live-extended-thinking` شرکت گوگل در ۱۵ سپتامبر به عرضه عمومی (GA) رسیدند (صوت ورودی $3 / خروجی $12 به ازای هر 1M Token؛ فراخوانی ناهمگام ابزار به‌صورت پیش‌فرض، و نسخه Extended Thinking هم‌زمان با صحبت کردن در پس‌زمینه استدلال می‌کند). گوگل امتیاز بنچمارک tau-Voice را برای Extended Thinking برابر با ۶۸.۶٪ در برابر ۳۰.۱٪ برای مدل پایه گزارش کرده است (گزارش‌شده توسط ارائه‌دهنده)؛ این همان الگویی است که باید بر مبنای آن سیستم را طراحی کرد: موفقیت وظیفه صوتی مستقیماً به استدلال متصل به لایه صوتی وابسته است، و این استدلال باید در بودجه تاخیر (Latency) هر نوبت بگنجد. مدل `gemini-3.8-flash-tts` در ۲۲ سپتامبر با قیمت تبلیغاتی $0.50 / $9 به ازای هر 1M تا ۳۱ دسامبر عرضه عمومی شد (از ۱ ژانویه ۲۰۲۷ با نرخ $1 / $18). پشته‌های صوتی که همچنان روی شناسه‌های پیش‌نمایش گوگل کار می‌کنند با خاموشی قطعی مواجه هستند: در ۱۷ نوامبر (زمان‌بندی‌شده، نزدیک‌ترین تاریخ ممکن بدون ذکر هیچ مسیریابی جایگزین) سرویس Gemini API شناسه‌های `gemini-3.1-flash-live-preview` و `gemini-2.5-flash-native-audio-preview-12-2025` (با جایگزین `gemini-3.8-live`) و پیش‌نمایش‌های TTS شامل `gemini-2.5-flash-preview-tts`، `gemini-2.5-pro-preview-tts` و `gemini-3.1-flash-tts-preview` (با جایگزین `gemini-3.8-flash-tts` یا `gemini-3.8-flash-lite-tts`) را خاموش می‌کند؛ در Vertex AI نیز مدل `gemini-live-2.5-flash-native-audio` در ۱۳ دسامبر بازنشسته می‌شود (مهاجرت به `gemini-3.8-live`). شرکت xAI هزینه صوت را $0.08 در دقیقه محاسبه می‌کند و در ماه اکتبر نام مستعار `grok-voice-latest` را با همان قیمت از `grok-voice-2.0` به `grok-voice-3.0` منتقل کرد: ارتقایی در نام مستعار که مدل را بدون تغییر کد شما دگرگون می‌سازد. شرکت Anthropic فاقد API گفتار است: مدل Claude تنها می‌تواند به عنوان بک‌اند متنی در یک پشته صوتی عمل کند؛ به عنوان مثال پشت واگذاری کلاینت GPT-Live. بخش [ایجنت‌های صوتی بلادرنگ](../18-voice-and-audio-agents/01-realtime-voice-agents.md) را ببینید.
 
-### Gemini 4 Argon (Google) - October 2026 NEW (GA October 13)
+### Gemini 4 Argon (Google) - اکتبر ۲۰۲۶ (جدید، عرضه عمومی در ۱۳ اکتبر)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gemini-4-argon` (stable; paid tier only, not on the free tier) |
-| Context Window | 1,048,576 tokens shared between input and output; output defaults to 65,536 and reaches about 1M only through "long decode", a continuation protocol |
-| Input / Output Cost | $2 / $10 per 1M through November 30, 2026; **$4 / $20 from December 1**. No prompt-length tiers |
-| Cache | Implicit caching only (hits $0.10, then $0.20 from December 1); explicit caching is not supported |
-| Service tiers | Batch and Flex half of Standard; Priority $3.60 / $18 ($7.20 / $36 from December 1) |
-| Modalities and tools | Text, image, video, audio, and PDF in; text out. Function calling, structured outputs, computer use, Search grounding, Batch; no Live API |
-| Safety | Model card: Google "cannot rule out" that it reaches the critical capability levels for biology and cybersecurity |
-| Benchmarks | Google-reported at the September 30 announcement: DeepSWE v1.1 77.9%, AutomationBench 51.3%, LVBench 91.7%. Independent: AA Intelligence Index v5.0 50 (high) |
-| Released | Announced September 30, 2026 (Fairwind cyber defenders first); GA October 13, 2026 |
+| شناسه مدل | `gemini-4-argon` (پایدار؛ فقط در سطح پولی، در سطح رایگان موجود نیست) |
+| پنجره کانتکست | ۱,۰۴۸,۵۷۶ Token به‌صورت مشترک بین ورودی و خروجی؛ خروجی به‌طور پیش‌فرض ۶۵,۵۳۶ است و فقط از طریق «long decode» (یک پروتکل ادامه‌دهی یا continuation protocol) به حدود ۱M می‌رسد |
+| هزینه ورودی / خروجی | $2 / $10 به ازای هر ۱M تا ۳۰ نوامبر ۲۰۲۶؛ **$4 / $20 از ۱ دسامبر**. بدون سطوح قیمت‌گذاری مبتنی بر طول Prompt |
+| کش | فقط کش‌گذاری ضمنی (implicit caching) (هیت‌ها $0.10، سپس $0.20 از ۱ دسامبر)؛ کش‌گذاری صریح (explicit caching) پشتیبانی نمی‌شود |
+| سطوح سرویس | سطوح Batch و Flex نصف سطح استاندارد (Standard)؛ اولویت‌دار (Priority) برابر با $3.60 / $18 ($7.20 / $36 از ۱ دسامبر) |
+| مدالیته‌ها و ابزارها | ورودی متن، تصویر، ویدیو، صوت و PDF؛ خروجی متن. فراخوانی تابع (Function calling)، خروجی‌های ساختاریافته (structured outputs)، کار با کامپیوتر (computer use)، اتصال به جستجو (Search grounding)، پردازش دسته‌ای (Batch)؛ فاقد Live API |
+| ایمنی | شناسنامه مدل (Model card): گوگل «نمی‌تواند رد کند» که این مدل به سطوح قابلیت‌های حیاتی برای حوزه‌های زیست‌شناسی و امنیت سایبری رسیده است |
+| بنچمارک‌ها | گزارش‌شده توسط گوگل در اعلامیه ۳۰ سپتامبر: DeepSWE v1.1 برابر با ۷۷.۹٪، AutomationBench برابر با ۵۱.۳٪، LVBench برابر با ۹۱.۷٪. مستقل: شاخص هوش AA Intelligence Index v5.0 امتیاز ۵۰ (بالا) |
+| تاریخ انتشار | معرفی در ۳۰ سپتامبر ۲۰۲۶ (ابتدا برای مدافعان سایبری Fairwind)؛ عرضه عمومی (GA) در ۱۳ اکتبر ۲۰۲۶ |
 
-**How to treat it:** budget at $4/$20, because the introductory price lasts seven weeks. At that price it matches Claude Opus 5.5's list price while scoring 8 points lower on AA v5.0 (50 vs 58), so its case is native video and audio input, Google's tooling, and long output, not raw capability per dollar. Two contract details change architecture. The 1M output only arrives through the long-decode protocol, so a whole-repo rewrite still needs a continuation loop, just a vendor-managed one. And with no explicit caching, cache-control code written for earlier Gemini models does nothing; cached cost depends on implicit hit rates you cannot pin, so measure them before trusting a cached-cost estimate. Argon is a new Gemini 4 line, not the Gemini 3.5 Pro that never shipped; `gemini-3.1-pro-preview` stays listed with no shutdown date.
+**نحوه مواجهه با آن:** بودجه‌بندی را بر مبنای ۴ دلار / ۲۰ دلار در نظر بگیرید، زیرا قیمت معرفی اولیه (introductory price) تنها هفت هفته دوام دارد. با این قیمت، این مدل با قیمت رسمی (list price) مدل Claude Opus 5.5 برابری می‌کند در حالی که در AA v5.0 هشت امتیاز پایین‌تر کسب کرده است (۵۰ در برابر ۵۸)؛ بنابراین مزیت رقابتی آن، ورودی بومی ویدیو و صوت، ابزارهای گوگل و خروجی طولانی است، نه قابلیت خام به ازای هر دلار. دو جزئیات قراردادی (contract details)، معماری را تغییر می‌دهند: خروجی ۱M تنها از طریق پروتکل long-decode حاصل می‌شود، بنابراین بازنویسی کل یک ریپازیتوری (whole-repo rewrite) همچنان به یک حلقه ادامه‌دهی (continuation loop) نیاز دارد، منتهی حلقه‌ای که توسط ارائه‌دهنده (vendor-managed) مدیریت می‌شود. و با نبود کش‌گذاری صریح (explicit caching)، کدهای کنترل کش که برای مدل‌های قبلی Gemini نوشته شده‌اند هیچ کاری انجام نمی‌دهند؛ هزینه کش‌شده به نرخ‌های هیت (hit rates) ضمنی بستگی دارد که نمی‌توانید آن‌ها را ثابت نگه دارید، بنابراین پیش از اعتماد به تخمین هزینه کش‌شده، آن‌ها را اندازه‌گیری کنید. مدل Argon خط تولید جدیدی از سری Gemini 4 است، نه Gemini 3.5 Pro که هرگز عرضه نشد؛ مدل `gemini-3.1-pro-preview` همچنان بدون تاریخ توقف سرویس در فهرست باقی مانده است.
 
-### Gemini 4 Carbon (Google) - ANNOUNCED October 28, 2026, not available to developers
+### Gemini 4 Carbon (Google) - معرفی در ۲۸ اکتبر ۲۰۲۶، در دسترس توسعه‌دهندگان نیست
 
-Google announced Carbon on October 28 for a subset of cyber defenders through the Fairwind Program. There is no model ID and no date for broader access. Artificial Analysis added it on October 28 at 59 (high), the top score on Intelligence Index v5.0, ahead of Claude Opus 5.5 (58); after the November 3 v5.0.1 regrade it scores 60 and Opus 5.5 59. Treat it like Argon in September: a signal of where the frontier is, not a dependency. If a leaderboard's top entry is a model you cannot call, compare against the best model you can.
+گوگل در ۲۸ اکتبر مدل Carbon را برای زیرمجموعه‌ای از مدافعان سایبری از طریق برنامه Fairwind معرفی کرد. هیچ شناسه مدلی وجود ندارد و تاریخی برای دسترسی گسترده‌تر اعلام نشده است. موسسه Artificial Analysis در ۲۸ اکتبر آن را با امتیاز ۵۹ (بالا) اضافه کرد که بالاترین امتیاز در Intelligence Index v5.0 و بالاتر از Claude Opus 5.5 (با ۵۸) بود؛ پس از بازتنظیم نمرات در نسخه v5.0.1 در ۳ نوامبر، این مدل امتیاز ۶۰ و Opus 5.5 امتیاز ۵۹ را به دست آوردند. با آن مانند مدل Argon در ماه سپتامبر برخورد کنید: نشانه‌ای از موقعیت مرز توانمندی‌ها (frontier)، نه یک وابستگی در سیستم خود. اگر رتبه نخست یک جدول رده‌بندی مدلی است که نمی‌توانید آن را فراخوانی کنید، سیستم خود را با بهترین مدلی که قادر به فراخوانی آن هستید بسنجید.
 
-### Gemini 3.8 Flash (Google) - September 2026
+### Gemini 3.8 Flash (Google) - سپتامبر ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gemini-3.8-flash` (stable, GA) |
-| Context Window | 1,048,576 tokens in / 65,536 out |
-| Input / Output Cost | $0.75 / $3.75 per 1M through December 31, 2026; $1.50 / $7.50 from January 1, 2027. Batch and Flex 50% off; Priority $1.35 / $6.75 ($2.70 / $13.50 from January 1); cache read $0.075 per 1M plus storage |
-| Modalities | Text, image, video, audio, PDF in; text out |
-| Thinking | `thinking_level` `low`, `medium` (default), `high`; no minimal level; replaces `thinking_budget` |
-| Tools | Function calling, structured outputs, caching, code execution, computer use (the Gemini Computer Use tool went GA October 30), file search, Search and Maps grounding; no Live API |
-| Benchmarks | Google-reported: DeepSWE v1.1 73.7% vs Claude Opus 5 74.0%. Independent: AA Intelligence Index v5.0 31 (high); SWE-Bench Pro v2 private set 211/272 (Scale) |
-| Released | September 2, 2026 |
+| شناسه مدل | `gemini-3.8-flash` (پایدار، عرضه عمومی یا GA) |
+| پنجره کانتکست | ۱,۰۴۸,۵۷۶ Token ورودی / ۶۵,۵۳۶ خروجی |
+| هزینه ورودی / خروجی | $0.75 / $3.75 به ازای هر ۱M تا ۳۱ دسامبر ۲۰۲۶؛ $1.50 / $7.50 از ۱ ژانویه ۲۰۲۷. تخفیف ۵۰٪ برای Batch و Flex؛ اولویت‌دار (Priority) برابر با $1.35 / $6.75 ($2.70 / $13.50 از ۱ ژانویه)؛ خواندن از کش $0.075 به ازای هر ۱M به علاوه هزینه ذخیره‌سازی |
+| مدالیته‌ها | ورودی متن، تصویر، ویدیو، صوت، PDF؛ خروجی متن |
+| استدلال (Thinking) | پارامتر `thinking_level` با مقادیر `low`، `medium` (پیش‌فرض)، `high`؛ بدون سطح minimal؛ جایگزین `thinking_budget` |
+| ابزارها | فراخوانی تابع (Function calling)، خروجی‌های ساختاریافته (structured outputs)، کش‌گذاری، اجرای کد، کار با کامپیوتر (ابزار Gemini Computer Use در ۳۰ اکتبر به وضعیت GA رسید)، جستجوی فایل، اتصال به جستجو و نقشه‌ها (Search and Maps grounding)؛ فاقد Live API |
+| بنچمارک‌ها | گزارش‌شده توسط گوگل: DeepSWE v1.1 برابر با ۷۳.۷٪ در برابر ۷۴.۰٪ برای Claude Opus 5. مستقل: شاخص هوش AA Intelligence Index v5.0 امتیاز ۳۱ (بالا)؛ مجموعه خصوصی SWE-Bench Pro v2 برابر با ۲۱۱/۲۷۲ (Scale) |
+| تاریخ انتشار | ۲ سپتامبر ۲۰۲۶ |
 
-**What it is:** Further training on Gemini 3.7 Flash rather than a new base, and Google's third Flash in six weeks. Since October 8, requests to `gemini-3.7-flash` are served by 3.8 Flash automatically. It is the Gemini model Google recommends for computer use. The per-token price is low, but coverage notes it spends more reasoning tokens per task. On DeepSWE v1.1, where it tied Astra and Opus 5 near 74%, its cost per task was $2.36 at high effort versus $4.43 for Astra at xhigh and $11.84 for Opus 5 at max. Model the January 2027 price before committing volume: 3.6, 3.7, and 3.8 Flash all double on the same day.
+**ماهیت آن:** آموزش تکمیلی (Further training) روی Gemini 3.7 Flash به جای یک مدل پایه جدید، و سومین مدل Flash گوگل ظرف شش هفته. از ۸ اکتبر، درخواست‌ها به `gemini-3.7-flash` به‌طور خودکار توسط 3.8 Flash پاسخ داده می‌شوند. این همان مدل Gemini است که گوگل برای کار با کامپیوتر (computer use) توصیه می‌کند. قیمت به ازای هر Token پایین است، اما گزارش‌ها نشان می‌دهند که به ازای هر وظیفه، Tokenهای استدلالی بیشتری مصرف می‌کند. در بنچمارک DeepSWE v1.1، جایی که با Astra و Opus 5 در نزدیکی ۷۴٪ برابر شد، هزینه آن به ازای هر وظیفه در سطح تلاش بالا (high effort) برابر با ۲.۳۶ دلار در مقایسه با ۴.۴۳ دلار برای Astra در xhigh و ۱۱.۸۴ دلار برای Opus 5 در max بود. پیش از متعهد کردن حجم کاری، قیمت‌های ژانویه ۲۰۲۷ را مدل‌سازی کنید: قیمت‌های 3.6، 3.7 و 3.8 Flash همگی در همان روز دو برابر می‌شوند.
 
-**Gemini 3.8 Flash Cyber:** announced the same day for trusted defenders in the new Fairwind Program, with more permissive cybersecurity mitigations and Google's CodeMender harness for find-verify-fix pipelines (Google reports CyberGym 86.2%). It replaces Gemini 3.5 Flash Cyber in Google's tiered-access lineup.
+**مدل Gemini 3.8 Flash Cyber:** در همان روز برای مدافعان معتمد در برنامه جدید Fairwind معرفی شد، با کاهش‌های امنیتی منعطف‌تر (permissive cybersecurity mitigations) و بستر آزمون CodeMender گوگل برای خطوط لوله یافتن-تایید-اصلاح (find-verify-fix pipelines) (گوگل بنچمارک CyberGym را ۸۶.۲٪ گزارش کرده است). این مدل جایگزین Gemini 3.5 Flash Cyber در مجموعه مدل‌های دسترسی لایه‌ای گوگل می‌شود.
 
-### Gemini 3.1 Pro Preview (Google) - February 2026
+### Gemini 3.1 Pro Preview (Google) - فوریه ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gemini-3.1-pro-preview` (Preview) |
-| Context Window | 1M tokens |
-| Input Cost | $2.00 / 1M tokens (standard); $4.00 (200K+) |
-| Output Cost | $12.00 / 1M tokens (standard); $18.00 (200K+) |
-| Multimodal | Native: Text, Vision, Audio, Video |
-| Highlights | Strong agentic and coding capabilities; still a preview, with Gemini 4 Argon now the GA model above it |
-| Released | February 2026 |
+| شناسه مدل | `gemini-3.1-pro-preview` (پیش‌نمایش) |
+| پنجره کانتکست | 1M Token |
+| هزینه ورودی | $2.00 به ازای هر 1M Token (استاندارد)؛ $4.00 (بیش از 200K) |
+| هزینه خروجی | $12.00 به ازای هر 1M Token (استاندارد)؛ $18.00 (بیش از 200K) |
+| چندوجهی (Multimodal) | بومی: متن، بینایی، صوت، ویدیو |
+| نکات برجسته | قابلیت‌های ایجنتی (agentic) و کدنویسی قدرتمند؛ همچنان یک نسخه پیش‌نمایش، در حالی که اکنون Gemini 4 Argon مدل GA بالاتر از آن است |
+| تاریخ انتشار | فوریه ۲۰۲۶ |
 
-**Best for:** Complex reasoning, multimodal analysis, long-context workloads.
-**Considerations:** Replaced Gemini 3 Pro Preview. It is still the only 3-series Pro model on the Gemini API (there is no Gemini 3.5 Pro), and it has no shutdown date; for new work at this price point, compare it with Gemini 4 Argon at Argon's December price. Gemini 2.5 is now deprecated on the Gemini API. After restricting the 2.5 models to existing users on September 18 and calling them "not deprecated", Google deprecated `gemini-2.5-pro` and `gemini-2.5-flash` on November 2, 2026; both are no longer selectable in Google AI Studio. From December 1 (scheduled), `gemini-2.5-pro` requests route to `gemini-3.8-flash` and bill at 3.8 Flash rates, and `gemini-2.5-flash` requests route to `gemini-3.5-flash-lite` at its rates. Pinned 2.5 Pro code will keep returning 200s while a different model answers, with breaking changes Google lists on the targets: stricter function-calling and `thought_signature` validation, `thinking_level` replacing `thinking_budget`, removed sampling parameters, and no prefilled model turns. `gemini-2.5-flash-lite` is not deprecated. Google Cloud (Vertex AI) scheduled `gemini-2.5-pro`, `gemini-2.5-flash`, and `gemini-2.5-flash-lite` to retire on October 20, 2026; as of November 6 that retirement is still not confirmed as executed, so test before assuming either outcome.
+**مناسب‌ترین کاربرد:** استدلال پیچیده، تحلیل چندوجهی، بارهای کاری با کانتکست طولانی.
+**ملاحظات:** جایگزین Gemini 3 Pro Preview شد. این مدل همچنان تنها مدل سری 3 پرو در Gemini API است (مدلی به نام Gemini 3.5 Pro وجود ندارد)، و فاقد تاریخ توقف سرویس است؛ برای کارهای جدید در این رده قیمتی، آن را با Gemini 4 Argon بر اساس نرخ دسامبر مدل Argon مقایسه کنید. سری Gemini 2.5 اکنون در Gemini API منسوخ (deprecated) شده است. گوگل پس از محدود کردن مدل‌های 2.5 به کاربران موجود در ۱۸ سپتامبر و «منسوخ‌نشده» خواندن آن‌ها، سرانجام در ۲ نوامبر ۲۰۲۶ مدل‌های `gemini-2.5-pro` و `gemini-2.5-flash` را منسوخ اعلام کرد؛ هر دو مدل دیگر در Google AI Studio قابل انتخاب نیستند. از ۱ دسامبر (طبق برنامه‌ریزی)، درخواست‌های `gemini-2.5-pro` به `gemini-3.8-flash` هدایت شده و با نرخ‌های 3.8 Flash محاسبه می‌شوند، و درخواست‌های `gemini-2.5-flash` با نرخ‌های آن مدل به `gemini-3.5-flash-lite` ارسال می‌گردند. کدهای متصل به 2.5 Pro همچنان کد وضعیت 200 را بازمی‌گردانند در حالی که مدل دیگری پاسخ می‌دهد؛ همراه با تغییرات ناسازگاری (breaking changes) که گوگل در مدل‌های مقصد فهرست کرده است: اعتبارسنجی سخت‌گیرانه‌تر فراخوانی تابع و `thought_signature`، جایگزینی `thinking_budget` با `thinking_level`، حذف پارامترهای نمونه‌برداری (sampling parameters) و عدم امکان پیش‌تکمیل نوبت‌های مدل (prefilled model turns). مدل `gemini-2.5-flash-lite` منسوخ نشده است. پلتفرم ابری گوگل (Vertex AI) زمان بازنشستگی `gemini-2.5-pro`، `gemini-2.5-flash` و `gemini-2.5-flash-lite` را برای ۲۰ اکتبر ۲۰۲۶ برنامه‌ریزی کرده بود؛ تا ۶ نوامبر این بازنشستگی هنوز به عنوان اجراشده تایید نشده است، بنابراین پیش از فرض هر یک از دو حالت، آن را تست کنید.
 
-### Gemini Flash and Flash-Lite Lineup (Google)
+### خط تولید Gemini Flash و Flash-Lite (Google)
 
-| Model | Input / Output per 1M | Status |
+| مدل | ورودی / خروجی به ازای هر ۱M | وضعیت |
 |---|---|---|
-| `gemini-3.8-flash` | $0.75 / $3.75 intro; $1.50 / $7.50 from January 1, 2027 | GA September 2, 2026; the current default |
-| `gemini-3.7-flash` | Same intro pricing as 3.8 Flash | Requests route automatically to `gemini-3.8-flash` since October 8. On Vertex AI it retires January 28, 2027 (scheduled), with no routing described |
-| `gemini-3.6-flash` | Same intro pricing as 3.8 Flash | Superseded by 3.8 Flash; now also the target for `gemini-3.5-flash` traffic. On Vertex AI it retires November 19, 2026 (scheduled, replacement `gemini-3.8-flash`, no auto-upgrade), while Vertex keeps `gemini-3.5-flash` until "May 19, 2027 or later": the same ID has a different lifecycle per platform |
-| Gemini 3.5 Flash | $1.50 / $9.00 | Requests route automatically to `gemini-3.6-flash` since October 8; Google has not said how rerouted requests bill |
-| Gemini 3.5 Flash-Lite | $0.30 / $2.50 | Google's pointer, with 3.8 Flash, for projects leaving 2.5 |
-| Gemini 3.1 Flash-Lite | $0.25 / $1.50 | Shuts down May 7, 2027 (to 3.5 Flash-Lite) |
-| Gemini 3 Flash Preview | $0.50 / $3.00 | Preview |
-| Gemini 2.5 Flash-Lite | $0.10 / $0.40 | Existing users only since September 18; not deprecated, unlike 2.5 Pro and 2.5 Flash (November 2) |
+| `gemini-3.8-flash` | $0.75 / $3.75 اولیه؛ $1.50 / $7.50 از ۱ ژانویه ۲۰۲۷ | عرضه عمومی (GA) در ۲ سپتامبر ۲۰۲۶؛ پیش‌فرض فعلی |
+| `gemini-3.7-flash` | قیمت‌گذاری اولیه مشابه 3.8 Flash | از ۸ اکتبر درخواست‌ها به‌طور خودکار به `gemini-3.8-flash` هدایت می‌شوند. در Vertex AI در ۲۸ ژانویه ۲۰۲۷ (برنامه‌ریزی‌شده) بدون ذکر هیچ مسیریابی بازنشسته می‌شود |
+| `gemini-3.6-flash` | قیمت‌گذاری اولیه مشابه 3.8 Flash | جایگزین‌شده توسط 3.8 Flash؛ اکنون مقصد ترافیک `gemini-3.5-flash` نیز هست. در Vertex AI در ۱۹ نوامبر ۲۰۲۶ (برنامه‌ریزی‌شده، جایگزین `gemini-3.8-flash`، بدون ارتقای خودکار) بازنشسته می‌شود، در حالی که Vertex مدل `gemini-3.5-flash` را تا «۱۹ مه ۲۰۲۷ یا بعد از آن» حفظ می‌کند: شناسه یکسان دارای چرخه عمر متفاوتی در هر پلتفرم است |
+| Gemini 3.5 Flash | $1.50 / $9.00 | درخواست‌ها از ۸ اکتبر به‌طور خودکار به `gemini-3.6-flash` هدایت می‌شوند؛ گوگل نحوه محاسبه هزینه درخواست‌های تغییرمسیریافته را اعلام نکرده است |
+| Gemini 3.5 Flash-Lite | $0.30 / $2.50 | پیشنهاد گوگل، به همراه 3.8 Flash، برای پروژه‌هایی که نسخه 2.5 را ترک می‌کنند |
+| Gemini 3.1 Flash-Lite | $0.25 / $1.50 | توقف سرویس در ۷ مه ۲۰۲۷ (مهاجرت به 3.5 Flash-Lite) |
+| Gemini 3 Flash Preview | $0.50 / $3.00 | پیش‌نمایش |
+| Gemini 2.5 Flash-Lite | $0.10 / $0.40 | فقط برای کاربران موجود از ۱۸ سپتامبر؛ بر خلاف 2.5 Pro و 2.5 Flash (در ۲ نوامبر) منسوخ نشده است |
 
-> **Watch for a phantom row:** a "Gemini 3.1 Flash" at $0.10 / $3.00 still circulates in older cost tables. No model with that name and price appears on Google's pricing page; the nearest are Gemini 3 Flash Preview and Gemini 3.1 Flash-Lite. Price new work on Gemini 3.8 Flash.
+> **مراقب یک ردیف شبح‌وار (phantom row) باشید:** مدلی تحت عنوان «Gemini 3.1 Flash» با قیمت $0.10 / $3.00 هنوز در جدول‌های هزینه قدیمی‌تر دست‌به‌دست می‌شود. هیچ مدلی با این نام و قیمت در صفحه قیمت‌گذاری گوگل دیده نمی‌شود؛ نزدیک‌ترین موارد Gemini 3 Flash Preview و Gemini 3.1 Flash-Lite هستند. هزینه‌های کارهای جدید را بر اساس Gemini 3.8 Flash برآورد کنید.
 
-### Gemini 3.2 Flash (Google) - May 2026, Historical
+### Gemini 3.2 Flash (Google) - مه ۲۰۲۶، جنبه تاریخی (Historical)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Status | Quiet rollout in iOS Gemini app and Google AI Studio May 5, 2026 (no formal announcement) |
-| Released | May 5, 2026 |
+| وضعیت | انتشار بی‌سروصدا در اپلیکیشن iOS Gemini و Google AI Studio در ۵ مه ۲۰۲۶ (بدون اعلام رسمی) |
+| تاریخ انتشار | ۵ مه ۲۰۲۶ |
 
-**Status:** Historical. Google's Flash line has since moved through 3.5, 3.6, 3.7, and 3.8; build on `gemini-3.8-flash`.
+**وضعیت:** جنبه تاریخی. خط تولید Flash گوگل از آن زمان تاکنون مراحل 3.5، 3.6، 3.7 و 3.8 را طی کرده است؛ پروژه‌ها را بر پایه `gemini-3.8-flash` بسازید.
 
-### Gemini Deep Research / Deep Research Max (Google) - April 2026
+### Gemini Deep Research / Deep Research Max (Google) - آوریل ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Built on | Gemini 3.1 Pro |
-| Capabilities | MCP support; native chart/infographic generation; extended test-time compute; async background workflows |
-| Released | April 21, 2026 |
+| ساخته‌شده بر پایه | Gemini 3.1 Pro |
+| قابلیت‌ها | پشتیبانی از MCP؛ تولید بومی نمودار/اینفوگرافیک؛ محاسبات گسترش‌یافته زمان آزمون (extended test-time compute)؛ جریان‌های کاری ناهمگام در پس‌زمینه (async background workflows) |
+| تاریخ انتشار | ۲۱ آوریل ۲۰۲۶ |
 
-**Best for:** Research agents, document synthesis, long-running async workflows. The MCP support made it the first Google research-agent product with first-class tool integration.
+**مناسب‌ترین کاربرد:** ایجنت‌های پژوهشی (Research agents)، ترکیب و یکپارچه‌سازی اسناد، جریان‌های کاری ناهمگام طولانی‌مدت. پشتیبانی از MCP آن را به نخستین محصول ایجنت پژوهشی گوگل با یکپارچه‌سازی درجه یک ابزارها تبدیل کرد.
 
-### Gemini Robotics-ER 1.6 (Google DeepMind) - April 2026
+### Gemini Robotics-ER 1.6 (Google DeepMind) - آوریل ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Domain | Physical robotics, embodied reasoning |
-| New capability | Reading gauges/sight glasses |
-| Deployment | Boston Dynamics Spot |
-| Released | April 14, 2026 |
+| حوزه | رباتیک فیزیکی، استدلال تجسم‌یافته (embodied reasoning) |
+| قابلیت جدید | خواندن درجه‌ها/شیشه‌های نشانگر سطح مایع (gauges/sight glasses) |
+| استقرار (Deployment) | ربات بوستون داینامیکس اسپات (Boston Dynamics Spot) |
+| تاریخ انتشار | ۱۴ آوریل ۲۰۲۶ |
 
-**Best for:** Robotics applications requiring vision-language grounding for physical actions. Available via Gemini API and AI Studio.
+**مناسب‌ترین کاربرد:** برنامه‌های کاربردی رباتیک نیازمند تطبیق بینایی-زبان (vision-language grounding) برای اقدامات فیزیکی. در دسترس از طریق Gemini API و AI Studio.
 
-### Gemini 3.7 Flash (Google) - August 2026, SUPERSEDED by 3.8 Flash (rerouted October 8)
+### Gemini 3.7 Flash (Google) - اوت ۲۰۲۶، جایگزین‌شده توسط 3.8 Flash (تغییر مسیر داده شده در ۸ اکتبر)
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `gemini-3.7-flash` |
-| Context Window | 1,048,576 tokens in / 65,536 out |
-| Input / Output Cost | $0.75 / $3.75 per 1M through December 31, 2026, then $1.50 / $7.50. Context caching $0.075 per 1M; Batch $0.375 / $1.875 |
-| Multimodal | Text, image, audio, video; agentic video understanding is opt-in (`"processing": "agentic"`), not on by default |
-| Knowledge cutoff | March 2026 |
-| Released | August 13, 2026 (GA) |
+| شناسه مدل | `gemini-3.7-flash` |
+| پنجره کانتکست | ۱,۰۴۸,۵۷۶ Token ورودی / ۶۵,۵۳۶ خروجی |
+| هزینه ورودی / خروجی | $0.75 / $3.75 به ازای هر ۱M تا ۳۱ دسامبر ۲۰۲۶، سپس $1.50 / $7.50. کش‌گذاری کانتکست $0.075 به ازای هر ۱M؛ پردازش دسته‌ای (Batch) برابر با $0.375 / $1.875 |
+| چندوجهی | متن، تصویر، صوت، ویدیو؛ درک ایجنتی ویدیو به‌صورت اختیاری (opt-in با `"processing": "agentic"`) است، نه به‌صورت پیش‌فرض |
+| پایان داده‌های آموزشی (Knowledge cutoff) | مارس ۲۰۲۶ |
+| تاریخ انتشار | ۱۳ اوت ۲۰۲۶ (عرضه عمومی یا GA) |
 
-**What it is:** Google's workhorse tier, built on Gemini 3.6 Flash with what the model card describes as algorithmic improvements to the reasoning foundation rather than a new pretraining run. Customizable thinking configurations trade quality against cost and latency per request. Google-reported gains over 3.6 Flash include FrontierCode 1.1 Main 43.6% versus 34.4% and WebDev Arena Elo 1588 versus 1538.
+**ماهیت آن:** سطح کاری پرکاربرد (workhorse tier) گوگل، ساخته‌شده بر پایه Gemini 3.6 Flash با آنچه شناسنامه مدل تحت عنوان بهبودهای الگوریتمی در پایه استدلال به جای یک اجرای پیش‌آموزش جدید توصیف می‌کند. پیکربندی‌های استدلالی قابل تنظیم، کیفیت را در برابر هزینه و تاخیر (Latency) در هر درخواست مبادله (trade-off) می‌کنند. بهبودهای گزارش‌شده توسط گوگل نسبت به 3.6 Flash شامل FrontierCode 1.1 Main برابر با ۴۳.۶٪ در برابر ۳۴.۴٪ و امتیاز Elo در WebDev Arena برابر با ۱۵۸۸ در برابر ۱۵۳۸ است.
 
-**Agentic video (September 1):** with `"processing": "agentic"` on a video input, the model decides which segments to inspect, at what speed, and through which modality, instead of sampling at a fixed 1 FPS (still the default). Google reports up to 88% fewer tokens and up to 66% lower cost at standard token pricing, and the mode now covers 3.8 Flash, 3.7 Flash, 3.6 Flash, and 3.5 Flash-Lite. Video cost models built on fixed-FPS sampling can overestimate tokens by as much as roughly 8x.
+**ویدیوی ایجنتی (۱ سپتامبر):** با تنظیم `"processing": "agentic"` روی یک ورودی ویدیو، مدل به جای نمونه‌برداری با نرخ ثابت ۱ فریم بر ثانیه (1 FPS، که هنوز پیش‌فرض است)، تصمیم می‌گیرد کدام بخش‌ها را بررسی کند، با چه سرعتی و از طریق کدام مدالیته. گوگل تا ۸۸٪ کاهش در تعداد Tokenها و تا ۶۶٪ کاهش هزینه را بر اساس قیمت استاندارد Token گزارش کرده است، و این حالت اکنون مدل‌های 3.8 Flash، 3.7 Flash، 3.6 Flash و 3.5 Flash-Lite را پوشش می‌دهد. مدل‌های هزینه ویدیو که بر اساس نمونه‌برداری با FPS ثابت ساخته شده‌اند، ممکن است تعداد Tokenها را تا حدود ۸ برابر بیشتر از حد برآورد کنند.
 
-**Considerations:** Superseded by 3.8 Flash on September 2 at the same intro price, and since October 8 requests to `gemini-3.7-flash` route to `gemini-3.8-flash` automatically: a pinned model string kept working while the model behind it changed, so evals pinned to 3.7 Flash now measure 3.8 Flash. Gemini 3.5 Pro never shipped; Google's next flagship was Gemini 4 Argon (GA October 13).
+**ملاحظات:** در ۲ سپتامبر با همان قیمت اولیه جای خود را به 3.8 Flash داد، و از ۸ اکتبر درخواست‌ها به `gemini-3.7-flash` به‌طور خودکار به `gemini-3.8-flash` هدایت می‌شوند: یک رشته مدل پین‌شده به کار خود ادامه داد در حالی که مدل پشت آن تغییر کرد، بنابراین ارزیابی‌های (evals) متصل به 3.7 Flash اکنون در واقع 3.8 Flash را می‌سنجند. مدل Gemini 3.5 Pro هرگز عرضه نشد؛ پرچم‌دار بعدی گوگل Gemini 4 Argon بود (عرضه عمومی در ۱۳ اکتبر).
 
-### Grok 4.7 (SpaceXAI) - September 2026
+### Grok 4.7 (SpaceXAI) - سپتامبر ۲۰۲۶
 
-| Attribute | Value |
+| مشخصه | مقدار |
 |-----------|-------|
-| Model ID | `grok-4.7` |
-| Context Window | 500K tokens; text and image in, text out |
-| Input / Output Cost | $2.00 / $6.00 per 1M below a 200K prompt; $4.00 / $12.00 on all tokens once the prompt reaches 200K. Cached input $0.50 ($1.00 at 200K+) |
-| Fast variant | About 2x output speed at 2x price, offered only in Cursor and Grok Build (not a listed API model) |
-| Knowledge cutoff | May 2026 per the API docs |
-| Benchmarks | Terminal-Bench 4.0 leaderboard 37.58% at xhigh. AA Intelligence Index v5.0: 35 (high) |
-| Released | September 21, 2026 (Grok API, Grok Build, Cursor on all plans, OpenRouter and other gateways) |
+| شناسه مدل (Model ID) | `grok-4.7` |
+| پنجره کانتکست (Context Window) | ۵۰۰K Token؛ ورودی متن و تصویر، خروجی متن |
+| هزینه ورودی / خروجی | ۲.۰۰ دلار / ۶.۰۰ دلار به ازای هر ۱M Token برای Prompt کمتر از 200K؛ ۴.۰۰ دلار / ۱۲.۰۰ دلار برای تمام Tokenها زمانی که Prompt به 200K برسد. ورودی کش‌شده ۰.۵۰ دلار (۱.۰۰ دلار در 200K+) |
+| گونه سریع (Fast variant) | حدود ۲ برابر سرعت خروجی با ۲ برابر قیمت، ارائه‌شده صرفاً در Cursor و Grok Build (یک مدل فهرست‌شده در API نیست) |
+| پایان داده‌های آموزشی (Knowledge cutoff) | مه ۲۰۲۶ طبق مستندات API |
+| بنچمارک‌ها (Benchmarks) | لیدربورد Terminal-Bench 4.0 برابر با ۳۷.۵۸٪ در سطح xhigh. شاخص هوش AA Intelligence Index نسخه v5.0: برابر با ۳۵ (در سطح high) |
+| تاریخ انتشار | ۲۱ سپتامبر ۲۰۲۶ (در Grok API، ‏Grok Build، ‏Cursor در تمام پلن‌ها، OpenRouter و سایر درگاه‌ها) |
 
-**What it is:** Unlike most August releases, a new and larger base model, with a longer RL run weighted toward multi-hour tasks (per SpaceXAI). It is also this quarter's clearest case of vendor tables outrunning independent indices: large gains in SpaceXAI's own table, small ones on AA, where v5.0 puts it about 20 points behind GPT-6.1 Sol (55) and Sonnet 5.5 (54) at the same $2 input price. Still SpaceXAI's newest text model: there is no Grok 5 as of November 6. Distribution now runs through Cursor, which became part of SpaceX in mid-August, and Grok launches appear on Cursor's blog. The whole-request 200K pricing trap carries over from 4.6.
+**ماهیت مدل:** برخلاف اغلب مدل‌های عرضه‌شده در اوت، این یک مدل پایه (base model) جدید و بزرگ‌تر با یک دوره طولانی‌تر یادگیری تقویتی (RL) است که تمرکز آن بر تسک‌های چندساعته قرار دارد (طبق اعلام SpaceXAI). این مدل همچنین بارزترین نمونه این فصل از پیشی گرفتن جداول ارائه‌دهنده از شاخص‌های مستقل است: دستاوردهای بزرگ در جدول خود SpaceXAI، و پیشرفت‌های اندک در بنچمارک AA، جایی که نسخه v5.0 آن را با همان قیمت ورودی ۲ دلاری، حدود ۲۰ امتیاز عقب‌تر از GPT-6.1 Sol (امتیاز ۵۵) و Sonnet 5.5 (امتیاز ۵۴) قرار می‌دهد. این مدل همچنان جدیدترین مدل متنی SpaceXAI است: تا تاریخ ۶ نوامبر خبری از Grok 5 نیست. توزیع آن اکنون از طریق Cursor انجام می‌شود که در اواسط اوت بخشی از SpaceX شد، و اطلاعیه‌های عرضه Grok در وبلاگ Cursor منتشر می‌شوند. تله قیمت‌گذاری 200K برای کل درخواست، از نسخه 4.6 به این مدل نیز منتقل شده است.
 
-### Grok 4.6 (SpaceXAI) - August 2026, SUPERSEDED by Grok 4.7
+### Grok 4.6 (SpaceXAI) - اوت ۲۰۲۶، جایگزین‌شده توسط Grok 4.7
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Model ID | `grok-4.6` |
-| Context Window | 500K tokens |
-| Input / Output Cost | $2.00 / $6.00 per 1M below a 200K prompt; $4.00 / $12.00 at or above 200K. Cached input $0.50 |
-| Reasoning | Effort settings low, medium, high (default), xhigh |
-| Knowledge cutoff | February 1, 2026 |
-| Released | August 12, 2026 |
+| شناسه مدل (Model ID) | `grok-4.6` |
+| پنجره کانتکست (Context Window) | ۵۰۰K Token |
+| هزینه ورودی / خروجی | ۲.۰۰ دلار / ۶.۰۰ دلار به ازای هر ۱M Token برای Prompt کمتر از 200K؛ ۴.۰۰ دلار / ۱۲.۰۰ دلار در 200K یا بالاتر. ورودی کش‌شده ۰.۵۰ دلار |
+| استدلال (Reasoning) | تنظیمات تلاش (Effort) شامل low،‏ medium،‏ high (پیش‌فرض)، xhigh |
+| پایان داده‌های آموزشی (Knowledge cutoff) | ۱ فوریه ۲۰۲۶ |
+| تاریخ انتشار | ۱۲ اوت ۲۰۲۶ |
 
-**What it is:** SpaceXAI's frontier model before 4.7, focused on long-running agents and interactive visual work. It scored 61 on the Artificial Analysis Intelligence Index at launch, up from 56 for Grok 4.5 High, on the pre-September index. AA has re-baselined twice since (v4.3 in September, v5.0 in October), so that number compares with nothing current.
+**ماهیت مدل:** مدل پیشرو (frontier model) شرکت SpaceXAI پیش از 4.7، با تمرکز بر ایجنت‌های طولانی‌مدت (long-running agents) و کارهای بصری تعاملی. این مدل در زمان عرضه، روی شاخص هوش قبل از سپتامبر Artificial Analysis Intelligence Index امتیاز ۶۱ را کسب کرد که نسبت به امتیاز ۵۶ مدل Grok 4.5 High افزایش یافته بود. بنچمارک AA از آن زمان تاکنون دو بار بازتنظیم مبنا (re-baselined) شده است (نسخه v4.3 در سپتامبر، و نسخه v5.0 در اکتبر)، بنابراین آن عدد با هیچ‌یک از معیارهای فعلی قابل مقایسه نیست.
 
-**Two traps worth knowing.** The higher long-prompt rate applies to *all* tokens in the request once the prompt reaches 200K, not just the tokens past the threshold. And cached input got more expensive than Grok 4.5 ($0.50 versus $0.30 per 1M), so cache-heavy agent loops do not automatically get cheaper on the upgrade. Note the vendor name: xAI completed a rebrand to SpaceXAI, so current docs and release notes use the new name.
+**دو تله که دانستن آن‌ها ارزش دارد.** نرخ بالاتر برای Prompt طولانی، زمانی که Prompt به 200K برسد، برای *تمام* Tokenهای درخواست اعمال می‌شود، نه فقط برای Tokenهای فراتر از این آستانه. همچنین ورودی کش‌شده گران‌تر از Grok 4.5 شده است (۰.۵۰ دلار در مقایسه با ۰.۳۰ دلار به ازای هر ۱M Token)، بنابراین حلقه‌های ایجنتی با مصرف بالای کش (cache-heavy agent loops) با این ارتقا لزوماً ارزان‌تر نمی‌شوند. به نام ارائه‌دهنده توجه کنید: xAI فرایند تغییر نام تجاری (rebrand) به SpaceXAI را تکمیل کرد، بنابراین مستندات و یادداشت‌های انتشار فعلی از نام جدید استفاده می‌کنند.
 
-### Grok 4 (xAI) - RETIRED on the xAI API
+### Grok 4 (xAI) - بازنشسته‌شده (RETIRED) در xAI API
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Context Window | 256K tokens |
-| Input Cost | $3.00 / 1M tokens |
-| Output Cost | $15.00 / 1M tokens |
-| Highlights | Native tool use and real-time search; competitive reasoning |
-| Released | July 2025 (Grok 4.20 beta: February 2026) |
+| پنجره کانتکست (Context Window) | ۲۵۶K Token |
+| هزینه ورودی | ۳.۰۰ دلار / ۱M Token |
+| هزینه خروجی | ۱۵.۰۰ دلار / ۱M Token |
+| ویژگی‌های برجسته (Highlights) | استفاده بومی از ابزار و جستجوی بلادرنگ؛ استدلال رقابتی |
+| تاریخ انتشار | ژوئیه ۲۰۲۵ (نسخه آزمایشی Grok 4.20 beta: فوریه ۲۰۲۶) |
 
-**Status:** Retired from the xAI API on May 15, 2026, along with `grok-4-fast`, Grok 4.1 Fast, `grok-code-fast-1`, and `grok-3`. The retired text-model slugs still resolve but redirect to `grok-4.3` ($1.25 / $2.50) and bill at its rates (`grok-code-fast-1` goes to `grok-build-0.1`), so code keeps "working" while behavior and cost change. Azure Foundry still lists `grok-4` and `grok-4-1-fast` as GA, a reminder that lifecycle is tracked per (model, platform) pair.
+**وضعیت:** در ۱۵ مه ۲۰۲۶ همراه با `grok-4-fast`، مدل Grok 4.1 Fast، `grok-code-fast-1` و `grok-3` از xAI API بازنشسته شد. شناسه‌های متنی (slugs) مدل‌های بازنشسته‌شده همچنان پاسخ می‌دهند، اما به `grok-4.3` (با نرخ ۱.۲۵ دلار / ۲.۵۰ دلار) بازهدایت (redirect) می‌شوند و با نرخ‌های آن صورت‌حساب صادر می‌کنند (`grok-code-fast-1` به `grok-build-0.1` می‌رود)؛ بنابراین کد به "کار کردن" ادامه می‌دهد در حالی که رفتار و هزینه تغییر می‌کنند. Azure Foundry هنوز `grok-4` و `grok-4-1-fast` را در وضعیت عرضه عمومی (GA) فهرست می‌کند، که یادآور این است که چرخه حیات به ازای هر جفت (مدل، پلتفرم) پیگیری می‌شود.
 
-### MAI-Thinking-1 (Microsoft) - August 2026 (public preview)
+### MAI-Thinking-1 (Microsoft) - اوت ۲۰۲۶ (پیش‌نمایش عمومی)
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| Status | Public preview on Microsoft Foundry since August 12, 2026 |
-| Architecture | Sparse MoE, about 1T total / 35B active parameters; 256K context |
-| API | Chat Completions compatible, function calling |
-| Pricing | From $2 input / $8 output per 1M (Microsoft's Foundry blog, updated August 12) |
-| Limits | Preview version 2026-06-01; Global Standard only, no PTU; 256K total tokens per request with output capped at 64K; function tools only; an opaque encrypted reasoning state when `reasoning_display` is `encrypted`; default quota 0 TPM and 0 RPM (Medium 100,000 TPM / 100 RPM, High 250,000 TPM / 250 RPM) |
-| Benchmarks | Microsoft-reported: AIME 2025 97.0%, SWE-Bench Pro on par with Claude Opus 4.6, blind human preference over Claude Sonnet 4.6 across 1,276 tasks |
+| وضعیت | پیش‌نمایش عمومی در Microsoft Foundry از ۱۲ اوت ۲۰۲۶ |
+| معماری | معماری MoE پراکنده (Sparse MoE)، در مجموع حدود ۱T / ۳۵B پارامتر فعال؛ کانتکست ۲۵۶K |
+| رابط برنامه‌نویسی (API) | سازگار با Chat Completions، دارای قابلیت فراخوانی تابع (function calling) |
+| قیمت‌گذاری | شروع از ۲ دلار ورودی / ۸ دلار خروجی به ازای هر ۱M Token (وبلاگ Foundry مایکروسافت، به‌روزشده در ۱۲ اوت) |
+| محدودیت‌ها | نسخه پیش‌نمایش 2026-06-01؛ صرفاً در سطح Global Standard، فاقد PTU؛ حداکثر ۲۵۶K کل Tokenها در هر درخواست با سقف خروجی ۶۴K؛ صرفاً ابزارهای تابع (function tools)؛ وضعیت استدلال رمزنگاری‌شده مات هنگامی که `reasoning_display` برابر با `encrypted` باشد؛ سهمیه پیش‌فرض 0 TPM و 0 RPM (در سطح Medium معادل 100,000 TPM / 100 RPM، در سطح High معادل 250,000 TPM / 250 RPM) |
+| بنچمارک‌ها (Benchmarks) | گزارش مایکروسافت: در AIME 2025 برابر با ۹۷.۰٪، در SWE-Bench Pro هم‌تراز با Claude Opus 4.6، ترجیح انسانی دووسوکور نسبت به Claude Sonnet 4.6 در میان ۱,۲۷۶ تسک |
 
-**Why it matters:** Microsoft now has a first-party reasoning model in Foundry next to its OpenAI and Anthropic offerings, which matters for vendor diversification and sovereignty discussions. Microsoft says it did not distill from other labs' models. Price is no longer the blocker: it lists at GPT-6 Sol's input price and below it on output. The real blockers are the zero default quota (request capacity before you design around it) and the 64K output cap.
+**چرا این مدل اهمیت دارد:** مایکروسافت اکنون یک مدل استدلال دست‌اول (first-party) در Foundry در کنار محصولات OpenAI و Anthropic خود دارد، که برای بحث‌های تنوع‌بخشی به تأمین‌کنندگان (vendor diversification) و حاکمیت داده (sovereignty) حائز اهمیت است. مایکروسافت اظهار می‌دارد که این مدل را از مدل‌های سایر آزمایشگاه‌ها تقطیر (distill) نکرده است. قیمت دیگر مانع به شمار نمی‌رود: این مدل با قیمت ورودی مشابه GPT-6 Sol و نرخی پایین‌تر از آن در خروجی قیمت‌گذاری شده است. موانع واقعی عبارت‌اند از سهمیه پیش‌فرض صفر (پیش از آنکه معماری سیستم خود را بر پایه آن طراحی کنید، ظرفیت درخواست را ثبت کنید) و سقف خروجی ۶۴K Token.
 
-### Model Comparison: Frontier and Workhorse Tiers (November 2026)
+### مقایسه مدل‌ها: رده‌های پیشرو و پرکاربرد (Frontier and Workhorse Tiers) (نوامبر ۲۰۲۶)
 
-| Model | Input / Output per 1M | Cache read | Context | Access | Status |
+| مدل | ورودی / خروجی به ازای هر ۱M | خواندن از کش | کانتکست | دسترسی | وضعیت |
 |-------|-----------------------|------------|---------|--------|--------|
-| Claude Fable 5.1 | $10 / $50 | $0.25 (0.025x) | 1M, flat pricing | 5 platforms; ZDR only if authorized | GA September 1 |
-| GPT-6 Astra | $10 / $50 ($20 / $75 above 272K) | $1.00 | 1.05M | API, Bedrock, Foundry; Google Cloud (private preview) | Staged GA from September 3 |
-| Claude Opus 5.5 | $4 / $20 | $0.20 (0.05x) | 1M, flat pricing | 5 platforms; ZDR | GA September 22 |
-| Meta Muse Wonder | $4 / $20 | $0.20 | 1M | Meta Model API, Muse Code (Muse Wonder Full: Muse Code subscription only) | Released October 12 |
-| Gemini 4 Argon | $2 / $10 through November 30; $4 / $20 from December 1 | $0.10 implicit only ($0.20 from December 1) | 1M shared in and out; 65,536 default output | Gemini API paid tier | GA October 13 |
-| Claude Sonnet 5.5 | $2 / $10 | $0.10 (0.05x) | 1M, flat pricing | 5 platforms; ZDR | GA September 28 |
-| GPT-6.1 Sol | $2 / $10 ($4 / $15 above 272K) | $0.10 (0.05x) | 1.05M | API, Bedrock; Google Cloud (private preview) | GA September 29 |
-| GPT-6 Sol | $2 / $10 ($4 / $15 above 272K) | $0.20 | 1.05M | API, Bedrock | GA September 22 |
-| Grok 4.7 | $2 / $6 ($4 / $12 at 200K+) | $0.50 | 500K | xAI API, Cursor, gateways | GA September 21 |
-| Muse Spark 1.3 | $1.25 / $4.25 | $0.15 | 1M | Meta Model API, Muse Code | GA September 2 |
-| GPT-6.1 Terra | $1 / $5 ($2 / $7.50 above 272K) | $0.05 (0.05x) | 1.05M | API, Bedrock | GA October 26 |
-| Gemini 3.8 Flash | $0.75 / $3.75 intro ($1.50 / $7.50 from January 1) | $0.075 | 1M in / 65,536 out | Gemini API, Gemini Enterprise | GA September 2 |
-| Claude Haiku 5.5 | $0.10 / $0.50 up to a 100K prompt; $0.50 / $2.50 on the whole request above | $0.01 ($0.05 above 100K) | 1M | 5 platforms | GA October 7 |
-| GPT-6 Luna | $0.10 / $0.50 ($0.20 / $0.75 above 272K) | $0.01 | 1.05M | API, Bedrock; Google Cloud (private preview) | GA September 22 |
+| Claude Fable 5.1 | $10 / $50 | $0.25 (0.025x) | 1M، قیمت ثابت | ۵ پلتفرم؛ ZDR صرفاً در صورت احراز صلاحیت | GA در ۱ سپتامبر |
+| GPT-6 Astra | $10 / $50 ($20 / $75 بالای 272K) | $1.00 | 1.05M | API،‏ Bedrock،‏ Foundry؛ Google Cloud (پیش‌نمایش خصوصی) | عرضه عمومی مرحله‌ای از ۳ سپتامبر |
+| Claude Opus 5.5 | $4 / $20 | $0.20 (0.05x) | 1M، قیمت ثابت | ۵ پلتفرم؛ ZDR | GA در ۲۲ سپتامبر |
+| Meta Muse Wonder | $4 / $20 | $0.20 | 1M | Meta Model API،‏ Muse Code (نسخه Muse Wonder Full: صرفاً با اشتراک Muse Code) | منتشرشده در ۱۲ اکتبر |
+| Gemini 4 Argon | $2 / $10 تا ۳۰ نوامبر؛ $4 / $20 از ۱ دسامبر | $0.10 صرفاً ضمنی ($0.20 از ۱ دسامبر) | 1M اشتراکی ورودی و خروجی؛ خروجی پیش‌فرض 65,536 | لایه پولی Gemini API | GA در ۱۳ اکتبر |
+| Claude Sonnet 5.5 | $2 / $10 | $0.10 (0.05x) | 1M، قیمت ثابت | ۵ پلتفرم؛ ZDR | GA در ۲۸ سپتامبر |
+| GPT-6.1 Sol | $2 / $10 ($4 / $15 بالای 272K) | $0.10 (0.05x) | 1.05M | API،‏ Bedrock؛ Google Cloud (پیش‌نمایش خصوصی) | GA در ۲۹ سپتامبر |
+| GPT-6 Sol | $2 / $10 ($4 / $15 بالای 272K) | $0.20 | 1.05M | API،‏ Bedrock | GA در ۲۲ سپتامبر |
+| Grok 4.7 | $2 / $6 ($4 / $12 در 200K+) | $0.50 | 500K | xAI API،‏ Cursor، درگاه‌ها | GA در ۲۱ سپتامبر |
+| Muse Spark 1.3 | $1.25 / $4.25 | $0.15 | 1M | Meta Model API،‏ Muse Code | GA در ۲ سپتامبر |
+| GPT-6.1 Terra | $1 / $5 ($2 / $7.50 بالای 272K) | $0.05 (0.05x) | 1.05M | API،‏ Bedrock | GA در ۲۶ اکتبر |
+| Gemini 3.8 Flash | $0.75 / $3.75 معرفی اولیه ($1.50 / $7.50 از ۱ ژانویه) | $0.075 | 1M ورودی / 65,536 خروجی | Gemini API،‏ Gemini Enterprise | GA در ۲ سپتامبر |
+| Claude Haiku 5.5 | $0.10 / $0.50 تا سقف Prompt معادل 100K؛ $0.50 / $2.50 برای کل درخواست در مقادیر بالاتر | $0.01 ($0.05 بالای 100K) | 1M | ۵ پلتفرم | GA در ۷ اکتبر |
+| GPT-6 Luna | $0.10 / $0.50 ($0.20 / $0.75 بالای 272K) | $0.01 | 1.05M | API،‏ Bedrock؛ Google Cloud (پیش‌نمایش خصوصی) | GA در ۲۲ سپتامبر |
 
-"5 platforms" = Claude API, Bedrock, Google Cloud, Microsoft Foundry, Claude Platform on AWS. Since October 22 Google Cloud offers Claude two ways, Google managed and Anthropic managed (Claude Models on Google Cloud, which follows Anthropic's lifecycle dates), so Anthropic now counts six platforms. Standard tier, list prices. Benchmarks for these models are in [Capability Comparison](#capability-comparison); full pricing mechanics (batch, speed tiers, residency premiums) are in [Pricing and Costs](03-pricing-and-costs.md).
+«۵ پلتفرم» = Claude API،‏ Bedrock،‏ Google Cloud،‏ Microsoft Foundry، و Claude Platform در AWS. از ۲۲ اکتبر، Google Cloud مدل Claude را به دو روش ارائه می‌دهد: مدیریت‌شده توسط گوگل و مدیریت‌شده توسط آنتروپیک (Claude Models on Google Cloud، که از تاریخ‌های چرخه حیات Anthropic تبعیت می‌کند)، بنابراین Anthropic اکنون شش پلتفرم را برمی‌شمارد. لایه استاندارد، قیمت‌های رسمی. بنچمارک‌های این مدل‌ها در [مقایسه توانمندی‌ها](#capability-comparison) آمده است؛ سازوکارهای کامل قیمت‌گذاری (پردازش دسته‌ای یا batch، سطوح سرعت، و هزینه‌های اضافه استقرار داده یا residency premiums) در [قیمت‌گذاری و هزینه‌ها](03-pricing-and-costs.md) ارائه شده است.
 
-### Production Heritage & Maturity
+### پیشینه و بلوغ در محیط عملیاتی (Production Heritage & Maturity)
 
-While frontier models lead on benchmarks, many enterprise systems rely on **battle-tested** models, and most of them now have a retirement date:
+در حالی که مدل‌های پیشرو (frontier) در بنچمارک‌ها پیشتاز هستند، بسیاری از سیستم‌های سازمانی به مدل‌های **آزموده‌شده در میدان عملیات (battle-tested)** متکی هستند، و اکنون برای اکثر آن‌ها تاریخ بازنشستگی تعیین شده است:
 
-| Model Family | Production Since | Maturity Note |
+| خانواده مدل | در محیط عملیاتی از | یادداشت بلوغ |
 |--------------|------------------|---------------|
-| **GPT-4o / GPT-4.1** | May 2024 / April 2025 | Most mature ecosystem, now on a short clock. The original `gpt-4o-2024-05-13` snapshot shut down on the OpenAI API on October 23, 2026. On October 14 OpenAI gave about three months' notice that `gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`, `gpt-4o-mini-2024-07-18`, `gpt-4.1-2025-04-14`, `gpt-4.1-mini-2025-04-14`, and fine-tunes of them shut down January 14, 2027, replaced by `gpt-6-luna`, which cannot be fine-tuned. On Microsoft Foundry, gpt-4o 2024-05-13 retires the same day and its Global Standard and Data Zone Standard deployments auto-upgrade to gpt-5.1 (2025-11-13), a reasoning-class model swapped in with no code change; the other GPT-4o and GPT-4.1 versions run on Foundry until April 14, 2027. |
-| **Claude Sonnet 4.5 / 4.6** | Sept 2025 / Feb 2026 | Inherited the tool-use reliability reputation of Claude 3.5 and 3.7 Sonnet. Sonnet 4.5 retires November 30, 2026 on the Claude API and Foundry but runs on Bedrock until April 8, 2027; Sonnet 4.6 is legacy and now costs more than Sonnet 5.5. |
-| **Gemini 2.5 Pro** | March 2025 | Proven long-context. Restricted to existing users on the Gemini API since September 18, 2026, then deprecated there on November 2; from December 1 its requests route to `gemini-3.8-flash` at 3.8 Flash rates. Google Cloud (Vertex) scheduled its retirement for October 20, 2026; execution is not confirmed. |
-| **o1 / o3** | Sept 2024 | Well-understood reasoning failure modes. The OpenAI API shut down `o1`, `o1-pro`, `o3-mini`, and `o4-mini` on October 23; Foundry retires o1, o3, o3-pro, and siblings on November 19 (to GPT-5.6 Sol); OpenAI shuts down `o3-2025-04-16` and the dated GPT-5 snapshots on December 11. |
+| **GPT-4o / GPT-4.1** | مه ۲۰۲۴ / آوریل ۲۰۲۵ | بالغ‌ترین اکوسیستم، که اکنون با مهلت زمانی کوتاهی روبه‌رو است. اسنپ‌شات اصلی `gpt-4o-2024-05-13` در ۲۳ اکتبر ۲۰۲۶ در OpenAI API خاموش شد. در ۱۴ اکتبر، OpenAI اطلاعیه‌ای با مهلت حدوداً سه‌ماهه صادر کرد مبنی بر اینکه `gpt-4o-2024-08-06`، `gpt-4o-2024-11-20`، `gpt-4o-mini-2024-07-18`، `gpt-4.1-2025-04-14`، `gpt-4.1-mini-2025-04-14` و نسخه‌های Fine-tuning شده آن‌ها در ۱۴ ژانویه ۲۰۲۷ خاموش خواهند شد و با `gpt-6-luna` جایگزین می‌شوند که امکان Fine-tuning ندارد. در Microsoft Foundry، مدل gpt-4o 2024-05-13 در همان روز بازنشسته می‌شود و استقرارهای (deployments) Global Standard و Data Zone Standard آن به‌طور خودکار به gpt-5.1 (2025-11-13) ارتقا می‌یابند؛ یک مدل رده استدلالی که بدون نیاز به تغییر کد جایگزین می‌شود؛ سایر نسخه‌های GPT-4o و GPT-4.1 تا ۱۴ آوریل ۲۰۲۷ روی Foundry به کار خود ادامه می‌دهند. |
+| **Claude Sonnet 4.5 / 4.6** | سپتامبر ۲۰۲۵ / فوریه ۲۰۲۶ | به ارث برنده شهرت اتکاپذیری استفاده از ابزار مدل‌های Claude 3.5 و 3.7 Sonnet. مدل Sonnet 4.5 در ۳۰ نوامبر ۲۰۲۶ در Claude API و Foundry بازنشسته می‌شود اما تا ۸ آوریل ۲۰۲۷ روی Bedrock فعال خواهد بود؛ Sonnet 4.6 یک نسخه قدیمی (legacy) است و اکنون هزینه بیشتری نسبت به Sonnet 5.5 دارد. |
+| **Gemini 2.5 Pro** | مارس ۲۰۲۵ | کانتکست طولانی اثبات‌شده. از ۱۸ سپتامبر ۲۰۲۶ صرفاً به کاربران فعلی Gemini API محدود شد، سپس در ۲ نوامبر در آنجا منسوخ (deprecated) اعلام شد؛ از ۱ دسامبر درخواست‌های آن به `gemini-3.8-flash` با نرخ‌های 3.8 Flash هدایت می‌شوند. پلتفرم Google Cloud (Vertex) بازنشستگی آن را برای ۲۰ اکتبر ۲۰۲۶ زمان‌بندی کرده بود؛ اجرای آن تأیید نشده است. |
+| **o1 / o3** | سپتامبر ۲۰۲۴ | الگوهای شکست استدلال (failure modes) به‌خوبی درک‌شده. پلتفرم OpenAI API در ۲۳ اکتبر مدل‌های `o1`، `o1-pro`، `o3-mini` و `o4-mini` را خاموش کرد؛ Foundry مدل‌های o1، o3، o3-pro و موارد هم‌خانواده را در ۱۹ نوامبر بازنشسته می‌کند (و به GPT-5.6 Sol منتقل می‌نماید)؛ OpenAI مدل `o3-2025-04-16` و اسنپ‌شات‌های تاریخ‌دار GPT-5 را در ۱۱ دسامبر خاموش می‌کند. |
 
-**Why stay on "older" frontier models?**
-1. **Consistency**: New models have release-window latency spikes and behavior shifts. GPT-6 Sol's image path was degraded until a fix three days after launch.
-2. **Cost is no longer the reason**: Below the ceiling tier (where GPT-6 Astra costs more than GPT-5.6 Sol), the new generation is cheaper. Opus 5.5 undercuts Opus 5 by 20%, GPT-6 Sol and Luna cost roughly half of GPT-5.6 Sol and Luna, GPT-6.1 Terra half of GPT-5.6 Terra, Haiku 5.5 a tenth of Haiku 4.5 below 100K tokens, and Sonnet 5.5 less than Sonnet 4.6. Staying put now costs money.
-3. **Guardrail Tuning**: Security and moderation layers are more refined.
-4. **The runway is short, and notice policies are not guarantees**: OpenAI's stated minimum is 6 months for GA models, 3 months for specialized variants, and as little as 2 weeks for previews, yet its October 14 GPT-4o and GPT-4.1 notice gave about 3 months; Anthropic gives at least 60 days; new Bedrock models get 6 months or 45 days, but Bedrock gave several Claude 3.x regions about a month of Legacy before a November 13 end of life. Pin dated IDs and track retirements per (model, platform) pair.
+**چرا روی مدل‌های پیشرو «قدیمی‌تر» بمانیم؟**
+۱. **سازگاری و ثبات (Consistency)**: مدل‌های جدید در بازه زمانی عرضه با جهش‌های تاخیر (Latency spikes) و تغییر رفتار روبه‌رو می‌شوند. مسیر پردازش تصویر در GPT-6 Sol تا زمان اعمال اصلاحیه سه روز پس از عرضه، با افت کیفیت همراه بود.
+۲. **هزینه دیگر دلیلی برای ماندن نیست**: در سطوح پایین‌تر از لایه سقف (جایی که GPT-6 Astra گران‌تر از GPT-5.6 Sol است)، نسل جدید ارزان‌تر است. مدل Opus 5.5 به میزان ۲۰٪ ارزان‌تر از Opus 5 است، GPT-6 Sol و Luna تقریباً نصف GPT-5.6 Sol و Luna هزینه دارند، GPT-6.1 Terra نصف GPT-5.6 Terra قیمت دارد، Haiku 5.5 یک‌دهم Haiku 4.5 در کانتکست‌های زیر 100K Token قیمت دارد، و Sonnet 5.5 ارزان‌تر از Sonnet 4.6 است. پافشاری بر مدل‌های قبلی اکنون مستلزم پرداخت هزینه بیشتر است.
+۳. **تنظیم نرده‌های محافظ (Guardrail Tuning)**: لایه‌های امنیتی و نظارت بر محتوا (moderation) پخته‌تر و تنظیم‌شده‌تر هستند.
+۴. **مهلت باقی‌مانده کوتاه است، و سیاست‌های اطلاع‌رسانی تضمین قطعی نیستند**: حداقل مهلت اعلام‌شده توسط OpenAI برای مدل‌های GA معادل ۶ ماه، برای گونه‌های تخصصی ۳ ماه، و برای نسخه‌های پیش‌نمایش به کوتاهی ۲ هفته است، با این حال اطلاعیه ۱۴ اکتبر این شرکت برای GPT-4o و GPT-4.1 مهلتی در حدود ۳ ماه ارائه داد؛ Anthropic حداقل ۶۰ روز مهلت می‌دهد؛ مدل‌های جدید Bedrock مهلتی ۶ ماهه یا ۴۵ روزه دریافت می‌کنند، اما Bedrock برای چندین منطقه Claude 3.x حدود یک ماه وضعیت قدیمی (Legacy) پیش از پایان عمر در ۱۳ نوامبر در نظر گرفت. شناسه‌های تاریخ‌دار را پین (pin) کنید و بازنشستگی‌ها را به ازای هر جفت (مدل، پلتفرم) زیر نظر داشته باشید.
 
-### Retirement Calendar (as of November 6, 2026)
+### تقویم بازنشستگی (تا تاریخ ۶ نوامبر ۲۰۲۶)
 
-| Date | What changes | Move to |
+| تاریخ | چه چیزی تغییر می‌کند | جایگزین پیشنهادی (انتقال به) |
 |------|--------------|---------|
-| November 13 | Bedrock Claude 3 Haiku, 3 Sonnet, 3.5 Sonnet, 3.5 Sonnet v2, and 3.7 Sonnet in the remaining listed regions (Legacy only since October 10 to 15) | A current Claude model on Bedrock |
-| November 15 | Foundry `claude-haiku-4-5` (Anthropic's own floor implies about January 2027; plan for the earlier date) and `codex-mini` | Claude Haiku 5.5 |
-| November 17 | Gemini API preview speech models: `gemini-3.1-flash-live-preview`, `gemini-2.5-flash-native-audio-preview-12-2025`, `gemini-2.5-flash-preview-tts`, `gemini-2.5-pro-preview-tts`, `gemini-3.1-flash-tts-preview` (earliest-possible date, no routing) | `gemini-3.8-live`; `gemini-3.8-flash-tts` or `gemini-3.8-flash-lite-tts` |
-| November 19 | Foundry o1, o1-pro, o3, o3-pro, o3-deep-research; o3-mini, o4-mini. Vertex AI `gemini-3.6-flash` (no auto-upgrade) | GPT-5.6 Sol; GPT-5.6 Terra; `gemini-3.8-flash` |
-| November 24 | Foundry `claude-opus-4-5`. The Claude API floor passes the same day with no notice issued, so not before about January 2027 there | Opus 5.5 |
-| November 26 | Bedrock AI21 Jamba 1.5 | - |
-| November 27 | Bedrock Claude 3 Haiku and Claude 3 Sonnet in `ca-central-1` (Legacy since October 15), a second cutoff the November 13 row hides | A current Claude model on Bedrock |
-| November 30 | `claude-sonnet-4-5-20250929` (Claude API, Foundry); Opus 4.8 fast mode removed (`speed: "fast"` errors); OpenAI Evals, Agent Builder, and Reusable Prompts; last day of GPT-5.6 Sol's promotional $4 / $20 | `claude-sonnet-5-5`; Opus 5.5 fast mode; Promptfoo (OpenAI-owned, MIT) for evals; budget GPT-5.6 Sol at list or move to GPT-6.1 Sol |
-| December 1 | Gemini 4 Argon doubles to $4 / $20 (cache hits $0.20); `gemini-2.5-pro` and `gemini-2.5-flash` requests start routing to `gemini-3.8-flash` and `gemini-3.5-flash-lite` at those models' rates; OpenAI `gpt-image-1.5`, `gpt-image-1-mini`, `chatgpt-image-latest` retire | Budget Argon at $4 / $20; migrate 2.5 code deliberately and test tool calls; `gpt-image-2.5-sunburst` or `-flare`, or the same-priced `gpt-image-2.6-sunburst` or `-flare` (November 4; no Batch rate listed yet) |
-| December 11 | `gpt-5-2025-08-07`, `o3-2025-04-16`, and sibling snapshots | GPT-5.6 Sol, Terra, or Luna |
-| December 13 | Vertex AI `gemini-live-2.5-flash-native-audio` | `gemini-3.8-live` |
-| December 15 | Foundry `whisper`, `tts`, `tts-hd` | Current OpenAI speech models |
-| End of December | Moonshot plans to retire all Kimi K2 series models on its API, including K2.6 and K2.7 Code (closed to newly registered users since October 31) | Kimi K3.1 Pro |
-| January 6, 2027 | `tts-1`, `tts-1-hd`, `gpt-4o-mini-tts` snapshots; OpenAI fine-tuning job creation ends | `gpt-realtime-2.1-mini` for speech |
-| January 8, 2027 | Bedrock Claude Opus 4.1 end of life; Bedrock Claude Sonnet 4.5 enters higher-priced public extended access | Opus 5.5; Sonnet 5.5 |
-| January 14, 2027 | OpenAI `gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`, `gpt-4o-mini-2024-07-18`, `gpt-4.1-2025-04-14`, `gpt-4.1-mini-2025-04-14`, and fine-tunes of them; Foundry gpt-4o 2024-05-13 (Standard deployments auto-upgrade to gpt-5.1) | `gpt-6-luna` (no fine-tuning; move tuned workloads to open weights or a cloud that still tunes) |
-| January 20, 2027 | `gpt-realtime`, `gpt-audio`, and the gpt-4o realtime/audio families | `gpt-realtime-2.1`, `gpt-audio-1.5` |
-| January 28, 2027 | Vertex AI `gemini-3.7-flash` (no auto-upgrade described) | `gemini-3.8-flash` |
-| February 2, 2027 | Foundry `claude-opus-4-6`, three days before Anthropic's own floor (February 5) | Opus 5.5 |
-| February 10, 2027 | Foundry `claude-sonnet-4-6`, a week before Anthropic's own floor (February 17) | Sonnet 5.5 |
-| February 26, 2027 | `whisper-1`, `gpt-4o-transcribe` family | `gpt-transcribe`, `gpt-live-transcribe` |
-| March 15, 2027 | `gemini-2.5-flash-image` (moved from October 2) | A current Gemini image model |
-| March 30, 2027 | Bedrock Legacy batch: Llama 3.x and Llama 4 Scout and Maverick, DeepSeek-R1 and V3.1, Gemma 3, Qwen3-Coder, GLM 4.7, MiniMax M2 and M2.1, Kimi K2 Thinking, Devstral 2, Voxtral, Nemotron Nano | A current open model on Bedrock, or self-host |
-| April 1, 2027 | `gpt-5.1`, `gpt-5.3-codex`, `gpt-5.4-nano` | GPT-6 Sol or GPT-6 Luna |
-| April 8, 2027 | Bedrock Claude Sonnet 4.5 end of life | Sonnet 5.5 |
-| April 14, 2027 | Foundry gpt-4o (2024-08-06, 2024-11-20), gpt-4o-mini, and the gpt-4.1 family, including `gpt-4.1-nano` (moved from October 14) | A current OpenAI model on Foundry |
-| April 30, 2027 | Mistral Medium 3.5, Mistral Large 3, and the Voxtral TTS 26.03 API model (all deprecated October 31) | Mistral Large 4 (for Large 3 users, a 40% price increase); Voxtral TTS 3 (public preview) |
+| ۱۳ نوامبر | مدل‌های Bedrock شامل Claude 3 Haiku،‏ 3 Sonnet،‏ 3.5 Sonnet،‏ 3.5 Sonnet v2 و 3.7 Sonnet در مناطق فهرست‌شده باقی‌مانده (صرفاً در وضعیت Legacy از ۱۰ تا ۱۵ اکتبر) | یک مدل فعلی Claude در Bedrock |
+| ۱۵ نوامبر | مدل `claude-haiku-4-5` در Foundry (حداقل مهلت خود Anthropic بیانگر حدود ژانویه ۲۰۲۷ است؛ برای تاریخ زودتر برنامه‌ریزی کنید) و `codex-mini` | Claude Haiku 5.5 |
+| ۱۷ نوامبر | مدل‌های صوتی پیش‌نمایش Gemini API: شامل `gemini-3.1-flash-live-preview`، `gemini-2.5-flash-native-audio-preview-12-2025`، `gemini-2.5-flash-preview-tts`، `gemini-2.5-pro-preview-tts`، `gemini-3.1-flash-tts-preview` (زودترین تاریخ ممکن، بدون هدایت خودکار) | `gemini-3.8-live`؛ `gemini-3.8-flash-tts` یا `gemini-3.8-flash-lite-tts` |
+| ۱۹ نوامبر | مدل‌های Foundry شامل o1،‏ o1-pro،‏ o3،‏ o3-pro،‏ o3-deep-research؛ o3-mini،‏ o4-mini. مدل `gemini-3.6-flash` در Vertex AI (بدون ارتقای خودکار) | GPT-5.6 Sol؛ GPT-5.6 Terra؛ `gemini-3.8-flash` |
+| ۲۴ نوامبر | مدل `claude-opus-4-5` در Foundry. حداقل مهلت Claude API در همان روز بدون صدور اطلاعیه سپری می‌شود، بنابراین در آنجا زودتر از حدود ژانویه ۲۰۲۷ نخواهد بود | Opus 5.5 |
+| ۲۶ نوامبر | مدل AI21 Jamba 1.5 در Bedrock | - |
+| ۲۷ نوامبر | مدل‌های Claude 3 Haiku و Claude 3 Sonnet در Bedrock در منطقه `ca-central-1` (در وضعیت Legacy از ۱۵ اکتبر)، یک تاریخ قطع دوم که ردیف ۱۳ نوامبر آن را پنهان می‌کند | یک مدل فعلی Claude در Bedrock |
+| ۳۰ نوامبر | مدل `claude-sonnet-4-5-20250929` (در Claude API و Foundry)؛ حذف حالت سریع Opus 4.8 (خطاهای `speed: "fast"`)؛ ابزارهای OpenAI Evals،‏ Agent Builder و Reusable Prompts؛ آخرین روز تخفیف تبلیغاتی ۴ دلار / ۲۰ دلار مدل GPT-5.6 Sol | `claude-sonnet-5-5`؛ حالت سریع Opus 5.5؛ ابزار Promptfoo (متعلق به OpenAI، با مجوز MIT) برای ارزیابی‌ها (evals)؛ بودجه‌بندی GPT-5.6 Sol با قیمت رسمی یا انتقال به GPT-6.1 Sol |
+| ۱ دسامبر | قیمت Gemini 4 Argon دو برابر شده و به ۴ دلار / ۲۰ دلار می‌رسد (برخورد کش به ۰.۲۰ دلار)؛ درخواست‌های `gemini-2.5-pro` و `gemini-2.5-flash` با نرخ‌های همان مدل‌ها به `gemini-3.8-flash` و `gemini-3.5-flash-lite` هدایت می‌شوند؛ مدل‌های OpenAI شامل `gpt-image-1.5`، `gpt-image-1-mini` و `chatgpt-image-latest` بازنشسته می‌شوند | بودجه‌بندی Argon با نرخ ۴ دلار / ۲۰ دلار؛ بازنویسی و مهاجرت دقیق کد 2.5 و آزمودن فراخوانی ابزارها (tool calls)؛ مدل‌های `gpt-image-2.5-sunburst` یا `-flare`، یا مدل‌های هم‌قیمت `gpt-image-2.6-sunburst` یا `-flare` (۴ نوامبر؛ هنوز نرخ Batch برای آن‌ها درج نشده است) |
+| ۱۱ دسامبر | اسنپ‌شات‌های `gpt-5-2025-08-07`، `o3-2025-04-16` و مدل‌های هم‌خانواده | GPT-5.6 Sol،‏ Terra یا Luna |
+| ۱۳ دسامبر | مدل `gemini-live-2.5-flash-native-audio` در Vertex AI | `gemini-3.8-live` |
+| ۱۵ دسامبر | مدل‌های `whisper`، `tts` و `tts-hd` در Foundry | مدل‌های صوتی فعلی OpenAI |
+| پایان دسامبر | برنامه Moonshot برای بازنشستگی تمام مدل‌های سری Kimi K2 در API خود، از جمله K2.6 و K2.7 Code (از ۳۱ اکتبر به روی کاربران ثبت‌نام‌شده جدید بسته شده است) | Kimi K3.1 Pro |
+| ۶ ژانویه ۲۰۲۷ | اسنپ‌شات‌های `tts-1`، `tts-1-hd` و `gpt-4o-mini-tts`؛ پایان امکان ایجاد تسک‌های Fine-tuning در OpenAI | `gpt-realtime-2.1-mini` برای صوت |
+| ۸ ژانویه ۲۰۲۷ | پایان عمر Claude Opus 4.1 در Bedrock؛ ورود Claude Sonnet 4.5 در Bedrock به دسترسی تمدیدشده عمومی (extended access) با قیمت بالاتر | Opus 5.5؛ Sonnet 5.5 |
+| ۱۴ ژانویه ۲۰۲۷ | مدل‌های OpenAI شامل `gpt-4o-2024-08-06`، `gpt-4o-2024-11-20`، `gpt-4o-mini-2024-07-18`، `gpt-4.1-2025-04-14`، `gpt-4.1-mini-2025-04-14` و نسخه‌های Fine-tuning شده آن‌ها؛ مدل gpt-4o 2024-05-13 در Foundry (استقرارهای Standard به‌طور خودکار به gpt-5.1 ارتقا می‌یابند) | `gpt-6-luna` (بدون قابلیت Fine-tuning؛ بارهای کاری تنظیم‌شده را به مدل‌های با وزن باز یا ابری که هنوز امکان Fine-tune دارد منتقل کنید) |
+| ۲۰ ژانویه ۲۰۲۷ | مدل‌های `gpt-realtime`، `gpt-audio` و خانواده‌های بی‌درنگ/صوتی gpt-4o | `gpt-realtime-2.1`، `gpt-audio-1.5` |
+| ۲۸ ژانویه ۲۰۲۷ | مدل `gemini-3.7-flash` در Vertex AI (هیچ ارتقای خودکاری شرح داده نشده است) | `gemini-3.8-flash` |
+| ۲ فوریه ۲۰۲۷ | مدل `claude-opus-4-6` در Foundry، سه روز پیش از حداقل مهلت خود Anthropic (۵ فوریه) | Opus 5.5 |
+| ۱۰ فوریه ۲۰۲۷ | مدل `claude-sonnet-4-6` در Foundry، یک هفته پیش از حداقل مهلت خود Anthropic (۱۷ فوریه) | Sonnet 5.5 |
+| ۲۶ فوریه ۲۰۲۷ | مدل `whisper-1` و خانواده `gpt-4o-transcribe` | `gpt-transcribe`، `gpt-live-transcribe` |
+| ۱۵ مارس ۲۰۲۷ | مدل `gemini-2.5-flash-image` (منتقل‌شده از ۲ اکتبر) | یک مدل تصویر فعلی Gemini |
+| ۳۰ مارس ۲۰۲۷ | دسته مدل‌های قدیمی (Legacy) در Bedrock: شامل Llama 3.x و Llama 4 Scout و Maverick، مدل‌های DeepSeek-R1 و V3.1، مدل Gemma 3، مدل Qwen3-Coder، مدل GLM 4.7، مدل‌های MiniMax M2 و M2.1، مدل Kimi K2 Thinking، مدل Devstral 2، مدل Voxtral، و Nemotron Nano | یک مدل متن‌باز فعلی در Bedrock، یا میزبانی شخصی (self-host) |
+| ۱ آوریل ۲۰۲۷ | مدل‌های `gpt-5.1`، `gpt-5.3-codex` و `gpt-5.4-nano` | GPT-6 Sol یا GPT-6 Luna |
+| ۸ آوریل ۲۰۲۷ | پایان عمر Claude Sonnet 4.5 در Bedrock | Sonnet 5.5 |
+| ۱۴ آوریل ۲۰۲۷ | مدل‌های Foundry شامل gpt-4o (نسخه‌های 2024-08-06 و 2024-11-20)، gpt-4o-mini و خانواده gpt-4.1 از جمله `gpt-4.1-nano` (منتقل‌شده از ۱۴ اکتبر) | یک مدل فعلی OpenAI در Foundry |
+| ۳۰ آوریل ۲۰۲۷ | مدل‌های Mistral Medium 3.5،‏ Mistral Large 3 و مدل API صوتی Voxtral TTS 26.03 (همگی منسوخ‌شده در ۳۱ اکتبر) | Mistral Large 4 (برای کاربران Large 3 به همراه ۴۰٪ افزایش قیمت)؛ Voxtral TTS 3 (پیش‌نمایش عمومی) |
 
-**Already past (October 2 to November 6):**
-- **Executed October 29 to November 6:** Google deprecated `gemini-2.5-pro` and `gemini-2.5-flash` on the Gemini API (November 2; routing starts December 1). xAI retired `grok-imagine-image-quality` in November (scheduled for November 2; xAI's notes give only the month): requests to it and to `grok-imagine-image-pro` are now served by `grok-imagine-image-2.0-low`, the 2.0 model at low quality, at a lower per-image price with no request changes, so set `quality` explicitly if you need more than low. Moonshot closed the Kimi K2 series to newly registered API users (October 31), Mistral deprecated Voxtral TTS 26.03 (October 31), and Anthropic moved consumer Haiku 4.5 chats to Haiku 5.5 (October 29).
-- **Executed:** OpenAI shut down its legacy snapshots on October 23 as scheduled (`gpt-4o-2024-05-13`, `gpt-4-turbo`, `o1`, `o3-mini`, `o4-mini`, `gpt-image-1`, and the others announced April 22, plus their fine-tunes), and `gpt-3.5-turbo-instruct`, `babbage-002`, and `davinci-002` on September 28. Bedrock lists Claude 3 Haiku (September 10, including GovCloud), Nova Sonic v1 (September 14), Nova Canvas and Nova Reel (September 30), and Claude Sonnet 4 (October 14) as reached end of life; Opus 4.1 entered public extended access October 8 and Sonnet 4.5 moved to Legacy the same day.
-- **Behavior changes with no retirement:** Anthropic API version `2026-10-21` (October 21) returns a 400 for `temperature`, `top_p`, and `top_k` at any value on every model, and the new SDK majors send it by default, so it lands whenever a team upgrades its SDK. Google rerouted `gemini-3.7-flash` to 3.8 Flash and `gemini-3.5-flash` to 3.6 Flash (October 8), and new paid Gemini projects store requests by default from October 26 (`store=true`).
-- **Moved:** `gemini-2.5-flash-image` to March 15, 2027; Foundry `gpt-4.1-nano` to April 14, 2027.
-- **Not executed:** the Claude Haiku 4.5 floor (October 15) passed with no deprecation notice; it is still Active on the Claude API as of November 6.
-- **Not confirmed:** Google Cloud's Vertex retirement of `gemini-2.5-pro`, `-flash`, and `-flash-lite` (October 20); Foundry `gpt-4o-transcribe` and `gpt-4o-mini-transcribe` 2025-03-20 (October 15; still listed as GA); OpenAI Evals going read-only (October 31; shutdown is still November 30); `antigravity-preview-05-2026` (October 5); Mistral's GLM 5.2 (October 31) and OCR 4.0 and Leanstral 1.5 (September 30), past their listed dates with no extension; and Bedrock Nova Premier (September 14, in neither Bedrock's EOL table nor its catalog). Treat any of these still in your code as broken until you have tested them.
-- **Earlier (August 15 to October 1):** Groq's free and developer tiers dropped Llama 3.3 70B and Llama 3.1 8B (August 16), Anthropic Workbench closed (August 17), the OpenAI and Azure Assistants API shut down (August 26), Mistral Medium 3.1 retired (August 31), OpenAI Sora 2 and the Videos API shut down (September 24), and `gpt-5.4-cyber` shut down on 20 days' notice (October 1).
+**موارد سپری‌شده (۲ اکتبر تا ۶ نوامبر):**
+- **اجراشده از ۲۹ اکتبر تا ۶ نوامبر:** گوگل مدل‌های `gemini-2.5-pro` و `gemini-2.5-flash` را در Gemini API منسوخ (deprecated) کرد (۲ نوامبر؛ مسیریابی از ۱ دسامبر آغاز می‌شود). شرکت xAI مدل `grok-imagine-image-quality` را در ماه نوامبر بازنشسته کرد (زمان‌بندی‌شده برای ۲ نوامبر؛ یادداشت‌های xAI صرفاً به ماه اشاره دارند): درخواست‌ها به این مدل و به `grok-imagine-image-pro` اکنون توسط `grok-imagine-image-2.0-low` (مدل 2.0 در کیفیت پایین) با قیمتی کمتر به ازای هر تصویر و بدون تغییر در ساختار درخواست پاسخ داده می‌شوند؛ بنابراین اگر به کیفیتی بالاتر از low نیاز دارید، پارامتر `quality` را به‌صورت صریح تعیین کنید. شرکت Moonshot دسترسی به سری Kimi K2 را برای کاربران جدید API مسدود کرد (۳۱ اکتبر)، Mistral مدل Voxtral TTS 26.03 را منسوخ اعلام نمود (۳۱ اکتبر)، و Anthropic چت‌های کاربری Haiku 4.5 را به Haiku 5.5 منتقل کرد (۲۹ اکتبر).
+- **اجراشده:** OpenAI اسنپ‌شات‌های قدیمی خود را در ۲۳ اکتبر طبق برنامه خاموش کرد (`gpt-4o-2024-05-13`، `gpt-4-turbo`، `o1`، `o3-mini`، `o4-mini`، `gpt-image-1` و سایر موارد اعلام‌شده در ۲۲ آوریل، به‌علاوه نسخه‌های Fine-tuning شده آن‌ها)، و مدل‌های `gpt-3.5-turbo-instruct`، `babbage-002` و `davinci-002` را در ۲۸ سپتامبر از کار انداخت. پلتفرم Bedrock پایان عمر مدل‌های Claude 3 Haiku (در ۱۰ سپتامبر، شامل GovCloud)، مدل Nova Sonic v1 (در ۱۴ سپتامبر)، مدل‌های Nova Canvas و Nova Reel (در ۳۰ سپتامبر) و Claude Sonnet 4 (در ۱۴ اکتبر) را اعلام کرده است؛ مدل Opus 4.1 در ۸ اکتبر وارد دسترسی عمومی تمدیدشده شد و Sonnet 4.5 در همان روز به وضعیت Legacy منتقل گردید.
+- **تغییرات رفتاری بدون بازنشستگی مدل:** نسخه API مورخ `2026-10-21` آنتروپیک (۲۱ اکتبر) برای پارامترهای `temperature`، `top_p` و `top_k` در هر مقداری روی تمام مدل‌ها خطای 400 بازمی‌گرداند، و نسخه‌های اصلی (major) جدید SDK آن را به‌طور پیش‌فرض ارسال می‌کنند؛ بنابراین هر زمان تیمی SDK خود را ارتقا دهد، این تغییر اعمال می‌شود. گوگل مسیر `gemini-3.7-flash` را به 3.8 Flash و `gemini-3.5-flash` را به 3.6 Flash بازهدایت کرد (۸ اکتبر)، و پروژه‌های پولی جدید Gemini از ۲۶ اکتبر درخواست‌ها را به‌طور پیش‌فرض ذخیره می‌کنند (`store=true`).
+- **منتقل‌شده به تاریخی دیگر:** مدل `gemini-2.5-flash-image` به ۱۵ مارس ۲۰۲۷؛ مدل `gpt-4.1-nano` در Foundry به ۱۴ آوریل ۲۰۲۷.
+- **اجرانشده:** حداقل مهلت اعلام‌شده برای Claude Haiku 4.5 (تاریخ ۱۵ اکتبر) بدون صدور اطلاعیه منسوخ‌سازی سپری شد؛ این مدل تا تاریخ ۶ نوامبر همچنان در Claude API فعال (Active) است.
+- **تأییدنشده:** بازنشستگی مدل‌های `gemini-2.5-pro`، `-flash` و `-flash-lite` در Google Cloud Vertex (تاریخ ۲۰ اکتبر)؛ مدل‌های `gpt-4o-transcribe` و `gpt-4o-mini-transcribe` نسخه 2025-03-20 در Foundry (تاریخ ۱۵ اکتبر؛ همچنان به‌عنوان GA فهرست شده‌اند)؛ تبدیل ابزار OpenAI Evals به حالت فقط‌خواندنی (۳۱ اکتبر؛ زمان خاموش شدن همچنان ۳۰ نوامبر است)؛ مدل `antigravity-preview-05-2026` (تاریخ ۵ اکتبر)؛ مدل‌های GLM 5.2 (تاریخ ۳۱ اکتبر) و OCR 4.0 و Leanstral 1.5 (تاریخ ۳۰ سپتامبر) شرکت Mistral که بدون تمدید از تاریخ‌های درج‌شده آن‌ها گذشته است؛ و مدل Bedrock Nova Premier (تاریخ ۱۴ سپتامبر، نه در جدول EOL پلتفرم Bedrock قرار دارد و نه در کاتالوگ آن). اگر هر یک از این موارد هنوز در کد شما حضور دارند، تا زمان آزمودن عملکرد، آن‌ها را معیوب فرض کنید.
+- **پیش‌تر (۱۵ اوت تا ۱ اکتبر):** لایه‌های رایگان و توسعه‌دهنده Groq مدل‌های Llama 3.3 70B و Llama 3.1 8B را حذف کردند (۱۶ اوت)، پلتفرم Anthropic Workbench بسته شد (۱۷ اوت)، رابط برنامه‌نویسی Assistants API در OpenAI و Azure خاموش شد (۲۶ اوت)، مدل Mistral Medium 3.1 بازنشسته شد (۳۱ اوت)، مدل Sora 2 و Videos API در OpenAI خاموش شدند (۲۴ سپتامبر)، و مدل `gpt-5.4-cyber` با اطلاع‌رسانی ۲۰ روزه خاموش شد (۱ اکتبر).
 
 ---
 
-## Open Source Models
+## مدل‌های متن‌باز (Open Source Models)
 
-### Open-Weight Standings (November 2026)
+### جایگاه مدل‌های با وزن باز (Open-Weight Standings) (نوامبر ۲۰۲۶)
 
-Artificial Analysis Intelligence Index v5.0 (announced October 27): four equally weighted categories (Knowledge Work, Coding, Science, General), about 60% of it on private or held-out sets. On November 3 AA shipped methodology v5.0.1, which applied grading-robustness fixes from the CritPt authors and regraded every model on CritPt v2. v4.x scores are not comparable, so do not set these beside September or early-October figures. Scores marked v5.0.1 come from the current board; unmarked ones are v5.0 figures from before the regrade. Scores are the best listed effort for each model; a dash means AA shows no score.
+شاخص هوش Artificial Analysis Intelligence Index v5.0 (معرفی‌شده در ۲۷ اکتبر): چهار دسته با وزن یکسان (کار دانشی [Knowledge Work]، کدنویسی [Coding]، علوم [Science] و عمومی [General]) که حدود ۶۰٪ آن بر روی مجموعه‌داده‌های خصوصی یا نگه‌داشته‌شده (held-out) استوار است. در ۳ نوامبر، مؤسسه AA متدولوژی v5.0.1 را منتشر کرد که اصلاحات مربوط به پایداری نمره‌دهی (grading-robustness) ارائه‌شده توسط نویسندگان CritPt را اعمال نموده و همه مدل‌ها را بر اساس CritPt v2 بازنمره‌دهی (regrade) کرد. امتیازهای نسخه v4.x قابل مقایسه نیستند، بنابراین نباید این اعداد را در کنار ارقام سپتامبر یا اوایل اکتبر قرار داد. امتیازهای علامت‌گذاری‌شده با v5.0.1 از جدول فعلی برگرفته شده‌اند؛ موارد بدون علامت، ارقام v5.0 مربوط به پیش از بازنمره‌دهی هستند. امتیازها نشان‌دهنده بهترین سطح تلاش (effort) فهرست‌شده برای هر مدل است؛ خط تیره نشان می‌دهد که AA امتیازی را ثبت نکرده است.
 
-| Model | AA score | Total / active | License |
+| مدل | امتیاز AA | کل / فعال | مجوز |
 |-------|----------|----------------|---------|
-| Moonshot Kimi K3.1 Pro (weights November 4; AA still labels it proprietary) | 46 (v5.0.1) | 2.8T / 104B | Kimi K3.1-Pro License (MIT-like grant; MaaS agreement above US$20M revenue) |
-| DeepSeek V4.1-Flash-1017 | 33 (v5.0.1, max); 29 at high, 19 non-reasoning | 552B backbone (763B checkpoint); 8B prefill / 16B decode active | MIT |
-| Z.ai GLM-5.3 | 32 (v5.0.1, max); 23 at low | 744B / 40B | GLM-5.3 License (MIT plus a MaaS security review above US$10B revenue) |
+| Moonshot Kimi K3.1 Pro (انتشار وزن‌ها در ۴ نوامبر؛ AA همچنان آن را مالکیتی [proprietary] برچسب می‌زند) | 46 (v5.0.1) | 2.8T / 104B | مجوز Kimi K3.1-Pro (اعطای مجوز شبه-MIT؛ توافق‌نامه MaaS برای درآمد بالای ۲۰ میلیون دلار آمریکا) |
+| DeepSeek V4.1-Flash-1017 | ۳۳ (v5.0.1 در حالت max)؛ ۲۹ در حالت high، ۱۹ بدون استدلال (non-reasoning) | ستون‌فقرات ۵۵۲B (چک‌پوینت ۷۶۳B)؛ ۸B فعال در prefill / ۱۶B در decode | MIT |
+| Z.ai GLM-5.3 | ۳۲ (v5.0.1 در حالت max)؛ ۲۳ در حالت low | 744B / 40B | مجوز GLM-5.3 (مجوز MIT به همراه بررسی امنیتی MaaS برای درآمد بالای ۱۰ میلیارد دلار آمریکا) |
 | Xiaomi MiMo-V2.6-Pro | 30 (v5.0.1) | 1.02T / 42B | MIT |
-| Ant Group Ling-3.1-flash-1019 | 30 (v5.0.1) | 560B / about 25B | MIT |
-| StepFun Step 5 Preview | 29 | 600B / 27B | StepFun Model License 1.0 (MaaS agreement above US$20M revenue; separate license for branded devices) |
-| MiniMax-M3.1-Flash | 29 | About 428B / 23B per the model card | MiniMax Community License (commercial use only under conditions) |
+| Ant Group Ling-3.1-flash-1019 | 30 (v5.0.1) | 560B / حدود 25B | MIT |
+| StepFun Step 5 Preview | 29 | 600B / 27B | مجوز StepFun Model License 1.0 (توافق‌نامه MaaS برای درآمد بالای ۲۰ میلیون دلار آمریکا؛ مجوز جداگانه برای دستگاه‌های دارای برند) |
+| MiniMax-M3.1-Flash | 29 | حدود 428B / 23B طبق کارت مدل (model card) | مجوز MiniMax Community License (استفاده تجاری تنها تحت شرایط خاص) |
 | Z.ai GLM-5.3-Flash | 28 | 320B / 18B | MIT |
-| Mistral Large 4 | 26 at High; 23 at Medium | About 1T / 49B (52B with embeddings) | Mistral Ecosystem Open-Weight License (separate license for any MaaS business) |
-| Meta Muse Spark Open | 25 (v5.0.1) | 816B / 42B | Muse Model License (MaaS agreement above US$20M revenue) |
-| Alibaba Qwen3.8-27B | 20 (v5.0.1, xhigh) | 27B dense | Apache 2.0 |
-| BOSS Zhipin Nanbeige4.3-33B | 20 (v5.0.1) | 33B dense | Apache 2.0 |
+| Mistral Large 4 | ۲۶ در حالت High؛ ۲۳ در حالت Medium | حدود 1T / 49B (۵۲B به همراه Embeddingها) | مجوز Mistral Ecosystem Open-Weight License (مجوز جداگانه برای هرگونه کسب‌وکار MaaS) |
+| Meta Muse Spark Open | 25 (v5.0.1) | 816B / 42B | مجوز Muse Model License (توافق‌نامه MaaS برای درآمد بالای ۲۰ میلیون دلار آمریکا) |
+| Alibaba Qwen3.8-27B | ۲۰ (v5.0.1 در حالت xhigh) | 27B متراکم (dense) | Apache 2.0 |
+| BOSS Zhipin Nanbeige4.3-33B | 20 (v5.0.1) | 33B متراکم (dense) | Apache 2.0 |
 | Reflection AI Beam 1.0 | 18 (v5.0.1) | 501.3B / 23.4B | Apache 2.0 |
-| MBZUAI K2 Horizon 375B-A23B | 18 (v5.0.1) | 375B / 23B | Apache 2.0, open training data |
+| MBZUAI K2 Horizon 375B-A23B | 18 (v5.0.1) | 375B / 23B | Apache 2.0، داده‌های آموزشی باز |
 | NVIDIA Nemotron 3.5 Super VL | 14 | 120B / 12B | OpenMDW-1.1 |
 | Thinking Machines Inkling-Small | 13 | ~266B / 12B | Apache 2.0 |
 | Thinking Machines Inkling | 12 | 975B / 41B | Apache 2.0 |
 | NVIDIA Nemotron 3 Ultra | 12 | 550B / 55B | OpenMDW-1.1 |
-| Moonshot Kimi K3 | - | 2.8T / 104B | Kimi K3 License (MaaS agreement above US$20M revenue) |
-| Alibaba Qwen3.8 2.4T-A95B | - | 2.4T / 95B | Qwen3.8-Max License |
-| Ricursive Ripple-65B Preview | - (not yet scored) | 65B dense | Apache 2.0 |
+| Moonshot Kimi K3 | - | 2.8T / 104B | مجوز Kimi K3 License (توافق‌نامه MaaS برای درآمد بالای ۲۰ میلیون دلار آمریکا) |
+| Alibaba Qwen3.8 2.4T-A95B | - | 2.4T / 95B | مجوز Qwen3.8-Max License |
+| Ricursive Ripple-65B Preview | - (هنوز امتیازی ثبت نشده) | 65B متراکم (dense) | Apache 2.0 |
 
-For scale, the best model developers can call is Claude Opus 5.5 at 59 on v5.0.1, and the not-yet-public Gemini 4 Carbon scores 60. The open-to-closed gap now depends on the classification rule, so quote it with the index version and the rule. By weight availability, Kimi K3.1 Pro (weights published November 4) is the top open model at 46, 13 points behind Opus 5.5. By AA's own label, which still read "Proprietary" on November 6, the leader is DeepSeek V4.1 Flash 1017 at 33, 26 points behind. AA's October 27 v5 announcement had already counted K3.1 Pro as "the top open weights model at 46" and wrote that the open-weights gap widened from 3 points on v4.3 to 12, while the released-weight leaders sat 26 behind. Effort matters as much as the model: DeepSeek falls from 33 at max to 29 at high and 19 without reasoning, and GLM-5.3 from 32 at max to 23 at low, so evaluate at the effort you will pay for. Muse Spark Open (25) is still the top US open-weight model, ahead of Reflection's Beam 1.0 and MBZUAI's K2 Horizon 375B (both 18) and well ahead of both Inkling models.
+برای مقایسه مقیاس، بهترین مدلی که توسعه‌دهندگان می‌توانند فراخوانی کنند Claude Opus 5.5 با امتیاز ۵۹ در نسخه v5.0.1 است، و مدل Gemini 4 Carbon که هنوز عمومی نشده امتیاز ۶۰ را به دست آورده است. شکاف میان مدل‌های باز و بسته (open-to-closed gap) اکنون به قاعده طبقه‌بندی بستگی دارد؛ بنابراین همیشه آن را همراه با نسخه شاخص و قاعده مربوطه نقل کنید. از نظر در دسترس بودن وزن‌ها (weight availability)، مدل Kimi K3.1 Pro (با انتشار وزن‌ها در ۴ نوامبر) با امتیاز ۴۶ برترین مدل باز است که ۱۳ امتیاز عقب‌تر از Opus 5.5 قرار می‌گیرد. اما بر اساس برچسب‌گذاری خود AA که تا ۶ نوامبر همچنان عبارت «مالکیتی» (Proprietary) را نشان می‌داد، پیشتاز این رده DeepSeek V4.1 Flash 1017 با امتیاز ۳۳ است که ۲۶ امتیاز عقب‌تر است. در اطلاعیه ۲۷ اکتبر AA برای نسخه v5، مدل K3.1 Pro پیشاپیش به‌عنوان «برترین مدل با وزن‌های باز با امتیاز ۴۶» به شمار آمده بود و ذکر شده بود که شکاف وزن‌های باز از ۳ امتیاز در نسخه v4.3 به ۱۲ امتیاز افزایش یافته است، در حالی که پیشتازان با وزن‌های منتشرشده ۲۶ امتیاز عقب‌تر بودند. سطح تلاش (Effort) به اندازه خود مدل اهمیت دارد: امتیاز DeepSeek از ۳۳ در حالت max به ۲۹ در حالت high و ۱۹ بدون استدلال کاهش می‌یابد، و GLM-5.3 از ۳۲ در حالت max به ۲۳ در حالت low می‌رسد؛ بنابراین ارزیابی را بر اساس همان سطح تلاشی انجام دهید که هزینه آن را پرداخت خواهید کرد. مدل Muse Spark Open (امتیاز ۲۵) همچنان برترین مدل با وزن باز آمریکایی است که بالاتر از Beam 1.0 از Reflection و K2 Horizon 375B از MBZUAI (هر دو با امتیاز ۱۸) و بسیار جلوتر از هر دو مدل Inkling قرار دارد.
 
-**Architecture note:** the new open flagships all ship non-standard attention or KV schemes: sliding-window plus global layers on MiMo-V2.6-Pro, linear plus sparse attention on GLM-5.3-Flash and Qwen3.8-Flash-Next, sparse attention on Tencent Hy4, a hybrid linear MoE on Ling-3.1-flash (63 KDA linear-attention layers and 9 gated MLA layers), and a causal encoder-decoder with 890 bytes of global KV per token on DeepSeek V4.1-Flash. The textbook KV-size formula no longer transfers between models, so size capacity from each model card (see [KV Cache and Context Caching](../04-inference-optimization/02-kv-cache-and-context-caching.md)). Speculative-decoding heads now ship inside checkpoints too: DSpark in DeepSeek V4-Pro-0813, MTP heads in MiMo-V2.6, Qwen3.8-Flash-Next, and Ling-3.1-flash, and a DFlash2 drafter alongside Reflection's Beam 1.0.
+**نکته معماری:** تمامی پرچم‌داران باز جدید با طرح‌های توجه (attention) یا KV غیرمعمول عرضه می‌شوند: ترکیب پنجره کشویی (sliding-window) به همراه لایه‌های سراسری (global layers) در MiMo-V2.6-Pro؛ توجه خطی به‌علاوه توجه تُنُک (sparse attention) در GLM-5.3-Flash و Qwen3.8-Flash-Next؛ توجه تُنُک در Tencent Hy4؛ معماری ترکیبی MoE خطی در Ling-3.1-flash (شامل ۶۳ لایه توجه خطی KDA و ۹ لایه گیت‌شده MLA)؛ و یک انکودر-دیکودر علی (causal encoder-decoder) با ۸۹۰ بایت KV سراسری به ازای هر Token در DeepSeek V4.1-Flash. فرمول‌های سنتی محاسبه اندازه KV در کتاب‌های درسی دیگر قابل تعمیم به مدل‌های مختلف نیستند؛ بنابراین ظرفیت را بر اساس کارت مدل (model card) هر یک بسنجید (بخش [کش KV و کش کانتکست](../04-inference-optimization/02-kv-cache-and-context-caching.md) را ببینید). سرهای رمزگشایی حدسی (Speculative-decoding heads) اکنون درون چک‌پوینت‌ها نیز گنجانده می‌شوند: ماژول DSpark در DeepSeek V4-Pro-0813، سرهای MTP در MiMo-V2.6،‏ Qwen3.8-Flash-Next و Ling-3.1-flash، و یک پیش‌نویس‌کننده (drafter) موسوم به DFlash2 در کنار Beam 1.0 شرکت Reflection.
 
-### Llama 4 Family (Meta) - April 2025
+### خانواده Llama 4 (شرکت Meta) - آوریل ۲۰۲۵
 
-| Model | Parameters | Context | Architecture | Notes |
+| مدل | پارامترها | کانتکست | معماری | نکات |
 |-------|------------|---------|--------------|-------|
-| Llama 4 Scout | 17B active / 16 experts, 109B total (MoE) | 10M | Sparse MoE | Industry-leading 10M context; fits a single H100 at Int4; beat Gemma 3 and Gemini 2.0 Flash-Lite per Meta |
-| Llama 4 Maverick | 17B active / 128 experts, 400B total (MoE) | 1M | Sparse MoE | Beat GPT-4o and Gemini 2.0 Flash per Meta; comparable to DeepSeek V3 at half the active params |
-| Llama 4 Behemoth | ~288B active, about 2T total | - | Sparse MoE | Never released; Meta paused it in 2026, and its frontier models now ship closed as Muse Spark |
+| Llama 4 Scout | ۱۷B فعال / ۱۶ کارشناس (expert)، مجموعاً ۱۰۹B (مدل MoE) | 10M | Sparse MoE (تُنُک) | کانتکست پیشتاز در صنعت به میزان 10M؛ قابل جای‌گیری روی یک تک‌GPU H100 در فرمت Int4؛ شکست‌دهنده Gemma 3 و Gemini 2.0 Flash-Lite طبق گزارش Meta |
+| Llama 4 Maverick | ۱۷B فعال / ۱۲۸ کارشناس، مجموعاً ۴۰۰B (مدل MoE) | 1M | Sparse MoE (تُنُک) | شکست‌دهنده GPT-4o و Gemini 2.0 Flash طبق گزارش Meta؛ قابل مقایسه با DeepSeek V3 با نصف پارامترهای فعال |
+| Llama 4 Behemoth | حدود ۲۸۸B فعال، مجموعاً حدود 2T | - | Sparse MoE (تُنُک) | هرگز منتشر نشد؛ Meta توسعه آن را در سال ۲۰۲۶ متوقف کرد و مدل‌های مرزی این شرکت اکنون به‌صورت اختصاصی (closed) تحت عنوان Muse Spark عرضه می‌شوند |
 
-**Strengths:**
-- First Llama generation with Mixture-of-Experts architecture
-- Natively multimodal from the ground up (text, image, video input)
-- Open weights on Hugging Face under the Llama 4 Community License; available via Meta AI on WhatsApp, Messenger, Instagram
-- Scout's 10M token context window is industry-leading for open models
+**نقاط قوت:**
+- نخستین نسل Llama با معماری ترکیب کارشناسان (Mixture-of-Experts یا MoE)
+- ماهیتاً چندحالته (multimodal) از پایه (ورودی متن، تصویر و ویدیو)
+- وزن‌های باز روی Hugging Face تحت مجوز Llama 4 Community License؛ در دسترس از طریق Meta AI در WhatsApp، Messenger و Instagram
+- پنجره کانتکست ۱۰ میلیون Token مدل Scout در میان مدل‌های باز پیشتاز صنعت است
 
-**Watch out:** there is no Llama 4 8B, 70B, or 405B. Dense worked examples should use Llama 3.3 70B or Llama 3.1 405B, or a current open model. Fast-inference hosts are also dropping Llama: Groq retired Llama 4 Scout (July 17) and Llama 3.3 70B and Llama 3.1 8B (August 16) on its free and developer tiers.
+**هشدارها و نکات قابل توجه:** مدل‌های Llama 4 8B، 70B یا 405B وجود ندارند. برای مثال‌های عملی مبتنی بر مدل‌های متراکم (dense) باید از Llama 3.3 70B یا Llama 3.1 405B یا یک مدل باز فعلی استفاده کنید. سرویس‌دهندگان استنتاج سریع نیز در حال کنار گذاشتن Llama هستند: Groq مدل‌های Llama 4 Scout (در ۱۷ ژوئیه) و Llama 3.3 70B و Llama 3.1 8B (در ۱۶ اوت) را در پلن‌های رایگان و توسعه‌دهنده خود بازنشسته کرد.
 
-### Llama 3.x Family (Meta) - Previous Generation
+### خانواده Llama 3.x (شرکت Meta) - نسل پیشین
 
-| Model | Parameters | Context | License | Notes |
+| مدل | پارامترها | کانتکست | مجوز | نکات |
 |-------|------------|---------|---------|-------|
-| Llama 3.3 70B | 70B | 128K | Llama 3.3 | Still widely deployed; strong general model |
-| Llama 3.1 405B | 405B | 128K | Llama 3.1 | Largest dense Meta model; superseded by Llama 4 |
+| Llama 3.3 70B | 70B | 128K | Llama 3.3 | همچنان استقرار (Deployment) گسترده‌ای دارد؛ مدلی قدرتمند برای اهداف عمومی |
+| Llama 3.1 405B | 405B | 128K | Llama 3.1 | بزرگ‌ترین مدل متراکم (dense) شرکت Meta؛ جایگزین‌شده توسط Llama 4 |
 
-**Note:** Llama 3.x remains in production, but Llama 4 Scout/Maverick offer better performance with lower active parameter counts thanks to MoE.
+**نکته:** Llama 3.x همچنان در محیط عملیاتی به کار گرفته می‌شود، اما Llama 4 Scout/Maverick به لطف معماری MoE، عملکرد بهتری را با تعداد پارامترهای فعال کمتر ارائه می‌دهند.
 
-### DeepSeek Family
+### خانواده DeepSeek
 
-| Model | Parameters | Context | Status | Notes |
+| مدل | پارامترها | کانتکست | وضعیت | نکات |
 |-------|------------|---------|--------|-------|
-| **DeepSeek V4.1-Flash** | 552B backbone (763B checkpoint); 8B active for prefill, 16B for decode (MoE) | 1M (384K max output) | GA, September 10, 2026 | MIT; API name `deepseek-flash`. New causal encoder-decoder: the decoder's global KV is projected from encoder states, plus Compressed Sparse Attention 2 and FP4 KV, for 890 bytes of global KV per token (about 1/4 of V4-Flash, per DeepSeek). Native image input; reasoning effort 1-100. **API: peak $0.30 / $1.20 per 1M, cache hit $0.006; off-peak half.** Since the October 17 build (V4.1-Flash-1017, MIT weights), `deepseek-flash` serves 1017 at unchanged token prices. AA v5.0.1: 33 at max (the top released-weight score AA labels open), 29 at high, 19 non-reasoning; the max run used 174M output tokens against a 99.3M median and cost $0.60 per index task. |
-| **DeepSeek V4 Pro** | 1.6T total / 49B active (MoE) | 1M | GA (build V4-Pro-0813) | Previewed April 24, 2026. Uses ~27% compute / 10% memory of V3.2 at 1M tokens. SWE-bench Verified 80.6%. NIST CAISI evaluation (May 2026) placed it ~8 months behind the US frontier. V4-Pro-0813 (MIT, August 13) bundles a DSpark speculative-decoding module in the checkpoint. **API since August 16: peak $1.32 / $3.96 per 1M (cache hit $0.044), off-peak half.** DeepSeek announced on September 10 that v4-pro traffic would route to V4.1-Flash from September 14, then reversed that on September 11 "in response to user demand"; V4.1-Pro had not launched as of November 2. |
-| DeepSeek V4 Flash | 284B total / 13B active (MoE) | 1M | Superseded | Replaced by V4.1-Flash. The legacy names `deepseek-v4-flash` and `deepseek-v4-flash-vision-exp` now route to V4.1-Flash at its rates. It was $0.14 / $0.28 before the August 16 repricing. |
-| DeepSeek-V3.2 | 671B (MoE) | 128K | Previous gen | General-purpose; 98% cache-hit discount ($0.28/$0.42 per 1M base at the time). Superseded by the V4 line for new builds. |
-| DeepSeek-V3 | 671B (MoE, 37B active) | 128K | Previous gen | GPT-4o level at a fraction of training cost; open weights. |
-| DeepSeek-R1 | 671B (MoE) | 128K | Reasoning | Matched o1 on math/code; first open-source reasoning model. |
-| DeepSeek-R1-Distill | 7B to 70B | - | Reasoning | Distilled to smaller models; cost-efficient reasoning. |
+| **DeepSeek V4.1-Flash** | ستون‌فقرات ۵۵۲B (چک‌پوینت ۷۶۳B)؛ ۸B فعال برای prefill،‏ ۱۶B برای decode (مدل MoE) | 1M (حداکثر خروجی 384K) | عرضه عمومی (GA)، ۱۰ سپتامبر ۲۰۲۶ | مجوز MIT؛ نام در API معادل `deepseek-flash`. معماری انکودر-دیکودر علی جدید: KV سراسری دیکودر از حالت‌های انکودر پروجکت می‌شود، به همراه Compressed Sparse Attention 2 و KV با فرمت FP4، برای دستیابی به ۸۹۰ بایت KV سراسری به ازای هر Token (حدود یک‌چهارم V4-Flash طبق اعلام DeepSeek). ورودی تصویر محلی (native)؛ تلاش استدلال ۱ تا ۱۰۰. **نرخ API: در ساعات اوج مصرف (peak) معادل ۰.۳۰ دلار / ۱.۲۰ دلار به ازای هر ۱ میلیون Token، اصابت به کش (cache hit) معادل ۰.۰۰۶ دلار؛ در ساعات غیراوج نصف قیمت.** از زمان بیلد ۱۷ اکتبر (V4.1-Flash-1017 با وزن‌های MIT)، شناسه `deepseek-flash` نگارش 1017 را با قیمت‌های Token بدون تغییر ارائه می‌دهد. امتیاز شاخص AA نسخه v5.0.1: ۳۳ در حالت max (بالاترین امتیاز با وزن‌های منتشرشده که AA آن را متن‌باز برچسب می‌زند)، ۲۹ در حالت high، و ۱۹ بدون استدلال؛ اجرای حالت max حدود ۱۷۴M خروجی Token را در مقایسه با میانه ۹۹.۳M مصرف کرد و ۰.۶۰ دلار به ازای هر وظیفه شاخص هزینه داشت. |
+| **DeepSeek V4 Pro** | مجموعاً 1.6T / ۴۹B فعال (MoE) | 1M | عرضه عمومی (بیلد V4-Pro-0813) | پیش‌نمایش در ۲۴ آوریل ۲۰۲۶. در کانتکست 1M Token حدود ۲۷٪ توان پردازشی و ۱۰٪ حافظه V3.2 را مصرف می‌کند. امتیاز SWE-bench Verified برابر ۸۰.۶٪. ارزیابی NIST CAISI (مه ۲۰۲۶) آن را حدود ۸ ماه عقب‌تر از مرز توانمندی آمریکا قرار داد. نسخه V4-Pro-0813 (با مجوز MIT در ۱۳ اوت) یک ماژول رمزگشایی حدسی DSpark را درون چک‌پوینت بسته‌بندی کرده است. **نرخ API از ۱۶ اوت: ساعات اوج مصرف ۱.۳۲ دلار / ۳.۹۶ دلار به ازای هر ۱ میلیون Token (اصابت به کش ۰.۰۴۴ دلار)، ساعات غیراوج نصف قیمت.** شرکت DeepSeek در ۱۰ سپتامبر اعلام کرد ترافیک v4-pro از ۱۴ سپتامبر به V4.1-Flash هدایت خواهد شد، اما در ۱۱ سپتامبر «در پاسخ به تقاضای کاربران» این تصمیم را لغو کرد؛ تا ۲ نوامبر مدل V4.1-Pro هنوز عرضه نشده بود. |
+| DeepSeek V4 Flash | مجموعاً 284B / ۱۳B فعال (MoE) | 1M | جایگزین‌شده (Superseded) | توسط V4.1-Flash جایگزین شد. شناسه‌های قدیمی `deepseek-v4-flash` و `deepseek-v4-flash-vision-exp` اکنون با نرخ‌های V4.1-Flash به آن هدایت می‌شوند. قیمت آن پیش از بازنگری قیمت‌ها در ۱۶ اوت معادل ۰.۱۴ دلار / ۰.۲۸ دلار بود. |
+| DeepSeek-V3.2 | 671B (MoE) | 128K | نسل قبلی | کاربرد عمومی؛ ۹۸٪ تخفیف اصابت به کش (پایه ۰.۲۸ دلار / ۰.۴۲ دلار به ازای هر ۱ میلیون Token در آن زمان). برای ساخت سیستم‌های جدید با خط تولید V4 جایگزین شده است. |
+| DeepSeek-V3 | 671B (MoE با ۳۷B فعال) | 128K | نسل قبلی | در سطح GPT-4o با کسری از هزینه آموزش؛ دارای وزن‌های باز. |
+| DeepSeek-R1 | 671B (MoE) | 128K | استدلالی (Reasoning) | هم‌تراز با o1 در ریاضیات و کدنویسی؛ نخستین مدل استدلالی متن‌باز. |
+| DeepSeek-R1-Distill | 7B تا 70B | - | استدلالی (Reasoning) | تقطیرشده (Distilled) به مدل‌های کوچک‌تر؛ استدلال مقرون‌به‌صرفه. |
 
-**Key November 2026 context:** DeepSeek is no longer the automatic cheap answer, and its prices now depend on the clock. The August 16 repricing moved V4 to peak and off-peak billing: peak is 01:00-04:00 and 06:00-10:00 UTC on weekdays, excluding Chinese public holidays, and everything else, including weekends, is half price. V4.1-Flash then cut Flash prices on September 10, but at peak its $1.20 output only matches GPT-5.6 Luna and sits well above GPT-6 Luna's $0.50. Any cost model still using the pre-August flat $0.14 / $0.28 or $0.435 / $0.87 is off by roughly 2x to 4x. Cache-hit discounts remain steep (about 98% on V4.1-Flash), so cache-friendly batch work scheduled off-peak is where DeepSeek still wins. The V4-Pro reroute-then-reversal within a day is the operational lesson, and the October 17 swap of `deepseek-flash` to a new build repeats it: pin dated builds and alert when an endpoint starts serving something else. The same day DeepSeek opened a **Search & Fetch API** on its in-house search engine, with Search and Fetch each at $0.75 per 1,000 successful requests; residency reviews must treat those search queries as data leaving to DeepSeek. Concurrency caps limit fan-out too: 2,500 for `deepseek-flash` and 500 for `deepseek-v4-pro`.
+**بستر کلیدی نوامبر ۲۰۲۶:** DeepSeek دیگر به‌صورت خودکار پاسخ ارزان پیش‌فرض نیست و قیمت‌های آن اکنون به ساعت روز بستگی دارد. تغییر قیمت‌ها در ۱۶ اوت، مدل V4 را به سمت صورت‌حساب بر اساس ساعات اوج مصرف (peak) و غیراوج (off-peak) برد: ساعات اوج عبارتند از ۰۱:۰۰ الی ۰۴:۰۰ و ۰۶:۰۰ الی ۱۰:۰۰ به وقت UTC در روزهای کاری هفته (به‌استثنای تعطیلات رسمی چین)، و مابقی زمان‌ها از جمله تعطیلات آخر هفته با نصف قیمت محاسبه می‌شوند. سپس در ۱۰ سپتامبر مدل V4.1-Flash قیمت‌های سری Flash را کاهش داد، اما در ساعات اوج مصرف، نرخ ۱.۲۰ دلاری خروجی آن تنها با GPT-5.6 Luna برابری می‌کند و بسیار بالاتر از قیمت ۰.۵۰ دلاری GPT-6 Luna قرار دارد. هر مدل هزینه‌ای که هنوز از قیمت‌های ثابت پیش از اوت یعنی ۰.۱۴ دلار / ۰.۲۸ دلار یا ۰.۴۳۵ دلار / ۰.۸۷ دلار استفاده کند، حدوداً ۲ تا ۴ برابر دچار خطا خواهد بود. تخفیف‌های اصابت به کش (Cache-hit) همچنان چشمگیر هستند (حدود ۹۸٪ در V4.1-Flash)، بنابراین پردازش‌های دسته‌ای (batch) سازگار با کش که برای ساعات غیراوج زمان‌بندی شوند، جایی است که DeepSeek همچنان در آن برنده است. تغییر مسیر ترافیک V4-Pro و سپس بازگرداندن آن ظرف یک روز، درس عملیاتی مهمی است، و جایگزینی بیلد جدید در ۱۷ اکتبر برای شناسه `deepseek-flash` این درس را تکرار می‌کند: بیلد‌های تاریخ‌دار را پین (pin) کنید و سازوکار هشداری تنظیم نمایید تا در صورت ارائه مدلی دیگر توسط اندپوینت، متوجه شوید. در همان روز، DeepSeek یک **Search & Fetch API** را بر روی موتور جستجوی داخلی خود راه‌اندازی کرد که هزینه Search و Fetch هر کدام ۰.۷۵ دلار به ازای هر ۱,۰۰۰ درخواست موفق است؛ در بررسی‌های ماندگاری داده‌ها (data residency) باید با این کوئری‌های جستجو مانند داده‌هایی که به مقصد DeepSeek خارج می‌شوند برخورد کرد. سقف‌های هم‌زمانی (Concurrency caps) نیز میزان ارسال هم‌زمان درخواست‌ها (fan-out) را محدود می‌کنند: ۲,۵۰۰ درخواست برای `deepseek-flash` و ۵۰۰ درخواست برای `deepseek-v4-pro`.
 
-### Moonshot Kimi Family
+### خانواده Moonshot Kimi
 
-| Model | Parameters | Context | Notes |
+| مدل | پارامترها | کانتکست | نکات |
 |-------|------------|---------|-------|
-| **Kimi K3** | 2.8T total / 104B active (MoE) | 1M | July 16, 2026 (open weights July 27). Largest open-weight model to date. Always-on thinking, multimodal. $3 / $15 per 1M ($0.30 cached input). **License: a custom Kimi K3 License, not Modified MIT.** A Model-as-a-Service operator whose revenue (with affiliates) exceeds US$20M over 12 months needs a separate agreement before commercial use, and products above 100M MAU or US$20M monthly revenue must display "Kimi K3"; internal use and Moonshot's certified inference partners are exempt. AA v5.0 shows no score for it (the 57.1 quoted at launch and the later 44 were on older, non-comparable index versions). It was the first open model to top WebDev Arena at launch; on the October 27 Arena boards it is the top open model on the Text Arena (#19, 1488), while Kimi K3.1 Pro (Max) is the top open model on the WebDev Arena (#9, preliminary 1695, behind Claude Opus 5.5 at 1810). Since September 18 it runs on Amazon Bedrock, the first open-weight model there with explicit prompt caching (`prompt_cache_breakpoint` after at least 1,024 tokens, entries persist at least 30 minutes, cache hits do not count against input-TPM quotas), with the global cross-Region profile about 10% cheaper than the US one. |
-| **Kimi K3.1 Pro** | 2.8T total / 104B active (MoE) | 1,048,576 | API October 23, 2026; **weights November 4** (`moonshotai/Kimi-K3.1-Pro`, public and ungated, about 1.56 TB in 96 shards). MXFP4 weights with MXFP8 activations, trained quantization-aware. Reasoning effort `low`, `high`, or `max` (default `max`); multi-turn tool calls must return `reasoning_content`. $2 / $10 per 1M on Moonshot's API; `kimi-k3.1-pro-highspeed` $4 / $20 (2-3x the speed per Moonshot). AA v5.0.1: 46, the top open-weight score, though AA's page still labeled it proprietary on November 6. License: custom Kimi K3.1-Pro License (below). |
-| **Kimi K2.6** | 1T total / 32B active (MoE) | - | Released April 20, 2026. Modified MIT license. Closed to newly registered Kimi API users from October 31, 2026; Moonshot plans to retire all K2 series models by the end of December 2026 and points migrations to Kimi K3.1 Pro. Native video input; Agent Swarm scaling to 300 sub-agents and 4,000 coordinated steps. Tied GPT-5.5 on SWE-Bench Pro (58.6%); SWE-bench Verified ~80.2%. |
-| **Kimi K2.7 Code** | 1T total / 32B active (MoE) | 256K | June 12, 2026. Coding-focused build on K2.6 (Modified MIT) with a MoonViT vision encoder. Reports about +21.8% over K2.6 on Moonshot's own Kimi Code Bench v2 with roughly 30% fewer thinking tokens (vendor benchmark). API about $0.95 / $4.00 per 1M (on the same K2 retirement path: no new users since October 31, retirement planned by the end of December 2026). Superseded by K3 as Moonshot's flagship. |
-| Kimi K2-Thinking-0905 | - | - | First model to hit 100% on AIME 2025 (reasoning variant). |
+| **Kimi K3** | ۲.۸T کل / ۱۰۴B فعال (MoE) | 1M | ۱۶ ژوئیه ۲۰۲۶ (انتشار وزن‌های باز در ۲۷ ژوئیه). بزرگ‌ترین مدل با وزن باز تا به امروز. تفکر همواره فعال (Always-on thinking)، چندحالته. ۳ دلار / ۱۵ دلار به ازای هر ۱ میلیون Token (ورودی کش‌شده ۰.۳۰ دلار). **مجوز: مجوز اختصاصی Kimi K3 License، و نه Modified MIT.** هر ارائه‌دهنده مدل به‌عنوان سرویس (MaaS) که درآمد آن (به همراه شرکت‌های وابسته) در طول ۱۲ ماه از ۲۰ میلیون دلار آمریکا فراتر رود، پیش از استفاده تجاری نیازمند توافق‌نامه‌ای جداگانه است؛ همچنین محصولاتی با بیش از ۱۰۰ میلیون کاربر فعال ماهانه (MAU) یا درآمد ماهانه ۲۰ میلیون دلار باید عبارت "Kimi K3" را نمایش دهند؛ استفاده داخلی و شرکای استنتاج تاییدشده Moonshot از این قاعده معاف هستند. نسخه v5.0 شاخص AA هیچ امتیازی برای آن نشان نمی‌دهد (امتیاز ۵۷.۱ ذکرشده در زمان عرضه و امتیاز بعدی ۴۴ مربوط به نسخه‌های قدیمی‌تر و غیرقابل مقایسه این شاخص بودند). این مدل در زمان عرضه نخستین مدل باز بود که در صدر WebDev Arena قرار گرفت؛ در جدول‌های Arena در ۲۷ اکتبر، برترین مدل باز در Text Arena است (رتبه ۱۹، امتیاز ۱۴۸۸)، در حالی که Kimi K3.1 Pro (Max) برترین مدل باز در WebDev Arena است (رتبه ۹، امتیاز اولیه ۱۶۹۵، پشت سر Claude Opus 5.5 با ۱۸۱۰). از ۱۸ سپتامبر روی Amazon Bedrock اجرا می‌شود و نخستین مدل با وزن باز در این پلتفرم است که از کش‌گذاری صریح Prompt پشتیبانی می‌کند (`prompt_cache_breakpoint` پس از حداقل ۱,۰۲۴ Token، نگهداری ورودی‌ها حداقل به مدت ۳۰ دقیقه، و عدم محاسبه اصابت به کش در سهمیه‌های TPM ورودی)، که در آن پروفایل سراسری بین‌منطقه‌ای (global cross-Region) حدود ۱۰٪ ارزان‌تر از پروفایل ایالات متحده است. |
+| **Kimi K3.1 Pro** | ۲.۸T کل / ۱۰۴B فعال (MoE) | 1,048,576 | عرضه در API در ۲۳ اکتبر ۲۰۲۶؛ **انتشار وزن‌ها در ۴ نوامبر** (`moonshotai/Kimi-K3.1-Pro` به‌صورت عمومی و بدون گیت، حدود ۱.۵۶ ترابایت در ۹۶ شارد). وزن‌های MXFP4 با اکتیویشن‌های MXFP8، آموزش‌دیده به‌صورت آگاه از کوانتیزاسیون (quantization-aware). سطح تلاش استدلال `low`، `high` یا `max` (پیش‌فرض `max`)؛ فراخوانی چندمرحله‌ای ابزارها باید `reasoning_content` را برگرداند. قیمت ۲ دلار / ۱۰ دلار به ازای هر ۱ میلیون Token در API شرکت Moonshot؛ نگارش `kimi-k3.1-pro-highspeed` با قیمت ۴ دلار / ۲۰ دلار (۲ تا ۳ برابر سریع‌تر طبق ادعای Moonshot). شاخص AA v5.0.1: امتیاز ۴۶ که بالاترین امتیاز در میان مدل‌های با وزن باز است، اگرچه صفحه AA تا ۶ نوامبر همچنان آن را مالکیتی برچسب می‌زد. مجوز: مجوز اختصاصی Kimi K3.1-Pro License (در ادامه توضیح داده شده است). |
+| **Kimi K2.6** | 1T کل / ۳۲B فعال (MoE) | - | عرضه در ۲۰ آوریل ۲۰۲۶. مجوز Modified MIT. بسته شدن به روی کاربران جدید ثبت‌نامی Kimi API از ۳۱ اکتبر ۲۰۲۶؛ شرکت Moonshot قصد دارد تمام مدل‌های سری K2 را تا پایان دسامبر ۲۰۲۶ بازنشسته کند و کاربران را به مهاجرت به Kimi K3.1 Pro سوق می‌دهد. ورودی محلی ویدیو؛ مقیاس‌پذیری Swarm ایجنت‌ها تا ۳۰۰ زیر-ایجنت (sub-agents) و ۴,۰۰۰ مرحله هماهنگ‌شده. هم‌تراز با GPT-5.5 در SWE-Bench Pro (امتیاز ۵۸.۶٪)؛ بنچمارک SWE-bench Verified حدود ۸۰.۲٪. |
+| **Kimi K2.7 Code** | 1T کل / ۳۲B فعال (MoE) | 256K | ۱۲ ژوئن ۲۰۲۶. بیلد متمرکز بر کدنویسی بر پایه K2.6 (مجوز Modified MIT) با انکودر بینایی MoonViT. گزارش حدود ۲۱.۸٪+ بهبود نسبت به K2.6 در بنچمارک اختصاصی Kimi Code Bench v2 با تقریباً ۳۰٪ Tokenهای تفکر کمتر (بنچمارک ارائه‌دهنده). قیمت API حدود ۰.۹۵ دلار / ۴.۰۰ دلار به ازای هر ۱ میلیون Token (در همان مسیر بازنشستگی K2: عدم پذیرش کاربر جدید از ۳۱ اکتبر، بازنشستگی برنامه‌ریزی‌شده تا پایان دسامبر ۲۰۲۶). جایگزین‌شده توسط K3 به‌عنوان پرچم‌دار Moonshot. |
+| Kimi K2-Thinking-0905 | - | - | نخستین مدلی که در AIME 2025 به امتیاز ۱۰۰٪ دست یافت (نگارش استدلالی). |
 
-**Best for:** Long-horizon agent workloads, video understanding, open-weight agent stack alternative to closed frontier.
+**مناسب‌ترین کاربرد:** بارهای کاری ایجنتی با افق زمانی طولانی (long-horizon agent workloads)، درک ویدیو، و جایگزینی با وزن باز برای پشته ایجنتی در برابر مدل‌های مرزی بسته.
 
-**K3 as a pretraining substitute:** Cognition's SWE-2 (September 10, Devin-only, no weights) is post-trained from K3, and Fireworks' Ember-1 (September 23, research preview at K3's $3 / $15) is built on it, with about 40% fewer tokens than K3 (vendor-reported). Western product labs now buy an open base and compete on RL and post-training, which turns the base model's license into a supply-chain term: K3's MaaS clause is written for exactly this kind of hosted API. Moonshot then published **Kimi K3.1 Pro's weights on November 4**, 12 days after the API launch, under a custom **Kimi K3.1-Pro License**: an MIT-like permission grant with two conditions. A MaaS business whose licensee and affiliates earn more than US$20M in any consecutive 12 months needs a separate agreement with Moonshot before commercial use, and commercial products above 100M monthly active users or US$20M monthly revenue must display "Kimi K3.1-Pro" in the UI. The MaaS definition is the useful part for design reviews: giving third parties meaningful control over inference or fine-tuning (for example via API) counts, while end-user products with the capability embedded in specific features or harnesses, and mere relaying to models hosted by others, do not. Internal use that exposes nothing to third parties, and use through Moonshot's official products or certified inference partners, are exempt from both conditions. It is not an MIT license.
+**K3 به‌عنوان جایگزین پیش‌آموزش (Pretraining):** ابزار SWE-2 از شرکت Cognition (۱۰ سپتامبر، فقط برای Devin، بدون ارائه وزن‌ها) با پس‌آموزش (post-training) بر روی K3 ساخته شده است، و مدل Ember-1 از شرکت Fireworks (۲۳ سپتامبر، پیش‌نمایش پژوهشی با همان قیمت ۳ دلار / ۱۵ دلار مدل K3) بر پایه آن بنا شده و طبق گزارش ارائه‌دهنده حدود ۴۰٪ Token کمتری نسبت به K3 مصرف می‌کند. آزمایشگاه‌های محصول غربی اکنون یک مدل پایه باز خریداری کرده و بر سر یادگیری تقویتی (RL) و پس‌آموزش به رقابت می‌پردازند، که این امر مجوز مدل پایه را به یک بند از زنجیره تامین تبدیل می‌کند: بند MaaS در مجوز K3 دقیقاً برای چنین APIهای میزبانی‌شده‌ای نوشته شده است. سپس Moonshot **وزن‌های Kimi K3.1 Pro را در ۴ نوامبر**، ۱۲ روز پس از راه‌اندازی API، تحت یک مجوز اختصاصی **Kimi K3.1-Pro License** منتشر کرد: اعطای مجوزی شبه-MIT با دو شرط. کسب‌وکارهای MaaS که دارنده مجوز و شرکت‌های وابسته به آن در هر دوره ۱۲ ماه متوالی بیش از ۲۰ میلیون دلار آمریکا درآمد داشته باشند، پیش از استفاده تجاری به توافق‌نامه‌ای جداگانه با Moonshot نیاز دارند، و محصولات تجاری با بیش از ۱۰۰ میلیون کاربر فعال ماهانه یا درآمد ماهانه ۲۰ میلیون دلار باید "Kimi K3.1-Pro" را در رابط کاربری نمایش دهند. تعریف MaaS بخش کاربردی این مجوز برای بررسی‌های طراحی است: دادن کنترل معنادار بر استنتاج (Inference) یا Fine-tuning به اشخاص ثالث (مثلاً از طریق API) مشمول این شرط می‌شود، در حالی که محصولات کاربر نهایی که این قابلیت را در ویژگی‌ها یا بسترهای خاص جاسازی کرده‌اند و همچنین صرفاً بازهدایت (relay) به مدل‌های ارائه‌شده توسط دیگران، مشمول آن نمی‌شوند. استفاده داخلی که چیزی را برای اشخاص ثالث افشا نمی‌کند و استفاده از طریق محصولات رسمی Moonshot یا شرکای استنتاج تاییدشده، از هر دو شرط معاف هستند. این یک مجوز MIT نیست.
 
-### Alibaba Qwen Family
+### خانواده Alibaba Qwen
 
-| Model | Parameters | License | Notes |
+| مدل | پارامترها | مجوز | نکات |
 |-------|------------|---------|-------|
-| **Qwen3.8-Flash-Next** | 125B total / 6B active MoE, plus a 51B N-gram memory and a 4B MTP module | Qwen Community License 1.0 | August 26, 2026. An early preview of the Qwen4 architecture: Gated DeltaNet linear attention in three of every four layers plus Qwen Sparse Attention, and an N-gram lookup table that can live in host RAM rather than HBM. 262K native, 1M with YaRN; text, image, and video in. **License:** any MaaS or AI coding/office-assistant business needs a separate license from Qwen before commercial use, with no revenue floor; internal use is exempt. Hosted as `qwen3.8-flash` on Qwen Cloud at $0.15 / $0.47 per 1M. |
-| **Qwen3.8-Max** | 2.4T total / 95B active MoE | Qwen3.8-Max License (gated) | August 12, 2026; open checkpoint Qwen3.8-2.4T-A95B. 262K context native, extensible to ~1,010,000. Open weights under a bespoke license, not Apache: attribution required above 100M MAU or $20M monthly revenue, and a separate license from Qwen is required for Model-as-a-Service or AI Work Assistant (coding or office) businesses above US$50M aggregate revenue over 12 months. The open checkpoint is text-input-only; the API version is multimodal. |
-| **Qwen3.8-Max-0902** | Same 2.4T / 95B | API only | September 2, 2026 post-training refresh with no weights; US$2 / $6 per 1M on Alibaba Model Studio (international), the same as `qwen3.8-max`. AA v5.0: 34, above every open-weight model except Kimi K3.1 Pro (46 on v5.0.1, weights since November 4), which is the cost of staying on the open checkpoint. The open checkpoint stays at the August 12 build, so self-hosters fall behind the API model within weeks: "open snapshot, closed refresh". |
-| **Qwen3.8-27B** | 27B dense | Apache 2.0 | August 14, 2026. The more permissive *and* more modality-complete artifact: accepts image and video input where the open Max checkpoint does not. 262K context, extensible to ~1M. Dense rather than MoE, which makes it the practical single-GPU option. AA v5.0: 20 (xhigh). Base for Ternary Bonsai 2; Groq moved its Qwen tier to it on September 14. |
-| **Qwen 3.6 Max-Preview** | ~1T MoE | Commercial preview | Released ~April 20-27, 2026. 262K context. Topped six coding benchmarks per Alibaba. |
-| **Qwen 3.6-Plus** | - | - | Released April 2, 2026. Enhanced coding. |
-| **Qwen 3.6-35B-A3B** | 35B / 3B active MoE | Apache 2.0 | Released April 16, 2026. Open-weight workhorse. |
-| Qwen2.5-Coder-32B | 32B | Apache 2.0 | Previous-generation open coding leader. |
-| Qwen2.5-72B | 72B | Apache 2.0 | Previous-generation multilingual leader. |
-| Qwen2.5-7B | 7B | Apache 2.0 | Efficient self-hosted option. |
+| **Qwen3.8-Flash-Next** | مجموعاً ۱۲۵B / ۶B فعال (MoE)، به‌علاوه یک حافظه ۵۱B مبتنی بر N-gram و یک ماژول ۴B مبتنی بر MTP | Qwen Community License 1.0 | ۲۶ اوت ۲۰۲۶. پیش‌نمایش اولیه‌ای از معماری Qwen4: توجه خطی Gated DeltaNet در سه لایه از هر چهار لایه به همراه Qwen Sparse Attention، و یک جدول جستجوی N-gram که می‌تواند به‌جای HBM در RAM میزبان قرار گیرد. کانتکست محلی 262K، و 1M با YaRN؛ ورودی متن، تصویر و ویدیو. **مجوز:** هرگونه کسب‌وکار MaaS یا دستیار هوش مصنوعی کدنویسی/اداری پیش از استفاده تجاری نیازمند مجوزی جداگانه از Qwen است، بدون هیچ کف درآمدی؛ استفاده داخلی معاف است. میزبانی‌شده به‌عنوان `qwen3.8-flash` روی Qwen Cloud با قیمت ۰.۱۵ دلار / ۰.۴۷ دلار به ازای هر ۱ میلیون Token. |
+| **Qwen3.8-Max** | مجموعاً 2.4T / ۹۵B فعال (MoE) | مجوز Qwen3.8-Max License (کنترل‌شده یا gated) | ۱۲ اوت ۲۰۲۶؛ چک‌پوینت باز Qwen3.8-2.4T-A95B. کانتکست محلی 262K، قابل ارتقا تا حدود ۱,۰۱۰,۰۰۰. وزن‌های باز تحت مجوزی اختصاصی و نه Apache: ارجاع به نام مدل برای بیش از ۱۰۰ میلیون MAU یا ۲۰ میلیون دلار درآمد ماهانه الزامی است، و کسب‌وکارهای مدل به‌عنوان سرویس (MaaS) یا دستیار کار هوش مصنوعی (کدنویسی یا اداری) با درآمد مجموع بیش از ۵۰ میلیون دلار آمریکا در طول ۱۲ ماه نیازمند دریافت مجوزی جداگانه از Qwen هستند. چک‌پوینت باز فقط از ورودی متنی پشتیبانی می‌کند؛ نسخه API چندحالته است. |
+| **Qwen3.8-Max-0902** | همان 2.4T / ۹۵B | فقط API | تازه‌سازی پس‌آموزش (post-training refresh) در ۲ سپتامبر ۲۰۲۶ بدون ارائه وزن‌ها؛ ۲ دلار / ۶ دلار به ازای هر ۱ میلیون Token در Alibaba Model Studio (بین‌المللی)، مشابه با `qwen3.8-max`. شاخص AA v5.0: امتیاز ۳۴، بالاتر از تمامی مدل‌های با وزن باز به‌جز Kimi K3.1 Pro (امتیاز ۴۶ در v5.0.1، وزن‌ها از ۴ نوامبر)، که این اختلاف هزینه ماندن روی چک‌پوینت باز است. چک‌پوینت باز روی بیلد ۱۲ اوت باقی می‌ماند، بنابراین میزبانی‌کنندگان محلی ظرف چند هفته از مدل API عقب می‌افتند: «اسنپ‌شات باز، تازه‌سازی بسته». |
+| **Qwen3.8-27B** | 27B متراکم (dense) | Apache 2.0 | ۱۴ اوت ۲۰۲۶. آرتیفکت دارای مجوز آزادتر *و* از نظر مدالیته کامل‌تر: بر خلاف چک‌پوینت باز Max، ورودی تصویر و ویدیو را می‌پذیرد. کانتکست 262K، قابل ارتقا تا حدود 1M. معماری متراکم (dense) به‌جای MoE که آن را به گزینه‌ای کاربردی برای تک‌GPU تبدیل می‌کند. شاخص AA v5.0: امتیاز ۲۰ (در حالت xhigh). مدل پایه برای Ternary Bonsai 2؛ Groq در ۱۴ سپتامبر رده Qwen خود را به این مدل منتقل کرد. |
+| **Qwen 3.6 Max-Preview** | حدود 1T (مدل MoE) | پیش‌نمایش تجاری | عرضه در حدود ۲۰ الی ۲۷ آوریل ۲۰۲۶. کانتکست 262K. صدرنشین شش بنچمارک کدنویسی طبق اعلام Alibaba. |
+| **Qwen 3.6-Plus** | - | - | عرضه در ۲ آوریل ۲۰۲۶. کدنویسی ارتقایافته. |
+| **Qwen 3.6-35B-A3B** | 35B / ۳B فعال (MoE) | Apache 2.0 | عرضه در ۱۶ آوریل ۲۰۲۶. اسب کاری (workhorse) با وزن باز. |
+| Qwen2.5-Coder-32B | 32B | Apache 2.0 | پیشتاز باز کدنویسی در نسل گذشته. |
+| Qwen2.5-72B | 72B | Apache 2.0 | پیشتاز چندزبانه در نسل گذشته. |
+| Qwen2.5-7B | 7B | Apache 2.0 | گزینه کارآمد برای میزبانی شخصی (self-hosted). |
 
-Within one family, the newest release (Flash-Next) carries the strictest license and the smaller 27B the most permissive one. Read the LICENSE file for each checkpoint, not the family name. **Qwen4 has not shipped** as of November 6: the newest language models on the Qwen Hugging Face organization are still Qwen3.8-Flash-Next and its FP8 build (August 24). Attendees reported Alibaba Cloud CTO Feifei Li saying "Qwen4 next week" at Apsara Amsterdam on October 29 (reported, not vendor-confirmed), but Alibaba has published no Qwen4 date, model card, or license, so do not plan around Qwen4 weights or assume Apache 2.0.
+درون یک خانواده، جدیدترین انتشار (Flash-Next) سخت‌گیرانه‌ترین مجوز و مدل کوچک‌تر 27B آزادترین مجوز را دارد. فایل LICENSE را برای هر چک‌پوینت بخوانید، نه فقط نام خانواده مدل را. تا تاریخ ۶ نوامبر **مدل Qwen4 هنوز عرضه نشده است**: جدیدترین مدل‌های زبانی در سازمان Hugging Face شرکت Qwen همچنان Qwen3.8-Flash-Next و بیلد FP8 آن (۲۴ اوت) هستند. شرکت‌کنندگان در رویداد Apsara Amsterdam در ۲۹ اکتبر گزارش دادند که Feifei Li، مدیر ارشد فناوری Alibaba Cloud، عبارت «Qwen4 هفته آینده» را بیان کرده است (گزارش‌شده، اما توسط ارائه‌دهنده تایید نشده)، ولی Alibaba هیچ تاریخ انتشار، کارت مدل یا مجوزی برای Qwen4 منتشر نکرده است؛ بنابراین بر اساس وزن‌های Qwen4 برنامه‌ریزی نکنید و فرض را بر مجوز Apache 2.0 نگذارید.
 
-### Mistral Family
+### خانواده Mistral
 
-| Model | Parameters | Context | Notes |
+| مدل | پارامترها | کانتکست | نکات |
 |-------|------------|---------|-------|
-| **Mistral Large 4** | About 1T total / 49B active (52B with embeddings and output layers), MoE | 1M | API preview October 6, 2026; **open weights October 29** (`mistralai/Mistral-Large-4-1T-A52B`). $0.70 / $2.10 per 1M, cached $0.07. **License: Mistral Ecosystem Open-Weight License**, under which any Model-as-a-Service business needs a separate commercial license, with no revenue threshold. The final release replaced the preview's `None` reasoning mode with `Low`, so it offers Low, Medium, and High, with **High as the default**: preview code that asked for no reasoning must move to low, and unset effort raises token use. AA: 26 at High, 23 at Medium (October 29). Microsoft Foundry is the first cloud to offer it, per Mistral, which also reports Terminal-Bench 4.0 41% (28% in preview) and 48% on AA's Coding Agent Index (vendor-reported). Named replacement for Medium 3.5 and Large 3. |
-| **Mistral Medium 3.5** | 128B dense | 256K | Released April 29, 2026. Merges Magistral (reasoning) + Pixtral (vision) + Devstral 2 (coding) into one model. 77.6% on SWE-Bench Verified. $1.50 / $7.50 per 1M. **License: Modified MIT that withdraws all rights from organizations with more than US$20M global monthly revenue** (they need a commercial license or Mistral's hosted API), including derivatives. Deprecated October 31, 2026; retires April 30, 2027 (to Large 4). |
-| **Voxtral TTS** | 4B open-weights | streaming | March 23, 2026 release, CC BY-NC 4.0 (non-commercial). 70ms latency, 9 languages, 3-second voice cloning. On the Mistral API, Voxtral TTS 26.03 was deprecated October 31, 2026 and retires April 30, 2027, replaced by Voxtral TTS 3 (public preview since October 20); the deprecation applies to the API model ID. |
-| Mistral Large 3 | 675B (MoE, 41B active) | 256K | Sparse MoE; parity with best open-weight models at launch. $0.50 / $1.50 per 1M on the API. Deprecated October 31, 2026; retires April 30, 2027. Moving to Large 4 raises the price 40%. |
-| Mistral Small 4 | - | 256K | Hybrid instruct/reasoning/coding; released March 2026. $0.15 / $0.60 per 1M. |
-| Mistral 3 (14B/8B/3B) | 3B to 14B | - | Unified family: multilingual, multimodal, Apache 2.0. |
-| Mixtral 8x22B | 141B (MoE) | - | Previous gen; still viable for throughput. |
+| **Mistral Large 4** | حدود 1T کل / ۴۹B فعال (۵۲B با Embeddingها و لایه‌های خروجی)، مدل MoE | 1M | پیش‌نمایش در API در ۶ اکتبر ۲۰۲۶؛ **انتشار وزن‌های باز در ۲۹ اکتبر** (`mistralai/Mistral-Large-4-1T-A52B`). ۰.۷۰ دلار / ۲.۱۰ دلار به ازای هر ۱ میلیون Token، ورودی کش‌شده ۰.۰۷ دلار. **مجوز: Mistral Ecosystem Open-Weight License** که تحت آن هرگونه کسب‌وکار مدل به‌عنوان سرویس (MaaS) بدون هیچ آستانه درآمدی نیازمند یک مجوز تجاری جداگانه است. نسخه نهایی حالت استدلال `None` در پیش‌نمایش را با `Low` جایگزین کرد، بنابراین این مدل حالت‌های Low،‏ Medium و High را ارائه می‌دهد که **High حالت پیش‌فرض است**: کدهای پیش‌نمایشی که خواستار عدم استدلال بودند باید به Low منتقل شوند، و تعیین نکردن سطح تلاش، مصرف Token را افزایش می‌دهد. امتیاز AA: ۲۶ در حالت High، و ۲۳ در حالت Medium (در ۲۹ اکتبر). طبق اعلام Mistral، مایکروسافت Foundry نخستین سرویس ابری ارائه‌دهنده آن است؛ Mistral همچنین امتیاز ۴۱٪ در Terminal-Bench 4.0 (۲۸٪ در پیش‌نمایش) و ۴۸٪ در شاخص Coding Agent Index متعلق به AA را گزارش داده است (گزارش ارائه‌دهنده). جایگزین رسمی برای Medium 3.5 و Large 3. |
+| **Mistral Medium 3.5** | 128B متراکم (dense) | 256K | عرضه در ۲۹ آوریل ۲۰۲۶. ادغام‌کننده Magistral (استدلال) + Pixtral (بینایی) + Devstral 2 (کدنویسی) در یک مدل واحد. امتیاز ۷۷.۶٪ در SWE-Bench Verified. نرخ ۱.۵۰ دلار / ۷.۵۰ دلار به ازای هر ۱ میلیون Token. **مجوز: Modified MIT که تمامی حقوق را از سازمان‌هایی با درآمد ماهانه جهانی بیش از ۲۰ میلیون دلار آمریکا سلب می‌کند** (آن‌ها نیازمند مجوز تجاری یا استفاده از API میزبانی‌شده Mistral هستند)، شامل مدل‌های مشتق‌شده (derivatives). در ۳۱ اکتبر ۲۰۲۶ منسوخ (deprecated) شد؛ در ۳۰ آوریل ۲۰۲۷ بازنشسته می‌شود (به نفع Large 4). |
+| **Voxtral TTS** | 4B با وزن باز | استریمینگ (streaming) | عرضه در ۲۳ مارس ۲۰۲۶، با مجوز CC BY-NC 4.0 (غیرتجاری). تاخیر (Latency) معادل 70ms، پشتیبانی از ۹ زبان، شبیه‌سازی ۳ ثانیه‌ای صدا. در Mistral API، مدل Voxtral TTS 26.03 در ۳۱ اکتبر ۲۰۲۶ منسوخ شد و در ۳۰ آوریل ۲۰۲۷ بازنشسته می‌شود و با Voxtral TTS 3 (پیش‌نمایش عمومی از ۲۰ اکتبر) جایگزین خواهد شد؛ این انقضا بر شناسه مدل در API اعمال می‌شود. |
+| Mistral Large 3 | 675B (مدل MoE، ۴۱B فعال) | 256K | مدل Sparse MoE؛ هم‌تراز با بهترین مدل‌های با وزن باز در زمان عرضه. ۰.۵۰ دلار / ۱.۵۰ دلار به ازای هر ۱ میلیون Token در API. در ۳۱ اکتبر ۲۰۲۶ منسوخ شد؛ در ۳۰ آوریل ۲۰۲۷ بازنشسته می‌شود. مهاجرت به Large 4 قیمت را ۴۰٪ افزایش می‌دهد. |
+| Mistral Small 4 | - | 256K | مدل ترکیبی دستورپذیر/استدلالی/کدنویسی؛ عرضه در مارس ۲۰۲۶. ۰.۱۵ دلار / ۰.۶۰ دلار به ازای هر ۱ میلیون Token. |
+| Mistral 3 (14B/8B/3B) | 3B تا 14B | - | خانواده یکپارچه: چندزبانه، چندحالته، با مجوز Apache 2.0. |
+| Mixtral 8x22B | 141B (MoE) | - | نسل قبلی؛ همچنان برای توان عملیاتی (Throughput) کارآمد است. |
 
-Large 4 is Mistral's first open-weight flagship since Large 3, and its license is the strictest in this chapter for anyone selling inference: Medium 3.5's cap bites only above US$20M monthly revenue, while Large 4 needs a separate deal for any MaaS business. La Plateforme also serves Z.ai's GLM 5.3 (GA September 28; GLM 5.2 was listed to retire there October 31), so Europe's leading "sovereign" provider resells a Chinese open-weight model. Provenance and hosting jurisdiction are separate questions.
+مدل Large 4 نخستین پرچم‌دار با وزن باز Mistral از زمان Large 3 است، و مجوز آن سخت‌گیرانه‌ترین مجوز در این فصل برای هر کسی است که استنتاج (Inference) می‌فروشد: سقف درآمدی Medium 3.5 تنها برای درآمدهای ماهانه بیش از ۲۰ میلیون دلار آمریکا محدودیت ایجاد می‌کرد، در حالی که Large 4 برای هر کسب‌وکار MaaS به قراردادی جداگانه نیاز دارد. پلتفرم La Plateforme همچنین مدل GLM 5.3 شرکت Z.ai را ارائه می‌دهد (عرضه عمومی در ۲۸ سپتامبر؛ طبق فهرست، مدل GLM 5.2 در ۳۱ اکتبر در آنجا بازنشسته می‌شد)، بنابراین ارائه‌دهنده «حاکمیتی» (sovereign) پیشرو در اروپا، یک مدل با وزن باز چینی را بازفروش می‌کند. خاستگاه مدل و حوزه قضایی میزبانی دو مقوله جداگانه هستند.
 
-### Google Gemma Family
+### خانواده Google Gemma
 
-| Model | Parameters | Context | License | Notes |
+| مدل | پارامترها | کانتکست | مجوز | نکات |
 |-------|------------|---------|---------|-------|
-| **Gemma 4 (31B dense)** | 31B | 256K | Apache 2.0 | Released April 2, 2026. 140+ languages; native vision/audio; function calling. |
-| **Gemma 4 (26B-A4B MoE)** | 26B / 4B active | 256K | Apache 2.0 | Sparse MoE variant. |
-| **Gemma 4 12B (Unified)** | 11.95B dense | 256K | Apache 2.0 | June 3, 2026. Encoder-free multimodal: raw image patches and audio waveforms are projected into the LLM embedding space through lightweight linear layers; text, image, audio, and video (as frames) in. Official QAT int4 builds. The obvious laptop-class multimodal default. |
-| **Gemma 4 E4B** | 8B | 256K | Apache 2.0 | Edge-suitable. |
-| **Gemma 4 E2B** | 5.1B / 2.3B active | 256K | Apache 2.0 | Smallest variant; mobile/embedded. |
-| **DiffusionGemma (26B-A4B MoE)** | 26B / ~4B active | 256K | Apache 2.0 | June 10, 2026. Google DeepMind's first open-weight text-diffusion model; denoises blocks of tokens in parallel for roughly 4x faster generation (1000+ tokens/sec on one H100). Lower quality than standard Gemma 4; aimed at low-latency and in-line editing. |
+| **Gemma 4 (31B متراکم)** | 31B | 256K | Apache 2.0 | عرضه در ۲ آوریل ۲۰۲۶. بیش از ۱۴۰ زبان؛ بینایی/صوت بومی؛ فراخوانی تابع (function calling). |
+| **Gemma 4 (26B-A4B MoE)** | ۲۶B کل / ۴B فعال | 256K | Apache 2.0 | گونه Sparse MoE. |
+| **Gemma 4 12B (Unified)** | ۱۱.۹۵B متراکم | 256K | Apache 2.0 | ۳ ژوئن ۲۰۲۶. چندحالته بدون انکودر: پچ‌های خام تصویر و شکل‌موج‌های صوتی از طریق لایه‌های خطی سبک به فضای Embedding مدل LLM نگاشت می‌شوند؛ با ورودی متن، تصویر، صوت و ویدیو (به‌صورت فریم). بیلدهای رسمی QAT int4. گزینه پیش‌فرض آشکار چندحالته در رده لپ‌تاپ. |
+| **Gemma 4 E4B** | 8B | 256K | Apache 2.0 | مناسب برای پردازش لبه (Edge). |
+| **Gemma 4 E2B** | ۵.۱B کل / ۲.۳B فعال | 256K | Apache 2.0 | کوچک‌ترین نسخه؛ مناسب برای موبایل و دستگاه‌های تعبیه‌شده (embedded). |
+| **DiffusionGemma (26B-A4B MoE)** | ۲۶B کل / حدود ۴B فعال | 256K | Apache 2.0 | ۱۰ ژوئن ۲۰۲۶. نخستین مدل انتشار متنی (text-diffusion) با وزن باز از Google DeepMind؛ حذف نویز از بلوک‌های Token را به‌صورت موازی انجام می‌دهد تا تولید متن تقریباً ۴ برابر سریع‌تر شود (بیش از ۱۰۰۰ Token در ثانیه روی یک H100). کیفیت پایین‌تر در مقایسه با Gemma 4 استاندارد؛ با هدف تاخیر (Latency) پایین و ویرایش درون‌خطی (in-line editing). |
 
-Google has released no new Gemma LLM since DiffusionGemma, and Gemma 5 has not been announced.
+گوگل از زمان DiffusionGemma هیچ LLM جدیدی از خانواده Gemma عرضه نکرده و Gemma 5 نیز معرفی نشده است.
 
-### Zhipu / Z.ai GLM Family
+### خانواده Zhipu / Z.ai GLM
 
-| Model | Parameters | Context | License | Notes |
+| مدل | پارامترها | کانتکست | مجوز | نکات |
 |-------|------------|---------|---------|-------|
-| **GLM-5.3** | 744B total / 40B active (MoE), same base as GLM-5.2 | 1M | GLM-5.3 License (MIT plus a security-review clause) | Coding Plan August 14, 2026; general API August 18; **open weights August 28, the date Z.ai had targeted**. The entire gain comes from extended post-training rather than a new pretraining run. The license is MIT except that a Model-as-a-Service operator with more than US$10B aggregate revenue over 12 months must pass a Z.ai security review before commercial use, so almost everyone gets effectively MIT terms. API $1.40 / $0.26 cached / $4.40 per 1M. Amazon Bedrock made it GA on October 5 (1M context, up to 128K output, US and Global profiles), and AWS states inference data is not shared with the model provider, so teams barred from calling Chinese vendors directly can run it inside the AWS boundary. AA v5.0.1: 32 at max, 23 at low. NIST CAISI (September 17) called it the most cyber-capable open-weight model released to date, about four months behind the US frontier. |
-| **GLM-5.3-Flash** | 320B total / 18B active (MoE) | 1M (128K max output) | MIT | August 26, 2026, with none of GLM-5.3's review clause. First natively multimodal GLM-5 model, built for GUI observation and interaction. Hybrid linear and sparse attention (Z.ai: 3.01x less attention compute and a 4.44x smaller KV cache than GLM-5.3). $0.15 / $0.50 per 1M, about 1/9 of GLM-5.3. AA v5.0: 28. |
-| GLM-5.2 | 744B total / 40B active (MoE) | 1M | MIT | Coding-plan access June 13, 2026; open weights June 16-17. Built for long-horizon agentic coding and tool use. Reports SWE-Bench Pro 62.1 (ahead of GPT-5.5 at 58.6 on that benchmark); vendor-reported. API roughly $1.40 / $4.40 per 1M. Superseded by GLM-5.3. |
+| **GLM-5.3** | ۷۴۴B کل / ۴۰B فعال (MoE)، پایه یکسان با GLM-5.2 | 1M | مجوز GLM-5.3 (مجوز MIT به همراه بند بررسی امنیتی) | طرح کدنویسی در ۱۴ اوت ۲۰۲۶؛ عرضه عمومی API در ۱۸ اوت؛ **انتشار وزن‌های باز در ۲۸ اوت، تاریخی که Z.ai هدف‌گذاری کرده بود**. تمام پیشرفت حاصل پس‌آموزش طولانی‌تر (extended post-training) است و نه یک دور پیش‌آموزش جدید. مجوز از نوع MIT است، با این استثنا که هر گرداننده مدل به‌عنوان سرویس (Model-as-a-Service یا MaaS) با بیش از ۱۰ میلیارد دلار آمریکا درآمد مجموع طی ۱۲ ماه، باید پیش از استفاده تجاری ارزیابی امنیتی Z.ai را پشت سر بگذارد؛ بنابراین تقریباً برای همه افراد عملاً شرایط MIT اعمال می‌شود. قیمت API معادل ۱.۴۰ دلار / ۰.۲۶ دلار کش‌شده / ۴.۴۰ دلار به ازای هر ۱ میلیون Token. آمازون Bedrock در ۵ اکتبر آن را به عرضه عمومی (GA) رساند (کانتکست 1M، حداکثر تا ۱۲۸K خروجی، پروفایل‌های ایالات متحده و جهانی)، و AWS اعلام می‌کند که داده‌های استنتاج (Inference) با ارائه‌دهنده مدل به اشتراک گذاشته نمی‌شود؛ بنابراین تیم‌هایی که از فراخوانی مستقیم فروشندگان چینی منع شده‌اند می‌توانند آن را درون مرزهای امنیتی AWS اجرا کنند. امتیاز AA v5.0.1: ۳۲ در حالت max، ۲۳ در حالت low. موسسه NIST CAISI (در ۱۷ سپتامبر) آن را سایبری‌ترین مدل با وزن بازِ عرضه‌شده تا به امروز نامید که حدود چهار ماه عقب‌تر از پیشتازان مرزی (frontier) ایالات متحده است. |
+| **GLM-5.3-Flash** | ۳۲۰B کل / ۱۸B فعال (MoE) | 1M (حداکثر ۱۲۸K خروجی) | MIT | ۲۶ اوت ۲۰۲۶، بدون هیچ‌کدام از بندهای بررسی امنیتی GLM-5.3. نخستین مدل بومی چندحالته از خانواده GLM-5، ساخته‌شده برای مشاهده و تعامل با واسط گرافیکی کاربر (GUI). مکانیزم توجه ترکیبی خطی و اسپارس (Hybrid linear and sparse attention) (طبق اعلام Z.ai: محاسبات توجه ۳.۰۱ برابر کمتر و KV Cache تا ۴.۴۴ برابر کوچک‌تر نسبت به GLM-5.3). قیمت ۰.۱۵ دلار / ۰.۵۰ دلار به ازای هر ۱ میلیون Token، حدود یک‌نهم قیمت GLM-5.3. امتیاز AA v5.0: ۲۸. |
+| GLM-5.2 | ۷۴۴B کل / ۴۰B فعال (MoE) | 1M | MIT | دسترسی به طرح کدنویسی در ۱۳ ژوئن ۲۰۲۶؛ انتشار وزن‌های باز در ۱۶–۱۷ ژوئن. طراحی‌شده برای کدنویسی ایجنتیک افق‌بلند (long-horizon agentic coding) و استفاده از ابزار. امتیاز SWE-Bench Pro معادل ۶۲.۱ را گزارش می‌دهد (بالاتر از GPT-5.5 با ۵۸.۶ در همان بنچمارک)؛ گزارش‌شده توسط ارائه‌دهنده. API تقریباً ۱.۴۰ دلار / ۴.۴۰ دلار به ازای هر ۱ میلیون Token. با GLM-5.3 جایگزین شده است. |
 
-**Best for:** Open-weight agentic coding and long-horizon tool use where a 1M context and a permissive license matter. GLM-5.3-Flash is the new default self-host candidate in the 18B-active class. Verify benchmark claims on independent leaderboards.
+**بهترین برای:** کدنویسی ایجنتیک با وزن باز و استفاده از ابزار در افق‌های طولانی که در آن‌ها کانتکست 1M و یک مجوز سهل‌گیرانه اهمیت دارد. مدل GLM-5.3-Flash گزینه پیش‌فرض و نامزد اصلی جدید برای میزبانی شخصی (self-host) در رده ۱۸B فعال است. ادعاهای مربوط به بنچمارک‌ها را در لیدربوردهای مستقل راستی‌آزمایی کنید.
 
-**A safety window is not a safety guarantee.** Within days of the GLM-5.3 weight drop, Hugging Face carried community "uncensored" and abliterated derivatives, including a GLM-5.3-Flash build with roughly 220K monthly downloads. A staged release delays open access; it does not stop safety training from being stripped afterward.
+**یک بازه زمانی امنیتی تضمینی برای امنیت نیست.** ظرف چند روز پس از انتشار وزن‌های GLM-5.3، در Hugging Face مشتقات «بدون سانسور» (uncensored) و سانسورزدایی‌شده (abliterated) توسط جامعه کاربری منتشر شد، از جمله بیلدی از GLM-5.3-Flash با حدود ۲۲۰ هزار دانلود ماهانه. انتشار مرحله‌ای دسترسی باز را به تاخیر می‌اندازد؛ اما مانع از حذف آموزش‌های ایمنی پس از انتشار وزن‌ها نمی‌شود.
 
-### Thinking Machines Inkling - July 2026
+### Thinking Machines Inkling - ژوئیه ۲۰۲۶
 
-| Model | Parameters | Context | License | Notes |
+| مدل | پارامترها | کانتکست | مجوز | نکات |
 |-------|------------|---------|---------|-------|
-| **Inkling** | 975B total / 41B active (MoE) | 1M (64K or 256K via the lab's Tinker API) | Apache 2.0 | Released July 15, 2026: Thinking Machines Lab's first public model, pretrained on 45T tokens of text, image, audio, and video. SWE-Bench Verified 77.6%; the leading US open-weights model per Artificial Analysis at launch, with safety scores the lab reports as aligning with frontier models. NVFP4 checkpoint optimized for NVIDIA Blackwell. AA v5.0: 12. |
-| **Inkling-Small** | ~266B total / 12B active | - | Apache 2.0 | Full weights released July 30, 2026 (post-trained beyond the earlier preview checkpoint), plus an NVFP4 build. Text, image, and audio in. Vendor-reported SWE-bench Verified 80.2%, beating its larger sibling. AA v5.0: 13. |
+| **Inkling** | ۹۷۵B کل / ۴۱B فعال (MoE) | 1M (مقدار 64K یا 256K از طریق Tinker API این آزمایشگاه) | Apache 2.0 | عرضه در ۱۵ ژوئیه ۲۰۲۶: نخستین مدل عمومی Thinking Machines Lab، پیش‌آموزش‌دیده بر روی ۴۵T از Tokenهای متنی، تصویر، صوت و ویدیو. امتیاز SWE-Bench Verified معادل ۷۷.۶٪؛ برترین مدل با وزن باز آمریکایی بر اساس ارزیابی Artificial Analysis در زمان عرضه، با امتیازات ایمنی که طبق گزارش این آزمایشگاه با مدل‌های مرزی هم‌تراز است. چک‌پوینت NVFP4 بهینه‌سازی‌شده برای NVIDIA Blackwell. امتیاز AA v5.0: ۱۲. |
+| **Inkling-Small** | حدود ۲۶۶B کل / ۱۲B فعال | - | Apache 2.0 | انتشار کامل وزن‌ها در ۳۰ ژوئیه ۲۰۲۶ (پس‌آموزش‌دیده فراتر از چک‌پوینت پیش‌نمایش قبلی)، به همراه بیلد NVFP4. با ورودی‌های متن، تصویر و صوت. امتیاز SWE-bench Verified گزارش‌شده توسط ارائه‌دهنده ۸۰.۲٪ که از برادر بزرگ‌تر خود پیشی می‌گیرد. امتیاز AA v5.0: ۱۳. |
 
-**Why it matters:** A brand-new US lab shipping the leading American open-weights family, positioned explicitly as a fine-tuning foundation. Kimi K3 and Inkling landing in the same July week made it the strongest open-weights month on record at the time. By November both Inkling models trail Meta's Muse Spark Open (25), Reflection's Beam 1.0, and MBZUAI's K2 Horizon 375B (both 18) on AA v5.0.1 and sit far behind the Chinese leaders (Kimi K3.1 Pro at 46 by weight availability; DeepSeek V4.1-Flash-1017 at 33 and GLM-5.3 at 32 under AA's own label), and no new Thinking Machines model has shipped since July.
+**چرا اهمیت دارد:** یک آزمایشگاه کاملاً نوپای آمریکایی که برترین خانواده با وزن باز آمریکایی را عرضه کرد و صراحتاً آن را به‌عنوان پایه‌ای برای Fine-tuning قرار داد. فرود آمدن Kimi K3 و Inkling در یک هفته مشترک در ماه ژوئیه، آن را به قدرتمندترین ماه ثبت‌شده برای مدل‌های با وزن باز تا آن زمان تبدیل کرد. تا ماه نوامبر، هر دو مدل Inkling در بنچمارک AA v5.0.1 از Muse Spark Open متا (امتیاز ۲۵)، Beam 1.0 شرکت Reflection و K2 Horizon 375B دانشگاه MBZUAI (هر دو ۱۸) عقب افتاده‌اند و بسیار پشت سر رهبران چینی قرار دارند (Kimi K3.1 Pro با امتیاز ۴۶ بر مبنای در دسترس بودن وزن‌ها؛ DeepSeek V4.1-Flash-1017 با امتیاز ۳۳ و GLM-5.3 با امتیاز ۳۲ تحت برچسب خود AA)، و از ماه ژوئیه تاکنون هیچ مدل جدیدی از Thinking Machines عرضه نشده است.
 
-### Meta Muse Spark (Closed Weights) - April 2026 STRATEGIC SHIFT
+### Meta Muse Spark (وزن‌های بسته) - آوریل ۲۰۲۶: چرخش راهبردی (STRATEGIC SHIFT)
 
-| Attribute | Value |
+| ویژگی | مقدار |
 |-----------|-------|
-| License | **Closed weights** - first proprietary model from Meta Superintelligence Labs |
-| Capabilities | Multimodal reasoning with Instant / Thinking / Contemplating modes |
-| Released | April 8, 2026 |
+| مجوز | **وزن‌های بسته (Closed weights)** - نخستین مدل اختصاصی از آزمایشگاه‌های ابرهوش متا (Meta Superintelligence Labs) |
+| قابلیت‌ها | استدلال چندحالته با حالت‌های Instant / Thinking / Contemplating |
+| تاریخ انتشار | ۸ آوریل ۲۰۲۶ |
 
-**Strategic significance:** Meta's first non-open model since the original Llama era. Signals that frontier-quality work may require a closed-development feedback loop. Meta paused the Llama 4 Behemoth release at the same time amid capability concerns, and Behemoth has never shipped. The open-vs-closed equilibrium became two-tier: frontier closed models lead, and open weights catch up via distillation, RL, and ecosystem iteration. The lead was commonly put at 6 to 12 months in April; by September NIST CAISI estimated GLM-5.3 at about four months behind the US frontier on cyber, while AA v5.0.1 shows 26 points between the best callable closed model and the best model AA labels open (59 vs 33), or 13 if you count Kimi K3.1 Pro (46), whose weights shipped November 4.
+**اهمیت راهبردی:** نخستین مدل غیرباز متا از زمان عصر اولیه Llama تاکنون. این امر نشان می‌دهد که دستیابی به کیفیت در سطح مرزهای دانش ممکن است به یک چرخه بازخورد توسعه بسته (closed-development feedback loop) نیاز داشته باشد. متا هم‌زمان انتشار مدل Llama 4 Behemoth را به دلیل نگرانی‌های مربوط به قابلیت‌ها متوقف کرد و Behemoth هرگز عرضه نشد. تعادل میان مدل‌های باز در برابر بسته به یک ساختار دو سطحی تبدیل شد: مدل‌های بسته مرزی پیشتازی می‌کنند، و مدل‌های با وزن باز از طریق تقطیر (distillation)، یادگیری تقویتی (RL) و تکرار در اکوسیستم به آن‌ها می‌رسند. این فاصله پیشتازی در آوریل معمولاً بین ۶ تا ۱۲ ماه برآورد می‌شد؛ تا ماه سپتامبر موسسه NIST CAISI برآورد کرد که GLM-5.3 در حوزه امنیت سایبری حدود چهار ماه عقب‌تر از مرزهای ایالات متحده است، در حالی که شاخص AA v5.0.1 اختلاف ۲۶ امتیازی میان بهترین مدل بسته قابل فراخوانی و بهترین مدلی که AA آن را باز برچسب می‌زند نشان می‌دهد (۵۹ در برابر ۳۳)، یا ۱۳ امتیاز اگر Kimi K3.1 Pro (با امتیاز ۴۶) را به حساب آورید که وزن‌های آن در ۴ نوامبر منتشر شد.
 
-**July 2026 update:** **Muse Spark 1.1** shipped July 9 alongside the public preview of the **Meta Model API**, Meta's first self-serve paid API: OpenAI-compatible, $1.25 / $4.25 per 1M, roughly a quarter of rival flagship rates. Vendor-reported benchmarks lead on scaled tool use (MCP Atlas 88.1) and professional tool use (JobBench 54.7). Meta charging for API access completes the pivot away from open-weight Llama; there is no Llama 5, and Behemoth remains shelved.
+**به‌روزرسانی ژوئیه ۲۰۲۶:** مدل **Muse Spark 1.1** در ۹ ژوئیه هم‌زمان با پیش‌نمایش عمومی **Meta Model API**، نخستین API پولی سلف‌سرویس متا عرضه شد: سازگار با OpenAI، قیمت ۱.۲۵ دلار / ۴.۲۵ دلار به ازای هر ۱ میلیون Token، تقریباً یک‌چهارم نرخ پرچم‌داران رقیب. بنچمارک‌های ارائه‌شده توسط شرکت سازنده نشان‌دهنده پیشتازی در استفاده مقیاس‌پذیر از ابزارها (MCP Atlas با امتیاز ۸۸.۱) و استفاده حرفه‌ای از ابزارها (JobBench با امتیاز ۵۴.۷) است. دریافت هزینه برای دسترسی به API توسط متا، چرخش این شرکت به دور از Llama با وزن باز را تکمیل می‌کند؛ مدلی به نام Llama 5 وجود ندارد و Behemoth همچنان بایگانی شده باقی می‌ماند.
 
-**August 2026 update:** **Muse Glimmer** (August 10) is Meta's first open-weight release since Llama 4 and, at Apache 2.0, its most permissive license ever for an open model. It is a 30B dense multimodal model aimed at always-on local agent work (local coding agents, function calling, LLM-as-a-judge), with a 131,072-token context; quantized to 4-bit it fits under 20GB and runs on a single 24GB consumer GPU. **Muse Spark 1.2** and **Muse Code**, a terminal coding agent, shipped alongside it, notable for a `muse-spark-1.2-contributor` tier priced at $0.10 / $0.20 per 1M (against $1.25 / $4.25 standard) in exchange for permission to train on your prompts and completions. Data-for-discount as an explicit, published API tier is new, and worth a policy decision before anyone enables it.
+**به‌روزرسانی اوت ۲۰۲۶:** مدل **Muse Glimmer** (در ۱۰ اوت) نخستین انتشار وزن باز متا پس از Llama 4 و با مجوز Apache 2.0، سهل‌گیرانه‌ترین مجوزی است که تاکنون برای یک مدل باز ارائه کرده است. این مدل یک مدل چندحالته متراکم (dense) ۳۰B است که برای وظایف همواره فعال ایجنت‌های محلی (ایجنت‌های محلی کدنویسی، فراخوانی تابع یا function calling، و مدل LLM به‌عنوان ارزیاب یا LLM-as-a-judge) طراحی شده و کانتکست آن ۱۳۱,۰۷۲ Token است؛ با کوانتیزاسیون ۴ بیتی در حافظه کمتر از ۲۰ گیگابایت جای می‌گیرد و روی یک GPU مصرفی تکی ۲۴ گیگابایتی اجرا می‌شود. مدل **Muse Spark 1.2** و **Muse Code** (یک ایجنت ترمینال برای کدنویسی) هم‌زمان با آن عرضه شدند، که نکته شاخص آن‌ها سطح کاربری `muse-spark-1.2-contributor` با قیمت ۰.۱۰ دلار / ۰.۲۰ دلار به ازای هر ۱ میلیون Token (در برابر نرخ استاندارد ۱.۲۵ دلار / ۴.۲۵ دلار) در ازای اجازه آموزش بر روی Promptها و پاسخ‌های (completions) شما است. رویکرد «داده در برابر تخفیف» به عنوان یک سطح API صریح و منتشرشده پدیده‌ای نوظهور است و نیازمند یک تصمیم‌گیری سیاستی و سازمانی پیش از فعال‌سازی توسط هر کاربری خواهد بود.
 
-**September 2026 update:** **Muse Spark 1.3** (`muse-spark-1.3`, September 2) keeps the $1.25 / $4.25 price ($0.15 cached) and adds a 1M-token context with text, image, video, and PDF input; the contributor tier (about $0.10 / $0.20, traffic may be used by Meta) continues. The `max` tier launched in limited preview pending safety testing and is now listed on Standard. AA v5.0 shows no score for it yet. It is more verbose than 1.2: The Decoder put cost per task at $0.55 versus $0.40 despite flat per-token prices, a clean example of why cost per task, not cost per token, should drive selection. Meta also launched **Muse**, a consumer personal agent that can browse and fill out forms (September 8).
+**به‌روزرسانی سپتامبر ۲۰۲۶:** مدل **Muse Spark 1.3** (`muse-spark-1.3`، ۲ سپتامبر) قیمت ۱.۲۵ دلار / ۴.۲۵ دلار (۰.۱۵ دلار برای کش‌شده) را حفظ کرده و یک کانتکست ۱ میلیون Token با ورودی متن، تصویر، ویدیو و PDF اضافه می‌کند؛ رده کاربری contributor (حدود ۰.۱۰ دلار / ۰.۲۰ دلار، با امکان استفاده ترافیک توسط متا) همچنان ادامه دارد. رده کاربری `max` در پیش‌نمایش محدود در انتظار ارزیابی‌های ایمنی راه‌اندازی شد و اکنون در سطح Standard فهرست شده است. شاخص AA v5.0 هنوز امتیازی برای آن ثبت نکرده است. این مدل پرگوتر (verbose) از نسخه 1.2 است: نشریه The Decoder هزینه به ازای هر وظیفه (cost per task) را علیرغم قیمت ثابت به ازای هر Token، معادل ۰.۵۵ دلار در مقایسه با ۰.۴۰ دلار برآورد کرده است؛ نمونه‌ای روشن از این که چرا هزینه به ازای هر وظیفه، و نه هزینه به ازای هر Token، باید مبنای انتخاب قرار گیرد. متا همچنین **Muse** را عرضه کرد؛ یک ایجنت شخصی برای کاربران عادی که می‌تواند به مرور وب پرداخته و فرم‌ها را پر کند (۸ سپتامبر).
 
-**October 2026 update:** **Muse Spark Open** (October 15, `meta-models/Muse-Spark-Open-816B-A42B`) is Meta's largest open-weight release: 816B total / 42B active, 1M context, text, image, video, and audio in. It ships under the **Muse Model License**, not Apache: products must display "Built with Muse Spark Open", and a Model-as-a-Service operator whose revenue with affiliates exceeds US$20M over 12 months must sign a separate agreement with Meta. AA v5.0.1 scores it 25, the top US open-weight model and 8 points behind DeepSeek V4.1 Flash 1017. Meta's frontier models stay closed, so the open line still trails the closed one by design. Two operational details matter. The Hugging Face repo requires manual approval and collects legal name, date of birth, country, affiliation, job title, and IP-based location, so CI and fresh clusters cannot pull it without a human-approved account; mirror it. And it is also hosted: Fireworks serves it serverless at $1.25 / $0.15 cached / $4.25 per 1M on US-only capacity (blog post October 20), Microsoft Foundry has offered it on managed compute since October 15, and GroqCloud lists it as a preview model. That matches the closed Muse Spark 1.3's price, so the choice between them is license and data terms, not cost.
+**به‌روزرسانی اکتبر ۲۰۲۶:** مدل **Muse Spark Open** (در ۱۵ اکتبر، `meta-models/Muse-Spark-Open-816B-A42B`) بزرگ‌ترین انتشار وزن باز متا است: ۸۱۶B کل / ۴۲B فعال، کانتکست 1M، با ورودی متن، تصویر، ویدیو و صوت. این مدل تحت **Muse Model License** و نه Apache عرضه می‌شود: محصولات باید عبارت «Built with Muse Spark Open» را نمایش دهند، و هر گرداننده مدل به‌عنوان سرویس (MaaS) که درآمد آن به همراه شرکت‌های وابسته در طول ۱۲ ماه از ۲۰ میلیون دلار آمریکا فراتر رود، باید توافق‌نامه‌ای جداگانه با متا امضا کند. شاخص AA v5.0.1 به آن امتیاز ۲۵ می‌دهد که برترین مدل با وزن باز آمریکایی است و ۸ امتیاز پشت سر DeepSeek V4.1 Flash 1017 قرار می‌گیرد. مدل‌های مرزی متا بسته باقی می‌مانند، بنابراین رده مدل‌های باز بر اساس طراحی ساختاری همچنان از رده بسته عقب می‌ماند. دو نکته عملیاتی حائز اهمیت است: مخزن آن در Hugging Face نیازمند تایید دستی است و نام قانونی، تاریخ تولد، کشور، وابستگی سازمانی، عنوان شغلی و موقعیت مکانی مبتنی بر IP را جمع‌آوری می‌کند، بنابراین CI و کلاسترهای تازه نمی‌توانند آن را بدون یک حساب کاربری تاییدشده توسط انسان دریافت کنند؛ از آن یک نسخه آینه‌ای (mirror) بسازید. همچنین این مدل میزبانی هم می‌شود: Fireworks آن را به‌صورت بدون سرور (serverless) با قیمت ۱.۲۵ دلار / ۰.۱۵ دلار کش‌شده / ۴.۲۵ دلار به ازای هر ۱ میلیون Token روی ظرفیت‌های صرفاً مستقر در آمریکا ارائه می‌دهد (پست وبلاگ ۲۰ اکتبر)، پلتفرم Microsoft Foundry از ۱۵ اکتبر آن را روی منابع محاسباتی مدیریت‌شده ارائه داده و GroqCloud آن را به عنوان یک مدل پیش‌نمایش فهرست کرده است. این رقم با قیمت مدل بسته Muse Spark 1.3 برابری می‌کند، بنابراین انتخاب بین آن‌ها به شرایط مجوز و خط‌مشی‌های داده بستگی دارد، نه هزینه.
 
-Three days earlier Meta shipped that closed frontier line: **Muse Wonder** (October 12, `muse-wonder-1.0`) at $4 input / $0.20 cached / $20 output per 1M on the Meta Model API and in Muse Code, with a 1M-token context and computer use that Meta says can operate browsers, desktop, and mobile apps. **Muse Wonder Full** (`muse-wonder-full-1.0`) has no API price at all: it is available only through Muse Code subscriptions ($50 and $200 monthly plans). Meta claims state-of-the-art results on personal and professional agentic tasks but published no benchmark numbers at launch. Artificial Analysis v5.0 scores Muse Wonder 43 and Muse Wonder Full 50, both at max effort. Two design consequences. At Opus 5.5's list price and 15 AA points below it, Muse Wonder competes on Meta's stack and computer use, not capability per dollar. And the strongest Meta model is a subscription product, so the model your API evals measure is not the best one Meta ships.
+سه روز قبل از آن، متا همان رده مرزی بسته را عرضه کرد: **Muse Wonder** (در ۱۲ اکتبر، `muse-wonder-1.0`) با قیمت ورودی ۴ دلار / ۰.۲۰ دلار کش‌شده / ۲۰ دلار خروجی به ازای هر ۱ میلیون Token در Meta Model API و درون Muse Code، با کانتکست ۱ میلیون Token و قابلیت استفاده از کامپیوتر (computer use) که به گفته متا می‌تواند مرورگرها و اپلیکیشن‌های دسکتاپ و موبایل را اجرا کند. مدل **Muse Wonder Full** (`muse-wonder-full-1.0`) اصولاً هیچ قیمت API ندارد: این مدل تنها از طریق اشتراک‌های Muse Code (طرح‌های ماهانه ۵۰ دلار و ۲۰۰ دلار) در دسترس است. متا ادعای دستیابی به نتایج پیشرفته و در سطح مرزهای دانش در وظایف ایجنتیک شخصی و حرفه‌ای دارد اما هیچ بنچمارک عددی در زمان معرفی منتشر نکرد. شاخص Artificial Analysis v5.0 به Muse Wonder امتیاز ۴۳ و به Muse Wonder Full امتیاز ۵۰ داده است (هر دو در حداکثر تلاش یا max effort). این امر دو پیامد در طراحی به همراه دارد: با قیمت رسمی هم‌تراز با Opus 5.5 و ۱۵ امتیاز پایین‌تر در AA، مدل Muse Wonder بر سر پشته فناوری متا و قابلیت استفاده از کامپیوتر رقابت می‌کند، نه میزان قابلیت به ازای هر دلار. و قوی‌ترین مدل متا یک محصول اشتراکی است، بنابراین مدلی که ارزیابی‌های API شما اندازه‌گیری می‌کنند، بهترین مدلی نیست که متا عرضه می‌کند.
 
-### Xiaomi MiMo-V2.6 - September 2026
+### Xiaomi MiMo-V2.6 - سپتامبر ۲۰۲۶
 
-| Model | Parameters | Context | License | Notes |
+| مدل | پارامترها | کانتکست | مجوز | نکات |
 |-------|------------|---------|---------|-------|
-| **MiMo-V2.6-Pro** | 1.02T total / 42B active (MoE) | 1M | MIT | September 21, 2026, ungated weights. Omni-modal input (text, image, video, audio). 60 sliding-window plus 10 global attention layers and a 5-layer MTP drafter that predicts 7 tokens per pass. AA v5.0: 30, just behind DeepSeek V4.1-Flash-1017 and GLM-5.3 (32). Vendor-reported Terminal-Bench 2.1 89.9, DeepSWE v1.1 71.9. OpenRouter $0.435 / $0.87 per 1M. Xiaomi's SGLang recipe serves it across two nodes with 16-way tensor parallelism. |
-| **MiMo-V2.6-Flash** | 309B total / 15B active (MoE) | 1M | MIT | Same date and modalities; fits one 8-GPU node. OpenRouter $0.14 / $0.28 per 1M. |
+| **MiMo-V2.6-Pro** | ۱.۰۲T کل / ۴۲B فعال (MoE) | 1M | MIT | ۲۱ سپتامبر ۲۰۲۶، وزن‌های بدون محدودیت و آزاد (ungated). ورودی همه‌حالته یا Omni-modal (متن، تصویر، ویدیو، صوت). ۶۰ لایه توجه پنجره لغزان (sliding-window) به‌علاوه ۱۰ لایه توجه سراسری (global attention) و یک ماژول پیش‌نویس‌کننده (drafter) پنج‌لایه‌ای MTP که در هر گام ۷ Token را پیش‌بینی می‌کند. امتیاز AA v5.0: ۳۰، درست پشت سر DeepSeek V4.1-Flash-1017 و GLM-5.3 (امتیاز ۳۲). امتیاز گزارش‌شده توسط ارائه‌دهنده: Terminal-Bench 2.1 معادل ۸۹.۹، DeepSWE v1.1 معادل ۷۱.۹. قیمت در OpenRouter معادل ۰.۴۳۵ دلار / ۰.۸۷ دلار به ازای هر ۱ میلیون Token. دستورالعمل استقرار SGLang شیائومی آن را روی دو نود با موازی‌سازی تانسوری ۱۶ مسیره (16-way tensor parallelism) سرو می‌کند. |
+| **MiMo-V2.6-Flash** | ۳۰۹B کل / ۱۵B فعال (MoE) | 1M | MIT | همان تاریخ و همان مدالیته‌ها؛ روی یک نود دارای ۸ GPU جای می‌گیرد. قیمت در OpenRouter معادل ۰.۱۴ دلار / ۰.۲۸ دلار به ازای هر ۱ میلیون Token. |
 
-**Why it matters:** a phone maker took the top open-weight spot in September and on AA v5.0.1 sits at 30, 3 points behind DeepSeek V4.1-Flash-1017 (33) and 16 behind Kimi K3.1 Pro (46, weights since November 4), and its OpenRouter prices are exactly DeepSeek's old V4 Pro and V4 Flash list prices, so it took over the price point DeepSeek vacated in August.
+**چرا اهمیت دارد:** یک شرکت تولیدکننده تلفن همراه در ماه سپتامبر جایگاه نخست مدل‌های با وزن باز را به دست آورد و در شاخص AA v5.0.1 در امتیاز ۳۰ قرار دارد، یعنی ۳ امتیاز پشت سر DeepSeek V4.1-Flash-1017 (با امتیاز ۳۳) و ۱۶ امتیاز پشت سر Kimi K3.1 Pro (با امتیاز ۴۶، وزن‌ها از ۴ نوامبر)؛ قیمت‌های آن در OpenRouter دقیقاً منطبق بر قیمت‌های رسمی قدیمی V4 Pro و V4 Flash شرکت DeepSeek است، بنابراین نقطه‌قیمتی را پر کرد که DeepSeek در ماه اوت خالی کرده بود.
 
-### Other Open-Weight Families to Know (November 2026)
+### سایر خانواده‌های با وزن باز قابل توجه (نوامبر ۲۰۲۶)
 
-| Model | Released | Size | License | Notes |
+| مدل | تاریخ انتشار | اندازه | مجوز | نکات |
 |-------|----------|------|---------|-------|
-| **Tencent Hy4 preview** | Aug 28, 2026 | 770B / 49B active MoE | Apache 2.0 (standard text; no use-policy appendix, revenue gate, or territorial carve-out) | 1M context; Gated DeepSeek Sparse Attention. Vendor-reported SWE-Bench Pro 65.7. TokenHub $0.834 / $2.501 per 1M. Labeled a preview with known issues such as over-verification. Notable from a lab whose April Hy3 preview license excluded the EU, UK, and South Korea. The full **Hy4** (November 4) adds image input and computer use but is API-only for now (Tencent TokenHub, OpenRouter `tencent/hy4`); Tencent says weights and a system card will follow, with no date or license, and AA v5.0.1 scores it 35 and labels it proprietary. The Apache 2.0 terms cover the preview checkpoint only |
-| **MBZUAI K2 Horizon** | Sep 3, 2026 | Six models, 0.9B to 375B-A23B | Apache 2.0, with training data, code, intermediate checkpoints, and logs | 512K context (0.9B: 128K). The 375B-A23B scores 18 on AA v5.0, above Inkling and Nemotron 3 Ultra. The best fully reproducible family for provenance and contamination audits |
-| **IBM Granite 4.2** | Aug 25, 2026 | 3B, 8B, 30B dense | Apache 2.0 | 128K native, extendable to 512K; full, non-thinking, and low-effort modes; official FP8, MXFP4, NVFP4, GGUF, and MLX builds. The common answer to "US-origin, Apache, one GPU" |
-| **IBM Granite Switch 4.1** | Oct 14, 2026 (rev. 4.1.1 Oct 27) | 8B, 30B | Apache 2.0 | One endpoint packaging a Granite 4.1 base, two aLoRA adapters (guardian-core for safety detection, decision for scoring labeled options), and a 470M Granite Speech 5.0 encoder; 131,072-token context. Its optional vLLM backend is pinned to ">= 0.26.0, < 0.31.0", below this guide's vLLM 0.32.0 security floor, a concrete reason to check model-card engine pins in CI |
-| **NVIDIA Nemotron 3 Ultra** | Jun 4, 2026 | 550B / 55B active | OpenMDW-1.1 | Not 500B. AA v5.0: 12. Superseded as the NVIDIA-stack open default by Nemotron 3.5 Super VL (below). A Labs competitive-coding variant (Sep 3) reached IOI 2026 gold-level scores in an unofficial run using traces distilled from Z.ai's GLM-5.2, so distillation lineage now crosses borders both ways. Nemotron 4 is reportedly still in training; NVIDIA has given no date |
-| **MiniMax-M3 / M3.1-Flash** | Jun 1 / Oct 23, 2026 | ~428B / 23B active (M3.1-Flash per its model card) | MiniMax Community License (gated; see the licensing table) | 1M context with MiniMax Sparse Attention. MiniMax-M3.1-Flash weights landed October 23 (AA v5.0: 29); the full M3.1 is still closed |
-| **NVIDIA Nemotron 3.5 Super VL** | Oct 15, 2026 | 120B / 12B active, Mamba-2 and Transformer hybrid MoE with MTP | OpenMDW-1.1 | Text, image, and up to 2-minute video in, up to 1M context; BF16 and NVFP4 checkpoints; the vLLM v0.32.0 recipe serves it on 4x H100 or 2x GB200. AA 14 vs 12 for Nemotron 3 Ultra; NVIDIA-reported NeMo Gym results include SWE-bench Verified 71.10 and Terminal-Bench 2.1 60.67. The new NVIDIA-stack open default: higher score, multimodal, four H100s |
-| **Reflection AI Beam 1.0** | Weights Oct 16, 2026 | 501.3B / 23.4B active, 256 experts | Apache 2.0 | 1M context, text only; FP8, NVFP4, and a DFlash2 speculative drafter. AA v5.0.1: 18, tied with K2 Horizon 375B and second among US open-weight models behind Muse Spark Open. Reflection reports SWE-bench Verified 81.6% and Terminal-Bench 2.1 80.1% (BF16, temperature 0.7). A second unconditional Apache 2.0 US option at 500B scale: a license and provenance pick, not a capability pick |
-| **Ant Group Ling-3.1-flash-1019** | Oct 2026 (scored Oct 22) | 560B / ~25B active | MIT | 1M context; hybrid linear MoE with MTP. AA v5.0.1: 30, tied with MiMo-V2.6-Pro, but it used 240M output tokens on the index against a 99.3M median, so cost per task, not AA's $0.30 / $0.90 list, decides it |
-| **Nanbeige4.3-33B** (BOSS Zhipin) | Oct 24, 2026 | 33B dense | Apache 2.0 | Context up to 524,288; FP8, INT8, and INT4 builds October 31. AA v5.0.1: 20, tying Qwen3.8-27B at xhigh, but at 160M output tokens against a 77.7M median; no public API. A single-GPU Apache peer to Qwen3.8-27B at higher cost per task |
-| **Ricursive Ripple-65B Preview** | Nov 4, 2026 | 65B dense | Apache 2.0 | Up to 1M context; pretrained on 12T tokens; ungated. Vendor-reported Terminal-Bench 2.1 80.52, topping the vendor's own comparison with Beam (80.1) and Muse Spark Open (76.4); AA has not scored it. Shortlist only after an independent score appears |
-| **Ant Group Ling-3.0-flash-VL / LLaDA2.2-mini** | Sep 4 / Sep 5, 2026 | 124B / 5.5B active; 16B / 1.4B active | MIT; Apache 2.0 | A GUI-agent vision-language MoE, and a diffusion LM with DELETE and INSERT edit tokens and a 128K context |
-| **StepFun Step 5 Preview** | API Sep 20; weights around Oct 15, 2026 | 600B / 27B active | StepFun Model License 1.0 | API $1 / $2.70 per 1M; AA v5.0: 29. Verbose: about 160M output tokens on AA's earlier suite vs an 81M median, which eats much of its per-token advantage. The license gates MaaS above US$20M revenue and any branded device (phones, cars, robots), and counts models trained substantially on its outputs as derivatives |
+| **Tencent Hy4 preview** | ۲۸ اوت ۲۰۲۶ | مدل MoE با ۷۷۰B کل / ۴۹B فعال | Apache 2.0 (متن استاندارد؛ بدون ضمیمه خط‌مشی استفاده، سقف درآمدی یا استثنای جغرافیایی) | کانتکست 1M؛ مکانیسم توجه اسپارس با گیت دیپ‌سیک (Gated DeepSeek Sparse Attention). امتیاز SWE-Bench Pro گزارش‌شده توسط ارائه‌دهنده ۶۵.۷. قیمت در TokenHub معادل ۰.۸۳۴ دلار / ۲.۵۰۱ دلار به ازای هر ۱ میلیون Token. دارای برچسب پیش‌نمایش با مشکلات شناخته‌شده نظیر راستی‌آزمایی بیش از حد (over-verification). نکته‌ای درخور توجه از آزمایشگاهی که مجوز پیش‌نمایش مدل Hy3 آن در آوریل، اتحادیه اروپا، بریتانیا و کره جنوبی را مستثنی کرده بود. نسخه کامل **Hy4** (در ۴ نوامبر) ورودی تصویر و استفاده از کامپیوتر را اضافه می‌کند اما در حال حاضر فقط از طریق API ارائه می‌شود (TokenHub شرکت Tencent، و OpenRouter به نشانی `tencent/hy4`)؛ شرکت Tencent اعلام کرده وزن‌ها و شناسنامه سیستم (system card) متعاقباً ارائه خواهند شد، اما هیچ تاریخ یا مجوزی مشخص نکرده است؛ شاخص AA v5.0.1 به آن امتیاز ۳۵ داده و آن را مالکیتی (proprietary) برچسب می‌زند. شرایط مجوز Apache 2.0 صرفاً چک‌پوینت پیش‌نمایش را در بر می‌گیرد. |
+| **MBZUAI K2 Horizon** | ۳ سپتامبر ۲۰۲۶ | شش مدل، از 0.9B تا 375B-A23B | Apache 2.0، همراه با داده‌های آموزشی، کد، چک‌پوینت‌های میانی و لاگ‌ها | کانتکست 512K (مدل 0.9B کانتکست 128K دارد). مدل 375B-A23B در AA v5.0 امتیاز ۱۸ را به دست آورده که بالاتر از Inkling و Nemotron 3 Ultra است. بهترین خانواده با قابلیت بازتولید کامل برای ارزیابی اصالت و ردگیری آلودگی داده‌ها (provenance and contamination audits). |
+| **IBM Granite 4.2** | ۲۵ اوت ۲۰۲۶ | مدل‌های متراکم (dense) در اندازه‌های 3B، 8B و 30B | Apache 2.0 | کانتکست بومی 128K، قابل گسترش تا 512K؛ دارای حالت‌های کامل (full)، بدون استدلال (non-thinking) و تلاش اندک (low-effort)؛ بیلدهای رسمی FP8،‏ MXFP4،‏ NVFP4،‏ GGUF و MLX. پاسخ رایج به خواسته «با منشأ آمریکایی، مجوز Apache و قابل اجرا روی یک GPU». |
+| **IBM Granite Switch 4.1** | ۱۴ اکتبر ۲۰۲۶ (نسخه 4.1.1 در ۲۷ اکتبر) | اندازه‌های 8B و 30B | Apache 2.0 | یک اندپوینت که شامل یک پایه Granite 4.1، دو آداپتور aLoRA (ماژول guardian-core برای تشخیص ایمنی، و decision برای امتیازدهی به گزینه‌های برچسب‌دار)، و یک انکودر ۴۷۰M مدل Granite Speech 5.0 است؛ با کانتکست ۱۳۱,۰۷۲ Token. بک‌اند اختیاری vLLM آن مقید به " >= 0.26.0, < 0.31.0 " است که پایین‌تر از حداقل آستانه امنیتی vLLM 0.32.0 در این راهنما قرار دارد؛ دلیلی ملموس برای بررسی نسخه‌های قفل‌شده موتورها در شناسنامه مدل (model-card engine pins) در پایپ‌لاین‌های CI. |
+| **NVIDIA Nemotron 3 Ultra** | ۴ ژوئن ۲۰۲۶ | ۵۵۰B کل / ۵۵B فعال | OpenMDW-1.1 | ۵۵۰B و نه 500B. امتیاز AA v5.0: ۱۲. به عنوان گزینه پیش‌فرض با وزن باز در پشته فناوری NVIDIA جای خود را به Nemotron 3.5 Super VL (در ادامه) داده است. یک نسخه ویژه کدنویسی رقابتی از Labs (در ۳ سپتامبر) در یک ارزیابی غیررسمی با استفاده از ردپاهای تقطیرشده از مدل GLM-5.2 شرکت Z.ai به امتیازات سطح طلای مسابقات بین‌المللی کامپیوتر (IOI 2026) دست یافت؛ این نشان می‌دهد تبار تقطیر (distillation lineage) اکنون به صورت دوطرفه از مرزها عبور می‌کند. طبق گزارش‌ها مدل Nemotron 4 همچنان در مرحله آموزش است؛ انویدیا تاریخی برای آن مشخص نکرده است. |
+| **MiniMax-M3 / M3.1-Flash** | ۱ ژوئن / ۲۳ اکتبر ۲۰۲۶ | حدود ۴۲۸B کل / ۲۳B فعال (M3.1-Flash طبق شناسنامه مدل) | مجوز MiniMax Community License (کنترل‌شده؛ جدول مجوزها را ببینید) | کانتکست 1M با مکانیسم توجه MiniMax Sparse Attention. وزن‌های MiniMax-M3.1-Flash در ۲۳ اکتبر منتشر شدند (امتیاز AA v5.0: ۲۹)؛ نسخه کامل M3.1 همچنان بسته است. |
+| **NVIDIA Nemotron 3.5 Super VL** | ۱۵ اکتبر ۲۰۲۶ | ۱۲۰B کل / ۱۲B فعال، معماری ترکیبی MoE از Mamba-2 و Transformer همراه با MTP | OpenMDW-1.1 | ورودی متن، تصویر و تا ۲ دقیقه ویدیو، کانتکست تا 1M؛ چک‌پوینت‌های BF16 و NVFP4؛ دستورالعمل vLLM v0.32.0 آن را روی ۴ عدد H100 یا ۲ عدد GB200 سرو می‌کند. امتیاز AA معادل ۱۴ در مقایسه با ۱۲ برای Nemotron 3 Ultra؛ نتایج گزارش‌شده توسط انویدیا در NeMo Gym شامل SWE-bench Verified معادل ۷۱.۱۰ و Terminal-Bench 2.1 معادل ۶۰.۶۷ است. گزینه پیش‌فرض متن‌باز جدید در پشته انویدیا: امتیاز بالاتر، چندحالته، ۴ عدد H100. |
+| **Reflection AI Beam 1.0** | انتشار وزن‌ها در ۱۶ اکتبر ۲۰۲۶ | ۵۰۱.۳B کل / ۲۳.۴B فعال، ۲۵۶ خبره (experts) | Apache 2.0 | کانتکست 1M، فقط متن؛ نسخه‌های FP8،‏ NVFP4 و پیش‌نویس‌کننده گمانه‌زن DFlash2. امتیاز AA v5.0.1: ۱۸، مساوی با K2 Horizon 375B و در جایگاه دوم مدل‌های با وزن باز آمریکایی پس از Muse Spark Open. شرکت Reflection ارقام SWE-bench Verified معادل ۸۱.۶٪ و Terminal-Bench 2.1 معادل ۸۰.۱٪ (با BF16، دمای ۰.۷) را گزارش کرده است. دومین گزینه بدون قید و شرط با مجوز Apache 2.0 آمریکایی در مقیاس 500B: انتخابی بر مبنای مجوز و اصالت منبع، و نه بر مبنای قابلیت‌ها. |
+| **Ant Group Ling-3.1-flash-1019** | اکتبر ۲۰۲۶ (امتیازدهی در ۲۲ اکتبر) | ۵۶۰B کل / حدود ۲۵B فعال | MIT | کانتکست 1M؛ معماری ترکیبی خطی MoE همراه با MTP. امتیاز AA v5.0.1: ۳۰، برابر با MiMo-V2.6-Pro، اما در این شاخص ۲۴۰ میلیون Token خروجی مصرف کرد در حالی که مقدار میانه ۹۹.۳ میلیون بود؛ بنابراین هزینه به ازای هر وظیفه، و نه قیمت رسمی ۰.۳۰ دلار / ۰.۹۰ دلار در AA، برنده را تعیین می‌کند. |
+| **Nanbeige4.3-33B** (BOSS Zhipin) | ۲۴ اکتبر ۲۰۲۶ | ۳۳B متراکم (dense) | Apache 2.0 | کانتکست تا ۵۲۴,۲۸۸؛ بیلدهای FP8،‏ INT8 و INT4 در ۳۱ اکتبر. امتیاز AA v5.0.1: ۲۰، مساوی با Qwen3.8-27B در حالت xhigh، اما با ۱۶۰ میلیون Token خروجی در مقایسه با میانه ۷۷.۷ میلیون؛ فاقد API عمومی. یک همتای تک‌GPU با مجوز Apache برای Qwen3.8-27B با هزینه بالاتر به ازای هر وظیفه. |
+| **Ricursive Ripple-65B Preview** | ۴ نوامبر ۲۰۲۶ | ۶۵B متراکم (dense) | Apache 2.0 | کانتکست تا 1M؛ پیش‌آموزش‌دیده بر روی ۱۲T از Tokenها؛ با دسترسی آزاد (ungated). امتیاز گزارش‌شده توسط ارائه‌دهنده در Terminal-Bench 2.1 برابر با ۸۰.۵۲، بالاتر از مقایسه خود شرکت با Beam (امتیاز ۸۰.۱) و Muse Spark Open (امتیاز ۷۶.۴)؛ AA هنوز به آن امتیاز نداده است. تنها پس از انتشار یک امتیاز مستقل آن را در فهرست نهایی قرار دهید. |
+| **Ant Group Ling-3.0-flash-VL / LLaDA2.2-mini** | ۴ سپتامبر / ۵ سپتامبر ۲۰۲۶ | ۱۲۴B کل / ۵.۵B فعال؛ ۱۶B کل / ۱.۴B فعال | مجوزهای MIT؛ Apache 2.0 | یک مدل MoE بینایی-زبانی برای ایجنت‌های واسط گرافیکی کاربر (GUI)، و یک LM انتشاری با Tokenهای ویرایشی DELETE و INSERT و کانتکست 128K. |
+| **StepFun Step 5 Preview** | عرضه API در ۲۰ سپتامبر؛ وزن‌ها در حدود ۱۵ اکتبر ۲۰۲۶ | ۶۰۰B کل / ۲۷B فعال | مجوز StepFun Model License 1.0 | قیمت API معادل ۱ دلار / ۲.۷۰ دلار به ازای هر ۱ میلیون Token؛ امتیاز AA v5.0: ۲۹. پرگو (Verbose): حدود ۱۶۰ میلیون Token خروجی در مجموعه ارزیابی اولیه AA در مقایسه با میانه ۸۱ میلیون، که بخش عمده‌ای از مزیت قیمتی آن به ازای هر Token را از بین می‌برد. مجوز آن کسب‌وکارهای MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا و هرگونه دستگاه تجاری دارای برند (گوشی‌ها، خودروها، ربات‌ها) را محدود می‌کند، و مدل‌هایی که به‌طور عمده بر خروجی‌های آن آموزش دیده‌اند را مشتق‌شده (derivatives) به شمار می‌آورد. |
 
 ---
 
-### The Open-Weight Licensing Split (August to November 2026)
+### شکاف در مجوزدهی وزن‌های باز (اوت تا نوامبر ۲۰۲۶)
 
-August was the month open weights stopped meaning one thing, September made the pattern clear, and October tightened it: gated licenses converge on one trigger, whether you sell inference or an AI assistant, and Mistral Large 4 dropped the revenue floor entirely. The license is as much a design input as the benchmark:
+ماه اوت زمانی بود که «وزن باز» دیگر یک معنای واحد نداشت؛ سپتامبر این الگو را شفاف ساخت و اکتبر آن را سخت‌گیرانه‌تر کرد: مجوزهای کنترل‌شده و مشروط (gated licenses) همگی حول یک عامل راه‌انداز (trigger) همگرا شده‌اند: این که آیا شما استنتاج (Inference) می‌فروشید یا یک دستیار هوش مصنوعی؛ و Mistral Large 4 کف درآمدی را به‌طور کامل حذف کرد. در طراحی سیستم، مجوز درست به اندازه بنچمارک یک ورودی اساسی به شمار می‌رود:
 
-| Model | Released | Size | License posture | What the license actually does |
+| مدل | تاریخ انتشار | اندازه | رویکرد مجوز | عملکرد واقعی مجوز |
 |-------|----------|------|-----------------|-------------------------------|
-| **Mistral Large 4** | Oct 29 (weights) | ~1T / 49B active | Mistral Ecosystem Open-Weight License | Any Model-as-a-Service business needs a separate commercial license, with no revenue threshold. The strictest MaaS gate on a flagship-class open model, and it applies to the named replacement for Medium 3.5 and Large 3 |
-| **Kimi K3.1 Pro** (Moonshot) | Nov 4 (weights) | 2.8T / 104B active | Kimi K3.1-Pro License | MIT-like grant; separate agreement for MaaS businesses above US$20M revenue over 12 months, where MaaS means giving third parties meaningful control over inference or fine-tuning; "Kimi K3.1-Pro" UI credit above 100M MAU or US$20M monthly revenue; internal use and certified partners exempt |
-| **Muse Spark Open** (Meta) | Oct 15 | 816B / 42B active | Muse Model License | "Built with Muse Spark Open" attribution in any product; a separate agreement with Meta for MaaS operators above US$20M revenue (with affiliates) over 12 months; internal use and building it into your own product's features are excluded. The Hugging Face repo is gated by manual approval and is not intended for individuals under 18 |
-| **Step 5 Preview** (StepFun) | Weights around Oct 15 | 600B / 27B active | StepFun Model License 1.0 | Separate agreement for MaaS businesses above US$20M revenue in any 12 months, and for any branded hardware that exposes the model (phones, vehicles, wearables, robots) with no threshold; attribution above 100M MAU or US$20M monthly revenue; models trained substantially on its outputs count as derivatives |
-| **MiniMax-M3.1-Flash** | Oct 23 | ~428B / 23B active | MiniMax Community License | Rights for non-commercial purposes; commercial use (fee-based products relying on the model, API offerings including cloud-hosted ones, and commercial deployment of fine-tuned derivatives) only under conditions: prior written authorization above US$20M yearly revenue, a one-time notice to MiniMax for everyone else, and "Built with MiniMax M3.1-Flash" display for all commercial users. An appendix bars uses including any military purpose, and there is no explicit internal-use exemption. The full M3.1 stays closed |
-| **Qwen3.8-Flash-Next** (Alibaba) | Aug 26 | 125B / 6B active | Qwen Community License 1.0 | Any MaaS or AI coding/office-assistant business needs a separate license before commercial use, with no revenue floor; internal use exempt; attribution above 100M MAU or US$20M monthly revenue. Stricter than the flagship's license |
-| **Qwen3.8-Max** (Alibaba) | Aug 12 | 2.4T / 95B active | Bespoke, commercially gated | Free use, modification, and resale, but attribution is required above 100M MAU or $20M monthly revenue, and a separate license from Qwen is required to run a Model-as-a-Service or AI Work Assistant (coding or office productivity) business when aggregate revenue with affiliates exceeds US$50M over any 12 consecutive months |
-| **Kimi K3** (Moonshot) | Jul 27 (weights) | 2.8T / 104B active | Kimi K3 License | Separate agreement for MaaS operators above US$20M revenue over 12 months; attribution above 100M MAU or US$20M monthly revenue; internal use and certified partners exempt |
-| **Mistral Medium 3.5** | Apr 29 | 128B dense | Modified MIT | A blanket revenue cap, not a MaaS trigger: no rights at all above US$20M global monthly revenue. Deprecated on Mistral's API October 31 (retires April 30, 2027), though the weights stay under this license |
-| **GLM-5.3** (Z.ai) | Aug 28 (weights) | 744B / 40B active | GLM-5.3 License (MIT plus review) | Security review before commercial use only for MaaS operators above US$10B aggregate revenue; effectively MIT for almost everyone. Weights shipped on the stated date after a two-week safety window |
-| **Qwen3.8-27B** (Alibaba) | Aug 14 | 27B dense | Apache 2.0 | No conditions. The smaller sibling is both more permissive and more modality-complete than the flagship |
-| **Muse Glimmer** (Meta) | Aug 10 | 30B dense | Apache 2.0 | No conditions; Meta's most permissive open license to date |
-| **Tencent Hy3** | Global Aug 5 (model Jul 6) | 295B / 21B active | Apache 2.0 | Fully permissive with no geographic carve-outs, reversing the April preview's restrictive license that excluded the EU, UK, and South Korea |
-| **Tencent Hy4 preview** | Aug 28 | 770B / 49B active | Apache 2.0 | No conditions; verbatim Apache text with no use-policy appendix. Applies to the preview checkpoint only: the full Hy4 (November 4) has no weights or license yet |
-| **MiMo-V2.6-Pro / Flash** (Xiaomi) | Sep 21 | 1.02T / 42B; 309B / 15B | MIT | No conditions |
-| **DeepSeek V4.1-Flash / V4.1-Flash-1017** | Sep 10 / Oct 17 | 552B backbone | MIT | No conditions; the 1017 build now serves `deepseek-flash` |
-| **Ling-3.1-flash / -1019** (Ant Group) | Oct 2026 | 560B / ~25B active | MIT | No conditions |
-| **Beam 1.0** (Reflection AI) | Oct 16 (weights) | 501B / 23B active | Apache 2.0 | No conditions |
-| **Nanbeige4.3-33B**, **Ripple-65B Preview** | Oct 24 / Nov 4 | 33B dense; 65B dense | Apache 2.0 | No conditions |
-| **GLM-5.3-Flash** (Z.ai) | Aug 26 | 320B / 18B active | MIT | No conditions; none of GLM-5.3's review clause |
-| **K2 Horizon** (MBZUAI) | Sep 3 | 0.9B to 375B | Apache 2.0 | No conditions, plus open training data and code |
-| **Ling-3.0-flash / tiny** (Ant Group) | Aug 5 / Aug 11 | 124B / 5.1B active; 7.9B / 1.3B active | MIT | No conditions |
-| **Nemotron 3.5 Lightning / Super VL** (NVIDIA) | Aug 11 / Oct 15 | 30B / 3B active; 120B / 12B active | OpenMDW-1.1 | Linux Foundation license, free for commercial use |
-| **Qwen3.8-Max-0902**, **Tencent Hy4** (full) | Sep 2 / Nov 4 | - | Weights not released | API-only; do not plan around weights or a license until they ship |
+| **Mistral Large 4** | ۲۹ اکتبر (وزن‌ها) | حدود 1T کل / ۴۹B فعال | مجوز Mistral Ecosystem Open-Weight License | هرگونه کسب‌وکار مدل به‌عنوان سرویس (Model-as-a-Service یا MaaS) بدون در نظر گرفتن هیچ آستانه درآمدی نیازمند یک مجوز تجاری جداگانه است. سخت‌گیرانه‌ترین دروازه MaaS روی یک مدل باز در رده پرچم‌دار، و اعمال‌شده بر جایگزین رسمی برای Medium 3.5 و Large 3 |
+| **Kimi K3.1 Pro** (Moonshot) | ۴ نوامبر (وزن‌ها) | ۲.۸T کل / ۱۰۴B فعال | مجوز Kimi K3.1-Pro License | اعطای حقوق شبه-MIT؛ توافق‌نامه جداگانه برای کسب‌وکارهای MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا در طول ۱۲ ماه، که در آن MaaS به معنای دادن کنترل معنادار بر استنتاج (Inference) یا Fine-tuning به اشخاص ثالث است؛ درج نام «Kimi K3.1-Pro» در واسط کاربری (UI) برای بیش از ۱۰۰ میلیون MAU یا درآمد ماهانه ۲۰ میلیون دلار آمریکا؛ استفاده داخلی و شرکای تاییدشده معاف هستند |
+| **Muse Spark Open** (Meta) | ۱۵ اکتبر | ۸۱۶B کل / ۴۲B فعال | مجوز Muse Model License | درج انتساب «Built with Muse Spark Open» در هر محصولی؛ توافق‌نامه جداگانه با متا برای گردانندگان MaaS با درآمد بیش از ۲۰ میلیون دلار آمریکا (به همراه شرکت‌های وابسته) طی ۱۲ ماه؛ استفاده داخلی و گنجاندن آن در قابلیت‌های محصول اختصاصی خود مستثنی است. مخزن Hugging Face نیازمند تایید دستی است و برای افراد زیر ۱۸ سال در نظر گرفته نشده است |
+| **Step 5 Preview** (StepFun) | وزن‌ها در حدود ۱۵ اکتبر | ۶۰۰B کل / ۲۷B فعال | مجوز StepFun Model License 1.0 | توافق‌نامه جداگانه برای کسب‌وکارهای MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا در هر دوره ۱۲ ماهه، و برای هر سخت‌افزار دارای برندی که مدل را در دسترس قرار می‌دهد (گوشی‌ها، وسایل نقلیه، ابزارهای پوشیدنی، ربات‌ها) بدون هیچ آستانه حداقلی؛ درج انتساب برای بیش از ۱۰۰ میلیون MAU یا درآمد ماهانه ۲۰ میلیون دلار آمریکا؛ مدل‌هایی که به‌طور عمده بر خروجی‌های آن آموزش دیده‌اند به عنوان مدل‌های مشتق‌شده (derivatives) به حساب می‌آیند |
+| **MiniMax-M3.1-Flash** | ۲۳ اکتبر | حدود ۴۲۸B کل / ۲۳B فعال | مجوز MiniMax Community License | حقوق استفاده برای اهداف غیرتجاری؛ استفاده تجاری (محصولات نیازمند پرداخت هزینه که بر این مدل متکی هستند، محصولات API از جمله سرویس‌های میزبانی‌شده روی ابر، و استقرار (Deployment) تجاری مشتقات حاصل از Fine-tuning) صرفاً تحت شرایط زیر امکان‌پذیر است: کسب مجوز کتبی قبلی برای درآمد سالانه بالای ۲۰ میلیون دلار آمریکا، اطلاع‌رسانی یک‌باره به MiniMax برای سایرین، و نمایش «Built with MiniMax M3.1-Flash» برای تمامی کاربران تجاری. یک ضمیمه استفاده‌های نظامی و مواردی دیگر را ممنوع کرده و هیچ معافیت صریحی برای استفاده داخلی وجود ندارد. نسخه کامل M3.1 بسته باقی می‌ماند |
+| **Qwen3.8-Flash-Next** (Alibaba) | ۲۶ اوت | ۱۲۵B کل / ۶B فعال | مجوز Qwen Community License 1.0 | هر کسب‌وکار MaaS یا دستیار هوش مصنوعی کدنویسی/اداری پیش از استفاده تجاری نیازمند مجوزی جداگانه است، بدون هیچ کف درآمدی؛ استفاده داخلی معاف است؛ درج انتساب برای بیش از ۱۰۰ میلیون MAU یا ۲۰ میلیون دلار درآمد ماهانه الزامی است. سخت‌گیرانه‌تر از مجوز مدل پرچم‌دار |
+| **Qwen3.8-Max** (Alibaba) | ۱۲ اوت | ۲.۴T کل / ۹۵B فعال | اختصاصی، با دروازه تجاری | استفاده، تغییر و بازفروش آزاد، اما درج انتساب برای بیش از ۱۰۰ میلیون MAU یا ۲۰ میلیون دلار درآمد ماهانه الزامی است، و برای راه‌اندازی کسب‌وکار مدل به‌عنوان سرویس (MaaS) یا دستیار کار هوش مصنوعی (کدنویسی یا بهره‌وری اداری) در صورتی که درآمد مجموع همراه با شرکت‌های وابسته در هر دوره ۱۲ ماهه متوالی از ۵۰ میلیون دلار آمریکا فراتر رود، دریافت مجوزی جداگانه از Qwen الزامی است |
+| **Kimi K3** (Moonshot) | ۲۷ ژوئیه (وزن‌ها) | ۲.۸T کل / ۱۰۴B فعال | مجوز Kimi K3 License | توافق‌نامه جداگانه برای گردانندگان MaaS با درآمد بالای ۲۰ میلیون دلار آمریکا در طول ۱۲ ماه؛ درج انتساب برای بیش از ۱۰۰ میلیون MAU یا ۲۰ میلیون دلار درآمد ماهانه؛ استفاده داخلی و شرکای تاییدشده معاف هستند |
+| **Mistral Medium 3.5** | ۲۹ آوریل | ۱۲۸B متراکم (dense) | مجوز Modified MIT | یک سقف درآمدی فراگیر و نه یک شرط راه‌انداز MaaS: سلب کامل هرگونه حق استفاده برای درآمدهای ماهانه جهانی بیش از ۲۰ میلیون دلار آمریکا. در ۳۱ اکتبر در API شرکت Mistral منسوخ شد (در ۳۰ آوریل ۲۰۲۷ بازنشسته می‌شود)، هرچند وزن‌های آن تحت همین مجوز باقی می‌مانند |
+| **GLM-5.3** (Z.ai) | ۲۸ اوت (وزن‌ها) | ۷۴۴B کل / ۴۰B فعال | مجوز GLM-5.3 License (مجوز MIT به همراه ارزیابی) | ارزیابی امنیتی پیش از استفاده تجاری صرفاً برای گردانندگان MaaS با درآمد مجموع بیش از ۱۰ میلیارد دلار آمریکا؛ عملاً برای تقریباً همه افراد حکم مجوز MIT را دارد. وزن‌ها در تاریخ اعلام‌شده پس از یک بازه زمانی امنیتی دوهفته‌ای عرضه شدند |
+| **Qwen3.8-27B** (Alibaba) | ۱۴ اوت | ۲۷B متراکم (dense) | Apache 2.0 | بدون هیچ شرطی. مدل کوچک‌تر در مقایسه با مدل پرچم‌دار هم مجوز آزادتر و هم مدالیته‌های کامل‌تری دارد |
+| **Muse Glimmer** (Meta) | ۱۰ اوت | ۳۰B متراکم (dense) | Apache 2.0 | بدون شرط؛ سهل‌گیرانه‌ترین مجوز باز متا تا به امروز |
+| **Tencent Hy3** | عرضه جهانی در ۵ اوت (مدل در ۶ ژوئیه) | ۲۹۵B کل / ۲۱B فعال | Apache 2.0 | کاملاً آزاد و بدون استثناهای جغرافیایی، که مجوز محدودکننده پیش‌نمایش آوریل را که اتحادیه اروپا، بریتانیا و کره جنوبی را مستثنی می‌کرد، معکوس نمود |
+| **Tencent Hy4 preview** | ۲۸ اوت | ۷۷۰B کل / ۴۹B فعال | Apache 2.0 | بدون شرط؛ متن دقیق Apache بدون ضمیمه خط‌مشی استفاده. صرفاً بر چک‌پوینت پیش‌نمایش اعمال می‌شود: نسخه کامل Hy4 (در ۴ نوامبر) هنوز هیچ وزن یا مجوزی ندارد |
+| **MiMo-V2.6-Pro / Flash** (Xiaomi) | ۲۱ سپتامبر | ۱.۰۲T / ۴۲B؛ ۳۰۹B / ۱۵B | MIT | بدون شرط |
+| **DeepSeek V4.1-Flash / V4.1-Flash-1017** | ۱۰ سپتامبر / ۱۷ اکتبر | ستون‌فقرات ۵۵۲B | MIT | بدون شرط؛ بیلد ۱۰۱۷ اکنون `deepseek-flash` را سرو می‌کند |
+| **Ling-3.1-flash / -1019** (Ant Group) | اکتبر ۲۰۲۶ | ۵۶۰B کل / حدود ۲۵B فعال | MIT | بدون شرط |
+| **Beam 1.0** (Reflection AI) | ۱۶ اکتبر (وزن‌ها) | ۵۰۱B کل / ۲۳B فعال | Apache 2.0 | بدون شرط |
+| **Nanbeige4.3-33B**، **Ripple-65B Preview** | ۲۴ اکتبر / ۴ نوامبر | ۳۳B متراکم؛ ۶۵B متراکم | Apache 2.0 | بدون شرط |
+| **GLM-5.3-Flash** (Z.ai) | ۲۶ اوت | ۳۲۰B کل / ۱۸B فعال | MIT | بدون شرط؛ هیچ‌یک از بندهای ارزیابی GLM-5.3 را ندارد |
+| **K2 Horizon** (MBZUAI) | ۳ سپتامبر | 0.9B تا 375B | Apache 2.0 | بدون شرط، به همراه داده‌های آموزشی و کدهای باز |
+| **Ling-3.0-flash / tiny** (Ant Group) | ۵ اوت / ۱۱ اوت | ۱۲۴B کل / ۵.۱B فعال؛ ۷.۹B کل / ۱.۳B فعال | MIT | بدون شرط |
+| **Nemotron 3.5 Lightning / Super VL** (NVIDIA) | ۱۱ اوت / ۱۵ اکتبر | ۳۰B کل / ۳B فعال؛ ۱۲۰B کل / ۱۲B فعال | OpenMDW-1.1 | مجوز لینوکس فاندیشن (Linux Foundation)، آزاد برای استفاده تجاری |
+| **Qwen3.8-Max-0902**، **Tencent Hy4** (نسخه کامل) | ۲ سپتامبر / ۴ نوامبر | - | وزن‌ها منتشر نشده است | فقط API؛ تا زمانی که وزن‌ها عرضه نشده‌اند، پیرامون وزن‌ها یا مجوز آن‌ها برنامه‌ریزی نکنید |
 
-Three things follow for anyone building on open weights. First, **read the license before the model card**: the trigger is almost always "are you selling inference or an AI assistant", which is exactly the business many teams (and interview candidates) propose building, and a gated license can make an "open" flagship unusable for it while its smaller sibling is unencumbered. Second, **staged release is now a working precedent, and so is the closed refresh**: Z.ai shipped GLM-5.3 commercially, held the weights for a two-week safety window, and released them on the date it named; StepFun's Step 5 Preview weights followed its API by about four weeks; Moonshot's Kimi K3.1 Pro weights followed its API by 12 days (November 4); Alibaba's Qwen3.8-Max-0902 refresh and the full Tencent Hy4 remain API-only, so do not build a roadmap on weights that have not shipped. Third, **mirror what you depend on**: NVIDIA agreed to buy Hugging Face for $12.93B (confirmed September 3; no closing date disclosed), so once the deal closes, the main open-weight distribution hub will be owned by the company selling the GPUs those pipelines run on. Keep internal mirrors of the exact weights and license files you deploy; gated repos such as Muse Spark Open, which needs a human-approved Hugging Face account, make that mandatory for CI and fresh clusters.
+برای هر کسی که سیستم‌های خود را بر پایه مدل‌های با وزن باز توسعه می‌دهد، سه نتیجه‌گیری حاصل می‌شود. اول، **قبل از شناسنامه مدل (model card)، مجوز آن را بخوانید**: عامل راه‌انداز تقریباً همیشه این است که «آیا استنتاج (Inference) می‌فروشید یا یک دستیار هوش مصنوعی»، که این دقیقاً همان کسب‌وکاری است که بسیاری از تیم‌ها (و داوطلبان مصاحبه) ساخت آن را پیشنهاد می‌کنند؛ یک مجوز دارای دروازه و کنترل‌شده می‌تواند یک مدل پرچم‌دار «باز» را برای چنین هدفی غیرقابل‌استفاده کند، در حالی که مدل برادرِ کوچک‌تر آن کاملاً بدون قید و شرط و آزاد است. دوم، **انتشار مرحله‌ای (staged release) اکنون به یک رویه عملیاتی تبدیل شده است، و همین‌طور تازه‌سازی اختصاصی و بسته (closed refresh)**: شرکت Z.ai مدل GLM-5.3 را به صورت تجاری عرضه کرد، وزن‌ها را برای یک بازه زمانی امنیتی دوهفته‌ای نگه داشت، و سپس آن‌ها را دقیقاً در تاریخی که وعده داده بود منتشر کرد؛ وزن‌های پیش‌نمایش Step 5 از شرکت StepFun حدود چهار هفته پس از API آن منتشر شد؛ وزن‌های Kimi K3.1 Pro شرکت Moonshot دوازده روز پس از API آن عرضه شد (۴ نوامبر)؛ اما به‌روزرسانی Qwen3.8-Max-0902 علی‌بابا و نسخه کامل Hy4 شرکت Tencent همچنان فقط به‌صورت API باقی مانده‌اند، بنابراین نقشه راه خود را بر اساس وزن‌هایی که هنوز منتشر نشده‌اند پایه‌ریزی نکنید. سوم، **از هر آنچه به آن وابسته هستید نسخه آینه‌ای (mirror) تهیه کنید**: انویدیا برای خرید Hugging Face به مبلغ ۱۲.۹۳ میلیارد دلار به توافق رسید (تاییدشده در ۳ سپتامبر؛ هیچ تاریخ نهایی‌سازی اعلام نشده است)، بنابراین به محض نهایی شدن معامله، هاب اصلی توزیع وزن‌های باز در مالکیت شرکتی خواهد بود که GPUهای لازم برای اجرای آن پایپ‌لاین‌ها را می‌فروشد. نسخه‌های آینه‌ای داخلی از وزن‌های دقیق و فایل‌های مجوز مدل‌هایی که استقرار (Deployment) می‌دهید نگهداری کنید؛ مخازن کنترل‌شده نظیر Muse Spark Open که به حساب Hugging Face تاییدشده توسط انسان نیاز دارند، نگهداری نسخه آینه‌ای را برای پایپ‌لاین‌های CI و کلاسترهای تازه به یک الزام اجتناب‌ناپذیر تبدیل می‌کنند.
 
-### Small and On-Device Models (November 2026)
+### مدل‌های کوچک و روی دستگاه (نوامبر ۲۰۲۶)
 
-| Model | Size | Context | License | Notes |
+| مدل | اندازه | کانتکست | مجوز | نکات |
 |-------|------|---------|---------|-------|
-| **Nemotron 3.5 Bolt 74B-A9B 24GB** (NVIDIA) | 74B / 9B active | Up to 256K | OpenMDW-1.1 | October 15. Compressed from Nemotron 3.5 Super VL with Star Elastic into a 24GB packed checkpoint: experts in IQ2-XXS (about 2.06 bits per element), Mamba layers in NVFP4, embedding and output layers in Q8_0, with accuracy recovered by quantization-aware distillation. Runs on llama.cpp, Ollama, LM Studio, and vLLM; targets RTX PCs, RTX Spark laptops, and DGX Spark. A companion Bolt E4B 4GB followed October 23 |
-| **Ling-3.0-tiny** (Ant Group) | 7.9B / 1.3B active | 256K | MIT | Genuinely laptop-class agentic model: roughly 8.3 GiB peak memory at 8K context, 86-90 tok/s on an M4 Pro MacBook at FP8 |
-| **LFM2.5-2.6B** (Liquid AI) | 2.6B | 128K | Open weights | Built for on-device tool calling and multi-step planning rather than chat; under 2.5 GB memory, runs down to a Raspberry Pi |
-| **LFM2.5-VL-3B** (Liquid AI) | 3B | - | Open weights | On-device vision-language model for screen understanding and GUI grounding (August 12) |
-| **Shieldstral 1.0** (Mistral) | 3B | 32K | Apache 2.0 | Policy-adaptive **multimodal** safety classifier (text and image, 12 languages): moderation policies are supplied in natural language at inference time, so a policy change needs no retraining. Runs on one 16GB GPU |
-| **Muse Glimmer** (Meta) | 30B dense | 131K | Apache 2.0 | Under 20GB at 4-bit; targets always-on local agents |
-| **Gemma 4 12B Unified** (Google) | 11.95B dense | 256K | Apache 2.0 | Encoder-free multimodal (text, image, audio, video frames); official QAT int4 builds |
-| **Granite 4.2 3B / 8B** (IBM) | 3B, 8B dense | 128K (512K extended) | Apache 2.0 | Official FP8, MXFP4, NVFP4, GGUF, and MLX builds |
-| **K2 Horizon 0.9B / 3.7B / 7B** (MBZUAI) | 0.9B to 7B | 128K (0.9B), 512K | Apache 2.0 | MBZUAI says the 0.9B is small enough for a watch; GGUF builds at launch |
-| **Ternary Bonsai 2 27B** (PrismML) | 27.36B at 1.72 bits/weight | 262K | Apache 2.0 | Derived from Qwen3.8-27B. A 5.95 GB file vs ~54 GB at FP16; PrismML reports 98.2% of FP16 quality across 14 thinking-mode benchmarks. Needs PrismML's llama.cpp and MLX forks (stock llama.cpp cannot load it) |
-| **Needle 3** (Cactus Compute) | 121M | - | Apache 2.0 | On-device tool calling, structured extraction, and embeddings in an 8-29 MB file at about 2 bits per weight |
-| **Apple Foundation Models 3 (on-device)** | 3B dense; 20B sparse activating 1-4B | - | OS-provided | The 20B Core Advanced model keeps its full weights in NAND flash and loads selected experts into DRAM; ships in the iOS 27 cycle |
+| **Nemotron 3.5 Bolt 74B-A9B 24GB** (NVIDIA) | ۷۴B کل / ۹B فعال | تا سقف 256K | OpenMDW-1.1 | ۱۵ اکتبر. فشرده‌شده از Nemotron 3.5 Super VL با ابزار Star Elastic در یک چک‌پوینت بسته‌بندی‌شده ۲۴ گیگابایتی: خبره‌ها در فرمت IQ2-XXS (حدود ۲.۰۶ بیت به ازای هر عنصر)، لایه‌های Mamba در فرمت NVFP4، لایه‌های خروجی و Embedding در فرمت Q8_0، با بازیابی دقت از طریق تقطیر آگاه از کوانتیزاسیون (quantization-aware distillation). قابل اجرا روی llama.cpp،‏ Ollama،‏ LM Studio و vLLM؛ با هدف رایانه‌های شخصی RTX، لپ‌تاپ‌های RTX Spark و سیستم‌های DGX Spark. مدل مکمل Bolt E4B 4GB در ۲۳ اکتبر به دنبال آن عرضه شد |
+| **Ling-3.0-tiny** (Ant Group) | ۷.۹B کل / ۱.۳B فعال | 256K | MIT | یک مدل ایجنتیک واقعاً در رده لپ‌تاپ: تقریباً ۸.۳ گیبی‌بایت (GiB) اوج مصرف حافظه در کانتکست 8K، سرعت ۸۶–۹۰ Token بر ثانیه روی مک‌بوک M4 Pro در فرمت FP8 |
+| **LFM2.5-2.6B** (Liquid AI) | 2.6B | 128K | وزن‌های باز | ساخته‌شده برای فراخوانی ابزار (tool calling) روی دستگاه و برنامه‌ریزی چندمرحله‌ای به‌جای چت؛ با حافظه زیر ۲.۵ گیگابایت، تا سطح Raspberry Pi نیز اجرا می‌شود |
+| **LFM2.5-VL-3B** (Liquid AI) | 3B | - | وزن‌های باز | مدل بینایی-زبانی روی دستگاه برای درک صفحه نمایش و تطبیق واسط گرافیکی کاربر (GUI grounding) (۱۲ اوت) |
+| **Shieldstral 1.0** (Mistral) | 3B | 32K | Apache 2.0 | دسته‌بند ایمنی **چندحالته** و تطبیق‌پذیر با خط‌مشی (متن و تصویر، ۱۲ زبان): خط‌مشی‌های نظارت و تعدیل محتوا در زمان استنتاج (Inference) به زبان طبیعی ارائه می‌شوند، بنابراین تغییر خط‌مشی نیازی به آموزش مجدد ندارد. روی یک GPU با حافظه ۱۶ گیگابایت اجرا می‌شود |
+| **Muse Glimmer** (Meta) | ۳۰B متراکم (dense) | 131K | Apache 2.0 | کمتر از ۲۰ گیگابایت در حالت ۴ بیتی؛ با هدف ایجنت‌های محلی همواره فعال |
+| **Gemma 4 12B Unified** (Google) | ۱۱.۹۵B متراکم (dense) | 256K | Apache 2.0 | چندحالته بدون انکودر (فریم‌های متن، تصویر، صوت، ویدیو)؛ بیلدهای رسمی QAT int4 |
+| **Granite 4.2 3B / 8B** (IBM) | ۳B و ۸B متراکم (dense) | 128K (قابل توسعه تا 512K) | Apache 2.0 | بیلدهای رسمی FP8،‏ MXFP4،‏ NVFP4،‏ GGUF و MLX |
+| **K2 Horizon 0.9B / 3.7B / 7B** (MBZUAI) | 0.9B تا 7B | کانتکست 128K (برای مدل 0.9B)، 512K | Apache 2.0 | به گفته MBZUAI، مدل 0.9B به اندازه کافی کوچک است که روی ساعت هوشمند اجرا شود؛ بیلدهای GGUF در زمان عرضه ارائه شدند |
+| **Ternary Bonsai 2 27B** (PrismML) | ۲۷.۳۶B با ۱.۷۲ بیت به ازای هر وزن | 262K | Apache 2.0 | مشتق‌شده از Qwen3.8-27B. یک فایل ۵.۹۵ گیگابایتی در مقایسه با حدود ۵۴ گیگابایت در FP16؛ شرکت PrismML حفظ ۹۸.۲٪ کیفیت FP16 را در ۱۴ بنچمارک حالت استدلالی گزارش داده است. نیازمند فورک‌های اختصاصی PrismML از llama.cpp و MLX است (نسخه استاندارد llama.cpp قادر به بارگذاری آن نیست) |
+| **Needle 3** (Cactus Compute) | 121M | - | Apache 2.0 | فراخوانی ابزار روی دستگاه، استخراج ساختاریافته و Embeddingها در یک فایل ۸ الی ۲۹ مگابایتی با حدود ۲ بیت به ازای هر وزن |
+| **Apple Foundation Models 3 (on-device)** | ۳B متراکم؛ ۲۰B اسپارس با فعال‌سازی ۱ الی ۴B | - | ارائه‌شده توسط سیستم‌عامل (OS-provided) | مدل پیشرفته Core Advanced با اندازه ۲۰B تمام وزن‌های خود را در حافظه فلش NAND نگه می‌دارد و خبره‌های منتخب را در DRAM بارگذاری می‌کند؛ در چرخه انتشار iOS 27 عرضه می‌شود |
 
-The shift: the small-model tier stopped competing on chat quality and started competing on **tool calling, planning, and screen grounding**, which are the capabilities a local agent actually needs. September added two hardware-relevant patterns: ternary-native weights that put a 27B reasoner in about 6 GB, and flash-resident MoE that keeps most of a model out of DRAM. October added a third: NVIDIA's Bolt packs a 74B-total MoE into a 24GB checkpoint, so "a 70B-class model needs about 40GB" no longer holds. All three change the sizing math in [On-Device and Edge Deployment](../04-inference-optimization/09-on-device-and-edge-deployment.md).
+تحول اساسی: رده مدل‌های کوچک رقابت بر سر کیفیت چت را متوقف کرده و رقابت بر سر **فراخوانی ابزار (tool calling)، برنامه‌ریزی و تطبیق رابط کاربری (screen grounding)** را آغاز نموده‌اند؛ یعنی همان قابلیت‌هایی که یک ایجنت محلی در عمل به آن‌ها نیاز دارد. سپتامبر دو الگوی مرتبط با سخت‌افزار را افزود: وزن‌های سه‌تایی بومی (ternary-native) که یک مدل استدلال‌گر ۲۷B را در حدود ۶ گیگابایت جای می‌دهند، و مدل‌های MoE مقیم در حافظه فلش (flash-resident MoE) که بیشتر بخش‌های مدل را خارج از DRAM نگه می‌دارند. اکتبر الگوی سومی را اضافه کرد: مدل Bolt انویدیا یک مدل MoE با مجموع ۷۴B را در یک چک‌پوینت ۲۴ گیگابایتی جای می‌دهد، به‌طوری که گزاره «یک مدل در رده ۷۰B به حدود ۴۰ گیگابایت حافظه نیاز دارد» دیگر صدق نمی‌کند. هر سه الگو محاسبات تعیین اندازه را در [استقرار روی دستگاه و لبه (On-Device and Edge Deployment)](../04-inference-optimization/09-on-device-and-edge-deployment.md) دستخوش تغییر می‌کنند.
 
 ---
 
-## Specialized Models
+## مدل‌های تخصصی (Specialized Models)
 
-### Coding (November 2026)
+### کدنویسی (نوامبر ۲۰۲۶)
 
-SWE-bench Verified and the public SWE-Bench Pro split are saturated (Opus 5 scores 99.4% on the Pro v2 public split versus 81.6% on the private set), so cite Terminal-Bench 4.0 and SWE-Bench Pro v2 private, with effort and runner.
+مجموعه‌داده‌های SWE-bench Verified و بخش عمومی (public split) بنچمارک SWE-Bench Pro اشباع شده‌اند (مدل Opus 5 در بخش عمومی Pro v2 به امتیاز ۹۹.۴٪ دست می‌یابد، در حالی که در مجموعه خصوصی امتیاز ۸۱.۶٪ را کسب می‌کند)؛ بنابراین، نتایج Terminal-Bench 4.0 و بخش خصوصی SWE-Bench Pro v2 را به همراه سطح تلاش (effort) و مجری ارزیابی (runner) نقل کنید.
 
-| Model | Role | Evidence |
+| مدل | نقش | شواهد و نتایج |
 |-------|------|----------|
-| **Claude Opus 5.5** | Default agentic coding pick at $4/$20 | First on the Terminal-Bench 4.0 leaderboard at 64.85% (max; tbench.ai, entries added October 6); 66.4% at xhigh in Anthropic's run (vendor-reported); Claude Code's default Opus since 2.1.280 |
-| **Claude Sonnet 5.5** | Workhorse coding at $2/$10 | Second on the Terminal-Bench 4.0 leaderboard at 61.82% (max); 70.6% in Anthropic's run (vendor-reported); Claude Code's Sonnet default since 2.1.284 |
-| **GPT-6 Astra** | OpenAI's ceiling | Terminal-Bench 4.0 58.18% at max (leaderboard), tied with GPT-6.1 Sol; about a third of GPT-5.6 Sol's tokens per coding task (AA) |
-| **Claude Fable 5.1** | Ceiling on the Claude side | Terminal-Bench 4.0 57.88% at max (leaderboard); 55.8% in Anthropic's run |
-| **GPT-6.1 Sol** | OpenAI's $2/$10 coding default | Terminal-Bench 4.0 58.18% (leaderboard), tied with Astra at a fifth of its list price; Codex CLI default since rust-v0.159.1 (September 29); AA v5.0 55 (max) |
-| **GPT-6.1 Terra** | OpenAI's $1/$5 middle tier | AA v5.0 51 at max but 38 at the default `medium`; test at the effort you will pay for |
-| **Gemini 3.8 Flash** | Cheapest near-frontier coder | DeepSWE v1.1 tie near 74% at $2.36 per task (vs Astra xhigh $4.43, Opus 5 max $11.84); SWE-Bench Pro v2 private 211/272 |
-| **Claude Opus 5** | Prior Claude flagship | SWE-Bench Pro v2 private 222/272 (81.6%), the top private score Scale published; Terminal-Bench 4.0 53.94% at xhigh |
-| **Grok 4.7** | Cursor-native option | Terminal-Bench 4.0 37.58% at xhigh (leaderboard); on all Cursor plans |
-| **Kimi K3** | Largest open model | SWE-Bench Pro v2 private 214/272; custom license gates MaaS use |
-| **Claude Haiku 5.5** | Cheap coding sub-agent | Terminal-Bench 4.0 39.2% (Anthropic-reported) at $0.10/$0.50; keep each request under 100K tokens or it bills 5x |
-| **GLM-5.3 / GLM-5.3-Flash** | Open agentic coding | GLM-5.3 SWE-Bench Pro v2 private 211/272; Flash is MIT at $0.15/$0.50 |
-| **Kimi K3.1 Pro / DeepSeek V4.1-Flash-1017 / MiMo-V2.6-Pro** | Top open models overall | AA v5.0.1 46, 33, and 30; K3.1 Pro weights since November 4 under a MaaS-gated custom license, the other two MIT |
+| **Claude Opus 5.5** | انتخاب پیش‌فرض برای کدنویسی مبتنی بر ایجنت (agentic coding) با قیمت ۴ دلار / ۲۰ دلار | رتبه اول در جدول رده‌بندی Terminal-Bench 4.0 با امتیاز ۶۴.۸۵٪ (در حالت max؛ وب‌سایت tbench.ai، ورودی‌های اضافه‌شده در ۶ اکتبر)؛ ۶۶.۴٪ در حالت xhigh در اجرای ارائه‌شده توسط Anthropic (گزارش ارائه‌دهنده)؛ مدل پیش‌فرض Opus در ابزار Claude Code از نسخه 2.1.280 |
+| **Claude Sonnet 5.5** | مدل پرکاربرد (workhorse) کدنویسی با قیمت ۲ دلار / ۱۰ دلار | رتبه دوم در جدول رده‌بندی Terminal-Bench 4.0 با امتیاز ۶۱.۸۲٪ (در حالت max)؛ ۷۰.۶٪ در اجرای ارائه‌شده توسط Anthropic (گزارش ارائه‌دهنده)؛ مدل پیش‌فرض Sonnet در Claude Code از نسخه 2.1.284 |
+| **GPT-6 Astra** | سقف توانمندی OpenAI | امتیاز ۵۸.۱۸٪ در Terminal-Bench 4.0 در حالت max (جدول رده‌بندی)، مشترک با GPT-6.1 Sol؛ مصرف حدود یک‌سوم Tokenهای GPT-5.6 Sol به ازای هر وظیفه کدنویسی (طبق گزارش AA) |
+| **Claude Fable 5.1** | سقف توانمندی در سمت مدل‌های Claude | امتیاز ۵۷.۸۸٪ در Terminal-Bench 4.0 در حالت max (جدول رده‌بندی)؛ ۵۵.۸٪ در اجرای Anthropic |
+| **GPT-6.1 Sol** | گزینه پیش‌فرض کدنویسی OpenAI با قیمت ۲ دلار / ۱۰ دلار | امتیاز ۵۸.۱۸٪ در Terminal-Bench 4.0 (جدول رده‌بندی)، برابر با Astra با یک‌پنجم قیمت رسمی آن؛ مدل پیش‌فرض Codex CLI از نسخه rust-v0.159.1 (۲۹ سپتامبر)؛ امتیاز ۵۵ در AA v5.0 (در حالت max) |
+| **GPT-6.1 Terra** | رده میانی ۱ دلار / ۵ دلار در OpenAI | امتیاز ۵۱ در AA v5.0 در حالت max اما ۳۸ در حالت پیش‌فرض `medium`؛ ارزیابی را بر اساس همان سطح تلاشی انجام دهید که هزینه آن را می‌پردازید |
+| **Gemini 3.8 Flash** | ارزان‌ترین مدل کدنویسی نزدیک به رده مرزی (near-frontier) | نتیجه برابر در DeepSWE v1.1 نزدیک به ۷۴٪ با هزینه ۲.۳۶ دلار به ازای هر وظیفه (در مقایسه با Astra در حالت xhigh با ۴.۴۳ دلار و Opus 5 در حالت max با ۱۱.۸۴ دلار)؛ امتیاز ۲۱۱ از ۲۷۲ در بخش خصوصی SWE-Bench Pro v2 |
+| **Claude Opus 5** | پرچم‌دار پیشین Claude | امتیاز ۲۲۲ از ۲۷۲ (۸۱.۶٪) در بخش خصوصی SWE-Bench Pro v2، بالاترین امتیاز در مجموعه خصوصی منتشرشده توسط Scale؛ امتیاز ۵۳.۹۴٪ در Terminal-Bench 4.0 در حالت xhigh |
+| **Grok 4.7** | گزینه بومی پلتفرم Cursor (Cursor-native) | امتیاز ۳۷.۵۸٪ در Terminal-Bench 4.0 در حالت xhigh (جدول رده‌بندی)؛ در دسترس در تمامی پلن‌های Cursor |
+| **Kimi K3** | بزرگ‌ترین مدل باز | امتیاز ۲۱۴ از ۲۷۲ در بخش خصوصی SWE-Bench Pro v2؛ مجوز سفارشی، استفاده در قالب MaaS را مشروط می‌کند |
+| **Claude Haiku 5.5** | ساب‌ایجنت (sub-agent) ارزان‌قیمت برای کدنویسی | امتیاز ۳۹.۲٪ در Terminal-Bench 4.0 (گزارش Anthropic) با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار؛ هر درخواست را زیر ۱۰۰K عدد Token نگه دارید، در غیر این صورت با ضریب 5x محاسبه می‌شود |
+| **GLM-5.3 / GLM-5.3-Flash** | کدنویسی مبتنی بر ایجنت متن‌باز | امتیاز ۲۱۱ از ۲۷۲ در بخش خصوصی SWE-Bench Pro v2 برای GLM-5.3؛ مدل Flash دارای مجوز MIT با نرخ ۰.۱۵ دلار / ۰.۵۰ دلار است |
+| **Kimi K3.1 Pro / DeepSeek V4.1-Flash-1017 / MiMo-V2.6-Pro** | برترین مدل‌های باز در مجموع | امتیازهای ۴۶، ۳۳ و ۳۰ در AA v5.0.1؛ وزن‌های K3.1 Pro از ۴ نوامبر تحت مجوز سفارشی با محدودیت MaaS عرضه شده است، دو مدل دیگر دارای مجوز MIT هستند |
 
-### Reasoning & Math
+### مدل‌های استدلالی و ریاضیات (Reasoning & Math)
 
-| Model | Approach | Best For |
+| مدل | رویکرد | بهترین کاربرد |
 |-------|----------|----------|
-| **GPT-6 Astra** | Effort `low` to `max`, no `none` | ARC-AGI-3 62.7% on ARC Prize's Standard harness (max, $26,098) and 99.9% on the Provider Adapter harness (high, $18,817); HLE-Diamond without tools 59.9% vs Opus 5.5 54.6% |
-| **Claude Opus 5.5 / Fable 5.1** | Always-on adaptive thinking | Anthropic's HLE with tools: Opus 5.5 67.7% vs Astra 57.2% (vendor-reported). On HLE-Diamond with tools the order flips (Astra 82.9%, Opus 5.5 73.9%), so pick the set that matches your task |
-| **Gemini 4 Argon** | Thinking model (output price includes thinking) | AA v5.0 50 (high); budget at $4/$20 from December 1 |
-| **Gemini 3.1 Pro Deep Think** | Sustained chain-of-thought | Scientific reasoning on the preview Pro model |
-| **DeepSeek V4.1-Flash** | Effort dial 1-100 | Open (MIT) reasoning at peak $0.30/$1.20; AA v5.0.1 33 at max but 29 at high, so price the effort you serve |
-| **DeepSeek-R1** | RL-based thinking | Historical open reasoning baseline |
-| **Grok 4.3 (DeepSearch)** | Web-grounded reasoning | Research tasks needing live information |
+| **GPT-6 Astra** | سطح تلاش از `low` تا `max`، فاقد گزینه `none` | بنچمارک ARC-AGI-3 با ۶۲.۷٪ روی هارنس Standard متعلق به ARC Prize (در حالت max با هزینه ۲۶,۰۹۸ دلار) و ۹۹.۹٪ روی هارنس Provider Adapter (در حالت high با هزینه ۱۸,۸۱۷ دلار)؛ امتیاز ۵۹.۹٪ در HLE-Diamond بدون ابزار در برابر ۵۴.۶٪ برای Opus 5.5 |
+| **Claude Opus 5.5 / Fable 5.1** | تفکر تطبیقی همواره فعال (Always-on adaptive thinking) | بنچمارک HLE همراه با ابزار متعلق به Anthropic: مدل Opus 5.5 با ۶۷.۷٪ در برابر Astra با ۵۷.۲٪ (گزارش ارائه‌دهنده). در HLE-Diamond به همراه ابزار، این ترتیب معکوس می‌شود (Astra با ۸۲.۹٪، Opus 5.5 با ۷۳.۹٪)؛ بنابراین مجموعه‌ای را انتخاب کنید که با وظیفه شما همخوانی دارد |
+| **Gemini 4 Argon** | مدل متفکر (هزینه خروجی شامل زمان تفکر نیز می‌شود) | امتیاز ۵۰ در AA v5.0 (در حالت high)؛ بودجه‌بندی با نرخ ۴ دلار / ۲۰ دلار از ۱ دسامبر |
+| **Gemini 3.1 Pro Deep Think** | زنجیره تفکر پیوسته و پایدار (Sustained chain-of-thought) | استدلال علمی روی مدل پیش‌نمایش Pro |
+| **DeepSeek V4.1-Flash** | درجه تنظیم تلاش از ۱ تا ۱۰۰ | استدلال باز (MIT) در زمان اوج مصرف با نرخ ۰.۳۰ دلار / ۱.۲۰ دلار؛ امتیاز ۳۳ در AA v5.0.1 در حالت max اما ۲۹ در حالت high، بنابراین هزینه را بر اساس تلاشی که ارائه می‌دهید برآورد کنید |
+| **DeepSeek-R1** | تفکر مبتنی بر یادگیری تقویتی (RL-based thinking) | خط پایه تاریخی استدلال باز |
+| **Grok 4.3 (DeepSearch)** | استدلال متصل به وب (Web-grounded reasoning) | وظایف پژوهشی نیازمند به اطلاعات زنده و به‌روز |
 
-GPQA Diamond is saturated (Astra about 96%), so it no longer separates frontier models.
+بنچمارک GPQA Diamond اشباع شده است (Astra در حدود ۹۶٪)، بنابراین دیگر نمی‌تواند مدل‌های مرزی را از یکدیگر متمایز سازد.
 
-### Long Context (1M+)
+### کانتکست طولانی (+1M) (Long Context)
 
-| Model | Window | Pricing past the threshold |
+| مدل | پنجره کانتکست | قیمت‌گذاری پس از عبور از آستانه |
 |-------|--------|----------------------------|
-| **Llama 4 Scout** | 10M | Self-hosted; industry-leading open-weight window |
-| **Claude Opus 5.5 / Sonnet 5.5 / Fable 5.1** | 1M | Flat to 1M on Claude 4.6 and later, including fast mode |
-| **Claude Haiku 5.5** | 1M | The exception: a prompt over 100K tokens bills the whole request at 5x ($0.50 / $2.50), and cached tokens count toward the threshold |
-| **GPT-6 Astra / Sol / Luna, GPT-6.1 Sol / Terra** | 1.05M | The whole request bills at long-context rates (2x input, 1.5x output) above 272K input |
-| **Gemini 4 Argon** | 1,048,576 shared in and out | No prompt-length tiers; output defaults to 65,536 and reaches about 1M only through long decode |
-| **Gemini 3.8 Flash / 3.1 Pro Preview** | ~1M input | 3.1 Pro Preview moves to $4/$18 above 200K |
-| **Grok 4.7** | 500K | Every token doubled once the prompt reaches 200K |
-| **MiMo-V2.6, GLM-5.3, DeepSeek V4.1-Flash, Hy4 preview** | 1M | Open weights; KV cost per token varies by orders of magnitude across architectures |
+| **Llama 4 Scout** | 10M | خودمیزبان (Self-hosted)؛ پنجره کانتکست پیشتاز در صنعت در میان مدل‌های با وزن باز |
+| **Claude Opus 5.5 / Sonnet 5.5 / Fable 5.1** | 1M | قیمت ثابت تا سقف 1M در مدل‌های Claude 4.6 و بالاتر، از جمله در حالت سریع (fast mode) |
+| **Claude Haiku 5.5** | 1M | استثنای این قاعده: در صورتی که Prompt از ۱۰۰K عدد Token فراتر رود، کل درخواست با ضریب 5x محاسبه می‌شود (۰.۵۰ دلار / ۲.۵۰ دلار)، و Tokenهای کش‌شده نیز جزو این آستانه به شمار می‌آیند |
+| **GPT-6 Astra / Sol / Luna, GPT-6.1 Sol / Terra** | 1.05M | برای ورودی‌های بالای ۲۷۲K، کل درخواست با نرخ‌های کانتکست طولانی (2x برای ورودی، 1.5x برای خروجی) محاسبه می‌شود |
+| **Gemini 4 Argon** | ۱,۰۴۸,۵۷۶ مشترک میان ورودی و خروجی | فاقد رده‌بندی بر اساس طول Prompt؛ طول خروجی به‌طور پیش‌فرض ۶۵,۵۳۶ است و تنها از طریق رمزگشایی طولانی (long decode) به حدود 1M می‌رسد |
+| **Gemini 3.8 Flash / 3.1 Pro Preview** | حدود 1M ورودی | مدل 3.1 Pro Preview برای ورودی‌های بالای ۲۰۰K به نرخ ۴ دلار / ۱۸ دلار تغییر می‌یابد |
+| **Grok 4.7** | 500K | به محض رسیدن Prompt به ۲۰۰K، هزینه هر Token دو برابر می‌شود |
+| **MiMo-V2.6, GLM-5.3, DeepSeek V4.1-Flash, Hy4 preview** | 1M | وزن‌های باز؛ هزینه کش KV به ازای هر Token در بین معماری‌های مختلف چندین مرتبه بزرگی (orders of magnitude) تفاوت دارد |
 
 ---
 
-## Embedding Models
+## مدل‌های Embedding
 
-### API Embedding Models (November 2026)
+### مدل‌های Embedding مبتنی بر API (نوامبر ۲۰۲۶)
 
-| Model | Max input | Cost/1M | Notes |
+| مدل | حداکثر ورودی | هزینه به ازای هر ۱M | نکات |
 |-------|-----------|---------|-------|
-| OpenAI text-embedding-3-large | 8,192 | $0.13 | Unchanged; OpenAI shipped no new embedding model in 2026, and there is no "text-embedding-4" |
-| OpenAI text-embedding-3-small | 8,192 | $0.02 | Cheapest mainstream API option |
-| Voyage voyage-4-large / voyage-4 / voyage-4-lite | 32K | $0.12 / $0.06 / $0.02 | January 15, 2026; one shared embedding space across the three sizes |
-| Voyage voyage-context-4, voyage-code-4 | - | $0.12 | voyage-code-4 +27.54% over voyage-code-3 (vendor-reported) |
-| Cohere embed-v5.0-pro / embed-v5.0-fast | 128K | $0.12 / $0.08 | September 30, 2026; shared embedding space |
-| Google gemini-embedding-2 | - | See Google's pricing page | Stable April 2026; multimodal. Replaces text-embedding-004 (shut down January 14, 2026) |
+| OpenAI text-embedding-3-large | 8,192 | 0.13 دلار | بدون تغییر؛ OpenAI در سال ۲۰۲۶ هیچ مدل Embedding جدیدی عرضه نکرد و مدلی به نام «text-embedding-4» وجود ندارد |
+| OpenAI text-embedding-3-small | 8,192 | 0.02 دلار | ارزان‌ترین گزینه API جریان اصلی |
+| Voyage voyage-4-large / voyage-4 / voyage-4-lite | 32K | ۰.۱۲ دلار / ۰.۰۶ دلار / ۰.۰۲ دلار | ۱۵ ژانویه ۲۰۲۶؛ یک فضای Embedding مشترک در هر سه اندازه |
+| Voyage voyage-context-4, voyage-code-4 | - | 0.12 دلار | مدل voyage-code-4 با ۲۷.۵۴٪+ بهبود نسبت به voyage-code-3 (گزارش ارائه‌دهنده) |
+| Cohere embed-v5.0-pro / embed-v5.0-fast | 128K | ۰.۱۲ دلار / ۰.۰۸ دلار | ۳۰ سپتامبر ۲۰۲۶؛ فضای Embedding مشترک |
+| Google gemini-embedding-2 | - | صفحه قیمت‌گذاری گوگل را ببینید | نسخه پایدار در آوریل ۲۰۲۶؛ چندحالته (multimodal). جایگزین text-embedding-004 (خاموش‌شده در ۱۴ ژانویه ۲۰۲۶) |
 
-The MTEB scores this table used to carry were 2024-25 numbers that do not compare with current models. Prefer RTEB (retrieval-focused, with private sets) plus an eval on your own corpus.
+امتیازهای MTEB که پیش‌تر در این جدول قرار داشت، ارقام سال‌های ۲۰۲۴-۲۵ بودند که با مدل‌های فعلی قابل مقایسه نیستند. استفاده از بنچمارک RTEB (تمرکز بر بازیابی با مجموعه‌های خصوصی) را به همراه ارزیابی (eval) روی پیکره متنی (corpus) خود در اولویت قرار دهید.
 
-### Open Source Embedding Models
+### مدل‌های Embedding متن‌باز (Open Source Embedding Models)
 
-| Model | Dimensions | Max Tokens | MTEB (legacy) | Notes |
+| مدل | ابعاد | حداکثر Tokenها | MTEB (قدیمی) | نکات |
 |-------|------------|------------|---------------|-------|
-| Nemotron 3 Embed 8B / 1B (NVIDIA) | - | - | - | July 16, 2026, OpenMDW-1.1; RTEB Multilingual #1 at 78.5 (vendor-reported) |
-| pplx-embed-v2-context-9b-preview (Perplexity) | - | - | - | September 25, 2026 preview; do not mix its vectors with later releases |
-| EmbeddingGemma 2 (Google) | - | - | - | October 2026, 740M parameters, Apache 2.0; text, image, video, and audio in one embedding space |
-| BGE-large-en-v1.5 | 1024 | 512 | 63.9 | Instruction-tuned |
-| E5-mistral-7b-instruct | 4096 | 32768 | 66.6 | Strong with instructions |
-| Nomic-embed-text-v1.5 | 768 | 8192 | 62.3 | Long context, open |
-| GTE-Qwen2-7B | 3584 | 32K | 72.1 | Strong 2024 open baseline |
+| Nemotron 3 Embed 8B / 1B (NVIDIA) | - | - | - | ۱۶ ژوئیه ۲۰۲۶، مجوز OpenMDW-1.1؛ رتبه ۱ در RTEB Multilingual با امتیاز ۷۸.۵ (گزارش ارائه‌دهنده) |
+| pplx-embed-v2-context-9b-preview (Perplexity) | - | - | - | پیش‌نمایش در ۲۵ سپتامبر ۲۰۲۶؛ بردارهای آن را با نسخه‌های بعدی ادغام نکنید |
+| EmbeddingGemma 2 (Google) | - | - | - | اکتبر ۲۰۲۶، ۷۴۰M پارامتر، Apache 2.0؛ متن، تصویر، ویدیو و صوت در یک فضای Embedding واحد |
+| BGE-large-en-v1.5 | 1024 | 512 | 63.9 | تیون‌شده با دستورالعمل (Instruction-tuned) |
+| E5-mistral-7b-instruct | 4096 | 32768 | 66.6 | عملکرد قوی با دستورالعمل‌ها |
+| Nomic-embed-text-v1.5 | 768 | 8192 | 62.3 | کانتکست طولانی، متن‌باز |
+| GTE-Qwen2-7B | 3584 | 32K | 72.1 | خط پایه باز و قدرتمند سال ۲۰۲۴ |
 
-### Embedding Selection Guide
+### راهنمای انتخاب مدل Embedding
 
-| Requirement | Recommended | Why |
+| نیازمندی | مدل پیشنهادی | دلیل |
 |-------------|-------------|-----|
-| Best quality | voyage-4-large or embed-v5.0-pro, validated on your corpus | Current flagship APIs; benchmark on RTEB, not MTEB alone |
-| Cost-efficient | voyage-4-lite or text-embedding-3-small | $0.02/1M |
-| Self-hosted | Nemotron 3 Embed 8B | Open (OpenMDW-1.1); RTEB Multilingual leader (vendor-reported) |
-| Long documents | embed-v5.0 (128K) or voyage-4 (32K) | Long input windows |
-| Multilingual | Nemotron 3 Embed | RTEB Multilingual leader (vendor-reported) |
-| Multimodal | gemini-embedding-2 | Multimodal input in one model |
+| بالاترین کیفیت | voyage-4-large یا embed-v5.0-pro، اعتبارسنجی‌شده روی پیکره متنی شما | پرچم‌داران فعلی در میان APIها؛ بنچمارک را روی RTEB انجام دهید، نه صرفاً MTEB |
+| صرفه‌جویی در هزینه | voyage-4-lite یا text-embedding-3-small | ۰.۰۲ دلار به ازای هر ۱M |
+| خودمیزبانی (Self-hosted) | Nemotron 3 Embed 8B | متن‌باز (OpenMDW-1.1)؛ پیشتاز در RTEB Multilingual (گزارش ارائه‌دهنده) |
+| اسناد طولانی | embed-v5.0 (128K) یا voyage-4 (32K) | پنجره‌های ورودی طولانی |
+| چندزبانه | Nemotron 3 Embed | پیشتاز در RTEB Multilingual (گزارش ارائه‌دهنده) |
+| چندحالته (Multimodal) | gemini-embedding-2 | ورودی چندحالته در یک مدل واحد |
 
-See [Embeddings and Vector Spaces](../01-foundations/05-embeddings-and-vector-spaces.md) for how to evaluate them.
+برای چگونگی ارزیابی آن‌ها، به بخش [امبدینگ‌ها و فضاهای برداری](../01-foundations/05-embeddings-and-vector-spaces.md) مراجعه کنید.
 
 ---
 
-## Model Selection Framework
+## فریم‌ورک انتخاب مدل (Model Selection Framework)
 
-### Decision Tree
+### درخت تصمیم‌گیری (Decision Tree)
+
+<div dir="ltr">
 
 ```
 What is your primary constraint?
@@ -1152,246 +1159,250 @@ What is your primary constraint?
     └── Opus 5.5 and Sonnet 5.5 support ZDR; Fable 5.1 needs authorization; residency costs ~10% more
 ```
 
-### Semantic Routing
+</div>
 
-Static decision trees are being replaced by **Semantic Routers**:
-- **How it works**: A small, fast embedding model embeds the query. If it matches a "known easy" cluster, route to a cheap model (GPT-6 Luna, Claude Haiku 5.5 for prompts under 100K tokens, Gemini 3.8 Flash, DeepSeek V4.1-Flash off-peak). Middle clusters go to GPT-6.1 Terra or Sonnet 5.5. If it hits an "agentic/logic" cluster, route to Claude Opus 5.5 or GPT-6.1 Sol at higher effort, and reserve Fable 5.1 or GPT-6 Astra for what those still fail.
-- **Benefit**: Automates cost-optimization without hardcoded rules.
-- **Implementation**: Tools like `semantic-router` (Python), vLLM Semantic Router, or custom Weaviate/Pinecone classifiers.
+### مسیریابی معنایی (Semantic Routing)
 
-**What September and October 2026 changed for routers:**
-- **Prompt length is a price input, now on every major vendor.** Claude Haiku 5.5 bills the whole request at 5x once the prompt passes 100K tokens (cache reads count), OpenAI bills it at long-context rates above 272K input, xAI doubles every token once a prompt reaches 200K, and the other Claude 4.6-and-later models stay flat to 1M. Measure prompt length with the target model's tokenizer and route long prompts by price, not just by window size.
-- **Speed is a tier, not a model.** OpenAI Fast (2x) and Ultrafast (6x on Astra and GPT-6.1 Sol), Claude fast mode ($8/$40 on Opus 5.5, out of preview since October 15), and Gemini Priority (about 1.8x) mean a latency SLO maps to a tier per route.
-- **Conversation state is model-bound on Claude.** Fallback chains that replay a Claude 5.5 or Fable 5.1 conversation to another model lose the reasoning blocks, and history rewrites before a thinking block fail with a 400. Fall back at turn boundaries and keep history append-only.
-- **Safety refusals are routing events.** Fable 5.1 refusals come back as HTTP 200 with `stop_reason: "refusal"`; handle them with `fallbacks: "default"` or your own retry, and remember that benchmark scores labeled "with fallback" already include that routing.
-- **IDs do not pin behavior.** GPT-6 Sol and Luna changed behavior under the same ID on September 25; Google routed `gemini-3.7-flash` to 3.8 Flash and `gemini-3.5-flash` to 3.6 Flash on October 8; `deepseek-flash` moved to a new build on October 17; retired xAI slugs redirect to `grok-4.3` at its rates; Codex CLI and Claude Code swapped default models in point releases; from December 1 Google routes `gemini-2.5-pro` to 3.8 Flash and `gemini-2.5-flash` to 3.5 Flash-Lite; xAI now serves `grok-imagine-image-pro` requests with its low-quality 2.0 tier. Verify the served model, alert on changes, and rerun evals on vendor changelog events.
-- **SDK upgrades change the API contract.** Anthropic's eight new SDK and CLI majors send API version `2026-10-21`, which rejects sampling parameters on every model. Pin SDK majors and API versions per route, and upgrade them like a model migration.
-- **Gated access is a request field.** OpenAI's `access_programs.cyber` (`standard`, `daybreak_blue`, `daybreak_red`) decides refusal treatment per request, and its default changed with `gpt-6.1-terra`. A router that swaps models without setting it explicitly can change refusal behavior or hit a 400 or 403.
+درخت‌های تصمیم‌گیری ایستا در حال جایگزینی با **مسیریاب‌های معنایی (Semantic Routers)** هستند:
+- **نحوه کارکرد:** یک مدل Embedding کوچک و سریع، پرس‌وجو (query) را به بردار تبدیل می‌کند. اگر این بردار با یک کلاستر «ساده و شناخته‌شده» تطابق یابد، پرس‌وجو به یک مدل ارزان‌قیمت هدایت می‌شود (GPT-6 Luna، مدل Claude Haiku 5.5 برای Promptهای زیر ۱۰۰K عدد Token، مدل Gemini 3.8 Flash، یا DeepSeek V4.1-Flash در ساعات غیر اوج مصرف). کلاسترهای میانی به GPT-6.1 Terra یا Sonnet 5.5 هدایت می‌گردند. اگر پرس‌وجو به یک کلاستر «ایجنتیک/منطقی» برخورد کند، به Claude Opus 5.5 یا GPT-6.1 Sol با سطح تلاش بالاتر ارسال می‌شود، و Fable 5.1 یا GPT-6 Astra برای مواردی رزرو می‌شوند که مدل‌های قبلی هنوز در آن‌ها ناموفق عمل می‌کنند.
+- **مزیت:** بهینه‌سازی خودکار هزینه‌ها بدون نیاز به قوانین کدنویسی‌شده سخت (hardcoded).
+- **پیاده‌سازی:** ابزارهایی مانند `semantic-router` (پایتون)، vLLM Semantic Router، یا طبقه‌بندهای سفارشی Weaviate/Pinecone.
+
+**آنچه در سپتامبر و اکتبر ۲۰۲۶ برای مسیریاب‌ها تغییر کرد:**
+- **طول Prompt به یک ورودی تعیین‌کننده قیمت تبدیل شده است، اکنون در تمامی ارائه‌دهندگان بزرگ.** مدل Claude Haiku 5.5 به محض فراتر رفتن Prompt از ۱۰۰K عدد Token، کل درخواست را با ضریب 5x محاسبه می‌کند (خواندن از کش نیز محاسبه می‌شود)، OpenAI برای ورودی‌های بالای ۲۷۲K هزینه را با نرخ‌های کانتکست طولانی اعمال می‌کند، xAI هزینه هر Token را با رسیدن Prompt به ۲۰۰K دو برابر می‌کند، و سایر مدل‌های Claude 4.6 به بعد قیمت ثابتی تا سقف 1M دارند. طول Prompt را با Tokenizer مدل هدف اندازه‌گیری کنید و Promptهای طولانی را بر اساس قیمت مسیردهی نمایید، نه صرفاً بر اساس اندازه پنجره کانتکست.
+- **سرعت یک رده خدماتی (tier) است، نه یک مدل.** سرویس‌های OpenAI Fast (با نرخ 2x) و Ultrafast (با نرخ 6x روی Astra و GPT-6.1 Sol)، حالت سریع Claude fast mode (با نرخ ۸ دلار / ۴۰ دلار روی Opus 5.5، خارج‌شده از پیش‌نمایش از ۱۵ اکتبر)، و Gemini Priority (حدود 1.8x) بدین معنا هستند که توافق‌نامه سطح خدمت تاخیر (Latency SLO) به ازای هر مسیر به یک رده خدماتی نگاشت می‌شود.
+- **وضعیت گفتگو (Conversation state) در Claude وابسته به مدل است.** زنجیره‌های بازگشتی (Fallback chains) که گفتگوی یک مدل Claude 5.5 یا Fable 5.1 را روی مدلی دیگر بازپخش (replay) می‌کنند، بلوک‌های استدلالی (reasoning blocks) را از دست می‌دهند، و بازنویسی تاریخچه قبل از یک بلوک تفکر با خطای 400 مواجه می‌شود. بازگشت به مدل پشتیبان (fallback) را در مرزهای نوبت گفتگو (turn boundaries) انجام دهید و تاریخچه را به‌صورت فقط‌الحاقی (append-only) حفظ کنید.
+- **رد درخواست به دلایل ایمنی (Safety refusals) رویدادهای مسیریابی به شمار می‌روند.** موارد رد درخواست در Fable 5.1 با کد HTTP 200 و `stop_reason: "refusal"` بازمی‌گردند؛ آن‌ها را با `fallbacks: "default"` یا مکانیزم تلاش مجدد (retry) اختصاصی خود مدیریت کنید، و به خاطر داشته باشید امتیازات بنچمارکی که دارای برچسب «به همراه fallback» هستند، از قبل این مسیریابی را در خود دارند.
+- **شناسه‌های مدل (IDs) رفتار ثابتی را تضمین نمی‌کنند.** مدل‌های GPT-6 Sol و Luna در ۲۵ سپتامبر رفتار خود را ذیل همان شناسه تغییر دادند؛ گوگل در ۸ اکتبر مسیر `gemini-3.7-flash` را به 3.8 Flash و `gemini-3.5-flash` را به 3.6 Flash تغییر داد؛ `deepseek-flash` در ۱۷ اکتبر به یک ساختار (build) جدید منتقل شد؛ اسلاگ‌های بازنشسته‌شده xAI به `grok-4.3` با نرخ‌های آن ریدایرکت می‌شوند؛ ابزارهای Codex CLI و Claude Code مدل‌های پیش‌فرض را در به‌روزرسانی‌های جزئی تغییر دادند؛ گوگل از ۱ دسامبر مسیر `gemini-2.5-pro` را به 3.8 Flash و `gemini-2.5-flash` را به 3.5 Flash-Lite هدایت می‌کند؛ xAI اکنون درخواست‌های `grok-imagine-image-pro` را با رده کیفیت پایین 2.0 خود ارائه می‌دهد. مدل ارائه‌شده را اعتبارسنجی کنید، نسبت به تغییرات هشدار تنظیم نمایید، و با هر رویداد در تغییرات ارائه‌دهنده (changelog)، ارزیابی‌ها (evals) را مجدداً اجرا کنید.
+- **ارتقای SDK قرارداد API را تغییر می‌دهد.** هشت نسخه اصلی جدید SDK و CLI شرکت Anthropic، نسخه API موسوم به `2026-10-21` را ارسال می‌کنند که پارامترهای نمونه‌برداری (sampling parameters) را در تمام مدل‌ها رد می‌کند. نسخه‌های اصلی SDK و نسخه‌های API را برای هر مسیر پین کنید، و ارتقای آن‌ها را مانند یک مهاجرت مدلی مدیریت نمایید.
+- **دسترسی کنترل‌شده (Gated access) یک فیلد درخواست است.** فیلد `access_programs.cyber` در OpenAI (با مقادیر `standard`،‏ `daybreak_blue`،‏ `daybreak_red`) نحوه برخورد با رد درخواست را برای هر درخواست تعیین می‌کند، و مقدار پیش‌فرض آن با `gpt-6.1-terra` تغییر یافت. مسیریابی که مدل‌ها را بدون تنظیم صریح این فیلد تعویض کند، می‌تواند رفتار رد درخواست را تغییر دهد یا با خطای 400 یا 403 روبرو شود.
 
 ---
 
-## Sovereign AI and Data Residency
+## هوش مصنوعی حاکمیتی و اقامتگاه داده (Sovereign AI and Data Residency)
 
-**The 2026 Regulatory Reality:**
-Enterprises must comply with GDPR (EU), DPDPA (India), Saudi Arabia PDPL, and sectoral rules. "Sovereign AI" is now a product category.
+**واقعیت مقرراتی سال ۲۰۲۶:**
+سازمان‌ها و شرکت‌های بزرگ ملزم به رعایت مقررات عمومی حفاظت از داده اتحادیه اروپا (GDPR)، قانون DPDPA هند، قانون PDPL عربستان سعودی و قوانین بخشی (sectoral rules) هستند. اکنون «هوش مصنوعی حاکمیتی» (Sovereign AI) به یک دسته‌بندی محصول مستقل تبدیل شده است.
 
-| Solution | Provider | Use Case |
+| راهکار | ارائه‌دهنده | مورد کاربرد |
 |----------|----------|----------|
-| **Azure Government/Sovereign** | Microsoft | Dedicated infra in 40+ regions; approved for US Gov/EU NIS2 |
-| **AWS Sovereign Cloud** | Amazon | Physically isolated VPCs; GDPR-safe EU regions |
-| **Google Distributed Cloud** | Google | Air-gapped on-prem Gemini deployment |
-| **Residency-pinned API endpoints** | Anthropic (`inference_geo: "us"`, 1.1x on Claude 4.6 and later, stacking on Haiku 5.5's over-100K prices), OpenAI (regional endpoints, +10% for models released from March 5, 2026), Bedrock and Google Cloud regional Claude, Bedrock regional GPT-6 Astra, Mistral EU (each about +10%). On Google Cloud (Google managed), regional endpoints serve Claude Sonnet 4.6 and earlier only; Opus 5.5, Sonnet 5.5, Haiku 5.5, and Fable 5.1 need the global endpoint or the `us` or `eu` multi-region endpoints (10% over global), so residency there is geography-level, not single-region | Residency without self-hosting, priced as a published line item |
-| **Private Llama 4 / 3.3** | Meta (self-host) | Maximum data sovereignty; open weights (Llama 4 MoE or 3.3 dense) |
-| **Permissive open weights (self-host)** | Z.ai GLM-5.3-Flash, Tencent Hy4 preview, Xiaomi MiMo-V2.6, IBM Granite 4.2 | MIT or Apache 2.0 weights; no data leaves your infra |
-| **DeepSeek (self-host)** | DeepSeek (MIT weights) | Open weights; no data leaves your infra |
-| **Mistral Large 3 (self-host)** | Mistral (Apache 2.0) | 675B MoE; open weights; strong multilingual. Its API retires April 30, 2027, and the Large 4 weights that replace it carry a MaaS gate |
+| **Azure Government/Sovereign** | مایکروسافت | زیرساخت اختصاصی در بیش از ۴۰ منطقه؛ تاییدشده برای دولت ایالات متحده / استاندارد NIS2 اتحادیه اروپا |
+| **AWS Sovereign Cloud** | آمازون | شبکه‌های VPC با جداسازی فیزیکی؛ مناطق سازگار با GDPR در اتحادیه اروپا |
+| **Google Distributed Cloud** | گوگل | استقرار (Deployment) در محل (on-prem) و ایزوله از شبکه (air-gapped) مدل Gemini |
+| **اندپوینت‌های API پین‌شده به اقامتگاه داده (Residency-pinned API endpoints)** | شرکت Anthropic (پارامتر `inference_geo: "us"` با ضریب 1.1x در Claude 4.6 و بالاتر، که به قیمت‌های بالای ۱۰۰K در Haiku 5.5 اضافه می‌شود)، OpenAI (اندپوینت‌های منطقه‌ای با ۱۰٪+ برای مدل‌های ارائه‌شده از ۵ مارس ۲۰۲۶ به بعد)، اندپوینت‌های منطقه‌ای Claude در Bedrock و Google Cloud، اندپوینت منطقه‌ای GPT-6 Astra در Bedrock، پلتفرم Mistral EU (هر کدام حدود ۱۰٪+). در سرویس Google Cloud (مدیریت‌شده توسط گوگل)، اندپوینت‌های منطقه‌ای تنها به Claude Sonnet 4.6 و قبل از آن سرویس می‌دهند؛ مدل‌های Opus 5.5،‏ Sonnet 5.5،‏ Haiku 5.5 و Fable 5.1 به اندپوینت سراسری یا اندپوینت‌های چندمنطقه‌ای `us` یا `eu` (۱۰٪ بالاتر از سراسری) نیاز دارند، بنابراین اقامت داده در آنجا در سطح جغرافیایی است نه یک منطقه منفرد | اقامت داده بدون نیاز به خودمیزبانی، با قیمت‌گذاری شفاف در قالب یک ردیف فاکتور رسمی |
+| **Private Llama 4 / 3.3** | متا (خودمیزبان) | حداکثر حاکمیت داده؛ وزن‌های باز (Llama 4 MoE یا 3.3 متراکم) |
+| **وزن‌های باز با مجوز آزاد (خودمیزبان)** | مدل‌های Z.ai GLM-5.3-Flash، پیش‌نمایش Tencent Hy4،‏ Xiaomi MiMo-V2.6،‏ IBM Granite 4.2 | وزن‌های دارای مجوز MIT یا Apache 2.0؛ هیچ داده‌ای از زیرساخت شما خارج نمی‌شود |
+| **DeepSeek (خودمیزبان)** | شرکت DeepSeek (وزن‌های MIT) | وزن‌های باز؛ هیچ داده‌ای از زیرساخت شما خارج نمی‌شود |
+| **Mistral Large 3 (خودمیزبان)** | شرکت Mistral (مجوز Apache 2.0) | مدل ۶۷۵B MoE؛ وزن‌های باز؛ چندزبانه قدرتمند. سرویس API آن در ۳۰ آوریل ۲۰۲۷ بازنشسته می‌شود و وزن‌های Large 4 که جایگزین آن می‌شوند دارای محدودیت MaaS هستند |
 
-**Tradeoff**: Dedicated sovereign clouds are priced by contract and usually carry a premium over standard regions, while per-request residency on the major APIs is now a published ~10% premium. Price residency per tenant and route only residency-bound traffic to pinned geos. Two newer wrinkles matter in regulated designs. Mistral's EU platform now serves Z.ai's GLM 5.3, so model provenance and hosting jurisdiction are separate questions. And frontier zero data retention now comes with monitoring options: Anthropic's Enterprise Frontier Safeguards (announced September 1, rolling out in phases later this fall) let customers opt in to keeping misuse-monitoring data in their own cloud account under customer-managed keys, with fully automated review, and OpenAI began previewing Private Safety Processing with select customers on August 19.
+**موازنه و بده‌بستان (Tradeoff):** ابرهای حاکمیتی اختصاصی از طریق قرارداد قیمت‌گذاری می‌شوند و معمولاً هزینه بیشتری نسبت به مناطق استاندارد دارند، در حالی که اقامت داده به ازای هر درخواست در APIهای اصلی اکنون با حدود ۱۰٪ هزینه اضافه رسمی ارائه می‌شود. قیمت اقامت داده را به ازای هر مستأجر (multi-tenant) تعیین کنید و فقط ترافیک وابسته به اقامت داده را به موقعیت‌های جغرافیایی پین‌شده هدایت نمایید. دو نکته ظریف جدید در طراحی‌های تحت مقررات اهمیت دارند: پلتفرم اروپایی Mistral اکنون به ارائه مدل GLM 5.3 شرکت Z.ai می‌پردازد، بنابراین خاستگاه مدل و حوزه قضایی میزبانی دو مقوله جداگانه هستند. علاوه بر این، عدم نگهداری داده (zero data retention) در مدل‌های مرزی اکنون با گزینه‌های نظارتی همراه است: برنامه Enterprise Frontier Safeguards شرکت Anthropic (معرفی‌شده در ۱ سپتامبر، که مراحل عرضه آن در اواخر پاییز انجام می‌شود) به مشتریان این امکان را می‌دهد که داده‌های نظارت بر سوءاستفاده را در حساب ابری اختصاصی خود و تحت کلیدهای مدیریت‌شده توسط مشتری نگه دارند، همراه با بازبینی کاملاً خودکار؛ همچنین OpenAI پیش‌نمایش Private Safety Processing را با مشتریان منتخب در ۱۹ اوت آغاز کرد.
 
-### Cost Comparison at Scale (November 2026)
+### مقایسه هزینه‌ها در مقیاس بالا (نوامبر ۲۰۲۶)
 
-Assume 1M requests/day, 1K input + 500 output tokens, Standard tier list prices, no caching:
+فرض کنید روزانه ۱ میلیون درخواست، با ۱K ورودی + ۵۰۰ خروجی به ازای هر Token، بر اساس قیمت‌های رسمی رده استاندارد (Standard tier) و بدون اعمال کش‌گذاری:
 
-| Model | Input Cost/Day | Output Cost/Day | Total/Month |
+| مدل | هزینه ورودی / روز | هزینه خروجی / روز | مجموع ماهانه |
 |-------|----------------|-----------------|-------------|
-| GPT-6 Astra | $10,000 | $25,000 | $1,050,000 |
-| Claude Opus 5.5 | $4,000 | $10,000 | $420,000 |
-| Gemini 4 Argon (from December 1) | $4,000 | $10,000 | $420,000 |
-| Meta Muse Wonder | $4,000 | $10,000 | $420,000 |
-| Gemini 3.1 Pro Preview | $2,000 | $6,000 | $240,000 |
-| Claude Sonnet 5.5 | $2,000 | $5,000 | $210,000 |
-| GPT-6 Sol / GPT-6.1 Sol | $2,000 | $5,000 | $210,000 |
-| Gemini 3.8 Flash (from January 1, 2027) | $1,500 | $3,750 | $157,500 |
-| Grok 4.7 | $2,000 | $3,000 | $150,000 |
-| GPT-6.1 Terra | $1,000 | $2,500 | $105,000 |
-| Muse Spark 1.3 | $1,250 | $2,125 | $101,250 |
-| Gemini 3.8 Flash (intro, through December 31) | $750 | $1,875 | $78,750 |
-| DeepSeek V4.1-Flash (all at peak) | $300 | $600 | $27,000 |
-| GPT-6 Luna / Claude Haiku 5.5 | $100 | $250 | $10,500 |
+| GPT-6 Astra | ۱۰,۰۰۰ دلار | ۲۵,۰۰۰ دلار | ۱,۰۵۰,۰۰۰ دلار |
+| Claude Opus 5.5 | ۴,۰۰۰ دلار | ۱۰,۰۰۰ دلار | ۴۲۰,۰۰۰ دلار |
+| Gemini 4 Argon (از ۱ دسامبر) | ۴,۰۰۰ دلار | ۱۰,۰۰۰ دلار | ۴۲۰,۰۰۰ دلار |
+| Meta Muse Wonder | ۴,۰۰۰ دلار | ۱۰,۰۰۰ دلار | ۴۲۰,۰۰۰ دلار |
+| Gemini 3.1 Pro Preview | ۲,۰۰۰ دلار | ۶,۰۰۰ دلار | ۲۴۰,۰۰۰ دلار |
+| Claude Sonnet 5.5 | ۲,۰۰۰ دلار | ۵,۰۰۰ دلار | ۲۱۰,۰۰۰ دلار |
+| GPT-6 Sol / GPT-6.1 Sol | ۲,۰۰۰ دلار | ۵,۰۰۰ دلار | ۲۱۰,۰۰۰ دلار |
+| Gemini 3.8 Flash (از ۱ ژانویه ۲۰۲۷) | ۱,۵۰۰ دلار | ۳,۷۵۰ دلار | ۱۵۷,۵۰۰ دلار |
+| Grok 4.7 | ۲,۰۰۰ دلار | ۳,۰۰۰ دلار | ۱۵۰,۰۰۰ دلار |
+| GPT-6.1 Terra | ۱,۰۰۰ دلار | ۲,۵۰۰ دلار | ۱۰۵,۰۰۰ دلار |
+| Muse Spark 1.3 | ۱,۲۵۰ دلار | ۲,۱۲۵ دلار | ۱۰۱,۲۵۰ دلار |
+| Gemini 3.8 Flash (قیمت معرفی، تا ۳۱ دسامبر) | ۷۵۰ دلار | ۱,۸۷۵ دلار | ۷۸,۷۵۰ دلار |
+| DeepSeek V4.1-Flash (همگی در زمان اوج مصرف) | ۳۰۰ دلار | ۶۰۰ دلار | ۲۷,۰۰۰ دلار |
+| GPT-6 Luna / Claude Haiku 5.5 | ۱۰۰ دلار | ۲۵۰ دلار | ۱۰,۵۰۰ دلار |
 
-How to read it:
-- **Cost per task beats cost per token.** Verbose models eat their price advantage (Muse Spark 1.3 at $0.55 vs $0.40 per task for 1.2; Step 5 Preview at about twice the median output tokens on AA's suite), and token-efficient ones narrow theirs (Astra uses about a third of GPT-5.6 Sol's tokens per coding task). Measure tokens per task on your workload before trusting this table.
-- **Caching reorders it.** With a cached system prompt, cache reads cost 0.1x on most models, 0.05x on Opus 5.5, Sonnet 5.5, GPT-6.1 Sol, and GPT-6.1 Terra, and 0.025x on Fable 5.1, so per-model break-even matters more than the headline rate. Gemini 4 Argon caches only implicitly, so its cached cost is whatever hit rate Google's cache gives you.
-- **Prompt size reorders it too.** At 1K-token prompts Haiku 5.5 ties GPT-6 Luna; at 150K-token prompts it bills $0.50 / $2.50 on every token while Luna stays at $0.10 / $0.50 until 272K.
-- **Promotions expire.** Gemini 4 Argon doubles on December 1, Gemini 3.8 Flash on January 1, 2027, and OpenAI dates GPT-5.6 Sol's $4/$20 promotion to November 30, 2026, with no stated price after it.
-- **Self-hosting is priced in GPU-hours, not tokens.** The Silicon Data rental index on November 5 put an H100 at $2.97 and a B200 at $6.70 per GPU-hour (B200 up about 14% in four weeks), and Lambda's on-demand prices rise about 15% on November 16 (scheduled); see [Pricing and Costs](03-pricing-and-costs.md) for the break-even math.
+نحوه تحلیل این جدول:
+- **هزینه به ازای هر وظیفه بر هزینه به ازای هر Token غلبه دارد.** مدل‌های پرگو (verbose) مزیت قیمتی خود را از بین می‌برند (مدل Muse Spark 1.3 با ۰.۵۵ دلار به ازای هر وظیفه در برابر ۰.۴۰ دلار برای نسخه 1.2؛ پیش‌نمایش Step 5 با حدود دو برابر میانه Tokenهای خروجی در مجموعه ارزیابی AA)، و مدل‌های با مصرف بهینه Token این فاصله را جبران می‌کنند (Astra حدود یک‌سوم Tokenهای GPT-5.6 Sol را به ازای هر تسک کدنویسی مصرف می‌کند). پیش از اتکا به این جدول، میزان Token به ازای هر وظیفه را روی حجم کاری واقعی خود بسنجید.
+- **کش‌گذاری رتبه‌بندی را تغییر می‌دهد.** با کش‌گذاری یک Prompt سیستمی، هزینه خواندن از کش در اکثر مدل‌ها به میزان 0.1x، در Opus 5.5،‏ Sonnet 5.5،‏ GPT-6.1 Sol و GPT-6.1 Terra به میزان 0.05x، و در Fable 5.1 به میزان 0.025x کاهش می‌یابد؛ بنابراین نقطه سربه سر به ازای هر مدل اهمیت بیشتری نسبت به نرخ‌های اعلامی اولیه دارد. مدل Gemini 4 Argon تنها کش‌گذاری ضمنی را اعمال می‌کند، بنابراین هزینه کش‌شده آن کاملاً وابسته به نرخ موفقیت کش (hit rate) ارائه‌شده توسط گوگل خواهد بود.
+- **اندازه Prompt نیز ترتیب را به هم می‌زند.** در Promptهای ۱K تومنی (۱K-token)، مدل Haiku 5.5 با GPT-6 Luna برابر است؛ اما در Promptهای ۱۵۰K تومنی، Haiku به ازای هر Token نرخ ۰.۵۰ دلار / ۲.۵۰ دلار را محاسبه می‌کند در حالی که Luna تا ۲۷۲K در نرخ ۰.۱۰ دلار / ۰.۵۰ دلار باقی می‌ماند.
+- **تخفیف‌های دوره‌ای منقضی می‌شوند.** قیمت Gemini 4 Argon در ۱ دسامبر دو برابر می‌شود، Gemini 3.8 Flash در ۱ ژانویه ۲۰۲۷ افزایش می‌یابد، و OpenAI قیمت تبلیغاتی ۴ دلار / ۲۰ دلار مدل GPT-5.6 Sol را تا ۳۰ نوامبر ۲۰۲۶ تعیین کرده است، بدون آنکه قیمتی برای پس از آن اعلام کند.
+- **هزینه خودمیزبانی با ساعت‌های مصرف GPU سنجیده می‌شود، نه با Tokenها.** شاخص اجاره Silicon Data در ۵ نوامبر هزینه اجاره H100 را ۲.۹۷ دلار و B200 را ۶.۷۰ دلار به ازای هر ساعت مصرف GPU (GPU-hour) اعلام کرد (B200 حدود ۱۴٪ در چهار هفته افزایش داشته است)، و قیمت‌های درخواستی (on-demand) شرکت Lambda در ۱۶ نوامبر حدود ۱۵٪ افزایش می‌یابد (برنامه‌ریزی‌شده)؛ برای محاسبات نقطه سر‌به‌سر، به بخش [قیمت‌گذاری و هزینه‌ها](03-pricing-and-costs.md) مراجعه کنید.
 
 ---
 
-## Capability Comparison
+## مقایسه قابلیت‌ها (Capability Comparison)
 
-### Benchmark Snapshot (November 2026)
+### نمای کلی بنچمارک‌ها (نوامبر ۲۰۲۶)
 
-| Model | AA Index (v5.0.1 where marked) | Terminal-Bench 4.0 | SWE-Bench Pro v2 private (of 272) | Notes |
+| مدل | شاخص AA (نسخه v5.0.1 در موارد مشخص‌شده) | Terminal-Bench 4.0 | SWE-Bench Pro v2 خصوصی (از ۲۷۲) | نکات |
 |-------|---------------|--------------------|-----------------------------------|-------|
-| **Gemini 4 Carbon** (not available to developers) | 60 (high, v5.0.1); 59 on v5.0 | - | - | Fairwind cyber defenders only; no model ID |
-| **Claude Opus 5.5** | 59 (max, v5.0.1); 58 on v5.0 (with fallback) | 64.85% max (leaderboard, first); 66.4% xhigh (Anthropic) | - | OSWorld 2.1 partial 81.8% (Anthropic) |
-| **GPT-6 Astra** | 57 (max, v5.0.1) | 58.18% max (leaderboard, tied third) | - | ARC-AGI-3 62.7% Standard vs 99.9% Provider Adapter (ARC Prize) |
-| **GPT-6.1 Sol** | 55 (max, v5.0.1) | 58.18% (leaderboard, tied third) | - | $2/$10 |
-| **Claude Sonnet 5.5** | 54 (max, with fallback); 41 at high | 61.82% max (leaderboard, second); 70.6% (Anthropic) | - | GDPval-AA v2.1 within 2 Elo of Opus 5.5 (Anthropic) |
-| **GPT-6.1 Terra** | 51 (max); 38 at medium | - | - | $1/$5 |
-| **Gemini 4 Argon** | 50 (high) | - | - | DeepSWE v1.1 77.9% (Google) |
-| **Claude Fable 5.1** | 50 (xhigh, with fallback); 49 at max | 57.88% max (leaderboard); 55.8% (Anthropic) | - | Cache reads 0.025x |
-| **Meta Muse Wonder Full** | 50 (max) | - | - | Muse Code subscription only; no API |
-| **Kimi K3.1 Pro** (open weights since November 4) | 46 (v5.0.1) | - | - | AA still labels it proprietary; custom MaaS-gated license |
-| **Meta Muse Wonder** | 43 (max) | - | - | $4/$20, Opus 5.5's list price |
-| **Claude Haiku 5.5** | 36 (max) | 39.2% (Anthropic) | - | 5x on the whole request above a 100K-token prompt |
-| **Grok 4.7** | 35 (high) | 37.58% xhigh (leaderboard) | - | $2/$6 |
-| **DeepSeek V4.1-Flash-1017** (open) | 33 (max, v5.0.1); 29 at high | - | - | MIT |
-| **GLM-5.3** (open) | 32 (max, v5.0.1); 23 at low | - | 211 (77.6%) | MIT plus MaaS review |
-| **Gemini 3.8 Flash** | 31 (high) | - | 211 (77.6%) | Intro price through December 31 |
-| **MiMo-V2.6-Pro** (open) | 30 (v5.0.1) | - | - | MIT; Ling-3.1-flash-1019 also 30 |
-| **GPT-6 Luna** | 28 (max) | - | - | $0.10/$0.50 |
-| **Kimi K3** (open) | - | - | 214 (78.7%) | Custom license |
-| **Claude Opus 5** | - | 53.94% xhigh (leaderboard) | 222 (81.6%) | 99.4% on the saturated public split |
-| **Inkling** (open) | 12 | - | 184 (67.6%) | Inkling-Small scores 13 |
+| **Gemini 4 Carbon** (در دسترس توسعه‌دهندگان نیست) | ۶۰ (در حالت high، نسخه v5.0.1)؛ ۵۹ در v5.0 | - | - | صرفاً برای مدافعان سایبری Fairwind؛ فاقد شناسه مدل |
+| **Claude Opus 5.5** | ۵۹ (در حالت max، نسخه v5.0.1)؛ ۵۸ در v5.0 (به همراه fallback) | ۶۴.۸۵٪ در حالت max (جدول رده‌بندی، رتبه اول)؛ ۶۶.۴٪ در حالت xhigh (گزارش Anthropic) | - | امتیاز جزئی ۸۱.۸٪ در OSWorld 2.1 (گزارش Anthropic) |
+| **GPT-6 Astra** | ۵۷ (در حالت max، نسخه v5.0.1) | ۵۸.۱۸٪ در حالت max (جدول رده‌بندی، مشترک در رتبه سوم) | - | امتیاز ۶۲.۷٪ در هارنس Standard بنچمارک ARC-AGI-3 در برابر ۹۹.۹٪ در Provider Adapter (ARC Prize) |
+| **GPT-6.1 Sol** | ۵۵ (در حالت max، نسخه v5.0.1) | ۵۸.۱۸٪ (جدول رده‌بندی، مشترک در رتبه سوم) | - | ۲ دلار / ۱۰ دلار |
+| **Claude Sonnet 5.5** | ۵۴ (در حالت max، به همراه fallback)؛ ۴۱ در حالت high | ۶۱.۸۲٪ در حالت max (جدول رده‌بندی، رتبه دوم)؛ ۷۰.۶٪ (گزارش Anthropic) | - | اختلاف کمتر از ۲ Elo با Opus 5.5 در GDPval-AA v2.1 (گزارش Anthropic) |
+| **GPT-6.1 Terra** | ۵۱ (در حالت max)؛ ۳۸ در حالت medium | - | - | ۱ دلار / ۵ دلار |
+| **Gemini 4 Argon** | ۵۰ (در حالت high) | - | - | امتیاز ۷۷.۹٪ در DeepSWE v1.1 (گزارش گوگل) |
+| **Claude Fable 5.1** | ۵۰ (در حالت xhigh، به همراه fallback)؛ ۴۹ در حالت max | ۵۷.۸۸٪ در حالت max (جدول رده‌بندی)؛ ۵۵.۸٪ (گزارش Anthropic) | - | خواندن از کش با نرخ 0.025x |
+| **Meta Muse Wonder Full** | ۵۰ (در حالت max) | - | - | صرفاً از طریق اشتراک Muse Code؛ فاقد API |
+| **Kimi K3.1 Pro** (وزن‌های باز از ۴ نوامبر) | ۴۶ (نسخه v5.0.1) | - | - | موسسه AA همچنان آن را مالکیتی برچسب می‌زند؛ مجوز سفارشی با محدودیت MaaS |
+| **Meta Muse Wonder** | ۴۳ (در حالت max) | - | - | ۴ دلار / ۲۰ دلار، برابر با قیمت رسمی Opus 5.5 |
+| **Claude Haiku 5.5** | ۳۶ (در حالت max) | ۳۹.۲٪ (گزارش Anthropic) | - | اعمال ضریب 5x بر کل درخواست برای Promptهای بالاتر از ۱۰۰K Token |
+| **Grok 4.7** | ۳۵ (در حالت high) | ۳۷.۵۸٪ در حالت xhigh (جدول رده‌بندی) | - | ۲ دلار / ۶ دلار |
+| **DeepSeek V4.1-Flash-1017** (متن‌باز) | ۳۳ (در حالت max، نسخه v5.0.1)؛ ۲۹ در حالت high | - | - | مجوز MIT |
+| **GLM-5.3** (متن‌باز) | ۳۲ (در حالت max، نسخه v5.0.1)؛ ۲۳ در حالت low | - | ۲۱۱ (۷۷.۶٪) | مجوز MIT به همراه بررسی MaaS |
+| **Gemini 3.8 Flash** | ۳۱ (در حالت high) | - | ۲۱۱ (۷۷.۶٪) | قیمت معرفی تا ۳۱ دسامبر |
+| **MiMo-V2.6-Pro** (متن‌باز) | ۳۰ (نسخه v5.0.1) | - | - | مجوز MIT؛ مدل Ling-3.1-flash-1019 نیز امتیاز ۳۰ |
+| **GPT-6 Luna** | ۲۸ (در حالت max) | - | - | ۰.۱۰ دلار / ۰.۵۰ دلار |
+| **Kimi K3** (متن‌باز) | - | - | ۲۱۴ (۷۸.۷٪) | مجوز سفارشی |
+| **Claude Opus 5** | - | ۵۳.۹۴٪ در حالت xhigh (جدول رده‌بندی) | ۲۲۲ (۸۱.۶٪) | ۹۹.۴٪ در بخش عمومی اشباع‌شده |
+| **Inkling** (متن‌باز) | ۱۲ | - | ۱۸۴ (۶۷.۶٪) | مدل Inkling-Small امتیاز ۱۳ کسب می‌کند |
 
-*Sources: Artificial Analysis Intelligence Index v5.0 (announced October 27; Carbon added October 28) and v5.0.1 (November 3, which regraded every model on CritPt v2; unmarked AA figures are v5.0), the tbench.ai Terminal-Bench 4.0 leaderboard (entries added October 6), Scale's SWE-Bench Pro v2 (September 22), ARC Prize (September 3). Vendor figures are labeled with the vendor's name.* Rules for reading any table like this:
-- **Index versions do not mix.** Label every AA number with its version: v5.0.1 (November 3) moved Carbon from 59 to 60, Opus 5.5 from 58 to 59, and DeepSeek V4.1 Flash 1017 from 32 to 33. AA v5.0 has four equally weighted categories (Knowledge Work, Coding, Science, General) with about 60% of its questions on private or held-out sets, and its scores are not comparable with v4.x. Any v4.3 or v4.3.2 figure you find elsewhere, and the pre-September launch figures (Kimi K3 57.1, Grok 4.6 61), cannot sit in the same column.
-- **Effort moves the score as much as the model does.** Sonnet 5.5 is 54 at max and 41 at high; GPT-6.1 Terra is 51 at max and 38 at its default `medium`. Compare at the effort you will serve.
-- **The top entry may be unavailable.** Carbon leads v5.0.1 but has no model ID, and Muse Wonder Full is sold only inside a subscription product; compare against the best model you can actually call.
-- **"With fallback" means a routed system.** Claude scores include safeguard fallbacks to Opus 4.8 or Opus 5 when a classifier intervened; pin fallback state the way you pin harness and effort.
-- **Name the effort and the runner.** Astra is 58.18% at max on the leaderboard but 57.9% at high in OpenAI's figure; Fable 5.1 is 57.88% on the leaderboard but 55.8% in Anthropic's own run. The runner can even flip the order: Anthropic's runs put Sonnet 5.5 ahead of Opus 5.5 (70.6% vs 66.4%), and the leaderboard puts it behind (61.82% vs 64.85%).
-- **Saturated sets stop discriminating.** SWE-bench Verified, the public SWE-Bench Pro split, and GPQA Diamond no longer separate frontier models; use private or held-out sets. See [Benchmarks and Leaderboards](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md).
+*منابع: شاخص هوش Artificial Analysis Intelligence Index v5.0 (معرفی‌شده در ۲۷ اکتبر؛ مدل Carbon در ۲۸ اکتبر اضافه شد) و نسخه v5.0.1 (در ۳ نوامبر، که تمام مدل‌ها را بر اساس CritPt v2 بازنمره‌دهی کرد؛ ارقام بدون علامت AA مربوط به نسخه v5.0 هستند)، جدول رده‌بندی Terminal-Bench 4.0 در tbench.ai (ورودی‌های اضافه‌شده در ۶ اکتبر)، بنچمارک SWE-Bench Pro v2 شرکت Scale (در ۲۲ سپتامبر)، جایزه ARC Prize (در ۳ سپتامبر). ارقام مربوط به ارائه‌دهندگان با نام آن‌ها مشخص شده است.* قواعد خواندن چنین جدول‌هایی:
+- **نسخه‌های مختلف شاخص با یکدیگر ترکیب نمی‌شوند.** هر عدد شاخص AA را با نسخه دقیق آن برچسب‌گذاری کنید: نسخه v5.0.1 (در ۳ نوامبر) امتیاز Carbon را از ۵۹ به ۶۰، Opus 5.5 را از ۵۸ به ۵۹، و DeepSeek V4.1 Flash 1017 را از ۳۲ به ۳۳ تغییر داد. نسخه AA v5.0 دارای چهار دسته با وزن یکسان است (کار دانشی، کدنویسی، علوم و عمومی) که حدود ۶۰٪ سوالات آن بر روی مجموعه‌داده‌های خصوصی یا نگه‌داشته‌شده قرار دارد، و امتیازات آن با نسخه v4.x قابل مقایسه نیستند. هیچ‌یک از ارقام v4.3 یا v4.3.2 که در منابع دیگر می‌یابید، و نیز ارقام زمان عرضه پیش از سپتامبر (مانند Kimi K3 با ۵۷.۱ و Grok 4.6 با ۶۱) نمی‌توانند در یک ستون مشترک قرار گیرند.
+- **سطح تلاش (Effort) به اندازه خود مدل بر امتیاز تاثیر می‌گذارد.** مدل Sonnet 5.5 در حالت max امتیاز ۵۴ و در حالت high امتیاز ۴۱ را کسب می‌کند؛ مدل GPT-6.1 Terra در حالت max امتیاز ۵۱ و در حالت پیش‌فرض `medium` امتیاز ۳۸ را به دست می‌آورد. مقایسه‌ها را بر اساس همان سطح تلاشی انجام دهید که در محیط عملیاتی به کار خواهید گرفت.
+- **رتبه نخست ممکن است در دسترس نباشد.** مدل Carbon پیشتاز نسخه v5.0.1 است اما فاقد شناسه مدل است، و مدل Muse Wonder Full صرفاً درون یک محصول اشتراکی فروخته می‌شود؛ مقایسه را با بهترین مدلی انجام دهید که عملاً امکان فراخوانی آن را دارید.
+- **«به همراه fallback» نشان‌دهنده یک سیستم مسیریابی‌شده است.** امتیازات مدل‌های Claude شامل موارد بازگشت حفاظتی (safeguard fallbacks) به مدل‌های Opus 4.8 یا Opus 5 در هنگام مداخله سیستم طبقه‌بند است؛ وضعیت fallback را همانند هارنس و سطح تلاش پین کنید.
+- **سطح تلاش و مجری ارزیابی (runner) را نام ببرید.** مدل Astra در جدول رده‌بندی در حالت max امتیاز ۵۸.۱۸٪ و در گزارش رسمی OpenAI در حالت high امتیاز ۵۷.۹٪ را به دست می‌آورد؛ مدل Fable 5.1 در جدول رده‌بندی امتیاز ۵۷.۸۸٪ و در اجرای اختصاصی شرکت Anthropic امتیاز ۵۵.۸٪ را ثبت کرده است. مجری ارزیابی حتی می‌تواند ترتیب مدل‌ها را تغییر دهد: ارزیابی‌های Anthropic مدل Sonnet 5.5 را بالاتر از Opus 5.5 قرار می‌دهند (۷۰.۶٪ در برابر ۶۶.۴٪)، در حالی که جدول رده‌بندی آن را پایین‌تر قرار می‌دهد (۶۱.۸۲٪ در برابر ۶۴.۸۵٪).
+- **مجموعه‌داده‌های اشباع‌شده دیگر تمایز ایجاد نمی‌کنند.** بنچمارک‌های SWE-bench Verified، بخش عمومی SWE-Bench Pro و GPQA Diamond دیگر توان تفکیک مدل‌های مرزی را ندارند؛ از مجموعه‌داده‌های خصوصی یا نگه‌داشته‌شده استفاده کنید. بخش [بنچمارک‌ها و جدول‌های رده‌بندی](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md) را ببینید.
 
-### Task-Specific Recommendations (November 2026)
+### توصیه‌های مبتنی بر وظیفه (Task-Specific Recommendations) (نوامبر ۲۰۲۶)
 
-| Task | Recommended Models | Why |
+| وظیفه | مدل‌های پیشنهادی | دلیل |
 |------|--------------------|-----|
-| **Autonomous Coding Agent** | Claude Opus 5.5, Claude Sonnet 5.5, GPT-6.1 Sol; GPT-6.1 Terra for cheaper fleets | The two Claude models lead the Terminal-Bench 4.0 leaderboard (64.85% and 61.82%) and Anthropic's own runs, at $2-$4 input; defaults in Claude Code and Codex; Terra at half the price if it holds up at your serving effort |
-| **Complex Reasoning** | Claude Fable 5.1, GPT-6 Astra (xhigh/max), Claude Opus 5.5 at high effort | Ceiling models; Opus 5.5 first, escalate when evals fall short |
-| **Agentic Computer Use** | Claude Opus 5.5 / Sonnet 5.5 with `computer_toolset_20260801`, GPT-6 Astra, Gemini 3.8 Flash | OSWorld 2.1 partial 81.8% / 80.1% (Anthropic) and 72.6% for Astra on OpenAI's offline set (OpenAI); Gemini's recommended computer-use model, with the Computer Use tool GA since October 30. Claude Haiku 5.5 scores 72.4% partial on Anthropic's offline subset, but its 24.4% GUI prompt-injection success rate argues for tight isolation |
-| **High-Volume API** | GPT-6 Luna, Claude Haiku 5.5 (prompts under 100K), Gemini 3.8 Flash, DeepSeek V4.1-Flash (off-peak) | Lowest cost per token in class; budget Gemini on its 2027 price and keep Haiku 5.5 under its cliff |
-| **Long Context RAG** | Claude Sonnet 5.5 / Opus 5.5 (flat to 1M), Gemini 3.8 Flash | No long-context surcharge on Claude except Haiku 5.5, which bills 5x above 100K; keep OpenAI prompts under 272K or price the cliff |
-| **Ultra-Long Context** | Llama 4 Scout (10M) | Industry-leading 10M context; open weights |
-| **Multimodal Real-time** | GPT-Live-1, Gemini 3.8 Live | Full-duplex voice with delegated reasoning, or native audio with async tools |
-| **Private Production** | GLM-5.3-Flash, Qwen3.8-27B, MiMo-V2.6-Flash, IBM Granite 4.2 | Permissive licenses; single-node to single-GPU footprints |
-| **Open-source Coding** | Kimi K3.1 Pro, GLM-5.3, MiMo-V2.6-Pro, Kimi K3 (check the license) | Top open scores on AA and SWE-Bench Pro v2 private; K3.1 Pro weights since November 4 |
-| **Gated Cyber or Bio Work** | Claude Mythos 5.1, GPT-5.6-Cyber, Gemini 3.8 Flash Cyber, Gemini 4 Carbon (when access opens), GPT-6 Rosalind and GPT-Rosalind | Capability-tiered access programs with identity verification |
-| **Creative/Chat** | GPT-6 Sol, Claude Sonnet 5.5 | Strong conversation quality and instruction following at $2/$10 |
+| **ایجنت خودکار کدنویسی (Autonomous Coding Agent)** | Claude Opus 5.5،‏ Claude Sonnet 5.5،‏ GPT-6.1 Sol؛ و GPT-6.1 Terra برای ناوگان‌های اقتصادی‌تر | دو مدل Claude در صدر جدول رده‌بندی Terminal-Bench 4.0 (با ۶۴.۸۵٪ و ۶۱.۸۲٪) و ارزیابی‌های Anthropic قرار دارند، با قیمت ۲ تا ۴ دلار ورودی؛ مدل‌های پیش‌فرض در Claude Code و Codex؛ مدل Terra با نصف قیمت در صورتی که در سطح تلاش کاری شما کیفیت خود را حفظ کند |
+| **استدلال پیچیده (Complex Reasoning)** | Claude Fable 5.1،‏ GPT-6 Astra (در حالت‌های xhigh/max)،‏ Claude Opus 5.5 در سطح تلاش بالا | مدل‌های سقف توانمندی؛ اولویت با Opus 5.5، و در صورت عدم کفایت در ارزیابی‌ها ارتقا به مدل‌های بالاتر |
+| **استفاده ایجنت از کامپیوتر (Agentic Computer Use)** | مدل‌های Claude Opus 5.5 / Sonnet 5.5 به همراه `computer_toolset_20260801`،‏ GPT-6 Astra،‏ Gemini 3.8 Flash | امتیاز جزئی ۸۱.۸٪ / ۸۰.۱٪ در OSWorld 2.1 (گزارش Anthropic) و ۷۲.۶٪ برای Astra روی مجموعه آفلاین OpenAI (گزارش OpenAI)؛ مدل پیشنهادی گوگل برای استفاده از کامپیوتر، با ابزار Computer Use که از ۳۰ اکتبر به عرضه عمومی (GA) رسیده است. مدل Claude Haiku 5.5 امتیاز جزئی ۷۲.۴٪ را روی زیرمجموعه آفلاین Anthropic کسب می‌کند، اما نرخ موفقیت ۲۴.۴٪ در تزریق Prompt در محیط گرافیکی (GUI prompt-injection) ایجاب می‌کند که در محیطی کاملاً ایزوله استفاده شود |
+| **API با حجم بالا (High-Volume API)** | GPT-6 Luna، مدل Claude Haiku 5.5 (برای Promptهای زیر ۱۰۰K)،‏ Gemini 3.8 Flash،‏ DeepSeek V4.1-Flash (ساعات غیر اوج مصرف) | کمترین هزینه به ازای هر Token در این رده؛ هزینه Gemini را بر اساس قیمت سال ۲۰۲۷ آن بودجه‌بندی کنید و Haiku 5.5 را زیر آستانه جهش قیمت نگه دارید |
+| **سیستم RAG با کانتکست طولانی (Long Context RAG)** | Claude Sonnet 5.5 / Opus 5.5 (قیمت ثابت تا 1M)،‏ Gemini 3.8 Flash | عدم وجود هزینه اضافی برای کانتکست طولانی در مدل‌های Claude به جز Haiku 5.5 که برای بالای ۱۰۰K ضریب 5x اعمال می‌کند؛ در مدل‌های OpenAI ورودی را زیر ۲۷۲K نگه دارید یا جهش قیمت را در هزینه‌ها لحاظ کنید |
+| **کانتکست فوق طولانی (Ultra-Long Context)** | Llama 4 Scout (با کانتکست 10M) | کانتکست 10M پیشتاز در صنعت؛ با وزن‌های باز |
+| **چندحالته بلادرنگ (Multimodal Real-time)** | GPT-Live-1،‏ Gemini 3.8 Live | صوت تمام‌دوطرفه (Full-duplex) به همراه استدلال تفویض‌شده، یا صوت بومی همراه با ابزارهای ناهمگام (async) |
+| **محیط عملیاتی خصوصی (Private Production)** | GLM-5.3-Flash،‏ Qwen3.8-27B،‏ MiMo-V2.6-Flash،‏ IBM Granite 4.2 | مجوزهای آزاد؛ قابل استقرار روی تک‌نود تا تک‌GPU |
+| **کدنویسی متن‌باز (Open-source Coding)** | Kimi K3.1 Pro،‏ GLM-5.3،‏ MiMo-V2.6-Pro،‏ Kimi K3 (بررسی مجوز ضروری است) | بالاترین امتیازهای باز در AA و بخش خصوصی SWE-Bench Pro v2؛ انتشار وزن‌های K3.1 Pro از ۴ نوامبر |
+| **فعالیت‌های کنترل‌شده سایبری یا زیستی (Gated Cyber or Bio Work)** | Claude Mythos 5.1،‏ GPT-5.6-Cyber،‏ Gemini 3.8 Flash Cyber،‏ Gemini 4 Carbon (در صورت باز شدن دسترسی)،‏ GPT-6 Rosalind و GPT-Rosalind | برنامه‌های دسترسی چندسطحی بر اساس توانمندی با احراز هویت |
+| **خلاقیت / گفتگو (Creative/Chat)** | GPT-6 Sol،‏ Claude Sonnet 5.5 | کیفیت گفتگوی قدرتمند و پیروی عالی از دستورالعمل‌ها با قیمت ۲ دلار / ۱۰ دلار |
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه (Interview Questions)
 
-### Q: How would you select a model for a production RAG system?
+### سوال: چگونه مدلی را برای یک سیستم RAG در محیط عملیاتی انتخاب می‌کنید؟
 
-**Strong answer:**
-I evaluate across these dimensions:
+**پاسخ قوی:**
+من ارزیابی را در این ابعاد انجام می‌دهم:
 
-**1. Quality requirements:**
-- Test on representative queries from the actual domain
-- Measure answer correctness, hallucination rate, citation accuracy
+**۱. الزامات کیفی:**
+- آزمودن روی پرس‌وجوهای معرف و واقعی از دامنه کاربرد اصلی
+- سنجش صحت پاسخ، نرخ توهم (hallucination rate) و دقت ارجاعات (citation accuracy)
 
-**2. Cost analysis:**
+**۲. تحلیل هزینه:**
 ```
 Monthly cost = requests/day × 30 × (input_tokens × input_rate + output_tokens × output_rate)
 ```
-Always calculate for the top 2-3 candidates, at the price that applies next quarter (Gemini 4 Argon doubles on December 1, Gemini 3.8 Flash on January 1, 2027), with your measured cache hit rate, prompt-size distribution, and tokens per task.
+همیشه محاسبه را برای ۲ تا ۳ کاندیدای برتر، بر اساس قیمتی که در فصل آینده اعمال خواهد شد (قیمت Gemini 4 Argon در ۱ دسامبر دو برابر می‌شود و Gemini 3.8 Flash در ۱ ژانویه ۲۰۲۷ افزایش می‌یابد)، همراه با نرخ موفقیت کش (cache hit rate) اندازه‌گیری‌شده خودتان، توزیع اندازه Prompt و میزان مصرف Token به ازای هر وظیفه انجام دهید.
 
-**3. Latency requirements:**
-- Tight TTFT budgets: GPT-6 Luna, Claude Haiku 5.5 at low effort, Gemini 3.8 Flash at low thinking; measure TTFT yourself
-- If quality is paramount: accept multi-second latency with Claude Opus 5.5 or GPT-6.1 Sol, or buy speed with Opus 5.5 fast mode or OpenAI Fast
+**۳. الزامات تاخیر (Latency):**
+- بودجه‌های زمانی محدود برای TTFT (زمان تا دریافت نخستین Token): مدل‌های GPT-6 Luna،‏ Claude Haiku 5.5 در سطح تلاش پایین، و Gemini 3.8 Flash در سطح تفکر پایین؛ شاخص TTFT را خودتان اندازه‌گیری کنید
+- اگر کیفیت در اولویت اول است: پذیرش تاخیر چندثانیه‌ای با Claude Opus 5.5 یا GPT-6.1 Sol، یا خرید سرعت بالاتر با حالت سریع Opus 5.5 fast mode یا سرویس OpenAI Fast
 
-**4. Operational requirements:**
-- Self-hosting: GLM-5.3-Flash, Qwen3.8-27B, or Llama 4 Scout/Maverick, after a license check
-- Compliance / data residency: ZDR-eligible models, residency-pinned endpoints (~10% premium), or self-hosted
+**۴. الزامات عملیاتی:**
+- خودمیزبانی (Self-hosting): مدل‌های GLM-5.3-Flash،‏ Qwen3.8-27B یا Llama 4 Scout/Maverick، پس از بررسی مجوزها
+- انطباق با قوانین / اقامت داده (data residency): مدل‌های واجد شرایط ZDR (حفظ صفر داده یا Zero Data Retention)، اندپوینت‌های تثبیت‌شده بر اساس اقامتگاه داده (residency-pinned) (با حدود ۱۰٪ هزینه بیشتر)، یا میزبانی شخصی (self-hosted)
 
-**5. Practical selection:**
-- Start with Claude Sonnet 5.5 or GPT-6 Sol for prototyping
-- A/B test GPT-6 Luna, Claude Haiku 5.5, or Gemini 3.8 Flash for the 80% of easy queries (cost)
-- Keep Opus 5.5 on hard queries via semantic routing, and keep prompts under 272K on OpenAI models and under 100K on Haiku 5.5 (retrieved context counts, cached or not)
+**۵. انتخاب عملی:**
+- برای نمونه‌سازی اولیه (prototyping) با Claude Sonnet 5.5 یا GPT-6 Sol شروع کنید
+- مدل‌های GPT-6 Luna،‏ Claude Haiku 5.5 یا Gemini 3.8 Flash را برای ۸۰٪ از پرس‌وجوهای ساده مورد آزمون A/B قرار دهید (از نظر هزینه)
+- مدل Opus 5.5 را از طریق مسیریابی معنایی (semantic routing) برای پرس‌وجوهای دشوار نگه دارید، و اندازه Promptها را در مدل‌های OpenAI زیر ۲۷۲K و در Haiku 5.5 زیر ۱۰۰K حفظ کنید (کانتکست بازیابی‌شده، چه کش شده باشد چه نباشد، محاسبه می‌شود)
 
-### Q: Explain the tradeoffs between proprietary and open source models.
+### پرسش: موازنه‌ها (tradeoffs) میان مدل‌های اختصاصی و متن‌باز را توضیح دهید.
 
-**Strong answer:**
-| Factor | Proprietary (OpenAI, Anthropic, Google) | Open Weights (GLM, Qwen, DeepSeek, MiMo) |
-|--------|----------------------------------------|------------------------------------------|
-| Quality | Higher at the top end | 13 to 26 points behind on AA v5.0.1 (46 or 33 vs 59), depending on whether Kimi K3.1 Pro counts as open |
-| Cost | Per-token pricing; $0.10/$0.50 at the low end | Compute + ops; cheap only at high utilization |
-| Control | Limited | Full |
-| Privacy | Data goes to provider (ZDR available on many models) | Stays on-prem |
-| Updates | Automatic, sometimes under the same model ID | Manual; you pin the weights |
-| Customization | Limited fine-tuning (OpenAI stops new fine-tuning jobs January 6, 2027, and GPT-4o and GPT-4.1 fine-tunes shut down January 14, 2027) | Full fine-tuning |
-| License | Terms of service | Ranges from MIT/Apache to MaaS-gated custom licenses |
-| Ops overhead | None | Significant |
+**پاسخ قوی:**
+| عامل (Factor) | اختصاصی (OpenAI،‏ Anthropic،‏ Google) | وزن‌های باز (GLM،‏ Qwen،‏ DeepSeek،‏ MiMo) |
+|---|---|---|
+| کیفیت | در بالاترین رده، برتر است | ۱۳ تا ۲۶ امتیاز عقب‌تر در AA v5.0.1 (امتیاز ۴۶ یا ۳۳ در برابر ۵۹)، بسته به اینکه آیا Kimi K3.1 Pro جزو وزن‌های باز به شمار آید یا خیر |
+| هزینه | قیمت‌گذاری بر اساس هر Token؛ ۰.۱۰ دلار / ۰.۵۰ دلار در ارزان‌ترین رده | پردازش (Compute) + عملیات (Ops)؛ تنها در نرخ بهره‌وری (utilization) بالا ارزان است |
+| کنترل | محدود | کامل |
+| حریم خصوصی | داده‌ها به ارائه‌دهنده منتقل می‌شوند (قابلیت ZDR در بسیاری از مدل‌ها موجود است) | در سرورهای محلی (on-prem) باقی می‌مانند |
+| به‌روزرسانی‌ها | خودکار، گاهی تحت همان شناسه مدل | دستی؛ شما وزن‌ها را تثبیت (pin) می‌کنید |
+| سفارشی‌سازی | Fine-tuning محدود (OpenAI پذیرش کارهای جدید Fine-tuning را از ۶ ژانویه ۲۰۲۷ متوقف می‌کند، و مدل‌های Fine-tuning شده GPT-4o و GPT-4.1 در ۱۴ ژانویه ۲۰۲۷ خاموش می‌شوند) | Fine-tuning کامل |
+| مجوز | شرایط خدمات (Terms of service) | از MIT/Apache تا مجوزهای سفارشی دارای محدودیت MaaS متغیر است |
+| بار عملیاتی (Ops overhead) | ندارد | قابل توجه |
 
-**Key insight (November 2026):** The gap is real, its size depends on the classification rule, and the license is the other big variable. On AA v5.0.1 the best model AA labels open (DeepSeek V4.1-Flash-1017, 33) trails the best closed model you can call (Claude Opus 5.5, 59) by 26 points; Kimi K3.1 Pro, whose weights shipped November 4 but which AA still labels proprietary, narrows that to 13 (46). Always state the index version and the rule. The best US open model (Muse Spark Open, 25) trails DeepSeek by 8. Meanwhile GPT-6 Luna and Claude Haiku 5.5 at $0.10 / $0.50 undercut most hosted open models, so "open is cheaper" only holds at high utilization on your own GPUs. Choose open weights for control, residency, and fine-tuning, and read the license first: Mistral Large 4 gates every MaaS business, and Kimi K3 and K3.1 Pro, Muse Spark Open, Step 5 Preview, MiniMax-M3.1-Flash, Qwen Community 1.0, Mistral Medium 3.5, and GLM-5.3 all gate some commercial uses.
+**بینش کلیدی (نوامبر ۲۰۲۶):** این شکاف واقعی است، اندازه آن به قاعده طبقه‌بندی بستگی دارد، و مجوز استفاده، متغیر بزرگ دیگر است. در بنچمارک AA v5.0.1، بهترین مدلی که AA آن را متن‌باز برچسب‌گذاری می‌کند (DeepSeek V4.1-Flash-1017، با امتیاز ۳۳)، ۲۶ امتیاز از بهترین مدل بسته و اختصاصی قابل فراخوانی (Claude Opus 5.5، با امتیاز ۵۹) عقب‌تر است؛ مدل Kimi K3.1 Pro که وزن‌های آن در ۴ نوامبر عرضه شد اما AA همچنان آن را اختصاصی قلمداد می‌کند، این فاصله را به ۱۳ امتیاز (با امتیاز ۴۶) کاهش می‌دهد. همواره نسخه شاخص و قاعده طبقه‌بندی را مشخص کنید. بهترین مدل متن‌باز آمریکایی (Muse Spark Open، با امتیاز ۲۵) ۸ امتیاز از DeepSeek عقب‌تر است. در همین حال، GPT-6 Luna و Claude Haiku 5.5 با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار قیمتی پایین‌تر از اغلب مدل‌های متن‌باز میزبانی‌شده ارائه می‌دهند؛ بنابراین عبارت «متن‌باز ارزان‌تر است» تنها در شرایط نرخ بهره‌وری بالا روی GPUهای خودتان صدق می‌کند. مدل‌های با وزن باز را برای کنترل، اقامت داده (residency) و Fine-tuning انتخاب کنید، و پیش از هر چیز مجوز را مطالعه نمایید: Mistral Large 4 برای هر کسب‌وکار MaaS محدودیت ایجاد می‌کند، و مدل‌های Kimi K3 و K3.1 Pro،‏ Muse Spark Open،‏ Step 5 Preview،‏ MiniMax-M3.1-Flash،‏ Qwen Community 1.0،‏ Mistral Medium 3.5 و GLM-5.3 همگی برای برخی از کاربردهای تجاری محدودیت وضع کرده‌اند.
 
-### Q: How do reasoning controls differ between GPT-6 and the Claude 5.5 generation, and what breaks when you route between them?
+### پرسش: کنترل‌های استدلال میان نسل GPT-6 و Claude 5.5 چه تفاوتی با یکدیگر دارند، و هنگام مسیریابی بین آن‌ها چه چیزهایی دچار شکست می‌شود؟
 
-**Strong answer:**
-Both vendors expose reasoning as an effort dial rather than a toggle, but the contracts differ:
+**پاسخ قوی:**
+هر دو ارائه‌دهنده، استدلال را به‌جای یک کلید روشن/خاموش (toggle)، به‌صورت یک پیچ تنظیم سطح تلاش (effort dial) ارائه می‌دهند، اما قراردادهای آن‌ها متفاوت است:
 
-- **OpenAI GPT-6 family**: effort `low` to `max` (GPT-6.1 Sol defaults to `medium`; Astra has no `none`, while GPT-6.1 Terra runs from `none` to `max`). Reasoning tokens are billed but not returned. "Pro" is `reasoning.mode: "pro"` on the GPT-5.6 and GPT-6 families rather than a separate model (GPT-5.4 Pro and GPT-5.5 Pro remain at $30/$180). Astra drops `temperature`, `top_p`, and logprobs, and its tool calling requires the Responses API.
-- **Claude Opus 5.5 / Sonnet 5.5 / Fable 5.1**: adaptive thinking is always on (Sonnet 5.5's floor is `between_tools`; `disabled` returns a 400). Default effort differs by model: Opus 5.5 `medium`, Sonnet 5.5 and Fable 5.1 `high` on the API. Thinking, including the text between tool calls, arrives in `thinking` content blocks that are empty at the default `display: "omitted"` (the `display: "updates"` beta returns the text). Blocks are bound to the producing model and conversation. Under API version `2026-10-21` any `temperature`, `top_p`, or `top_k` returns a 400 on every Claude model.
-- **What breaks in a router**: replaying a Claude conversation to another model silently drops its reasoning blocks; editing anything before a thinking block (system prompt, tools, earlier turns, even the image bytes behind a URL) returns a 400 for accounts created on or after August 31, 2026; forced `tool_choice` returns a 400 on Opus 5.5, Sonnet 5.5, and Fable/Mythos 5.1, while Haiku 5.5 accepts it but skips thinking on that turn; and an unpinned Opus 5 to 5.5 upgrade quietly moves effort from `high` to `medium`.
+- **خانواده OpenAI GPT-6:** سطح تلاش از `low` تا `max` است (GPT-6.1 Sol به‌طور پیش‌فرض روی `medium` قرار دارد؛ Astra فاقد سطح `none` است، در حالی که GPT-6.1 Terra از `none` تا `max` را پوشش می‌دهد). Tokenهای استدلال صورت‌حساب می‌شوند اما بازگردانده نمی‌شوند. برچسب "Pro" در خانواده‌های GPT-5.6 و GPT-6 به‌صورت `reasoning.mode: "pro"` تعیین می‌شود و یک مدل جداگانه نیست (مدل‌های GPT-5.4 Pro و GPT-5.5 Pro با قیمت ۳۰ دلار / ۱۸۰ دلار باقی مانده‌اند). مدل Astra پارامترهای `temperature`، `top_p` و logprobs را حذف کرده است، و فراخوانی ابزار (tool calling) در آن مستلزم Responses API است.
+- **مدل‌های Claude Opus 5.5 / Sonnet 5.5 / Fable 5.1:** تفکر تطبیقی (adaptive thinking) همیشه روشن است (حداقل سطح در Sonnet 5.5 مقدار `between_tools` است؛ مقدار `disabled` خطای 400 بازمی‌گرداند). سطح تلاش پیش‌فرض در هر مدل متفاوت است: در API، مدل Opus 5.5 به‌صورت `medium` و مدل‌های Sonnet 5.5 و Fable 5.1 به‌صورت `high` هستند. تفکر، از جمله متن بین فراخوانی‌های ابزار، در بلوک‌های محتوایی `thinking` تحویل داده می‌شود که در حالت پیش‌فرض `display: "omitted"` خالی هستند (نسخه بتای `display: "updates"` متن را بازمی‌گرداند). این بلوک‌ها به مدل تولیدکننده و به همان گفتگو وابسته (bound) هستند. تحت نسخه API مورخ `2026-10-21`، ارسال هر مقداری برای `temperature`، `top_p` یا `top_k` در تمام مدل‌های Claude خطای 400 بازمی‌گرداند.
+- **چه مواردی در یک مسیریاب دچار شکست می‌شود:** ارسال مجدد (replay) تاریخچه گفتگوی یک مدل Claude به مدلی دیگر، بلوک‌های استدلال آن را بدون اعلام خطا حذف می‌کند؛ ویرایش هر چیزی پیش از یک بلوک تفکر (شامل Prompt سیستم، ابزارها، نوبت‌های قبلی، و حتی بایت‌های تصویر پشت یک URL) برای حساب‌های کاربری ایجادشده در ۳۱ اوت ۲۰۲۶ یا پس از آن، خطای 400 بازمی‌گرداند؛ اجبار در انتخاب ابزار (`tool_choice`) در Opus 5.5،‏ Sonnet 5.5 و Fable/Mythos 5.1 خطای 400 برمی‌گرداند، در حالی که Haiku 5.5 آن را می‌پذیرد اما از تفکر در آن نوبت صرف‌نظر می‌کند؛ و ارتقای بدون تثبیت نسخه (unpinned) از Opus 5 به 5.5، سطح تلاش را بی‌صدا از `high` به `medium` تغییر می‌دهد.
 
-**Production choice**: Pin effort per route, keep conversation history append-only, use `auto` tool choice with strict schemas, and rerun evals at the effort you will actually serve. Log `stop_reason`, effort, and the served model on every call; visible reasoning is no longer something you can count on from either vendor.
+**انتخاب در محیط عملیاتی:** سطح تلاش را برای هر مسیر تثبیت (pin) کنید، تاریخچه گفتگو را فقط‌افزودنی (append-only) نگه دارید، از انتخاب ابزار `auto` به همراه اسکیماهای سخت‌گیرانه (strict schemas) استفاده کنید، و ارزیابی‌ها (evals) را در همان سطح تلاشی که در عمل سرویس‌دهی خواهید کرد، مجدداً اجرا نمایید. پارامترهای `stop_reason`، سطح تلاش و مدل سرویس‌دهی‌شده را در هر فراخوانی ثبت (log) کنید؛ استدلال قابل مشاهده دیگر قابلیتی نیست که بتوانید روی آن از سوی هیچ‌یک از دو ارائه‌دهنده حساب باز کنید.
 
-### Q: You want to launch a hosted coding assistant on an open-weight model. How do you choose one?
+### پرسش: قصد دارید یک دستیار کدنویسی میزبانی‌شده را بر پایه یک مدل با وزن باز راه‌اندازی کنید. چگونه مدل مناسب را انتخاب می‌کنید؟
 
-**Strong answer:**
-I screen in this order, because the first gate eliminates more candidates than benchmarks do:
+**پاسخ قوی:**
+من غربال‌گری را به این ترتیب انجام می‌دهم، چرا که نخستین دروازه (gate)، کاندیداهای بیشتری را نسبت به بنچمارک‌ها حذف می‌کند:
 
-1. **License triggers**: a hosted coding assistant is exactly what gated licenses target. Mistral Large 4 and Qwen3.8-Flash-Next (Qwen Community 1.0) need a separate license from day one, Muse Spark Open and Step 5 Preview need a separate agreement for MaaS once revenue passes US$20M, Kimi K3 and K3.1 Pro need a separate agreement if the company runs a MaaS business and its total revenue (with affiliates) passes US$20M over 12 months (K3.1 Pro's license defines MaaS as giving third parties meaningful control over inference or fine-tuning, so a coding assistant whose model is embedded in its own features and harness may fall outside it; have counsel read the definition), MiniMax-M3.1-Flash needs at least a one-time notice for any commercial use and written authorization above US$20M yearly revenue, Mistral Medium 3.5 withdraws all rights above US$20M monthly revenue, and GLM-5.3's security review only bites above US$10B. MiMo-V2.6, GLM-5.3-Flash, DeepSeek V4.1-Flash, Ling-3.1-flash, Beam 1.0, Tencent Hy4 preview (preview checkpoint only), and Qwen3.8-27B are MIT or Apache.
-2. **Quality on like-for-like scales and on my tasks**: AA v5.0.1 (Kimi K3.1 Pro 46, DeepSeek V4.1-Flash-1017 33, GLM-5.3 32, MiMo-V2.6-Pro and Ling-3.1-flash-1019 30; GLM-5.3-Flash 28 on v5.0), at the effort I will serve, and SWE-Bench Pro v2 private (GLM-5.3 211/272, Kimi K3 214/272), then my own eval on real repositories.
-3. **Serving cost by architecture**: KV bytes per token differ by orders of magnitude across these models, DeepSeek V4.1-Flash activates 8B parameters at prefill but 16B at decode, and several checkpoints ship their own speculative-decoding heads. Size from the model card, not a generic formula.
-4. **Supply chain**: mirror the exact weights and LICENSE files, watch for API-only refreshes that leave the open checkpoint behind (Qwen3.8-Max-0902), and treat post-trained derivatives as inheriting their base license.
-5. **The closed baseline**: compare total cost against GPT-6 Luna, Claude Haiku 5.5 (under 100K-token prompts), GPT-6.1 Terra, or Gemini 3.8 Flash. If my utilization is low, the hosted closed model often wins on cost.
+1. **شروط فعال‌سازی مجوز (License triggers):** یک دستیار کدنویسی میزبانی‌شده دقیقاً همان هدفی است که مجوزهای دارای محدودیت (gated licenses) آن را نشانه می‌گیرند. مدل‌های Mistral Large 4 و Qwen3.8-Flash-Next (تحت مجوز Qwen Community 1.0) از روز نخست به مجوزی جداگانه نیاز دارند؛ Muse Spark Open و Step 5 Preview به محض اینکه درآمد از ۲۰ میلیون دلار آمریکا فراتر رود، برای ارائه MaaS به توافقی جداگانه نیاز دارند؛ Kimi K3 و K3.1 Pro در صورتی که شرکت یک کسب‌وکار MaaS را اداره کند و کل درآمد آن (به همراه شرکت‌های وابسته) در طول ۱۲ ماه از ۲۰ میلیون دلار آمریکا عبور کند، به توافقی جداگانه نیاز دارند (مجوز K3.1 Pro کسب‌وکار MaaS را به‌صورت اعطای کنترل معنادار به اشخاص ثالث بر استنتاج (Inference) یا Fine-tuning تعریف می‌کند؛ بنابراین یک دستیار کدنویسی که مدل آن درون ویژگی‌ها و چارچوب اختصاصی‌اش تعبیه شده است، ممکن است خارج از این تعریف قرار گیرد؛ از وکیل حقوقی بخواهید این تعریف را مطالعه کند)؛ MiniMax-M3.1-Flash برای هرگونه استفاده تجاری حداقل به یک اعلان یک‌باره (one-time notice) و برای درآمدهای سالانه بالای ۲۰ میلیون دلار آمریکا به مجوز کتبی نیاز دارد؛ Mistral Medium 3.5 تمامی حقوق را برای درآمدهای ماهانه بیش از ۲۰ میلیون دلار آمریکا سلب می‌کند؛ و بازبینی امنیتی GLM-5.3 تنها برای درآمدهای بالاتر از ۱۰ میلیارد دلار آمریکا اعمال می‌گردد. مدل‌های MiMo-V2.6،‏ GLM-5.3-Flash،‏ DeepSeek V4.1-Flash،‏ Ling-3.1-flash،‏ Beam 1.0،‏ پیش‌نمایش Tencent Hy4 (تنها چک‌پوینت پیش‌نمایش) و Qwen3.8-27B دارای مجوز MIT یا Apache هستند.
+2. **کیفیت در مقیاس‌های هم‌ارز و روی وظایف من:** بنچمارک AA v5.0.1 (مدل Kimi K3.1 Pro امتیاز ۴۶، مدل DeepSeek V4.1-Flash-1017 امتیاز ۳۳، مدل GLM-5.3 امتیاز ۳۲، مدل‌های MiMo-V2.6-Pro و Ling-3.1-flash-1019 امتیاز ۳۰؛ و GLM-5.3-Flash امتیاز ۲۸ در v5.0) در سطح تلاشی که سرویس‌دهی خواهم کرد، و آزمون خصوصی SWE-Bench Pro v2 (مدل GLM-5.3 امتیاز ۲۱۱/۲۷۲، مدل Kimi K3 امتیاز ۲۱۴/۲۷۲)، و سپس ارزیابی اختصاصی خودم روی مخازن واقعی.
+3. **هزینه سرویس‌دهی بر اساس معماری:** بایت‌های KV به ازای هر Token در این مدل‌ها تا چندین مرتبه بزرگی تفاوت دارد؛ مدل DeepSeek V4.1-Flash در فاز پیش‌پُر کردن (prefill) تعداد ۸B پارامتر اما در فاز رمزگشایی (decode) تعداد ۱۶B پارامتر را فعال می‌کند، و چندین چک‌پوینت هدهای رمزگشایی حدسی (speculative-decoding) اختصاصی خود را به همراه دارند. ابعاد و نیازمندی‌ها را از روی کارت مدل تعیین کنید، نه با یک فرمول عمومی.
+4. **زنجیره تامین (Supply chain):** وزن‌های دقیق و فایل‌های LICENSE را آینه‌سازی (mirror) کنید، مراقب به‌روزرسانی‌های منحصر به API باشید که چک‌پوینت متن‌باز را عقب نگه می‌دارند (مانند Qwen3.8-Max-0902)، و مدل‌های مشتق‌شده پس از آموزش (post-trained derivatives) را به گونه‌ای در نظر بگیرید که مجوز پایه خود را به ارث می‌برند.
+5. **معیار مدل بسته (The closed baseline):** هزینه کل را در مقایسه با GPT-6 Luna،‏ Claude Haiku 5.5 (با Promptهای زیر ۱۰۰K-Token)،‏ GPT-6.1 Terra یا Gemini 3.8 Flash بسنجید. اگر نرخ بهره‌وری من پایین باشد، مدل بسته میزبانی‌شده اغلب از نظر هزینه برنده می‌شود.
 
-### Q: A vendor says its new model beats your current one by 10 points. What do you check before switching?
+### پرسش: ارائه‌دهنده‌ای ادعا می‌کند که مدل جدیدش مدل فعلی شما را با اختلاف ۱۰ امتیاز شکست می‌دهد. پیش از تعویض مدل چه مواردی را بررسی می‌کنید؟
 
-**Strong answer:**
-Six things. Some move a number by a point or two; the harness and index-version effects alone have moved headline numbers by tens of points this year:
-- **Runner**: vendor run or public leaderboard? On Terminal-Bench 4.0, Anthropic's runs put Sonnet 5.5 ahead of Opus 5.5 (70.6% vs 66.4%), while the tbench.ai leaderboard puts it behind (61.82% vs 64.85%).
-- **Effort**: Sonnet 5.5 is 54 at max and 41 at high on AA v5.0, a 13-point swing from one setting, and GPT-6.1 Terra is 51 at max but 38 at its default `medium`; compare at the effort you will pay for.
-- **Harness**: Astra scores 62.7% on ARC-AGI-3 with ARC Prize's Standard harness and 99.9% with ARC Prize's Provider Adapter harness (which uses OpenAI's own context-management features), same model and test set.
-- **Fallback state**: Claude scores "with fallback" belong to a router plus several models.
-- **Index version and saturation**: Artificial Analysis re-baselined twice in two months (v4.3 in September, v5.0 in October) and then regraded every model in v5.0.1 (November 3), and each time scores moved, so a "10-point gain" across versions means nothing. Opus 5 scores 99.4% on the public SWE-Bench Pro split but 81.6% on the private one.
-- **Cost per task**: tokens per task differ by about 3x between models of similar quality.
+**پاسخ قوی:**
+شش مورد. برخی ممکن است عدد را یک یا دو نمره جابه‌جا کنند؛ اما اثرات بستر آزمایش (harness) و نسخه شاخص (index-version) به تنهایی در سال جاری اعداد سرخط خبرها را تا ده‌ها امتیاز جابه‌جا کرده‌اند:
+- **مجری آزمون (Runner):** اجرای ارائه‌دهنده بوده است یا جدول رده‌بندی عمومی؟ در Terminal-Bench 4.0، ارزیابی‌های خود شرکت Anthropic مدل Sonnet 5.5 را جلوتر از Opus 5.5 قرار داد (۷۰.۶٪ در برابر ۶۶.۴٪)، در حالی که جدول رده‌بندی tbench.ai آن را عقب‌تر می‌داند (۶۱.۸۲٪ در برابر ۶۴.۸۵٪).
+- **سطح تلاش (Effort):** در بنچمارک AA v5.0، امتیاز Sonnet 5.5 در سطح تلاش `max` برابر ۵۴ و در سطح `high` برابر ۴۱ است که یک نوسان ۱۳ امتیازی حاصل از یک تنظیمات را نشان می‌دهد، و GPT-6.1 Terra در سطح `max` امتیاز ۵۱ اما در پیش‌فرض خود یعنی `medium` امتیاز ۳۸ کسب می‌کند؛ مقایسه را در سطح تلاشی انجام دهید که هزینه آن را پرداخت خواهید کرد.
+- **بستر آزمایش (Harness):** مدل Astra در بنچمارک ARC-AGI-3 با بستر استاندارد ARC Prize نمره ۶۲.۷٪ و با بستر Provider Adapter متعلق به ARC Prize (که از ویژگی‌های مدیریت کانتکست اختصاصی OpenAI استفاده می‌کند) نمره ۹۹.۹٪ به دست می‌آورد؛ دقیقاً با همان مدل و همان مجموعه آزمون.
+- **وضعیت fallback:** نمرات مدل‌های Claude که برچسب "with fallback" دارند، متعلق به یک مسیریاب به همراه چندین مدل است.
+- **نسخه شاخص و اشباع (Index version and saturation):** موسسه Artificial Analysis در مدت دو ماه دو بار خط مبنای خود را بازتعریف کرد (نسخه v4.3 در سپتامبر، و v5.0 در اکتبر) و سپس در v5.0.1 (در ۳ نوامبر) دوباره به همه مدل‌ها امتیاز داد، و هر بار نمرات تغییر کردند؛ بنابراین یک «بهبود ۱۰ امتیازی» در بین نسخه‌های مختلف هیچ معنایی ندارد. Opus 5 در بخش عمومی SWE-Bench Pro نمره ۹۹.۴٪ اما در بخش خصوصی نمره ۸۱.۶٪ کسب می‌کند.
+- **هزینه به ازای هر وظیفه (Cost per task):** Tokenهای مصرفی به ازای هر وظیفه میان مدل‌هایی با کیفیت مشابه، تا حدود ۳ برابر تفاوت دارد.
 
-Then I run my own eval at the serving effort, on held-out tasks, with fallback state pinned, and I rerun it after vendor-side changes (GPT-6 Sol's September 25 image fix changed results under the same ID).
-
----
-
-## Release History (2026)
-
-Earlier monthly headlines, kept for context. Each describes the landscape as it stood at the time; the sections above describe it as of November 6, 2026.
-
-**October 2026 (mid-August to October 1).** Anthropic, OpenAI, Google, SpaceXAI, and Meta all shipped new models in September, and the story was price as much as capability. **Anthropic** shipped **Claude Fable 5.1 and Mythos 5.1** (September 1, same $10/$50 with cache reads cut to 0.025x), **Claude Opus 5.5** (September 22, the first Opus price cut since Opus 4.5, to $4/$20, which Anthropic made its "start here" default), and **Claude Sonnet 5.5** (September 28, $2/$10). **OpenAI** shipped **GPT-6 Astra** (September 3, $10/$50, a Daybreak-first staged rollout and the first OpenAI model rated Critical for cybersecurity), **GPT-6 Sol and Luna** (September 22, $2/$10 and $0.10/$0.50, about half the GPT-5.6 prices they replaced, with no Terra tier until GPT-6.1 Terra on October 26), and **GPT-6.1 Sol** (September 29, same $2/$10 with 0.05x cache reads). **Google** shipped **Gemini 3.8 Flash** (September 2, its third Flash in six weeks, half price until January 1, 2027) plus a Fairwind-gated **3.8 Flash Cyber**, then on September 30 **announced Gemini 4 Argon**, rolling out to cyber defenders first (GA followed on October 13). **SpaceXAI** shipped **Grok 4.7** (September 21) on a new, larger base at an unchanged $2/$6, and **Meta** shipped **Muse Spark 1.3** (September 2). The practical consequences: the mid tier converged on **$2/$10** (Sonnet 5.5, GPT-6 Sol, GPT-6.1 Sol), cache-read multipliers began to differ by model (0.1x, 0.05x, 0.025x), OpenAI billed the whole request at long-context rates above 272K input, and the September Claude models rejected forced `tool_choice` and bound thinking blocks to the producing model and conversation, which broke naive routers. Benchmarks reset too: Artificial Analysis re-baselined its Intelligence Index (v4.3, September 7, itself replaced by v5.0 on October 27), Terminal-Bench 4.0 replaced 3.0, the public SWE-Bench Pro split saturated, and Claude scores began carrying a "with fallback" label. On open weights, **Z.ai shipped GLM-5.3's weights on schedule** (August 28) under an MIT-plus license, **Xiaomi's MiMo-V2.6-Pro** (September 21, MIT) took the top open-weight spot, **DeepSeek V4.1-Flash** (September 10, MIT) cut Flash prices less than a month after the August 16 increase, and Qwen's new Community License required a separate license for any MaaS or coding/office-assistant business. Retirements: the Assistants API shut down August 26, `gpt-5.4-cyber` was shut down October 1 on 20 days' notice, the original `gpt-4o-2024-05-13`, `o1`, `o3-mini`, and `o4-mini` snapshots were scheduled to leave the OpenAI API October 23 (they did), and Claude Sonnet 4.5 was deprecated for November 30.
-
-**August 2026.** Most of the month's releases were post-training refreshes or derivatives rather than new pretraining runs, and no US frontier lab shipped a new flagship base model. The action moved to prices, licenses, and access control. The clear exception was Alibaba's Qwen3.8-Max, a genuinely new 2.4T base whose weights landed August 12. **Claude Sonnet 5's introductory $2/$10 per 1M became the permanent price on August 10**, and the scheduled September 1 rise to $3/$15 was canceled, making Sonnet 5 permanently cheaper than the Sonnet 4.6 it replaced. Running the other way, **DeepSeek raised V4 prices 3x to 12x effective August 16 at 16:00 UTC**, moving to peak and off-peak billing (off-peak is half of peak, and peak covers only 01:00-04:00 and 06:00-10:00 UTC on weekdays, excluding Chinese public holidays). That ended its run as the unambiguous cheap option. **OpenAI shipped GPT-5.6-Cyber** (August 10, $12.50/$75 per 1M) behind a new two-tier Daybreak Blue and Daybreak Red access program, at the time the most concrete production example of capability-tiered gating. **Google released Gemini 3.7 Flash** (August 13) at half price through year-end, and **SpaceXAI released Grok 4.6** (August 12) with a 500K context. On open weights the licensing picture split: **Alibaba's Qwen3.8-Max** (August 12, 2.4T/95B active) shipped under a bespoke commercially gated license while its **Qwen3.8-27B** sibling (August 14) shipped plain Apache 2.0, **Meta returned to open weights with Muse Glimmer** (August 10, 30B, Apache 2.0), and **Z.ai withheld GLM-5.3's weights** pending safety evaluation after cyber capability grew faster than expected (the weights then shipped on schedule, August 28). **Claude Opus 4.1 retired on August 5** on the Claude API, closing out the last $15/$75 Opus tier. Most benchmark figures in that month's launch posts were vendor-reported.
-
-**July 2026.** Anthropic shipped a full generation refresh: **Claude Sonnet 5** (June 30, `claude-sonnet-5`, which became the default everywhere, at an introductory $2/$10 per 1M made permanent on August 10) and **Claude Opus 5** (July 24, `claude-opus-5`, unchanged $5/$25 with an optional Fast mode at $10/$50, about 2.5x faster). **Claude Fable 5 was restored globally July 1** after the export-control suspension, with a new jailbreak-specific cybersecurity classifier; Mythos 5 returned only to roughly 100 US critical-infrastructure organizations via Project Glasswing. **GPT-5.6 (Sol, Terra, Luna) reached general availability July 9**, and on July 30 OpenAI cut Luna 80% to $0.20/$1.20 and Terra 20% to $2/$12 (Sol stayed at $5/$30 until a promotional cut to $4/$20 on August 21). The open-weight frontier had its strongest month to that point: **Moonshot Kimi K3** (July 16, weights July 27) became the largest open-weight model to date at 2.8T total / 104B active with a 1M context, and **Thinking Machines Lab** debuted **Inkling** (July 15, 975B / 41B active, open weights), then the leading US open-weights model. Google shipped **Gemini 3.6 Flash**, **3.5 Flash-Lite**, and a government-gated **3.5 Flash Cyber** (July 21) while delaying Gemini 3.5 Pro, which never shipped. **Meta Muse Spark 1.1** (July 9) arrived with Meta's first paid self-serve model API ($1.25/$4.25 per 1M). Black Forest Labs announced **FLUX 3** (July 23), a unified image, video, audio, and action model, in gated early access. Most benchmark figures in these launches were vendor-reported.
-
-**June 2026.** Anthropic released **Claude Fable 5** (June 9, `claude-fable-5`, $10/$50 per 1M, 1M context), then its most capable widely released model: a Mythos-class model made safe for general availability, with an Opus 4.8 fallback safeguard on sensitive topics. **Claude Mythos 5** shipped the same day as the unrestricted variant for Project Glasswing partners, succeeding Mythos Preview at less than half its price.
-
-**June 10-26, 2026.** A dense second wave of June launches followed. **Google DeepMind DiffusionGemma** (June 10, Apache 2.0), Google DeepMind's first open-weight text-diffusion model, is a 26B Mixture-of-Experts (~4B active) that denoises blocks of tokens in parallel for roughly 4x faster generation on a single H100, trading some quality versus standard Gemma 4. **Gemini 3.5 Live Translate** (June 9 per launch coverage; Google's changelog had no entry for it, and it was listed as `gemini-3.5-live-translate-preview`) added real-time speech-to-speech translation across 70+ languages in public preview via the Gemini Live API and AI Studio. **Cohere North Mini Code 1.0** (June 9, Apache 2.0), Cohere's first open coding model, is a 30B / 3B-active MoE that runs on one H100. **Moonshot Kimi K2.7 Code** (June 12, Modified MIT) tuned K2.6 for long-horizon software work (1T / 32B-active MoE, roughly 30% fewer thinking tokens). **Z.ai GLM-5.2** (coding-plan access June 13, open weights under MIT June 16-17), a 744B / 40B-active MoE with a 1M context, reported SWE-Bench Pro 62.1, ahead of GPT-5.5 on that benchmark, at roughly $1.40 / $4.40 per 1M. **xAI Grok Imagine Video 1.5** reached general availability June 16 (image-to-video with synchronized audio, $0.080 per second of video), and **Grok 4.3** arrived on Amazon Bedrock June 15 ($1.25 / $2.50 per 1M, xAI's first model there). Alibaba's Qwen Cloud changelog listed a June snapshot adding vision to **Qwen 3.7-Max** (text-only at its May launch), though some independent coverage attributed that update to Qwen 3.7-Plus instead. Separately, on June 12 Anthropic suspended access to Claude Fable 5 and Claude Mythos 5 following a US export-control directive, with Mythos 5 later cleared for a limited set of US institutions. Then on June 26, OpenAI previewed **GPT-5.6** (Sol, Terra, and Luna) in a limited release to a small set of US-government-approved partners over dual-use cybersecurity concerns, echoing the Anthropic restriction; OpenAI claimed a new Terminal-Bench 2.1 record for Sol and pitched Terra at GPT-5.5-level quality for about half the cost. Most coding scores in these launches were vendor-reported.
-
-**May 2026.** Anthropic Claude Opus 4.8 (May 28, same $5/$25 price as Opus 4.7; Dynamic Workflows research preview with hundreds of parallel subagents; fast mode at $10/$50, 3x cheaper than the Opus 4.7 fast mode); OpenAI GPT-5.5 (April 23) and GPT-5.5 Instant (May 5, default in ChatGPT); Claude Opus 4.7 (April 16, GA on Bedrock/Vertex/Foundry); Google Gemma 4 (April 2, Apache 2.0) and Gemini 3.2 Flash (quiet rollout May 5); DeepSeek V4 Pro and V4 Flash (April 24; the 75% V4 Pro discount was made permanent May 22, with a $0.435/$0.87 per 1M list price from June 1 that lasted until the August 16 repricing); Moonshot Kimi K2.6 (April 20, 1T MoE / 32B active); Alibaba Qwen 3.6 Plus / 3.6-35B-A3B / 3.6 Max-Preview; Mistral Medium 3.5 (April 29, unified chat/reasoning/coding/vision); Meta Muse Spark (April 8, first closed-weight Meta model). Meta also paused the Llama 4 Behemoth release amid capability concerns; it never shipped. Published SWE-bench Verified leaders before the Fable 5 launch: Claude Mythos Preview 93.9%, GPT-5.5 88.7%, Claude Opus 4.8 88.6%; ARC-AGI-2 leader: GPT-5.5 at 85.0%. Anthropic described Fable 5 as state of the art on nearly all tested benchmarks but put no standard numeric scores in its launch post.
+سپس ارزیابی اختصاصی خودم را در سطح تلاش سرویس‌دهی، روی وظایف دیده‌نشده (held-out tasks)، با تثبیت وضعیت fallback اجرا می‌کنم، و پس از تغییرات اعمال‌شده در سمت ارائه‌دهنده نیز آن را مجدداً تکرار می‌نمایم (اصلاح پردازش تصویر GPT-6 Sol در ۲۵ سپتامبر، نتایج را تحت همان شناسه تغییر داد).
 
 ---
 
-## References
+## تاریخچه انتشار (۲۰۲۶)
 
-- Anthropic models overview: https://platform.claude.com/docs/en/about-claude/models/overview
-- Anthropic model deprecations: https://platform.claude.com/docs/en/about-claude/model-deprecations
-- OpenAI Platform models: https://developers.openai.com/api/docs/models
-- OpenAI pricing and deprecations: https://developers.openai.com/api/docs/pricing and https://developers.openai.com/api/docs/deprecations
-- Google AI models and changelog: https://ai.google.dev/gemini-api/docs/models and https://ai.google.dev/gemini-api/docs/changelog
-- Meta Llama: https://www.llama.com/
-- Meta Muse Wonder: https://about.fb.com/news/2026/10/introducing-muse-wonder-models/ and https://dev.meta.ai/models/muse-wonder/
-- DeepSeek pricing: https://api-docs.deepseek.com/quick_start/pricing
-- xAI Grok: https://docs.x.ai/developers/models
-- Mistral AI: https://docs.mistral.ai/models/
-- Anthropic API version 2026-10-21 migration: https://platform.claude.com/docs/en/api/migration-2026-10-21
-- Artificial Analysis leaderboards and Intelligence Index methodology: https://artificialanalysis.ai/leaderboards/models and https://artificialanalysis.ai/methodology/intelligence-benchmarking
-- Terminal-Bench 4.0: https://www.tbench.ai/news/terminal-bench-4-0 and leaderboard https://www.tbench.ai/leaderboard/terminal-bench/4.0
-- Scale SWE-Bench Pro v2: https://labs.scale.com/blog/swe-bench-pro-v2
-- ARC Prize on GPT-6 Astra: https://arcprize.org/blog/astra
-- Arena (formerly LMArena): https://arena.ai/
+سرخط خبرهای ماهانه گذشته که برای حفظ بستر و پیشینه آورده شده‌اند. هر یک وضعیت چشم‌انداز را در زمان خود توصیف می‌کند؛ بخش‌های فوق وضعیت را تا تاریخ ۶ نوامبر ۲۰۲۶ شرح می‌دهند.
+
+**اکتبر ۲۰۲۶ (اواسط اوت تا ۱ اکتبر):** شرکت‌های Anthropic،‏ OpenAI،‏ Google،‏ SpaceXAI و Meta همگی در ماه سپتامبر مدل‌های جدیدی عرضه کردند و محور اخبار به اندازه قابلیت‌ها به قیمت نیز اختصاص داشت. **Anthropic** مدل‌های **Claude Fable 5.1 و Mythos 5.1** را عرضه کرد (۱ سپتامبر، با همان قیمت ۱۰ دلار / ۵۰ دلار و با کاهش نرخ خواندن از کش به 0.025x)، **Claude Opus 5.5** را منتشر کرد (۲۲ سپتامبر، نخستین کاهش قیمت مدل Opus از زمان Opus 4.5 تا کنون، به ۴ دلار / ۲۰ دلار، که Anthropic آن را گزینه پیش‌فرض «شروع از اینجا» قرار داد)، و **Claude Sonnet 5.5** را عرضه نمود (۲۸ سپتامبر، ۲ دلار / ۱۰ دلار). **OpenAI** مدل **GPT-6 Astra** را منتشر کرد (۳ سپتامبر، ۱۰ دلار / ۵۰ دلار، با عرضه مرحله‌ای و ابتدا در برنامه Daybreak و نخستین مدل OpenAI که رتبه حساس (Critical) را برای امنیت سایبری دریافت کرد)، **GPT-6 Sol و Luna** را روانه بازار ساخت (۲۲ سپتامبر، ۲ دلار / ۱۰ دلار و ۰.۱۰ دلار / ۰.۵۰ دلار، یعنی حدود نصف قیمت‌های GPT-5.6 که جایگزین آن‌ها شدند، و بدون سطح Terra تا زمان عرضه GPT-6.1 Terra در ۲۶ اکتبر)، و **GPT-6.1 Sol** را منتشر کرد (۲۹ سپتامبر، با همان قیمت ۲ دلار / ۱۰ دلار و ضریب 0.05x برای خواندن از کش). **گوگل** مدل **Gemini 3.8 Flash** را عرضه کرد (۲ سپتامبر، سومین مدل Flash آن ظرف شش هفته، با نصف قیمت تا ۱ ژانویه ۲۰۲۷) به همراه مدل دارای دسترسی محدود Fairwind به نام **3.8 Flash Cyber**، و سپس در ۳۰ سپتامبر **از مدل Gemini 4 Argon رونمایی کرد** که ابتدا در اختیار مدافعان سایبری قرار گرفت (عرضه عمومی یا GA در ۱۳ اکتبر دنبال شد). **SpaceXAI** مدل **Grok 4.7** را (در ۲۱ سپتامبر) بر روی یک مدل پایه جدید و بزرگ‌تر با قیمت بدون تغییر ۲ دلار / ۶ دلار عرضه کرد، و **متا** مدل **Muse Spark 1.3** را روانه بازار ساخت (۲ سپتامبر). پیامدهای عملی: رده میانی بر روی نرخ **۲ دلار / ۱۰ دلار** همگرا شد (مدل‌های Sonnet 5.5،‏ GPT-6 Sol و GPT-6.1 Sol)، ضرایب خواندن از کش بر اساس مدل شروع به تفاوت کردند (0.1x،‏ 0.05x و 0.025x)، شرکت OpenAI کل درخواست را برای ورودی‌های بالای ۲۷۲K با نرخ‌های کانتکست طولانی محاسبه کرد، و مدل‌های سپتامبر Claude قابلیت اجبار در انتخاب ابزار (`tool_choice`) را رد کرده و بلوک‌های تفکر را به مدل تولیدکننده و به همان گفتگو وابسته ساختند، که این امر موجب اختلال در مسیریاب‌های ساده‌انگارانه (naive routers) شد. بنچمارک‌ها نیز دستخوش بازتنظیم شدند: شاخص هوش Artificial Analysis Intelligence Index مجدداً بازتعریف شد (نسخه v4.3 در ۷ سپتامبر، که خود در ۲۷ اکتبر با v5.0 جایگزین شد)، بنچمارک Terminal-Bench 4.0 جایگزین نسخه 3.0 شد، بخش عمومی بنچمارک SWE-Bench Pro اشباع گردید، و نمرات Claude شروع به دریافت برچسب "with fallback" کردند. در بخش وزن‌های باز، **شرکت Z.ai وزن‌های GLM-5.3 را طبق برنامه منتشر کرد** (۲۸ اوت) تحت مجوزی شبیه به MIT (مجوز MIT-plus)، مدل **MiMo-V2.6-Pro متعلق به شیائومی** (۲۱ سپتامبر، MIT) جایگاه نخست مدل‌های با وزن باز را به دست آورد، مدل **DeepSeek V4.1-Flash** (در ۱۰ سپتامبر، MIT) کمتر از یک ماه پس از افزایش قیمت ۱۶ اوت قیمت‌های Flash را کاهش داد، و مجوز جدید Community متعلق به Qwen برای هرگونه کسب‌وکار MaaS یا دستیار کدنویسی/اداری نیازمند مجوزی جداگانه شد. بازنشستگی‌ها: پلتفرم Assistants API در ۲۶ اوت خاموش شد، مدل `gpt-5.4-cyber` در ۱ اکتبر با اطلاعیه ۲۰ روزه خاموش گردید، اسنپ‌شات‌های اولیه `gpt-4o-2024-05-13`،‏ `o1`،‏ `o3-mini` و `o4-mini` قرار بود در ۲۳ اکتبر از OpenAI API خارج شوند (که خارج شدند)، و Claude Sonnet 4.5 برای بازنشستگی در ۳۰ نوامبر منسوخ (deprecated) شد.
+
+**اوت ۲۰۲۶:** بیشتر انتشارات این ماه بازنگری‌های پس از آموزش (post-training refreshes) یا مدل‌های مشتق‌شده بودند تا آموزش‌های اولیه جدید (new pretraining runs)، و هیچ آزمایشگاه پیشرو آمریکایی مدل پایه پرچم‌دار جدیدی عرضه نکرد. تمرکز اصلی به قیمت‌ها، مجوزها و کنترل دسترسی معطوف شد. استثنای بارز، مدل Qwen3.8-Max از علی‌بابا بود؛ یک مدل پایه حقیقتاً جدید با حجم 2.4T که وزن‌های آن در ۱۲ اوت عرضه شدند. **قیمت اولیه ۲ دلار / ۱۰ دلار به ازای هر ۱ میلیون Token برای Claude Sonnet 5 در ۱۰ اوت به قیمت دائمی تبدیل شد**، و افزایش برنامه‌ریزی‌شده ۱ سپتامبر به ۳ دلار / ۱۵ دلار لغو گردید که این امر Sonnet 5 را به‌طور دائمی ارزان‌تر از Sonnet 4.6 ساخت که جایگزین آن شده بود. در جهت عکس، **شرکت DeepSeek قیمت‌های V4 را از ۱۶ اوت در ساعت 16:00 UTC به میزان ۳ تا ۱۲ برابر افزایش داد** و به سیستم صورت‌حساب ساعات اوج (peak) و ساعات غیر اوج (off-peak) روی آورد (نرخ غیر اوج نصف نرخ اوج است، و ساعات اوج تنها شامل ساعات 01:00-04:00 و 06:00-10:00 UTC در روزهای کاری به استثنای تعطیلات رسمی چین می‌شود). این امر به دوران آن به‌عنوان گزینه ارزان بی‌چون‌وچرا پایان داد. **OpenAI مدل GPT-5.6-Cyber را عرضه کرد** (۱۰ اوت، ۱۲.۵۰ دلار / ۷۵ دلار به ازای هر ۱ میلیون Token) در قالب برنامه دسترسی دوسطحی جدید Daybreak Blue و Daybreak Red، که در آن زمان عینی‌ترین نمونه محیط عملیاتی از کنترل دسترسی سطح‌بندی‌شده بر اساس قابلیت بود. **گوگل مدل Gemini 3.7 Flash را منتشر کرد** (۱۳ اوت) با نصف قیمت تا پایان سال، و **SpaceXAI مدل Grok 4.6 را عرضه نمود** (۱۲ اوت) با کانتکست ۵۰۰K. در بخش وزن‌های باز وضعیت مجوزها دوپاره شد: **مدل Qwen3.8-Max علی‌بابا** (۱۲ اوت، با ۲.۴T پارامتر کل / ۹۵B فعال) تحت یک مجوز سفارشی با محدودیت تجاری عرضه شد در حالی که مدل هم‌خانواده آن یعنی **Qwen3.8-27B** (در ۱۴ اوت) تحت مجوز ساده Apache 2.0 منتشر گردید، **متا با عرضه Muse Glimmer به دنیای وزن‌های باز بازگشت** (۱۰ اوت، ۳۰B، مجوز Apache 2.0)، و **شرکت Z.ai وزن‌های GLM-5.3 را به تعویق انداخت** تا ارزیابی ایمنی پس از رشد سریع‌تر از حد انتظار قابلیت‌های سایبری انجام گیرد (سپس وزن‌ها طبق برنامه در ۲۸ اوت منتشر شدند). **مدل Claude Opus 4.1 در ۵ اوت در Claude API بازنشسته شد** و به آخرین رده ۱۵ دلار / ۷۵ دلاری Opus پایان داد. اکثر ارقام بنچمارک در پست‌های معرفی این ماه توسط خود ارائه‌دهندگان گزارش شده بود.
+
+**ژوئیه ۲۰۲۶:** شرکت Anthropic یک بازنگری کامل نسلی را عرضه کرد: **Claude Sonnet 5** (در ۳۰ ژوئن، `claude-sonnet-5` که در همه‌جا به گزینه پیش‌فرض تبدیل شد، با قیمت اولیه ۲ دلار / ۱۰ دلار به ازای هر ۱ میلیون Token که در ۱۰ اوت دائمی شد) و **Claude Opus 5** (در ۲۴ ژوئیه، `claude-opus-5` با قیمت بدون تغییر ۵ دلار / ۲۵ دلار و یک حالت اختیاری Fast با نرخ ۱۰ دلار / ۵۰ دلار، حدود ۲.۵ برابر سریع‌تر). **مدل Claude Fable 5 در ۱ ژوئیه در سطح جهانی احیا شد** پس از تعلیق ناشی از کنترل‌های صادراتی، همراه با یک طبقه‌بندی‌کننده جدید امنیت سایبری مخصوص جلوگیری از جیل‌بریک (jailbreak)؛ مدل Mythos 5 تنها از طریق پروژه Glasswing به حدود ۱۰۰ سازمان زیرساخت حیاتی ایالات متحده بازگشت. **مدل‌های GPT-5.6 (شامل Sol،‏ Terra و Luna) در ۹ ژوئیه به عرضه عمومی (GA) رسیدند**، و در ۳۰ ژوئیه OpenAI قیمت Luna را ۸۰٪ کاهش داده و به ۰.۲۰ دلار / ۱.۲۰ دلار و Terra را ۲۰٪ کاهش داده و به ۲ دلار / ۱۲ دلار رساند (Sol روی ۵ دلار / ۳۰ دلار باقی ماند تا اینکه در ۲۱ اوت یک تخفیف تبلیغاتی آن را به ۴ دلار / ۲۰ دلار رساند). مرز مدل‌های با وزن باز قدرتمندترین ماه خود را تا آن زمان تجربه کرد: **مدل Kimi K3 از Moonshot** (در ۱۶ ژوئیه، انتشار وزن‌ها در ۲۷ ژوئیه) با ۲.۸T کل / ۱۰۴B فعال و کانتکست ۱M به بزرگ‌ترین مدل با وزن باز تا آن تاریخ تبدیل شد، و **آزمایشگاه Thinking Machines** از مدل **Inkling** رونمایی کرد (۱۵ ژوئیه، ۹۷۵B / ۴۱B فعال، وزن‌های باز) که در آن زمان مدل پیشروی آمریکایی با وزن باز به شمار می‌رفت. گوگل مدل‌های **Gemini 3.6 Flash**،‏ **3.5 Flash-Lite** و مدل با دسترسی دولتی **3.5 Flash Cyber** را روانه بازار ساخت (۲۱ ژوئیه) در حالی که عرضه Gemini 3.5 Pro را به تعویق انداخت، که البته هرگز عرضه نشد. **مدل Meta Muse Spark 1.1** (در ۹ ژوئیه) همراه با نخستین API تجاری و سلف‌سرویس مدل متا (۱.۲۵ دلار / ۴.۲۵ دلار به ازای هر ۱ میلیون Token) عرضه شد. شرکت Black Forest Labs از مدل **FLUX 3** (در ۲۳ ژوئیه) رونمایی کرد که یک مدل یکپارچه تصویر، ویدیو، صدا و عمل (action) بود و در دسترسی اولیه محدود ارائه شد. اغلب ارقام بنچمارک در این رونمایی‌ها توسط خود ارائه‌دهندگان گزارش شده بود.
+
+**ژوئن ۲۰۲۶:** شرکت Anthropic مدل **Claude Fable 5** را عرضه کرد (۹ ژوئن، `claude-fable-5`، ۱۰ دلار / ۵۰ دلار به ازای هر ۱ میلیون Token، با کانتکست ۱M)، که در آن زمان توانمندترین مدل عمومی عرضه‌شده آن بود: مدلی در کلاس Mythos که برای عرضه عمومی ایمن‌سازی شده بود و در موضوعات حساس به سیستم پشتیبان و حفاظتی (safeguard) مدل Opus 4.8 رجوع می‌کرد. **Claude Mythos 5** در همان روز به‌عنوان نسخه بدون محدودیت برای شرکای Project Glasswing عرضه شد، و با قیمتی کمتر از نصف نسخه قبلی جایگزین Mythos Preview گردید.
+
+**۱۰ تا ۲۶ ژوئن ۲۰۲۶:** موج متراکم دوم انتشارات ماه ژوئن در پی آن آمد. **مدل DiffusionGemma از Google DeepMind** (در ۱۰ ژوئن، مجوز Apache 2.0)، نخستین مدل دیفیوژن متنی (text-diffusion) با وزن باز Google DeepMind، یک مدل متغیر از خبرگان (Mixture-of-Experts یا MoE) با ۲۶B پارامتر (حدود ۴B فعال) است که بلوک‌هایی از Tokenها را به‌صورت موازی نویززدایی (denoise) می‌کند تا تولید متنی تقریباً ۴ برابر سریع‌تر روی یک پردازنده H100 ارائه دهد، هرچند اندکی از کیفیت را در مقایسه با Gemma 4 استاندارد فدا می‌کند. مدل **Gemini 3.5 Live Translate** (در ۹ ژوئن طبق پوشش خبری رونمایی؛ در changelog گوگل ورودی نداشت و با شناسه `gemini-3.5-live-translate-preview` فهرست شد) قابلیت ترجمه بلادرنگ گفتار-به-گفتار را در بیش از ۷۰ زبان به‌صورت پیش‌نمایش عمومی از طریق Gemini Live API و AI Studio افزود. **مدل Cohere North Mini Code 1.0** (در ۹ ژوئن، مجوز Apache 2.0)، نخستین مدل کدنویسی باز شرکت Cohere، یک مدل MoE با ۳۰B کل / ۳B فعال است که روی یک H100 اجرا می‌شود. **مدل Kimi K2.7 Code از Moonshot** (در ۱۲ ژوئن، مجوز Modified MIT) مدل K2.6 را برای کارهای نرم‌افزاری طولانی‌مدت (long-horizon) تنظیم کرد (مدل MoE با ۱T کل / ۳۲B فعال، با حدود ۳۰٪ Tokenهای تفکر کمتر). **مدل GLM-5.2 شرکت Z.ai** (دسترسی به پلن کدنویسی در ۱۳ ژوئن، وزن‌های باز تحت مجوز MIT در ۱۶-۱۷ ژوئن)، یک مدل MoE با ۷۴۴B کل / ۴۰B فعال با کانتکست ۱M، نمره ۶۲.۱ در SWE-Bench Pro را گزارش داد که در آن بنچمارک جلوتر از GPT-5.5 قرار می‌گرفت، با قیمتی در حدود ۱.۴۰ دلار / ۴.۴۰ دلار به ازای هر ۱ میلیون Token. مدل **Grok Imagine Video 1.5 از شرکت xAI** در ۱۶ ژوئن به عرضه عمومی رسید (تصویر-به-ویدیو با صدای همگام‌شده، ۰.۰۸۰ دلار به ازای هر ثانیه ویدیو)، و **Grok 4.3** در ۱۵ ژوئن به Amazon Bedrock راه یافت (۱.۲۵ دلار / ۲.۵۰ دلار به ازای هر ۱ میلیون Token، نخستین مدل xAI در آنجا). در changelog پلتفرم Qwen Cloud متعلق به علی‌بابا اسنپ‌شاتی از ماه ژوئن درج شده بود که بینایی را به **Qwen 3.7-Max** اضافه می‌کرد (مدلی که در زمان عرضه در ماه مه صرفاً متنی بود)، هرچند برخی منابع مستقل این به‌روزرسانی را به Qwen 3.7-Plus نسبت دادند. به‌طور جداگانه، در ۱۲ ژوئن شرکت Anthropic در پی دستورالعمل کنترل صادرات ایالات متحده، دسترسی به Claude Fable 5 و Claude Mythos 5 را معلق کرد، که سپس دسترسی به Mythos 5 برای مجموعه محدودی از موسسات آمریکایی مجاز شد. پس از آن در ۲۶ ژوئن، OpenAI مدل **GPT-5.6** (نسخه‌های Sol،‏ Terra و Luna) را به‌دلیل نگرانی‌های مربوط به کاربرد دوگانه در امنیت سایبری در قالب یک انتشار محدود به گروه کوچکی از شرکای تاییدشده توسط دولت آمریکا پیش‌نمایش کرد، که بازتابی از محدودیت Anthropic بود؛ OpenAI ادعای رکورد جدیدی در Terminal-Bench 2.1 برای Sol داشت و کیفیت Terra را در سطح GPT-5.5 اما با حدود نصف هزینه معرفی نمود. اکثر نمرات کدنویسی در این انتشارات توسط خود ارائه‌دهندگان گزارش شده بود.
+
+**مه ۲۰۲۶:** مدل Claude Opus 4.8 از Anthropic (در ۲۸ مه، با همان قیمت ۵ دلار / ۲۵ دلار مانند Opus 4.7؛ پیش‌نمایش پژوهشی جریان‌های کاری پویا یا Dynamic Workflows با صدها زیرایجنت موازی؛ حالت سریع با قیمت ۱۰ دلار / ۵۰ دلار، ۳ برابر ارزان‌تر از حالت سریع Opus 4.7)؛ OpenAI GPT-5.5 (در ۲۳ آوریل) و GPT-5.5 Instant (در ۵ مه، پیش‌فرض در ChatGPT)؛ Claude Opus 4.7 (در ۱۶ آوریل، عرضه عمومی در Bedrock/Vertex/Foundry)؛ Google Gemma 4 (در ۲ آوریل، Apache 2.0) و Gemini 3.2 Flash (عرضه بی‌سر‌و‌صدا در ۵ مه)؛ DeepSeek V4 Pro و V4 Flash (در ۲۴ آوریل؛ تخفیف ۷۵ درصدی V4 Pro در ۲۲ مه دائمی شد، با قیمت رسمی ۰.۴۳۵ دلار / ۰.۸۷ دلار به ازای هر ۱ میلیون Token از ۱ ژوئن که تا تغییر قیمت ۱۶ اوت ادامه داشت)؛ Moonshot Kimi K2.6 (در ۲۰ آوریل، مدل MoE با ۱T کل / ۳۲B فعال)؛ مدل‌های Alibaba Qwen 3.6 Plus / 3.6-35B-A3B / 3.6 Max-Preview؛ مدل Mistral Medium 3.5 (در ۲۹ آوریل، یکپارچه‌کننده چت/استدلال/کدنویسی/بینایی)؛ Meta Muse Spark (در ۸ آوریل، نخستین مدل وزن‌بسته متا). شرکت متا همچنین عرضه Llama 4 Behemoth را در میان نگرانی‌های مربوط به قابلیت‌ها متوقف کرد؛ این مدل هرگز عرضه نشد. پیشتازان منتشرشده بنچمارک SWE-bench Verified قبل از رونمایی Fable 5: مدل Claude Mythos Preview با ۹۳.۹٪، مدل GPT-5.5 با ۸۸.۷٪، مدل Claude Opus 4.8 با ۸۸.۶٪؛ پیشتاز ARC-AGI-2: مدل GPT-5.5 با ۸۵.۰٪. شرکت Anthropic مدل Fable 5 را در تقریباً تمامی بنچمارک‌های آزمایش‌شده پیشرفته‌ترین (state of the art) توصیف کرد، اما هیچ نمره عددی استانداردی در پست رونمایی خود درج ننمود.
 
 ---
 
-*Next: [Capability Assessment](02-capability-assessment.md)*
+## مراجع
+
+- نمای کلی مدل‌های Anthropic: https://platform.claude.com/docs/en/about-claude/models/overview
+- مدل‌های منسوخ‌شده Anthropic: https://platform.claude.com/docs/en/about-claude/model-deprecations
+- مدل‌های پلتفرم OpenAI: https://developers.openai.com/api/docs/models
+- قیمت‌گذاری و مدل‌های منسوخ‌شده OpenAI: https://developers.openai.com/api/docs/pricing و https://developers.openai.com/api/docs/deprecations
+- مدل‌های Google AI و گزارش تغییرات: https://ai.google.dev/gemini-api/docs/models و https://ai.google.dev/gemini-api/docs/changelog
+- پلتفرم Meta Llama: https://www.llama.com/
+- مدل‌های Meta Muse Wonder: https://about.fb.com/news/2026/10/introducing-muse-wonder-models/ و https://dev.meta.ai/models/muse-wonder/
+- قیمت‌گذاری DeepSeek: https://api-docs.deepseek.com/quick_start/pricing
+- مدل‌های xAI Grok: https://docs.x.ai/developers/models
+- پلتفرم Mistral AI: https://docs.mistral.ai/models/
+- مهاجرت به نسخه API مورخ 2026-10-21 در Anthropic: https://platform.claude.com/docs/en/api/migration-2026-10-21
+- جداول رده‌بندی و متدولوژی شاخص هوش در Artificial Analysis: https://artificialanalysis.ai/leaderboards/models و https://artificialanalysis.ai/methodology/intelligence-benchmarking
+- بنچمارک Terminal-Bench 4.0: https://www.tbench.ai/news/terminal-bench-4-0 و جدول رده‌بندی https://www.tbench.ai/leaderboard/terminal-bench/4.0
+- بنچمارک Scale SWE-Bench Pro v2: https://labs.scale.com/blog/swe-bench-pro-v2
+- گزارش ARC Prize درباره GPT-6 Astra: https://arcprize.org/blog/astra
+- پلتفرم Arena (که قبلاً LMArena نام داشت): https://arena.ai/
+
+---
+
+*بعدی: [ارزیابی قابلیت‌ها](02-capability-assessment.md)*
+
+</div>

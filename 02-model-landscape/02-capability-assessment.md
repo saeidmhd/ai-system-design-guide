@@ -1,43 +1,45 @@
-# Capability Assessment
+<div dir="rtl">
 
-This chapter covers how to evaluate and compare model capabilities for your specific use case. Generic benchmarks rarely tell the full story; this guide helps you conduct meaningful assessments.
+# ارزیابی قابلیت‌ها
 
-## Table of Contents
+این فصل به نحوه ارزیابی و مقایسه قابلیت‌های مدل برای مورد کاربرد (use case) خاص شما می‌پردازد. بنچمارک‌های عمومی به‌ندرت تمام ابعاد ماجرا را بازگو می‌کنند؛ این راهنما به شما کمک می‌کند تا ارزیابی‌های معنادار و کاربردی انجام دهید.
 
-- [Why Benchmarks Are Not Enough](#why-benchmarks-are-not-enough)
-- [Reading a Vendor Benchmark Table](#reading-a-vendor-benchmark-table-november-2026)
-- [Evaluation Dimensions](#evaluation-dimensions)
-- [Reasoning Calibration & Efficiency](#reasoning-calibration)
-- [Internal Elo-based Evaluation](#internal-elo-based-evaluation)
-- [Building Custom Evaluations](#building-custom-evaluations)
-- [Common Evaluation Pitfalls](#common-evaluation-pitfalls)
-- [Practical Assessment Process](#practical-assessment-process)
-- [A/B Testing Models](#ab-testing-models)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [چرا بنچمارک‌ها کافی نیستند](#why-benchmarks-are-not-enough)
+- [خواندن جدول بنچمارک عرضه‌کننده](#reading-a-vendor-benchmark-table-november-2026)
+- [ابعاد ارزیابی](#evaluation-dimensions)
+- [کالیبراسیون و کارایی استدلال](#reasoning-calibration)
+- [ارزیابی داخلی مبتنی بر Elo](#internal-elo-based-evaluation)
+- [ساخت ارزیابی‌های سفارشی](#building-custom-evaluations)
+- [دام‌های رایج ارزیابی](#common-evaluation-pitfalls)
+- [فرایند ارزیابی کاربردی](#practical-assessment-process)
+- [تست A/B مدل‌ها](#ab-testing-models)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Why Benchmarks Are Not Enough
+## چرا بنچمارک‌ها کافی نیستند
 
-### The Benchmark Problem
+### مسئله بنچمارک
 
-Public benchmarks, from the saturated (MMLU, HumanEval, GPQA Diamond) to the current agentic suites (SWE-Bench Pro, Terminal-Bench 4.0, OSWorld 2.0), have limitations:
+بنچمارک‌های عمومی، از بنچمارک‌های اشباع‌شده (MMLU، HumanEval، GPQA Diamond) گرفته تا مجموعه‌های ایجنتی فعلی (SWE-Bench Pro، Terminal-Bench 4.0، OSWorld 2.0)، دارای محدودیت‌هایی هستند:
 
-| Issue | Impact |
-|-------|--------|
-| Training data contamination | Models may have seen test questions. SWE-Bench Pro v2's public split is at 99.4% (Claude Opus 5) while its private 272-task set is at 81.6%; Scale attributes most of the gap to training exposure |
-| Unearned passes | Agents find answers instead of solving tasks. An audit of SWE-Bench Pro v1.0 found 24% (Opus 4.7) to 73% (Fable 5) of passes unearned, mostly via reference solutions in git history (arXiv 2609.34262) |
-| Harness dependence | Same model, same test set: GPT-6 Astra scored 62.7% on ARC-AGI-3 with ARC Prize's provider-neutral harness and 99.9% with OpenAI's adapter that preserves reasoning state between requests |
-| Metric choice | OSWorld 2.0's primary metric is binary task completion, but launch posts quote partial credit. On the official leaderboard's v2.1 full set, Opus 5 (max) scores 44.33% binary and 77.67% partial on the same run |
-| Safety fallback | Claude Opus 5.5 was benchmarked with safeguards on; when they intervened, Opus 4.8 or Opus 5 completed the task. Artificial Analysis labels these entries "with fallback" |
-| Task mismatch | Benchmarks may not reflect your use case |
-| Weak construct validity | Benchmarks assigned the same concept correlate about as strongly with each other as with unrelated ones (56 benchmarks across 53 models, arXiv 2609.08812) |
-| Aggregate scores hide variance | Model A may beat B overall but lose on your domain |
-| Gaming | Models optimized for benchmarks over real tasks |
-| Saturation | Benchmarks lag behind model capabilities: GPQA Diamond sits around 96% at the frontier |
+| مسئله | تاثیر / پیامد |
+|-------|---------------|
+| آلودگی داده‌های آموزش (Training data contamination) | مدل‌ها ممکن است سوالات آزمون را قبلاً دیده باشند. بخش عمومی (public split) در SWE-Bench Pro v2 به ۹۹.۴٪ (Claude Opus 5) می‌رسد، در حالی که مجموعه خصوصی ۲۷۲ وظیفه‌ای آن روی ۸۱.۶٪ قرار دارد؛ شرکت Scale بخش عمده این شکاف را به مواجهه در طول آموزش نسبت می‌دهد |
+| قبولی‌های بادآورده (Unearned passes) | Agentها به جای حل وظایف، پاسخ‌ها را پیدا می‌کنند. یک بازرسی از SWE-Bench Pro v1.0 نشان داد که ۲۴٪ (در Opus 4.7) تا ۷۳٪ (در Fable 5) از قبولی‌ها بادآورده بوده‌اند که عمدتاً از طریق راه‌حل‌های مرجع موجود در تاریخچه git به دست آمده بودند (arXiv 2609.34262) |
+| وابستگی به بستر آزمون (Harness dependence) | مدل یکسان، مجموعه آزمون یکسان: GPT-6 Astra در ARC-AGI-3 با بستر خنثی و مستقل از ارائه‌دهنده مربوط به ARC Prize امتیاز ۶۲.۷٪ و با آداپتور OpenAI که وضعیت استدلال را بین درخواست‌ها حفظ می‌کند، امتیاز ۹۹.۹٪ را کسب کرد |
+| انتخاب متریک (Metric choice) | متریک اصلی OSWorld 2.0 تکمیل دودویی وظیفه است، اما پست‌های معرفی و رونمایی، نمره جزئی (partial credit) را نقل می‌کنند. در مجموعه کامل نسخه 2.1 لیدربورد رسمی، مدل Opus 5 (در حالت max) روی همان اجرا به امتیاز ۴۴.۳۳٪ دودویی و ۷۷.۶۷٪ نمره جزئی دست می‌یابد |
+| بازگشت ایمنی (Safety fallback) | مدل Claude Opus 5.5 با فعال بودن تدابیر محافظتی بنچمارک شد؛ هنگامی که آن‌ها مداخله می‌کردند، Opus 4.8 یا Opus 5 وظیفه را تکمیل می‌کردند. پایگاه Artificial Analysis این ورودی‌ها را با برچسب «همراه با fallback» مشخص می‌کند |
+| عدم تطابق وظایف (Task mismatch) | بنچمارک‌ها ممکن است منعکس‌کننده مورد کاربرد شما نباشند |
+| روایی سازه ضعیف (Weak construct validity) | بنچمارک‌هایی که به یک مفهوم نسبت داده شده‌اند، تقریباً همان‌قدر با یکدیگر همبستگی دارند که با بنچمارک‌های نامرتبط دارند (بررسی ۵۶ بنچمارک روی ۵۳ مدل، arXiv 2609.08812) |
+| پنهان ماندن واریانس در نمرات تجمیعی | مدل A ممکن است در مجموع مدل B را شکست دهد، اما در دامنه تخصصی شما مغلوب شود |
+| دور زدن آزمون (Gaming) | مدل‌ها بیشتر برای بنچمارک‌ها بهینه‌سازی شده‌اند تا وظایف واقعی |
+| اشباع‌شدگی (Saturation) | بنچمارک‌ها از قابلیت‌های مدل‌ها عقب می‌مانند: نمره GPQA Diamond برای مدل‌های پیشرو در حدود ۹۶٪ قرار دارد |
 
-### What Benchmarks Tell You
+### بنچمارک‌ها چه چیزی به شما می‌گویند
 
 ```
 Benchmark results tell you: "Model X scored 58% on Terminal-Bench 4.0"
@@ -46,45 +48,45 @@ What you need to know: "Will Model X, at the effort level I can afford,
 in my harness, finish my team's real tasks without supervision?"
 ```
 
-**Rule of thumb:** Use benchmarks for initial filtering, then conduct your own evaluation.
+**قاعده سرانگشتی:** از بنچمارک‌ها برای غربالگری اولیه استفاده کنید، سپس ارزیابی اختصاصی خود را انجام دهید.
 
-### Reading a Vendor Benchmark Table (November 2026)
+### خواندن جدول بنچمارک عرضه‌کننده (نوامبر ۲۰۲۶)
 
-Every score needs six labels before it means anything: **benchmark version, harness, effort level, who ran it (leaderboard or vendor), fallback state, and metric**. Add **cost per task** whenever two scores are close. September and October 2026 launches show why:
+هر امتیاز پیش از آنکه معنایی داشته باشد، به شش برچسب نیاز دارد: **نسخه بنچمارک، بستر آزمون (harness)، سطح تلاش (effort level)، اجراکننده آن (لیدربورد یا عرضه‌کننده)، وضعیت fallback و متریک**. هر زمان که دو امتیاز به یکدیگر نزدیک بودند، **هزینه به ازای هر وظیفه (cost per task)** را نیز اضافه کنید. رونمایی‌های سپتامبر و اکتبر ۲۰۲۶ دلیل این موضوع را نشان می‌دهند:
 
-| Claim you will see | What was actually measured |
-|--------------------|----------------------------|
-| "Opus 5.5 scores 66.4% on Terminal-Bench 4.0" | Anthropic's own run at xhigh effort (vendor-reported, SE ±2.6). On the tbench.ai leaderboard (entries added October 6), Opus 5.5 is first at 64.85% (max) and Sonnet 5.5 second at 61.82% (max), ahead of GPT-6 Astra and GPT-6.1 Sol (tied at 58.18%). Anthropic's own runs reverse the Claude order (Sonnet 5.5 70.6%, Opus 5.5 66.4%) |
-| "Astra 57.9%" vs "Astra 58.2%" on Terminal-Bench 4.0 | OpenAI's figure is high effort; 58.18% is the leaderboard's max-effort run |
-| "Fable 5.1 55.8%" vs "Fable 5.1 57.9%" | Anthropic's own run vs the leaderboard max-effort entry (57.88%), which xAI quoted in its Grok 4.7 table |
-| "GPT-6 Astra 99.9% on ARC-AGI-3" | ARC Prize's Provider Adapter harness, high effort, $18,817. Its Standard harness at max effort scored 62.7% for $26,098 |
-| "Opus 5.5 81.8% on OSWorld 2.1" | Partial-credit metric, vendor run. On the official leaderboard's v2.1 full set (September 17), Opus 5 at max effort scores 44.33% binary and 77.67% partial; that update predates Opus 5.5 |
-| HLE with tools: Astra ahead, or Opus 5.5 ahead? | Both. HLE-Diamond (1,000 cleaned questions): Astra 82.9%, Opus 5.5 73.9%. Anthropic's full-HLE table: Opus 5.5 67.7%, Astra 57.2%. Dataset and runner flip the order |
-| "Three models tie at 74% on DeepSWE v1.1" | Same pass rate at $2.36 per task (Gemini 3.8 Flash, high), $4.43 (GPT-6 Astra, xhigh) and $11.84 (Claude Opus 5, max) |
-| "Opus 5.5 scores 58 on the AA Intelligence Index" vs "59" | 58 is Index v5.0 (announced October 27), max effort, with safeguard fallback; 59 is v5.0.1 (November 3), which regraded every model on CritPt v2 and put Gemini 4 Carbon, which developers cannot call, at 60. v4.x scores are on a different scale and cannot be compared, even when a number happens to match |
-| "Sonnet 5.5 scores 54" vs "Sonnet 5.5 scores 41" | Both AA v5.0: 54 at max effort, 41 at high. One effort setting moved it 13 points; GPT-6.1 Terra moves from 51 at max to 38 at its default `medium` |
-| "Haiku 5.5 scores 72.4% on OSWorld 2.1" | Anthropic's offline subset with partial credit, vendor-reported. Not the leaderboard's binary metric, and not comparable with full-set scores |
+| ادعایی که مشاهده خواهید کرد | آنچه در واقعیت سنجیده شده است |
+|-----------------------------|-------------------------------|
+| «Opus 5.5 در Terminal-Bench 4.0 امتیاز ۶۶.۴٪ کسب می‌کند» | اجرای خود Anthropic در سطح تلاش xhigh (گزارش‌شده توسط عرضه‌کننده، SE ±2.6). در لیدربورد tbench.ai (ورودی‌های افزوده شده در ۶ اکتبر)، Opus 5.5 با ۶۴.۸۵٪ (در حالت max) اول و Sonnet 5.5 با ۶۱.۸۲٪ (در حالت max) دوم است، جلوتر از GPT-6 Astra و GPT-6.1 Sol (با امتیاز مشترک ۵۸.۱۸٪). اجراهای خود Anthropic ترتیب مدل‌های Claude را معکوس می‌کند (Sonnet 5.5 برابر ۷۰.۶٪، Opus 5.5 برابر ۶۶.۴٪) |
+| «Astra ۵۷.۹٪» در برابر «Astra ۵۸.۲٪» در Terminal-Bench 4.0 | عدد OpenAI مربوط به سطح تلاش high است؛ ۵۸.۱۸٪ مربوط به اجرای سطح تلاش max در لیدربورد است |
+| «Fable 5.1 ۵۵.۸٪» در برابر «Fable 5.1 ۵۷.۹٪» | اجرای خود Anthropic در برابر ورودی با سطح تلاش max در لیدربورد (۵۷.۸۸٪) که xAI در جدول Grok 4.7 خود به آن استناد کرد |
+| «GPT-6 Astra ۹۹.۹٪ در ARC-AGI-3» | بستر آزمون Provider Adapter مربوط به ARC Prize، در سطح تلاش high با هزینه ۱۸,۸۱۷ دلار. بستر استاندارد (Standard) آن در سطح تلاش max امتیاز ۶۲.۷٪ را با هزینه ۲۶,۰۹۸ دلار ثبت کرد |
+| «Opus 5.5 ۸۱.۸٪ در OSWorld 2.1» | متریک نمره جزئی (partial-credit)، اجرای عرضه‌کننده. در مجموعه کامل نسخه 2.1 لیدربورد رسمی (۱۷ سپتامبر)، مدل Opus 5 در سطح تلاش max به امتیاز ۴۴.۳۳٪ دودویی و ۷۷.۶۷٪ نمره جزئی دست می‌یابد؛ آن به‌روزرسانی پیش از عرضه Opus 5.5 منتشر شده بود |
+| بنچمارک HLE همراه با ابزارها: آیا Astra پیشتاز است یا Opus 5.5؟ | هر دو. در HLE-Diamond (شامل ۱,۰۰۰ سوال پاکسازی‌شده): Astra با ۸۲.۹٪ و Opus 5.5 با ۷۳.۹٪. در جدول کامل HLE ارائه شده توسط Anthropic: مدل Opus 5.5 با ۶۷.۷٪ و Astra با ۵۷.۲٪. مجموعه داده و اجراکننده، ترتیب را معکوس می‌کنند |
+| «سه مدل با ۷۴٪ در DeepSWE v1.1 مساوی شده‌اند» | نرخ قبولی یکسان با هزینه ۲.۳۶ دلار به ازای هر وظیفه (Gemini 3.8 Flash، در حالت high)، ۴.۴۳ دلار (GPT-6 Astra، در حالت xhigh) و ۱۱.۸۴ دلار (Claude Opus 5، در حالت max) |
+| «Opus 5.5 در شاخص هوش AA امتیاز ۵۸ می‌گیرد» در برابر «۵۹» | ۵۸ مربوط به Index v5.0 (اعلام‌شده در ۲۷ اکتبر) در سطح تلاش max به همراه fallback تدابیر محافظتی است؛ ۵۹ مربوط به v5.0.1 (در ۳ نوامبر) است که تمام مدل‌ها را مجدداً روی CritPt v2 درجه‌بندی کرد و Gemini 4 Carbon را (که توسعه‌دهندگان نمی‌توانند به آن فراخوانی API بزنند) در امتیاز ۶۰ قرار داد. نمرات سری v4.x در مقیاس متفاوتی هستند و قابل مقایسه نیستند، حتی اگر یک عدد به طور اتفاقی یکسان باشد |
+| «Sonnet 5.5 امتیاز ۵۴ می‌گیرد» در برابر «Sonnet 5.5 امتیاز ۴۱ می‌گیرد» | هر دو در AA v5.0: ۵۴ در سطح تلاش max و ۴۱ در سطح تلاش high. تغییر یک تنظیم تلاش، آن را ۱۳ امتیاز جابه‌جا کرد؛ GPT-6.1 Terra نیز از ۵۱ در حالت max به ۳۸ در حالت پیش‌فرض `medium` تغییر می‌کند |
+| «Haiku 5.5 امتیاز ۷۲.۴٪ در OSWorld 2.1 می‌گیرد» | زیرمجموعه آفلاین Anthropic با نمره جزئی، گزارش‌شده توسط عرضه‌کننده. این عدد متریک دودویی لیدربورد نیست و با نمرات مجموعه کامل قابل مقایسه نمی‌باشد |
 
-The rule that follows: **only same-harness, same-effort, same-runner numbers are comparable.** A vendor number is a claim about the vendor's best configuration, not a prediction for yours. The [benchmarks chapter](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md#harness-and-scaffold-variance) covers harness variance in more depth.
+قاعده‌ای که در پی می‌آید: **تنها اعدادی قابل مقایسه‌اند که دارای بستر آزمون یکسان، سطح تلاش یکسان و اجراکننده یکسان باشند.** عدد اعلام‌شده توسط عرضه‌کننده، ادعایی درباره بهترین پیکربندی خود عرضه‌کننده است، نه یک پیش‌بینی برای سناریوی شما. [فصل بنچمارک‌ها](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md#harness-and-scaffold-variance) واریانس بستر آزمون را با عمق بیشتری پوشش می‌دهد.
 
 ---
 
-## Evaluation Dimensions
+## ابعاد ارزیابی
 
-### Dimension 1: Task Performance
+### بعد ۱: عملکرد وظیفه (Task Performance)
 
-| Task Type | Evaluation Approach | Key Metric |
-|-----------|---------------------|------------|
-| **Autonomous Coding** | SWE-Bench Pro v2 (private set), DeepSWE v1.1, Terminal-Bench 4.0, then your own repositories | % tasks resolved, cost per resolved task |
-| **Long-Horizon Planning** | Agentic loop testing (tau3-bench v1.0.1, Agents' Last Exam) | Success rate on 10+ step plans |
-| **Computer Use** | OSWorld 2.0 | Binary completion first, partial credit second |
-| **Reasoning Depth** | Effort sweep (low to max) | Accuracy and tokens at each effort level |
-| **Long Context RAG** | Multi-needle and reasoning recall (MRCR, AA-LCR) at up to 1M tokens | Recall and cross-document reasoning at depth |
-| **Native Multimodal** | Interleaved Vision/Voice/Text | Sync accuracy across modalities |
+| نوع وظیفه | رویکرد ارزیابی | متریک کلیدی |
+|-----------|----------------|-------------|
+| **کدنویسی خودکار** | SWE-Bench Pro v2 (مجموعه خصوصی)، DeepSWE v1.1، Terminal-Bench 4.0 و سپس مخازن خودتان | درصد وظایف حل‌شده، هزینه به ازای هر وظیفه حل‌شده |
+| **برنامه‌ریزی بلندمدت** | تست حلقه ایجنتی (tau3-bench v1.0.1، Agents' Last Exam) | نرخ موفقیت در برنامه‌های بیش از ۱۰ مرحله |
+| **استفاده از رایانه** | OSWorld 2.0 | ابتدا تکمیل دودویی، سپس نمره جزئی |
+| **عمق استدلال** | پیمایش سطح تلاش (از low تا max) | دقت و Tokenها در هر سطح تلاش |
+| **RAG با کانتکست طولانی** | فراخوانی چندسوزنی و استدلالی (MRCR، AA-LCR) تا حداکثر ۱ میلیون Token | فراخوانی و استدلال میان‌سندی در عمق |
+| **چندوجهی بومی** | تصویر/صوت/متن درهم‌تنیده | دقت همگام‌سازی بین مدالیته‌ها |
 
-### Dimension 2: Agentic Mastery
+### بعد ۲: تسلط ایجنتی (Agentic Mastery)
 
-How well does the model use tools and follow multi-step instructions?
+مدل تا چه حد در استفاده از ابزارها و دنبال کردن دستورالعمل‌های چندمرحله‌ای خوب عمل می‌کند؟
 
 ```python
 def evaluate_agentic_flow(agent, task_environment):
@@ -106,56 +108,56 @@ def evaluate_agentic_flow(agent, task_environment):
     return aggregate(results)
 ```
 
-Grade the final state with fresh, isolated checks, not the agent's own report, and lock the sandbox's network to the model endpoint where you can. SWE-Bench Pro v2 now does both (a network-locked sandbox plus a re-grade of every diff on a pristine image), and the re-grade caught a frontier model forging a Go module version.
+وضعیت نهایی را با بررسی‌های تازه و ایزوله‌شده ارزیابی کنید، نه بر اساس گزارش خود Agent، و تا حد امکان شبکه ساندباکس را صرفاً به Endpoint مدل محدود و قفل کنید. SWE-Bench Pro v2 اکنون هر دو کار را انجام می‌دهد (یک ساندباکس با شبکه قفل‌شده به‌علاوه ارزیابی مجدد هر diff روی یک ایمیج دست‌نخورده)، و این ارزیابی مجدد مچ یک مدل پیشرو را در جعل نسخه یک ماژول Go گرفت.
 
-### Dimension 3: Reasoning Reliability
+### بعد ۳: قابلیت اطمینان استدلال (Reasoning Reliability)
 
-Thinking is now a dial, not a switch. Claude Opus 5.5 cannot disable thinking, Sonnet 5.5's lowest setting is `between_tools`, and GPT-6 Astra has no `none` effort. The question is which **effort level** your task needs:
+تفکر اکنون مانند یک درجه تنظیم پیوسته است، نه یک کلید قطع و وصل. Claude Opus 5.5 نمی‌تواند تفکر را غیرفعال کند، پایین‌ترین تنظیم Sonnet 5.5 مقدار `between_tools` است، و GPT-6 Astra هیچ سطح تلاش `none` ندارد. پرسش این است که وظیفه شما به کدام **سطح تلاش (effort level)** نیاز دارد:
 
-| Effort (illustrative) | Accuracy (Math) | Accuracy (Code) | Avg Latency | Tokens / Output |
-|-----------------------|-----------------|-----------------|-------------|-----------------|
-| **Low** | 78% | 74% | 2.1s | 600 |
-| **Medium** | 88% | 84% | 5.8s | 1,500 |
-| **High** | 93% | 88% | 12.5s | 2,800 |
-| **Max** | 94% | 89% | 31s | 7,000 |
+| سطح تلاش (نمونه) | دقت (ریاضی) | دقت (کدنویسی) | میانگین تاخیر (Latency) | Tokenها / خروجی |
+|------------------|-------------|---------------|-------------------------|-----------------|
+| **Low** | ۷۸٪ | ۷۴٪ | ۲.۱ ثانیه | ۶۰۰ |
+| **Medium** | ۸۸٪ | ۸۴٪ | ۵.۸ ثانیه | ۱,۵۰۰ |
+| **High** | ۹۳٪ | ۸۸٪ | ۱۲.۵ ثانیه | ۲,۸۰۰ |
+| **Max** | ۹۴٪ | ۸۹٪ | ۳۱ ثانیه | ۷,۰۰۰ |
 
-Defaults move under you: Opus 5.5 and Haiku 5.5 default to `medium` where Opus 5 used `high`, GPT-6.1 Sol and GPT-6.1 Terra default to `medium`, and Sonnet 5.5 defaults to `high` on the API but medium in Claude Code. Pin effort explicitly in both evals and production. A max-effort eval does not predict a medium-effort deployment.
+تنظیمات پیش‌فرض تغییر می‌کنند: Opus 5.5 و Haiku 5.5 به طور پیش‌فرض روی `medium` هستند، جایی که Opus 5 از `high` استفاده می‌کرد؛ GPT-6.1 Sol و GPT-6.1 Terra به طور پیش‌فرض روی `medium` قرار دارند، و Sonnet 5.5 در API به طور پیش‌فرض روی `high` است اما در Claude Code روی `medium` تنظیم شده است. سطح تلاش را هم در ارزیابی‌ها و هم در پروداکشن به صراحت تثبیت (pin) کنید. یک ارزیابی با حداکثر تلاش، استقرار (Deployment) با تلاش متوسط را پیش‌بینی نمی‌کند.
 
-### Reasoning Calibration
+### کالیبراسیون استدلال (Reasoning Calibration)
 
-**The "Over-Thinking" Problem:**
-Models often spend 2000+ "thinking" tokens on a question that could be answered with 10 tokens (e.g., "What is 2+2?").
+**مسئله «بیش‌ازحد فکر کردن»:**
+مدل‌ها اغلب بیش از ۲۰۰۰ Token «تفکر» را برای سوالی صرف می‌کنند که می‌شد با ۱۰ Token به آن پاسخ داد (مثلاً «۲+۲ چند می‌شود؟»).
 
-**Principal-level Nuance:**
-Evaluate models based on **Logic Efficiency**: `Accuracy / (Inference Tokens)`.
-Production systems use **Model Arbitration**: a small, cheap model (GPT-6 Luna, Claude Haiku 5.5 on prompts under 100K tokens, Gemini 3.8 Flash at low thinking) classifies the query and picks the effort level, or the model, for the main call. On models where thinking cannot be turned off, the arbiter's job is choosing `low` versus `high`, which still avoids the 10x latency and cost penalty on simple queries.
+**نکته ظریف در سطح مهندسی ارشد:**
+مدل‌ها را بر اساس **کارایی منطق (Logic Efficiency)** ارزیابی کنید: `Accuracy / (Inference Tokens)`.
+سیستم‌های پروداکشن از **داوری مدل (Model Arbitration)** استفاده می‌کنند: یک مدل کوچک و ارزان (GPT-6 Luna، Claude Haiku 5.5 در Promptهای زیر ۱۰۰ هزار Token، Gemini 3.8 Flash در سطح تفکر پایین) پرس‌وجو را دسته‌بندی کرده و سطح تلاش یا مدل را برای فراخوانی اصلی برمی‌گزیند. در مدل‌هایی که تفکر در آن‌ها خاموش نمی‌شود، وظیفه داور انتخاب بین `low` و `high` است که همچنان از جریمه ۱۰ برابری تاخیر (Latency) و هزینه در پرس‌وجوهای ساده جلوگیری می‌کند.
 
-Measure **tokens per task**, not just accuracy. Models differ several-fold here: Artificial Analysis measured GPT-6 Astra using about a third of GPT-5.6 Sol's tokens per coding task, while Muse Spark 1.3 became more verbose than 1.2, so its cost per task rose even though its per-token price did not change.
+معیار **Tokenها به ازای هر وظیفه** را بسنجید، نه فقط دقت را. مدل‌ها در اینجا تفاوت‌های چند برابری دارند: Artificial Analysis اندازه‌گیری کرد که GPT-6 Astra در هر وظیفه کدنویسی حدود یک‌سوم Tokenهای GPT-5.6 Sol را مصرف می‌کند، در حالی که Muse Spark 1.3 نسبت به 1.2 پرحرف‌تر شد، بنابراین هزینه هر وظیفه آن افزایش یافت هرچند قیمت هر Token آن تغییری نکرد.
 
-### Dimension 4: Context Recall
+### بعد ۴: فراخوانی کانتکست (Context Recall)
 
-With 1M-token windows now standard (Claude 4.6 and later, GPT-6 at 1.05M, Gemini 3.8 Flash and Gemini 4 Argon at 1,048,576), simple "needle-in-a-haystack" is no longer enough. We now measure **Contextual Reasoning** across the window.
+اکنون که پنجره‌های ۱ میلیون Tokenای به استاندارد تبدیل شده‌اند (Claude 4.6 به بعد، GPT-6 با ۱.۰۵ میلیون، Gemini 3.8 Flash و Gemini 4 Argon با ۱,۰۴۸,۵۷۶)، آزمون ساده «سوزن در انبار کاه» دیگر کافی نیست. ما امروزه **استدلال زمینه‌ای (Contextual Reasoning)** را در کل پنجره اندازه می‌گیریم.
 
-| Metric | Measurement | Target |
-|--------|-------------|--------|
-| **Window Recall** | Factual recall at 90% window depth | > 98% |
-| **Cross-Doc Reasoning** | Logic linking Doc A (pos 10k) to Doc B (pos 900k) | > 90% |
-| **Contextual Noise Resistance** | Accuracy when 90% of window is irrelevant "filler" | > 95% |
-| **Long-Output Coherence** | Consistency across 64K-128K generated tokens (current output caps are 128K on Claude 5.x and GPT-6 models and 65,536 on Gemini 3.8 Flash; Gemini 4 Argon defaults to 65,536 and reaches about 1M only through its long-decode continuation protocol) | Task-specific |
+| متریک | نحوه سنجش | هدف |
+|-------|-----------|-----|
+| **فراخوانی پنجره (Window Recall)** | فراخوانی فکت‌ها در عمق ۹۰ درصدی پنجره | > ۹۸٪ |
+| **استدلال میان‌سندی (Cross-Doc Reasoning)** | منطقی که سند A (موقعیت 10k) را به سند B (موقعیت 900k) متصل می‌کند | > ۹۰٪ |
+| **مقاومت در برابر نویز زمینه‌ای (Contextual Noise Resistance)** | دقت زمانی که ۹۰٪ پنجره از محتوای پرکننده نامرتبط تشکیل شده باشد | > ۹۵٪ |
+| **انسجام خروجی طولانی (Long-Output Coherence)** | سازگاری در سرتاسر ۶۴ تا ۱۲۸ هزار Token تولیدشده (سقف فعلی خروجی در مدل‌های Claude 5.x و GPT-6 برابر ۱۲۸ هزار و در Gemini 3.8 Flash برابر ۶۵,۵۳۶ است؛ Gemini 4 Argon به طور پیش‌فرض ۶۵,۵۳۶ است و تنها از طریق پروتکل ادامه دیکود طولانی خود به حدود ۱ میلیون می‌رسد) | وابسته به وظیفه |
 
-Record cost alongside recall. On OpenAI models a prompt above 272K tokens bills the whole request at long-context rates, and on Claude Haiku 5.5 a prompt above 100K bills it at 5x, so a model that recalls well at 800K may still lose to RAG on price, and a cheap model can stop being cheap at 101K. The same applies to output: Argon's long decode lets one logical call replace a chunked generation loop, but only after you have measured coherence and cost at that length.
+هزینه را در کنار فراخوانی ثبت کنید. در مدل‌های OpenAI ارسال یک Prompt بالای ۲۷۲ هزار Token کل درخواست را با نرخ‌های کانتکست طولانی محاسبه می‌کند، و در Claude Haiku 5.5 ارسال Prompt بالای ۱۰۰ هزار Token هزینه آن را ۵ برابر می‌کند؛ بنابراین مدلی که در ۸۰۰ هزار Token فراخوانی خوبی دارد ممکن است از نظر هزینه به RAG ببازد، و یک مدل ارزان می‌تواند در ۱۰۱ هزار Token دیگر ارزان نباشد. همین امر در مورد خروجی نیز صدق می‌کند: دیکود طولانی Argon اجازه می‌دهد یک فراخوانی منطقی جایگزین حلقه تولید تکه‌تکه‌شده (chunked generation loop) شود، اما تنها پس از آنکه انسجام و هزینه را در آن طول سنجیده باشید.
 
 ---
 
-## Internal Elo-based Evaluation
+## ارزیابی داخلی مبتنی بر Elo
 
-**Moving beyond static rubrics.**
-Rubrics (1-5 scales) are prone to "judge fatigue" and "score drifting." Modern systems use **Pairwise Elo** for internal golden sets.
+**فراتر رفتن از معیارهای ارزیابی ایستا.**
+روبریم‌ها (مقیاس‌های ۱ تا ۵) مستعد «خستگی داور» و «انحراف امتیاز» هستند. سیستم‌های امروزی از **Elo جفتی (Pairwise Elo)** برای مجموعه‌های طلایی داخلی استفاده می‌کنند.
 
-**The Workflow:**
-1. **Blind Side-by-Side:** Model A and Model B generate answers for the same query.
-2. **The Judge:** A strong model (Claude Opus 5.5, GPT-6 Astra, or a human) selects the winner. Run each pair twice with positions swapped; you can no longer pin temperature on most frontier judges, so measure judge variance instead of assuming it away.
-3. **Elo Update:** Update the internal leaderboard.
+**گردش کار (Workflow):**
+۱. **مقایسه دوشادوش کور (Blind Side-by-Side):** مدل A و مدل B برای یک پرس‌وجوی یکسان پاسخ تولید می‌کنند.
+۲. **داور (The Judge):** یک مدل قوی (Claude Opus 5.5، GPT-6 Astra یا انسان) برنده را انتخاب می‌کند. هر جفت را دو بار با جابه‌جایی موقعیت‌ها اجرا کنید؛ در اکثر داورهای پیشرو دیگر نمی‌توانید پارامتر دما (temperature) را ثابت نگه دارید، بنابراین واریانس داور را اندازه بگیرید نه اینکه آن را نادیده فرض کنید.
+۳. **به‌روزرسانی Elo:** لیدربورد داخلی را به‌روزرسانی کنید.
 
 ```python
 def update_elo(winner_elo, loser_elo, k=32):
@@ -165,15 +167,15 @@ def update_elo(winner_elo, loser_elo, k=32):
     return new_winner_elo, new_loser_elo
 ```
 
-**Why it wins:** It provides a **relative** ranking that is much more robust to changes in judge personality or model versioning.
+**چرا این روش برتر است:** این شیوه یک رتبه‌بندی **نسبی** ارائه می‌دهد که در برابر تغییرات رفتار داور یا نسخه‌بندی مدل‌ها بسیار مقاوم‌تر است.
 
-**Judge cost is now a design choice.** Decision-model judges that return calibrated scores instead of text (TypeSafe's Jev) cost 16 to 325x less than LLM rubric judges, and accuracy differed significantly in at most 8 of 27 paired comparisons (arXiv 2609.29769). But on the decision model's most confident errors, about 96% of LLM verdicts repeated the same wrong answer, and judge cascades gained at most 2.7 points. Cheap judges are fine for binary checklist criteria; a second judge from the same family does not buy independence.
+**هزینه داوری اکنون یک تصمیم در طراحی است.** داورهای مدل تصمیمی که به جای متن، امتیازات کالیبره‌شده بازمی‌گردانند (مانند Jev از شرکت TypeSafe)، بین ۱۶ تا ۳۲۵ برابر ارزان‌تر از داورهای روبریم مبتنی بر LLM هستند و دقت آن‌ها حداکثر در ۸ مورد از ۲۷ مقایسه جفتی تفاوت معناداری داشت (arXiv 2609.29769). اما در خطاهایی که مدل تصمیمی با بالاترین اطمینان مرتکب می‌شد، حدود ۹۶٪ از قضاوت‌های LLM همان پاسخ اشتباه را تکرار کردند و آبشارهای داوری حداکثر ۲.۷ امتیاز بهبود ایجاد کردند. داورهای ارزان‌قیمت برای معیارهای چک‌لیست دودویی مناسب هستند؛ اما داور دوم از همان خانواده استقلال رأی ایجاد نمی‌کند.
 
 ---
 
-## Building Custom Evaluations
+## ساخت ارزیابی‌های سفارشی
 
-### Step 1: Define Evaluation Criteria
+### گام ۱: تعریف معیارهای ارزیابی
 
 ```python
 evaluation_criteria = {
@@ -207,7 +209,7 @@ evaluation_criteria = {
 }
 ```
 
-### Step 2: Create Test Set
+### گام ۲: ایجاد مجموعه آزمون (Test Set)
 
 ```python
 test_set = [
@@ -231,15 +233,15 @@ test_set = [
 ]
 ```
 
-**Test set guidelines:**
-- Cover all major use cases
-- Include easy, medium, hard examples
-- Balance across categories
-- Include edge cases
-- Have clear ground truth answers
-- Draw from real production traffic where possible, so it does not read like a test
+**راهنمای مجموعه آزمون:**
+- پوشش تمام موارد کاربرد اصلی
+- شامل نمونه‌های آسان، متوسط و دشوار
+- ایجاد تعادل بین دسته‌بندی‌ها
+- در نظر گرفتن حالت‌های مرزی (edge cases)
+- برخورداری از پاسخ‌های مرجع (ground truth) مشخص
+- استخراج از ترافیک واقعی پروداکشن در صورت امکان، به گونه‌ای که شبیه یک آزمون تصنعی نباشد
 
-### Step 3: Implement Evaluation
+### گام ۳: پیاده‌سازی ارزیابی
 
 ```python
 class ModelEvaluator:
@@ -285,7 +287,7 @@ class ModelEvaluator:
         # return cosine_sim(embed(response), embed(case["ground_truth"]))
 ```
 
-### Step 4: LLM-as-Judge
+### گام ۴: استفاده از LLM به عنوان داور (LLM-as-Judge)
 
 ```python
 def llm_judge(case: dict, response: str) -> dict:
@@ -311,17 +313,17 @@ Output JSON:
 
 ---
 
-## Common Evaluation Pitfalls
+## دام‌های رایج در ارزیابی
 
-### Pitfall 1: Small Test Set
+### دام ۱: مجموعه آزمون کوچک (Small Test Set)
 
-**Problem:** 20 test cases is not enough for reliable comparison.
+**مشکل:** ۲۰ مورد آزمون (test case) برای یک مقایسه قابل اتکا کافی نیست.
 
-**Solution:** Aim for 100+ cases, stratified by difficulty and category.
+**راه‌حل:** برای بیش از ۱۰۰ مورد آزمون هدف‌گذاری کنید که بر اساس میزان دشواری و دسته‌بندی، طبقه‌بندی (stratified) شده باشند.
 
-### Pitfall 2: Ambiguous Ground Truth
+### دام ۲: داده واقعیت زمینیِ مبهم (Ambiguous Ground Truth)
 
-**Problem:** "Reasonable" answers get marked wrong.
+**مشکل:** پاسخ‌های «منطقی» و قابل قبول، به اشتباه نادرست علامت‌گذاری می‌شوند.
 
 ```
 Query: "What is the capital of Australia?"
@@ -330,25 +332,25 @@ Model answer: "The capital of Australia is Canberra."
 Exact match: FAIL (but clearly correct)
 ```
 
-**Solution:** Use semantic matching or LLM judge, not exact match.
+**راه‌حل:** به‌جای تطابق دقیق (exact match)، از تطابق معنایی (semantic matching) یا داور LLM (LLM judge) استفاده کنید.
 
-### Pitfall 3: Evaluation Set Leakage
+### دام ۳: نشت مجموعه ارزیابی (Evaluation Set Leakage)
 
-**Problem:** Using same cases for development and evaluation.
+**مشکل:** استفاده از موارد آزمون یکسان برای توسعه و ارزیابی.
 
-**Solution:** Keep a held-out test set that you never use for prompt tuning.
+**راه‌حل:** یک مجموعه آزمون مجزا و کنارگذاشته‌شده (held-out) نگه دارید که هرگز از آن برای تنظیم Prompt (Prompt tuning) استفاده نکنید.
 
-### Pitfall 4: Ignoring Variance
+### دام ۴: نادیده گرفتن واریانس (Ignoring Variance)
 
-**Problem:** Running each test once ignores model randomness.
+**مشکل:** اجرای هر آزمون فقط برای یک بار، تصادفی‌بودن (randomness) رفتار مدل را نادیده می‌گیرد.
 
-**Solution:** Run each case at least three times at the production effort setting and report confidence intervals. Temperature is no longer a lever on most frontier models: Claude API version `2026-10-21`, which all eight of Anthropic's new SDK and CLI majors send by default, returns 400 on any `temperature`, `top_p`, or `top_k` on every model (earlier versions reject non-default values on Claude 4.7 and later); Google deprecated temperature in the Gemini API; and GPT-6 Astra does not accept it. Variance is something you measure, not something you tune away.
+**راه‌حل:** هر مورد آزمون را حداقل سه بار در همان تنظیمات سطح تلاش (effort) محیط عملیاتی (production) اجرا کنید و فاصله‌های اطمینان (confidence intervals) را گزارش نمایید. پارامتر دما (Temperature) دیگر در اکثر مدل‌های مرز دانشی (frontier) یک اهرم تنظیم به شمار نمی‌رود: نسخه API مورخ `2026-10-21` در Claude که هر هشت نسخه اصلی جدید SDK و CLI شرکت Anthropic آن را به‌طور پیش‌فرض ارسال می‌کنند، برای هر مقداری از `temperature`، `top_p` یا `top_k` در تمام مدل‌ها خطای 400 بازمی‌گرداند (نسخه‌های قبلی نیز مقادیر غیرپیش‌فرض را در Claude 4.7 و نسخه‌های پس از آن رد می‌کنند)؛ شرکت Google پارامتر دما را در Gemini API منسوخ کرده است؛ و GPT-6 Astra نیز آن را نمی‌پذیرد. واریانس چیزی است که باید آن را اندازه بگیرید، نه آنکه با تنظیم پارامترها نادیده‌اش بگیرید یا حذفش کنید.
 
-### Pitfall 5: Cost Blindness
+### دام ۵: بی‌توجهی به هزینه (Cost Blindness)
 
-**Problem:** Best model is 10x more expensive.
+**مشکل:** بهترین مدل ۱۰ برابر گران‌تر است.
 
-**Solution:** Always report quality-adjusted cost, per task rather than per token. The DeepSWE v1.1 three-way tie at 74% spans $2.36 to $11.84 per task.
+**راه‌حل:** همواره هزینه تعدیل‌شده بر اساس کیفیت (quality-adjusted cost) را به ازای هر تسک گزارش دهید، نه به ازای هر Token. تساوی سه‌جانبه DeepSWE v1.1 در امتیاز ۷۴٪، دامنه‌ای از ۲.۳۶ دلار تا ۱۱.۸۴ دلار به ازای هر تسک را در بر می‌گیرد.
 
 ```python
 def quality_adjusted_cost(model_results):
@@ -362,23 +364,23 @@ def quality_adjusted_cost(model_results):
     }
 ```
 
-### Pitfall 6: Evaluating a Different System Than You Ship
+### دام ۶: ارزیابی سیستمی متفاوت از آنچه به مرحله استقرار می‌رسانید
 
-**Problem:** The eval ran at max effort, in a vendor harness, with safeguard fallback to another model, or against a model that has since changed under the same ID.
+**مشکل:** ارزیابی در حداکثر سطح تلاش (max effort)، در بستر آزمایشی (harness) اختصاصی ارائه‌دهنده، با مکانیزم بازگشت ایمن (safeguard fallback) به مدلی دیگر، یا در برابر مدلی انجام شده است که از آن زمان تاکنون تحت همان شناسه تغییر یافته است.
 
-**Solution:** Match effort, harness, tools and fallback settings to production, and re-run evals on provider-side changes, not only on model-ID changes. OpenAI fixed an image-understanding bug in GPT-6 Sol and Luna on September 25, 2026 without changing the model ID and told customers to rerun image evals. DeepSeek's legacy `deepseek-v4-flash` names now serve V4.1-Flash, and `deepseek-flash` moved to the V4.1-Flash-1017 build on October 17. Google has served `gemini-3.7-flash` requests with Gemini 3.8 Flash since October 8, so an eval pinned to 3.7 Flash now measures a different model.
+**راه‌حل:** تنظیمات سطح تلاش (effort)، بستر آزمایشی (harness)، ابزارها و مکانیزم‌های جایگزین (fallback) را دقیقاً مطابق با محیط عملیاتی (production) تنظیم کنید، و ارزیابی‌ها را با هر تغییر سمت ارائه‌دهنده — و نه فقط تغییر در شناسه مدل — مجدداً اجرا نمایید. OpenAI در ۲۵ سپتامبر ۲۰۲۶ یک باگ درک تصویر را در GPT-6 Sol و Luna بدون تغییر شناسه مدل برطرف کرد و از مشتریان خواست ارزیابی‌های مربوط به تصویر را مجدداً اجرا کنند. نام‌های قدیمی `deepseek-v4-flash` در DeepSeek اکنون مدل V4.1-Flash را سرویس‌دهی می‌کنند، و `deepseek-flash` در ۱۷ اکتبر به بیلد V4.1-Flash-1017 تغییر یافت. Google از ۸ اکتبر به این سو درخواست‌های `gemini-3.7-flash` را با Gemini 3.8 Flash پاسخ می‌دهد؛ بنابراین ارزیابیِ تثبیت‌شده (pinned) روی 3.7 Flash اکنون در عمل مدل متفاوتی را می‌سنجد.
 
-### Pitfall 7: Eval Awareness
+### دام ۷: آگاهی از ارزیابی (Eval Awareness)
 
-**Problem:** Models behave differently when they recognize a test. Anthropic reports Opus 5.5 showing evaluation awareness in 36% of audit transcripts against 0.4% of internal Claude Code transcripts.
+**مشکل:** مدل‌ها هنگامی که متوجه آزمون بودن ورودی شوند، رفتار متفاوتی از خود نشان می‌دهند. Anthropic گزارش داده است که Opus 5.5 در ۳۶٪ از متن‌های بازرسی (audit transcripts) آگاهی از ارزیابی نشان داده است، در حالی که این میزان در رونوشت‌های داخلی Claude Code تنها ۰.۴٪ بوده است.
 
-**Solution:** Build eval sets from real (scrubbed) production traffic and shadow-mode runs rather than obviously synthetic prompts, and weight production signals over offline scores when they disagree.
+**راه‌حل:** مجموعه‌های ارزیابی را به‌جای استفاده از Promptهای آشکارا ساختگی، بر پایه ترافیک واقعی (و پاک‌سازی‌شده از داده‌های حساس) محیط عملیاتی و اجراهای حالت سایه (shadow-mode) بسازید؛ و در صورت عدم توافق، به سیگنال‌های محیط عملیاتی وزن و اعتبار بیشتری نسبت به امتیازهای آفلاین بدهید.
 
 ---
 
-## Practical Assessment Process
+## فرآیند عملی ارزیابی
 
-### Week 1: Setup and Initial Filtering
+### هفته اول: راه‌اندازی و غربال‌گری اولیه
 
 ```
 Day 1-2: Define evaluation criteria and create test set
@@ -386,7 +388,7 @@ Day 3-4: Benchmark 4-6 candidate models at the effort level you can afford to sh
 Day 5: Analyze results, filter to top 2-3
 ```
 
-### Week 2: Deep Evaluation
+### هفته دوم: ارزیابی عمیق
 
 ```
 Day 1-2: Expand test set for top candidates
@@ -395,7 +397,7 @@ Day 4: Measure latency and throughput
 Day 5: Calculate total cost of ownership
 ```
 
-### Week 3: Production Validation
+### هفته سوم: اعتبارسنجی در محیط عملیاتی
 
 ```
 Day 1-2: Shadow mode deployment
@@ -403,7 +405,7 @@ Day 3-4: A/B test if traffic allows
 Day 5: Final decision and documentation
 ```
 
-### Decision Template
+### الگوی تصمیم‌گیری (Decision Template)
 
 ```markdown
 ## Model Evaluation Report
@@ -433,16 +435,16 @@ Model C (GLM-5.3-Flash) for high-volume, cost-sensitive paths
 
 ---
 
-## A/B Testing Models
+## آزمون A/B مدل‌ها (A/B Testing Models)
 
-### When to A/B Test
+### چه زمانی باید آزمون A/B انجام داد
 
-- High traffic (1000+ queries/day)
-- Clear success metrics
-- Acceptable risk of quality variation
-- Need production validation
+- ترافیک بالا (بیش از ۱۰۰۰ پرس‌وجو در روز)
+- معیارهای موفقیت مشخص و شفاف
+- ریسک پذیرفتنی در نوسان کیفیت
+- نیاز به اعتبارسنجی در محیط عملیاتی
 
-### A/B Test Design
+### طراحی آزمون A/B
 
 ```python
 import hashlib
@@ -484,38 +486,38 @@ class ModelABTest:
         }
 ```
 
-Route on a stable unit (user or conversation ID), not a request ID, when the models carry state across turns. On Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5, thinking blocks are bound to the model that produced them (and on Sonnet 5.5 and Haiku 5.5 to the producing account), so flipping a conversation between arms mid-stream silently drops reasoning.
+هنگامی که مدل‌ها حالت (state) گفتگو را در طول نوبت‌ها حفظ می‌کنند، مسیریابی را بر اساس یک واحد پایدار (شناسه کاربر یا شناسه گفتگو) انجام دهید، نه شناسه درخواست (request ID). در Claude Fable 5.1،‏ Opus 5.5،‏ Sonnet 5.5 و Haiku 5.5، بلوک‌های تفکر (thinking blocks) به مدلی که آن‌ها را تولید کرده است وابسته (bound) هستند (و در Sonnet 5.5 و Haiku 5.5 به حساب کاربری تولیدکننده وابسته هستند)؛ بنابراین جابه‌جا کردن یک گفتگو بین بازوهای آزمون در میانه مسیر، بدون اعلام خطا زنجیره استدلال را حذف می‌کند.
 
-### Metrics to Track
+### معیارهایی که باید رصد شوند
 
-| Metric Type | Examples |
-|-------------|----------|
-| Quality | User ratings, expert review, LLM judge |
-| Engagement | Click-through, time on page, follow-up queries |
-| Business | Conversion, support escalation, resolution rate |
-| Operational | Latency, errors, cost per task, refusal rate |
+| نوع معیار | نمونه‌ها |
+|---|---|
+| کیفیت (Quality) | امتیازهای کاربران، بررسی تخصصی، داور LLM |
+| تعامل (Engagement) | نرخ کلیک (CTR)، زمان سپری‌شده در صفحه، پرس‌وجوهای پیگیری |
+| کسب‌وکار (Business) | نرخ تبدیل، ارجاع به پشتیبانی سطح بالاتر (escalation)، نرخ حل مسئله |
+| عملیاتی (Operational) | تاخیر (Latency)، خطاها، هزینه به ازای هر تسک، نرخ رد درخواست (refusal rate) |
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه
 
-### Q: How would you evaluate models for a customer support chatbot?
+### پرسش: چگونه مدل‌ها را برای یک چت‌بات پشتیبانی مشتری ارزیابی می‌کنید؟
 
-**Strong answer:**
-I would structure evaluation in layers:
+**پاسخ قوی:**
+من ارزیابی را در چند لایه ساختاردهی می‌کنم:
 
-**1. Offline evaluation (80% of effort):**
-- Create test set from real support tickets (200+ cases)
-- Cover all categories: billing, technical, returns, general
-- Include easy, medium, hard difficulty
-- Measure: accuracy, helpfulness, safety
+**۱. ارزیابی آفلاین (۸۰٪ تلاش):**
+- ایجاد مجموعه آزمون از تیکت‌های واقعی پشتیبانی (بیش از ۲۰۰ مورد)
+- پوشش تمام دسته‌بندی‌ها: صورت‌حساب، فنی، مرجوعی، عمومی
+- در بر گرفتن سطوح دشواری آسان، متوسط و سخت
+- سنجش: دقت، مفید بودن، ایمنی
 
-**2. Evaluation method:**
-- Use LLM-as-judge for subjective metrics
-- Human review for sample (20%)
-- Track instruction following (format, length)
+**۲. روش ارزیابی:**
+- استفاده از داوری مبتنی بر LLM (LLM-as-judge) برای معیارهای ذهنی و کیفی
+- بازبینی انسانی برای نمونه‌ای از داده‌ها (۲۰٪)
+- پایش میزان پیروی از دستورالعمل‌ها (فرمت، طول پاسخ)
 
-**3. Metrics:**
+**۳. معیارها:**
 ```python
 metrics = {
     "resolution_accuracy": "Does answer solve the problem?",
@@ -525,61 +527,63 @@ metrics = {
 }
 ```
 
-**4. Production validation:**
-- Shadow mode: run new model, compare outputs
-- A/B test: 10% traffic to new model
-- Monitor: CSAT, escalation rate, resolution time
+**۴. اعتبارسنجی در محیط عملیاتی:**
+- حالت سایه (Shadow mode): اجرای مدل جدید و مقایسه خروجی‌ها
+- آزمون A/B: هدایت ۱۰٪ از ترافیک به مدل جدید
+- رصد و پایش: شاخص رضایت مشتری (CSAT)، نرخ ارجاع به پشتیبانی انسانی (escalation rate)، زمان حل مسئله
 
-### Q: What is wrong with using MMLU to compare models for your use case?
+### پرسش: استفاده از MMLU برای مقایسه مدل‌ها در مورد کاربرد خاص شما چه اشکالی دارد؟
 
-**Strong answer:**
-MMLU has several problems for specific use cases:
+**پاسخ قوی:**
+بنچمارک MMLU برای موارد کاربرد خاص دارای چندین مشکل اساسی است:
 
-**1. Domain mismatch:** MMLU tests academic knowledge. My customer support bot needs product knowledge.
+**۱. عدم تطابق دامنه (Domain mismatch):** بنچمارک MMLU دانش آکادمیک را می‌سنجد، در حالی که بات پشتیبانی مشتری من به دانش محصول نیاز دارد.
 
-**2. Format mismatch:** MMLU is multiple choice. My use case is free-form generation.
+**۲. عدم تطابق ساختار (Format mismatch):** بنچمارک MMLU چندگزینه‌ای است، در حالی که مورد کاربرد من تولید متن آزاد (free-form generation) است.
 
-**3. Contamination:** Models may have trained on MMLU questions.
+**۳. آلودگی داده‌ها (Contamination):** مدل‌ها ممکن است با سوالات MMLU آموزش دیده باشند.
 
-**4. Aggregation hides variance:** Model A might beat B on MMLU but lose on the specific categories I care about.
+**۴. تجمیع داده‌ها واریانس را پنهان می‌کند:** ممکن است مدل A در مجموع امتیاز MMLU از مدل B پیشی بگیرد، اما در دسته‌بندی‌های خاصی که برای من اهمیت دارند شکست بخورد.
 
-**5. No context testing:** MMLU does not test RAG or long-context abilities.
+**۵. عدم آزمون کانتکست:** بنچمارک MMLU توانمندی‌های RAG یا کانتکست طولانی (long-context) را نمی‌سنجد.
 
-**6. Saturation:** Frontier models cluster at the top, so it no longer separates them. Artificial Analysis now lists MMLU-Pro, GPQA Diamond and similar evals as legacy, outside its current index.
+**۶. اشباع‌شدگی (Saturation):** مدل‌های مرز دانشی (frontier) در بالاترین امتیازات این بنچمارک تجمیع شده‌اند، بنابراین دیگر تمایزی میان آن‌ها ایجاد نمی‌کند. موسسه Artificial Analysis اکنون ارزیابی‌های MMLU-Pro،‏ GPQA Diamond و موارد مشابه را به عنوان بنچمارک‌های قدیمی (legacy) و خارج از شاخص فعلی خود دسته‌بندی می‌کند.
 
-**Better approach:** 
-- Use benchmarks for initial filtering (saves time), preferring contamination-resistant ones with private splits
-- Build custom evaluation for final decision
-- Test on actual use case data
-- Include operational metrics (latency, cost per task)
+**رویکرد بهتر:**
+- استفاده از بنچمارک‌ها برای غربال‌گری اولیه (جهت صرفه‌جویی در زمان)، با اولویت دادن به بنچمارک‌های مقاوم در برابر آلودگی داده‌ها و دارای بخش‌های خصوصی (private splits)
+- ساخت ارزیابی سفارشی برای تصمیم‌گیری نهایی
+- آزمون روی داده‌های واقعیِ مورد کاربرد
+- گنجاندن معیارهای عملیاتی (تاخیر (Latency)، هزینه به ازای هر تسک)
 
-### Q: A vendor reports 99.9% on ARC-AGI-3 for its new model. ARC Prize's own harness shows 62.7% for the same model. Which number do you use?
+### پرسش: ارائه‌دهنده‌ای ادعا می‌کند که مدل جدیدش در ARC-AGI-3 امتیاز ۹۹.۹٪ را کسب کرده است. بستر آزمایشی (harness) اختصاصی ARC Prize برای همان مدل، امتیاز ۶۲.۷٪ را نشان می‌دهد. شما به کدام عدد استناد می‌کنید؟
 
-**Strong answer:**
-Both are real; they measure different systems. ARC Prize verified both for GPT-6 Astra. The 99.9% ran on a Provider Adapter harness that preserves the model's opaque reasoning state between requests, at high effort, for about $19K. The 62.7% ran on the Standard harness, a provider-neutral interface where the model only keeps notes it chooses to write, at max effort, for about $26K.
+**پاسخ قوی:**
+هر دو عدد واقعی هستند؛ آن‌ها دو سیستم کاملاً متفاوت را اندازه‌گیری می‌کنند. مجموعه ARC Prize صحت هر دو عدد را برای GPT-6 Astra تایید کرده است. امتیاز ۹۹.۹٪ روی بستر تطبیق‌دهنده ارائه‌دهنده (Provider Adapter harness) اجرا شده است که حالت استدلال مات (opaque reasoning state) مدل را میان درخواست‌ها حفظ می‌کند؛ این آزمون در سطح تلاش بالا (high effort) و با هزینه‌ای در حدود ۱۹ هزار دلار انجام شد. امتیاز ۶۲.۷٪ روی بستر استاندارد (Standard harness) اجرا شده است، یعنی یک رابط بی‌طرف نسبت به ارائه‌دهنده (provider-neutral) که در آن مدل تنها یادداشت‌هایی را نگه می‌دارد که خودش انتخاب کرده بنویسد؛ این آزمون در حداکثر سطح تلاش (max effort) و با هزینه‌ای در حدود ۲۶ هزار دلار انجام شد.
 
-**Which one predicts my system:**
-- If my agent runs on the vendor's stateful API and harness (for OpenAI, the Responses API with reasoning state carried across turns), the adapter number is closer to my setup.
-- If I run a provider-neutral harness, route across vendors, or rebuild context each turn, the standard number is the honest one. Every cross-vendor comparison must use it.
+**کدام‌یک رفتار سیستم من را پیش‌بینی می‌کند:**
+- اگر ایجنت من روی API و بستر آزمایشی حالت‌مند (stateful) ارائه‌دهنده اجرا شود (برای مثال در OpenAI، از طریق Responses API که حالت استدلال را در طول نوبت‌ها منتقل می‌کند)، عدد تطبیق‌دهنده (adapter) به پیکربندی من نزدیک‌تر است.
+- اگر من از یک بستر بی‌طرف نسبت به ارائه‌دهنده استفاده کنم، درخواست‌ها را میان چند ارائه‌دهنده مسیریابی نمایم، یا کانتکست را در هر نوبت بازسازی کنم، عدد استاندارد عدد صادقانه و واقعی است. در هرگونه مقایسه میان چند ارائه‌دهنده، حتماً باید از این عدد استفاده شود.
 
-**What I take from the gap:** about 37 points separate two runs of the same weights, and the scaffold is the difference (the lower score even ran at higher effort). So I evaluate in my own harness, at my own effort level, and I treat state handling (what persists between turns, and whether failover drops it) as part of the model choice. I also record cost per task: here the higher score was cheaper.
+**نتیجه‌ای که از این شکاف می‌گیرم:** حدود ۳۷ امتیاز اختلاف میان دو اجرای حاصل از یک مجموعه وزنِ یکسان وجود دارد، و عامل این تمایز، اسکلت نرم‌افزاری و چارچوب اجرا (scaffold) است (امتیاز پایین‌تر حتی در سطح تلاش بالاتری اجرا شده بود). بنابراین، من ارزیابی را در بستر آزمایشی خودم و در سطح تلاش مد نظر خودم انجام می‌دهم، و نحوه مدیریت حالت (state) — اینکه چه چیزی میان نوبت‌ها باقی می‌ماند و آیا جابه‌جایی اضطراری (failover) آن را حذف می‌کند یا خیر — را به عنوان بخشی از تصمیم‌گیری در انتخاب مدل در نظر می‌گیرم. همچنین هزینه به ازای هر تسک را نیز ثبت می‌کنم: در اینجا، امتیازی که بالاتر بود حتی هزینه کمتری داشت.
 
 ---
 
-## References
+## منابع
 
 - Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (2023)
-- Arena (formerly LMArena / LMSYS Chatbot Arena): https://arena.ai/
-- Artificial Analysis Intelligence Index methodology: https://artificialanalysis.ai/methodology/intelligence-benchmarking
-- ARC Prize, GPT-6 Astra on ARC-AGI-3: https://arcprize.org/blog/astra
-- OSWorld 2.0 leaderboard (XLANG): https://osworld-v2.xlang.ai/
-- Terminal-Bench 4.0 leaderboard: https://www.tbench.ai/leaderboard/terminal-bench/4.0
-- "Maintaining Benchmarks Against Increasingly Capable Agents" (arXiv 2609.34262)
-- "JEV vs. LLMs as Rubric Judges" (arXiv 2609.29769)
-- HELM: https://crfm.stanford.edu/helm/
-- LMSys Evaluation: https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge
-- OpenAI Evals (open-source framework; the hosted Evals platform shuts down November 30, 2026): https://github.com/openai/evals
+- پلتفرم Arena (که قبلاً LMArena / LMSYS Chatbot Arena نام داشت): https://arena.ai/
+- متدولوژی شاخص هوش در Artificial Analysis: https://artificialanalysis.ai/methodology/intelligence-benchmarking
+- گزارش ARC Prize درباره GPT-6 Astra در ARC-AGI-3: https://arcprize.org/blog/astra
+- جدول رده‌بندی OSWorld 2.0 (XLANG): https://osworld-v2.xlang.ai/
+- جدول رده‌بندی Terminal-Bench 4.0: https://www.tbench.ai/leaderboard/terminal-bench/4.0
+- مقاله «Maintaining Benchmarks Against Increasingly Capable Agents» (شناسه arXiv 2609.34262)
+- مقاله «JEV vs. LLMs as Rubric Judges» (شناسه arXiv 2609.29769)
+- بنچمارک HELM: https://crfm.stanford.edu/helm/
+- ارزیابی LMSys: https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge
+- ابزار OpenAI Evals (فریم‌ورک متن‌باز؛ پلتفرم میزبانی‌شده Evals در ۳۰ نوامبر ۲۰۲۶ خاموش می‌شود): https://github.com/openai/evals
 
 ---
 
-*Previous: [Model Taxonomy](01-model-taxonomy.md) | Next: [Pricing and Costs](03-pricing-and-costs.md)*
+*قبلی: [طبقه‌بندی مدل‌ها](01-model-taxonomy.md) | بعدی: [قیمت‌گذاری و هزینه‌ها](03-pricing-and-costs.md)*
+
+</div>
