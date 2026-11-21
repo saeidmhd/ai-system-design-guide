@@ -1,28 +1,30 @@
-# Inference Pipeline
+<div dir="rtl">
 
-This chapter covers how LLMs generate text at inference time, the computational phases involved, and the key metrics for production serving.
+# پایپ‌لاین استنتاج (Inference Pipeline)
 
-## Table of Contents
+این فصل به نحوه تولید متن توسط LLMها در زمان استنتاج (Inference)، فازهای محاسباتی درگیر و معیارهای کلیدی برای سرویس‌دهی در محیط عملیاتی (production serving) می‌پردازد.
 
-- [Generation Basics](#generation-basics)
-- [Prefill and Decode Phases](#prefill-and-decode-phases)
-- [Sampling Strategies](#sampling-strategies)
-- [Stopping Conditions](#stopping-conditions)
-- [Speculative Decoding](#speculative-decoding)
-- [Latency Metrics, Goodput & Speed Tiers](#latency-metrics)
-- [Memory and Compute Requirements](#memory-and-compute-requirements)
-- [Streaming](#streaming)
-- [Production Considerations](#production-considerations)
-- [Continuous Batching & Prefix Caching](#continuous-batching-and-prefix-caching)
-- [Multi-LoRA Serving](#multi-lora-serving)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [مبانی تولید](#generation-basics)
+- [فازهای Prefill و Decode](#prefill-and-decode-phases)
+- [استراتژی‌های نمونه‌برداری (Sampling)](#sampling-strategies)
+- [شرایط توقف](#stopping-conditions)
+- [رمزگشایی حدسی (Speculative Decoding)](#speculative-decoding)
+- [معیارهای تاخیر (Latency)، توان کارآمد (Goodput) و سطوح سرعت](#latency-metrics)
+- [نیازمندی‌های حافظه و محاسبات](#memory-and-compute-requirements)
+- [استریمینگ (Streaming)](#streaming)
+- [ملاحظات محیط عملیاتی](#production-considerations)
+- [دسته‌بندی پیوسته (Continuous Batching) و کش پیشوند (Prefix Caching)](#continuous-batching-and-prefix-caching)
+- [سرویس‌دهی Multi-LoRA](#multi-lora-serving)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Generation Basics
+## مبانی تولید
 
-LLMs generate text autoregressively: one token at a time, using all previous tokens as context.
+مدل‌های LLM متن را به‌صورت خودبازگشتی (autoregressively) تولید می‌کنند: هر بار یک Token، با استفاده از تمام Tokenهای قبلی به عنوان زمینه (context).
 
 ```
 Input: "The quick brown"
@@ -32,7 +34,7 @@ Step 3: Generate "over" -> "The quick brown fox jumps over"
 ...
 ```
 
-### The Generation Loop
+### حلقه تولید (Generation Loop)
 
 ```python
 def generate(prompt: str, max_tokens: int, model) -> str:
@@ -56,13 +58,13 @@ def generate(prompt: str, max_tokens: int, model) -> str:
 
 ---
 
-## Prefill and Decode Phases
+## فازهای Prefill و Decode
 
-Inference has two distinct phases with different characteristics:
+استنتاج (Inference) دو فاز متمایز با ویژگی‌های متفاوت دارد:
 
-### Prefill Phase
+### فاز Prefill
 
-Processes the entire input prompt in parallel.
+کل Prompt ورودی را به‌صورت موازی پردازش می‌کند.
 
 ```
 Input: "The quick brown fox" (4 tokens)
@@ -74,15 +76,15 @@ Prefill:
 - Output: logits for next token
 ```
 
-**Characteristics:**
-- Compute-bound (lots of matrix operations)
-- Parallelizable across tokens
-- Time scales with prompt length
-- Happens once per generation
+**ویژگی‌ها:**
+- محدود به محاسبات یا Compute-bound (تعداد زیادی عملیات ماتریسی)
+- قابلیت موازی‌سازی در میان Tokenها
+- مقیاس‌پذیری زمان با طول Prompt
+- در هر بار تولید فقط یک بار رخ می‌دهد
 
-### Decode Phase
+### فاز Decode
 
-Generates one token at a time.
+هر بار یک Token تولید می‌کند.
 
 ```
 Decode step 1:
@@ -98,27 +100,29 @@ Decode step 2:
 ...repeat until done
 ```
 
-**Characteristics:**
-- Memory-bound (every step re-reads the weights and the KV cache from HBM)
-- Sequential (must complete each step to start next)
-- Time per token roughly constant
-- Repeated until stopping condition
+**ویژگی‌ها:**
+- محدود به حافظه یا Memory-bound (هر گام وزن‌ها و KV cache را مجدداً از HBM می‌خواند)
+- متوالی (برای شروع گام بعدی باید هر گام تکمیل شود)
+- زمان به ازای هر Token تقریباً ثابت است
+- تا زمان برقراری شرط توقف تکرار می‌شود
 
-### Why This Matters
+### چرا این موضوع اهمیت دارد
 
-| Phase | Bottleneck | Optimization |
+| فاز | گلوگاه (Bottleneck) | بهینه‌سازی |
 |-------|------------|--------------|
-| Prefill | Compute (GPU cores) | Flash Attention, better GPU |
-| Decode | Memory bandwidth | GQA, batching, quantization, speculative decoding |
+| Prefill | محاسبات (هسته‌های GPU) | Flash Attention، پردازنده GPU بهتر |
+| Decode | پهنای باند حافظه | GQA، دسته‌بندی (batching)، کوانتیزاسیون (quantization)، رمزگشایی حدسی (speculative decoding) |
 
-**Implication for serving:**
-- Long prompts increase prefill time (affects TTFT)
-- Long generations increase decode time (affects total latency)
-- Batching helps decode efficiency more than prefill
+**پیامدها برای سرویس‌دهی:**
+- Promptهای طولانی زمان prefill را افزایش می‌دهند (بر TTFT اثر می‌گذارد)
+- تولیدهای طولانی زمان decode را افزایش می‌دهند (بر تاخیر کلی یا total latency اثر می‌گذارد)
+- دسته‌بندی (Batching) به بازدهی decode بیشتر از prefill کمک می‌کند
 
-### Disaggregated Prefill and Decode
+### جداسازی Prefill و Decode (Disaggregated Prefill and Decode)
 
-Because the two phases have opposite bottlenecks, large deployments run them on separate pools: prefill workers build the KV cache and hand it over, decode workers stream tokens.
+از آنجا که این دو فاز گلوگاه‌های متضادی دارند، استقرارهای (deployments) بزرگ آن‌ها را در استخرهای (pools) جداگانه‌ای اجرا می‌کنند: ورکرهای prefill ساختار KV cache را می‌سازند و تحویل می‌دهند، و ورکرهای decode اقدام به استریم کردن Tokenها می‌کنند.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -128,34 +132,36 @@ flowchart LR
     R -.->|short prompts bypass| D
 ```
 
-- **The win is goodput, not peak throughput**: the request rate that meets both the TTFT and inter-token-latency SLOs. Prefill bursts stop stalling in-flight decodes. (vLLM's September 2026 disaggregated-serving guide frames it this way.)
-- **The cost is KV transfer**: Llama-3.1-70B in BF16 stores 320 KiB per token, so a 10K-token prompt hands decode about 3 GB, roughly 65 ms at 400 Gb/s added to TTFT. Short prompts often are not worth it; NVIDIA Dynamo 1.5 added a conditional bypass that sends them straight to decode.
-- **Cross-chip versions** put prefill on HBM GPUs and decode on SRAM or wafer-scale parts for premium-latency tiers: NVIDIA Rubin plus Groq 3 LPX (in production), AMD Helios plus Cerebras (announced, via Cerebras Cloud), and an Intel plus SambaNova blueprint.
-- **Models are now designed around the split**: DeepSeek V4.1-Flash activates 8B parameters per token in prefill and 16B in decode.
+</div>
+
+- **دستاورد اصلی توان کارآمد (Goodput) است، نه اوج توان عملیاتی (Peak Throughput)**: نرخ درخواستی که هر دو SLO مربوط به TTFT و تاخیر بین Tokenها (inter-token latency) را برآورده می‌کند. هجوم‌های ناگهانی prefill دیگر مانع پردازش‌های در حال انجام decode (اصطلاحاً in-flight decodes) نمی‌شوند. (راهنمای سپتامبر ۲۰۲۶ در سرویس‌دهی تفکیک‌شده vLLM این موضوع را به همین شکل تبیین می‌کند.)
+- **هزینه اصلی، انتقال KV است**: مدل Llama-3.1-70B در فرمت BF16 به ازای هر Token مقدار ۳۲۰ کیلوبایت (KiB) ذخیره می‌کند؛ بنابراین یک Prompt با ۱۰ هزار Token حدود ۳ گیگابایت به decode تحویل می‌دهد که با سرعت ۴۰۰ گیگابیت بر ثانیه (Gb/s)، تقریباً ۶۵ میلی‌ثانیه به TTFT اضافه می‌کند. این امر اغلب برای Promptهای کوتاه توجیه اقتصادی و عملکردی ندارد؛ سیستم NVIDIA Dynamo 1.5 یک بای‌پس شرطی (conditional bypass) اضافه کرده است که آن‌ها را مستقیماً به decode می‌فرستد.
+- **نسخه‌های چندتراشه‌ای (Cross-chip versions)** برای سطوح تاخیر ممتاز (premium-latency tiers)، فاز prefill را روی GPUهای دارای HBM و فاز decode را روی قطعات مبتنی بر SRAM یا در مقیاس ویفر (wafer-scale) قرار می‌دهند: ترکیب NVIDIA Rubin به همراه Groq 3 LPX (در محیط عملیاتی)، ترکیب AMD Helios به همراه Cerebras (اعلام‌شده، از طریق Cerebras Cloud)، و یک طرح اولیه (blueprint) از Intel به همراه SambaNova.
+- **مدل‌ها اکنون حول این تفکیک طراحی می‌شوند**: مدل DeepSeek V4.1-Flash در فاز prefill به ازای هر Token معادل ۸ میلیارد پارامتر و در فاز decode معادل ۱۶ میلیارد پارامتر را فعال می‌کند.
 
 ---
 
-## Sampling Strategies
+## استراتژی‌های نمونه‌برداری (Sampling)
 
-After computing logits, we need to select the next token. Different strategies produce different outputs.
+پس از محاسبه لاجیت‌ها (logits)، باید Token بعدی را انتخاب کنیم. استراتژی‌های گوناگون خروجی‌های متفاوتی تولید می‌کنند.
 
-### Greedy Decoding
+### رمزگشایی حریصانه (Greedy Decoding)
 
-Always pick the highest probability token:
+همیشه Token با بالاترین احتمال را انتخاب می‌کند:
 
 ```python
 def greedy_sample(logits):
     return torch.argmax(logits)
 ```
 
-**Properties:**
-- Deterministic
-- Often repetitive for long generations
-- Good for factual/structured outputs
+**ویژگی‌ها:**
+- قطعی (Deterministic)
+- اغلب برای تولیدهای طولانی تکراری می‌شود
+- مناسب برای خروجی‌های مبتنی بر واقعیت/ساختاریافته
 
-### Temperature Sampling
+### نمونه‌برداری با دما (Temperature Sampling)
 
-Scale logits before softmax to control randomness:
+مقیاس‌بندی لاجیت‌ها پیش از softmax برای کنترل تصادفی بودن:
 
 ```python
 def temperature_sample(logits, temperature=1.0):
@@ -164,18 +170,18 @@ def temperature_sample(logits, temperature=1.0):
     return torch.multinomial(probs, num_samples=1)
 ```
 
-**Temperature effects:**
+**اثرات دما (Temperature):**
 
-| Temperature | Behavior | Use Case |
+| دما (Temperature) | رفتار | مورد استفاده |
 |-------------|----------|----------|
-| 0 | Greedy (deterministic in math, not bit-exact on batched GPU serving) | Factual Q&A, code |
-| 0.3-0.7 | Low randomness | General tasks |
-| 1.0 | Baseline | Creative writing |
-| 1.5+ | High randomness | Brainstorming |
+| 0 | حریصانه (از نظر ریاضی قطعی است، اما در سرویس‌دهی دسته‌ای روی GPU از نظر بیتی دقیق نیست) | پرسش و پاسخ مبتنی بر واقعیت، کدنویسی |
+| 0.3-0.7 | تصادفی بودن کم | وظایف عمومی |
+| 1.0 | خط مبنا (Baseline) | نگارش خلاقانه |
+| 1.5+ | تصادفی بودن بالا | ایده‌پردازی (Brainstorming) |
 
-### Top-K Sampling
+### نمونه‌برداری Top-K
 
-Only consider the K highest probability tokens:
+فقط K تا از Tokenهای با بالاترین احتمال را در نظر می‌گیرد:
 
 ```python
 def top_k_sample(logits, k=50):
@@ -185,11 +191,11 @@ def top_k_sample(logits, k=50):
     return indices[sampled_idx]
 ```
 
-**Effect:** Filters out low-probability tokens that might be nonsensical.
+**اثر:** فیلتر کردن Tokenهای با احتمال پایینی که ممکن است بی‌معنی باشند.
 
-### Top-P (Nucleus) Sampling
+### نمونه‌برداری Top-P (هسته‌ای یا Nucleus)
 
-Include tokens until cumulative probability exceeds P:
+شامل کردن Tokenها تا زمانی که احتمال تجمعی از P فراتر رود:
 
 ```python
 def top_p_sample(logits, p=0.9):
@@ -209,23 +215,23 @@ def top_p_sample(logits, p=0.9):
     return sorted_indices[sampled_idx]
 ```
 
-**Advantage over Top-K:** Dynamically adjusts based on probability distribution. High-confidence predictions include fewer tokens; uncertain predictions include more.
+**مزیت نسبت به Top-K:** تنظیم پویا بر اساس توزیع احتمال. پیش‌بینی‌های با اطمینان بالا Tokenهای کمتری را شامل می‌شوند؛ پیش‌بینی‌های نامطمئن Tokenهای بیشتری را در بر می‌گیرند.
 
-### Common Configurations
+### پیکربندی‌های رایج
 
-| Use Case | Temperature | Top-P | Top-K |
+| مورد استفاده | Temperature | Top-P | Top-K |
 |----------|-------------|-------|-------|
-| Code generation | 0-0.2 | 0.95 | - |
-| Factual Q&A | 0.1-0.3 | 1.0 | - |
-| General chat | 0.7 | 0.9 | - |
-| Creative writing | 1.0 | 0.95 | - |
-| Brainstorming | 1.2 | 1.0 | - |
+| تولید کد | 0-0.2 | 0.95 | - |
+| پرسش و پاسخ مبتنی بر واقعیت | 0.1-0.3 | 1.0 | - |
+| گفتگوی عمومی | 0.7 | 0.9 | - |
+| نگارش خلاقانه | 1.0 | 0.95 | - |
+| ایده‌پردازی | 1.2 | 1.0 | - |
 
-These settings apply to self-hosted engines and to hosted models that still accept sampling parameters. Many hosted frontier models no longer do; see [Sampling Controls on Hosted Frontier Models](#sampling-controls-on-hosted-frontier-models).
+این تنظیمات برای موتورهای خود‌میزبان (self-hosted) و مدل‌های هاست‌شده‌ای که همچنان پارامترهای نمونه‌برداری را می‌پذیرند اعمال می‌شود. بسیاری از مدل‌های پیشرو هاست‌شده دیگر این پارامترها را نمی‌پذیرند؛ بخش [کنترل‌های نمونه‌برداری در مدل‌های پیشرو هاست‌شده](#sampling-controls-on-hosted-frontier-models) را ببینید.
 
-### Repetition Penalties
+### جریمه‌های تکرار (Repetition Penalties)
 
-Reduce probability of recently generated tokens:
+کاهش احتمال Tokenهایی که اخیراً تولید شده‌اند:
 
 ```python
 def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
@@ -234,53 +240,53 @@ def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
     return logits
 ```
 
-**Variants:**
-- Presence penalty: Penalize all tokens that appeared
-- Frequency penalty: Penalize proportional to occurrence count
+**انواع:**
+- جریمه حضور (Presence penalty): جریمه کردن تمام Tokenهایی که ظاهر شده‌اند
+- جریمه فرکانس (Frequency penalty): جریمه متناسب با تعداد دفعات تکرار
 
-### Sampling Controls on Hosted Frontier Models
+### کنترل‌های نمونه‌برداری در مدل‌های پیشرو هاست‌شده
 
-Everything above still applies to self-hosted engines: vLLM, SGLang and llama.cpp expose the full set. Hosted reasoning models are removing the knobs:
+تمام موارد بالا همچنان برای موتورهای خود‌میزبان (self-hosted) صادق است: vLLM، SGLang و llama.cpp مجموعه کامل این تنظیمات را ارائه می‌دهند. مدل‌های استدلالی هاست‌شده (hosted reasoning models) در حال حذف این ابزارهای کنترلی هستند:
 
-| Provider | What changed |
+| ارائه‌دهنده | چه تغییراتی رخ داد |
 |----------|--------------|
-| Anthropic | Since API version `2026-10-21` (October 21, 2026), any `temperature`, `top_p` or `top_k` returns 400 on every Claude model, even at its default value; all eight new SDK and CLI majors (Python, TypeScript, Go, Java, C#, PHP, Ruby and the ant CLI) send that version by default. Before it, the 400 applied to non-default values on Claude 4.7 and later models, and Python SDK 1.0 (August 20, 2026) had already removed the parameters from the Messages method signatures. On Bedrock the new version works only for Claude 4.7 and later. |
-| Google | Deprecated `temperature`, `top_p` and `top_k` in the Gemini API on July 21, 2026. Gemini 3.8 Flash replaces `thinking_budget` with `thinking_level` (`low`, `medium` default, `high`). |
-| OpenAI | GPT-6 Astra (September 3, 2026) accepts no custom `temperature` or `top_p` and returns no logprobs. |
+| Anthropic | از زمان نسخه API با شناسه `2026-10-21` (۲۱ اکتبر ۲۰۲۶)، ارسال هرگونه `temperature`، `top_p` یا `top_k` روی تمامی مدل‌های Claude با خطای 400 مواجه می‌شود، حتی اگر مقدار پیش‌فرض آن ارسال شود؛ هر هشت نسخه اصلی جدید SDK و CLI (شامل Python، TypeScript، Go، Java، C#، PHP، Ruby و CLI ابزار ant) این نسخه را به‌صورت پیش‌فرض ارسال می‌کنند. پیش از آن، خطای 400 برای مقادیر غیرپیش‌فرض در Claude 4.7 و مدل‌های بعدی اعمال می‌شد، و نسخه 1.0 از Python SDK (۲۰ اوت ۲۰۲۶) پیش‌تر این پارامترها را از امضای متدهای Messages حذف کرده بود. در Bedrock این نسخه جدید تنها برای Claude 4.7 و نسخه‌های پس از آن کار می‌کند. |
+| Google | پارامترهای `temperature`، `top_p` و `top_k` در Gemini API را در ۲۱ ژوئیه ۲۰۲۶ منسوخ (deprecated) کرد. مدل Gemini 3.8 Flash پارامتر `thinking_budget` را با `thinking_level` جایگزین می‌کند (`low`، مقدار پیش‌فرض `medium`، `high`). |
+| OpenAI | مدل GPT-6 Astra (۳ سپتامبر ۲۰۲۶) هیچ مقدار سفارشی برای `temperature` یا `top_p` نمی‌پذیرد و هیچ logprobی برنمی‌گرداند. |
 
-The control surface is now **reasoning effort** (or thinking level), not the sampler. What that changes:
-- **Determinism**: code that sets `temperature=0` "for reproducibility" now breaks or is being phased out (a 400 on every Claude model under the current API version, unsupported on GPT-6 Astra, deprecated on Gemini), and it never guaranteed bit-identical output anyway. Batched GPU serving, MoE routing and floating-point reduction order make outputs vary run to run unless the engine runs a deterministic, batch-invariant mode at some throughput cost.
-- **Confidence signals**: logprob-based scoring for routing, abstention or human escalation does not work on Astra. Use calibrated classifiers, verifier passes or structured self-assessment instead, or a decision model that returns a typed answer with a probability (OpenAI's Decisions API, or native endpoints in vLLM and SGLang; see [Research Radar theme 16](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). Calibrate those probabilities on your own data: early papers find decision models underconfident.
-- **Diversity**: best-of-n variety now comes from prompt variation, different models or the provider's own sampling, not from raising temperature.
-- **Abstraction layers**: wrappers that hard-code sampling parameters break when you switch to these models. Keep provider-specific parameters behind a thin, per-model config.
+سطح کنترل اکنون **میزان تلاش برای استدلال (reasoning effort)** (یا سطح تفکر / thinking level) است، نه نمونه‌بردار (sampler). تغییراتی که این رویکرد به همراه دارد:
+- **قطعیت (Determinism)**: کدهایی که `temperature=0` را «برای تکرارپذیری» تنظیم می‌کنند اکنون از کار می‌افتند یا در حال کنار گذاشته شدن هستند (خطای 400 در تمام مدل‌های Claude تحت نسخه فعلی API، عدم پشتیبانی در GPT-6 Astra، منسوخ‌شده در Gemini)، و در هر صورت هیچ‌گاه خروجی دقیقاً یکسان در سطح بیت را تضمین نمی‌کردند. سرویس‌دهی دسته‌ای روی GPU، مسیریابی MoE و ترتیب تقلیل ممیز شناور (floating-point reduction order) باعث می‌شوند خروجی‌ها از اجرایی به اجرای دیگر تغییر کنند، مگر اینکه موتور سرویس‌دهی حالتی قطعی و مستقل از دسته (batch-invariant) را با بهایی در توان عملیاتی (Throughput) اجرا کند.
+- **سیگنال‌های اطمینان (Confidence signals)**: امتیازدهی مبتنی بر logprob برای مسیریابی، امتناع از پاسخ (abstention) یا ارجاع به انسان (human escalation) در Astra کار نمی‌کند. به جای آن از طبقه‌بندهای کالیبره‌شده (calibrated classifiers)، گام‌های اعتبارسنج (verifier passes) یا خودارزیابی ساختاریافته استفاده کنید، یا از یک مدل تصمیم‌گیری (decision model) بهره ببرید که پاسخی تایپ‌شده همراه با یک احتمال برمی‌گرداند (API بخش Decisions در OpenAI، یا اندپوینت‌های بومی در vLLM و SGLang؛ [موضوع ۱۶ رادار پژوهشی](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities) را ببینید). این احتمالات را روی داده‌های خودتان کالیبره کنید: مقالات اولیه نشان می‌دهند که مدل‌های تصمیم‌گیری دچار کم‌اطمینانی (underconfident) هستند.
+- **تنوع (Diversity)**: تنوع در روش Best-of-N اکنون از تغییر دادن Prompt، مدل‌های متفاوت یا نمونه‌برداری خود ارائه‌دهنده حاصل می‌شود، نه از افزایش دما (temperature).
+- **لایه‌های انتزاع (Abstraction layers)**: بسته‌بندی‌ها (wrappers) و توابعی که پارامترهای نمونه‌برداری را به‌صورت هاردکد (hard-code) تعریف می‌کنند، هنگام مهاجرت به این مدل‌ها دچار شکست می‌شوند. پارامترهای خاص هر ارائه‌دهنده را در پشت یک لایه پیکربندی سبک و اختصاصی به ازای هر مدل نگه دارید.
 
 ---
 
-## Stopping Conditions
+## شرایط توقف
 
-Generation continues until a stopping condition is met:
+تولید متن تا زمانی که یک شرط توقف برآورده شود ادامه می‌یابد:
 
-### EOS Token
+### Token پایان توالی (EOS Token)
 
-Model generates end-of-sequence token:
+مدل Token پایان توالی (end-of-sequence) را تولید می‌کند:
 
 ```python
 if next_token == tokenizer.eos_token_id:
     break
 ```
 
-### Max Tokens
+### حداکثر تعداد Tokenها (Max Tokens)
 
-Hard limit on generation length:
+محدودیت قطعی (hard limit) برای طول تولید:
 
 ```python
 for i in range(max_tokens):
     # generate...
 ```
 
-### Stop Sequences
+### توالی‌های توقف (Stop Sequences)
 
-Custom strings that terminate generation:
+رشته‌های سفارشی که به تولید متن خاتمه می‌دهند:
 
 ```python
 stop_sequences = ["###", "\n\n", "Human:"]
@@ -293,11 +299,11 @@ for seq in stop_sequences:
 
 ---
 
-## Speculative Decoding
+## رمزگشایی حدسی (Speculative Decoding)
 
-**Standard on every major serving engine for latency-sensitive decode.**
+**استانداردی در تمامی موتورهای سرویس‌دهی اصلی برای decode حساس به تاخیر (Latency).**
 
-A cheap drafter proposes the next K tokens; the target model verifies all K in one forward pass and keeps the longest prefix it agrees with, plus one token it samples itself. With standard rejection-sampling verification the output distribution matches the target's exactly, so speculation changes speed, not quality.
+یک مدل پیش‌نویس‌کننده ارزان (cheap drafter) تعداد K تا از Tokenهای بعدی را پیشنهاد می‌دهد؛ مدل هدف (target model) تمام این K تا Token را در یک گذر روبه‌جلو (forward pass) اعتبارسنجی می‌کند و طولانی‌ترین پیشوندی را که با آن موافق است نگه می‌دارد، به علاوه یک Token که خودش نمونه‌برداری می‌کند. با اعتبارسنجی استاندارد نمونه‌برداری ردشده (rejection-sampling)، توزیع خروجی دقیقاً با مدل هدف مطابقت دارد؛ بنابراین پیش‌بینی حدسی سرعت را تغییر می‌دهد، نه کیفیت را.
 
 ```
 Drafter (cheap): proposes "The", "quick", "brown", "fox", "jumps"
@@ -306,112 +312,112 @@ Result: if the target accepts 4, it adds 1 of its own: 5 tokens for one
         large forward pass (plus the drafter's cost)
 ```
 
-| Method | Where drafts come from | Status (October 2026) |
+| روش | منشأ پیش‌نویس‌ها (Drafts) | وضعیت (اکتبر ۲۰۲۶) |
 |--------|------------------------|-----------------------|
-| Draft model | Separate small model with the same tokenizer | Still supported; needs a matched small model |
-| EAGLE-3 | Lightweight head trained on the target's hidden states | Common choice for models without built-in heads |
-| MTP heads | Multi-token-prediction modules shipped with the model | DeepSeek V3 onward; MiMo-V2.6-Pro (5-layer MTP, 7 tokens per pass); Qwen3.8-Flash-Next (4B MTP module) |
-| DSpark | DeepSeek's drafter, bundled in the checkpoint | DeepSeek-V4-Flash-DSpark and V4-Pro-DSpark (June 27, 2026) are the same checkpoints with a draft module attached; vLLM `method: "dspark"` with 7 speculative tokens |
-| DFlash 2 | Block-diffusion drafter that proposes a whole block in parallel | Inco AI, August 18, 2026; 2.7x to 3.4x on Qwen3.8-27B (vendor-reported); merged into SGLang, vLLM and llama.cpp August 19-27 |
-| N-gram, prompt lookup, suffix decoding | Substrings of the prompt or prior output | No extra model; strong for RAG, code edits and agent loops that repeat text |
+| Draft model | مدل کوچک جداگانه با همان Tokenizer | همچنان پشتیبانی می‌شود؛ نیازمند یک مدل کوچک منطبق است |
+| EAGLE-3 | هد سبک آموزش‌دیده روی حالت‌های پنهان مدل هدف | گزینه‌ای رایج برای مدل‌های فاقد هدهای داخلی |
+| هدهای MTP | ماژول‌های Multi-Token Prediction (MTP) همراه با مدل | از DeepSeek V3 به بعد؛ MiMo-V2.6-Pro (دارای MTP پنج لایه، ۷ تا Token در هر گذر)؛ Qwen3.8-Flash-Next (ماژول MTP چهار میلیاردی / 4B) |
+| DSpark | مدل پیش‌نویس‌کننده DeepSeek، ارائه‌شده در چک‌پوینت | مدل‌های DeepSeek-V4-Flash-DSpark و V4-Pro-DSpark (۲۷ ژوئن ۲۰۲۶) همان چک‌پوینت‌ها همراه با یک ماژول پیش‌نویس متصل هستند؛ در vLLM با `method: "dspark"` به همراه ۷ تا Token حدسی |
+| DFlash 2 | پیش‌نویس‌کننده انتشار بلوکی (Block-diffusion) که کل یک بلوک را به‌صورت موازی پیشنهاد می‌دهد | شرکت Inco AI، ۱۸ اوت ۲۰۲۶؛ ۲.۷ تا ۳.۴ برابر روی Qwen3.8-27B (گزارش‌شده توسط ارائه‌دهنده)؛ ادغام‌شده در SGLang، vLLM و llama.cpp در ۱۹ تا ۲۷ اوت |
+| N-gram، جستجوی Prompt، رمزگشایی پسوند | زیررشته‌هایی از Prompt یا خروجی قبلی | بدون نیاز به مدل اضافی؛ بسیار کارآمد برای RAG، ویرایش کد و حلقه‌های ایجنت (Agent) که متن را تکرار می‌کنند |
 
-Medusa heads, the 2024 favorite, are gone from vLLM: v0.33.0 (November 2, 2026) removed Medusa and the MLP speculator, so a config that still sets `medusa` fails on upgrade. Move to EAGLE-3 or the model's own MTP heads.
+هدهای مدوسا (Medusa heads) که گزینه محبوب سال ۲۰۲۴ بودند، از vLLM حذف شده‌اند: نسخه v0.33.0 (۲ نوامبر ۲۰۲۶) هدهای Medusa و پیش‌بینی‌کننده MLP را حذف کرد، بنابراین پیکربندی‌هایی که همچنان `medusa` را تنظیم کرده باشند هنگام ارتقا با خطا مواجه می‌شوند. به EAGLE-3 یا هدهای MTP خود مدل مهاجرت کنید.
 
-**The batch-size catch.** Speculation spends extra compute to save bandwidth-bound decode steps. At low concurrency that compute is free; at high concurrency the GPU is already busy and every rejected draft token is waste, which is why the classic advice was "turn it off at large batch." vLLM's **adaptive verification** (August 14, 2026; extended in v0.30 to MTP, EAGLE-3 and DFlash drafters) scores each draft position's survival probability and admits only a global top-B set of draft slots per step. On DeepSeek-V4-Pro-0813 the first of 7 draft tokens survives over 70% of the time and the last under 10%; vLLM reports speculation staying beneficial up to concurrency 256.
+**نکته ظریف اندازه دسته (Batch size).** روش حدسی (Speculation) محاسبات بیشتری مصرف می‌کند تا گام‌های decode که محدود به پهنای باند هستند را ذخیره نماید. در همزمانی پایین، این توان محاسباتی رایگان است؛ اما در همزمانی بالا، GPU پیش‌تر مشغول است و هر Token پیش‌نویس ردشده یک هدررفت محسوب می‌شود؛ به همین دلیل توصیه سنتی این بود که «در اندازه‌های دسته بزرگ آن را خاموش کنید». قابلیت **اعتبارسنجی تطبیقی (adaptive verification)** در vLLM (۱۴ اوت ۲۰۲۶؛ گسترش‌یافته در v0.30 برای پیش‌نویس‌کننده‌های MTP، EAGLE-3 و DFlash) احتمال بقای هر موقعیت پیش‌نویس را امتیازدهی کرده و در هر گام فقط یک مجموعه سراسری top-B از اسلات‌های پیش‌نویس را می‌پذیرد. در DeepSeek-V4-Pro-0813، اولین Token از ۷ تا Token پیش‌نویس بیش از ۷۰٪ مواقع و آخرین مورد کمتر از ۱۰٪ مواقع باقی می‌ماند؛ vLLM گزارش می‌دهد که این روش حدسی تا همزمانی ۲۵۶ همچنان سودمند باقی می‌ماند.
 
-**Operational consequences:**
-- Publishers now ship drafters with the weights, so self-host throughput estimates should assume speculation is on, and eval parity checks should run through the same speculative path you serve.
-- MLPerf Inference v6.1 (September 2026) allows speculative decoding in the gpt-oss-120b Interactive scenario, so results on that test may include it.
+**پیامدهای عملیاتی:**
+- ناشران مدل‌ها اکنون پیش‌نویس‌کننده‌ها را همراه با وزن‌ها عرضه می‌کنند، بنابراین برآوردهای توان عملیاتی (Throughput) در میزبانی شخصی (self-host) باید فرض کنند که روش حدسی فعال است، و بررسی‌های برابری ارزیابی (eval parity checks) نیز باید از همان مسیر حدسی که سرویس می‌دهید اجرا شوند.
+- بنچمارک MLPerf Inference نسخه v6.1 (سپتامبر ۲۰۲۶) رمزگشایی حدسی را در سناریوی تعاملی gpt-oss-120b مجاز می‌داند، بنابراین نتایج آن آزمایش ممکن است شامل آن باشد.
 
-See [Speculative Decoding](../04-inference-optimization/03-speculative-decoding.md) for the full treatment.
+برای بررسی کامل، بخش [رمزگشایی حدسی (Speculative Decoding)](../04-inference-optimization/03-speculative-decoding.md) را ببینید.
 
 ---
 
-## Latency Metrics
+## معیارهای تاخیر (Latency)
 
-### Time to First Token (TTFT)
+### زمان تا اولین Token (Time to First Token یا TTFT)
 
-Time from request to first generated token.
+زمان سپری‌شده از ارسال درخواست تا اولین Token تولیدشده.
 
 ```
 TTFT = network_latency + queue_time + prefill_time
 ```
 
-**What affects TTFT:**
-- Prompt length (prefill grows linearly with prompt length, faster at long context where quadratic attention dominates)
-- Model size
-- GPU speed
-- Queue depth
+**عوامل موثر بر TTFT:**
+- طول Prompt (مرحله prefill به‌صورت خطی با طول Prompt افزایش می‌یابد و در کانتکست‌های طولانی که توجه درجه‌دوم (quadratic attention) غالب است، سریع‌تر رشد می‌کند)
+- اندازه مدل
+- سرعت GPU
+- عمق صف (Queue depth)
 
-**Targets:**
-- Interactive chat: < 500ms
-- Real-time: < 200ms
-- Batch: Less critical
+**اهداف (Targets):**
+- چت تعاملی (Interactive chat): کمتر از ۵۰۰ میلی‌ثانیه (< 500ms)
+- بلادرنگ (Real-time): کمتر از ۲۰۰ میلی‌ثانیه (< 200ms)
+- دسته‌ای (Batch): اهمیت کمتری دارد
 
-### Tokens Per Second (TPS)
+### نرخ Token بر ثانیه (Tokens Per Second یا TPS)
 
-Rate of token generation after first token. Per-request TPS is the inverse of **inter-token latency** (ITL, also called time per output token).
+نرخ تولید Token پس از اولین Token. مقدار TPS به ازای هر درخواست، معکوس **تاخیر بین Tokenها** (inter-token latency یا ITL، که زمان به ازای هر Token خروجی نیز نامیده می‌شود) است.
 
 ```
 TPS = (total_tokens - 1) / (total_time - TTFT)
 ```
 
-**What affects TPS:**
-- Model size (active parameters for MoE)
-- Batch size
-- GPU memory bandwidth
-- KV cache size
-- Speculative decoding acceptance rate
+**عوامل موثر بر TPS:**
+- اندازه مدل (پارامترهای فعال در MoE)
+- اندازه دسته (Batch size)
+- پهنای باند حافظه GPU
+- اندازه KV cache
+- نرخ پذیرش در رمزگشایی حدسی (Speculative decoding)
 
-**Typical values:**
-- Llama 70B on H100: 30-50 tokens/sec per request
-- Hosted frontier APIs, standard tier: tens of tokens/sec per request, varying with model, reasoning effort and load
-- Small model (7B): 100+ tokens/sec
+**مقادیر متداول:**
+- مدل Llama 70B روی H100: بین ۳۰ تا ۵۰ Token بر ثانیه به ازای هر درخواست
+- روی APIهای میزبانی‌شده پیشرو (frontier)، لایه استاندارد: ده‌ها Token بر ثانیه به ازای هر درخواست، متغیر بسته به مدل، میزان تلاش استدلال (reasoning effort) و بار کاری
+- مدل کوچک (7B): بیش از ۱۰۰ Token بر ثانیه
 
-For reasoning models, hidden thinking tokens stream before the first visible token, so user-perceived TTFT includes part of the decode phase. Measure time to first *visible* token separately.
+در مدل‌های استدلالی (reasoning models)، Tokenهای تفکر پنهان (hidden thinking tokens) پیش از اولین Token مرئی استریم می‌شوند؛ بنابراین، TTFT احساس‌شده توسط کاربر شامل بخشی از فاز decode نیز می‌شود. زمان تا اولین Token *مرئی* را به‌صورت جداگانه اندازه‌گیری کنید.
 
-### Speed Is a Priced Tier
+### سرعت به‌عنوان یک لایه قیمت‌گذاری‌شده (Priced Tier)
 
-Providers now sell speed separately from the model:
-- **OpenAI**: Fast tier (renamed from Priority on July 30, 2026) at 2x Standard (2.5x on GPT-5.5); Ultrafast at 6x, GA on GPT-6 Astra since September 29, 2026 and on GPT-6.1 Sol for all API users since October 8 ($12/$60 per 1M). OpenAI previewed GPT-5.6 Sol Ultrafast on Cerebras at up to 750 output tok/s for select customers.
-- **Anthropic**: fast mode on Claude Opus 5.5 at $8/$40 per 1M (2x standard), out of research preview since October 15 and offered on the Claude API, Claude Models on Google Cloud (Anthropic managed), and Foundry's Azure-hosted deployments.
-- **Diffusion LMs** replace token-by-token decode with parallel refinement: Inception reports Mercury 2.5 at 1,107 tok/s on NVIDIA GPUs, at $0.20/$0.75 per 1M list.
+امروزه ارائه‌دهندگان سرعت را جدا از خود مدل به فروش می‌رسانند:
+- **OpenAI**: لایه سریع Fast (که در ۳۰ ژوئیه ۲۰۲۶ از Priority تغییر نام یافت) با ۲ برابر قیمت Standard (۲.۵ برابر در GPT-5.5)؛ لایه Ultrafast با ۶ برابر قیمت، که از ۲۹ سپتامبر ۲۰۲۶ برای GPT-6 Astra به‌صورت عمومی (GA) و از ۸ اکتبر برای تمام کاربران API در GPT-6.1 Sol در دسترس قرار گرفت ($12/$60 به ازای هر 1M). همچنین OpenAI نسخه GPT-5.6 Sol Ultrafast را روی سخت‌افزار Cerebras با سرعت حداکثر ۷۵۰ Token خروجی بر ثانیه برای مشتریان منتخب پیش‌نمایش کرد.
+- **Anthropic**: حالت fast mode در Claude Opus 5.5 با قیمت $8/$40 به ازای هر 1M (۲ برابر استاندارد)، که از ۱۵ اکتبر از حالت پیش‌نمایش تحقیقاتی خارج شده و روی Claude API، بخش Claude Models در Google Cloud (مدیریت‌شده توسط Anthropic) و استقرارهای (deployments) میزبانی‌شده در Azure تحت عنوان Foundry ارائه می‌شود.
+- **مدل‌های زبانی نفوذی (Diffusion LMs)** رمزگشایی Token-به-Token را با پالایش موازی جایگزین می‌کنند: شرکت Inception گزارش داده است که مدل Mercury 2.5 روی GPUهای NVIDIA به سرعت ۱,۱۰۷ Token بر ثانیه با قیمت لیست $0.20/$0.75 به ازای هر 1M می‌رسد.
 
-Latency is now a routing dimension: send the user-facing turn to a fast tier and background agent steps to Standard or Batch.
+تاخیر (Latency) اکنون به یک بعد مسیریابی تبدیل شده است: نوبت‌های رو به کاربر را به لایه سریع (fast tier) و گام‌های پس‌زمینه ایجنت (agent) را به لایه Standard یا Batch هدایت کنید.
 
-### Total Latency
+### تاخیر کل (Total Latency)
 
 ```
 Total = TTFT + (output_tokens / TPS)
 ```
 
-**Example:**
-- TTFT: 200ms
-- TPS: 50 tokens/sec
-- Output: 100 tokens
-- Total: 200ms + 2000ms = 2.2s
+**مثال:**
+- مقدار TTFT برابر با 200ms
+- مقدار TPS برابر با ۵۰ Token بر ثانیه
+- خروجی: ۱۰۰ Token
+- کل: 200ms + 2000ms = 2.2s
 
-### Throughput
+### توان عملیاتی (Throughput)
 
-Requests completed per unit time:
+تعداد درخواست‌های تکمیل‌شده در واحد زمان:
 
 ```
 Throughput = concurrent_requests * TPS / average_output_tokens
 ```
 
-Higher batch sizes increase throughput but may increase per-request latency.
+اندازه‌های بزرگ‌تر دسته (Batch size) باعث افزایش توان عملیاتی (Throughput) می‌شوند، اما ممکن است تاخیر (Latency) هر درخواست را افزایش دهند.
 
-### Goodput and Pareto Curves
+### توان عملیاتی مفید (Goodput) و منحنی‌های پارتو
 
-Peak throughput and batch-1 speed both mislead on their own. **Goodput** is the request rate that meets your TTFT and ITL SLOs at the same time. When comparing engines or accelerators, compare **throughput-versus-interactivity Pareto curves** at your SLO, on traffic shaped like yours.
+توان عملیاتی بیشینه (Peak throughput) و سرعت در دسته یک (batch-1 speed) هر دو به تنهایی گمراه‌کننده‌اند. **توان عملیاتی مفید (Goodput)** نرخ درخواستی است که اهداف سطح خدمت (SLO) مربوط به TTFT و ITL شما را به‌طور همزمان برآورده می‌کند. هنگام مقایسه موتورها یا شتاب‌دهنده‌ها، **منحنی‌های پارتوی توان عملیاتی در برابر تعاملی‌بودن (throughput-versus-interactivity Pareto curves)** را بر اساس SLO خود و با ترافیکی مشابه ترافیک واقعی‌تان مقایسه کنید.
 
-SemiAnalysis's AgentX scenario (multi-turn, long-context agent traffic with high prefix reuse) shows how much the operating point matters. On DeepSeek V4 Pro it reports Vera Rubin NVL72 at about 67x GB300's throughput per TCO at 170 tok/s per user under ownership-cost assumptions, but only 62% more tokens than GB300 NVL72 at an 80 tok/s P90 SLA on 3-year rental pricing (analyst-reported). Same hardware, same model: a 67x headline or a 1.6x result, depending on the interactivity target and the cost basis you pick. The first independent run, Artificial Analysis's AA-AgentPerf (October 15, 2026), measured Rubin at only 1.14x to 1.45x GB300's peak throughput per megawatt depending on the model, with larger leads only at high per-user speeds. Ask for the whole curve, and who measured it, before accepting any accelerator claim.
+سناریوی AgentX از SemiAnalysis (ترافیک چندنوبتی ایجنت با کانتکست طولانی و استفاده مجدد بالا از پیشوند) نشان می‌دهد نقطه کاری (operating point) تا چه حد اهمیت دارد. در DeepSeek V4 Pro، این سناریو گزارش می‌دهد که Vera Rubin NVL72 تحت مفروضات هزینه مالکیت (TCO) در سرعت ۱۷۰ Token بر ثانیه برای هر کاربر، حدود ۶۷ برابر توان عملیاتی نسبت به GB300 ارائه می‌دهد، اما با قیمت اجاره ۳ ساله در SLA صدک ۹۰ (P90) برابر با ۸۰ Token بر ثانیه، تنها ۶۲٪ Token بیشتر نسبت به GB300 NVL72 تولید می‌کند (گزارش‌شده توسط تحلیل‌گران). سخت‌افزار یکسان، مدل یکسان: یک تیتر ۶۷ برابری یا یک نتیجه ۱.۶ برابری، بسته به هدف تعاملی‌بودن و مبنای هزینه‌ای که انتخاب می‌کنید. اولین اجرای مستقل، یعنی AA-AgentPerf از Artificial Analysis (در ۱۵ اکتبر ۲۰۲۶)، نشان داد که برتری Rubin بسته به مدل تنها بین ۱.۱۴ تا ۱.۴۵ برابر توان عملیاتی بیشینه GB300 به ازای هر مگاوات است و پیشتازی‌های بزرگ‌تر تنها در سرعت‌های بالای اختصاص‌یافته به هر کاربر دیده می‌شود. پیش از پذیرش هرگونه ادعایی درباره شتاب‌دهنده‌ها، کل منحنی و نهاد اندازه‌گیری‌کننده آن را جویا شوید.
 
 ---
 
-## Memory and Compute Requirements
+## نیازمندی‌های حافظه و محاسبات
 
-### Model Weights
+### وزن‌های مدل (Model Weights)
 
 ```
 Memory = parameters * bytes_per_parameter
@@ -422,11 +428,11 @@ Memory = parameters * bytes_per_parameter
   (plus block scales: NVFP4 ~4.5 bits/weight, ~39 GB; MXFP4 ~4.25 bits, ~37 GB)
 ```
 
-**Precision in 2026:** FP4 weights (NVFP4 on NVIDIA, MXFP4 on AMD and other OCP-format hardware) plus an FP8 KV cache is the headline serving configuration, and SGLang can requantize NVFP4 checkpoints to MXFP4 at load to run them on AMD. Lower precision only wins with a good kernel: NVIDIA Dynamo's Nemotron 3.5 Lightning recipe measured BF16 80% faster than NVFP4 on Marlin kernels and 12% faster than NVFP4 on CuTeDSL kernels. Benchmark the exact kernel path before assuming FP4 is faster.
+**دقت محاسباتی در سال ۲۰۲۶:** وزن‌های FP4 (فرمت NVFP4 روی NVIDIA، فرمت MXFP4 روی AMD و سایر سخت‌افزارهای مبتنی بر فرمت OCP) به‌همراه KV cache با فرمت FP8، پیکربندی شاخص سرویس‌دهی محسوب می‌شود؛ همچنین SGLang می‌تواند چک‌پوینت‌های NVFP4 را هنگام بارگذاری به MXFP4 بازکوانتایز (requantize) کند تا روی AMD اجرا شوند. دقت پایین‌تر تنها در صورت وجود کرنل بهینه برنده می‌شود: دستورالعمل Nemotron 3.5 Lightning در NVIDIA Dynamo نشان داد که فرمت BF16 روی کرنل‌های Marlin حدود ۸۰٪ سریع‌تر از NVFP4، و روی کرنل‌های CuTeDSL حدود ۱۲٪ سریع‌تر از NVFP4 بوده است. پیش از آنکه فرض کنید FP4 سریع‌تر است، مسیر دقیق کرنل را بنچمارک کنید.
 
-For MoE models, size memory for **total** parameters (every expert must be resident) and compute for **active** parameters.
+برای مدل‌های MoE، حافظه را بر اساس **کل** پارامترها (زیرا تمام کارشناسان/expertها باید مقیم در حافظه باشند) و محاسبات را بر اساس پارامترهای **فعال** تعیین اندازه کنید.
 
-### KV Cache
+### کش KV (KV Cache)
 
 ```
 Per token: 2 * layers * kv_heads * head_dim * bytes
@@ -442,9 +448,9 @@ At 128K context: ~43 GB per request
 (FP8 KV halves these. Full MHA with 64 KV heads would be 8x larger.)
 ```
 
-This formula only holds for standard GQA/MHA layers. Sliding-window, linear-attention and compressed-KV models need their own math; see [Hybrid and Sparse Attention](03-attention-mechanisms.md#hybrid-and-sparse-attention-in-2026-open-models).
+این فرمول تنها برای لایه‌های استاندارد GQA/MHA برقرار است. مدل‌های مبتنی بر پنجره لغزان (Sliding-window)، توجه خطی (linear-attention) و KV فشرده‌شده به محاسبات خاص خود نیاز دارند؛ بخش [توجه ترکیبی و تنک](03-attention-mechanisms.md#hybrid-and-sparse-attention-in-2026-open-models) را مشاهده کنید.
 
-### Total GPU Memory
+### کل حافظه GPU
 
 ```
 Total = model_weights + kv_cache * batch_size + activations
@@ -457,7 +463,7 @@ Example: Llama 3.x 70B, 8K context, batch 16
   or one H100 with FP8 KV (~21 GB of KV instead of ~43 GB)
 ```
 
-### FLOPs per Token
+### تعداد FLOPs به ازای هر Token
 
 ```
 Forward pass FLOPs ≈ 2 * active parameters
@@ -473,11 +479,11 @@ raises arithmetic intensity.
 
 ---
 
-## Streaming
+## استریمینگ (Streaming)
 
-For interactive applications, stream tokens as they are generated:
+برای برنامه‌های تعاملی، Tokenها را به محض تولید استریم کنید:
 
-### Server-Sent Events (SSE)
+### رویدادهای ارسالی سرور (Server-Sent Events یا SSE)
 
 ```python
 # Server
@@ -492,30 +498,30 @@ async for event in sse_client.stream("/generate"):
     display(token)
 ```
 
-### Benefits
+### مزایا
 
-| Aspect | Streaming | Non-streaming |
+| جنبه | استریمینگ (Streaming) | غیر استریمینگ (Non-streaming) |
 |--------|-----------|---------------|
-| Perceived latency | TTFT only | Full generation time |
-| User experience | Progressive | Waiting, then complete |
-| Early termination | User can stop | Must wait |
-| Memory | Lower | Higher (buffer response) |
+| تاخیر ادراک‌شده | فقط TTFT | کل زمان تولید |
+| تجربه کاربری | پیش‌رونده | انتظار، سپس تکمیل یک‌باره |
+| توقف زودهنگام | کاربر می‌تواند متوقف کند | باید صبر کرد |
+| حافظه | کمتر | بیشتر (بافر کردن پاسخ) |
 
-### Implementation Details
+### جزئیات پیاده‌سازی
 
-- Flush after each token
-- Handle connection drops gracefully
-- Consider buffering for very fast generation
-- Some frameworks buffer by default; disable for streaming
-- Fail over only before the first token reaches the client; after that, a retry on another backend duplicates or contradicts output already shown. Gateways now implement this directly (Envoy AI Gateway 1.1's `streamIdleTimeout` moves to the next backend if no first token arrives)
+- تخلیه بافر (Flush) پس از هر Token
+- مدیریت مناسب قطعی ارتباط
+- در نظر گرفتن بافرینگ برای تولیدهای بسیار سریع
+- برخی فریم‌ورک‌ها به‌طور پیش‌فرض خروجی را بافر می‌کنند؛ برای استریمینگ آن را غیرفعال کنید
+- تغییر مسیر به پشتیبان (Fail over) را فقط پیش از رسیدن اولین Token به کلاینت انجام دهید؛ پس از آن، تلاش مجدد (retry) روی یک بک‌اند دیگر موجب تکرار یا تناقض در خروجی نمایش‌داده‌شده قبلی می‌شود. امروزه درگاه‌ها این قابلیت را مستقیماً پیاده‌سازی می‌کنند (قابلیت `streamIdleTimeout` در Envoy AI Gateway 1.1 در صورتی که اولین Token دریافت نشود، به بک‌اند بعدی سوییچ می‌کند)
 
 ---
 
-## Production Considerations
+## ملاحظات محیط عملیاتی (Production)
 
-### Batching for Throughput
+### دسته‌بندی برای توان عملیاتی (Batching for Throughput)
 
-Combine multiple requests to maximize GPU utilization:
+ترکیب چندین درخواست جهت به حداکثر رساندن بهره‌وری GPU:
 
 ```python
 # Without batching: GPU underutilized
@@ -527,29 +533,29 @@ batch = collect_requests(timeout_s=0.010, max_batch=32)
 responses = model.generate_batch(batch)
 ```
 
-### Continuous Batching and Prefix Caching
+### دسته‌بندی پیوسته و کش‌کردن پیشوند
 
-**Continuous Batching (Iteration-level Scheduling):**
-Unlike static batching, continuous batching injects new requests as soon as any request in the batch hits an EOS token. Anyscale measured up to 23x throughput over naive static batching in 2023; every major engine does this by default now. Pair it with admission control: vLLM 0.29 added `--max-num-queued-reqs` and `--max-num-queued-tokens` so overload returns a fast error instead of an unbounded queue and runaway TTFT.
+**دسته‌بندی پیوسته (زمان‌بندی در سطح تکرار یا Iteration-level Scheduling):**
+برخلاف دسته‌بندی ایستا (static batching)، دسته‌بندی پیوسته (continuous batching) به محض اینکه یکی از درخواست‌های درون دسته به Token پایان توالی (EOS token) برسد، درخواست‌های جدید را تزریق می‌کند. شرکت Anyscale در سال ۲۰۲۳ تا ۲۳ برابر افزایش توان عملیاتی (Throughput) را نسبت به دسته‌بندی ایستای اولیه اندازه‌گیری کرد؛ امروزه تمام موتورهای اصلی به‌طور پیش‌فرض این کار را انجام می‌دهند. این قابلیت را با کنترل پذیرش (admission control) همراه کنید: vLLM 0.29 پرچم‌های `--max-num-queued-reqs` و `--max-num-queued-tokens` را اضافه کرد تا در شرایط بار اضافی، به جای ایجاد صف نامحدود و افزایش مهارگسیخته TTFT، خطایی سریع بازگردانده شود.
 
-**Prefix Caching (vLLM automatic prefix caching, SGLang RadixAttention):**
-Caches the KV tensors of common prefixes (system prompts, tool definitions, few-shot examples, prior agent turns).
-- **TTFT reduction**: Prefill for the shared prefix is skipped, so savings scale with the shared fraction of the prompt. Agent loops with long, stable prefixes benefit most.
-- **Mechanism**: vLLM hashes fixed-size KV blocks into a chain keyed by everything before them; SGLang stores prefixes in a radix tree. Evicted blocks can spill down a tier chain: GPU HBM, then host DRAM, then disk, object storage or peer nodes.
-- **Security**: A shared prefix cache is a cross-tenant timing side channel, because a hit returns faster than a miss. Salt cache keys per tenant (vLLM `cache_salt`) and keep the engine patched: vLLM advisory GHSA-935w-9g4m-p28p, fixed in 0.30.0, found tool-continuation turns on one API path dropping the salt. Treat vLLM 0.32.0 as the floor (0.33.0 on hosts that load third-party repositories); the full advisory list and current floors live in [Serving Infrastructure](../04-inference-optimization/06-serving-infrastructure.md#operational-posture).
+**کش‌کردن پیشوند (Prefix Caching خودکار در vLLM، مکانیزم RadixAttention در SGLang):**
+تنسورهای KV مربوط به پیشوندهای متداول (Promptهای سیستمی، تعاریف ابزار، نمونه‌های few-shot، نوبت‌های قبلی ایجنت) را کش می‌کند.
+- **کاهش TTFT**: مرحله prefill برای پیشوند مشترک نادیده گرفته می‌شود؛ بنابراین، میزان صرفه‌جویی متناسب با بخش مشترک Prompt افزایش می‌یابد. حلقه‌های ایجنت با پیشوندهای طولانی و پایدار، بیشترین بهره را از این قابلیت می‌برند.
+- **سازوکار (Mechanism)**: موتور vLLM بلوک‌های KV با اندازه ثابت را در زنجیره‌ای هش می‌کند که کلید آن تمام محتوای پیشین است؛ SGLang پیشوندها را در یک درخت رادیکس (radix tree) ذخیره می‌کند. بلوک‌های خارج‌شده (evicted) می‌توانند در زنجیره‌ای از لایه‌ها تخلیه شوند: ابتدا HBM در GPU، سپس DRAM میزبان، و در ادامه دیسک، فضای ذخیره‌سازی شیء (object storage) یا گره‌های همتا (peer nodes).
+- **امنیت**: یک کش پیشوند مشترک، یک کانال جانبی زمان‌بندی بین‌مستأجری (multi-tenant) محسوب می‌شود؛ زیرا برخورد به کش (hit) سریع‌تر از عدم برخورد (miss) پاسخ می‌دهد. کلیدهای کش را به ازای هر مستأجر (multi-tenant) نمک‌گذاری (salt) کنید (پارامتر `cache_salt` در vLLM) و موتور را همواره به‌روز نگه دارید: هشدار امنیتی vLLM با شناسه GHSA-935w-9g4m-p28p که در نسخه 0.30.0 برطرف شد، نشان داد که نوبت‌های ادامه‌یافته ابزار (tool-continuation turns) در یکی از مسیرهای API مقدار salt را حذف می‌کردند. نسخه vLLM 0.32.0 را به‌عنوان حداقل نسخه مجاز در نظر بگیرید (نسخه 0.33.0 روی میزبان‌هایی که مخازن شخص ثالث را بارگذاری می‌کنند)؛ فهرست کامل هشدارهای امنیتی و حداقل نسخه‌های فعلی در [زیرساخت سرویس‌دهی](../04-inference-optimization/06-serving-infrastructure.md#operational-posture) ارائه شده است.
 
-### Multi-LoRA Serving
+### سرویس‌دهی چندگانه LoRA (Multi-LoRA Serving)
 
-**Scenario:** Serving 1000 different fine-tuned models (adapters) on one base model.
-**The Challenge:** Loading 1000 separate models would take terabytes of VRAM.
+**سناریو:** سرویس‌دهی به ۱۰۰۰ مدل Fine-tuning شده متفاوت (آداپتورها) روی یک مدل پایه یکسان.
+**چالش:** بارگذاری ۱۰۰۰ مدل مجزا به ترابایت‌ها حافظه VRAM نیاز خواهد داشت.
 
-**The Solution (pioneered by LoRAX / S-LoRA, now native in vLLM and SGLang):**
-1. Load one base model in VRAM.
-2. Store LoRA adapters (megabytes) in host RAM or SSD.
-3. Dynamically swap adapters during the forward pass based on the request ID.
-4. **Implementation**: Use a specialized kernel (S-LoRA) that performs matrix-vector multiplication for multiple different adapters in the same batch.
+**راهکار (پیشگام‌شده توسط LoRAX / S-LoRA و اکنون به‌صورت بومی در vLLM و SGLang):**
+۱. بارگذاری یک مدل پایه در VRAM.
+۲. ذخیره آداپتورهای LoRA (در حد مگابایت) در RAM یا SSD میزبان.
+۳. تعویض پویای آداپتورها در طول گذر رو به جلو (forward pass) بر اساس شناسه درخواست (request ID).
+۴. **پیاده‌سازی**: استفاده از یک کرنل اختصاصی (مانند S-LoRA) که ضرب ماتریس-بردار را برای چندین آداپتور مختلف درون یک دسته یکسان انجام می‌دهد.
 
-### Request Prioritization
+### اولویت‌بندی درخواست‌ها (Request Prioritization)
 
 ```python
 class RequestQueue:
@@ -563,13 +569,13 @@ class RequestQueue:
         return await self.low_priority.get()
 ```
 
-**Priority criteria:**
-- Customer tier
-- Request type
-- Wait time
-- Estimated compute cost
+**معیارهای اولویت:**
+- لایه اشتراک مشتری (Customer tier)
+- نوع درخواست
+- زمان انتظار
+- هزینه محاسباتی تخمینی
 
-### Timeout Handling
+### مدیریت مهلت زمانی (Timeout Handling)
 
 ```python
 async def generate_with_timeout(prompt: str, timeout: float):
@@ -583,7 +589,7 @@ async def generate_with_timeout(prompt: str, timeout: float):
         return {"error": "timeout", "partial": partial_output}
 ```
 
-### Graceful Degradation
+### تنزل کارایی کنترل‌شده (Graceful Degradation)
 
 ```python
 async def generate_with_fallback(prompt: str):
@@ -595,9 +601,9 @@ async def generate_with_fallback(prompt: str):
         return await small_fast_model.generate(prompt)
 ```
 
-Make at least one fallback cross vendors. Provider incidents tend to take down every model and product of that vendor at once, so a fallback to a sibling model often fails at the same moment. Between August 16 and September 29, 2026, Anthropic's status page logged at least 12 major or critical incidents, and OpenAI's September 29 outage (about 5 hours 20 minutes) hit the API, ChatGPT and Codex together.
+حداقل یک مسیر جایگزین (fallback) بین ارائه‌دهندگان مختلف (cross-vendor) ایجاد کنید. اختلالات ارائه‌دهندگان معمولاً تمام مدل‌ها و محصولات آن شرکت را به‌طور همزمان از کار می‌اندازند؛ بنابراین، تغییر مسیر به مدلی دیگر از همان خانواده اغلب در همان لحظه با شکست مواجه می‌شود. بین ۱۶ اوت تا ۲۹ سپتامبر ۲۰۲۶، صفحه وضعیت Anthropic حداقل ۱۲ حادثه بزرگ یا بحرانی را ثبت کرد، و قطعی ۲۹ سپتامبر OpenAI (حدود ۵ ساعت و ۲۰ دقیقه) همزمان API، ChatGPT و Codex را تحت تاثیر قرار داد.
 
-### Cost Tracking
+### رهگیری هزینه‌ها (Cost Tracking)
 
 ```python
 @dataclass
@@ -629,133 +635,135 @@ def calculate_cost(metrics: RequestMetrics) -> float:
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: Explain the difference between prefill and decode phases.
+### پرسش: تفاوت بین فازهای prefill و decode را توضیح دهید.
 
-**Strong answer:**
-LLM inference has two distinct phases:
+**پاسخ قوی:**
+استنتاج (Inference) در LLMها دو فاز مجزا دارد:
 
-**Prefill:**
-- Processes the entire input prompt at once
-- All tokens attend to each other in parallel
-- Populates the KV cache for all prompt positions
-- Compute-bound: uses GPU cores efficiently
-- Time scales with prompt length
+**پیش‌تکمیل (Prefill):**
+- کل Prompt ورودی را به‌صورت یک‌جا پردازش می‌کند
+- تمام Tokenها به‌صورت موازی به یکدیگر توجه (attend) می‌کنند
+- حافظه KV cache را برای تمام موقعیت‌های Prompt پر می‌کند
+- محدود به محاسبات (Compute-bound): از هسته‌های GPU به‌طور بهینه استفاده می‌کند
+- زمان پردازش متناسب با طول Prompt افزایش می‌یابد
 
-**Decode:**
-- Generates one token at a time
-- New token attends to all KV cache entries
-- Appends new K, V to cache
-- Memory-bound: each step re-reads the weights (dominant at small batch) and the KV cache (dominant at long context and large batch)
-- Time per token is roughly constant, creeping up as the KV cache grows
+**رمزگشایی (Decode):**
+- در هر لحظه یک Token تولید می‌کند
+- Token جدید به تمام ورودی‌های KV cache توجه می‌کند
+- مقادیر K و V جدید را به کش ضمیمه می‌کند
+- محدود به حافظه (Memory-bound): هر گام مجدداً وزن‌ها (غالب در دسته‌های کوچک) و KV cache (غالب در کانتکست‌های طولانی و دسته‌های بزرگ) را بازخوانی می‌کند
+- زمان به ازای هر Token تقریباً ثابت است و با بزرگ‌تر شدن KV cache اندکی افزایش می‌یابد
 
-This matters for system design because:
-- Long prompts increase TTFT (prefill intensive)
-- Batching helps decode more than prefill
-- Different optimization strategies for each phase
+این موضوع در طراحی سیستم اهمیت دارد، زیرا:
+- Promptهای طولانی باعث افزایش TTFT می‌شوند (فشار محاسباتی روی prefill)
+- دسته‌بندی (Batching) به فاز decode بیشتر از فاز prefill کمک می‌کند
+- راهبردهای بهینه‌سازی برای هر فاز متفاوت است
 
-### Q: How do temperature and top-p affect generation?
+### پرسش: پارامترهای temperature و top-p چگونه بر تولید متن تاثیر می‌گذارند؟
 
-**Strong answer:**
-Both control randomness in token selection:
+**پاسخ قوی:**
+هر دو پارامتر تصادفی‌بودن (randomness) را در انتخاب Token کنترل می‌کنند:
 
-**Temperature:**
-- Scales logits before softmax
-- Low (0-0.3): More deterministic, picks high-probability tokens
-- High (1.0+): More random, flattens probability distribution
-- Zero: Greedy decoding
+**دما (Temperature):**
+- مقیاس لاجیت‌ها (logits) را پیش از اعمال softmax تغییر می‌دهد
+- مقدار پایین (۰ تا ۰.۳): قطعی‌تر (deterministic)، انتخاب Tokenهای با احتمال بالا
+- مقدار بالا (+۱.۰): تصادفی‌تر، توزیع احتمال را مسطح می‌کند
+- مقدار صفر: رمزگشایی حریصانه (Greedy decoding)
 
-**Top-p (nucleus sampling):**
-- Filters to smallest set of tokens with cumulative probability > p
-- Dynamically adjusts cutoff based on distribution
-- High confidence: few tokens considered
-- Low confidence: many tokens considered
+**نمونه‌برداری هسته‌ای (Top-p یا nucleus sampling):**
+- خروجی را به کوچک‌ترین مجموعه‌ای از Tokenها با احتمال تجمعی بیشتر از p محدود می‌کند
+- حد آستانه (cutoff) را به‌صورت پویا بر اساس توزیع تنظیم می‌کند
+- اطمینان بالا: Tokenهای معدودی بررسی می‌شوند
+- اطمینان پایین: Tokenهای متعددی بررسی می‌شوند
 
-Typical production settings:
-- Factual Q&A: temperature 0.1, top-p 0.95
-- General chat: temperature 0.7, top-p 0.9
-- Creative: temperature 1.0+, top-p 0.95
+تنظیمات متداول در محیط‌های عملیاتی:
+- پرسش و پاسخ واقعیت‌محور: temperature برابر 0.1، top-p برابر 0.95
+- چت عمومی: temperature برابر 0.7، top-p برابر 0.9
+- تولید خلاقانه: temperature برابر +1.0، top-p برابر 0.95
 
-The key insight is that these work together. Temperature reshapes the distribution; top-p truncates it.
+نکته کلیدی این است که این دو در کنار یکدیگر کار می‌کنند: Temperature شکل توزیع را بازسازی می‌کند و top-p آن را برش می‌زند.
 
-The 2026 caveat: many hosted reasoning models no longer accept these parameters (under API version `2026-10-21` the Claude API rejects them on every model, even at default values; Google deprecated them in the Gemini API in July 2026; and GPT-6 Astra does not support them). On those models reasoning effort is the main lever, and the sampler settings are the provider's choice. The table above still holds for self-hosted engines.
+نکته مهم سال ۲۰۲۶: بسیاری از مدل‌های استدلالی میزبانی‌شده دیگر این پارامترها را نمی‌پذیرند (تحت نسخه API به شماره `2026-10-21`، سرویس Claude API این پارامترها را در تمام مدل‌ها حتی با مقادیر پیش‌فرض رد می‌کند؛ گوگل در ژوئیه ۲۰۲۶ آن‌ها را در Gemini API منسوخ اعلام کرد؛ و GPT-6 Astra نیز از آن‌ها پشتیبانی نمی‌کند). در این مدل‌ها، تلاش استدلال (reasoning effort) اهرم اصلی است و تنظیمات نمونه‌بردار (sampler) بر عهده ارائه‌دهنده خواهد بود. با این حال، مقادیر جدول بالا همچنان برای موتورهای خودمیزبان (self-hosted) معتبر است.
 
-### Q: How do you get reproducible outputs when the API no longer accepts temperature?
+### پرسش: وقتی API دیگر پارامتر temperature را نمی‌پذیرد، چگونه خروجی‌های بازتولیدپذیر دریافت می‌کنید؟
 
-**Strong answer:**
-First, separate the goals. Bit-identical output was never guaranteed even at temperature 0 on batched GPU serving, so "reproducible" should mean "stable enough that the system behaves the same," not "same bytes."
+**پاسخ قوی:**
+نخست باید اهداف را تفکیک کرد. خروجی دقیقاً هم‌بایت (bit-identical) حتی در دمای صفر روی سرویس‌دهی دسته‌ای در GPU نیز هرگز تضمین‌شده نبوده است؛ بنابراین «بازتولیدپذیر» باید به معنای «به‌اندازه کافی پایدار که سیستم رفتار مشابهی داشته باشد» تعبیر شود، نه لزوماً «بایت‌های کاملاً یکسان».
 
-What I rely on instead:
-1. **Constrain the output space.** Structured outputs with a JSON schema, enums for classifications, and validators that reject and retry. Most "nondeterminism" complaints are about free-form text that did not need to be free-form.
-2. **Pin everything that moves.** Exact model ID, effort level, prompt version, tool definitions. Providers have fixed bugs under a stable model ID (OpenAI did this for GPT-6 Sol and Luna image understanding in September 2026), so rerun evals when the provider announces changes.
-3. **Cache by input.** For identical requests, a response cache keyed on the normalized input returns the same answer and costs nothing.
-4. **Measure variance, not single runs.** Evals run each case several times and track pass rate and spread; a regression is a shift in the distribution.
-5. **Self-host when bit-exactness is a requirement** (audit replays, some regulated workflows): open weights, greedy decoding and an engine's deterministic, batch-invariant mode, accepting the throughput cost.
+راهکارهای جایگزینی که به آن‌ها اتکا می‌کنم:
+۱. **محدود کردن فضای خروجی.** خروجی‌های ساختاریافته با اسکیمای JSON، مقادیر شمارشی (enums) برای دسته‌بندی‌ها، و اعتبارسنج‌هایی که در صورت عدم تطابق رد کرده و تلاش مجدد می‌کنند. بیشتر گلایه‌ها از «عدم قطعیت»، مربوط به متون با فرمت آزاد است که در واقع نیازی به فرمت آزاد نداشته‌اند.
+۲. **تثبیت تمام متغیرها.** شناسه دقیق مدل، سطح تلاش (effort level)، نسخه Prompt و تعاریف ابزارها. ارائه‌دهندگان گاهی باگی را ذیل همان شناسه مدل پایدار برطرف می‌کنند (همان‌طور که OpenAI در سپتامبر ۲۰۲۶ برای درک تصویر در GPT-6 Sol و Luna انجام داد)؛ بنابراین هنگام اعلام تغییرات از سوی ارائه‌دهنده، ارزیابی‌ها (evals) را دوباره اجرا کنید.
+۳. **کش کردن بر اساس ورودی.** برای درخواست‌های یکسان، یک کش پاسخ که کلید آن ورودی نرمال‌شده است، همان پاسخ را برمی‌گرداند و هیچ هزینه‌ای در بر ندارد.
+۴. **اندازه‌گیری واریانس به جای تک‌اجراها.** ارزیابی‌ها باید هر سناریو را چندین بار اجرا کرده و نرخ قبولی و پراکندگی را بسنجند؛ رگرسیون در واقع تغییر در توزیع آماری است.
+۵. **میزبانی شخصی در صورت نیاز قطعی به یکسانی بایتی** (بازپخش‌های حسابرسی، برخی جریان‌های کاری دارای مقررات خاص): استفاده از وزن‌های متن‌باز، رمزگشایی حریصانه (greedy decoding) و حالت قطعی و مستقل از دسته (batch-invariant) در موتور سرویس‌دهی، با پذیرش افت توان عملیاتی (Throughput).
 
-### Q: What determines TTFT vs TPS?
+### پرسش: چه عواملی تعیین‌کننده TTFT در برابر TPS هستند؟
 
-**Strong answer:**
-**TTFT (Time to First Token):**
-- Network latency to reach the server
-- Queue wait time
-- Prefill computation time
-- Dominated by: prompt length, GPU compute speed
+**پاسخ قوی:**
+**زمان تا اولین Token (یا TTFT):**
+- تاخیر شبکه برای رسیدن به سرور
+- زمان انتظار در صف
+- زمان محاسبات مرحله prefill
+- عوامل غالب: طول Prompt، سرعت محاسباتی GPU
 
-**TPS (Tokens Per Second):**
-- Decode phase efficiency
-- Memory bandwidth for reading weights and KV cache
-- Dominated by: memory bandwidth, batch size, model size (active parameters for MoE)
+**نرخ Token بر ثانیه (یا TPS):**
+- بازدهی فاز decode
+- پهنای باند حافظه برای خواندن وزن‌ها و KV cache
+- عوامل غالب: پهنای باند حافظه، اندازه دسته (batch size)، اندازه مدل (پارامترهای فعال برای MoE)
 
-Optimization strategies differ:
-- TTFT: Reduce prompt when possible, use faster networking, minimize queueing
-- TPS: Increase batch size, use GQA/MQA models, optimize memory access, enable speculative decoding at low to moderate concurrency
+راهبردهای بهینه‌سازی متفاوت است:
+- برای TTFT: کاهش طول Prompt در صورت امکان، استفاده از شبکه سریع‌تر، به حداقل رساندن صف‌بندی
+- برای TPS: افزایش اندازه دسته، استفاده از مدل‌های دارای GQA/MQA، بهینه‌سازی دسترسی به حافظه، فعال‌سازی رمزگشایی حدسی (speculative decoding) در همروندی‌های کم تا متوسط
 
-The tradeoff: batching improves TPS (throughput) but may increase TTFT (latency) if requests wait for batch formation.
+موازنه (Trade-off): دسته‌بندی باعث بهبود TPS (توان عملیاتی) می‌شود، اما در صورتی که درخواست‌ها در انتظار تشکیل دسته بمانند، ممکن است TTFT (تاخیر) را افزایش دهد.
 
-### Q: How would you estimate GPU requirements for serving a model?
+### پرسش: نیازمندی‌های GPU را برای سرویس‌دهی یک مدل چگونه برآورد می‌کنید؟
 
-**Strong answer:**
-Three main memory consumers:
+**پاسخ قوی:**
+سه بخش اصلی مصرف‌کننده حافظه وجود دارد:
 
-1. **Model weights:**
-   - BF16/FP16: parameters * 2 bytes
-   - FP8/INT8: parameters * 1 byte
-   - FP4/INT4: parameters * 0.5 bytes (plus block scales)
-   - MoE: count total parameters, not active
+۱. **وزن‌های مدل:**
+   - فرمت BF16/FP16: پارامترها * ۲ بایت
+   - فرمت FP8/INT8: پارامترها * ۱ بایت
+   - فرمت FP4/INT4: پارامترها * ۰.۵ بایت (به‌علاوه مقیاس‌های بلوک یا block scales)
+   - در معماری MoE: کل پارامترها محاسبه می‌شود، نه فقط پارامترهای فعال
 
-2. **KV cache:**
-   - Per token: 2 * layers * kv_heads * head_dim * 2 bytes (BF16), for standard GQA/MHA models only
-   - Per request: per_token * sequence_length
-   - Total: per_request * batch_size
+۲. **کش KV (KV Cache):**
+   - به ازای هر Token: مقادیر 2 * layers * kv_heads * head_dim * 2 bytes (در فرمت BF16)، فقط برای مدل‌های استاندارد GQA/MHA
+   - به ازای هر درخواست: per_token * sequence_length
+   - کل: per_request * batch_size
 
-3. **Activations:** Typically 5-10% overhead
+۳. **اکتیویشن‌ها (Activations):** معمولاً ۵ تا ۱۰ درصد بالابار (overhead)
 
-Example for Llama 3.x 70B serving (GQA, 8 KV heads):
-- Weights (INT4/FP4): ~35-40 GB
-- KV cache (8K context, batch 8, BF16): 8 * 2.7 GB = ~21 GB
-- Need: ~60-65 GB total
+مثال برای سرویس‌دهی Llama 3.x 70B (با GQA و ۸ هد KV):
+- وزن‌ها (INT4/FP4): حدود ۳۵ تا ۴۰ گیگابایت
+- کش KV (کانتکست 8K، اندازه دسته ۸، BF16): برابر 8 * 2.7 GB = ~21 GB
+- نیاز کل: حدود ۶۰ تا ۶۵ گیگابایت
 
-Hardware options:
-- 1x H100 80GB with 4-bit weights, with room to grow the batch to roughly 13-14 at 8K
-- 1x H200 141GB at FP8 weights (70 GB) with a larger batch
-- 2x H100 80GB with tensor parallelism at FP8, or for long contexts (at 128K, each request needs ~43 GB of KV)
+گزینه‌های سخت‌افزاری:
+- یک عدد H100 80GB با وزن‌های ۴ بیتی، با فضا برای افزایش اندازه دسته تا حدود ۱۳ الی ۱۴ در کانتکست 8K
+- یک عدد H200 141GB با وزن‌های FP8 (برابر ۷۰ گیگابایت) همراه با دسته بزرگ‌تر
+- دو عدد H100 80GB با موازی‌سازی تانسور (tensor parallelism) در FP8، یا برای کانتکست‌های طولانی (در 128K، هر درخواست به حدود ۴۳ گیگابایت KV نیاز دارد)
 
-The mistake to avoid is sizing KV with query heads instead of KV heads: that gives 168 GB for this example, 8x too high. And for hybrid-attention models (sliding-window, linear or compressed KV), use the model's own KV numbers. Then verify throughput at your SLO via benchmarking.
+اشتباهی که باید از آن پرهیز کرد، محاسبه اندازه KV بر اساس هدهای query به جای هدهای KV است: این کار در این مثال رقم ۱۶۸ گیگابایت را به دست می‌دهد که ۸ برابر بیش از حد واقعی است. همچنین برای مدل‌های دارای توجه ترکیبی (hybrid-attention) مانند پنجره لغزان، توجه خطی یا KV فشرده‌شده، از ارقام اعلام‌شده خود مدل برای KV استفاده کنید. سپس توان عملیاتی (Throughput) را بر اساس SLO خود از طریق بنچمارک اعتبارسنجی نمایید.
 
 ---
 
-## References
+## مراجع
 
 - Holtzman et al. "The Curious Case of Neural Text Degeneration" (nucleus sampling, 2020)
 - Kwon et al. "Efficient Memory Management for Large Language Model Serving with PagedAttention" (vLLM, 2023)
 - Leviathan et al. "Fast Inference from Transformers via Speculative Decoding" (2023)
-- [vLLM Documentation](https://docs.vllm.ai/)
-- [vLLM: Disaggregated Serving Guide](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide) (2026)
-- [vLLM: Adaptive Verification for Speculative Decoding](https://vllm.ai/blog/2026-08-14-dspark-adaptive-verification) (2026)
+- [مستندات vLLM](https://docs.vllm.ai/)
+- [vLLM: راهنمای سرویس‌دهی تفکیک‌شده (Disaggregated Serving Guide)](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide) (2026)
+- [vLLM: اعتبارسنجی تطبیقی برای رمزگشایی حدسی (Adaptive Verification for Speculative Decoding)](https://vllm.ai/blog/2026-08-14-dspark-adaptive-verification) (2026)
 - [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)
-- [OpenAI API Documentation](https://platform.openai.com/docs/api-reference)
+- [مستندات OpenAI API](https://platform.openai.com/docs/api-reference)
 
 ---
 
-*Previous: [Embeddings and Vector Spaces](05-embeddings-and-vector-spaces.md) | Next: [Model Taxonomy](../02-model-landscape/01-model-taxonomy.md)*
+*قبلی: [امبدینگ‌ها و فضاهای برداری](05-embeddings-and-vector-spaces.md) | بعدی: [طبقه‌بندی مدل‌ها](../02-model-landscape/01-model-taxonomy.md)*
+
+</div>

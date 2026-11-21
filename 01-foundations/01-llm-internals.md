@@ -1,39 +1,43 @@
-# LLM Internals
+<div dir="rtl">
 
-The architectural core of modern LLMs: transformers, MoE, attention math, RoPE, GQA, KV cache, and the inference-optimal scaling shift driving 2026 model design.
+# سازوکار درونی LLMها (LLM Internals)
 
-This chapter covers the core concepts behind large language models. Understanding these internals is essential for making informed architectural decisions about AI systems. For practical implications of these architectural choices, see [Inference Optimization](../04-inference-optimization/) (KV cache, PagedAttention), [Model Taxonomy](../02-model-landscape/01-model-taxonomy.md) (MoE models in production), and [Glossary](../GLOSSARY.md) for definitions of MoE, RoPE, ALiBi, GQA, MLA.
+هسته معماری LLMهای مدرن: ترنسفورمرها، MoE، ریاضیات توجه (attention math)، روپ (RoPE)، GQA، ساختار KV cache، و تغییر به سمت مقیاس‌پذیری بهینه برای استنتاج (inference-optimal) که محرک اصلی طراحی مدل‌ها در سال ۲۰۲۶ است.
 
-## Table of Contents
+این فصل مفاهیم بنیادین مدل‌های زبانی بزرگ را پوشش می‌دهد. درک این سازوکارهای درونی برای اتخاذ تصمیمات معماری آگاهانه در سیستم‌های هوش مصنوعی ضروری است. برای آشنایی با کاربردهای عملی این انتخاب‌های معماری، بخش‌های [بهینه‌سازی استنتاج](../04-inference-optimization/) (شامل KV cache و PagedAttention)، [طبقه‌بندی مدل‌ها](../02-model-landscape/01-model-taxonomy.md) (مدل‌های MoE در محیط عملیاتی)، و [واژه‌نامه](../GLOSSARY.md) (برای تعاریف MoE، RoPE، ALiBi، GQA و MLA) را مطالعه کنید.
 
-- [The Transformer Revolution](#the-transformer-revolution)
-- [Architecture Variants](#architecture-variants)
-- [Mixture of Experts (MoE)](#mixture-of-experts-moe)
-- [Scaling Laws: Training vs. Inference Optimal](#scaling-laws-training-vs-inference-optimal)
-- [Native Multimodality](#native-multimodality)
-- [Self-Attention Mechanism](#self-attention-mechanism)
-- [Multi-Head Attention](#multi-head-attention)
-- [Position Encodings](#position-encodings)
-- [Feed-Forward Networks](#feed-forward-networks)
-- [Layer Normalization](#layer-normalization)
-- [Putting It All Together](#putting-it-all-together)
-- [Key Numbers to Know](#key-numbers-to-know)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [انقلاب ترنسفورمر](#the-transformer-revolution)
+- [انواع معماری](#architecture-variants)
+- [ترکیب متخصصان (MoE)](#mixture-of-experts-moe)
+- [قوانین مقیاس‌پذیری: بهینه برای آموزش در برابر بهینه برای استنتاج](#scaling-laws-training-vs-inference-optimal)
+- [چندوجهی بومی (Native Multimodality)](#native-multimodality)
+- [سازوکار خودتوجهی (Self-Attention)](#self-attention-mechanism)
+- [توجه چند سر (Multi-Head Attention)](#multi-head-attention)
+- [کدگذاری‌های موقعیت (Position Encodings)](#position-encodings)
+- [شبکه‌های پیش‌خور (Feed-Forward Networks)](#feed-forward-networks)
+- [نرمال‌سازی لایه‌ای (Layer Normalization)](#layer-normalization)
+- [جمع‌بندی و یکپارچه‌سازی تمام اجزا](#putting-it-all-together)
+- [اعداد کلیدی که باید بدانید](#key-numbers-to-know)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Transformer Revolution
+## انقلاب ترنسفورمر
 
-Before 2017, sequence modeling relied on recurrent architectures (RNNs, LSTMs) that processed tokens sequentially. This created two problems:
+پیش از سال ۲۰۱۷، مدل‌سازی توالی بر معماری‌های بازگشتی (مانند RNNها و LSTMها) متکی بود که Tokenها را به‌صورت متوالی پردازش می‌کردند. این امر دو مشکل اساسی ایجاد می‌کرد:
 
-1. **Training was slow**: Sequential processing prevented parallelization
-2. **Long-range dependencies were hard**: Information had to flow through many hidden states
+۱. **آموزش کند بود**: پردازش متوالی مانع از موازی‌سازی می‌شد
+۲. **وابستگی‌های بلندمدت دشوار بودند**: اطلاعات باید از میان حالت‌های پنهان متعددی عبور می‌کرد
 
-The Transformer architecture, introduced in "Attention Is All You Need" (Vaswani et al., 2017), solved both problems by replacing recurrence with self-attention.
+معماری ترنسفورمر که در مقاله «Attention Is All You Need» (واسوانی و همکاران، ۲۰۱۷) معرفی شد، با جایگزینی بازگشت با خودتوجهی (self-attention)، هر دو مشکل را حل کرد.
 
-**Mental model for distributed systems engineers:**
-Think of recurrence like a single-threaded request pipeline where each step depends on the previous. Self-attention is like a fully connected graph where every node can query every other node in parallel.
+**مدل ذهنی برای مهندسان سیستم‌های توزیع‌شده:**
+مدل‌های بازگشتی را مانند یک خط لوله پردازش درخواست تک‌نخی (single-threaded request pipeline) تصور کنید که در آن هر مرحله به مرحله قبلی وابسته است. در مقابل، خودتوجهی شبیه به یک گراف کاملاً متصل است که در آن هر نود می‌تواند به‌صورت موازی از تمام نودهای دیگر پرس‌وجو کند.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -56,20 +60,24 @@ flowchart LR
     end
 ```
 
+</div>
+
 ---
 
-## Architecture Variants
+## انواع معماری
 
-Three main variants emerged based on which parts of the original Transformer are used:
+بر اساس اینکه کدام بخش‌ها از ترنسفورمر اصلی استفاده می‌شوند، سه گونه اصلی پدید آمدند:
 
-| Architecture | Attention Type | Examples | Best For |
+| معماری | نوع توجه | نمونه‌ها | بهترین کاربرد برای |
 |--------------|---------------|----------|----------|
-| Encoder-only | Bidirectional | BERT, RoBERTa | Classification, NER, embeddings |
-| Decoder-only | Causal (left-to-right) | GPT-3, Llama, Qwen, Mistral | Text generation, chat |
-| Encoder-Decoder | Cross-attention | T5, BART | Translation, summarization |
-| Causal encoder-decoder (2026) | Causal; decoder KV projected from encoder states | DeepSeek V4.1-Flash | Long-context serving with a small KV cache |
+| صرفاً انکودر (Encoder-only) | دوطرفه (Bidirectional) | BERT، RoBERTa | طبقه‌بندی، NER، تعبیه‌ها (embeddings) |
+| صرفاً دکودر (Decoder-only) | علی (Causal - از چپ به راست) | GPT-3، Llama، Qwen، Mistral | تولید متن، چت |
+| انکودر-دکودر (Encoder-Decoder) | توجه متقاطع (Cross-attention) | T5، BART | ترجمه، خلاصه‌سازی |
+| انکودر-دکودر علی (Causal encoder-decoder - سال ۲۰۲۶) | علی؛ نگاشت KV دکودر از حالت‌های انکودر | DeepSeek V4.1-Flash | سرویس‌دهی با زمینه طولانی (Long-context) همراه با KV cache کوچک |
 
-### Decoder-Only (Most LLMs Today)
+### صرفاً دکودر (اکثر LLMهای امروزی)
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -92,33 +100,37 @@ Three main variants emerged based on which parts of the original Transformer are
                    Output Probabilities
 ```
 
-**Why decoder-only dominates:**
-- Simplest architecture
-- Pre-training objective (next token prediction) aligns with generation
-- Scales well with compute
+</div>
 
-### Encoder-Only (BERT-style)
+**چرا معماری صرفاً دکودر مسلط است:**
+- ساده‌ترین معماری را دارد
+- هدف پیش‌آموزش (پیش‌بینی Token بعدی) با تولید متن هم‌راستاست
+- با افزایش توان محاسباتی به‌خوبی مقیاس‌پذیر می‌شود
 
-Uses bidirectional attention. Each token sees all other tokens. Cannot generate text autoregressively but excels at understanding tasks.
+### صرفاً انکودر (به سبک BERT)
 
-**Practical relevance:**
-- Fine-tuned for classification (intent detection, sentiment)
-- Backbone for embedding models
-- Smaller, faster for specific tasks
+از توجه دوطرفه استفاده می‌کند. هر Token تمام Tokenهای دیگر را می‌بیند. نمی‌تواند متن را به‌صورت خودبازگشتی (autoregressively) تولید کند، اما در تسک‌های درک زبان عملکرد فوق‌العاده‌ای دارد.
 
-### Encoder-Decoder (The Return of the Encoder)
+**کاربرد عملی:**
+- برای طبقه‌بندی (تشخیص قصد، تحلیل احساسات) Fine-tuning می‌شود
+- ستون فقرات برای مدل‌های تعبیه (embedding models)
+- برای تسک‌های خاص، کوچک‌تر و سریع‌تر است
 
-Decoder-only still dominates, but the encoder has reappeared inside a large generative model rather than as a T5-style translation stack. The public example is **DeepSeek V4.1-Flash** (September 10, 2026, MIT weights): a **causal encoder-decoder** whose 40 layers split into a 20-layer causal encoder and a 20-layer decoder, with the decoder's global KV cache projected from the encoder's final hidden states. DeepSeek reports 8B active parameters per token during prefill and 16B during decode, and 890 bytes of global KV per token, about 1/4 of V4-Flash.
+### انکودر-دکودر (بازگشت انکودر)
 
-**Why it matters for system design:** prefill and decode now have different active-parameter counts, and the KV cache is no longer one K/V stack per layer. Both "FLOPs = 2 x active parameters" and the textbook KV formula need the model card's numbers. See [Prefill and Decode Phases](06-inference-pipeline.md#prefill-and-decode-phases).
+معماری صرفاً دکودر همچنان غالب است، اما انکودر بار دیگر در قالب یک مدل مولد بزرگ پدیدار شده است، نه به‌عنوان یک پشته ترجمه به سبک T5. نمونه عمومی و برجسته آن **DeepSeek V4.1-Flash** (۱۰ سپتامبر ۲۰۲۶، وزن‌های تحت مجوز MIT) است: یک **انکودر-دکودر علی (causal encoder-decoder)** که ۴۰ لایه آن به یک انکودر علی ۲۰ لایه‌ای و یک دکودر ۲۰ لایه‌ای تقسیم شده است، به طوری که KV cache سراسری دکودر از حالت‌های پنهان نهایی انکودر تصویر (project) می‌شود. طبق گزارش DeepSeek، این مدل در طول فاز prefill دارای ۸ میلیارد پارامتر فعال به ازای هر Token و در طول فاز decode دارای ۱۶ میلیارد پارامتر فعال است، و به ازای هر Token تنها ۸۹۰ بایت حافظه KV سراسری مصرف می‌کند که حدود یک‌چهارم V4-Flash است.
+
+**چرا این موضوع برای طراحی سیستم اهمیت دارد:** فازهای prefill و decode اکنون دارای تعداد پارامترهای فعال متفاوتی هستند و KV cache دیگر محدود به یک پشته K/V به ازای هر لایه نیست. هم فرمول «FLOPs = 2 x active parameters» و هم فرمول کتاب‌های مرجع برای KV، نیازمند ارقام مندرج در شناسنامه مدل (model card) هستند. بخش [فازهای Prefill و Decode](06-inference-pipeline.md#prefill-and-decode-phases) را ببینید.
 
 ---
 
-## Mixture of Experts (MoE)
+## ترکیب متخصصان (MoE)
 
-**The default architecture for open-weight frontier models (DeepSeek V4 and V4.1, Kimi K3, GLM-5.3, Qwen3.8, MiMo-V2.6, Tencent Hy4, and October 2026's Mistral Large 4 and Meta Muse Spark Open; earlier, Llama 4 Maverick and Mixtral).** Google's Gemini technical reports and model cards describe sparse MoE transformers; OpenAI and Anthropic do not publish their architectures, so treat any claim about GPT or Claude internals as speculation.
+**معماری پیش‌فرض برای مدل‌های مرزی با وزن‌های باز (DeepSeek V4 و V4.1، Kimi K3، GLM-5.3، Qwen3.8، MiMo-V2.6، Tencent Hy4 و مدل‌های اکتبر ۲۰۲۶ شامل Mistral Large 4 و Meta Muse Spark Open؛ و پیش از آن، Llama 4 Maverick و Mixtral).** گزارش‌های فنی و شناسنامه‌های مدل Google Gemini، ترنسفورمرهای MoE تنک (sparse) را توصیف می‌کنند؛ OpenAI و Anthropic معماری‌های خود را منتشر نمی‌کنند، بنابراین هر ادعایی درباره سازوکار درونی GPT یا Claude را باید صرفاً در حد حدس و گمان دانست.
 
-MoE replaces the dense Feed-Forward Network (FFN) with multiple "experts" and a "router" that selects which experts process a given token.
+معماری MoE شبکه پیش‌خور چگال (dense Feed-Forward Network یا FFN) را با چندین «متخصص» (expert) و یک «مسیریاب» (router) جایگزین می‌کند که وظیفه دارد متخصصان پردازش‌کننده یک Token مشخص را انتخاب کند.
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -139,15 +151,19 @@ MoE replaces the dense Feed-Forward Network (FFN) with multiple "experts" and a 
 └─────────────────────────▼───────────────────────────┘
 ```
 
-### Key MoE Nuances for System Design:
-1. **Total vs. Active Parameters**: Xiaomi MiMo-V2.6-Pro (September 2026) stores 1.02T parameters but activates 42B per token. DeepSeek V4 Pro is 1.6T total / 49B active. Llama 4 Maverick is 400B total / 17B active, with 128 routed experts plus a shared expert in alternating MoE layers.
-    - **Memory constraint**: Every expert must be resident somewhere. 1.02T parameters is about 1 TB at FP8 and still over 500 GB at 4 bits, before any KV cache. Xiaomi's SGLang recipe spreads MiMo-V2.6-Pro across two 8-GPU nodes (16-way tensor parallelism).
-    - **Compute constraint**: Per-token FLOPs scale with the 42B active parameters, not the 1.02T total.
-    - **The catch at high batch**: Different tokens route to different experts, so a large batch touches most experts every step and the bandwidth saving shrinks. MoE serving is an expert-placement and all-to-all communication problem (expert parallelism), not just "a smaller model."
-2. **Routing Collapse**: If the router only picks one expert, the others don't learn. Modern models use **load balancing loss** and **auxiliary losses** to ensure all experts are utilized.
-3. **DeepSeek Refinements**: **Multi-head Latent Attention (MLA)** (introduced in DeepSeek-V2) and **auxiliary-loss-free load balancing** (DeepSeek-V3) became the de facto standard for MoE efficiency, and other labs adopted MLA (Kimi K2, Tencent Hy4). DeepSeek itself moved on: V4 (previewed April 2026) uses a hybrid of Compressed Sparse Attention and Heavily Compressed Attention, which DeepSeek says needs about 10% of V3.2's KV cache and 27% of its per-token FLOPs at 1M tokens. V4.1-Flash (September 2026) adds Compressed Sparse Attention 2 and FP4 KV caching (see [Attention Mechanisms](03-attention-mechanisms.md#hybrid-and-sparse-attention-in-2026-open-models)).
+</div>
 
-The routing decision per token, as a flowchart:
+### نکات ظریف کلیدی MoE برای طراحی سیستم:
+۱. **پارامترهای کل در برابر پارامترهای فعال (Total vs. Active Parameters)**: مدل Xiaomi MiMo-V2.6-Pro (سپتامبر ۲۰۲۶) دارای ۱.۰۲ تریلیون پارامتر ذخیره‌شده است، اما تنها ۴۲ میلیارد پارامتر را به ازای هر Token فعال می‌کند. مدل DeepSeek V4 Pro دارای ۱.۶ تریلیون پارامتر کل / ۴۹ میلیارد پارامتر فعال است. مدل Llama 4 Maverick شامل ۴۰۰ میلیارد پارامتر کل / ۱۷ میلیارد پارامتر فعال با ۱۲۸ متخصص مسیریابی‌شده به همراه یک متخصص مشترک (shared expert) در لایه‌های متناوب MoE است.
+    - **محدودیت حافظه**: تک‌تک متخصصان باید در جایی از حافظه مستقر باشند. ۱.۰۲ تریلیون پارامتر حتی با دقت FP8 حدود ۱ ترابایت و در حالت ۴ بیتی همچنان بیش از ۵۰۰ گیگابایت حافظه اشغال می‌کند، آن هم پیش از در نظر گرفتن هرگونه KV cache. راهکار ارائه‌شده شیائومی برای SGLang، مدل MiMo-V2.6-Pro را روی دو نود ۸ تایی GPU (موازی‌سازی تانسوری ۱۶ مسیره یا 16-way tensor parallelism) توزیع می‌کند.
+    - **محدودیت محاسباتی**: محاسبات FLOPs به ازای هر Token بر اساس ۴۲ میلیارد پارامتر فعال مقیاس‌بندی می‌شود، نه ۱.۰۲ تریلیون پارامتر کل.
+    - **چالش در Batchهای بزرگ (The catch at high batch)**: از آنجا که Tokenهای مختلف به متخصصان متفاوتی هدایت می‌شوند، یک بچ بزرگ در هر گام به بیشتر متخصصان دسترسی پیدا می‌کند و در نتیجه صرفه‌جویی در پهنای باند کاهش می‌یابد. سرویس‌دهی MoE یک مسئله جای‌گذاری متخصصان (expert-placement) و ارتباطات همه-به-همه (all-to-all communication یا موازی‌سازی متخصصان / expert parallelism) است، نه صرفاً «یک مدل کوچک‌تر».
+۲. **فروپاشی مسیریابی (Routing Collapse)**: اگر مسیریاب تنها یک متخصص را انتخاب کند، سایر متخصصان چیزی یاد نخواهند گرفت. مدل‌های امروزی از **تابع زیان توازن بار (load balancing loss)** و **زیان‌های کمکی (auxiliary losses)** استفاده می‌کنند تا اطمینان حاصل شود از تمام متخصصان بهره گرفته می‌شود.
+۳. **بهبودهای اعمال‌شده توسط DeepSeek**: نوآوری **توجه نهفته چند سر (Multi-head Latent Attention یا MLA)** (معرفی‌شده در DeepSeek-V2) و **توازن بار بدون نیاز به تابع زیان کمکی (auxiliary-loss-free load balancing)** (در DeepSeek-V3) به استاندارد عملی کارایی MoE تبدیل شدند و سایر آزمایشگاه‌ها نیز MLA را به کار گرفتند (مانند Kimi K2 و Tencent Hy4). خود DeepSeek فراتر رفت: مدل V4 (پیش‌نمایش در آوریل ۲۰۲۶) از ترکیبی از «توجه تنک فشرده» (Compressed Sparse Attention) و «توجه به‌شدت فشرده» (Heavily Compressed Attention) استفاده می‌کند که طبق اعلام DeepSeek در ۱ میلیون Token، به حدود ۱۰٪ از KV cache مدل V3.2 و ۲۷٪ از FLOPs به ازای هر Token آن نیاز دارد. مدل V4.1-Flash (سپتامبر ۲۰۲۶) قابلیت Compressed Sparse Attention 2 و کش‌گذاری KV با فرمت FP4 را اضافه می‌کند (بخش [سازوکارهای توجه](03-attention-mechanisms.md#hybrid-and-sparse-attention-in-2026-open-models) را ببینید).
+
+تصمیم‌گیری مسیریابی به ازای هر Token در قالب فلوچارت:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -162,43 +178,46 @@ flowchart TD
     H --> I[Next layer]
 ```
 
----
-
-## Scaling Laws: Training vs. Inference Optimal
-
-The original Chinchilla laws (2022) focused on being **Training-Optimal**: finding the best model size for a given training budget.
-
-The industry has now shifted to **Inference-Optimal** scaling:
-- **Over-training**: Training smaller models (e.g., Llama 3 8B) on massive data (15T+ tokens) far beyond the Chinchilla point.
-- **Why?**: The cost of inference over millions of users dwarfs the one-time training cost. A 7B model trained for 10x longer is cheaper to serve than a 70B model trained at the Chinchilla point.
+</div>
 
 ---
 
-## Native Multimodality
+## قوانین مقیاس‌پذیری: بهینه برای آموزش در برابر بهینه برای استنتاج
 
-Older models used **Vision Adapters** (connecting a frozen CLIP-style vision encoder to an LLM). Frontier models are now trained **natively multimodal**, and the 2026 open releases show how far the design has moved:
+قوانین اولیه چینچیلا (Chinchilla laws - سال ۲۰۲۲) بر **بهینه‌سازی برای آموزش (Training-Optimal)** تمرکز داشتند: یافتن بهترین اندازه مدل به ازای یک بودجه آموزشی مشخص.
 
-- **Shared Vocabulary**: Visual tokens and text tokens exist in the same latent space.
-- **Uniform Transformer**: The same blocks process both pixels and text.
-- **Encoder-free inputs**: Gemma 4 12B "Unified" (June 2026, Apache 2.0) projects raw image patches and audio waveforms straight into the LLM embedding space through lightweight linear layers, with no separate vision encoder.
-- **Multimodal by default in open flagships**: MiMo-V2.6 takes text, image, video and audio; GLM-5.3-Flash is the first natively multimodal GLM-5 model, built for GUI agents; DeepSeek V4.1-Flash added native image input. A self-hosted stack now has to budget for image and audio tokens, not just text.
-- **Benefit**: Better spatial reasoning and cross-modal grounding than adapter-based approaches.
+صنعت اکنون به سمت مقیاس‌پذیری **بهینه برای استنتاج (Inference-Optimal)** تغییر جهت داده است:
+- **آموزش بیش از حد (Over-training)**: آموزش مدل‌های کوچک‌تر (مانند Llama 3 8B) روی حجم عظیمی از داده‌ها (بیش از ۱۵ تریلیون Token) بسیار فراتر از نقطه چینچیلا.
+- **چرا؟**: هزینه استنتاج (Inference) برای میلیون‌ها کاربر، بسیار سنگین‌تر از هزینه یک‌باره آموزش است و آن را کم‌اهمیت جلوه می‌دهد. سرویس‌دهی به یک مدل 7B که ۱۰ برابر طولانی‌تر آموزش دیده باشد، بسیار ارزان‌تر از یک مدل 70B است که در نقطه چینچیلا آموزش دیده باشد.
 
 ---
 
-## Self-Attention Mechanism
+## چندوجهی بومی (Native Multimodality)
 
-Self-attention is the core innovation. It allows each token to "attend to" (gather information from) all other tokens in a sequence.
+مدل‌های قدیمی‌تر از **آداپتورهای بینایی (Vision Adapters)** استفاده می‌کردند (اتصال یک انکودر بینایی منجمد به سبک CLIP به یک LLM). اکنون مدل‌های پیشرو به‌صورت **چندوجهی بومی (natively multimodal)** آموزش داده می‌شوند و نسخه‌های متن‌باز منتشرشده در سال ۲۰۲۶ نشان می‌دهند که این طراحی چقدر متحول شده است:
 
-### The Intuition
+- **واژگان مشترک (Shared Vocabulary)**: Tokenهای تصویری و Tokenهای متنی در یک فضای نهفته (latent space) مشترک حضور دارند.
+- **ترنسفورمر یکپارچه (Uniform Transformer)**: همان بلوک‌های یکسان، هم پیکسل‌ها و هم متن را پردازش می‌کنند.
+- **ورودی‌های بدون نیاز به انکودر (Encoder-free inputs)**: مدل Gemma 4 12B "Unified" (ژوئن ۲۰۲۶، مجوز Apache 2.0) وصله‌های تصویر خام (image patches) و شکل موج‌های صوتی را مستقیماً از طریق لایه‌های خطی سبک به فضای تعبیه مدل LLM نگاشت می‌کند، بدون آنکه انکودر بینایی مجزایی داشته باشد.
+- **چندوجهی به‌صورت پیش‌فرض در پرچمداران متن‌باز**: مدل MiMo-V2.6 ورودی‌های متنی، تصویری، ویدیویی و صوتی را دریافت می‌کند؛ مدل GLM-5.3-Flash نخستین مدل با چندوجهی بومی در سری GLM-5 است که برای ایجنت‌های رابط کاربری گرافیکی (GUI agents) طراحی شده است؛ مدل DeepSeek V4.1-Flash ورودی تصویر بومی را اضافه کرده است. اکنون یک پشته اختصاصی (self-hosted stack) باید علاوه بر متن، برای Tokenهای تصویر و صوت نیز بودجه‌بندی کند.
+- **مزیت**: استدلال فضایی بهتر و اتصال مفاهیم بین‌وجهی (cross-modal grounding) قوی‌تر نسبت به روش‌های مبتنی بر آداپتور.
 
-Consider the sentence: "The animal didn't cross the street because it was too tired."
+---
 
-What does "it" refer to? Understanding requires connecting "it" to "animal". Self-attention learns these connections by computing relevance scores between all token pairs.
+## سازوکار خودتوجهی (Self-Attention Mechanism)
 
-### The Math
+خودتوجهی (Self-attention) نوآوری محوری ترنسفورمر است. این مکانیزم به هر Token اجازه می‌دهد تا به تمام Tokenهای دیگر در یک توالی «توجه کند» (از آن‌ها اطلاعات جمع‌آوری نماید).
 
-For input sequence X of n tokens with dimension d:
+### درک شهودی
+
+جمله زیر را در نظر بگیرید:
+«The animal didn't cross the street because it was too tired.» (حیوان از خیابان عبور نکرد زیرا بیش از حد خسته بود.)
+
+کلمه «it» به چه چیزی ارجاع دارد؟ درک این جمله مستلزم اتصال «it» به «animal» است. خودتوجهی این ارتباطات را با محاسبه امتیازات ارتباط (relevance scores) میان تمام جفت‌های Token یاد می‌گیرد.
+
+### محاسبات ریاضی
+
+برای توالی ورودی X متشکل از n تا Token با بعد d:
 
 ```
 Q = XW_Q   (Query: What am I looking for?)
@@ -208,17 +227,17 @@ V = XW_V   (Value: What do I contribute?)
 Attention(Q, K, V) = softmax(QK^T / √d_k) × V
 ```
 
-**Step by step:**
-1. **QK^T**: Dot product measures similarity between queries and keys (n × n matrix)
-2. **/ √d_k**: Scale to prevent softmax saturation with large dimensions
-3. **softmax**: Convert to probabilities (each row sums to 1)
-4. **× V**: Weighted sum of values based on attention weights
+**گام‌به‌گام:**
+۱. **QK^T**: ضرب داخلی، میزان شباهت بین پرس‌وجوها (queries) و کلیدها (keys) را می‌سنجد (ماتریس n × n)
+۲. **/ √d_k**: مقیاس‌گذاری برای جلوگیری از اشباع تابع softmax در ابعاد بزرگ
+۳. **softmax**: تبدیل به احتمالات (مجموع هر سطر برابر ۱ می‌شود)
+۴. **× V**: مجموع وزن‌دار مقادیر (values) بر اساس وزن‌های توجه
 
-### Why Scale by √d_k?
+### چرا مقیاس‌گذاری با √d_k؟
 
-**Interview favorite**: This is frequently asked because it reveals understanding of numerical stability.
+**محبوب در مصاحبه‌ها**: این سوال مکرراً پرسیده می‌شود چرا که میزان درک شما از پایداری عددی (numerical stability) را مشخص می‌کند.
 
-Without scaling, as dimension d grows, dot products grow proportionally. Large dot products push softmax into saturated regions where gradients vanish.
+بدون مقیاس‌گذاری، با رشد بعد d، حاصل‌ضرب‌های داخلی نیز به تناسب رشد می‌کنند. مقادیر بزرگ حاصل‌ضرب داخلی، تابع softmax را به نواحی اشباع سوق می‌دهند که در آن گرادیان‌ها ناپدید (صفر) می‌شوند.
 
 ```python
 # Without scaling (problematic for large d)
@@ -231,21 +250,23 @@ dot = np.dot(q, k)  # Expected magnitude: ~√d ≈ 22.6
 scaled_dot = dot / np.sqrt(d)  # Expected magnitude: ~1
 ```
 
-### Attention Complexity
+### پیچیدگی محاسباتی توجه
 
-| Operation | Time Complexity | Space Complexity |
+| عملیات | پیچیدگی زمانی | پیچیدگی فضایی |
 |-----------|-----------------|------------------|
-| QK^T computation | O(n²d) | O(n²) |
-| Softmax | O(n²) | O(n²) |
-| Weighted sum with V | O(n²d) | O(nd) |
+| محاسبه QK^T | O(n²d) | O(n²) |
+| تابع Softmax | O(n²) | O(n²) |
+| مجموع وزن‌دار با V | O(n²d) | O(nd) |
 
-The O(n²) complexity limits context length. A 100K context window means 10 billion attention computations per layer.
+پیچیدگی O(n²) طول پنجره زمینه (context length) را محدود می‌کند. یک پنجره زمینه 100K به معنای ۱۰ میلیارد محاسبه توجه به ازای هر لایه است.
 
 ---
 
-## Multi-Head Attention
+## توجه چند سر (Multi-Head Attention)
 
-Instead of single attention, modern transformers use multiple "heads" that attend to different aspects in parallel.
+ترنسفورمرهای مدرن به جای یک مکانیزم توجه منفرد، از چندین «سر» (heads) بهره می‌برند که به جنبه‌های مختلف به‌صورت موازی توجه می‌کنند.
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -264,108 +285,110 @@ Instead of single attention, modern transformers use multiple "heads" that atten
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Why multiple heads?**
-- Different heads learn different patterns (syntax, semantics, coreference)
-- Similar to ensemble methods: multiple perspectives improve robustness
-- Enables parallel processing across heads
+</div>
 
-**Typical configuration:**
-- GPT-3 175B: 96 heads × 128 dimensions = 12,288 total dimension
-- Llama 2 70B: 64 heads × 128 dimensions = 8,192 total dimension
+**چرا چندین سر؟**
+- سرهای مختلف الگوهای متفاوتی را یاد می‌گیرند (نحو، معناشناسی، ارجاع هم‌پایه یا coreference)
+- مشابه روش‌های انسمبل (ensemble methods): دیدگاه‌های چندگانه پایداری و قدرت مدل را بهبود می‌بخشند
+- پردازش موازی را در میان سرها ممکن می‌سازد
 
-### Grouped Query Attention (GQA)
+**پیکربندی معمول:**
+- مدل GPT-3 175B: ۹۶ سر × ۱۲۸ بعد = ۱۲,۲۸۸ بعد کل
+- مدل Llama 2 70B: ۶۴ سر × ۱۲۸ بعد = ۸,۱۹۲ بعد کل
 
-**Critical for production systems**: Standard multi-head attention requires storing separate K and V for each head in the KV cache. GQA shares K and V across groups of heads.
+### توجه با پرس‌وجوی گروه‌بندی‌شده (Grouped Query Attention - GQA)
 
-| Attention Type | K,V per Query | KV Cache Reduction | Examples |
+**حیاتی برای سیستم‌های عملیاتی (production)**: مکانیزم استاندارد Multi-Head Attention نیازمند ذخیره K و V جداگانه برای هر سر در KV cache است. در مقابل، GQA مقادیر K و V را در میان گروه‌هایی از سرها به اشتراک می‌گذارد.
+
+| نوع توجه | K,V به ازای هر Query | کاهش حافظه KV Cache | نمونه‌ها |
 |----------------|---------------|-------------------|----------|
-| Multi-Head (MHA) | 1:1 | Baseline | GPT-3 |
-| Grouped-Query (GQA) | 8:1 typical | ~8x | Llama 2 70B, Llama 3, Mistral |
-| Multi-Query (MQA) | All:1 | ~n_heads × | PaLM, Falcon |
+| چند سر (Multi-Head - MHA) | ۱:۱ | مبنا (Baseline) | GPT-3 |
+| پرس‌وجوی گروه‌بندی‌شده (Grouped-Query - GQA) | معمولاً ۸:۱ | حدود 8x | Llama 2 70B، Llama 3، Mistral |
+| چند پرس‌وجویی (Multi-Query - MQA) | All:1 (همه به ۱) | حدود n_heads × | PaLM، Falcon |
 
-**Practical impact:**
-For Llama 3 70B (same attention shape as Llama 2 70B) at 8K context (BF16):
-- MHA KV cache (if it had 64 KV heads): ~21 GB per request
-- GQA KV cache (its actual 8 KV heads): ~2.7 GB per request
+**اثر عملی:**
+برای مدل Llama 3 70B (با همان ساختار توجه Llama 2 70B) در زمینه 8K با فرمت BF16:
+- حافظه KV cache در MHA (در صورتی که ۶۴ سر KV داشت): حدود ۲۱ گیگابایت به ازای هر درخواست
+- حافظه KV cache در GQA (۸ سر واقعی KV آن): حدود ۲.۷ گیگابایت به ازای هر درخواست
 
-This directly affects batch size and therefore throughput.
+این امر مستقیماً بر اندازه بچ (batch size) و در نتیجه بر توان عملیاتی (Throughput) تأثیر می‌گذارد.
 
 ---
 
-## Position Encodings
+## کدگذاری‌های موقعیت (Position Encodings)
 
-Self-attention is permutation-invariant. Without position information, "dog bites man" and "man bites dog" would be identical. Position encodings inject sequence order.
+مکانیزم توجه به خود (Self-attention) نسبت به جایگشت ناوردا (permutation-invariant) است. بدون اطلاعات موقعیت، «سگ مرد را گاز می‌گیرد» و «مرد سگ را گاز می‌گیرد» کاملاً یکسان خواهند بود. کدگذاری‌های موقعیت، ترتیب توالی را تزریق می‌کنند.
 
-### Sinusoidal (Original Transformer)
+### سینوسی (ترنسفورمر اولیه / Original Transformer)
 
-Uses sine and cosine functions of different frequencies:
+از توابع سینوس و کسینوس با بسامدهای مختلف استفاده می‌کند:
 
 ```
 PE(pos, 2i) = sin(pos / 10000^(2i/d))
 PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
 ```
 
-**Properties:**
-- Deterministic, no learned parameters
-- Can theoretically extrapolate to longer sequences
-- In practice, extrapolation does not work well
+**ویژگی‌ها:**
+- قطعی (Deterministic)، بدون پارامترهای یادگیری‌پذیر
+- از نظر تئوری می‌تواند به توالی‌های طولانی‌تر برون‌یابی (extrapolate) کند
+- در عمل، برون‌یابی به خوبی کار نمی‌کند
 
-### Learned Absolute
+### مطلق یادگیری‌شده (Learned Absolute)
 
-Learn a separate embedding for each position:
+یادگیری یک Embedding مجزا برای هر موقعیت:
 
 ```python
 position_embeddings = nn.Embedding(max_length, d_model)
 ```
 
-**Properties:**
-- Simple and effective
-- Cannot extrapolate beyond training length
-- Most early models (GPT-2, BERT)
+**ویژگی‌ها:**
+- ساده و کارآمد
+- فراتر از طول آموزش قابل برون‌یابی نیست
+- اکثر مدل‌های اولیه (GPT-2, BERT)
 
-### Rotary Position Embedding (RoPE)
+### تعبیه موقعیت چرخشی (RoPE - Rotary Position Embedding)
 
-Encode position by rotating the query and key vectors:
+کدگذاری موقعیت از طریق چرخاندن بردارهای Query و Key:
 
 ```
 RoPE(x, pos) = x × cos(pos × θ) + rotate(x) × sin(pos × θ)
 ```
 
-**Properties:**
-- Relative: Attention depends on (pos_q - pos_k)
-- Extrapolates better than absolute
-- Used in: Llama, Mistral, PaLM, Qwen, DeepSeek
-- Context extension: scaling methods such as Position Interpolation and YaRN stretch a trained RoPE window. Qwen3.8-Flash-Next is 262K native and reaches 1M with YaRN.
+**ویژگی‌ها:**
+- نسبی: توجه (Attention) به (pos_q - pos_k) بستگی دارد
+- برون‌یابی بهتر نسبت به روش مطلق
+- استفاده شده در: Llama, Mistral, PaLM, Qwen, DeepSeek
+- گسترش طول زمینه (Context extension): روش‌های مقیاس‌بندی مانند Position Interpolation و YaRN یک پنجره آموزش‌دیده RoPE را بسط می‌دهند. مدل Qwen3.8-Flash-Next به‌صورت بومی دارای ۲۶۲K است و با YaRN به ۱M می‌رسد.
 
-### ALiBi (Attention with Linear Biases)
+### ALiBi (توجه با بایاس‌های خطی / Attention with Linear Biases)
 
-Add position-dependent bias directly to attention scores:
+افزودن بایاس وابسته به موقعیت به‌طور مستقیم به امتیازهای توجه:
 
 ```
 Attention = softmax(QK^T / √d_k - m × distance)
 ```
 
-Where m is a head-specific slope and distance is |pos_q - pos_k|.
+که در آن m یک شیب اختصاصی برای هر هد (head-specific slope) و distance برابر با |pos_q - pos_k| است.
 
-**Properties:**
-- No modification to embeddings
-- Excellent extrapolation
-- Used in: BLOOM, MPT
+**ویژگی‌ها:**
+- بدون ایجاد تغییر در Embeddingها
+- برون‌یابی عالی
+- استفاده شده در: BLOOM, MPT
 
-### Position Encoding Comparison
+### مقایسه روش‌های کدگذاری موقعیت
 
-| Method | Extrapolation | Compute Overhead | Modern Usage |
+| روش | برون‌یابی (Extrapolation) | سربار محاسباتی | کاربرد مدرن |
 |--------|---------------|------------------|--------------|
-| Sinusoidal | Poor | None | Rarely |
-| Learned | None | Minimal | Legacy |
-| RoPE | Good | ~5% | Most LLMs |
-| ALiBi | Excellent | ~2% | Some LLMs |
+| سینوسی (Sinusoidal) | ضعیف | ندارد | به‌ندرت |
+| یادگیری‌شده (Learned) | ندارد | ناچیز | قدیمی (Legacy) |
+| RoPE | خوب | ~5% | اکثر LLMها |
+| ALiBi | عالی | ~2% | برخی LLMها |
 
 ---
 
-## Feed-Forward Networks
+## شبکه‌های پیش‌خور (Feed-Forward Networks)
 
-Each transformer layer has a feed-forward network (FFN) that processes each position independently:
+هر لایه ترنسفورمر دارای یک شبکه پیش‌خور (FFN) است که هر موقعیت را به‌صورت مستقل پردازش می‌کند:
 
 ```python
 def feed_forward(x):
@@ -374,22 +397,22 @@ def feed_forward(x):
     return output
 ```
 
-**Key properties:**
-- Position-wise: Same weights applied to each position
-- Expansion ratio: Typically 4x (e.g., 4096 → 16384 → 4096)
-- Where parameters live: FFN has ~2/3 of layer parameters
+**ویژگی‌های کلیدی:**
+- وابسته به موقعیت (Position-wise): وزن‌های یکسانی روی هر موقعیت اعمال می‌شود
+- نسبت انبساط (Expansion ratio): معمولاً ۴ برابر (به‌عنوان مثال، ۴۰۹۶ ← ۱۶۳۸۴ ← ۴۰۹۶)
+- محل قرارگیری پارامترها: بخش FFN حدود ۲/۳ پارامترهای لایه را در بر می‌گیرد
 
-### Activation Functions
+### توابع فعال‌سازی (Activation Functions)
 
-| Activation | Formula | Properties | Usage |
+| تابع فعال‌سازی | فرمول | ویژگی‌ها | کاربرد |
 |------------|---------|------------|-------|
-| ReLU | max(0, x) | Simple, sparse | Original |
-| GELU | x × Φ(x) | Smooth, used in BERT | GPT-2, BERT |
-| SwiGLU | Swish(xW) × xV | State of the art | Llama, PaLM |
+| ReLU | max(0, x) | ساده، تنک (sparse) | مقاله اصلی |
+| GELU | x × Φ(x) | هموار، استفاده شده در BERT | GPT-2, BERT |
+| SwiGLU | Swish(xW) × xV | پیشرفته‌ترین (State of the art) | Llama, PaLM |
 
-SwiGLU adds a gating mechanism that improves performance at the cost of ~50% more parameters in the FFN.
+تابع SwiGLU یک مکانیزم گیتینگ (gating) اضافه می‌کند که عملکرد را به بهای حدود ۵۰٪ پارامتر بیشتر در FFN ارتقا می‌دهد.
 
-### GLU Variants
+### گونه‌های مختلف GLU
 
 ```python
 # Standard FFN
@@ -404,9 +427,9 @@ output = (gate * hidden) @ W_down
 
 ---
 
-## Layer Normalization
+## نرمال‌سازی لایه‌ای (Layer Normalization)
 
-Layer normalization stabilizes training by normalizing activations:
+نرمال‌سازی لایه‌ای با نرمال کردن فعال‌سازی‌ها، فرآیند آموزش را پایدار می‌کند:
 
 ```python
 def layer_norm(x, gamma, beta):
@@ -416,28 +439,28 @@ def layer_norm(x, gamma, beta):
     return gamma * normalized + beta
 ```
 
-### Pre-LN vs Post-LN
+### مقایسه Pre-LN در برابر Post-LN
 
-**Post-LN (Original Transformer):**
+**روش Post-LN (ترنسفورمر اولیه):**
 ```
 x = LayerNorm(x + Attention(x))  # Post-LN: normalize after residual
 ```
 
-**Pre-LN (Modern LLMs):**
+**روش Pre-LN (مدل‌های مدرن LLM):**
 ```
 x = x + Attention(LayerNorm(x))  # Pre-LN: normalize before sublayer
 ```
 
-| Variant | Training Stability | Final Performance | Usage |
+| گونه (Variant) | پایداری آموزش | عملکرد نهایی | کاربرد |
 |---------|-------------------|-------------------|-------|
-| Post-LN | Harder | Slightly better | Original papers |
-| Pre-LN | Much easier | Good | Most modern LLMs |
+| Post-LN | دشوارتر | اندکی بهتر | مقالات اصلی |
+| Pre-LN | بسیار آسان‌تر | خوب | اکثر LLMهای مدرن |
 
-Pre-LN is standard because it enables training deep models without careful learning rate tuning.
+روش Pre-LN امروزه به یک استاندارد تبدیل شده است، زیرا آموزش مدل‌های عمیق را بدون نیاز به تنظیم دقیق نرخ یادگیری (learning rate) امکان‌پذیر می‌سازد.
 
-### RMSNorm
+### روش RMSNorm
 
-Simplification that skips mean centering:
+ساده‌سازی که از تفریق میانگین (mean centering) صرف‌نظر می‌کند:
 
 ```python
 def rms_norm(x, gamma):
@@ -445,13 +468,13 @@ def rms_norm(x, gamma):
     return gamma * (x / rms)
 ```
 
-~10-15% faster than LayerNorm with similar performance. Used in Llama, Mistral.
+حدود ۱۰ تا ۱۵٪ سریع‌تر از LayerNorm با عملکردی مشابه. استفاده شده در Llama و Mistral.
 
 ---
 
-## Putting It All Together
+## جمع‌بندی اجزا (Putting It All Together)
 
-A complete transformer layer:
+یک لایه کامل ترنسفورمر:
 
 ```python
 class TransformerLayer:
@@ -469,25 +492,25 @@ class TransformerLayer:
         return out
 ```
 
-**Full model:**
+**مدل کامل:**
 ```
 Token IDs → Embedding → [Transformer Layer × N] → Output Norm → LM Head → Logits
 ```
 
 ---
 
-## Key Numbers to Know
+## اعداد کلیدی که باید بدانید
 
-### Model Sizes
+### اندازه مدل‌ها
 
-| Model | Parameters | Layers | Heads | Dimension | FFN Dim |
+| مدل | پارامترها | لایه‌ها | هدها (Heads) | بُعد (Dimension) | بُعد FFN |
 |-------|------------|--------|-------|-----------|---------|
 | GPT-3 | 175B | 96 | 96 | 12,288 | 49,152 |
 | Llama 2 70B | 70B | 80 | 64 | 8,192 | 28,672 |
 | Llama 2 7B | 7B | 32 | 32 | 4,096 | 11,008 |
 | Mistral 7B | 7B | 32 | 32 | 4,096 | 14,336 |
 
-### Memory Requirements
+### نیازمندی‌های حافظه
 
 ```
 Model weights ≈ bytes_per_parameter × parameters
@@ -505,7 +528,7 @@ KV cache per token (BF16, standard MHA/GQA attention):
   (its sliding-window KV is extra, capped at the window length)
 ```
 
-### Compute Requirements
+### نیازمندی‌های محاسباتی
 
 ```
 FLOPs per token, forward pass ≈ 2 × active parameters
@@ -522,76 +545,76 @@ H100 SXM: ~989 TFLOPS dense BF16, ~3.35 TB/s HBM bandwidth
 
 ---
 
-## Key Takeaways
+## نکات کلیدی
 
-- The shift from RNN to Transformer was about parallelization, not just quality; this is why GPU scaling laws followed.
-- MoE separates total parameters (memory cost) from active parameters (compute cost): MiMo-V2.6-Pro stores 1.02T parameters but computes with 42B per token. The saving is largest at small batch; at large batch most experts are touched every step.
-- Inference-optimal scaling beats Chinchilla in production: over-train small models because inference cost dominates training cost over a model's lifetime.
-- GQA is the baseline KV-cache optimization (8x on Llama 70B); understand the N:G ratio before discussing serving cost. 2026 open flagships go further with MLA, sliding-window and linear-attention hybrids and compressed KV, so KV bytes per token now differ by orders of magnitude between models. Size from the model card, not the textbook formula.
-- Pre-LN with RMSNorm is the modern default; if you see Post-LN in an interview answer, the candidate is referencing 2018 papers.
-
----
-
-## Interview Questions
-
-### Q: Explain why transformer attention is O(n²) and what alternatives exist.
-
-**Strong answer:**
-Attention computes pairwise similarities between all tokens. For sequence length n:
-- QK^T is [n, d] × [d, n] = n² multiplications per head
-- Storage for attention weights: n² floats
-
-Alternatives:
-- Sparse attention (Longformer): O(n) with local + global patterns
-- Linear attention (Performer): O(n) using random feature approximation
-- Flash Attention: Still O(n²) compute but O(n) memory via kernel fusion
-- State-space models (Mamba): O(n) fully linear
-- Hybrids (the 2026 production answer): interleave linear-attention or sliding-window layers with a minority of full or sparse attention layers. Qwen3.8-Flash-Next runs Gated DeltaNet in three of every four layers; MiMo-V2.6-Pro uses 60 sliding-window layers and 10 global ones.
-
-The tradeoff: n² is necessary for full long-range dependencies, but most tasks do not need all pairwise interactions. Pure linear attention loses precise recall, which is why production models keep some full or sparse attention layers rather than dropping them entirely.
-
-### Q: What is the KV cache and why does it matter for serving?
-
-**Strong answer:**
-During autoregressive generation, we generate one token at a time. Without caching, we would recompute K and V for all previous tokens on each step.
-
-The KV cache stores K and V from previous positions. On each new token:
-1. Compute Q, K, V only for the new position
-2. Concatenate new K, V to cached K, V
-3. Compute attention with full K, V
-
-This reduces per-token complexity from O(n) to O(1) for K and V computation.
-
-**The cost:** Memory scales linearly with sequence length. For Llama 70B (GQA, 8 KV heads, BF16), KV cache is ~2.7 GB per request at 8K context and ~43 GB at 128K; without GQA it would be 8x larger. This limits batch size and requires techniques like PagedAttention, KV quantization (an FP8 KV cache, usually paired with FP4 weights, is the headline 2026 serving configuration) and offload to host memory.
-
-### Q: Why do modern LLMs use Pre-LN instead of Post-LN?
-
-**Strong answer:**
-Pre-LN places normalization before each sublayer rather than after. This creates a more direct path for gradients through residual connections.
-
-With Post-LN, gradients must pass through the normalization, which can cause instability at the start of training. Post-LN requires learning rate warmup and careful initialization.
-
-Pre-LN enables training very deep models (100+ layers) without special initialization. The tradeoff is slightly lower final performance, but in practice, the training stability is worth it.
-
-### Q: What is the difference between MHA, MQA, and GQA?
-
-**Strong answer:**
-All three are multi-head attention variants that differ in how K and V heads are shared:
-
-- **MHA (Multi-Head Attention)**: Each query head has its own K and V heads. N:N ratio.
-- **MQA (Multi-Query Attention)**: All query heads share a single K and V head. N:1 ratio.
-- **GQA (Grouped-Query Attention)**: Groups of query heads share K and V heads. N:G ratio (typical G=8).
-
-Memory impact for KV cache:
-- MHA: Full size
-- MQA: 1/N size (but quality degrades)
-- GQA: 1/G size (best tradeoff)
-
-Llama 2 70B uses GQA with 8 KV heads for 64 query heads, reducing KV cache by 8x with minimal quality loss.
+- گذار از RNN به ترنسفورمر به دلیل موازی‌سازی (parallelization) بود، نه صرفاً کیفیت؛ به همین دلیل است که قوانین مقیاس‌پذیری GPU به دنبال آن شکل گرفت.
+- معماری MoE پارامترهای کل (هزینه حافظه) را از پارامترهای فعال (هزینه محاسباتی) تفکیک می‌کند: مدل MiMo-V2.6-Pro تعداد ۱.۰۲ تریلیون (1.02T) پارامتر ذخیره می‌کند اما تنها با ۴۲ میلیارد (42B) پارامتر به ازای هر Token محاسبه انجام می‌دهد. بیشترین صرفه‌جویی در Batch Sizeهای کوچک رخ می‌دهد؛ در Batch Sizeهای بزرگ، بیشتر Expertها در هر گام فراخوانی می‌شوند.
+- مقیاس‌بندی بهینه برای استنتاج (Inference-optimal scaling) در محیط پروداکشن بر رویکرد چینچیلا (Chinchilla) برتری دارد: مدل‌های کوچک‌تر را بیش از حد آموزش (over-train) دهید زیرا در طول عمر یک مدل، هزینه استنتاج (Inference) بر هزینه آموزش غالب است.
+- مکانیزم GQA بهینه‌سازی پایه برای KV-cache محسوب می‌شود (کاهش ۸ برابری در Llama 70B)؛ پیش از بحث درباره هزینه سرویس‌دهی (serving cost)، نسبت N:G را درک کنید. مدل‌های پرچم‌دار متن‌باز در سال ۲۰۲۶ با معماری MLA، مدل‌های هیبریدی توجه خطی و پنجره لغزان (sliding-window) و KV فشرده فراتر می‌روند، به طوری که بایت‌های KV به ازای هر Token امروزه بین مدل‌ها چندین مرتبه بزرگی (orders of magnitude) تفاوت دارد. حجم حافظه را بر اساس کارت مدل (model card) تخمین بزنید، نه فرمول‌های کتاب‌های درسی.
+- ترکیب Pre-LN با RMSNorm پیش‌فرض دنیای مدرن است؛ اگر در یک پاسخ مصاحبه Post-LN را دیدید، داوطلب به مقالات سال ۲۰۱۸ ارجاع می‌دهد.
 
 ---
 
-## References
+## سوالات مصاحبه
+
+### سوال: توضیح دهید چرا مکانیزم توجه (Attention) در ترنسفورمر دارای پیچیدگی O(n²) است و چه جایگزین‌هایی برای آن وجود دارد؟
+
+**پاسخ قوی:**
+مکانیزم توجه، شباهت‌های دو‌به‌دو میان تمام Tokenها را محاسبه می‌کند. برای طول توالی n:
+- حاصل‌ضرب QK^T دارای ابعاد [n, d] × [d, n] = n² ضرب ماتریسی به ازای هر هد است
+- فضای ذخیره‌سازی برای وزن‌های توجه: n² عدد اعشاری (floats)
+
+جایگزین‌ها:
+- توجه تنک یا Sparse attention (مدل Longformer): دارای پیچیدگی O(n) با الگوهای محلی + سراسری
+- توجه خطی یا Linear attention (مدل Performer): دارای پیچیدگی O(n) با استفاده از تقریب ویژگی‌های تصادفی
+- فلش اتنشن (Flash Attention): همچنان محاسبات O(n²)، اما با مصرف حافظه O(n) از طریق ادغام هسته‌ها (kernel fusion)
+- مدل‌های فضای حالت یا State-space models (مدل Mamba): کاملاً خطی با O(n)
+- مدل‌های هیبریدی (پاسخ محیط پروداکشن در سال ۲۰۲۶): ترکیب متناوب لایه‌های توجه خطی یا پنجره لغزان (sliding-window) با اقلیتی از لایه‌های توجه کامل یا تنک. مدل Qwen3.8-Flash-Next در سه لایه از هر چهار لایه از Gated DeltaNet استفاده می‌کند؛ مدل MiMo-V2.6-Pro دارای ۶۰ لایه پنجره لغزان و ۱۰ لایه سراسری است.
+
+موازنه (Tradeoff): پیچیدگی n² برای ثبت وابستگی‌های دوربرد کامل ضروری است، اما بیشتر تسک‌ها به تمام تعاملات دو‌به‌دو نیازی ندارند. توجه کاملاً خطی، قابلیت بازیابی دقیق (precise recall) را از دست می‌دهد؛ به همین دلیل است که مدل‌های پروداکشن به جای حذف کامل لایه‌های توجه کامل یا تنک، بخشی از آن‌ها را حفظ می‌کنند.
+
+### سوال: حافظه کَش KV (یا KV cache) چیست و چرا برای سرویس‌دهی (serving) اهمیت دارد؟
+
+**پاسخ قوی:**
+در طول تولید خودبازگشتی (autoregressive generation)، ما در هر مرحله یک Token تولید می‌کنیم. بدون کَش‌سازی، مجبور بودیم در هر گام مقادیر K و V را برای تمام Tokenهای قبلی مجدداً محاسبه کنیم.
+
+مکانیزم KV cache مقادیر K و V موقعیت‌های قبلی را ذخیره می‌کند. به ازای هر Token جدید:
+1. مقادیر Q، K و V فقط برای موقعیت جدید محاسبه می‌شوند
+2. مقادیر جدید K و V به K و V کَش‌شده الحاق (concatenate) می‌شوند
+3. توجه با مقادیر کامل K و V محاسبه می‌شود
+
+این کار پیچیدگی محاسباتی K و V را به ازای هر Token از O(n) به O(1) کاهش می‌دهد.
+
+**هزینه:** میزان مصرف حافظه به‌صورت خطی با طول توالی افزایش می‌یابد. برای Llama 70B (با GQA، ۸ هد KV و فرمت BF16)، حافظه KV cache حدود ۲.۷ گیگابایت به ازای هر درخواست در طول زمینه 8K و حدود ۴۳ گیگابایت در 128K است؛ بدون GQA این مقدار ۸ برابر بزرگ‌تر می‌شد. این موضوع اندازه دسته (batch size) را محدود می‌کند و نیازمند تکنیک‌هایی مانند PagedAttention، کوانتیزاسیون KV (یک KV cache با فرمت FP8 که معمولاً با وزن‌های FP4 جفت می‌شود، پیکربندی اصلی سرویس‌دهی در سال ۲۰۲۶ است) و انتقال (offload) به حافظه میزبان (host memory) می‌باشد.
+
+### سوال: چرا LLMهای مدرن به جای Post-LN از Pre-LN استفاده می‌کنند؟
+
+**پاسخ قوی:**
+روش Pre-LN نرمال‌سازی را به جای بعد از هر زیرلایه، قبل از آن قرار می‌دهد. این کار یک مسیر مستقیم‌تر برای گرادیان‌ها از طریق اتصالات باقی‌مانده (residual connections) ایجاد می‌کند.
+
+در Post-LN، گرادیان‌ها باید از نرمال‌سازی عبور کنند که می‌تواند در ابتدای آموزش ناپایداری ایجاد کند. Post-LN نیازمند گرم‌کردن نرخ یادگیری (learning rate warmup) و مقداردهی اولیه دقیق است.
+
+روش Pre-LN آموزش مدل‌های بسیار عمیق (بیش از ۱۰۰ لایه) را بدون مقداردهی اولیه ویژه ممکن می‌سازد. موازنه این روش در عملکرد نهایی اندکی پایین‌تر است، اما در عمل، پایداری آموزش ارزش آن را دارد.
+
+### سوال: تفاوت بین MHA، MQA و GQA چیست؟
+
+**پاسخ قوی:**
+هر سه از گونه‌های توجه چندسره هستند که تفاوت آن‌ها در نحوه اشتراک‌گذاری هدهای K و V است:
+
+- **MHA (توجه چندسره / Multi-Head Attention)**: هر هد Query هدهای K و V اختصاصی خود را دارد. نسبت N:N.
+- **MQA (توجه چندکوئری / Multi-Query Attention)**: تمام هدهای Query یک جفت هد مشترک K و V دارند. نسبت N:1.
+- **GQA (توجه کوئری گروه‌بندی‌شده / Grouped-Query Attention)**: گروه‌هایی از هدهای Query هدهای K و V را به اشتراک می‌گذارند. نسبت N:G (معمولاً G=8).
+
+اثر بر میزان حافظه KV cache:
+- روش MHA: اندازه کامل
+- روش MQA: اندازه 1/N (اما کیفیت افت می‌کند)
+- روش GQA: اندازه 1/G (بهترین موازنه)
+
+مدل Llama 2 70B از GQA با ۸ هد KV برای ۶۴ هد Query استفاده می‌کند که حجم KV cache را با کمترین افت کیفیت تا ۸ برابر کاهش می‌دهد.
+
+---
+
+## مراجع
 
 - Vaswani et al. "Attention Is All You Need" (2017)
 - Su et al. "RoFormer: Enhanced Transformer with Rotary Position Embedding" (2021)
@@ -600,10 +623,12 @@ Llama 2 70B uses GQA with 8 KV heads for 64 query heads, reducing KV cache by 8x
 - Ainslie et al. "GQA: Training Generalized Multi-Query Transformer Models" (2023)
 - Peng et al. "YaRN: Efficient Context Window Extension of Large Language Models" (2023)
 - DeepSeek-AI "DeepSeek-V3 Technical Report" (2024)
-- [DeepSeek-V4.1-Flash model card](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash) (2026)
-- [Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
-- [The Annotated Transformer](https://nlp.seas.harvard.edu/2018/04/03/attention.html)
+- [کارت مشخصات مدل DeepSeek-V4.1-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash) (2026)
+- [ترنسفورمر مصور (Illustrated Transformer)](https://jalammar.github.io/illustrated-transformer/)
+- [ترنسفورمر حاشیه‌نویسی‌شده (The Annotated Transformer)](https://nlp.seas.harvard.edu/2018/04/03/attention.html)
 
 ---
 
-*Next: [Tokenization Deep Dive](02-tokenization-deep-dive.md)*
+*بعدی: [بررسی عمیق Tokenization](02-tokenization-deep-dive.md)*
+
+</div>

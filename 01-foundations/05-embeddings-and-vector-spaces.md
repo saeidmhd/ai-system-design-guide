@@ -1,55 +1,57 @@
-# Embeddings and Vector Spaces
+<div dir="rtl">
 
-Embeddings are dense vector representations of text that capture semantic meaning. They are foundational to RAG systems, semantic search, and many AI applications.
+# امبدینگ‌ها و فضاهای برداری (Embeddings and Vector Spaces)
 
-## Table of Contents
+امبدینگ‌ها (Embeddings) بازنمایی‌های برداری متراکمی از متن هستند که معنای معناشناختی (semantic meaning) را ثبت می‌کنند. آن‌ها پایه‌ای بنیادین برای سیستم‌های RAG، جستجوی معنایی (semantic search) و بسیاری از کاربردهای هوش مصنوعی به شمار می‌روند.
 
-- [What Are Embeddings](#what-are-embeddings)
-- [Embedding Model Architectures](#embedding-model-architectures)
-- [Training Objectives](#training-objectives)
-- [Distance Metrics](#distance-metrics)
-- [Embedding Model Comparison](#embedding-model-comparison)
-- [Matryoshka and Adaptive Dimensions](#matryoshka-and-adaptive-dimensions)
-- [Late Chunking and Late Interaction](#late-chunking-and-late-interaction)
-- [Quantization for Scale](#quantization-for-scale)
-- [Practical Considerations (Batching, Caching)](#practical-considerations)
-- [Embedding Drift and Versioning](#embedding-drift-and-versioning)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## What Are Embeddings
-
-Embeddings map discrete text (words, sentences, documents) to continuous vector spaces where semantic similarity corresponds to geometric proximity.
-
-**Key properties:**
-- Similar meanings are close together
-- Relationships can be encoded as vector operations (king - man + woman = queen)
-- Enable efficient similarity search through approximate nearest neighbor algorithms
-
-**Mental model:**
-Think of embeddings as coordinates in a very high-dimensional space. Dimensionality (512 to 4096) provides expressiveness. Each dimension captures some aspect of meaning, though individual dimensions are not interpretable.
+- [امبدینگ‌ها چه هستند](#what-are-embeddings)
+- [معماری‌های مدل امبدینگ](#embedding-model-architectures)
+- [اهداف آموزش (Training Objectives)](#training-objectives)
+- [سنجه‌های فاصله (Distance Metrics)](#distance-metrics)
+- [مقایسه مدل‌های امبدینگ](#embedding-model-comparison)
+- [ماتریوشکا و ابعاد تطبیقی](#matryoshka-and-adaptive-dimensions)
+- [Late Chunking و تعامل دیرهنگام (Late Interaction)](#late-chunking-and-late-interaction)
+- [کوانتایزیشن برای مقیاس‌پذیری](#quantization-for-scale)
+- [ملاحظات عملی (Batching و Caching)](#practical-considerations)
+- [انحراف امبدینگ (Embedding Drift) و نسخه‌بندی](#embedding-drift-and-versioning)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Embedding Model Architectures
+## امبدینگ‌ها چه هستند
 
-### Word Embeddings (Historical)
+امبدینگ‌ها متن گسسته (کلمات، جملات، اسناد) را به فضاهای برداری پیوسته نگاشت می‌کنند، جایی که شباهت معنایی متناظر با نزدیکی هندسی است.
 
-Early approaches embedded individual words:
+**ویژگی‌های کلیدی:**
+- معانی مشابه نزدیک یکدیگر قرار می‌گیرند
+- روابط می‌توانند به صورت عملیات برداری کدگذاری شوند (king - man + woman = queen)
+- جستجوی کارآمد شباهت را از طریق الگوریتم‌های تقریبی نزدیک‌ترین همسایه (Approximate Nearest Neighbor - ANN) امکان‌پذیر می‌سازند
 
-| Model | Year | Approach | Limitation |
-|-------|------|----------|------------|
-| Word2Vec | 2013 | Skip-gram, CBOW | Static: "bank" same in all contexts |
-| GloVe | 2014 | Co-occurrence matrix | Static |
-| FastText | 2017 | Subword embeddings | Static, but handles OOV |
+**مدل ذهنی:**
+امبدینگ‌ها را به عنوان مختصات در یک فضای با ابعاد بسیار بالا (high-dimensional) در نظر بگیرید. ابعاد (۵۱۲ تا ۴۰۹۶) قدرت بیان (expressiveness) را فراهم می‌کنند. هر بُعد جنبه‌ای از معنا را ثبت می‌کند، اگرچه ابعاد منفرد قابل تفسیر نیستند.
 
-**Key limitation:** Same word gets same embedding regardless of context.
+---
 
-### Contextual Embeddings
+## معماری‌های مدل امبدینگ
 
-Transformer-based models produce context-dependent embeddings:
+### امبدینگ‌های کلمه (پیشینه تاریخی)
+
+رویکردهای اولیه، کلمات منفرد را امبد می‌کردند:
+
+| مدل | سال | رویکرد | محدودیت |
+|---|---|---|---|
+| Word2Vec | ۲۰۱۳ | Skip-gram، CBOW | ایستا: "bank" در تمام زمینه‌ها یکسان است |
+| GloVe | ۲۰۱۴ | ماتریس هم‌آیندی (Co-occurrence matrix) | ایستا |
+| FastText | ۲۰۱۷ | امبدینگ‌های زیرکلمه (Subword embeddings) | ایستا، اما کلمات خارج از دایره واژگان (OOV) را مدیریت می‌کند |
+
+**محدودیت کلیدی:** کلمه یکسان فارغ از زمینه متن (Context)، امبدینگ یکسانی دریافت می‌کند.
+
+### امبدینگ‌های زمینه‌محور (Contextual Embeddings)
+
+مدل‌های مبتنی بر ترنسفورمر امبدینگ‌های وابسته به زمینه تولید می‌کنند:
 
 ```python
 # Static embedding (Word2Vec)
@@ -60,22 +62,22 @@ embed("river bank") = [0.1, 0.3, ...]   # Geography sense
 embed("bank account") = [0.5, 0.2, ...]  # Finance sense
 ```
 
-### Sentence/Document Embeddings
+### امبدینگ‌های جمله/سند
 
-For retrieval, we need to embed entire texts:
+برای بازیابی (Retrieval)، لازم است کل متون را امبد کنیم:
 
-| Approach | Method | Pros | Cons |
-|----------|--------|------|------|
-| Mean pooling | Average token embeddings | Simple | Loses information |
-| CLS token | Use [CLS] token embedding | Standard for BERT | May not capture full text |
-| Last token | Use final token | Works for decoder models | Position bias |
-| Trained pooling | Learn pooling weights | Better quality | Requires training |
+| رویکرد | روش | مزایا | معایب |
+|---|---|---|---|
+| Mean pooling | میانگین‌گیری از امبدینگ‌های Tokenها | ساده | بخشی از اطلاعات از دست می‌رود |
+| CLS token | استفاده از امبدینگ Token نماد [CLS] | استاندارد برای BERT | ممکن است کل متن را پوشش ندهد |
+| Last token | استفاده از آخرین Token | مناسب برای مدل‌های دیکودر (Decoder) | سوگیری موقعیت (Position bias) |
+| Trained pooling | یادگیری وزن‌های ادغام (Pooling weights) | کیفیت بالاتر | نیازمند آموزش است |
 
-Modern embedding models are trained specifically for sentence/document embedding, not just adapted from language models.
+مدل‌های امبدینگ امروزی به طور اختصاصی برای امبد کردن جمله/سند آموزش داده می‌شوند، نه اینکه صرفاً از مدل‌های زبانی اقتباس شوند.
 
-### Bi-Encoder Architecture
+### معماری Bi-Encoder
 
-Standard retrieval embedding architecture:
+معماری استاندارد امبدینگ برای بازیابی:
 
 ```
 Document -> Encoder -> Document Embedding
@@ -84,33 +86,33 @@ Query    -> Encoder -> Query Embedding
 Similarity = cosine(doc_embedding, query_embedding)
 ```
 
-**Properties:**
-- Documents can be pre-computed and indexed
-- Query embedding computed at query time
-- O(1) similarity computation per document (with ANN)
+**ویژگی‌ها:**
+- اسناد را می‌توان از پیش محاسبه و ایندکس کرد
+- امبدینگ پرس‌وجو (Query) در زمان ارسال کوئری محاسبه می‌شود
+- محاسبه شباهت با پیچیدگی زمانی O(1) به ازای هر سند (با استفاده از ANN)
 
-### Cross-Encoder Architecture
+### معماری Cross-Encoder
 
-Alternative that processes query and document together:
+رویکردی جایگزین که پرس‌وجو و سند را هم‌زمان با یکدیگر پردازش می‌کند:
 
 ```
 [Query, Document] -> Encoder -> Relevance Score
 ```
 
-**Properties:**
-- More accurate (sees both together)
-- Cannot pre-compute: O(n) inference for n documents
-- Used for reranking, not retrieval
+**ویژگی‌ها:**
+- دقت بالاتر (چرا که هر دو متن را با هم می‌بیند)
+- امکان پیش‌محاسبه وجود ندارد: استنتاج (Inference) با پیچیدگی O(n) برای n سند
+- برای بازرتبه‌بندی (Reranking) استفاده می‌شود، نه بازیابی اولیه
 
-Current rerankers take 32K-token inputs, so a candidate can be a long section or a short document instead of a 512-token passage: Cohere Rerank 5 (Pro $0.05, Fast $0.02 per 1M tokens), Voyage rerank-3 and rerank-3-lite (same $0.05 and $0.02), and open-weight options such as Qwen3-Reranker-8B and Qwen3-VL-Reranker (Apache 2.0, multimodal). See [Reranking Strategies](../06-retrieval-systems/06-reranking-strategies.md).
+مدل‌های Reranker فعلی ورودی‌های ۳۲K-Token را می‌پذیرند، بنابراین هر کاندید می‌تواند به جای یک بند ۵۱۲-Token، یک بخش طولانی یا یک سند کوتاه باشد: Cohere Rerank 5 (نسخه Pro با قیمت \$0.05 و Fast با قیمت \$0.02 به ازای هر ۱ میلیون Token)، مدل‌های Voyage rerank-3 و rerank-3-lite (با همان قیمت \$0.05 و \$0.02) و گزینه‌های وزن‌باز (Open-weight) مانند Qwen3-Reranker-8B و Qwen3-VL-Reranker (با مجوز Apache 2.0، چندوجهی). بخش [استراتژی‌های بازرتبه‌بندی (Reranking Strategies)](../06-retrieval-systems/06-reranking-strategies.md) را ببینید.
 
 ---
 
-## Training Objectives
+## اهداف آموزش (Training Objectives)
 
-### Contrastive Learning
+### یادگیری مقابله‌ای (Contrastive Learning)
 
-Most modern embedding models use contrastive learning:
+اکثر مدل‌های امبدینگ امروزی از یادگیری مقابله‌ای (Contrastive Learning) استفاده می‌کنند:
 
 ```python
 # Simplified contrastive loss
@@ -124,24 +126,24 @@ def contrastive_loss(anchor, positive, negatives):
     return loss
 ```
 
-**Key factors:**
-- **Positive pairs:** Semantically similar texts (parallel sentences, query-document pairs)
-- **Hard negatives:** Similar but not matching texts (BM25 retrieved non-relevant)
-- **In-batch negatives:** Other batch items as negatives (efficient)
+**عوامل کلیدی:**
+- **جفت‌های مثبت (Positive pairs):** متونی با شباهت معنایی (جملات موازی، جفت‌های پرس‌وجو-سند)
+- **منفی‌های سخت (Hard negatives):** متون مشابه اما غیرمرتبط (اسناد نامرتبط بازیابی‌شده توسط BM25)
+- **منفی‌های درون دسته‌ای (In-batch negatives):** سایر نمونه‌های موجود در دسته به عنوان منفی (بسیار کارآمد)
 
-### Training Data Sources
+### منابع داده آموزشی
 
-| Source | Positive Pairs | Quality | Scale |
-|--------|---------------|---------|-------|
-| Parallel sentences | Translation pairs | High | Medium |
-| Query-document | Search logs | High | Medium |
-| Title-body | Document structure | Medium | Large |
-| Paraphrase | NLI datasets | High | Small |
-| Generated | LLM creates pairs | Variable | Large |
+| منبع | جفت‌های مثبت | کیفیت | مقیاس |
+|---|---|---|---|
+| جملات موازی | جفت‌های ترجمه | بالا | متوسط |
+| پرس‌وجو-سند | لاگ‌های جستجو | بالا | متوسط |
+| عنوان-بدنه | ساختار سند | متوسط | بزرگ |
+| بازنویسی (Paraphrase) | مجموعه‌داده‌های NLI | بالا | کوچک |
+| تولیدشده (Generated) | تولید جفت‌ها توسط LLM | متغیر | بزرگ |
 
-### Instruction-Tuned Embeddings
+### امبدینگ‌های تنظیم‌شده با دستورالعمل (Instruction-Tuned)
 
-Recent models accept task instructions:
+مدل‌های اخیر دستورالعمل‌های وظیفه (Task Instructions) را می‌پذیرند:
 
 ```python
 # Instruction-tuned (e.g., E5, BGE)
@@ -149,116 +151,116 @@ query_embedding = embed("Represent this query for retrieval: What is RAG?")
 doc_embedding = embed("Represent this document for retrieval: RAG combines...")
 ```
 
-This improves performance by specifying the intended use.
+این قابلیت از طریق مشخص کردن نحوه استفاده مورد نظر، کارایی و عملکرد را بهبود می‌بخشد.
 
 ---
 
-## Distance Metrics
+## سنجه‌های فاصله (Distance Metrics)
 
-### Cosine Similarity
+### شباهت کسینوسی (Cosine Similarity)
 
-Most common for text embeddings:
+رایج‌ترین سنجه برای امبدینگ‌های متنی:
 
 ```python
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 ```
 
-**Properties:**
-- Range: [-1, 1] ([0, 1] when all components are non-negative)
-- Measures angle, not magnitude
-- Invariant to vector length
+**ویژگی‌ها:**
+- بازه: [-1, 1] (در صورتی که تمام مولفه‌ها غیرمنفی باشند: [0, 1])
+- زاویه را می‌سنجد، نه بزرگی (Magnitude) بردار را
+- نسبت به طول بردار تغییرناپذیر (Invariant) است
 
-**When to use:** Default choice for text embeddings.
+**زمان استفاده:** انتخاب پیش‌فرض برای امبدینگ‌های متنی.
 
-### Dot Product
+### ضرب داخلی (Dot Product)
 
 ```python
 def dot_product(a, b):
     return np.dot(a, b)
 ```
 
-**Properties:**
-- Magnitude matters
-- Unbounded range
-- Equivalent to cosine for normalized vectors
+**ویژگی‌ها:**
+- بزرگی (طول) بردار اهمیت دارد
+- بازه بی‌کران و نامحدود
+- معادل با شباهت کسینوسی برای بردارهای نرمالایز شده (Normalized)
 
-**When to use:** When embeddings are already normalized, or magnitude is meaningful.
+**زمان استفاده:** زمانی که امبدینگ‌ها از پیش نرمالایز شده باشند، یا بزرگی بردار معنادار باشد.
 
-### Euclidean Distance
+### فاصله اقلیدسی (Euclidean Distance)
 
 ```python
 def euclidean_distance(a, b):
     return np.linalg.norm(a - b)
 ```
 
-**Properties:**
-- Measures absolute difference
-- Affected by magnitude
-- For normalized vectors: sqrt(2 - 2 * cosine)
+**ویژگی‌ها:**
+- تفاوت مطلق را اندازه می‌گیرد
+- تحت تاثیر بزرگی بردار قرار می‌گیرد
+- برای بردارهای نرمالایز شده: sqrt(2 - 2 * cosine)
 
-**When to use:** Rarely for text; more common for image embeddings.
+**زمان استفاده:** به ندرت برای متن استفاده می‌شود؛ بیشتر برای امبدینگ‌های تصویری کاربرد دارد.
 
-### Metric Selection
+### انتخاب سنجه (Metric Selection)
 
-| Metric | Vector Databases | Common Use |
-|--------|------------------|------------|
-| Cosine | Pinecone, Qdrant, Weaviate | Text embeddings |
-| Dot Product | All major DBs | Normalized embeddings |
-| Euclidean | All major DBs | Image, multimodal |
-
----
-
-## Embedding Model Comparison
-
-### Hosted Models (October 2026)
-
-| Model | Dimensions | Max Input | Modalities | Cost / 1M tokens | Notes |
-|-------|------------|-----------|------------|------------------|-------|
-| OpenAI text-embedding-3-large | 3072 (Matryoshka) | 8,192 | Text | $0.13 | OpenAI has shipped no newer embedding model |
-| OpenAI text-embedding-3-small | 1536 (Matryoshka) | 8,192 | Text | $0.02 | Cheap baseline |
-| Google gemini-embedding-2 | 128-3,072 (768 / 1,536 / 3,072 recommended) | 8,192 text tokens; up to 6 images, 120 s video, audio, 6-page PDFs | Multimodal, interleaved | $0.20 text (Google pricing page) | Stable since April 2026; replaces text-embedding-004 (shut down) and text-only gemini-embedding-001 (shuts down May 14, 2028) |
-| Cohere embed-v5.0-pro / -fast | 256-2,048 (Matryoshka) | 128K | Text, image, fused text+image | $0.12 / $0.08 text; $0.40 image | September 30, 2026; Pro and Fast share one embedding space |
-| Voyage voyage-4-large / voyage-4 / voyage-4-lite | 1024 default (256-2,048) | 32K | Text | $0.12 / $0.06 / $0.02 | January 2026; the family shares one embedding space |
-| Voyage voyage-code-4 | 1024 default (256-2,048) | 32K | Code | $0.12 | August 13, 2026; trained on natural-language queries mined from pull requests, for agent-style code search |
-| Voyage voyage-context-4 | - | 32K window; longer documents handled | Text, contextualized chunks | $0.12 | One vector per chunk that encodes full-document context |
-
-**Reading benchmark claims:**
-- **Prefer RTEB** (from the MTEB team, October 2025) over MTEB-only rankings. RTEB mixes open datasets with private held-out sets that the maintainers evaluate, so models cannot be tuned toward all of it. NVIDIA reports Nemotron 3 Embed 8B at #1 on RTEB Multilingual with 78.5 (as of July 15, 2026).
-- **MTEB leadership is contested.** Qwen3-Embedding-8B (70.58 Multilingual mean) has since been passed in claimed rankings by llama-embed-nemotron-8b and KaLM-Embedding-Gemma3-12B-2511 (72.32). Check the live leaderboard.
-- **Vendor numbers are marketing until reproduced.** For visually rich documents, Cohere reports ViDoRe V3 scores of 85.8 (embed-v5.0-pro), 84.5 (fast), 83.7 (voyage-4-large), 83.2 (gemini-embedding-2) and 75.5 (text-embedding-3-large). On its own agentic code-retrieval suite, Voyage reports voyage-code-4 27.54% ahead of voyage-code-3, with independent verification pending. Both are vendor-reported.
-
-### Open Source Models
-
-| Model | Dimensions | Max Tokens | License | Notes |
-|-------|------------|------------|---------|-------|
-| Nemotron 3 Embed 8B | 4096 (sliceable) | 32,768 | OpenMDW-1.1 | July 16, 2026; RTEB Multilingual #1 at 78.5 (NVIDIA-reported); `query:` / `passage:` prefixes |
-| Nemotron 3 Embed 1B | 2048 | - | OpenMDW-1.1 | 72.4 RTEB Multilingual (NVIDIA-reported); NVFP4 variant for cheap serving |
-| Qwen3-Embedding-8B | Up to 4096 (Matryoshka) | 32K | Apache 2.0 | 70.58 MTEB Multilingual mean |
-| BGE-large-en-v1.5 | 1024 | 512 | MIT | Older strong English baseline |
-| E5-large-v2 | 1024 | 512 | MIT | Instruction-tuned |
-| Nomic-embed-text-v1.5 | 768 (Matryoshka) | 8192 | Apache 2.0 | Small, long context |
-
-### Selection Criteria
-
-| Factor | Considerations |
-|--------|----------------|
-| Quality (RTEB, MTEB) | Higher is better, but evaluation on your own queries matters more; held-out benchmarks beat public ones |
-| Dimensions | Higher = more expressive but more storage/compute |
-| Max tokens | Must accommodate your document sizes |
-| Cost | API vs self-hosting tradeoffs |
-| Latency | Embedding generation time |
-| Multilingual | If serving non-English content |
-| Modalities | Images, PDFs, video or code need a model trained for them (gemini-embedding-2, Cohere Embed 5, voyage-code-4) |
-| Shared space | A family that shares one space lets you change the query-side model without re-indexing |
+| سنجه | پایگاه‌های داده برداری (Vector Databases) | کاربرد رایج |
+|---|---|---|
+| کسینوسی (Cosine) | Pinecone، Qdrant، Weaviate | امبدینگ‌های متنی |
+| ضرب داخلی (Dot Product) | تمامی پایگاه‌های داده اصلی | امبدینگ‌های نرمالایز شده |
+| اقلیدسی (Euclidean) | تمامی پایگاه‌های داده اصلی | تصویر، چندوجهی (Multimodal) |
 
 ---
 
-## Matryoshka and Adaptive Dimensions
+## مقایسه مدل‌های امبدینگ
 
-### The Idea
+### مدل‌های میزبانی‌شده (اکتبر ۲۰۲۶)
 
-Matryoshka Representation Learning (MRL) trains embeddings such that prefixes of the full embedding are also meaningful:
+| مدل | ابعاد | حداکثر ورودی | مدالیته‌ها | هزینه / ۱ میلیون Token | نکات |
+|---|---|---|---|---|---|
+| OpenAI text-embedding-3-large | ۳۰۷۲ (ماتریوشکا) | ۸٬۱۹۲ | متن | \$0.13 | شرکت OpenAI مدل امبدینگ جدیدتری عرضه نکرده است |
+| OpenAI text-embedding-3-small | ۱۵۳۶ (ماتریوشکا) | ۸٬۱۹۲ | متن | \$0.02 | خط پایه ارزان‌قیمت |
+| Google gemini-embedding-2 | ۱۲۸ تا ۳٬۰۷۲ (۷۶۸ / ۱٬۵۳۶ / ۳٬۰۷۲ توصیه می‌شود) | ۸٬۱۹۲ Token متنی؛ تا ۶ تصویر، ۱۲۰ ثانیه ویدیو، صدا، فایل‌های PDF تا ۶ صفحه | چندوجهی، ادغام‌شده (Interleaved) | \$0.20 متن (صفحه قیمت‌گذاری گوگل) | پایدار از آوریل ۲۰۲۶؛ جایگزین text-embedding-004 (خاموش‌شده) و مدل فقط-متنی gemini-embedding-001 (خاموشی در ۱۴ مه ۲۰۲۸) |
+| Cohere embed-v5.0-pro / -fast | ۲۵۶ تا ۲٬۰۴۸ (ماتریوشکا) | 128K | متن، تصویر، متن+تصویر ادغام‌شده | \$0.12 / \$0.08 متن؛ \$0.40 تصویر | ۳۰ سپتامبر ۲۰۲۶؛ نسخه‌های Pro و Fast یک فضای امبدینگ مشترک دارند |
+| Voyage voyage-4-large / voyage-4 / voyage-4-lite | ۱۰۲۴ پیش‌فرض (۲۵۶ تا ۲٬۰۴۸) | 32K | متن | \$0.12 / \$0.06 / \$0.02 | ژانویه ۲۰۲۶؛ این خانواده یک فضای امبدینگ مشترک دارند |
+| Voyage voyage-code-4 | ۱۰۲۴ پیش‌فرض (۲۵۶ تا ۲٬۰۴۸) | 32K | کد | \$0.12 | ۱۳ اوت ۲۰۲۶؛ آموزش‌دیده روی کوئری‌های زبان طبیعی استخراج‌شده از Pull Requestها، برای جستجوی کد به سبک ایجنت (Agent-style) |
+| Voyage voyage-context-4 | - | پنجره 32K؛ مدیریت اسناد طولانی‌تر | متن، Chunkهای زمینه‌مندشده | \$0.12 | یک بردار به ازای هر Chunk که زمینه کل سند را کدگذاری می‌کند |
+
+**خواندن ادعاهای بنچمارک:**
+- **RTEB را ترجیح دهید** (ارائه‌شده توسط تیم MTEB، اکتبر ۲۰۲۵) نسبت به رتبه‌بندی‌های صرفاً مبتنی بر MTEB. بنچمارک RTEB مجموعه‌داده‌های متن‌باز را با مجموعه‌های نگه‌داشته‌شده خصوصی (Held-out) که نگه‌دارندگان ارزیابی می‌کنند ترکیب می‌کند، بنابراین مدل‌ها نمی‌توانند برای تمام آن تیون شوند. انویدیا گزارش داده است که Nemotron 3 Embed 8B با امتیاز ۷۸.۵ در رتبه اول RTEB Multilingual قرار دارد (تا ۱۵ ژوئیه ۲۰۲۶).
+- **صدرنشینی MTEB مورد مناقشه است.** مدل Qwen3-Embedding-8B (میانگین ۷۰.۵۸ در چندزبانه) از آن زمان در ادعاهای رتبه‌بندی توسط llama-embed-nemotron-8b و KaLM-Embedding-Gemma3-12B-2511 (امتیاز ۷۲.۳۲) پشت سر گذاشته شده است. لیدربورد زنده را بررسی کنید.
+- **آمارهای ارائه‌دهندگان جنبه تبلیغاتی دارند مگر اینکه بازتولید شوند.** برای اسناد غنی از لحاظ بصری، Cohere امتیازهای ViDoRe V3 را به این شرح گزارش کرده است: ۸۵.۸ (برای embed-v5.0-pro)، ۸۴.۵ (برای fast)، ۸۳.۷ (برای voyage-4-large)، ۸۳.۲ (برای gemini-embedding-2) و ۷۵.۵ (برای text-embedding-3-large). همچنین در مجموعه ارزیابی اختصاصی جستجوی کد ایجنتی (Agentic code-retrieval)، شرکت Voyage گزارش داده است که voyage-code-4 به میزان ۲۷.۵۴٪ جلوتر از voyage-code-3 است، در حالی که تایید مستقل آن هنوز در دست انجام است. هر دو مورد گزارش ارائه‌دهنده هستند.
+
+### مدل‌های متن‌باز (Open Source)
+
+| مدل | ابعاد | حداکثر Tokenها | مجوز | نکات |
+|---|---|---|---|---|
+| Nemotron 3 Embed 8B | ۴۰۹۶ (قابل برش / Sliceable) | ۳۲٬۷۶۸ | OpenMDW-1.1 | ۱۶ ژوئیه ۲۰۲۶؛ رتبه ۱ در RTEB Multilingual با امتیاز ۷۸.۵ (گزارش‌شده توسط انویدیا)؛ پیشوندهای `query:` / `passage:` |
+| Nemotron 3 Embed 1B | ۲۰۴۸ | - | OpenMDW-1.1 | امتیاز ۷۲.۴ در RTEB Multilingual (گزارش‌شده توسط انویدیا)؛ نسخه NVFP4 برای سرو ارزان‌قیمت |
+| Qwen3-Embedding-8B | تا ۴۰۹۶ (ماتریوشکا) | 32K | Apache 2.0 | میانگین ۷۰.۵۸ در MTEB Multilingual |
+| BGE-large-en-v1.5 | ۱۰۲۴ | ۵۱۲ | MIT | خط پایه انگلیسی قوی اما قدیمی‌تر |
+| E5-large-v2 | ۱۰۲۴ | ۵۱۲ | MIT | تنظیم‌شده با دستورالعمل (Instruction-tuned) |
+| Nomic-embed-text-v1.5 | ۷۶۸ (ماتریوشکا) | ۸۱۹۲ | Apache 2.0 | کوچک، طول زمینه بالا |
+
+### معیارهای انتخاب
+
+| فاکتور | ملاحظات |
+|---|---|
+| کیفیت (RTEB، MTEB) | بالاتر بهتر است، اما ارزیابی بر روی پرس‌وجوهای اختصاصی خودتان اهمیت بیشتری دارد؛ بنچمارک‌های نگه‌داشته‌شده (Held-out) بر بنچمارک‌های عمومی ارجحیت دارند |
+| ابعاد (Dimensions) | ابعاد بالاتر = قدرت بیان بیشتر اما نیازمند ذخیره‌سازی/محاسبات بیشتر |
+| حداکثر Tokenها | باید متناسب با اندازه اسناد شما باشد |
+| هزینه | موازنه‌های بین API و میزبانی شخصی (Self-hosting) |
+| تاخیر (Latency) | زمان تولید امبدینگ |
+| چندزبانه بودن (Multilingual) | در صورت ارائه و پردازش محتوای غیرانگلیسی |
+| مدالیته‌ها (Modalities) | تصاویر، فایل‌های PDF، ویدیو یا کد به مدلی نیاز دارند که مشخصاً برای آن‌ها آموزش دیده باشد (gemini-embedding-2، Cohere Embed 5، voyage-code-4) |
+| فضای مشترک (Shared space) | خانواده‌ای که از یک فضای مشترک استفاده می‌کند به شما امکان می‌دهد مدل سمت کوئری را بدون نیاز به ایندکس‌گذاری مجدد تغییر دهید |
+
+---
+
+## ابعاد ماتریوشکا و تطبیقی (Matryoshka and Adaptive Dimensions)
+
+### ایده اصلی
+
+یادگیری بازنمایی ماتریوشکا (Matryoshka Representation Learning یا MRL) مدل‌های Embedding را به‌گونه‌ای آموزش می‌دهد که پیشوندهای بردار کامل Embedding نیز معنادار و کارآمد باشند:
 
 ```python
 full_embedding = model.encode(text)  # 1024 dimensions
@@ -270,24 +272,24 @@ dim_128 = full_embedding[:128]
 dim_64 = full_embedding[:64]
 ```
 
-### Why It Matters
+### چرا این موضوع اهمیت دارد
 
-| Use Case | Dimension | Tradeoff |
+| مورد کاربرد (Use Case) | بُعد (Dimension) | مصالحه و توازن (Tradeoff) |
 |----------|-----------|----------|
-| Full Retrieval | 1024-3072 | Peak Accuracy |
-| **Two-Stage Retrieval**| 128 -> 1024 | **Production standard**: retrieve 1000 with 128-d, refine top 100 with 1024-d. |
-| Cost-sensitive | 256 | 12x storage savings vs 3,072-d; OpenAI reported text-embedding-3-large at 256-d still beat full-size ada-002 on MTEB |
-| Edge / Mobile | 64 | Maximum speed, handles simple intent |
+| بازیابی کامل (Full Retrieval) | ۱۰۲۴-۳۰۷۲ | بالاترین دقت (Peak Accuracy) |
+| **بازیابی دومرحله‌ای (Two-Stage Retrieval)** | ۱۲۸ -> ۱۰۲۴ | **استاندارد محیط عملیاتی (Production)**: بازیابی ۱۰۰۰ مورد با ابعاد ۱۲۸-d، پالایش ۱۰۰ مورد برتر با ابعاد ۱۰۲۴-d. |
+| حساس به هزینه (Cost-sensitive) | ۲۵۶ | صرفه‌جویی ۱۲ برابری در حافظه نسبت به ۳۰۷۲-d؛ شرکت OpenAI گزارش داد که مدل text-embedding-3-large در ابعاد ۲۵۶-d همچنان نسخه کامل ada-002 را در بنچمارک MTEB شکست می‌دهد |
+| لبه شبکه / موبایل (Edge / Mobile) | ۶۴ | حداکثر سرعت، مناسب برای مدیریت قصد و نیت‌های ساده |
 
-### Models with Matryoshka Support
+### مدل‌های دارای پشتیبانی از ماتریوشکا
 
-- OpenAI text-embedding-3-* (native)
-- Google gemini-embedding-2 (128 to 3,072)
-- Cohere Embed 5 (256 to 2,048) and the Voyage 4 family, including voyage-code-4 (256 to 2,048)
-- Open weights: Nemotron 3 Embed, Qwen3-Embedding, Nomic-embed-text-v1.5
-- Several fine-tuned models
+- مدل‌های text-embedding-3-* از OpenAI (به‌صورت بومی یا native)
+- مدل gemini-embedding-2 از Google (از ۱۲۸ تا ۳,۰۷۲)
+- مدل Cohere Embed 5 (از ۲۵۶ تا ۲,۰۴۸) و خانواده Voyage 4، از جمله voyage-code-4 (از ۲۵۶ تا ۲,۰۴۸)
+- مدل‌های با وزن باز (Open weights): مدل‌های Nemotron 3 Embed، Qwen3-Embedding و Nomic-embed-text-v1.5
+- چندین مدل Fine-tuning شده
 
-### Using Matryoshka Embeddings
+### استفاده از Embeddingهای ماتریوشکا
 
 ```python
 from openai import OpenAI
@@ -303,35 +305,35 @@ response = client.embeddings.create(
 
 ---
 
-## Late Chunking and Late Interaction
+## تکه‌بندی دیرهنگام (Late Chunking) و تعامل دیرهنگام (Late Interaction)
 
-### Late Chunking
+### تکه‌بندی دیرهنگام (Late Chunking)
 
-**Traditional Chunking:**
+**فرآیند سنتی Chunking:**
 `Document -> Split into chunks -> Embed chunks individually`
-- **Issue**: Chunk 2 loses the context from Chunk 1.
+- **مشکل**: تکه ۲ زمینه و کانتکست تکه ۱ را از دست می‌دهد.
 
-**Late Chunking (introduced by Jina AI in 2024):**
+**فرآیند Late Chunking (معرفی‌شده توسط Jina AI در سال ۲۰۲۴):**
 `Full Document -> Model Encoder -> Token-level Embeddings -> Pool into chunk boundaries`
-- **Benefit**: Each chunk's embedding contains information from the **entire document** because the transformer's self-attention was applied to the full sequence before pooling.
-- **Requirement**: A model with long-context support (at least 8k+ tokens).
+- **مزیت**: Embedding هر تکه حاوی اطلاعات کل **سند (entire document)** است، زیرا توجه به خود (self-attention) ترنسفورمر پیش از ادغام (pooling)، بر روی کل دنباله اعمال شده است.
+- **پیش‌نیاز**: مدلی با پشتیبانی از کانتکست طولانی (حداقل بیش از +8k از Tokenها).
 
-**Contextualized chunk embedding models** now ship the idea as a product, so you get document-aware chunk vectors without an LLM call per chunk:
-- **voyage-context-4** (GA June 29, 2026, $0.12 per 1M tokens): one vector per chunk that encodes full-document context, built-in auto-chunking, and transparent handling of documents beyond the 32K window. Voyage reports a 2.08% chunk-level gain over voyage-context-3 across 39 datasets.
-- **pplx-embed-v2-context-9b-preview** (Perplexity, September 25, 2026): encodes a document's chunks together at 2048 dimensions. It is a preview, and its embeddings must not be mixed with later releases.
+**مدل‌های Contextualized chunk embedding** اکنون این ایده را به‌صورت یک محصول ارائه می‌دهند، به‌طوری که بدون نیاز به فراخوانی LLM به ازای هر تکه، به بردارهای تکه‌ای مطلع از کل سند دست پیدا می‌کنید:
+- **مدل voyage-context-4** (عرضه عمومی در ۲۹ ژوئن ۲۰۲۶، ۰.۱۲ دلار به ازای هر ۱ میلیون Token): یک بردار به ازای هر تکه که کانتکست کامل سند را کدگذاری می‌کند، همراه با Chunking خودکار توکار و مدیریت شفاف اسناد فراتر از پنجره ۳۲K. شرکت Voyage بهبود ۲.۰۸ درصدی در سطح تکه‌ها را نسبت به voyage-context-3 در ۳۹ دیتاست گزارش کرده است.
+- **مدل pplx-embed-v2-context-9b-preview** (شرکت Perplexity، ۲۵ سپتامبر ۲۰۲۶): تکه‌های یک سند را با یکدیگر در ابعاد ۲۰۴۸ کدگذاری می‌کند. این یک نسخه پیش‌نمایش است و نباید Embeddingهای آن با نسخه‌های بعدی ترکیب شوند.
 
-This changes the cost comparison against contextual-prefix approaches that call an LLM to write a context blurb for every chunk.
+این امر، مقایسه هزینه را در برابر رویکردهای پیشوند زمینه‌ای (contextual-prefix) که برای نوشتن یک متن توصیف کانتکست به ازای هر تکه یک LLM را فراخوانی می‌کنند، تغییر می‌دهد.
 
-### Late Interaction (ColBERT)
+### تعامل دیرهنگام یا Late Interaction (مدل ColBERT)
 
-ColBERT keeps one embedding per token instead of one per document and scores with MaxSim (each query token matches its best document token) at query time.
+مدل ColBERT به جای یک بردار Embedding به ازای هر سند، یک Embedding به ازای هر Token نگهداری می‌کند و در زمان ثبت کوئری، با استفاده از MaxSim (تطبیق هر Token کوئری با بهترین Token سند) امتیازدهی را انجام می‌دهد.
 
-**When to use ColBERT:**
-- Retrieval precision is critical
-- Can afford storage overhead
-- Query latency budget > 50ms
+**چه زمانی از ColBERT استفاده کنیم:**
+- دقت بازیابی (Retrieval precision) حیاتی باشد
+- توانایی پرداخت هزینه بار اضافه فضای ذخیره‌سازی را داشته باشید
+- بودجه تاخیر (Latency) کوئری بیش از ۵۰ میلی‌ثانیه باشد
 
-**Implementation:**
+**پیاده‌سازی:**
 
 ```python
 # Using RAGatouille
@@ -351,28 +353,28 @@ results = model.search(query="What is RAG?", k=10)
 
 ---
 
-## Quantization for Scale
+## کوانتیزاسیون برای مقیاس‌پذیری (Quantization for Scale)
 
-To handle billions of vectors, **Binary** and **Scalar (Int8)** quantization are standard, and rotation-based 1 to 4-bit schemes are the 2026 addition.
+برای مدیریت میلیاردها بردار، کوانتیزاسیون **باینری (Binary)** و **اسکالر (Int8)** استانداردهای رایج هستند، و طرح‌های ۱ تا ۴ بیتی مبتنی بر چرخش (rotation-based) موارد افزوده‌شده در سال ۲۰۲۶ به شمار می‌روند.
 
-| Type | Data Size | Memory Savings | Quality Loss | Where You Get It |
+| نوع (Type) | اندازه داده (Data Size) | صرفه‌جویی در حافظه | افت کیفیت | نحوه دسترسی و پیاده‌سازی |
 |------|-----------|----------------|--------------|------------------|
-| Float32 | 4 bytes/dim | Baseline | 0% | All |
-| Int8 | 1 byte/dim | 4x | <1% | Model outputs (Cohere Embed 4/5, Voyage 4 family), most vector DBs |
-| 4-bit rotated (RaBitQ, TurboQuant, RQ) | 0.5 byte/dim | 8x | Small with rescoring (vendor claims) | Qdrant Turbo4 (opt-in), Weaviate 4-bit RQ (preview), LanceDB RaBitQ |
-| **Binary** | **1 bit/dim** | **32x** | ~5-10% | Model outputs (Cohere, Voyage), most vector DBs |
+| Float32 | ۴ بایت به ازای هر بعد (4 bytes/dim) | خط مبنا (Baseline) | ۰٪ | همه |
+| Int8 | ۱ بایت به ازای هر بعد (1 byte/dim) | ۴ برابر (4x) | کمتر از ۱٪ | خروجی مدل‌ها (Cohere Embed 4/5، خانواده Voyage 4)، اکثر پایگاه‌های داده برداری (Vector Database) |
+| ۴ بیتی مبتنی بر چرخش (RaBitQ, TurboQuant, RQ) | ۰.۵ بایت به ازای هر بعد (0.5 byte/dim) | ۸ برابر (8x) | اندک همراه با امتیازدهی مجدد (طبق ادعای ارائه‌دهندگان) | حالت انتخابی Qdrant Turbo4، نسخه ۴ بیتی Weaviate RQ (پیش‌نمایش)، LanceDB RaBitQ |
+| **باینری (Binary)** | **۱ بیت به ازای هر بعد (1 bit/dim)** | **۳۲ برابر (32x)** | حدود ۵-۱۰٪ | خروجی مدل‌ها (Cohere, Voyage)، اکثر پایگاه‌های داده برداری (Vector Database) |
 
-**Why rotation helps:** A random or Hadamard rotation spreads each vector's energy evenly across dimensions, so a uniform per-dimension quantizer stops wasting bits on a few outlier dimensions. That is what makes 1 to 4 bits per dimension usable. As of October 2026 these modes are opt-in or preview, not defaults: Qdrant added Hadamard-rotated TurboQuant in 1.18, an opt-in 4-bit Turbo4 storage type in 1.19 and `turbo8` and `turbo16` datatypes in 1.20 (October 22), Weaviate previewed 4-bit Rotational Quantization in 1.39 (7.84x compression), and LanceDB reports multi-bit RaBitQ at 96% recall without a refine step (vendor claim). Elasticsearch is the exception: BBQ (about 1 bit per dimension) has been the default for float `dense_vector` fields of 384+ dims since 9.1, and DiskBBQ (`bbq_disk`) is the default from 9.4 where the license includes it; 9.5 added a symmetric 1-bit OSQ scorer.
+**چرا چرخش کمک‌کننده است:** چرخش تصادفی یا هادامارد (Hadamard rotation) انرژی هر بردار را به‌طور یکنواخت در میان ابعاد توزیع می‌کند؛ در نتیجه، یک کوانتایزر یکنواخت به ازای هر بعد، دیگر بیت‌ها را روی چند بعد پرت (outlier) هدر نمی‌دهد. این همان چیزی است که استفاده از ۱ تا ۴ بیت به ازای هر بعد را کاربردی می‌سازد. تا اکتبر ۲۰۲۶، این حالت‌ها انتخابی (opt-in) یا پیش‌نمایش هستند و هنوز به عنوان پیش‌فرض در نیامده‌اند: Qdrant چرخش هادامارد TurboQuant را در نسخه 1.18، نوع ذخیره‌سازی انتخابی ۴ بیتی Turbo4 را در نسخه 1.19، و انواع داده‌های `turbo8` و `turbo16` را در نسخه 1.20 (۲۲ اکتبر) اضافه کرد؛ Weaviate پیش‌نمایش Rotational Quantization چهار بیتی را در نسخه 1.39 ارائه داد (فشرده‌سازی ۷.۸۴ برابری)، و LanceDB بازیابی (recall) ۹۶ درصدی را برای RaBitQ چندبیتی بدون نیاز به گام پالایش گزارش می‌کند (ادعای سازنده). پایگاه Elasticsearch یک استثنا است: الگوریتم BBQ (حدود ۱ بیت به ازای هر بعد) از نسخه 9.1 برای فیلدهای شناور `dense_vector` با بیش از ۳۸۴ بعد به صورت پیش‌فرض فعال بوده است، و DiskBBQ (`bbq_disk`) نیز از نسخه 9.4 در صورتی که لایسنس شامل آن باشد به عنوان پیش‌فرض عمل می‌کند؛ همچنین نسخه 9.5 یک امتیازدهنده متقارن ۱ بیتی OSQ را اضافه کرد.
 
-**Binary Quantization Pattern** (applies to any low-bit scheme):
-1. Retrieve top 1000 using Binary embeddings (extreme speed).
-2. Rerank top 50 using Float32 (or int8 originals kept on disk) or a Cross-Encoder (peak accuracy).
+**الگوی کوانتیزاسیون باینری** (قابل تعمیم به هر طرح با تعداد بیت پایین):
+1. بازیابی ۱۰۰۰ مورد برتر با استفاده از Embeddingهای باینری (سرعت فوق‌العاده بالا).
+2. بازرتبه‌بندی ۵۰ مورد برتر با استفاده از Float32 (یا مقادیر اصلی int8 نگهداری‌شده روی دیسک) یا یک Cross-Encoder (برای رسیدن به بالاترین دقت).
 
 ---
 
-## Practical Considerations
+## ملاحظات عملی (Practical Considerations)
 
-### Batch Processing
+### پردازش دسته‌ای (Batch Processing)
 
 ```python
 # Inefficient: one API call per document
@@ -387,9 +389,9 @@ for i in range(0, len(documents), batch_size):
     embeddings.extend(batch_embeddings)
 ```
 
-### Chunking for Embeddings
+### فرآیند Chunking برای Embeddingها
 
-Long documents must be chunked before embedding:
+اسناد طولانی پیش از اعمال Embedding باید Chunking (تکه‌بندی) شوند:
 
 ```python
 def embed_document(document: str, max_tokens: int = 512) -> list[np.array]:
@@ -401,14 +403,14 @@ def embed_document(document: str, max_tokens: int = 512) -> list[np.array]:
     return embeddings
 ```
 
-**Considerations:**
-- Chunk size should be less than model max tokens
-- Overlap helps preserve context across chunk boundaries
-- Store chunk-to-document mapping for retrieval
+**ملاحظات:**
+- اندازه هر تکه (Chunk size) باید کمتر از حداکثر تعداد Tokenهای مدل باشد
+- هم‌پوشانی (Overlap) به حفظ کانتکست در سراسر مرزهای تکه‌ها کمک می‌کند
+- نگاشت تکه-به-سند (chunk-to-document mapping) را برای مرحله بازیابی ذخیره کنید
 
-### Normalization
+### نرمال‌سازی (Normalization)
 
-Many systems expect normalized embeddings:
+بسیاری از سیستم‌ها انتظار Embeddingهای نرمال‌شده را دارند:
 
 ```python
 def normalize(embedding):
@@ -419,11 +421,11 @@ def normalize(embedding):
 similarity = np.dot(normalize(a), normalize(b))
 ```
 
-Most vector databases and embedding APIs handle normalization, but verify.
+بیشتر پایگاه‌های داده برداری (Vector Database) و APIهای تولید Embedding عمل نرمال‌سازی را خودکار انجام می‌دهند، اما حتماً آن را بررسی و تایید کنید.
 
-### Caching
+### کش‌گذاری (Caching)
 
-Embedding computation is expensive. Cache aggressively:
+محاسبه Embeddingها هزینه‌بر است. فرآیند کش‌گذاری (Caching) را به صورت تهاجمی پیاده‌سازی کنید:
 
 ```python
 import hashlib
@@ -441,25 +443,25 @@ def get_embedding(text: str, cache: dict) -> np.array:
 
 ---
 
-## Embedding Drift and Versioning
+## انحراف Embedding (Embedding Drift) و نسخه‌بندی
 
-### The Problem
+### مسئله
 
-Embeddings are not comparable across:
-- Different models
-- Different versions of the same model
-- Sometimes different API calls (some APIs have non-determinism)
+Embeddingها در موارد زیر با یکدیگر قابل مقایسه نیستند:
+- مدل‌های متفاوت
+- نسخه‌های مختلف از یک مدل یکسان
+- گاهی اوقات حتی در فراخوانی‌های مختلف API (برخی APIها دارای رفتار غیرقطعی یا non-determinism هستند)
 
-### Consequences
+### پیامدها
 
-If you update your embedding model:
-- All existing embeddings become incompatible
-- Must re-embed entire corpus
-- Search results will be inconsistent during migration
+اگر مدل Embedding خود را به‌روزرسانی کنید:
+- تمام Embeddingهای موجود ناسازگار خواهند شد
+- باید کل پیکره متنی (corpus) را دوباره Embed کنید
+- نتایج جستجو در طول فرآیند مهاجرت ناهماهنگ و ناپایدار خواهد بود
 
-### Mitigation Strategies
+### راهبردهای کاهش اثر (Mitigation Strategies)
 
-**1. Version your embeddings:**
+**۱. Embeddingهای خود را نسخه‌بندی کنید:**
 ```python
 embedding_metadata = {
     "model": "text-embedding-3-large",
@@ -469,12 +471,12 @@ embedding_metadata = {
 }
 ```
 
-**2. Plan for re-embedding:**
-- Estimate cost and time for full re-embed
-- Build pipelines that can run in background
-- Test new embeddings before switching
+**۲. برای فرآیند باز-تولید Embeddingها برنامه‌ریزی کنید:**
+- هزینه و زمان مورد نیاز برای باز-تولید کامل را تخمین بزنید
+- پایپ‌لاین‌هایی بسازید که بتوانند در پس‌زمینه اجرا شوند
+- پیش از سوئیچ کردن نهایی، Embeddingهای جدید را ارزیابی و آزمایش کنید
 
-**3. Blue-green deployment:**
+**۳. استقرار (Deployment) آبی-سبز:**
 ```
 Index A: Current embeddings
 Index B: New embeddings (building)
@@ -482,101 +484,101 @@ Index B: New embeddings (building)
 Query -> Both indexes -> Merge or switch
 ```
 
-**4. Track embedding quality:**
-- Monitor retrieval metrics continuously
-- Detect drift in embedding distributions
-- Alert on quality degradation
+**۴. ردیابی کیفیت Embedding:**
+- معیارهای بازیابی را به صورت پیوسته پایش کنید
+- انحراف در توزیع بردارها (embedding distributions) را شناسایی نمایید
+- در صورت افت کیفیت، هشدارهای خودکار صادر کنید
 
-**5. Use shared embedding spaces where they exist:**
-The Voyage 4 family (large, base, lite) shares one space, and Cohere Embed 5 Pro and Fast share one, so you can index with the large model and query with the small one, or swap the query model later, without re-indexing. Qdrant's Constella research preview (September 29, 2026) pushes this further: a fixed Stella document index with swappable tiny query encoders, where Qdrant reports Constella Nano (34.5M parameters) keeping about 91% of Stella's BEIR nDCG@10 at 12x faster CPU query encoding. A shared space only helps within the family; moving to another vendor is still a full rebuild.
+**۵. در صورت در دسترس بودن، از فضاهای برداری مشترک (Shared Embedding Spaces) استفاده کنید:**
+خانواده Voyage 4 (مدل‌های large، base و lite) از یک فضای برداری مشترک استفاده می‌کنند و Cohere Embed 5 Pro و Fast نیز دارای فضای مشترک هستند؛ از این رو می‌توانید نمایه‌سازی (indexing) را با مدل بزرگ‌تر انجام دهید و جستجو (query) را با مدل سبک‌تر پیش ببرید، یا در آینده مدل جستجو را بدون نیاز به نمایه‌سازی مجدد تغییر دهید. نسخه پیش‌نمایش تحقیقاتی Constella در Qdrant (۲۹ سپتامبر ۲۰۲۶) این رویکرد را فراتر برده است: نمایه اسناد ثابت بر پایه مدل Stella همراه با انکودرهای کوئری کوچک و قابل تعویض، که در آن Qdrant گزارش داده مدل Constella Nano (با ۳۴.۵ میلیون پارامتر) حدود ۹۱٪ از معیار BEIR nDCG@10 مدل Stella را حفظ کرده در حالی که کدگذاری کوئری روی CPU را ۱۲ برابر سریع‌تر انجام می‌دهد. فضای مشترک تنها در درون محصولات یک خانواده کاربرد دارد؛ مهاجرت به ارائه‌دهنده دیگر نیازمند بازسازی کامل نمایه خواهد بود.
 
-**6. Know who owns the embedder:**
-In-database embedding (MongoDB Atlas Automated Embedding, GA August 13, 2026; turbopuffer native embedding, GA September 29, 2026; Elasticsearch `semantic_text`) removes the sync pipeline but couples your index to a vendor-chosen model version. Pin the model, and find out how the vendor handles model upgrades and who pays for re-embedding.
-
----
-
-## Interview Questions
-
-### Q: How do embedding models learn semantic similarity?
-
-**Strong answer:**
-Embedding models are trained with contrastive learning. The objective is to make embeddings of semantically similar texts close together and dissimilar texts far apart.
-
-Training process:
-1. Positive pairs: Texts that should be similar (query-document pairs, paraphrases, translations)
-2. Negative pairs: Texts that should be dissimilar (often from same batch or hard negatives from BM25)
-3. Loss function: Pushes positive pairs close, negative pairs far
-
-The model learns to place texts in a high-dimensional space where distance correlates with semantic similarity. This enables retrieval: embed the query, find nearest neighbors in the document embedding space.
-
-Modern models like E5, BGE and Qwen3-Embedding are also instruction-tuned, where you prefix with task instructions to specialize the embedding; others, such as Nemotron 3 Embed, use fixed `query:` and `passage:` prefixes. Using the wrong prefix silently degrades retrieval.
-
-### Q: When would you use ColBERT over a bi-encoder?
-
-**Strong answer:**
-ColBERT uses late interaction: instead of one embedding per document, it keeps per-token embeddings. At query time, it computes token-level similarity.
-
-Choose ColBERT when:
-- Retrieval precision is critical (legal, medical, high-stakes)
-- You can afford 10-100x storage overhead per document
-- Query latency budget is 50ms+ (slightly slower than bi-encoder)
-- Your queries benefit from lexical matching (technical terms)
-
-Choose bi-encoder when:
-- Storage is constrained
-- Need sub-20ms latency
-- Retrieval precision from bi-encoder is sufficient
-- Frequent re-indexing (ColBERT reindex is expensive)
-
-In practice, a common pattern is: bi-encoder for first-stage retrieval (top 100), then cross-encoder or ColBERT for reranking.
-
-### Q: How do you handle embedding drift when updating models?
-
-**Strong answer:**
-Embedding models produce vectors that are only meaningful relative to the same model. If you update the model, all old embeddings become incompatible.
-
-My approach:
-1. **Never update in place.** Create a parallel index with new embeddings.
-2. **Test before switching.** Compare retrieval quality on a test set with both old and new embeddings.
-3. **Background rebuild.** Re-embed the entire corpus with the new model in the background.
-4. **Atomic switch.** Once the new index is complete and validated, switch traffic atomically.
-5. **Rollback plan.** Keep the old index available for quick rollback.
-
-For cost estimation: if you have 10M documents at 500 tokens average, and text-embedding-3-large costs $0.13/1M tokens, re-embedding costs about $650. Plan for this cost when considering model updates. The API bill is usually the small part; index rebuild time, dual-index storage and the evaluation run cost more.
-
-One exception worth naming: within a shared-space family (Voyage 4, Cohere Embed 5 Pro and Fast) I can change the query-side model without touching the document index. Changing the document-side model still needs the full rebuild.
-
-### Q: How do you choose dimensions for embeddings?
-
-**Strong answer:**
-Higher dimensions capture more information but cost more storage and computation.
-
-Considerations:
-- **Storage:** 1024-d float32 = 4 KB per embedding. At 10M docs = 40 GB just for embeddings.
-- **Search speed:** Higher dimensions = slower nearest neighbor search.
-- **Quality:** Diminishing returns above certain dimensions for most tasks.
-
-Practical approach:
-1. Start with the model's recommended dimensions.
-2. If using Matryoshka models (like text-embedding-3), experiment with lower dimensions on your task.
-3. Benchmark quality at each dimension on your own queries. OpenAI's published figures set a floor: text-embedding-3-large cut to 256-d still beats full-size ada-002 (61.0 MTEB average) against 64.6 at 3,072-d, so it keeps more than 94% of the full score on that benchmark. A narrow domain can lose more.
-4. For two-stage retrieval: use low dimensions for first stage, full dimensions for reranking.
-
-For most applications, 768-1024 dimensions provide good balance. The exception is very high-precision requirements where 2048-4096 may help.
-
-### Q: Why not just ask an LLM to judge relevance instead of using embeddings?
-
-**Strong answer:**
-Because parity costs orders of magnitude more. "The Embedder's Dilemma" (arXiv 2608.12875, August 2026) compared 10 LLMs with 26 embedding models on 37 tasks. In aggregate they tie: the best LLM (Gemini 3.1 Pro) scored 77.6 against 77.2 for the best embedder. But matching the embedder cost up to 1,431x more (USD 154 versus 0.11 per benchmark pass), open LLMs ran 2.5x to 736x slower on the same GPU, and reasoning tokens were 28% to 81% of LLM cost.
-
-The split that follows:
-- **Embeddings** for first-stage similarity over the whole corpus: precomputed, cheap, millisecond lookup.
-- **Cross-encoder or listwise rerankers** on the top 50-100.
-- **An LLM judge only at the end**, on a handful of candidates, and only for reasoning-heavy queries where the paper found LLMs actually lead. Lower reasoning budgets usually kept retrieval quality, so run that judge at low effort.
+**۶. بدانید مدیریت و مالکیت مدل بر عهده چه کسی است:**
+تولید Embedding درون پایگاه داده (مانند MongoDB Atlas Automated Embedding با عرضه عمومی در ۱۳ آگوست ۲۰۲۶؛ قابلیت بومی turbopuffer با عرضه عمومی در ۲۹ سپتامبر ۲۰۲۶؛ فیلد `semantic_text` در Elasticsearch) پایپ‌لاین همگام‌سازی را حذف می‌کند، اما نمایه شما را به نسخه مدلی که ارائه‌دهنده سرویس انتخاب کرده وابسته (کوپل) می‌سازد. مدل را پین (pin) کنید و دریابید که ارائه‌دهنده ارتقای مدل‌ها را چگونه مدیریت می‌کند و هزینه باز-تولید Embeddingها بر عهده چه کسی خواهد بود.
 
 ---
 
-## References
+## سوالات مصاحبه (Interview Questions)
+
+### پرسش: مدل‌های Embedding چگونه شباهت معنایی را یاد می‌گیرند؟
+
+**پاسخ قوی:**
+مدل‌های Embedding با استفاده از یادگیری مقابله‌ای (Contrastive Learning) آموزش داده می‌شوند. هدف این است که Embeddingهای متون دارای شباهت معنایی به یکدیگر نزدیک و متون نامشابه از یکدیگر دور شوند.
+
+فرآیند آموزش:
+1. جفت‌های مثبت (Positive pairs): متونی که باید مشابه باشند (جفت‌های کوئری-سند، جملات بازنویسی‌شده، ترجمه‌ها)
+2. جفت‌های منفی (Negative pairs): متونی که باید نامشابه باشند (اغلب از همان دسته [batch] یا نمونه‌های منفی دشوار [hard negatives] برگرفته از BM25)
+3. تابع زیان (Loss function): جفت‌های مثبت را به یکدیگر نزدیک و جفت‌های منفی را دور می‌کند
+
+مدل یاد می‌گیرد متون را در یک فضای برداری با ابعاد بالا نگاشت کند که در آن فاصله هندسی با شباهت معنایی همبستگی مستقیم دارد. این امر فرآیند بازیابی را ممکن می‌سازد: کوئری را Embed کرده و نزدیک‌ترین همسایه‌ها را در فضای برداری اسناد پیدا می‌کنید.
+
+مدل‌های مدرن نظیر E5، BGE و Qwen3-Embedding همچنین به صورت instruction-tuned توسعه یافته‌اند که در آن‌ها برای تخصصی‌سازی Embedding یک پیشوند شامل دستورالعمل وظیفه اضافه می‌کنید؛ مدل‌های دیگر نظیر Nemotron 3 Embed از پیشوندهای ثابت `query:` و `passage:` استفاده می‌کنند. استفاده از پیشوند نادرست بدون هیچ هشداری، عملکرد بازیابی را کاهش می‌دهد.
+
+### پرسش: چه زمانی باید از ColBERT به جای یک bi-encoder استفاده کرد؟
+
+**پاسخ قوی:**
+مدل ColBERT از مکانیزم تعامل دیرهنگام (Late Interaction) بهره می‌برد: به جای اختصاص یک بردار به کل سند، برای هر Token بردار مجزایی نگهداری می‌کند. سپس در زمان کوئری، شباهت را در سطح Tokenها محاسبه می‌نماید.
+
+ColBERT را زمانی انتخاب کنید که:
+- دقت بازیابی بسیار حیاتی باشد (زمینه‌های حقوقی، پزشکی، سامانه‌های بسیار حساس)
+- توانایی پذیرش بار اضافه حافظه ۱۰ تا ۱۰۰ برابری به ازای هر سند وجود داشته باشد
+- بودجه تاخیر (Latency) کوئری بیش از ۵۰ میلی‌ثانیه باشد (کمی کندتر از bi-encoder)
+- کوئری‌های شما از تطبیق واژگانی دقیق (برای مثال اصطلاحات فنی) نفع ببرند
+
+مدل bi-encoder را زمانی انتخاب کنید که:
+- فضای ذخیره‌سازی محدود باشد
+- نیاز به تاخیر کمتر از ۲۰ میلی‌ثانیه داشته باشید
+- دقت بازیابی حاصل از bi-encoder پاسخگوی نیاز سیستم باشد
+- نمایه‌سازی مجدد به دفعات زیاد رخ دهد (نمایه‌سازی مجدد در ColBERT پرهزینه است)
+
+در عمل، الگوی رایج عبارت است از: استفاده از bi-encoder برای مرحله اول بازیابی (۱۰۰ مورد برتر)، و سپس استفاده از cross-encoder یا ColBERT برای مرحله بازرتبه‌بندی (reranking).
+
+### پرسش: هنگام ارتقای مدل‌ها، انحراف Embedding (Embedding Drift) را چگونه مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+مدل‌های Embedding بردارهایی تولید می‌کنند که تنها در مقایسه با همان مدل معنا دارند. اگر مدل را به‌روزرسانی کنید، تمام برداری‌های پیشین ناسازگار می‌شوند.
+
+رویکرد من:
+1. **هرگز به‌روزرسانی درجا (in-place) انجام ندهید.** یک نمایه موازی با Embeddingهای مدل جدید ایجاد کنید.
+2. **پیش از سوییچ کردن اعتبارسنجی کنید.** کیفیت بازیابی را روی یک مجموعه داده آزمایشی با هر دو نمایه قدیمی و جدید مقایسه کنید.
+3. **بازسازی نمایه در پس‌زمینه.** کل پیکره اسناد را در پس‌زمینه با استفاده از مدل جدید باز-تولید (re-embed) نمایید.
+4. **سوئیچ اتمیک (Atomic switch).** پس از تکمیل و اعتبارسنجی کامل نمایه جدید، جریان ترافیک را به صورت یکپارچه و آنی تغییر دهید.
+5. **برنامه بازگشت (Rollback plan).** نمایه قدیمی را برای امکان بازگشت سریع در دسترس نگه دارید.
+
+برای تخمین هزینه: اگر ۱۰ میلیون سند با میانگین ۵۰۰ Token داشته باشید، و هزینه مدل text-embedding-3-large برابر با ۰.۱۳ دلار به ازای هر ۱ میلیون Token باشد، باز-تولید بردارها حدود ۶۵۰ دلار هزینه خواهد داشت. هنگام تصمیم‌گیری برای ارتقای مدل، این هزینه را در محاسبات لحاظ کنید. البته هزینه API معمولاً بخش کوچکی از کل ماجرا است؛ زمان بازسازی نمایه، هزینه ذخیره‌سازی همزمان دو نمایه و فرآیند اجرای آزمون‌های اعتبارسنجی معمولاً هزینه بیشتری به همراه دارند.
+
+یک استثنای حائز اهمیت: در خانواده مدل‌های با فضای برداری مشترک (نظیر Voyage 4 یا Cohere Embed 5 Pro و Fast)، می‌توان مدل سمت کوئری را بدون دستکاری نمایه اسناد تغییر داد. با این حال، تغییر مدل سمت اسناد همچنان مستلزم بازسازی کامل نمایه خواهد بود.
+
+### پرسش: ابعاد (Dimensions) بردارها را چگونه انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+ابعاد بالاتر اطلاعات غنی‌تری را ضبط می‌کنند اما نیازمند فضای ذخیره‌سازی بیشتر و محاسبات سنگین‌تر هستند.
+
+ملاحظات:
+- **فضای ذخیره‌سازی:** ابعاد ۱۰۲۴ از نوع float32 برابر با ۴ کیلوبایت به ازای هر بردار است. برای ۱۰ میلیون سند، این عدد تنها برای Embeddingها به ۴۰ گیگابایت می‌رسد.
+- **سرعت جستجو:** ابعاد بالاتر برابر است با جستجوی کندتر برای نزدیک‌ترین همسایه.
+- **کیفیت:** برای بیشتر وظایف، فراتر از ابعادی مشخص با پدیده بازده نزولی (diminishing returns) مواجه می‌شویم.
+
+رویکرد عملی:
+1. کار را با ابعاد توصیه‌شده مدل آغاز کنید.
+2. اگر از مدل‌های ماتریوشکا (مانند text-embedding-3) استفاده می‌کنید، ابعاد پایین‌تر را برای مسئله خود ارزیابی کنید.
+3. کیفیت را در هر بعد روی کوئری‌های واقعی خود بسنجید. آمار منتشرشده توسط OpenAI یک کف کیفیت را نشان می‌دهد: مدل text-embedding-3-large پس از کاهش بعد به ۲۵۶، همچنان مدل پایه ada-002 را در بنچمارک MTEB شکست می‌دهد (امتیاز ۶۱.۰ در برابر ۶۴.۶ برای ابعاد ۳۰۷۲)، به این معنا که بیش از ۹۴٪ از امتیاز نسخه کامل را حفظ می‌کند. در حوزه‌های تخصصی و محدود ممکن است افت عملکرد بیشتر باشد.
+4. برای بازیابی دومرحله‌ای: از ابعاد پایین برای گام اول و از ابعاد کامل برای بازرتبه‌بندی بهره ببرید.
+
+برای اکثر کاربردها، ابعاد ۷۶۸ تا ۱۰۲۴ توازن بسیار خوبی برقرار می‌کنند. استثنا مربوط به سناریوهای با دقت فوق‌العاده بالا است که ابعاد ۲۰۴۸ تا ۴۰۹۶ در آن‌ها مزیت محسوسی ایجاد می‌کنند.
+
+### پرسش: چرا به جای استفاده از Embeddingها، مستقیماً از یک LLM برای ارزیابی میزان ارتباط استفاده نکنیم؟
+
+**پاسخ قوی:**
+چون دستیابی به کیفیتی برابر، چندین مرتبه بزرگی (orders of magnitude) هزینه بیشتری دارد. مقاله «تنگنای مدل‌های بردارساز» موسوم به "The Embedder's Dilemma" (سند arXiv 2608.12875، آگوست ۲۰۲۶) تعداد ۱۰ مدل LLM را با ۲۶ مدل Embedding در ۳۷ تسک مختلف مقایسه کرده است. در مجموع عملکرد کلی آن‌ها برابر بود: برترین LLM (مدل Gemini 3.1 Pro) به امتیاز ۷۷.۶ دست یافت در حالی که برترین مدل Embedding امتیاز ۷۷.۲ را ثبت کرد. اما رقابت با مدل Embedding تا ۱,۴۳۱ برابر هزینه بیشتری در پی داشت (۱۵۴ دلار در برابر ۰.۱۱ دلار برای هر بار اجرای بنچمارک)، مدل‌های متن‌باز LLM بر روی همان سخت‌افزار GPU بین ۲.۵ تا ۷۳۶ برابر کندتر عمل کردند، و Tokenهای استدلال بین ۲۸٪ تا ۸۱٪ از کل هزینه‌های LLM را تشکیل دادند.
+
+تقسیم وظایف منطقی حاصل از این نتایج:
+- **Embeddingها** برای مرحله نخست سنجش شباهت بر روی کل پیکره اسناد: از پیش محاسبه‌شده، بسیار کم‌هزینه و با جستجوی میلی‌ثانیه‌ای.
+- **Cross-encoder یا بازرتبه‌بندی‌کننده‌های لیستی (listwise rerankers)** برای ۵۰ تا ۱۰۰ نتیجه برتر.
+- **قضاوت با LLM تنها در گام نهایی**، بر روی چند کاندیدای انگشت‌شمار، و صرفاً برای کوئری‌های نیازمند استدلال سنگین که مقاله نشان داده LLMها در آن‌ها واقعاً پیشتاز هستند. از آنجا که بودجه‌های استدلال پایین‌تر معمولاً کیفیت بازیابی را حفظ می‌کنند، می‌توان آن فرآیند قضاوت را با سطح تلاش (effort) پایین اجرا کرد.
+
+---
+
+## مراجع
 
 - Reimers and Gurevych. "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks" (2019)
 - Khattab and Zaharia. "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT" (2020)
@@ -585,9 +587,11 @@ The split that follows:
 - Kusupati et al. "Matryoshka Representation Learning" (MRL, 2022)
 - Günther et al. "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models" (2024)
 - "The Embedder's Dilemma" (arXiv 2608.12875, 2026)
-- MTEB Leaderboard (includes RTEB): https://huggingface.co/spaces/mteb/leaderboard
-- OpenAI Embeddings Guide: https://platform.openai.com/docs/guides/embeddings
+- لیدربورد MTEB (شامل RTEB): https://huggingface.co/spaces/mteb/leaderboard
+- راهنمای Embeddingهای شرکت OpenAI: https://platform.openai.com/docs/guides/embeddings
 
 ---
 
-*Previous: [Transformer Architecture](04-transformer-architecture.md) | Next: [Inference Pipeline](06-inference-pipeline.md)*
+*قبلی: [معماری ترنسفورمر](04-transformer-architecture.md) | بعدی: [پایپ‌لاین استنتاج](06-inference-pipeline.md)*
+
+</div>

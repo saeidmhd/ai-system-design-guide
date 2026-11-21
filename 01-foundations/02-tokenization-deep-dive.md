@@ -1,53 +1,55 @@
-# Tokenization Deep Dive
+<div dir="rtl">
 
-Tokenization is the process of converting text into discrete units (tokens) that models can process. It directly impacts model capabilities, costs, and performance.
+# بررسی عمیق Tokenization
 
-## Table of Contents
+فرایند Tokenization تبدیل متن به واحدهای گسسته (Tokenها) است که مدل‌ها می‌توانند آن‌ها را پردازش کنند. این فرایند مستقیماً بر قابلیت‌ها، هزینه‌ها و عملکرد مدل تأثیر می‌گذارد.
 
-- [Why Tokenization Matters](#why-tokenization-matters)
-- [Tokenization Algorithms](#tokenization-algorithms)
-- [Vocabulary Design Tradeoffs](#vocabulary-design-tradeoffs)
-- [Special Tokens](#special-tokens)
-- [Multilingual Tokenization](#multilingual-tokenization)
-- [Multimodal Tokenization](#multimodal-tokenization-pixels-to-tokens)
-- [Token Counting for Cost Estimation](#token-counting-for-cost-estimation)
-- [Common Tokenization Issues](#common-tokenization-issues)
-- [Practical Tokenization Patterns](#practical-tokenization-patterns)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Why Tokenization Matters
-
-### For System Design
-
-1. **Cost**: LLM APIs charge per token. Tokenization efficiency directly affects costs.
-2. **Context limits**: Token count, not word count, determines what fits in context.
-3. **Capability**: Some tasks (character counting, anagrams) are hard because of tokenization.
-4. **Consistency**: Same text tokenizes differently across models.
-
-### For Understanding LLM Behavior
-
-**Classic interview question**: Why does GPT struggle to count letters in "strawberry"?
-
-Because "strawberry" is tokenized as multiple subwords. The model never sees individual characters; it sees subword units. Counting letters requires reasoning about internal structure of tokens.
+- [چرا Tokenization اهمیت دارد](#why-tokenization-matters)
+- [الگوریتم‌های Tokenization](#tokenization-algorithms)
+- [موازنه‌های طراحی واژگان](#vocabulary-design-tradeoffs)
+- [Tokenهای ویژه](#special-tokens)
+- [Tokenization چندزبانه](#multilingual-tokenization)
+- [Tokenization چندوجهی](#multimodal-tokenization-pixels-to-tokens)
+- [شمارش Token برای برآورد هزینه](#token-counting-for-cost-estimation)
+- [مشکلات رایج Tokenization](#common-tokenization-issues)
+- [الگوهای کاربردی Tokenization](#practical-tokenization-patterns)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Tokenization Algorithms
+## چرا Tokenization اهمیت دارد
 
-### Byte Pair Encoding (BPE)
+### برای طراحی سیستم
 
-The most common algorithm. Used by GPT-series, Llama, Qwen, DeepSeek.
+1. **هزینه**: APIهای LLM بر اساس هر Token هزینه دریافت می‌کنند. کارایی Tokenization مستقیماً بر هزینه‌ها تأثیر می‌گذارد.
+2. **محدودیت‌های کانتکست**: تعداد Tokenها، و نه تعداد کلمات، مشخص می‌کند چه مقدار متن در کانتکست (Context) جای می‌گیرد.
+3. **قابلیت**: برخی از وظایف (مانند شمارش کاراکترها و حل آناگرام‌ها) به دلیل نحوه کار Tokenization دشوار هستند.
+4. **سازگاری**: یک متن یکسان در مدل‌های مختلف به صورت متفاوتی Tokenize می‌شود.
 
-**Training algorithm:**
-1. Start with vocabulary of individual bytes (256 tokens)
-2. Count all adjacent token pairs in training corpus
-3. Merge most frequent pair into a new token
-4. Repeat until vocabulary size reached
+### برای درک رفتار LLM
 
-**Example:**
+**سوال کلاسیک مصاحبه**: چرا GPT در شمارش حروف کلمه "strawberry" با مشکل مواجه می‌شود؟
+
+زیرا "strawberry" به چندین زیرکلمه (Subword) تقسیم (Tokenize) می‌شود. مدل هرگز کاراکترهای منفرد را نمی‌بیند؛ بلکه واحدهای زیرکلمه‌ای را می‌بیند. شمارش حروف نیازمند استدلال درباره ساختار داخلی Tokenها است.
+
+---
+
+## الگوریتم‌های Tokenization
+
+### کدگذاری جفت بایت (BPE)
+
+رایج‌ترین الگوریتم که توسط سری مدل‌های GPT، Llama، Qwen و DeepSeek استفاده می‌شود.
+
+**الگوریتم آموزش:**
+1. شروع با واژگانی متشکل از تک‌بایت‌ها (۲۵۶ عدد Token)
+2. شمارش تمام جفت‌های مجاور Token در پیکره متنی آموزشی (Corpus)
+3. ادغام پرتکرارترین جفت در یک Token جدید
+4. تکرار تا رسیدن به اندازه واژگان مورد نظر
+
+**مثال:**
 ```
 Corpus: "low lower lowest"
 Initial: ['l', 'o', 'w', ' ', 'l', 'o', 'w', 'e', 'r', ' ', 'l', 'o', 'w', 'e', 's', 't']
@@ -64,86 +66,86 @@ Step 3: Most frequent pair is ('low', 'e'). Merge to 'lowe'.
 Continue until vocabulary size target...
 ```
 
-**Properties:**
-- Deterministic tokenization given trained vocabulary
-- Common words tend to be single tokens
-- Rare words split into subwords
+**ویژگی‌ها:**
+- فرایند Tokenization قطعی (Deterministic) با داشتن واژگان آموزش‌دیده
+- کلمات رایج تمایل دارند به صورت تک Token ظاهر شوند
+- کلمات نادر به زیرکلمه‌ها تقسیم می‌شوند
 
 ### WordPiece
 
-Used by BERT-family models.
+توسط مدل‌های خانواده BERT استفاده می‌شود.
 
-**Key difference from BPE:**
-- BPE: Merge based on frequency
-- WordPiece: Merge based on likelihood improvement
+**تفاوت کلیدی با BPE:**
+- الگوریتم BPE: ادغام بر اساس فرکانس (تکرار)
+- الگوریتم WordPiece: ادغام بر اساس بهبود درستی‌نمایی (Likelihood)
 
 ```
 Score = freq(AB) / (freq(A) * freq(B))
 ```
 
-This favors merges that are more meaningful than random co-occurrence.
+این رویکرد ادغام‌هایی را ترجیح می‌دهد که نسبت به هم‌آیی‌های تصادفی، معنادارتر باشند.
 
-**Visual marker:** WordPiece uses ## prefix for continuation tokens:
+**نشانگر بصری:** WordPiece از پیشوند ## برای Tokenهای ادامه استفاده می‌کند:
 ```
 "embedding" becomes ["em", "##bed", "##ding"]
 ```
 
-### Unigram (SentencePiece)
+### الگوریتم Unigram (SentencePiece)
 
-Used by T5, ALBERT, some multilingual models.
+توسط T5، ALBERT و برخی مدل‌های چندزبانه استفاده می‌شود.
 
-**Training algorithm:**
-1. Start with large candidate vocabulary
-2. Compute loss if each token were removed
-3. Remove tokens that increase loss least
-4. Repeat until vocabulary size reached
+**الگوریتم آموزش:**
+1. شروع با یک واژگان کاندید بزرگ
+2. محاسبه مقدار Loss در صورت حذف هر Token
+3. حذف Tokenهایی که کمترین افزایش را در Loss ایجاد می‌کنند
+4. تکرار تا رسیدن به اندازه واژگان مورد نظر
 
-**Key difference:** Works with probabilities rather than frequencies. Can recover from suboptimal early merges.
+**تفاوت کلیدی:** به جای فرکانس، با احتمالات کار می‌کند و می‌تواند ادغام‌های اولیه زیربهینه (Suboptimal) را جبران و بازیابی کند.
 
-### Comparison
+### مقایسه
 
-| Algorithm | Merge Criterion | Tokenization | Used By |
+| الگوریتم | معیار ادغام | نوع Tokenization | استفاده‌شده در |
 |-----------|-----------------|--------------|---------|
-| BPE | Frequency | Deterministic | GPT, Llama, Qwen |
-| WordPiece | Likelihood | Deterministic | BERT, DistilBERT |
-| Unigram | Probability | Probabilistic | T5, mT5, XLNet |
+| BPE | تکرار (Frequency) | قطعی (Deterministic) | GPT، Llama، Qwen |
+| WordPiece | درستی‌نمایی (Likelihood) | قطعی (Deterministic) | BERT، DistilBERT |
+| Unigram | احتمال (Probability) | احتمالاتی (Probabilistic) | T5، mT5، XLNet |
 
 ---
 
-## Vocabulary Design Tradeoffs
+## موازنه‌های طراحی واژگان
 
-### Vocabulary Size
+### اندازه واژگان
 
-| Size | Example | Pros | Cons |
+| اندازه | مثال | مزایا | معایب |
 |------|---------|------|------|
-| Small (10K) | Some early models | Smaller embeddings | Long token sequences |
-| Medium (32K) | Llama 2, Mistral 7B | Good balance | Multilingual inefficiency |
-| Large (100K-152K) | GPT-4 (cl100k), Llama 3 (128K), DeepSeek V3 and V4.1 (~129K), Mistral Tekken (~131K), Qwen3 (~152K) | **Common default for open models.** High compression ratio. | Larger embeddings table |
-| Huge (200K+) | GPT-4o through GPT-5.x (o200k, ~200K), Llama 4 (~202K), Gemma 3 (~262K) | Multimodal and multilingual efficiency | Memory pressure at the LM Head |
+| کوچک (10K) | برخی مدل‌های اولیه | Embeddings کوچک‌تر | توالی‌های طولانی از Tokenها |
+| متوسط (32K) | Llama 2، Mistral 7B | تعادل مناسب | ناکارآمدی در چندزبانگی |
+| بزرگ (100K-152K) | GPT-4 (cl100k)، Llama 3 (128K)، DeepSeek V3 و V4.1 (~129K)، Mistral Tekken (~131K)، Qwen3 (~152K) | **پیش‌فرض رایج برای مدل‌های متن‌باز.** نسبت فشرده‌سازی بالا. | جدول Embeddings بزرگ‌تر |
+| بسیار بزرگ (+200K) | GPT-4o تا GPT-5.x (o200k، ~200K)، Llama 4 (~202K)، Gemma 3 (~262K) | کارایی چندوجهی و چندزبانه | فشار حافظه روی LM Head |
 
-Anthropic and Google do not publish vocabulary sizes for Claude and Gemini, and tiktoken covers only OpenAI's published encodings (o200k_base for GPT-4o through GPT-5.x). For any model whose tokenizer you cannot load and confirm, count with the provider's token-counting API or the response `usage` field, not with a proxy tokenizer.
+شرکت‌های Anthropic و Google اندازه واژگان را برای Claude و Gemini منتشر نمی‌کنند، و tiktoken صرفاً انکودینگ‌های منتشرشده توسط OpenAI را پوشش می‌دهد (o200k_base برای GPT-4o تا GPT-5.x). برای هر مدلی که نمی‌توانید Tokenizer آن را بارگذاری و تأیید کنید، شمارش را با API شمارش Token ارائه‌دهنده یا فیلد `usage` در پاسخ انجام دهید، نه با یک Tokenizer نیابتی (Proxy).
 
-**The vocab-expansion deep dive:**
-- **Llama 3 (128K)**: Meta combined 100K tokens from tiktoken with 28K extra tokens aimed at non-English languages, and reported up to 15% fewer tokens than Llama 2 for the same text. Llama 4 went to ~202K.
-- **GPT-4o through GPT-5.x (o200k_base)**: Doubling cl100k's vocabulary improved compression for code and non-English text, which lowers cost per unit of meaning even at the same per-token price.
-- **Same price, different bill**: a tokenizer change moves your bill without any list-price change. Anthropic's docs say Claude 4.7 and later models use a newer tokenizer that produces roughly 30% more tokens than earlier Claude models for the same text, with the exact increase depending on content. Claude Haiku 5.5 brought it to the small tier: about 30% more tokens than Haiku 4.5, so its list price, a tenth of Haiku 4.5's, is a smaller cut per unit of text than the rate card says. Re-baseline token counts whenever you switch model families.
+**واکاوی دقیق گسترش واژگان:**
+- **مدل Llama 3 (128K)**: متا ۱۰۰ هزار Token از tiktoken را با ۲۸ هزار Token اضافی با هدف زبان‌های غیرانگلیسی ترکیب کرد و گزارش داد که برای یک متن یکسان، تا ۱۵٪ Tokenهای کمتری نسبت به Llama 2 مصرف می‌کند. مدل Llama 4 به حدود ۲۰۲ هزار Token رسید.
+- **مدل‌های GPT-4o تا GPT-5.x (o200k_base)**: دو برابر کردن واژگان cl100k فشرده‌سازی را برای کد و متون غیرانگلیسی بهبود بخشید، که هزینه به ازای هر واحد معنایی را حتی با همان قیمت ثابت به ازای هر Token کاهش می‌دهد.
+- **قیمت یکسان، صورت‌حساب متفاوت**: تغییر Tokenizer می‌تواند مبلغ صورت‌حساب شما را بدون هیچ تغییری در لیست قیمت‌ها جابه‌جا کند. اسناد Anthropic بیان می‌کنند که Claude 4.7 و مدل‌های پس از آن از Tokenizer جدیدتری استفاده می‌کنند که برای یک متن یکسان، تقریباً ۳۰٪ Tokenهای بیشتری نسبت به مدل‌های اولیه Claude تولید می‌کند که مقدار دقیق این افزایش به محتوا بستگی دارد. مدل Claude Haiku 5.5 این موضوع را به رده مدل‌های کوچک نیز تعمیم داد: حدود ۳۰٪ Tokenهای بیشتر نسبت به Haiku 4.5؛ بنابراین قیمت پایه آن که یک‌دهم Haiku 4.5 است، در عمل کاهش کمتری به ازای هر واحد متن نسبت به آنچه در جدول تعرفه‌ها اعلام شده فراهم می‌کند. هر زمان که خانواده مدل‌ها را تغییر می‌دهید، مبنای شمارش Tokenها (Token counts) را مجدداً ارزیابی کنید.
 
-### Character vs Subword vs Word
+### کاراکتر در برابر زیرکلمه در برابر کلمه
 
-| Granularity | Example | Tokens for "running" | Tradeoffs |
+| دانه‌بندی (Granularity) | مثال | Tokenها برای "running" | موازنه‌ها |
 |-------------|---------|---------------------|-----------|
-| Character | ByT5 | ['r','u','n','n','i','n','g'] | Handles any text but very long sequences |
-| Subword | GPT | ['running'] or ['run','ning'] | Good balance |
-| Word | Early NLP | ['running'] | Short sequences but cannot handle OOV |
+| کاراکتر | ByT5 | ['r','u','n','n','i','n','g'] | از هر متنی پشتیبانی می‌کند اما توالی‌ها بسیار طولانی می‌شوند |
+| زیرکلمه (Subword) | GPT | ['running'] یا ['run','ning'] | تعادل مناسب |
+| کلمه | پردازش زبان طبیعی اولیه (Early NLP) | ['running'] | توالی‌های کوتاه‌تر، اما ناتوان در مدیریت OOV |
 
-Modern LLMs universally use subword tokenization for the balance of vocabulary size and sequence length.
+امروزه LLMها به طور همگانی از Tokenization زیرکلمه‌ای (Subword) برای برقراری تعادل میان اندازه واژگان و طول توالی استفاده می‌کنند.
 
-### Byte-Level BPE
+### الگوریتم Byte-Level BPE
 
-GPT-2 introduced byte-level BPE:
-- Base vocabulary is 256 bytes, not characters
-- Can represent any text without UNK tokens
-- Unicode handled naturally as byte sequences
+مدل GPT-2 مفهوم Byte-Level BPE را معرفی کرد:
+- واژگان پایه به جای کاراکترها، از ۲۵۶ بایت تشکیل شده است
+- می‌تواند هر متنی را بدون Tokenهای UNK نمایش دهد
+- یونی‌کد (Unicode) به صورت طبیعی به عنوان توالی‌هایی از بایت‌ها مدیریت می‌شود
 
 ```python
 # Character-level: Needs explicit handling of characters
@@ -155,23 +157,23 @@ text = "cafe"  # Becomes bytes, then BPE operates on bytes
 
 ---
 
-## Special Tokens
+## Tokenهای ویژه
 
-Special tokens handle structural information outside normal text:
+Tokenهای ویژه اطلاعات ساختاری فراتر از متن عادی را مدیریت می‌کنند:
 
-| Token | Purpose | Example |
+| Token | هدف | مثال |
 |-------|---------|---------|
-| BOS | Beginning of sequence | Signals start of generation |
-| EOS | End of sequence | Signals completion |
-| PAD | Padding | Fill batches to equal length |
-| UNK | Unknown token | Fallback for OOV (rare with byte BPE) |
-| SEP | Separator | Divide segments (BERT-style) |
+| BOS | آغاز توالی (Beginning of sequence) | نشانه شروع فرایند تولید |
+| EOS | پایان توالی (End of sequence) | نشانه اتمام تولید |
+| PAD | پدینگ (Padding) | پر کردن دسته‌ها (Batches) تا رسیدن به طول برابر |
+| UNK | Token ناشناخته (Unknown token) | راهکار جایگزین برای کلمات خارج از واژگان (OOV) (در Byte BPE نادر است) |
+| SEP | جداکننده (Separator) | تفکیک بخش‌ها (به سبک BERT) |
 
-### Chat Templates
+### قالب‌های چت (Chat Templates)
 
-Modern chat models use special tokens for conversation structure:
+مدل‌های چت امروزی از Tokenهای ویژه برای تعیین ساختار مکالمه استفاده می‌کنند:
 
-**Llama 2 format:**
+**قالب Llama 2:**
 ```
 [INST] <<SYS>>
 You are a helpful assistant.
@@ -180,7 +182,7 @@ You are a helpful assistant.
 User message here [/INST] Assistant response here
 ```
 
-**ChatML (OpenAI style):**
+**قالب ChatML (سبک OpenAI):**
 ```
 <|im_start|>system
 You are a helpful assistant.<|im_end|>
@@ -190,75 +192,75 @@ Hello!<|im_end|>
 Hi there!<|im_end|>
 ```
 
-**Why this matters:**
-- Wrong formatting leads to poor results
-- Special tokens are not in pre-training data
-- Libraries like transformers use chat_template for automatic formatting
+**چرا این موضوع اهمیت دارد:**
+- قالب‌بندی نادرست به نتایج ضعیف منجر می‌شود
+- Tokenهای ویژه در داده‌های پیش‌آموزش (Pre-training) وجود ندارند
+- کتابخانه‌هایی مانند transformers از chat_template برای قالب‌بندی خودکار استفاده می‌کنند
 
 ---
 
-## Multilingual Tokenization
+## Tokenization چندزبانه
 
-### The Challenge
+### چالش
 
-Tokenizers trained primarily on English have poor efficiency for other languages:
+Tokenizerهایی که عمدتاً روی زبان انگلیسی آموزش دیده‌اند، برای سایر زبان‌ها کارایی ضعیفی دارند:
 
-| Language | Tokens for "Hello" | Tokens for equivalent greeting |
+| زبان | Tokenها برای "Hello" | Tokenها برای معادل سلام |
 |----------|-------------------|-------------------------------|
-| English | 1 ("Hello") | - |
-| Chinese | - | 2-3+ for equivalent |
-| Japanese | - | 3-5+ for equivalent |
-| Korean | - | 2-4+ for equivalent |
+| انگلیسی | 1 ("Hello") | - |
+| چینی | - | ۲-۳+ برای معادل |
+| ژاپنی | - | ۳-۵+ برای معادل |
+| کره‌ای | - | ۲-۴+ برای معادل |
 
-**Cost implication:** On English-centric tokenizers, non-English users pay 2-3x more per semantic unit. Larger modern vocabularies narrow the gap for major languages but do not close it.
+**پیامد هزینه‌ای:** در Tokenizerهای انگلیسی‌محور، کاربران غیرانگلیسی ۲ تا ۳ برابر بیشتر به ازای هر واحد معنایی هزینه پرداخت می‌کنند. واژگان بزرگ‌تر امروزی این فاصله را برای زبان‌های اصلی کاهش داده‌اند، اما آن را از بین نبرده‌اند.
 
-### Solutions
+### راهکارها
 
-1. **Multilingual training corpus:** Train tokenizer on balanced multilingual data
-2. **Larger vocabulary:** More room for non-English tokens
-3. **Language-specific tokenizers:** Separate tokenizers per language family
+1. **پیکره متنی آموزشی چندزبانه:** آموزش Tokenizer روی داده‌های متوازن چندزبانه
+2. **واژگان بزرگ‌تر:** فضای بیشتر برای Tokenهای غیرانگلیسی
+3. **Tokenizerهای اختصاصی زبان:** Tokenizerهای جداگانه برای هر خانواده زبانی
 
-**Models with good multilingual support:**
-- mT5, XLM-R: Trained on 100+ languages
-- Current GPT, Claude and Qwen models: large vocabularies with broad multilingual coverage
-- Gemini: Designed for multilingual from the start
+**مدل‌های دارای پشتیبانی مناسب از چندزبانگی:**
+- مدل‌های mT5 و XLM-R: آموزش‌دیده روی بیش از ۱۰۰ زبان
+- مدل‌های فعلی GPT، Claude و Qwen: دارای واژگان بزرگ با پوشش گسترده چندزبانه
+- مدل Gemini: طراحی‌شده برای چندزبانگی از همان ابتدا
 
-Approximate token multiplier versus equivalent English text (illustrative; measure on your own corpus, since ratios vary by domain and script):
+ضریب تقریبی Tokenها در مقایسه با متن انگلیسی معادل (صرفاً برای تقریب؛ روی پیکره متنی خودتان اندازه‌گیری کنید، زیرا این نسبت‌ها بر اساس حوزه کاربرد و رسم‌الخط متفاوت است):
 
-| Tokenizer | Chinese | Japanese | Korean | Hindi |
+| Tokenizer | چینی | ژاپنی | کره‌ای | هندی |
 |-------|---------|----------|--------|--------|
 | GPT-2 | 2.5x | 3.0x | 2.8x | 6.0x |
 | GPT-4 (cl100k) | 1.4x | 1.6x | 1.5x | 3.2x |
-| o200k (GPT-4o through GPT-5.x) | 1.1x | 1.2x | 1.1x | 1.4x |
+| o200k (GPT-4o تا GPT-5.x) | 1.1x | 1.2x | 1.1x | 1.4x |
 | Llama 3 (128K) | 1.2x | 1.3x | 1.2x | 1.5x |
 
 ---
 
-## Multimodal Tokenization (pixels-to-tokens)
+## Tokenization چندوجهی (pixels-to-tokens)
 
-Modern native multimodal models do not just "see" images; they tokenize them.
+مدل‌های چندوجهی بومی (Native Multimodal) مدرن فقط تصاویر را «نمی‌بینند»؛ بلکه آن‌ها را Tokenize می‌کنند.
 
-### Image Tokenization (Vision Transformers)
-Images are split into patches (e.g., 14x14 pixels). Each patch is passed through a vision encoder (like SigLIP) to produce a single visual token.
-- **Fixed Token Cost**: Most models use a fixed number of tokens per image at a specific resolution (e.g., 256 or 729 tokens per image).
-- **Dynamic Resolution**: Some models (Gemini 3) use a variable number of tokens depending on image aspect ratio and detail level.
-- **Encoder-free**: Gemma 4 12B "Unified" (June 2026) skips the vision encoder and projects raw image patches and audio waveforms into the LLM embedding space with lightweight linear layers. Token cost then follows patch count directly.
+### Tokenization تصویر (Vision Transformers)
+تصاویر به وصله‌ها یا پچ‌هایی (Patch - به‌عنوان مثال ۱۴×۱۴ پیکسل) تقسیم می‌شوند. هر پچ از یک انکودر بینایی (مانند SigLIP) عبور داده می‌شود تا یک Token بصری منفرد تولید شود.
+- **هزینه ثابت Token (Fixed Token Cost):** اکثر مدل‌ها از تعداد ثابتی Token به ازای هر تصویر در یک رزولوشن مشخص استفاده می‌کنند (مثلاً ۲۵۶ یا ۷۲۹ Token به ازای هر تصویر).
+- **رزولوشن پویا (Dynamic Resolution):** برخی مدل‌ها (Gemini 3) بسته به نسبت ابعاد تصویر و سطح جزئیات، از تعداد متغیری Token استفاده می‌کنند.
+- **بدون انکودر (Encoder-free):** مدل Gemma 4 12B "Unified" (ژوئن ۲۰۲۶) انکودر بینایی را حذف کرده و پچ‌های خام تصویر و شکل‌موج‌های صوتی را با استفاده از لایه‌های خطی سبک مستقیماً به فضای Embedding مربوط به LLM نگاشت می‌کند. در این صورت، هزینه Token مستقیماً از تعداد پچ‌ها پیروی می‌کند.
 
-### Audio/Video Tokenization
-- **Audio**: Compressed into discrete units using codecs like EnCodec, then represented as a sequence of audio tokens.
-- **Video**: Treated as a sequence of image frames (temporal tokenization). A 1-second video @ 1FPS might cost as much as 1 high-res image.
-- **Agentic video processing**: Since September 1, 2026 the Gemini API offers an opt-in `"processing": "agentic"` mode on Gemini 3.8 Flash, 3.6 Flash and 3.5 Flash-Lite (requests to `gemini-3.7-flash`, also supported at launch, have routed to 3.8 Flash since October 8). The model decides which segments to inspect, at what speed and through which modality (frames, audio or transcript) instead of sampling at a fixed rate. Google reports up to 88% fewer tokens and up to 66% lower cost on standard video benchmarks, billed at normal token prices. Static 1 FPS sampling remains the default, so a cost model built on fixed-rate sampling can overestimate agentic-mode tokens by up to roughly 8x.
+### Tokenization صدا و ویدیو
+- **صدا (Audio):** با استفاده از کدک‌هایی مانند EnCodec به واحدهای گسسته فشرده شده و سپس به‌صورت توالی‌ای از Tokenهای صوتی نمایش داده می‌شود.
+- **ویدیو (Video):** به‌صورت توالی‌ای از فریم‌های تصویر پردازش می‌شود (Tokenization زمانی یا Temporal). یک ویدیوی ۱ ثانیه‌ای با نرخ 1FPS ممکن است هزینه‌ای به اندازه ۱ تصویر با وضوح بالا از نظر Token داشته باشد.
+- **پردازش ایجنتی ویدیو (Agentic video processing):** از ۱ سپتامبر ۲۰۲۶،‏ Gemini API یک حالت اختیاری `"processing": "agentic"` را روی Gemini 3.8 Flash،‏ 3.6 Flash و 3.5 Flash-Lite ارائه می‌دهد (درخواست‌های ارسالی به `gemini-3.7-flash` که در زمان عرضه نیز پشتیبانی می‌شدند، از ۸ اکتبر به 3.8 Flash هدایت شده‌اند). مدل به‌جای نمونه‌برداری با نرخ ثابت، تصمیم می‌گیرد کدام بخش‌ها را با چه سرعتی و از طریق کدام وجه یا مُدالیتی (فریم‌ها، صدا یا رونوشت متنی) بررسی کند. گوگل گزارش می‌دهد که این رویکرد در بنچمارک‌های استاندارد ویدیو تا ۸۸٪ Token کمتر و تا ۶۶٪ هزینه پایین‌تر به همراه دارد که با قیمت‌های معمولی Token محاسبه می‌شود. نمونه‌برداری ایستا با نرخ 1 FPS همچنان حالت پیش‌فرض باقی مانده است، بنابراین یک مدل هزینه که بر اساس نمونه‌برداری با نرخ ثابت ساخته شده باشد می‌تواند Tokenهای حالت ایجنتی را تا حدود ۸ برابر بیش‌ازحد برآورد کند.
 
 ---
 
-## Token Counting for Cost Estimation
+## شمارش Token برای برآورد هزینه
 
-### Quick Estimation Rules
+### قوانین برآورد سریع
 
-For English text:
-- **Words to tokens:** ~1.3 tokens per word
-- **Characters to tokens:** ~4 characters per token
-- **Pages to tokens:** ~500-800 tokens per page
+برای متن انگلیسی:
+- **کلمات به Token:** حدود ۱.۳ Token به ازای هر کلمه
+- **کاراکترها به Token:** حدود ۴ کاراکتر به ازای هر Token
+- **صفحات به Token:** حدود ۵۰۰ تا ۸۰۰ Token به ازای هر صفحه
 
 ```python
 def estimate_tokens(text: str) -> int:
@@ -267,9 +269,9 @@ def estimate_tokens(text: str) -> int:
     return int(word_count * 1.3)
 ```
 
-### Accurate Counting
+### شمارش دقیق
 
-Use the model-specific tokenizer, or the provider's counting endpoint when the tokenizer is not public:
+از Tokenizer اختصاصی هر مدل استفاده کنید، یا در مواردی که Tokenizer عمومی نیست، از اندپوینت شمارش ارائه‌دهنده بهره ببرید:
 
 ```python
 import tiktoken
@@ -296,13 +298,13 @@ count = client.messages.count_tokens(
 token_count = count.input_tokens
 ```
 
-Gemini has an equivalent `countTokens` call, and OpenAI's Responses API has an input-token counting endpoint for models tiktoken does not map. Never estimate Claude or Gemini tokens with tiktoken: different vocabularies give different counts for the same text.
+مدل Gemini فراخوانی معادل `countTokens` را دارد و Responses API شرکت OpenAI نیز یک اندپوینت شمارش Token ورودی برای مدل‌هایی که tiktoken آن‌ها را نگاشت نمی‌کند، ارائه می‌دهد. هرگز Tokenهای مدل‌های Claude یا Gemini را با tiktoken تخمین نزنید: دایره واژگان مختلف، شمارش‌های متفاوتی برای یک متن یکسان ارائه می‌دهند.
 
-### Reasoning Tokens
+### Tokenهای استدلال (Reasoning Tokens)
 
-With reasoning models, the visible answer is only part of the output bill. Thinking or reasoning tokens are billed as output on OpenAI, Anthropic and Google models even when the raw reasoning is not returned, and their volume depends on the effort or thinking level you set. Budget from the API's `usage` field on real traffic, not from the length of the visible response.
+در مدل‌های استدلالی، پاسخ قابل‌مشاهده تنها بخشی از صورت‌حساب خروجی است. Tokenهای تفکر یا استدلال (Thinking or reasoning tokens) در مدل‌های OpenAI،‏ Anthropic و Google حتی زمانی که متن خام استدلال بازگردانده نمی‌شود، به‌عنوان خروجی محاسبه می‌شوند و حجم آن‌ها به سطح تلاش (Effort) یا تفکری که تعیین می‌کنید بستگی دارد. بودجه‌بندی را بر اساس فیلد `usage` در API روی ترافیک واقعی انجام دهید، نه بر اساس طول پاسخ قابل‌مشاهده.
 
-### Cost Calculation
+### محاسبه هزینه
 
 ```python
 # USD per 1M tokens, standard tier list prices as of November 2026.
@@ -328,11 +330,11 @@ def calculate_cost(input_tokens: int, output_tokens: int, model: str) -> float:
 
 ---
 
-## Common Tokenization Issues
+## مشکلات رایج Tokenization
 
-### Issue 1: Token Boundary Misalignment
+### مشکل ۱: عدم انطباق مرز Tokenها (Token Boundary Misalignment)
 
-**Problem:** Text operations may not align with token boundaries.
+**مشکل:** عملیات متنی ممکن است با مرزهای Tokenها هم‌تراز نباشد.
 
 ```python
 text = "Hello world"
@@ -341,11 +343,11 @@ text = "Hello world"
 # Truncating at character 6 ("Hello ") splits a token
 ```
 
-**Solution:** Always truncate at token boundaries when managing context.
+**راه‌حل:** هنگام مدیریت کانتکست، همیشه برش متن (Truncate) را در مرزهای Tokenها انجام دهید.
 
-### Issue 2: Inconsistent Tokenization
+### مشکل ۲: Tokenization ناسازگار (Inconsistent Tokenization)
 
-**Problem:** Same text tokenizes differently based on context.
+**مشکل:** یک متن یکسان بسته به کانتکست پیرامونی، به شکل متفاوتی Tokenize می‌شود.
 
 ```python
 # GPT tokenizer example
@@ -354,11 +356,11 @@ text = "Hello world"
 " New York"    # Might be [" New", " York"]
 ```
 
-**Implication:** Token counts can vary based on surrounding text. Always tokenize the full context.
+**پیامد:** تعداد Tokenها می‌تواند بر اساس متن اطراف تغییر کند. همیشه کل کانتکست را به‌صورت کامل Tokenize کنید.
 
-### Issue 3: Code and Structured Data
+### مشکل ۳: کد و داده‌های ساختاریافته
 
-**Problem:** Code and JSON often tokenize inefficiently.
+**مشکل:** کدها و داده‌های JSON اغلب از نظر Tokenization ناکارآمد هستند (تعداد زیادی Token مصرف می‌کنند).
 
 ```python
 # Python code often tokenizes poorly
@@ -370,14 +372,14 @@ text = "Hello world"
 # Many tokens for structure
 ```
 
-**Mitigation:** 
-- Some models have code-optimized tokenizers
-- Consider compressing JSON before sending
-- Use structured output modes when available
+**راهکارهای کاهش اثر (Mitigation):**
+- برخی مدل‌ها دارای Tokenizerهای بهینه‌سازی‌شده برای کد هستند
+- فشرده‌سازی JSON را پیش از ارسال در نظر داشته باشید
+- در صورت در دسترس بودن، از حالت‌های خروجی ساختاریافته (Structured Output) استفاده کنید
 
-### Issue 4: Whitespace Handling
+### مشکل ۴: مدیریت فاصله‌های خالی (Whitespace)
 
-**Problem:** Tokenizers handle whitespace differently.
+**مشکل:** Tokenizerها فاصله‌های خالی (Whitespace) را به شیوه‌های متفاوتی مدیریت می‌کنند.
 
 ```python
 # Leading spaces often become separate tokens
@@ -387,13 +389,13 @@ text = "Hello world"
 "Hello  world"  # Behavior varies by tokenizer
 ```
 
-**Best practice:** Normalize whitespace before tokenizing.
+**بهترین شیوه (Best practice):** پیش از Tokenize کردن، فاصله‌های خالی را نرمال‌سازی کنید.
 
 ---
 
-## Practical Tokenization Patterns
+## الگوهای کاربردی Tokenization
 
-### Pattern 1: Context Window Management
+### الگوی ۱: مدیریت پنجره کانتکست (Context Window Management)
 
 ```python
 def fit_to_context(
@@ -429,7 +431,7 @@ def fit_to_context(
     return format_prompt(system_prompt, included_history, user_message)
 ```
 
-### Pattern 2: Chunking at Token Boundaries
+### الگوی ۲: Chunking در مرزهای Tokenها
 
 ```python
 def chunk_at_token_boundaries(
@@ -452,7 +454,7 @@ def chunk_at_token_boundaries(
     return chunks
 ```
 
-### Pattern 3: Token Budget Allocation
+### الگوی ۳: تخصیص بودجه Token (Token Budget Allocation)
 
 ```python
 class TokenBudget:
@@ -481,61 +483,61 @@ budget.allocate("output_reserve", 2000)
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: Why do LLMs struggle with simple character counting?
+### سوال: چرا LLMها در شمارش ساده کاراکترها به مشکل می‌خورند؟
 
-**Strong answer:**
-Tokenization converts text to subword units, not characters. When asked "How many 'r's in strawberry?", the model sees tokens like ["str", "aw", "berry"] rather than individual letters.
+**پاسخ قوی:**
+فرآیند Tokenization متن را به واحدهای زیرکلمه (Subword)، و نه کاراکترها، تبدیل می‌کند. هنگامی که از مدل پرسیده می‌شود «کلمه strawberry چند حرف 'r' دارد؟»، مدل به‌جای حروف مجزا، Tokenهایی مانند ["str", "aw", "berry"] را می‌بیند.
 
-The model has to reason about the internal structure of tokens it does not directly observe. This requires memorizing or computing character compositions of tokens, which is an emergent capability that is not always reliable.
+مدل باید در مورد ساختار درونی Tokenهایی که مستقیماً آن‌ها را مشاهده نمی‌کند استدلال نماید. این امر مستلزم به‌خاطرسپردن یا محاسبه ترکیب کاراکتری Tokenها است که یک توانمندی نوظهور (Emergent capability) محسوب می‌شود و همواره قابل‌اعتماد نیست.
 
-The solution is to prompt the model to spell out the word character by character first, then count. This forces the creation of character-level tokens.
+راه‌حل این است که در Prompt به مدل هدایت شود ابتدا کلمه را حرف‌به‌حرف هجی کند و سپس شمارش را انجام دهد. این کار ایجاد Tokenهای سطح کاراکتر را اجباری می‌کند.
 
-### Q: How would you estimate token count for cost planning?
+### سوال: چگونه تعداد Token را برای برنامه‌ریزی هزینه برآورد می‌کنید؟
 
-**Strong answer:**
-For rough estimation: multiply word count by 1.3 for English text.
+**پاسخ قوی:**
+برای برآورد تقریبی: تعداد کلمات را برای متن انگلیسی در ۱.۳ ضرب کنید.
 
-For accurate counting: Use the model-specific tokenizer.
-- OpenAI: tiktoken for the encodings it ships (o200k_base for GPT-4o through GPT-5.x); for a model tiktoken does not map, the Responses API input-token counting endpoint or the `usage` field
-- Open-weight models: the model's own Hugging Face tokenizer
-- Claude and Gemini: the provider's token-counting endpoint (tokenizers are not public)
+برای شمارش دقیق: از Tokenizer اختصاصی هر مدل استفاده کنید:
+- مدل‌های OpenAI: استفاده از tiktoken برای انکودینگ‌هایی که ارائه می‌دهد (`o200k_base` برای GPT-4o تا GPT-5.x)؛ برای مدلی که tiktoken آن را نگاشت نمی‌کند، از اندپوینت شمارش Token ورودی در Responses API یا فیلد `usage` استفاده کنید
+- مدل‌های با وزن باز (Open-weight): استفاده از Tokenizer خود مدل در Hugging Face
+- مدل‌های Claude و Gemini: استفاده از اندپوینت شمارش Token ارائه‌دهنده (Tokenizerها عمومی نیستند)
 
-Important considerations:
-- Non-English text uses more tokens: roughly 1.1-1.5x for major languages on modern 128K-200K vocabularies, 3x or more on older tokenizers and less-covered scripts
-- Code and structured data tokenize inefficiently
-- Always budget extra for output tokens (priced 3-6x input; 5x on most current frontier models), including reasoning tokens, which are billed as output and scale with the effort level
-- Include system prompts, tool definitions and formatting tokens
-- The same text costs a different number of tokens on each vendor, so compare cost per completed task, not price per token
+ملاحظات مهم:
+- متن‌های غیرانگلیسی Tokenهای بیشتری مصرف می‌کنند: تقریباً ۱.۱ تا ۱.۵ برابر برای زبان‌های اصلی روی دایره واژگان مدرن 128K-200K، و ۳ برابر یا بیشتر روی Tokenizerهای قدیمی‌تر و خطوط با پوشش کمتر
+- کدها و داده‌های ساختاریافته از نظر Tokenization ناکارآمد هستند
+- همیشه بودجه بیشتری را برای Tokenهای خروجی در نظر بگیرید (قیمت‌گذاری آن‌ها ۳ تا ۶ برابر ورودی است؛ در اکثر مدل‌های پیشروی فعلی ۵ برابر)، از جمله Tokenهای استدلال که به‌عنوان خروجی صورت‌حساب شده و متناسب با سطح تلاش (Effort level) افزایش می‌یابند
+- حتماً System Promptها، تعاریف ابزارها و Tokenهای قالب‌بندی را در نظر بگیرید
+- متن یکسان در هر ارائه‌دهنده تعداد متفاوتی Token مصرف می‌کند، بنابراین هزینه به ازای هر تسک تکمیل‌شده را مقایسه کنید، نه قیمت به ازای هر Token را
 
-For production cost estimation, I sample real requests and measure actual token usage from the API's `usage` field, then apply safety margins. I re-run the measurement on every model migration, because a tokenizer change (Claude 4.7 and later count roughly 30% more tokens for the same text than earlier Claude models, per Anthropic) or a new default effort level moves the bill without any price change.
+برای برآورد هزینه در محیط عملیاتی (Production)، درخواست‌های واقعی را نمونه‌برداری کرده و مصرف واقعی Token را از فیلد `usage` در API می‌سنجم، سپس حاشیه‌های ایمنی (Safety margins) را اعمال می‌کنم. این اندازه‌گیری را در هر مهاجرت مدل مجدداً تکرار می‌کنم؛ زیرا تغییر Tokenizer (طبق گزارش Anthropic، مدل Claude 4.7 و نسخه‌های بعدی برای متنی یکسان حدود ۳۰٪ Token بیشتری نسبت به مدل‌های اولیه Claude می‌شمارند) یا یک سطح تلاش پیش‌فرض جدید، بدون هیچ تغییری در قیمت، رقم صورت‌حساب را تغییر می‌دهد.
 
-### Q: What happens when switching tokenizers between models?
+### سوال: هنگام تغییر Tokenizer بین مدل‌ها چه اتفاقی می‌افتد؟
 
-**Strong answer:**
-Every model family has its own tokenizer. You cannot reuse tokens across models because:
+**پاسخ قوی:**
+هر خانواده از مدل‌ها دارای Tokenizer اختصاصی خود است. شما نمی‌توانید Tokenها را در میان مدل‌ها استفاده مجدد کنید، زیرا:
 
-1. **Vocabulary differs:** Token IDs mean different strings
-2. **Merge rules differ:** Same text splits differently
-3. **Special tokens differ:** Chat formatting varies
+۱. **دایره واژگان (Vocabulary) متفاوت است:** شناسه‌های Token (یا Token IDها) بیانگر رشته‌های متنی متفاوتی هستند
+۲. **قوانین ادغام (Merge rules) متفاوت است:** متن یکسان به شکل‌های متفاوتی تقسیم می‌شود
+۳. **Tokenهای ویژه (Special tokens) متفاوت هستند:** قالب‌بندی چت متغیر است
 
-Practical implications:
-- Always use the correct tokenizer for token counting
-- Cached embeddings are model-specific
-- Prompt templates need per-model adjustment
-- Fine-tuned models inherit their base tokenizer
+پیامدهای عملی:
+- همیشه از Tokenizer صحیح برای شمارش Token استفاده کنید
+- مقادیر Embedding کش‌شده مختص مدل هستند
+- قالب‌های Prompt نیازمند تنظیم مجزا برای هر مدل هستند
+- مدل‌های Fine-tune شده، Tokenizer مدل پایه خود را به ارث می‌برند
 
-### Q: How do you handle tokenization for RAG chunking?
+### سوال: فرآیند Tokenization را برای Chunking در RAG چگونه مدیریت می‌کنید؟
 
-**Strong answer:**
-Key considerations:
+**پاسخ قوی:**
+ملاحظات کلیدی:
 
-1. **Chunk at token boundaries:** Splitting mid-token corrupts text when decoded
-2. **Account for template tokens:** System prompt, formatting consume tokens
-3. **Leave headroom:** Retrieved chunks plus question must fit context
+۱. **انجام Chunking در مرزهای Tokenها:** برش متن در میانه یک Token باعث مخدوش شدن متن هنگام Decode می‌شود
+۲. **محاسبه Tokenهای الگو:** System Prompt و قالب‌بندی نیز Token مصرف می‌کنند
+۳. **در نظر گرفتن فضای خالی کافی (Headroom):** تکه‌های (Chunks) بازیابی‌شده به‌همراه سوال باید در پنجره کانتکست بگنجند
 
-Implementation approach:
+رویکرد پیاده‌سازی:
 ```python
 # Determine available tokens for chunks
 available = max_context - system_prompt_tokens - question_tokens - output_reserve
@@ -555,15 +557,17 @@ for chunk in ranked_chunks:
 
 ---
 
-## References
+## منابع
 
-- Sennrich et al. "Neural Machine Translation of Rare Words with Subword Units" (BPE, 2016)
-- Wu et al. "Google's Neural Machine Translation System" (WordPiece, 2016)
-- Kudo and Richardson "SentencePiece: A simple and language independent subword tokenizer" (2018)
-- OpenAI tiktoken library: https://github.com/openai/tiktoken
-- Anthropic token counting: https://platform.claude.com/docs/en/build-with-claude/token-counting
-- HuggingFace tokenizers: https://github.com/huggingface/tokenizers
+- سنریش و همکاران (Sennrich et al.)،‏ "Neural Machine Translation of Rare Words with Subword Units" (BPE، ۲۰۱۶)
+- وو و همکاران (Wu et al.)،‏ "Google's Neural Machine Translation System" (WordPiece، ۲۰۱۶)
+- کودو و ریچاردسون (Kudo and Richardson)،‏ "SentencePiece: A simple and language independent subword tokenizer" (۲۰۱۸)
+- کتابخانه tiktoken شرکت OpenAI: https://github.com/openai/tiktoken
+- شمارش Token در Anthropic: https://platform.claude.com/docs/en/build-with-claude/token-counting
+- کتابخانه‌های Tokenizer در HuggingFace: https://github.com/huggingface/tokenizers
 
 ---
 
-*Previous: [LLM Internals](01-llm-internals.md) | Next: [Attention Mechanisms](03-attention-mechanisms.md)*
+*قبلی: [سازوکار داخلی LLM](01-llm-internals.md) | بعدی: [مکانیزم‌های توجه](03-attention-mechanisms.md)*
+
+</div>
