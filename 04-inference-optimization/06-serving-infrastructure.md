@@ -1,162 +1,166 @@
-# Serving Infrastructure
+<div dir="rtl">
 
-Deploying LLMs at scale requires an infrastructure layer that handles load balancing, model parallelism, and multi-tenant isolation. The focus has shifted from "serving a model" to "orchestrating an inference fleet": KV-aware routing, separate prefill and decode pools, and in the premium tier, different chips for different phases.
+# زیرساخت سرویس‌دهی (Serving Infrastructure)
 
-## Table of Contents
+استقرار (Deployment) LLMها در مقیاس بالا نیازمند لایه‌ای از زیرساخت است که توازن بار (Load Balancing)، موازی‌سازی مدل (Model Parallelism) و جداسازی چندمستأجری (multi-tenant isolation) را مدیریت کند. تمرکز از «سرویس‌دهی یک مدل» به «ارکستراسیون یک ناوگان استنتاج (Inference fleet)» تغییر یافته است: مسیریابی آگاه از KV (KV-aware routing)، استخرهای مجزای prefill و decode، و در سطوح پیشرفته (premium tier)، تراشه‌های متفاوت برای فازهای مختلف.
 
-- [The Inference Gateway](#the-inference-gateway)
-- [Model Parallelism (Tensor, Pipeline, Expert, Context)](#model-parallelism)
-- [Multi-GPU Orchestration](#multi-gpu-orchestration)
-- [Streaming and Long-Lived Connections](#streaming-and-long-lived-connections)
-- [Inference Engines (November 2026)](#inference-engines-november-2026)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [گیت‌وی استنتاج (The Inference Gateway)](#the-inference-gateway)
+- [موازی‌سازی مدل (تانسوری، خط لوله‌ای، متخصص، کانتکست)](#model-parallelism)
+- [ارکستراسیون چند GPU (Multi-GPU Orchestration)](#multi-gpu-orchestration)
+- [استریمینگ و اتصالات با طول عمر بالا (Streaming and Long-Lived Connections)](#streaming-and-long-lived-connections)
+- [موتورهای استنتاج (نوامبر ۲۰۲۶)](#inference-engines-november-2026)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Inference Gateway
+## گیت‌وی استنتاج (The Inference Gateway)
 
-The gateway is the "Traffic Controller" for your AI workload.
+گیت‌وی، «کنترل‌کننده ترافیک» (Traffic Controller) برای بار کاری هوش مصنوعی شما است.
 
-| Component | Responsibility |
+| مولفه (Component) | مسئولیت |
 |-----------|---------------------------|
-| **Auth & Rate Limiting** | Token-based quotas and tenant isolation. |
-| **Model Router** | Directing requests to specific model versions (Canary/A-B). |
-| **KV-Aware Router** | Sending a request to the replica that already holds its prefix in cache, weighted by load and predicted latency. This replaced plain sticky sessions: Kubernetes Gateway API Inference Extension (GAIE) plus the llm-d Endpoint Picker, or NVIDIA Dynamo's router. Google reports under 1% routing overhead for multi-cluster GKE Inference Gateway. |
-| **Admission & Failover** | Rejecting over-context or over-capacity requests before a stream opens, and failing over to another backend if no token arrives in time (Envoy AI Gateway v1.1's `streamIdleTimeout`). |
-| **Output Filter** | Real-time safety and PII scrubbing on streaming responses. |
+| **احراز هویت و محدودسازی نرخ (Auth & Rate Limiting)** | سهمیه‌بندی‌های مبتنی بر Token و جداسازی مستأجران (tenant isolation / multi-tenant). |
+| **مسیریاب مدل (Model Router)** | هدایت درخواست‌ها به نسخه‌های خاصی از مدل (Canary/A-B). |
+| **مسیریاب آگاه از KV (KV-Aware Router)** | ارسال درخواست به رپلیکایی (replica) که پیش‌وند آن را از قبل در کش نگه داشته است، وزن‌دهی‌شده بر اساس بار کاری و تاخیر (Latency) پیش‌بینی‌شده. این سازوکار جایگزین نشست‌های ماندگار ساده (sticky sessions) شده است: اکستنشن استنتاج Gateway API کوبرنتیز (GAIE) به همراه llm-d Endpoint Picker، یا مسیریاب NVIDIA Dynamo. گوگل برای GKE Inference Gateway چندخوشه‌ای، اورهد مسیریابی زیر ۱٪ گزارش کرده است. |
+| **پذیرش و بازگشت از خرابی (Admission & Failover)** | رد درخواست‌های فراتر از ظرفیت کانتکست یا ظرفیت سیستم پیش از باز شدن استریم، و بازگردانی (failover) به بک‌اند دیگر در صورتی که هیچ Tokenای به‌موقع نرسد (`streamIdleTimeout` در Envoy AI Gateway نسخه ۱.۱). |
+| **فیلتر خروجی (Output Filter)** | پاک‌سازی داده‌های هویتی و شخصی (PII) و بررسی ایمنی بی‌درنگ (Real-time) روی پاسخ‌های استریم‌شده. |
 
-The gateway also concentrates every provider credential you own, which makes it a prime target. In 2026 LiteLLM alone had an unauthenticated RCE (CVE-2026-37004, CVSS 9.8), an authenticated `api_base` redirect that sent the operator's stored provider keys to an attacker host (CVE-2026-84377), an unauthenticated file read that leaks the master key on Enterprise-licensed proxies (GHSA-w4c7-34wj-hqm8, CVSS 10.0), and on October 21 a poisoned 1.107.0 release, PyPI wheels plus container images, published with stolen CI credentials. The poisoned images even carry a valid signature from LiteLLM's old cosign key, so a green `cosign verify` proved nothing; LiteLLM rotated the key on October 23 and points users to 1.108.0 (November 4). Pin and patch the gateway like any internet-facing service, and allowlist routing parameters instead of accepting them from clients. Failover has to cross vendors when you call hosted APIs, because a vendor outage takes down its API, chat app, and coding agent together: OpenAI's September 29, 2026 incident ran about 5 hours 20 minutes across all three, and Anthropic's status page logged at least 12 major or critical incidents between August 16 and September 29. Gateway design is covered in depth in the [AI gateways chapter](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md).
-
----
-
-## Model Parallelism
-
-For models that don't fit on a single GPU (e.g., Llama 3.1 405B needs about 810 GB for BF16 weights alone, before any KV cache), we must split them.
-
-### 1. Tensor Parallelism (TP)
-Splits individual layers/tensors across multiple GPUs.
-- **Latency**: Low (Fastest).
-- **Communication**: High (Requires NVLink).
-- **Standard**: Used for 90% of production serving within a single node (8x GPUs) or a single NVLink domain (up to 72 GPUs on an NVL72 rack).
-
-### 2. Pipeline Parallelism (PP)
-Splits different layers (e.g., layers 1-40 on GPU 1, 41-80 on GPU 2).
-- **Latency**: High on GPUs (Micro-batching overhead).
-- **Efficiency**: Lower util (Bubble time).
-- **Standard**: Used for massive models spanning multiple nodes. The exception proves the rule: wafer-scale systems pipeline at layer boundaries because only activations cross between wafers; OpenAI previewed GPT-5.6 Sol Ultrafast this way across multiple Cerebras CS-3 systems at up to 750 output tok/s.
-
-### 3. Expert Parallelism (EP)
-Spreads the experts of an MoE model across GPUs and routes each token's hidden state to the GPUs holding its selected experts with an all-to-all exchange (DeepEP is the common kernel library). EP plus data-parallel attention is the standard layout for DeepSeek, Kimi, and Qwen-class MoE models.
-
-### 4. Context Parallelism (CP)
-Splits a long sequence across GPUs. Decode context parallelism (DCP) shards the KV cache of very long contexts; SGLang runs it on its default Blackwell MLA backend and has verified DSpark speculation under disaggregated serving with DCP up to 256K input on 8x B300.
-
-### 5. Attention-FFN Disaggregation (experimental)
-Runs attention (which owns the KV cache) and the FFN or expert layers as separately scaled services. vLLM has an experimental plugin for MoE on NVIDIA GPUs and Ascend NPUs, and NVIDIA lists it as one Vera Rubin plus Groq 3 LPX serving mode.
+گیت‌وی همچنین تمامی اعتبارنامه‌های ارائه‌دهندگانی را که در اختیار دارید متمرکز می‌کند، که این امر آن را به یک هدف اصلی تبدیل می‌سازد. در سال ۲۰۲۶، تنها LiteLLM با یک آسیب‌پذیری اجرای کد از راه دور بدون نیاز به احراز هویت (Unauthenticated RCE با شناسه CVE-2026-37004 و امتیاز CVSS 9.8)، یک تغییر مسیر احراز هویت‌شده `api_base` که کلیدهای ذخیره‌شده ارائه‌دهنده را برای هاست مهاجم ارسال می‌کرد (CVE-2026-84377)، یک خواندن فایل بدون احراز هویت که کلید اصلی (master key) را در پروکسی‌های با لایسنس Enterprise افشا می‌کرد (GHSA-w4c7-34wj-hqm8 با امتیاز CVSS 10.0)، و در ۲۱ اکتبر با یک نسخه آلوده‌شده 1.107.0 (شامل wheelهای PyPI به همراه ایمیج‌های کانتینر) مواجه شد که با اعتبارنامه‌های سرقت‌شده CI منتشر شده بود. ایمیج‌های آلوده حتی حامل امضای معتبری از کلید cosign قدیمی LiteLLM بودند، بنابراین سبز بودن نتیجه `cosign verify` هیچ چیزی را ثابت نمی‌کرد؛ LiteLLM این کلید را در ۲۳ اکتبر تغییر داد و کاربران را به نسخه 1.108.0 (۴ نوامبر) ارجاع داد. نسخه گیت‌وی را مانند هر سرویس متصل به اینترنت دیگری پین و پچ کنید و پارامترهای مسیریابی را در لیست مجاز (allowlist) قرار دهید نه اینکه مستقیماً از سمت کلاینت‌ها پذیرفته شوند. هنگام فراخوانی APIهای میزبانی‌شده (hosted APIs)، قابلیت بازگشت از خرابی (Failover) باید بین ارائه‌دهندگان مختلف (cross-vendor) انجام شود، زیرا قطعی یک ارائه‌دهنده، API، اپلیکیشن چت و Agent کدنویسی آن را هم‌زمان از کار می‌اندازد: حادثه ۲۹ سپتامبر ۲۰۲۶ شرکت OpenAI برای هر سه مورد حدود ۵ ساعت و ۲۰ دقیقه به طول انجامید، و صفحه وضعیت شرکت Anthropic نیز دست‌کم ۱۲ حادثه بزرگ یا بحرانی را بین ۱۶ آگوست تا ۲۹ سپتامبر ثبت کرد. طراحی گیت‌وی به طور عمیق در [فصل گیت‌وی‌های هوش مصنوعی](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md) پوشش داده شده است.
 
 ---
 
-## Multi-GPU Orchestration
+## موازی‌سازی مدل (Model Parallelism)
 
-Kubernetes is the default substrate, with LLM-specific layers on top: **KubeRay** for Ray-based serving, **LeaderWorkerSet** for multi-node replicas, **llm-d** for KV-aware routing and autoscaling on the Gateway API Inference Extension, and **NVIDIA Dynamo** as an orchestration layer above vLLM, SGLang, and TensorRT-LLM.
+برای مدل‌هایی که در یک GPU جا نمی‌شوند (به عنوان مثال، Llama 3.1 405B تنها برای وزن‌های BF16 و پیش از هرگونه KV cache به حدود ۸۱۰ گیگابایت حافظه نیاز دارد)، باید آن‌ها را تقسیم کنیم.
 
-- **Heterogeneous Clusters**: Mixing H100s for frontier models and L4s for small models in the same cluster. Mixed vendors in one pool are now benchmarked too: Cisco's MLPerf Inference v6.1 submission ran 8 H200 plus 8 MI350X as one inference pool.
-- **Autoscaling**: Scaling based on **KV Cache utilization** and queue depth rather than CPU or standard memory usage. Dynamo's Kubernetes planner can also clamp scaling to a total GPU power limit.
-- **Cold Start**: Model load time dominates scale-out. vLLM v0.30.0's **Fast Start** (`--load-format ipc_cache`) keeps a per-GPU daemon holding already-quantized, tensor-parallel-sharded weights and maps them into a restarted engine over CUDA IPC. SGLang's overlapped checkpoint staging (`--startup-weight-load-mode overlap`) started Qwen3-32B on an H100 2.38x faster (35.6 s versus 84.8 s).
-- **Plan by simulation**: SGLang's CPU-only Simulator runs the real scheduler and cache with a latency model and predicts TTFT within about 6% (up to 10% on 32K to 128K traces); Dynamo's AISimulate (formerly AIConfigurator) does configuration search. Simulate before you buy or rent GPUs.
+### ۱. موازی‌سازی تانسوری (Tensor Parallelism - TP)
+لایه‌ها/تانسورهای مجزا را در چندین GPU تقسیم می‌کند.
+- **تاخیر (Latency)**: کم (سریع‌ترین).
+- **ارتباطات (Communication)**: بالا (نیازمند NVLink).
+- **استاندارد**: برای ۹۰٪ سرویس‌دهی پروداکشن در قالب یک نود منفرد (8x GPU) یا یک دامنه‌ی NVLink منفرد (تا ۷۲ عدد GPU روی یک رک NVL72) استفاده می‌شود.
+
+### ۲. موازی‌سازی خط لوله‌ای (Pipeline Parallelism - PP)
+لایه‌های مختلف را تقسیم می‌کند (به عنوان مثال، لایه‌های ۱ تا ۴۰ روی GPU 1 و لایه‌های ۴۱ تا ۸۰ روی GPU 2).
+- **تاخیر (Latency)**: روی GPUها بالا است (به دلیل اورهد Micro-batching).
+- **کارایی (Efficiency)**: بهره‌وری پایین‌تر (Bubble time).
+- **استاندارد**: برای مدل‌های عظیمی که چندین نود را در بر می‌گیرند استفاده می‌شود. استثنا بر قاعده حاکم است: سیستم‌های مقیاس ویفر (wafer-scale) پایپ‌لاین را در مرزهای لایه‌ها اجرا می‌کنند، زیرا تنها اکتیویشن‌ها (activations) بین ویفرها رد و بدل می‌شوند؛ شرکت OpenAI نسخه GPT-5.6 Sol Ultrafast را به همین شکل روی چندین سیستم Cerebras CS-3 با سرعت خروجی تا ۷۵۰ Token در ثانیه (output tok/s) به نمایش گذاشت.
+
+### ۳. موازی‌سازی متخصصان (Expert Parallelism - EP)
+متخصصان (experts) یک مدل MoE را در بین چندین GPU پخش می‌کند و حالت پنهان (hidden state) هر Token را با یک تبادل all-to-all (که DeepEP کتابخانه کرنل رایج آن است) به GPUهایی که متخصصان منتخب آن را در اختیار دارند هدایت می‌کند. ترکیب EP به همراه مکانیزم توجه موازی داده‌ای (data-parallel attention)، ساختار استاندارد برای مدل‌های MoE از رده DeepSeek، Kimi و Qwen است.
+
+### ۴. موازی‌سازی کانتکست (Context Parallelism - CP)
+یک دنباله طولانی را در بین چندین GPU تقسیم می‌کند. موازی‌سازی کانتکست دیکود (Decode context parallelism یا DCP) حافظه KV cache مربوط به کانتکست‌های بسیار طولانی را خرد (shard) می‌کند؛ SGLang آن را روی بک‌اند پیش‌فرض Blackwell MLA خود اجرا می‌کند و حدس و گمانه‌زنی DSpark را تحت سرویس‌دهی تفکیک‌شده (disaggregated serving) همراه با DCP تا ورودی 256K روی 8x B300 تایید و اعتبارسنجی کرده است.
+
+### ۵. تفکیک Attention-FFN (آزمایشی)
+مکانیزم توجه (که مالک KV cache است) و لایه‌های FFN یا لایه‌های متخصص (expert layers) را به عنوان سرویس‌هایی با مقیاس‌پذیری مجزا اجرا می‌کند. vLLM یک پلاگین آزمایشی برای MoE روی GPUهای NVIDIA و NPUهای Ascend دارد، و NVIDIA آن را به عنوان یکی از حالت‌های سرویس‌دهی Vera Rubin به همراه Groq 3 LPX فهرست کرده است.
 
 ---
 
-## Streaming and Long-Lived Connections
+## ارکستراسیون چند GPU (Multi-GPU Orchestration)
 
-LLMs are almost always served via **Server-Sent Events (SSE)** or **WebSockets**.
+کوبرنتیز (Kubernetes) بستر پیش‌فرض است، با لایه‌های ویژه LLM روی آن: **KubeRay** برای سرویس‌دهی مبتنی بر Ray، **LeaderWorkerSet** برای رپلیکاهای چندنودی، **llm-d** برای مسیریابی آگاه از KV و مقیاس‌پذیری خودکار (autoscaling) روی Gateway API Inference Extension، و **NVIDIA Dynamo** به عنوان لایه ارکستراسیون بالای vLLM، SGLang و TensorRT-LLM.
 
-**Infrastructure challenge**: Standard load balancers (Layer 4) struggle with long-lived AI connections.
-- **The Fix**: Use **Layer 7 Load Balancers** (Envoy/Istio) that understand the "End of Sequence" token and can re-balance traffic *between* user turns rather than just at the connection level.
-- **Fail before the first token, not after.** Envoy AI Gateway v1.1 can fail over to the next backend if no token arrives within `streamIdleTimeout`; once tokens have streamed, a backend failure surfaces as a 504 rather than a silently duplicated answer. Dynamo's frontend likewise rejects over-context requests before the stream opens and returns 503 on overload. Retries after the first token belong in the client or agent loop, with idempotent tool calls.
+- **خوشه‌های ناهمگن (Heterogeneous Clusters)**: ترکیب H100ها برای مدل‌های مرزی و پیشرو (frontier) و L4ها برای مدل‌های کوچک در یک خوشه یکسان. استخرهای ترکیبی از ارائه‌دهندگان مختلف نیز اکنون بنچمارک شده‌اند: نسخه ارائه‌شده سیسکو در MLPerf Inference v6.1، تعداد ۸ عدد H200 به همراه ۸ عدد MI350X را به عنوان یک استخر استنتاج واحد اجرا کرد.
+- **مقیاس‌پذیری خودکار (Autoscaling)**: مقیاس‌پذیری بر اساس **میزان استفاده از KV Cache** و عمق صف به جای استفاده از CPU یا حافظه استاندارد. برنامه‌ریز کوبرنتیز در Dynamo همچنین می‌تواند مقیاس‌پذیری را به سقف توان مصرفی کل GPU محدود کند.
+- **شروع سرد (Cold Start)**: زمان بارگذاری مدل بر مقیاس‌پذیری افقی (scale-out) غالب است. قابلیت **Fast Start** در vLLM نسخه v0.30.0 (با آرگومان `--load-format ipc_cache`) یک دیمن (daemon) به ازای هر GPU نگه می‌دارد که وزن‌های از قبل کوانتیزه‌شده و خردشده بر اساس موازی‌سازی تانسوری (tensor-parallel-sharded) را حفظ کرده و آن‌ها را از طریق CUDA IPC به یک موتور راه‌اندازی‌مجددشده نگاشت (map) می‌کند. تکنیک استقرار هم‌پوشان چک‌پوینت در SGLang (با آرگومان `--startup-weight-load-mode overlap`) مدل Qwen3-32B را روی یک H100 تا ۲.۳۸ برابر سریع‌تر راه‌اندازی کرد (۳۵.۶ ثانیه در مقایسه با ۸۴.۸ ثانیه).
+- **برنامه‌ریزی از طریق شبیه‌سازی (Plan by simulation)**: شبیه‌ساز فقط-CPU در SGLang، زمان‌بند واقعی و کش را با یک مدل تاخیر (latency model) اجرا کرده و TTFT را با دقت حدود ۶٪ (و تا ۱۰٪ روی تریس‌های 32K تا 128K) پیش‌بینی می‌کند؛ ابزار AISimulate در Dynamo (که سابقاً AIConfigurator نام داشت) جستجوی پیکربندی را انجام می‌دهد. قبل از خرید یا اجاره GPUها، شبیه‌سازی را انجام دهید.
 
 ---
 
-## Inference Engines (November 2026)
+## استریمینگ و اتصالات با طول عمر بالا (Streaming and Long-Lived Connections)
 
-The engine choice is no longer a question of "which one is fastest." Each leading engine has won a workload category, and an orchestration layer (Dynamo or llm-d) now sits above the engines in large fleets. The right answer is engine-per-workload, pinned to a patched version.
+LLMها تقریباً همیشه از طریق **Server-Sent Events (SSE)** یا **WebSockets** سرویس‌دهی می‌شوند.
 
-| Component | Current (as of November 6, 2026) | What changed that matters |
+**چالش زیرساختی**: متعادل‌کننده‌های بار استاندارد (لایه ۴ یا Layer 4) با اتصالات بلندمدت هوش مصنوعی دچار چالش می‌شوند.
+- **راه‌حل**: از **متعادل‌کننده‌های بار لایه ۷ (Layer 7 Load Balancers)** مانند Envoy/Istio استفاده کنید که Token پایان دنباله ("End of Sequence") را درک می‌کنند و می‌توانند ترافیک را *بین* نوبت‌های کاربر (user turns) بازتوزیع کنند، نه صرفاً در سطح اتصال.
+- **قبل از اولین Token شکست بخورید، نه پس از آن.** در Envoy AI Gateway نسخه ۱.۱، اگر هیچ Tokenای در بازه زمانی `streamIdleTimeout` نرسد، سیستم می‌تواند به بک‌اند بعدی تغییر مسیر دهد (failover کند)؛ اما هنگامی که Tokenها شروع به استریم شدن کردند، خرابی بک‌اند به جای یک پاسخ تکراری و بی‌صدا، به صورت خطای 504 نمایش داده می‌شود. فرانت‌اند Dynamo نیز به همین ترتیب درخواست‌های فراتر از کانتکست را پیش از باز شدن استریم رد کرده و در شرایط بار بیش از حد (overload) خطای 503 برمی‌گرداند. تلاش‌های مجدد (Retries) پس از اولین Token متعلق به حلقه کلاینت یا Agent است، همراه با فراخوانی‌های ابزاری بی‌اثر در تکرار (idempotent tool calls).
+
+---
+
+## موتورهای استنتاج (Inference) (نوامبر ۲۰۲۶)
+
+انتخاب موتور دیگر مسئله‌ی «کدام یک سریع‌تر است» نیست. هر موتور پیشرو در یک دسته از بارهای کاری برنده شده است، و یک لایه‌ی ارکستراسیون (Dynamo یا llm-d) اکنون در ناوگان‌های بزرگ بالاتر از موتورها قرار می‌گیرد. پاسخ صحیح، رویکرد «یک موتور به ازای هر بار کاری» (engine-per-workload) است که به یک نسخه‌ی پچ‌شده متصل (pinned) شده باشد.
+
+| کامپوننت | وضعیت فعلی (تا ۶ نوامبر ۲۰۲۶) | تغییرات مهم و اثرگذار |
 |-----------|----------------------------------|---------------------------|
-| **vLLM** | v0.33.0 (Nov 2); about a two-week release cadence | Breaking in 0.33: CUDA 13.0-only wheels and images (CUDA 12.9 builds dropped; NVIDIA says CUDA 13.x needs driver 580 or newer), PyTorch 2.14.0, ROCm 10.0 as the default ROCm build (ROCm 7.2 still published as `-rocm72`), HTTP 503 for requests sent while generation is paused, NIXL 1.5+ for the NIXL connector, the legacy Ray compiled-graph executor removed, and Medusa and the MLP speculator removed. It also serves an OpenAI-compatible `/v1/decisions` endpoint on by default for supported generation models and adds a watchdog that dumps stack traces from stuck processes. Breaking in 0.32 (Oct 18): default CORS origins changed from `*` to none (browser clients need `--allowed-origins`), Python 3.11 minimum, cascade attention removed, and `max_tokens` is now an upper bound on output rather than a reservation from the context window, so recheck capacity math. Also new: a `POST /v1/systemone` decision endpoint served by default. Model Runner V2 default since v0.29; Fast Start; tiered KV offload to disk |
-| **SGLang** | v0.5.23 (Nov 2) | Still unpatched for both October criticals (see below). Adds opt-in `SGLANG_ZMQ_ALLOWED_PEERS` (peer IP allowlist; left empty it admits every peer) and `SGLANG_ZMQ_SOURCE_IP`, and removes the unsafe `weights_only=False` pickle fallback, so legacy tar-format .pt checkpoints no longer load. v0.5.22 (Oct 19): Python 3.11 required; InstantTensor loader (about 10x faster model loads, project-reported). v0.5.21 (Oct 2) lets prefill and decode instances switch roles without a restart, moved the prefix cache to a Rust core by default, and added `/v1/decisions` and `/v1/score` |
-| **TensorRT-LLM** | v1.2.1 stable (Apr 20); v1.4.0rc2 (Oct 28) | PyTorch backend default since 1.0 (Sep 2025), so no per-model engine build; no stable v1.3, and the RCs include breaking removals such as the AutoDeploy integration. NVIDIA's October 27 bulletin fixed a code-execution bug in `KvCacheAwareRouter` tokenizer loading and two SSRF bugs, all affecting 1.3.0rc24 and fixed in 1.3.0rc25 |
-| **NVIDIA Dynamo** | v1.6.1 (Oct 27) | 1.6.0 (Oct 22) added pluggable flow control at router intake, frontend mutual TLS, LPX components on Kubernetes and snapshot-backed engine failover, and removed the TensorRT-LLM AutoDeploy backend (breaking). 1.6.1 refreshes CA bundles and Rust TLS roots (dropping the emSign ECC Root CA - G3 root, so TLS to endpoints that chain only to it fails) and moves images to Pillow 13. Bundled engines are unchanged: vLLM 0.31.0, SGLang 0.5.21 and TensorRT-LLM 1.3.0rc29, so vLLM and SGLang sit below the security floors under [Operational Posture](#operational-posture). A 1.7.0 development pre-release (Nov 2) adds native Mistral Large 4 serving with arm64-only images |
-| **llm-d / GAIE** | llm-d v1.0.0 (Oct 20); GAIE v1.6.2 (Sep 17) | Priority- and fairness-aware flow control with load shedding (config moves under `flowControl`); router HA with hot standby; router config API at v1; `DisaggregatedSet` manages prefill and decode replicas as one unit and needs LeaderWorkerSet v0.11.1 or newer (the release notes warn that almost all guides break without it) |
+| **vLLM** | v0.33.0 (۲ نوامبر)؛ چرخه‌ی انتشار حدوداً دو هفته‌ای | تغییرات شکننده (Breaking) در 0.33: wheelها و imageهای فقط سازگار با CUDA 13.0 (بیلدهای CUDA 12.9 حذف شدند؛ انویدیا اعلام کرده است CUDA 13.x نیازمند درایور 580 یا جدیدتر است)، PyTorch 2.14.0، نسخه ROCm 10.0 به عنوان بیلد پیش‌فرض ROCm (نسخه ROCm 7.2 هنوز تحت عنوان `-rocm72` منتشر می‌شود)، خطای HTTP 503 برای درخواست‌های ارسال‌شده در زمان توقف موقت فرآیند تولید (generation)، نیاز به NIXL 1.5+ برای رابط (connector) مربوط به NIXL، حذف مجری نمودار کامپایل‌شده‌ی قدیمی Ray (legacy Ray compiled-graph executor)، و حذف Medusa و تخمین‌گر MLP (MLP speculator). این نسخه همچنین یک اندپوینت `/v1/decisions` سازگار با OpenAI را به طور پیش‌فرض برای مدل‌های تولیدی پشتیبانی‌شده ارائه می‌دهد و یک نگهبان (watchdog) اضافه می‌کند که رد پشته (stack trace) فرایندهای متوقف‌شده را ثبت (dump) می‌کند. تغییرات شکننده در 0.32 (۱۸ اکتبر): تغییر مبداهای پیش‌فرض CORS از `*` به none (کلاینت‌های مرورگر نیازمند `--allowed-origins` هستند)، حداقل پایتون ۳.۱۱، حذف cascade attention، و اینکه `max_tokens` اکنون به عنوان یک سقف برای خروجی عمل می‌کند تا رزروی از پنجره بافت (context window)، بنابراین محاسبات ظرفیت را مجدداً بررسی کنید. همچنین موارد جدید: یک اندپوینت تصمیم‌گیری `POST /v1/systemone` که به صورت پیش‌فرض فعال است. قابلیت Model Runner V2 از نسخه v0.29 به صورت پیش‌فرض؛ قابلیت Fast Start؛ و تخلیه لایه‌ای KV به دیسک (tiered KV offload to disk). |
+| **SGLang** | v0.5.23 (۲ نوامبر) | هنوز برای هر دو آسیب‌پذیری حیاتی اکتبر پچ نشده است (به زیر مراجعه کنید). متغیرهای اختیاری `SGLANG_ZMQ_ALLOWED_PEERS` (لیست مجاز IP همتایان؛ در صورت خالی ماندن، تمام همتایان را می‌پذیرد) و `SGLANG_ZMQ_SOURCE_IP` را اضافه می‌کند، و حالت بازگشتی ناامن `weights_only=False` برای pickle را حذف می‌کند، بنابراین چک‌پوینت‌های قدیمی فرمت tar با پسوند .pt دیگر بارگذاری نمی‌شوند. نسخه v0.5.22 (۱۹ اکتبر): الزام به استفاده از پایتون ۳.۱۱؛ لودر InstantTensor (حدود ۱۰ برابر بارگذاری سریع‌تر مدل، طبق گزارش پروژه). نسخه v0.5.21 (۲ اکتبر): امکان تغییر نقش نمونه‌های prefill و decode بدون نیاز به راه‌اندازی مجدد، انتقال پیش‌فرض کش پیشوند به یک هسته Rust، و اضافه شدن اندپوینت‌های `/v1/decisions` و `/v1/score`. |
+| **TensorRT-LLM** | v1.2.1 پایدار (۲۰ آوریل)؛ v1.4.0rc2 (۲۸ اکتبر) | بک‌اند PyTorch از نسخه 1.0 (سپتامبر ۲۰۲۵) پیش‌فرض شده است، بنابراین نیازی به بیلد موتور به ازای هر مدل نیست؛ نسخه پایدار v1.3 وجود ندارد، و نسخه‌های کاندیدای انتشار (RCs) شامل حذفیات شکننده‌ای مانند یکپارچه‌سازی با AutoDeploy هستند. بولتن ۲۷ اکتبر انویدیا یک باگ اجرای کد در بارگذاری Tokenizer داخل `KvCacheAwareRouter` و دو باگ SSRF را برطرف کرد که همگی بر 1.3.0rc24 تاثیرگذار بوده و در 1.3.0rc25 برطرف شدند. |
+| **NVIDIA Dynamo** | v1.6.1 (۲۷ اکتبر) | نسخه 1.6.0 (۲۲ اکتبر) کنترل جریان اتصال‌پذیر (pluggable flow control) در ورودی روتر، TLS دوطرفه (mutual TLS) در بخش فرانت‌اند، کامپوننت‌های LPX روی کوبرنتیز و failover مبتنی بر اسنپ‌شات موتور را اضافه کرد، و بک‌اند AutoDeploy در TensorRT-LLM را حذف نمود (تغییر شکننده). نسخه 1.6.1 بسته‌های CA و ریشه‌های TLS در Rust را به‌روزرسانی می‌کند (حذف ریشه emSign ECC Root CA - G3، بنابراین اتصال TLS به اندپوینت‌هایی که زنجیره اعتبارسنجی آن‌ها فقط به این ریشه متصل است ناموفق خواهد بود) و imageها را به Pillow 13 منتقل می‌کند. موتورهای باندل‌شده بدون تغییر مانده‌اند: vLLM 0.31.0، SGLang 0.5.21 و TensorRT-LLM 1.3.0rc29، بنابراین vLLM و SGLang پایین‌تر از کف امنیتی مشخص‌شده در [وضعیت عملیاتی](#operational-posture) قرار می‌گیرند. نسخه پیش‌انتشار توسعه 1.7.0 (۲ نوامبر) سرویس‌دهی بومی Mistral Large 4 را با imageهای فقط arm64 اضافه می‌کند. |
+| **llm-d / GAIE** | llm-d v1.0.0 (۲۰ اکتبر)؛ GAIE v1.6.2 (۱۷ سپتامبر) | کنترل جریان مبتنی بر اولویت و عدالت با حذف بار اضافی (load shedding) (انتقال پیکربندی به بخش `flowControl`)؛ دسترسی‌پذیری بالا (HA) برای روتر به همراه hot standby؛ رابط برنامه‌نویسی (API) پیکربندی روتر در نسخه v1؛ کامپوننت `DisaggregatedSet` نسخه‌های کپی (replicas) مرحله prefill و decode را به عنوان یک واحد یکپارچه مدیریت می‌کند و به LeaderWorkerSet v0.11.1 یا جدیدتر نیاز دارد (یادداشت‌های انتشار هشدار می‌دهند که تقریباً همه راهنماها بدون آن دچار شکست می‌شوند). |
 
-### vLLM: The Default Open Engine
+### موتور vLLM: موتور متن‌باز پیش‌فرض
 
-[vLLM](https://docs.vllm.ai/) remains the default open engine when the workload is "Llama / Mistral / Qwen / DeepSeek under continuous batching": broadest model coverage, easiest to operate, and the fastest same-week security patches. It also has the largest attack surface. Between August 11 and September 28, 2026 it published more than 20 advisories, October brought another large batch, and one more followed on November 2. The ones that teach something:
+موتور [vLLM](https://docs.vllm.ai/) همچنان موتور متن‌باز پیش‌فرض در شرایطی است که بار کاری «Llama / Mistral / Qwen / DeepSeek تحت Continuous Batching» باشد: بیشترین پوشش مدل، ساده‌ترین عملیات اجرایی، و سریع‌ترین ارائه‌ی پچ‌های امنیتی در همان هفته. این موتور همچنین بزرگ‌ترین سطح حمله (attack surface) را دارد. بین ۱۱ آگوست تا ۲۸ سپتامبر ۲۰۲۶، بیش از ۲۰ توصیه‌نامه امنیتی (advisories) منتشر کرد، اکتبر موج بزرگ دیگری را به همراه داشت، و یکی دیگر نیز در ۲ نوامبر ارائه شد. مواردی که حاوی نکاتی آموزنده هستند عبارتند از:
 
-- **CVE-2026-90553** (high, fixed in 0.28.0): a model processor loader executed a malicious repo's code even with `trust_remote_code=False`.
-- **CVE-2026-93592** (high, fixed in 0.28.0): one unauthenticated request with a negative token ID to `/v1/embeddings` or `/pooling` poisons the CUDA context and kills the engine for every client until restart.
-- **GHSA-935w-9g4m-p28p** (low, fixed in 0.30.0): a code path dropped the per-tenant `cache_salt`, reopening a cross-tenant prefix-cache timing oracle.
-- **GHSA-4xqp-c3mv-qff7** (moderate, fixed in 0.31.0): one request to `/inference/v1/generate` with a null `max_tokens` and an oversized `min_tokens` killed the engine's input thread. The process stayed up and `/health` kept returning 200 while every generation request hung, and nothing restarted it.
-- **CVE-2026-115915** (high, CVSS 8.1, fixed in 0.32.0): the image loader let Pillow pick the decoder by sniffing bytes, ignoring the declared MIME type, so an EPS file labeled PNG reached Pillow's EPS plugin and Ghostscript. On a host with a vulnerable Ghostscript build that is command execution. **CVE-2026-115912**, in the multimodal shared-memory processor cache, is also fixed in 0.32.0.
-- **GHSA-qrj2-j723-m6w8** (moderate, CVSS 5.4, no CVE, fixed in 0.33.0): a crafted repository's `speculators_config` `verifier.name_or_path` could point vLLM at any local directory (absolute paths work, no `trust_remote_code` needed), so an unauthenticated client could read that directory's tokenizer vocabulary through `/detokenize` or query a private checkpoint. It only bites when you serve repositories you do not control, which is exactly what a shared fine-tuning or model-hosting platform does.
+- **CVE-2026-90553** (شدت بالا، برطرف‌شده در 0.28.0): یک لودر پردازشگر مدل، کد ریپازیتوری مخرب را حتی در صورت تنظیم `trust_remote_code=False` اجرا می‌کرد.
+- **CVE-2026-93592** (شدت بالا، برطرف‌شده در 0.28.0): یک درخواست احراز هویت‌نشده با Token ID منفی به اندپوینت `/v1/embeddings` یا `/pooling`، محیط (context) پلتفرم CUDA را مسموم کرده و موتور را برای تمام کلاینت‌ها تا زمان راه‌اندازی مجدد متوقف می‌کرد.
+- **GHSA-935w-9g4m-p28p** (شدت پایین، برطرف‌شده در 0.30.0): یک مسیر کد، متغیر `cache_salt` اختصاصی هر tenant (multi-tenant) را حذف می‌کرد و اوراکل زمان‌بندی (timing oracle) کش پیشوند بین-tenant (multi-tenant) را مجدداً ایجاد می‌نمود.
+- **GHSA-4xqp-c3mv-qff7** (شدت متوسط، برطرف‌شده در 0.31.0): یک درخواست به اندپوینت `/inference/v1/generate` با مقدار `max_tokens` خالی (null) و `min_tokens` بیش از حد بزرگ، ترد ورودی (input thread) موتور را متوقف می‌کرد. فرایند همچنان فعال باقی می‌ماند و اندپوینت `/health` به بازگرداندن کد وضعیت 200 ادامه می‌داد، در حالی که تمام درخواست‌های تولید (generation) معلق می‌شدند و هیچ عاملی برای راه‌اندازی مجدد آن وجود نداشت.
+- **CVE-2026-115915** (شدت بالا، CVSS 8.1، برطرف‌شده در 0.32.0): لودر تصویر به Pillow اجازه می‌داد دیکودر را از طریق بررسی بایت‌ها (sniffing bytes) و نادیده گرفتن نوع MIME اعلام‌شده انتخاب کند، بنابراین یک فایل EPS که با برچسب PNG ارسال شده بود به پلاگین EPS در Pillow و Ghostscript می‌رسید. در هاستی با بیلد آسیب‌پذیر Ghostscript، این امر منجر به اجرای دستور (command execution) می‌شد. **CVE-2026-115912** نیز در کش پردازشگر حافظه اشتراکی چندوجهی (multimodal shared-memory processor cache) در نسخه 0.32.0 برطرف شده است.
+- **GHSA-qrj2-j723-m6w8** (شدت متوسط، CVSS 5.4، بدون CVE، برطرف‌شده در 0.33.0): پارامتر `verifier.name_or_path` در `speculators_config` مربوط به یک ریپازیتوری دست‌کاری‌شده می‌توانست vLLM را به هر دایرکتوری محلی هدایت کند (مسیرهای مطلق عمل می‌کنند، بدون نیاز به `trust_remote_code`)، بنابراین یک کلاینت احراز هویت‌نشده می‌توانست واژگان Tokenizer (tokenizer vocabulary) آن دایرکتوری را از طریق `/detokenize` بخواند یا یک چک‌پوینت خصوصی را استعلام کند. این مشکل تنها زمانی دردسرساز می‌شود که شما به ریپازیتوری‌هایی که تحت کنترل شما نیستند سرویس دهید؛ که این دقیقاً کاری است که یک پلتفرم اشتراکی Fine-tuning یا هاستینگ مدل انجام می‌دهد.
 
-Earlier in the year, the February multimodal RCE (CVE-2026-22778, video processing) was fixed in v0.14.1. **Baseline: vLLM 0.32.0 or later, and 0.33.0 on any host that loads third-party repositories**; read the breaking defaults first, because 0.33.0 also needs a host driver upgrade (CUDA 13, driver 580+) on older fleets and adds another default-on route (`/v1/decisions`) to allowlist or block at the gateway. The lessons generalize: a GPU engine is a shared-fate domain, so validate inputs before they reach the device, allowlist media formats instead of trusting a decoder's autodetection, salt the prefix cache on every path, only load models from repos you trust, and health-check by generating, because a liveness endpoint can stay green while the engine serves nothing.
+در اوایل سال، آسیب‌پذیری RCE چندوجهی ماه فوریه (CVE-2026-22778، پردازش ویدیو) در نسخه v0.14.1 برطرف شد. **خط مبنا (Baseline): نسخه vLLM 0.32.0 یا بالاتر، و 0.33.0 روی هر هاستی که ریپازیتوری‌های شخص ثالث را بارگذاری می‌کند**؛ ابتدا تنظیمات پیش‌فرض شکننده را مطالعه کنید، زیرا نسخه 0.33.0 همچنین نیازمند ارتقای درایور هاست (CUDA 13 و درایور 580+) در ناوگان‌های قدیمی‌تر است و مسیر جدیدی را به صورت پیش‌فرض فعال (`/v1/decisions`) اضافه می‌کند که باید در گیت‌وی (gateway) مجاز یا مسدود شود. این درس‌ها قابل تعمیم هستند: موتور GPU یک دامنه با سرنوشت مشترک (shared-fate domain) است، بنابراین ورودی‌ها را پیش از رسیدن به دستگاه اعتبارسنجی کنید، فرمت‌های رسانه را در لیست مجاز قرار دهید به جای آنکه به تشخیص خودکار دیکودر اعتماد کنید، کش پیشوند را در هر مسیر saltگذاری کنید، مدل‌ها را فقط از ریپازیتوری‌های مورد اعتماد بارگذاری نمایید، و بررسی سلامت (health-check) را از طریق تست تولید انجام دهید، زیرا یک اندپوینت ارزیابی حیات (liveness endpoint) ممکن است وضعیت سبز (سالم) نشان دهد در حالی که موتور به هیچ درخواستی پاسخ نمی‌دهد.
 
-### SGLang: Prefix-Heavy and Structured Workloads
+### موتور SGLang: بارهای کاری با پیشوند سنگین و ساختاریافته
 
-[SGLang](https://github.com/sgl-project/sglang) leads on workloads with heavy prefix reuse and structured output: **RadixAttention** prefix caching, constrained decoding overlapped with the forward pass, and first-class MoE serving (DeepEP v2, W4A8 MXFP4 MoE on Hopper, decode context parallelism on Blackwell). Its v0.5.20 radix tree caches sliding-window state at prefix branch points, raising token hit rate from 43.8% to 60.8% and cutting mean TTFT from 1.57 s to 1.07 s on DeepSeek-V4-Flash with a shared system prompt.
+موتور [SGLang](https://github.com/sgl-project/sglang) در بارهای کاری با استفاده‌ی مجدد سنگین از پیشوند و خروجی ساختاریافته پیشتاز است: کش کردن پیشوند با **RadixAttention**، رمزگشایی مقید (constrained decoding) هم‌پوشان با forward pass، و سرویس‌دهی درجه یک MoE (نسخه DeepEP v2، مدل W4A8 MXFP4 MoE روی Hopper، و موازی‌سازی بافت در decode روی Blackwell). درخت radix در نسخه v0.5.20 این فریم‌ورک وضعیت پنجره کشویی (sliding-window) را در نقاط انشعاب پیشوند کش می‌کند که باعث افزایش نرخ اصابت (hit rate) مربوط به Tokenها از ۴۳.۸٪ به ۶۰.۸٪ و کاهش میانگین TTFT از ۱.۵۷ ثانیه به ۱.۰۷ ثانیه روی DeepSeek-V4-Flash با یک Prompt سیستمی مشترک می‌شود.
 
-**Security posture**: the March 2026 critical RCEs in the multimodal ZMQ broker and encoder-parallel disaggregation (CVE-2026-3059, CVE-2026-3060) were fixed in v0.5.10. A May batch (CVE-2026-7301, 7302, 7304, critical: a scheduler socket bound to all interfaces with `pickle.loads`, a path traversal, and `dill.loads` via custom logit processors) lists affected versions through 0.5.12 with no patched version recorded. October added two more criticals that also record no patched version:
+**وضعیت امنیتی**: آسیب‌پذیری‌های بحرانی RCE ماه مارس ۲۰۲۶ در بروکر ZMQ چندوجهی و تفکیک (disaggregation) موازی انکودر (CVE-2026-3059 و CVE-2026-3060) در نسخه v0.5.10 برطرف شدند. دسته‌ای از آسیب‌پذیری‌ها در ماه مه (CVE-2026-7301، 7302 و 7304، با شدت بحرانی: سوکت زمان‌بند متصل‌شده به تمام اینترفیس‌ها همراه با `pickle.loads`، پیمایش مسیر (path traversal)، و `dill.loads` از طریق پردازشگرهای سفارشی logit) نسخه‌های تحت تاثیر را تا 0.5.12 بدون هیچ نسخه پچ‌شده‌ی ثبت‌شده‌ای فهرست می‌کنند. ماه اکتبر دو آسیب‌پذیری بحرانی دیگر را اضافه کرد که برای آن‌ها نیز هیچ نسخه پچ‌شده‌ای ثبت نشده است:
 
-- **CVE-2026-111391** (CVSS v4 9.2): `eval()` injection through the unauthenticated `/dumper/configure` debug endpoint, which is exposed when `DUMPER_SERVER_PORT` is set. The description covers 0.5.10 through 0.5.22, and v0.5.23 (November 2) does not fix it: `dumper.py` is byte-identical to 0.5.22 and still passes filter strings to `eval()`, and fix PR #45998 was still unmerged on November 6.
-- **CVE-2026-93034** (CVSS 9.8): `pickle.loads` in the ZMQ message decoder, remotely reachable when data-parallel attention runs with a non-loopback `--dist-init-addr`. Setting `SGLANG_USE_PICKLE_IPC=false` does not close it, and 0.5.23 still calls `pickle.loads` in the decoder; its new `SGLANG_ZMQ_ALLOWED_PEERS` allowlist is a mitigation you must set, not a fix.
+- **CVE-2026-111391** (با امتیاز CVSS v4 9.2): تزریق `eval()` از طریق اندپوینت اشکال‌زدایی احراز هویت‌نشده‌ی `/dumper/configure`، که در صورت تنظیم `DUMPER_SERVER_PORT` در دسترس قرار می‌گیرد. توضیحات شامل نسخه‌های 0.5.10 تا 0.5.22 است و نسخه v0.5.23 (۲ نوامبر) آن را برطرف نکرده است: فایل `dumper.py` از نظر بایت دقیقاً مشابه 0.5.22 است و همچنان رشته‌های فیلتر را به `eval()` ارسال می‌کند، و پول‌ریکوئست پچ #45998 تا ۶ نوامبر همچنان ادغام نشده بود.
+- **CVE-2026-93034** (با امتیاز CVSS 9.8): تابع `pickle.loads` در دیکودر پیام ZMQ، که در صورت اجرای توجه داده‌-موازی (data-parallel attention) با یک `--dist-init-addr` غیر loopback از راه دور قابل دسترسی است. تنظیم `SGLANG_USE_PICKLE_IPC=false` آن را مسدود نمی‌کند، و نسخه 0.5.23 همچنان `pickle.loads` را در دیکودر فراخوانی می‌کند؛ لیست مجاز جدید `SGLANG_ZMQ_ALLOWED_PEERS` در آن، صرفاً یک اقدام کاهشی (mitigation) است که باید تنظیم کنید، نه یک راهکار قطعی (fix).
 
-So no released version is clean, and the defense is configuration, not an upgrade. When an advisory lists no patched version, read the code rather than trusting a version bump. Run 0.5.23, set `SGLANG_ZMQ_ALLOWED_PEERS` on every multi-node DP-attention node, convert legacy tar-format .pt checkpoints before upgrading, leave `DUMPER_SERVER_PORT` unset, keep `--dist-init-addr` and every internal ZMQ or RPC socket on loopback or a pod-private network enforced by network policy, and do not enable custom logit processors for untrusted callers. With that posture SGLang is fine for multimodal traffic too; the old "keep multimodal off SGLang" rule rested on CVEs that have since been patched.
+بنابراین هیچ نسخه منتشرشده‌ای بی‌نقص و امن نیست و راهکار دفاعی، پیکربندی است نه ارتقای نسخه. هنگامی که یک توصیه‌نامه هیچ نسخه پچ‌شده‌ای را ذکر نمی‌کند، به جای اعتماد به افزایش شماره نسخه، خود کد را بخوانید. از نسخه 0.5.23 استفاده کنید، متغیر `SGLANG_ZMQ_ALLOWED_PEERS` را روی هر نود توجه DP چندنودی تنظیم کنید، چک‌پوینت‌های قدیمی فرمت tar با پسوند .pt را قبل از ارتقا تبدیل کنید، `DUMPER_SERVER_PORT` را بدون مقدار رها کنید، مقدار `--dist-init-addr` و هر سوکت داخلی ZMQ یا RPC را روی loopback یا یک شبکه اختصاصی پاد (pod-private network) که توسط network policy اعمال می‌شود نگه دارید، و پردازنده‌های سفارشی logit را برای فراخوانندگان غیرقابل اعتماد فعال نکنید. با چنین رویکردی، SGLang برای ترافیک چندوجهی (multimodal) نیز مناسب است؛ قاعده‌ی قدیمی «چندوجهی را از SGLang دور نگه دارید» بر پایه‌ی آسیب‌پذیری‌های CVE بود که از آن زمان تاکنون برطرف شده‌اند.
 
-### TensorRT-LLM: Peak NVIDIA Throughput
+### موتور TensorRT-LLM: اوج توان عملیاتی (Throughput) انویدیا
 
-[TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) remains the throughput leader on pure NVIDIA hardware for hand-tuned models, with custom FP4/FP8 kernels on Blackwell often ahead of open engines and tight integration with Triton and NIM. The old operational objection, a multi-hour engine build for every model, no longer applies: since 1.0 the PyTorch backend is the default and models load like any other engine's. The remaining costs are **NVIDIA lock-in** and an **RC-heavy release cadence** (the stable line is still v1.2.1 from April; v1.3 spent months in release candidates without a stable release before the RCs moved on to 1.4 in October, and the RCs include breaking removals). If you are committed to NVIDIA and have one or two flagship models that need every token per second, it pays; otherwise vLLM or SGLang is the more flexible fit.
+موتور [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) همچنان پیشتاز توان عملیاتی (Throughput) روی سخت‌افزارهای خالص انویدیا برای مدل‌های تنظیم‌شده‌ی دستی (hand-tuned) است؛ به طوری که کرنل‌های سفارشی FP4/FP8 آن روی Blackwell اغلب جلوتر از موتورهای متن‌باز بوده و یکپارچگی تنگاتنگی با Triton و NIM دارد. ایراد عملیاتی قدیمی مبنی بر نیاز به بیلد چندساعته‌ی موتور برای هر مدل، دیگر مطرح نیست: از نسخه 1.0 بک‌اند PyTorch به عنوان پیش‌فرض در نظر گرفته شده و مدل‌ها مانند هر موتور دیگری بارگذاری می‌شوند. هزینه‌های باقی‌مانده شامل **وابستگی به انویدیا (NVIDIA lock-in)** و **چرخه‌ی انتشار متکی بر نسخه‌های کاندیدا (RC-heavy release cadence)** است (شاخه پایدار همچنان v1.2.1 متعلق به آوریل است؛ v1.3 ماه‌ها در وضعیت کاندیدای انتشار ماند بدون آنکه نسخه پایداری منتشر شود، پیش از آنکه نسخه‌های کاندیدا در اکتبر به نسخه 1.4 منتقل شوند، و این نسخه‌های RC شامل حذفیات شکننده هستند). اگر به انویدیا متعهد هستید و یک یا دو مدل پرچمدار دارید که به تک تک Tokenها در ثانیه نیاز دارند، این ابزار به صرفه است؛ در غیر این صورت vLLM یا SGLang انتخاب انعطاف‌پذیرتری خواهند بود.
 
-### Orchestration Above the Engine: Dynamo and llm-d
+### ارکستراسیون بالاتر از سطح موتور: Dynamo و llm-d
 
-At fleet scale the decisions that move cost (which replica gets a request, when to disaggregate, how to scale) live above the engine. **NVIDIA Dynamo** routes on KV-cache overlap with pluggable scorer and picker policies and hard or soft session affinity, indexes cache events from SGLang HiCache and vLLM disk tiers, sends short requests straight to decode, and supports TLS/mTLS on its transports; v1.6.0 (October 22) opened request intake to flow-control plugins and added mutual TLS on the HTTP frontend, and v1.6.1 (October 27) is the current stable release. **llm-d** plays the same role in the Kubernetes Gateway API world and reached v1.0.0 on October 20 with load shedding, router HA and the `DisaggregatedSet` API. Both move fast; pin versions and read the deprecations (Dynamo's KVBM, GAIE's removed alpha APIs). And check what the orchestration image bundles: Dynamo 1.6.1 still ships vLLM 0.31.0 and SGLang 0.5.21, so a current Dynamo release does not mean a patched engine.
+در مقیاس ناوگان (fleet scale)، تصمیماتی که هزینه را تغییر می‌دهند (کدام replica درخواست را دریافت کند، چه زمانی تفکیک انجام شود، چگونه مقیاس‌پذیری صورت گیرد) بالاتر از سطح موتور اتخاذ می‌شوند. پلتفرم **NVIDIA Dynamo** مسیریابی را بر اساس هم‌پوشانی کش KV (KV-cache overlap) به همراه سیاست‌های امتیازدهی (scorer) و انتخاب (picker) اتصال‌پذیر و وابستگی نشست (session affinity) سخت یا نرم انجام می‌دهد، رویدادهای کش را از HiCache در SGLang و سطوح دیسک vLLM نمایه‌سازی می‌کند، درخواست‌های کوتاه را مستقیماً به مرحله decode می‌فرستد، و از پروتکل‌های TLS/mTLS در بستر انتقال پشتیبانی می‌کند؛ نسخه v1.6.0 (۲۲ اکتبر) ورودی درخواست‌ها را برای پلاگین‌های کنترل جریان باز کرد و TLS دوطرفه را در فرانت‌اند HTTP اضافه نمود، و نسخه v1.6.1 (۲۷ اکتبر) نسخه پایدار فعلی است. فریم‌ورک **llm-d** همین نقش را در دنیای Kubernetes Gateway API ایفا می‌کند و در ۲۰ اکتبر با پشتیبانی از حذف بار اضافی (load shedding)، دسترسی‌پذیری بالا (HA) برای روتر، و رابط برنامه‌نویسی (API) با کامپوننت `DisaggregatedSet` به نسخه v1.0.0 رسید. هر دو به سرعت در حال توسعه هستند؛ نسخه‌ها را قفل (pin) کنید و موارد منسوخ‌شده (deprecations) را مطالعه نمایید (مانند KVBM در Dynamo و APIهای آلفای حذف‌شده در GAIE). همچنین بررسی کنید که image ارکستراسیون چه مواردی را باندل کرده است: Dynamo 1.6.1 همچنان به همراه vLLM 0.31.0 و SGLang 0.5.21 عرضه می‌شود، بنابراین انتشار نسخه‌ی جدید Dynamo به معنای پچ بودن موتور نیست.
 
-A precision caveat from the same ecosystem: Dynamo's refreshed Nemotron 3.5 Lightning recipe measured BF16 80% faster than NVFP4 with Marlin kernels and 12% faster with CuTeDSL. Benchmark precision per model and kernel backend; see the [Quantization Deep Dive](../03-training-and-adaptation/07-quantization-deep-dive.md).
+یک نکته احتیاطی در مورد دقت (precision) از همین اکوسیستم: دستورالعمل به‌روزرسانی‌شده‌ی Nemotron 3.5 Lightning در Dynamo نشان داد که فرمت BF16 با کرنل‌های Marlin حدود ۸۰٪ سریع‌تر از NVFP4 و با CuTeDSL حدود ۱۲٪ سریع‌تر عمل می‌کند. دقت را به ازای هر مدل و بک‌اند کرنل بنچمارک کنید؛ به [بررسی عمیق کوانتیزاسیون (Quantization Deep Dive)](../03-training-and-adaptation/07-quantization-deep-dive.md) مراجعه کنید.
 
-### MoE-Aware Serving (Llama 4 Maverick, DeepSeek V4, Kimi K3)
+### سرویس‌دهی آگاه از MoE (Llama 4 Maverick، DeepSeek V4، Kimi K3)
 
-MoE models broke the assumption that serving cost scales smoothly with batch size. The properties that matter for an MoE serving engine:
+مدل‌های MoE این فرضیه را که هزینه سرویس‌دهی به‌طور روان با اندازه دسته (batch size) مقیاس‌پذیر است، رد کردند. ویژگی‌هایی که برای یک موتور سرویس‌دهی MoE اهمیت دارند:
 
-- **Expert weight residency**: a 400B-parameter MoE with 17B active per token (Llama 4 Maverick) spends most of its VRAM on experts that a given token does not use. The engine has to be aware of expert-to-token routing and either spread experts with expert parallelism, pin hot experts, or stream cold ones.
-- **Expert routing latency**: the router decision happens **per token** and adds a measurable cost. Engines now batch routing decisions across the batch dimension.
-- **Non-monotonic batching profile**: adding requests to the batch can *decrease* throughput if it forces a colder set of experts to be active. Optimal batch size depends on the **distribution of routing patterns** in the batch, not just batch count.
-- **Phase-specific and tiered parameters**: DeepSeek V4.1-Flash activates about 8B parameters per token in prefill and 16B in decode, and Qwen3.8-Flash-Next adds a 51B-parameter N-gram memory meant to live in host DRAM. Size prefill pools, decode pools, and host memory separately.
-- **Precision per component**: DeepSeek-V4 ships FP4 expert weights with FP8 for most other parameters, so kernel support for mixed-precision MoE decides real throughput.
+- **محل استقرار وزن‌های خبره (Expert weight residency)**: یک مدل MoE با ۴۰۰ میلیارد پارامتر (400B-parameter) و ۱۷ میلیارد پارامتر فعال به ازای هر Token (مانند Llama 4 Maverick)، بخش عمده حافظه VRAM خود را صرف خبره‌هایی (experts) می‌کند که یک Token خاص از آن‌ها استفاده نمی‌کند. موتور باید از مسیریابی خبره به Token آگاه باشد و خبره‌ها را یا از طریق موازی‌سازی خبره‌ها (expert parallelism) توزیع کند، خبره‌های پرکاربرد (hot) را در حافظه سنجاق (pin) نماید، یا خبره‌های کم‌کاربرد (cold) را استریم کند.
+- **تاخیر (Latency) مسیریابی خبره**: تصمیم‌گیری روتر (مسیریاب) **به ازای هر Token** اتفاق می‌افتد و هزینه قابل‌اندازه‌گیری به بار می‌آورد. موتورها اکنون تصمیمات مسیریابی را در راستای بُعد دسته (batch dimension) دسته‌بندی (batch) می‌کنند.
+- **پروفایل دسته‌بندی غیریکنواخت (Non-monotonic batching profile)**: افزودن درخواست‌ها به دسته در صورتی که منجر به فعال شدن مجموعه‌ای از خبره‌های کم‌کاربردتر (colder) شود، می‌تواند توان عملیاتی (Throughput) را *کاهش* دهد. اندازه بهینه دسته (batch size) به **توزیع الگوهای مسیریابی** در درون دسته بستگی دارد، نه صرفاً تعداد درخواست‌های دسته.
+- **پارامترهای چندسطحی و مختص به فاز (Phase-specific and tiered parameters)**: مدل DeepSeek V4.1-Flash در فاز prefill حدود ۸ میلیارد پارامتر به ازای هر Token و در فاز decode حدود ۱۶ میلیارد پارامتر را فعال می‌کند، و Qwen3.8-Flash-Next یک حافظه N-gram با ۵۱ میلیارد پارامتر اضافه می‌کند که قرار است در حافظه DRAM میزبان (host DRAM) قرار گیرد. استخرهای prefill، استخرهای decode و حافظه میزبان را به‌صورت جداگانه اندازه‌گذاری (سایزبندی) کنید.
+- **دقت به ازای هر مؤلفه (Precision per component)**: مدل DeepSeek-V4 وزن‌های خبره را با دقت FP4 و اکثر پارامترهای دیگر را با FP8 ارائه می‌دهد، بنابراین پشتیبانی کرنل از MoE با دقت ترکیبی (mixed-precision)، تعیین‌کننده توان عملیاتی (Throughput) واقعی است.
 
-| Engine | MoE path, October 2026 |
+| موتور | مسیر MoE، اکتبر ۲۰۲۶ |
 |--------|------------------------|
-| vLLM 0.30+ | Expert parallelism; bundled DSpark/MTP speculation with adaptive verification; HiSparse host-resident KV tier for sparse-MLA decode; experimental attention-FFN plugin |
-| SGLang 0.5.20+ | DeepEP v2; W4A8 MXFP4 MoE on Hopper (+12% DeepSeek-V4-Flash output throughput); DCP on Blackwell MLA; DSpark under disaggregated serving |
-| TensorRT-LLM 1.3 and 1.4 RCs | FP4 MLA and an MLA-backed DSpark drafter; release-candidate only |
+| vLLM 0.30+ | موازی‌سازی خبره‌ها (Expert parallelism)؛ گمانه‌زنی پیش‌فرض DSpark/MTP همراه با اعتبارسنجی تطبیقی (adaptive verification)؛ لایه KV مقیم میزبان با HiSparse برای دیکود sparse-MLA؛ پلاگین آزمایشی attention-FFN |
+| SGLang 0.5.20+ | نگارش دوم DeepEP (DeepEP v2)؛ مدل W4A8 MXFP4 MoE روی Hopper (افزایش ۱۲+ درصدی توان عملیاتی (Throughput) خروجی DeepSeek-V4-Flash)؛ فناوری DCP روی Blackwell MLA؛ الگوریتم DSpark تحت سرویس‌دهی تفکیک‌شده (disaggregated serving) |
+| TensorRT-LLM 1.3 and 1.4 RCs | معماری FP4 MLA و پیش‌نویس‌کننده DSpark مبتنی بر MLA؛ فقط در نسخه‌های کاندید انتشار (release-candidate) |
 
-The interview-ready insight: **MoE serving is no longer "vLLM with bigger weights."** It is a different scheduling and memory-placement problem, and the engines have all built dedicated MoE paths.
+بینش مناسب مصاحبه: **سرویس‌دهی MoE دیگر به معنای «vLLM با وزن‌های بزرگ‌تر» نیست.** این یک مسئله کاملاً متفاوت در زمان‌بندی (scheduling) و جانمایی حافظه (memory-placement) است و همه موتورها مسیرهای اختصاصی برای MoE ایجاد کرده‌اند.
 
-### Premium Latency Tiers: Cross-Chip Disaggregation
+### سطوح تاخیر (Latency) پریمیوم: تفکیک بین‌تراشه‌ای (Cross-Chip Disaggregation)
 
-The old shortcut was "for sub-50ms TTFT on a large model, call Cerebras or Groq." The 2026 pattern is **heterogeneous prefill and decode**: compute-dense HBM GPUs for prefill, SRAM or wafer-scale parts for bandwidth-bound decode.
+راهکار میانبر قدیمی این بود: «برای دستیابی به TTFT زیر ۵۰ میلی‌ثانیه در یک مدل بزرگ، از Cerebras یا Groq استفاده کنید.» الگوی سال ۲۰۲۶ عبارت است از **prefill و decode ناهمگن (heterogeneous)**: GPUهای متراکم از نظر محاسباتی و دارای HBM برای prefill، و قطعات مبتنی بر SRAM یا در مقیاس ویفر (wafer-scale) برای decode با محدودیت پهنای باند (bandwidth-bound).
 
-| Pairing | Status | Notes |
+| ترکیب (Pairing) | وضعیت | یادداشت‌ها |
 |---------|--------|-------|
-| NVIDIA Vera Rubin NVL72 plus Groq 3 LPX | LPX in full production since August 24, 2026; Nebius first cloud | 256 LPUs and 128 GB of SRAM per rack. Modes: P/D (Rubin prefill, LPX decode), attention-FFN split, or LPX as a speculative drafter. The Register estimates one LPX rack tops out around batch 12 at 100K-token inputs because of SRAM capacity |
-| AMD Helios plus Cerebras WSE | Announced; first through Cerebras Cloud in H2 2026 | Helios for prompt and large-context processing, Cerebras for decode; up to 5x tokens/s per watt versus Cerebras alone (AMD/Cerebras modeling) |
-| GPUs plus SambaNova RDUs (SambaNova and Intel) | Blueprint (April 8, 2026) | GPUs for prefill, SambaNova RDUs for decode, Intel Xeon 6 CPUs for agentic tool execution |
+| NVIDIA Vera Rubin NVL72 به همراه Groq 3 LPX | تولید کامل LPX از ۲۴ اوت ۲۰۲۶؛ Nebius اولین ارائه‌دهنده ابری | ۲۵۶ پردازنده LPU و ۱۲۸ گیگابایت حافظه SRAM در هر رک. حالت‌ها: P/D (پردازش prefill با Rubin، پردازش decode با LPX)، تقسیم attention-FFN، یا LPX به‌عنوان پیش‌نویس‌کننده گمانه‌زنی (speculative drafter). وب‌سایت The Register تخمین می‌زند که به‌دلیل ظرفیت SRAM، یک رک LPX در ورودی‌های با ۱۰۰ هزار Token در حدود دسته ۱۲ (batch 12) به سقف ظرفیت خود می‌رسد |
+| AMD Helios به همراه Cerebras WSE | اعلام‌شده؛ اولین بار از طریق Cerebras Cloud در نیمه دوم ۲۰۲۶ | پردازنده Helios برای پردازش Prompt و زمینه‌های طولانی (large-context)، و Cerebras برای decode؛ تا ۵ برابر Token بر ثانیه به ازای هر وات در مقایسه با Cerebras به‌تنهایی (مدل‌سازی AMD/Cerebras) |
+| GPUها به همراه SambaNova RDUs (SambaNova و Intel) | طرح اولیه (Blueprint) (۸ آوریل ۲۰۲۶) | GPUها برای prefill، پردازنده‌های SambaNova RDU برای decode، و CPUهای Intel Xeon 6 برای اجرای ابزارهای مبتنی بر Agent |
 
-Two business facts behind the table: NVIDIA's December 2025 deal with Groq is a non-exclusive technology license plus hires (terms undisclosed, reported at about $17-20B), and GroqCloud continues as an independent NVIDIA Cloud Partner deploying LPX and Rubin. SambaNova was not acquired; it announced a $1B first close at an $11B valuation on July 8.
+دو واقعیت تجاری در پس این جدول وجود دارد: قرارداد دسامبر ۲۰۲۵ شرکت NVIDIA با Groq یک مجوز غیرانحصاری فناوری به‌همراه جذب نیرو است (شرایط مالی فاش نشده است، اما حدود ۱۷ تا ۲۰ میلیارد دلار (\$17-20B) گزارش شده است)، و GroqCloud همچنان به‌عنوان یک شریک ابری مستقل NVIDIA (NVIDIA Cloud Partner) به استقرار LPX و Rubin ادامه می‌دهد. شرکت SambaNova خریداری نشد؛ این شرکت در ۸ ژوئیه از یک دوره اولیه جذب سرمایه ۱ میلیارد دلاری (\$1B) با ارزش‌گذاری ۱۱ میلیارد دلاری (\$11B) خبر داد.
 
-Speed is also sold as an API tier: OpenAI's Ultrafast tier costs 6x Standard, went GA on GPT-6 Astra on September 29, 2026, and opened to all API users on GPT-6.1 Sol on October 8 ($12/$60 per 1M tokens). Anthropic's fast mode for Opus 5.5 ($8/$40, 2x standard) left research preview on October 15 and is also offered on Foundry's Azure-hosted deployments and on Claude Models on Google Cloud (Anthropic managed). The small batch ceilings above are why those tiers carry a premium. The hidden cost in any self-built cross-chip design is moving KV between pools; budget it per request.
+سرعت همچنین به‌عنوان یک سطح API (API tier) فروخته می‌شود: سطح Ultrafast شرکت OpenAI هزینه‌ای معادل ۶ برابر نسخه استاندارد دارد، در ۲۹ سپتامبر ۲۰۲۶ روی GPT-6 Astra به مرحله دسترسی عمومی (GA) رسید و در ۸ اکتبر برای همه کاربران API روی GPT-6.1 Sol فعال شد (\$12/\$60 به ازای هر ۱ میلیون Token). حالت سریع (fast mode) شرکت Anthropic برای Opus 5.5 (\$8/\$40، ۲ برابر استاندارد) در ۱۵ اکتبر از مرحله پیش‌نمایش پژوهشی (research preview) خارج شد و همچنین در استقرارهای (Deployments) میزبانی‌شده در Azure شرکت Foundry و در Claude Models در Google Cloud (مدیریت‌شده توسط Anthropic) ارائه می‌شود. سقف‌های کوچک اندازه دسته (batch) که در بالا ذکر شد، دلیل قیمت بالاتر (پریمیوم) این سطوح هستند. هزینه پنهان در هر معماری بین‌تراشه‌ای اختصاصی، جابجایی KV بین استخرها است؛ این هزینه را باید به ازای هر درخواست در نظر بگیرید.
 
-### Decision Framework: Engine per Workload
+### فریم‌ورک تصمیم‌گیری: انتخاب موتور بر اساس بار کاری (Workload)
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -173,76 +177,80 @@ flowchart TD
     I -->|No| K[vLLM 0.33 plus]
 ```
 
-A more explicit mapping for the workloads teams actually deploy:
+</div>
 
-| Workload | Engine Choice (November 2026) | Why |
+یک نگاشت صریح‌تر برای بارهای کاری که تیم‌ها در عمل مستقر (Deploy) می‌کنند:
+
+| بار کاری (Workload) | انتخاب موتور (نوامبر ۲۰۲۶) | دلیل |
 |----------|---------------------------|-----|
-| Public chatbot (mixed traffic, must be patched fast) | **vLLM 0.33+** | Easiest to operate, best security cadence |
-| JSON function-calling backend, agent loops with long shared prefixes | **SGLang 0.5.23** (pinned, dumper off, ZMQ peer allowlist set, internal sockets in-pod) | RadixAttention prefix reuse and overlapped constrained decoding |
-| Single-model latency-critical (one model, one team) | **TensorRT-LLM** on B300 or Rubin | Peak NVIDIA throughput, no longer an engine-build tax |
-| Multimodal (image, audio, video in) | **vLLM 0.33+** | Broadest multimodal model coverage; SGLang is viable on a verified pinned version |
-| Reasoning model (long CoT, low concurrency) | **vLLM** or **SGLang** with the publisher's MTP or DSpark drafter | Decode-bound; speculative decoding with adaptive verification is the main lever |
-| MoE at fleet scale (DeepSeek V4, Kimi K3, Llama 4 Maverick) | **vLLM** or **SGLang** under **Dynamo** or **llm-d**, disaggregated | Expert parallelism, KV-aware routing, separate prefill and decode pools |
-| Premium sub-50ms TTFT and very high tok/s per user | **API speed tier** (Ultrafast, fast mode) or **cross-chip P/D** | GPUs alone cannot reach these per-user speeds on large models at reasonable batch |
+| چت‌بات عمومی (ترافیک ترکیبی، نیاز به پچ شدن سریع) | **vLLM 0.33+** | ساده‌ترین مدیریت عملیاتی، بهترین آهنگ انتشار وصله‌های امنیتی |
+| بک‌اند فراخوانی تابع JSON (JSON function-calling)، حلقه‌های Agent با پیشوندهای مشترک طولانی | **SGLang 0.5.23** (نسخه ثابت/pinned، خاموش بودن dumper، تنظیم لیست مجاز همتایان ZMQ، سوکت‌های داخلی درون‌پاد) | استفاده مجدد از پیشوند با RadixAttention و دیکود مقید هم‌پوشان (overlapped constrained decoding) |
+| تک‌مدل حساس به تاخیر (Latency) (یک مدل، یک تیم) | **TensorRT-LLM** روی B300 یا Rubin | حداکثر توان عملیاتی (Throughput) در NVIDIA، بدون دردسرهای قدیمی ساخت موتور (engine-build tax) |
+| چندوجهی (ورودی تصویر، صوت، ویدیو) | **vLLM 0.33+** | گسترده‌ترین پوشش مدل‌های چندوجهی؛ SGLang در یک نسخه پین‌شده و تاییدشده قابل‌استفاده است |
+| مدل استدلال (CoT طولانی، همزمانی پایین) | **vLLM** یا **SGLang** به همراه پیش‌نویس‌کننده (drafter) مبتنی بر MTP یا DSpark ارائه‌دهنده مدل | محدود به دیکود (Decode-bound)؛ دیکود گمانه‌زنی با اعتبارسنجی تطبیقی، اهرم اصلی است |
+| مدل MoE در مقیاس ناوگان (DeepSeek V4، Kimi K3، Llama 4 Maverick) | **vLLM** یا **SGLang** تحت **Dynamo** یا **llm-d**، به‌صورت تفکیک‌شده (disaggregated) | موازی‌سازی خبره‌ها (Expert parallelism)، مسیریابی آگاه از KV، استخرهای مجزای prefill و decode |
+| سطح پریمیوم TTFT زیر ۵۰ میلی‌ثانیه و Token بر ثانیه بسیار بالا به ازای هر کاربر | **سطح سرعتی API** (مانند Ultrafast، fast mode) یا **P/D بین‌تراشه‌ای** | GPUها به‌تنهایی نمی‌توانند در مدل‌های بزرگ و در دسته (batch) معقول، به این سرعت‌ها به ازای هر کاربر دست یابند |
 
-### Operational Posture
+### وضعیت عملیاتی (Operational Posture)
 
-- **Always be on a patched version.** Inference engines and gateways now have a CVE cadence comparable to web servers. Current floors:
+- **همیشه از یک نسخه پچ‌شده استفاده کنید.** موتورهای استنتاج (Inference) و Gatewayها اکنون آهنگ انتشار CVE مشابهی با وب‌سرورها دارند. حداقل نسخه‌های فعلی:
 
-| Component | Floor | Reason |
+| مؤلفه | حداقل نسخه (Floor) | دلیل |
 |-----------|-------|--------|
-| vLLM | 0.32.0; 0.33.0 on hosts that load third-party repositories | GHSA-qrj2-j723-m6w8 (crafted repo reads any local directory's vocabulary) fixed in 0.33.0; Ghostscript-reachable image decoding (CVE-2026-115915) and CVE-2026-115912 fixed in 0.32.0; generation hang behind a green `/health` fixed in 0.31.0; earlier model-load RCE, engine kill and prefix-cache oracle |
-| SGLang | 0.5.23, plus mitigations | CVE-2026-111391 and CVE-2026-93034 (critical) record no patched version and 0.5.23 does not fix either: set `SGLANG_ZMQ_ALLOWED_PEERS`, leave `DUMPER_SERVER_PORT` unset and keep `--dist-init-addr`, ZMQ and RPC endpoints off any shared network |
-| TensorRT-LLM (if on the RC line) | 1.3.0rc25 | CVE-2026-65119 (CVSS 8.4, local vector: `KvCacheAwareRouter` tokenizer loading can pull in untrusted code) and two SSRF bugs, CVE-2026-65120 and CVE-2026-24269 (CVSS 7.1 each), all in 1.3.0rc24; NVIDIA's only remedy is to update |
-| Ollama (dev or edge) | 0.35.0 | CVE-2026-103663 (CVSS v4 9.4): path traversal in `/api/pull` that can plant a binary that runs as root on restart. Never expose `/api/pull`; mirror the models you serve |
-| LiteLLM (if used) | 1.100.4, 1.101.3, 1.102.2 or 1.103.1, or later on that line; Enterprise-licensed proxies 1.103.10, 1.104.8, 1.105.6 or 1.106.5 | CVE-2026-114612 (CVSS 9.9, internal user to proxy admin, exploitable by default from 1.91.0) and GHSA-w4c7-34wj-hqm8 (CVSS 10.0, master-key leak on Enterprise-licensed proxies), on top of the earlier `api_base` key-exfiltration fix. Skip the 1.107 line and take 1.108.0 (November 4) or a legitimate post-incident 1.107 RC; never install 1.82.7, 1.82.8 or 1.107.0 (compromised builds; see [Securing the Gateway](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#securing-the-gateway)); install by hash from a mirror, pull images by digest, and re-pin cosign keys in admission policies to the key rotated on October 23 |
+| vLLM | 0.32.0؛ 0.33.0 روی میزبان‌هایی که مخازن شخص ثالث را بارگذاری می‌کنند | آسیب‌پذیری GHSA-qrj2-j723-m6w8 (مخزن دستکاری‌شده دایره واژگان هر دایرکتوری محلی را می‌خواند) در نسخه 0.33.0 برطرف شد؛ دیکود تصویر قابل‌دسترسی از طریق Ghostscript (CVE-2026-115915) و CVE-2026-115912 در نسخه 0.32.0 برطرف شدند؛ هنگ کردن فرایند تولید علی‌رغم وضعیت سبز `/health` در نسخه 0.31.0 برطرف شد؛ همچنین آسیب‌پذیری‌های قبلی اجرای کد از راه دور (RCE) هنگام بارگذاری مدل، بستن اجباری موتور و نشت اطلاعات از prefix-cache |
+| SGLang | 0.5.23، به‌همراه اقدامات کاهنده (mitigations) | برای CVE-2026-111391 و CVE-2026-93034 (بحرانی) هیچ نسخه پچ‌شده‌ای ثبت نشده است و 0.5.23 نیز هیچ‌کدام را برطرف نمی‌کند: متغیر `SGLANG_ZMQ_ALLOWED_PEERS` را تنظیم کنید، `DUMPER_SERVER_PORT` را بدون مقدار بگذارید و پارامتر `--dist-init-addr`، اندپوینت‌های ZMQ و RPC را از هر شبکه اشتراکی دور نگه دارید |
+| TensorRT-LLM (در صورت استفاده از شاخه RC) | 1.3.0rc25 | آسیب‌پذیری CVE-2026-65119 (با امتیاز CVSS 8.4، بردار محلی: بارگذاری Tokenizer در `KvCacheAwareRouter` می‌تواند کد غیرقابل‌اعتماد را وارد کند) و دو باگ SSRF شامل CVE-2026-65120 و CVE-2026-24269 (هر کدام با CVSS 7.1)، همگی در 1.3.0rc24 وجود دارند؛ تنها راهکار NVIDIA ارتقا به نسخه جدیدتر است |
+| Ollama (محیط توسعه یا edge) | 0.35.0 | آسیب‌پذیری CVE-2026-103663 (با CVSS v4 9.4): پیمایش مسیر (path traversal) در `/api/pull` که می‌تواند فایلی باینری بکارد که پس از ری‌استارت با دسترسی root اجرا شود. هرگز `/api/pull` را در معرض اینترنت قرار ندهید؛ مدل‌هایی را که سرویس می‌دهید Mirror (آینه‌سازی) کنید |
+| LiteLLM (در صورت استفاده) | 1.100.4، 1.101.3، 1.102.2 یا 1.103.1، یا نسخه‌های بعدی در آن شاخه؛ پروکسی‌های دارای مجوز Enterprise نسخه‌های 1.103.10، 1.104.8، 1.105.6 یا 1.106.5 | آسیب‌پذیری CVE-2026-114612 (با CVSS 9.9، ارتقای دسترسی کاربر داخلی به ادمین پروکسی، که به‌صورت پیش‌فرض از نسخه 1.91.0 قابل سوءاستفاده است) و GHSA-w4c7-34wj-hqm8 (با CVSS 10.0، افشای کلید اصلی در پروکسی‌های با مجوز Enterprise)، علاوه‌بر پچ قبلی استخراج کلید از طریق `api_base`. از شاخه 1.107 صرف‌نظر کرده و نسخه 1.108.0 (۴ نوامبر) یا یک نسخه RC معتبر بعد از حادثه از 1.107 را دریافت کنید؛ هرگز نسخه‌های 1.82.7، 1.82.8 یا 1.107.0 را نصب نکنید (بیلدهای آلوده؛ به [امن‌سازی Gateway](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#securing-the-gateway) مراجعه کنید)؛ از طریق هش و از یک Mirror نصب کنید، ایمیج‌ها را بر اساس Digest دریافت کنید، و کلیدهای cosign را در سیاست‌های پذیرش (admission policies) مجدداً به کلید چرخیده‌شده در ۲۳ اکتبر پین کنید |
 
-- **Health-check by generating, not by pinging.** A liveness endpoint proves the HTTP server is up, not that the engine produces tokens; in the vLLM advisory fixed in 0.31.0, `/health` returned 200 while every generation hung. Run a synthetic request through the real generation path (a few tokens, a hard timeout) as the readiness probe, restart on failure, and alert when probe latency drifts.
-- **Assume one request can take down every tenant on a replica.** Validate token IDs, media, and sizes at the gateway, run untrusted tenants on separate replicas when the blast radius matters, and alert on engine restarts.
-- **Run a canary on a second engine.** Production traffic on vLLM, 1-5% canary on SGLang or TensorRT-LLM, alert on quality or latency divergence. This catches engine-specific bugs and gives you a faster migration path.
-- **Treat the engine as part of the deployment manifest.** A model is not "Llama 4 Maverick"; it is "Llama 4 Maverick on vLLM v0.33.0 with this batch config, this kernel backend, and this speculative method on this hardware." Pin all of it, because defaults change between releases: kernel backends, batch budgets and model runners, in 0.32 the CORS policy and the meaning of `max_tokens`, and in 0.33 the CUDA version, the speculative methods on offer, and a new default-on route.
-- **Rebuild images when trust stores change.** On October 18, 2026 eMudhra revoked eight intermediate CAs with weak private keys, and Mozilla and Chrome distrusted the intermediates and moved to drop the emSign ECC Root CA - G3 root. Go 1.27.3 and 1.26.10 distrust the intermediates only in binaries rebuilt with the new toolchain, Python stacks pick up the root removal through certifi 2026.10.18 or later, and RHEL- and UBI-based containers must be rebuilt once base images update (details in [LLM Security](../12-security-and-access/01-llm-security.md#securing-the-ai-stack-itself)). The flip side: an image refresh such as Dynamo 1.6.1 can break TLS to any endpoint that chains only to the removed root, so test outbound TLS after every base-image bump.
-- **Benchmark on Pareto curves.** Use throughput-versus-interactivity curves on agentic traffic (SemiAnalysis InferenceX AgentX) and MLPerf Inference v6.1, which added End-to-End RAG and Edge Agentic tests and extended speculative decoding to the gpt-oss-120b Interactive scenario. See [Inference Fundamentals](01-inference-fundamentals.md#measure-on-the-pareto-curve-not-at-batch-1).
-- **Watch the security advisory feeds**, not just the release notes: [vLLM advisories](https://github.com/vllm-project/vllm/security/advisories), [SGLang advisories](https://github.com/sgl-project/sglang/security/advisories), [TensorRT-LLM CVE list](https://nvd.nist.gov/vuln/search/results?form_type=Basic&search_type=all&query=tensorrt-llm), and [NVIDIA product security](https://github.com/NVIDIA/product-security), where NVIDIA publishes TensorRT-LLM and NeMo bulletins instead of the repository's advisories tab.
-
----
-
-## Interview Questions
-
-### Q: Why is Tensor Parallelism preferred over Pipeline Parallelism for low-latency serving?
-
-**Strong answer:**
-Tensor Parallelism (TP) performs the matrix multiplications of a single layer across multiple GPUs simultaneously. This means the latency of that layer is reduced by the number of GPUs. Pipeline Parallelism (PP), conversely, processes different layers sequentially. While GPU 2 is working on layers 40-80, GPU 1 is idle unless you have a deep pipeline of multiple requests (batching). For a single user's request, PP adds the latency of all GPUs, whereas TP divides the latency across all GPUs. The nuance: TP needs very fast interconnect for its per-layer all-reduces, so across slow links PP wins, and on wafer-scale hardware, where each stage is enormously fast and only activations cross between wafers, pipelining is how the fastest per-user speeds are achieved.
-
-### Q: How do you handle "Noisy Neighbors" in a multi-tenant LLM cluster?
-
-**Strong answer:**
-We handle noisy neighbors through **Tiered Iteration-Level Scheduling**. Each tenant is assigned a "share" of the total GPU cycles. In the continuous batching loop, the scheduler ensures that a single tenant doesn't occupy 100% of the KV cache slots. If Tenant A is overwhelming the system, the scheduler will prioritize "Prefill" steps for Tenant B and C, or only process a subset of Tenant A's decode iterations per cycle. This is enforced at the Gateway via token-bucket rate limiting and at the serving engine via specific scheduling policies, plus queue-level admission control (bounded queued requests and tokens) so excess load is rejected early instead of inflating everyone's TTFT.
-
-### Q: A single malformed request crashed a vLLM replica and every tenant on it lost service. What is the design lesson?
-
-**Strong answer:**
-A GPU inference engine is a shared-fate domain. In CVE-2026-93592, one unauthenticated request with a negative token ID to the embeddings endpoint tripped a CUDA device-side assertion that poisoned the CUDA context, and no try/except can catch that, so the whole engine died until restart. Patching to 0.28.0 or later fixes that bug, but the lesson is architectural. Validate inputs before they reach the device: token IDs in range, media decoded and size-checked in a separate process, request sizes bounded at the gateway. Limit blast radius: separate replicas or pools for untrusted tenants and for endpoints you do not need (disable embeddings or pooling routes if unused). Detect and recover fast: a readiness probe that runs a real generation rather than hitting `/health` (a later vLLM advisory, fixed in 0.31.0, hung every generation while `/health` kept returning 200), automatic restart, and Fast Start-style weight caching so a restart takes seconds, not minutes. Treat the same class of risk for the prefix cache, which is a cross-tenant side channel unless every path salts it per tenant.
-
-### Q: Design a premium low-latency tier for an agent product that needs very high tokens per second per user.
-
-**Strong answer:**
-First I would check whether buying it is enough: OpenAI's Ultrafast tier (6x Standard, on GPT-6 Astra and GPT-6.1 Sol) and Anthropic's fast mode for Opus 5.5 (2x, out of research preview since October 15) sell exactly this, and for most teams the 2-6x price premium is cheaper than building it. If we self-host, the 2026 pattern is cross-chip disaggregation: HBM GPUs (Vera Rubin) for compute-bound prefill, SRAM or wafer-scale parts (Groq 3 LPX, Cerebras) for bandwidth-bound decode, with a KV-aware router choosing when to disaggregate. The numbers to get right are the KV transfer cost per request between pools (hundreds of KiB per token for dense models, far less for latent or sparse attention), and the batch ceiling of SRAM-limited decode (The Register estimates one LPX rack tops out near batch 12 at 100K-token contexts), which sets cost per user. I would add speculative decoding with the publisher's drafter, route only latency-critical traffic to the tier, price it separately, and keep a GPU-only fallback, because these are new parts with limited cloud availability.
+- **بررسی سلامت را با تولید متن انجام دهید، نه با پینگ کردن (Health-check by generating, not by pinging).** یک اندپوینت liveness تنها زنده بودن سرور HTTP را اثبات می‌کند، نه اینکه موتور در حال تولید Tokenها باشد؛ در هشدار امنیتی vLLM که در نسخه 0.31.0 رفع شد، `/health` وضعیت ۲۰۰ برمی‌گرداند در حالی که فرایند تولید قفل می‌کرد. یک درخواست ساختگی (synthetic request) را از طریق مسیر تولید واقعی (تعداد کمی Token، با یک مهلت زمانی سخت/hard timeout) به‌عنوان پروب آمادگی (readiness probe) اجرا کنید، در صورت بروز خطا ری‌استارت نمایید، و هنگام انحراف تاخیر (Latency) پروب هشدار ارسال کنید.
+- **فرض کنید یک درخواست می‌تواند همه مستاجران (multi-tenant) روی یک رپلیکا را از کار بیندازد.** شناسه‌های Token، مدیا و اندازه‌ها را در Gateway اعتبارسنجی کنید، مستاجران (multi-tenant) غیرقابل‌اعتماد را در مواقعی که شعاع تخریب (blast radius) اهمیت دارد روی رپلیکاهای جداگانه اجرا کنید، و روی ری‌استارت‌های موتور سیستم هشدار تنظیم نمایید.
+- **یک استقرار قناری (Canary) روی موتور دوم اجرا کنید.** ترافیک پروداکشن روی vLLM، و ۱ تا ۵ درصد ترافیک قناری (canary) روی SGLang یا TensorRT-LLM، و در صورت واگرایی کیفیت یا تاخیر (Latency) هشدار دهید. این کار باگ‌های مختص به موتور را کشف می‌کند و مسیر مهاجرت سریع‌تری را برای شما فراهم می‌سازد.
+- **موتور را بخشی از مانیفست استقرار (Deployment manifest) در نظر بگیرید.** یک مدل صرفاً «Llama 4 Maverick» نیست؛ بلکه «Llama 4 Maverick روی vLLM v0.33.0 با این پیکربندی دسته (batch config)، این بک‌اند کرنل، و این روش گمانه‌زنی روی این سخت‌افزار» است. همه این موارد را پین (ثابت) کنید، زیرا مقادیر پیش‌فرض بین نسخه‌ها تغییر می‌کنند: بک‌اندهای کرنل، بودجه‌های دسته‌بندی و اجراکننده‌های مدل (model runners)، در نسخه 0.32 سیاست CORS و معنای `max_tokens`، و در نسخه 0.33 نسخه CUDA، روش‌های گمانه‌زنی ارائه‌شده و یک مسیر جدید که به‌طور پیش‌فرض فعال است.
+- **هنگام تغییر مخازن گواهی‌های معتمد (trust stores)، ایمیج‌ها را بازسازی (Rebuild) کنید.** در ۱۸ اکتبر ۲۰۲۶، شرکت eMudhra هشت مرکز صدور گواهی میانی (intermediate CA) با کلیدهای خصوصی ضعیف را باطل کرد، و موزیلا و کروم به این مراجع میانی سلب اعتماد کرده و اقدام به حذف گواهی ریشه emSign ECC Root CA - G3 کردند. زبان Go در نسخه‌های 1.27.3 و 1.26.10 تنها در باینری‌هایی که با زنجیره ابزار (toolchain) جدید بازسازی شده‌اند سلب اعتماد به این مراجع میانی را اعمال می‌کند، پشته‌های پایتون حذف این ریشه را از طریق certifi نسخه 2026.10.18 یا جدیدتر دریافت می‌کنند، و کانتینرهای مبتنی بر RHEL و UBI نیز باید پس از به‌روزرسانی ایمیج‌های پایه مجدداً ساخته شوند (جزئیات در [امنیت LLM](../12-security-and-access/01-llm-security.md#securing-the-ai-stack-itself)). جنبه منفی این موضوع: به‌روزرسانی یک ایمیج مانند Dynamo 1.6.1 می‌تواند اتصال TLS به هر اندپوینتی را که فقط به ریشه حذف‌شده متصل است قطع کند؛ بنابراین پس از هر بار ارتقای ایمیج پایه، اتصال TLS خروجی را آزمایش کنید.
+- **بنچمارک‌ها را بر اساس منحنی‌های پارتو (Pareto curves) انجام دهید.** از منحنی‌های توان عملیاتی (Throughput) در برابر تعاملی‌بودن (interactivity) روی ترافیک مبتنی بر Agent (بنچمارک SemiAnalysis InferenceX AgentX) و MLPerf Inference v6.1 استفاده کنید؛ این نسخه آزمون‌های End-to-End RAG و Edge Agentic را اضافه کرده و دیکود گمانه‌زنی را به سناریوی تعاملی gpt-oss-120b تعمیم داده است. به [مبانی استنتاج (Inference)](01-inference-fundamentals.md#measure-on-the-pareto-curve-not-at-batch-1) مراجعه کنید.
+- **فیدهای هشدارهای امنیتی را زیر نظر داشته باشید**، نه فقط یادداشت‌های انتشار (release notes): [هشدارهای امنیتی vLLM](https://github.com/vllm-project/vllm/security/advisories)، [هشدارهای امنیتی SGLang](https://github.com/sgl-project/sglang/security/advisories)، [فهرست CVEهای TensorRT-LLM](https://nvd.nist.gov/vuln/search/results?form_type=Basic&search_type=all&query=tensorrt-llm) و [امنیت محصول NVIDIA](https://github.com/NVIDIA/product-security)؛ جایی که NVIDIA به جای تب advisories مخزن، بولتن‌های امنیتی TensorRT-LLM و NeMo را منتشر می‌کند.
 
 ---
 
-## References
+## سوالات مصاحبه
+
+### سوال: چرا موازی‌سازی تانسوری (Tensor Parallelism) برای سرویس‌دهی با تاخیر کم (low-latency) نسبت به موازی‌سازی خط‌لوله‌ای (Pipeline Parallelism) ترجیح داده می‌شود؟
+
+**پاسخ قوی:**
+موازی‌سازی تانسوری (Tensor Parallelism یا TP) ضرب‌های ماتریسی یک لایه منفرد را به طور هم‌زمان روی چندین GPU انجام می‌دهد. این بدان معناست که تاخیر (Latency) آن لایه به نسبت تعداد GPUها کاهش می‌یابد. در مقابل، موازی‌سازی خط‌لوله‌ای (Pipeline Parallelism یا PP) لایه‌های مختلف را به صورت متوالی پردازش می‌کند. در حالی که GPU 2 روی لایه‌های ۴۰ تا ۸۰ کار می‌کند، GPU 1 بیکار (idle) است، مگر اینکه خط‌لوله‌ای عمیق از چندین درخواست (دسته‌بندی یا batching) داشته باشید. برای درخواست یک کاربر منفرد، PP تاخیر (Latency) همه GPUها را با یکدیگر جمع می‌کند، در حالی که TP تاخیر (Latency) را بین تمام GPUها تقسیم می‌نماید. نکته ظریف این است که: TP برای عملیات‌های all-reduce در هر لایه به اتصال متقابل (interconnect) بسیار سریعی نیاز دارد، بنابراین در پیوندهای ارتباطی کندتر، PP برنده می‌شود؛ و در سخت‌افزارهای در مقیاس ویفر (wafer-scale)، جایی که هر مرحله فوق‌العاده سریع است و تنها اکتیویشن‌ها (activations) بین ویفرها رد و بدل می‌شوند، استفاده از خط لوله (pipelining) روشی است که بالاترین سرعت‌ها را به ازای هر کاربر محقق می‌سازد.
+
+### سوال: چگونه مشکل «مستأجران ناهنجار» (Noisy Neighbors in multi-tenant) را در یک کلاستر LLM چندمستأجری (multi-tenant) مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+ما مستأجران ناهنجار (Noisy Neighbors in multi-tenant) را از طریق **زمان‌بندی چندسطحی در سطح تکرار (Tiered Iteration-Level Scheduling)** مدیریت می‌کنیم. به هر مستأجر (tenant در multi-tenant) یک «سهم» از کل چرخه‌های GPU اختصاص می‌یابد. در حلقه دسته‌بندی مداوم (continuous batching)، زمان‌بند (scheduler) اطمینان حاصل می‌کند که یک مستأجر (tenant در multi-tenant) به تنهایی ۱۰۰٪ اسلات‌های کش KV (KV cache) را اشغال نکند. اگر مستأجر A (در multi-tenant) بار بیش از حدی به سیستم وارد کند، زمان‌بند گام‌های «Prefill» را برای مستأجران B و C (در multi-tenant) در اولویت قرار می‌دهد یا در هر چرخه تنها زیرمجموعه‌ای از تکرارهای دیکود (decode iterations) مستأجر A (در multi-tenant) را پردازش می‌کند. این سیاست در سطح Gateway از طریق محدودسازی نرخ با الگوریتم سطل Token (token-bucket rate limiting) و در موتور سرویس‌دهی از طریق سیاست‌های زمان‌بندی خاص اعمال می‌شود، به همراه کنترل پذیرش در سطح صف (محدود کردن درخواست‌ها و Tokenهای درون صف) تا بار اضافی به موقع و پیش از موعد رد (reject) شود، به جای اینکه TTFT (زمان تا اولین Token) همه کاربران را افزایش دهد.
+
+### سوال: یک درخواست منفرد نادرست و معیوب (malformed request) منجر به از کار افتادن (crash) یک رپلیکا (replica) از vLLM شد و تمامی مستأجران روی آن (tenants in multi-tenant) سرویس خود را از دست دادند. درس معماری این اتفاق چیست؟
+
+**پاسخ قوی:**
+یک موتور استنتاج (Inference) مبتنی بر GPU، دامنه‌ای با سرنوشت مشترک (shared-fate domain) است. در CVE-2026-93592، یک درخواست احراز هویت‌نشده با یک شناسه منفی Token (negative token ID) به اندپوینت امبدینگ‌ها، باعث فعال شدن یک device-side assertion در CUDA شد که کانتکست CUDA را مسموم (poisoned) کرد؛ و هیچ `try/except`ی قادر به گرفتن (catch) آن نیست، بنابراین کل موتور تا زمان راه‌اندازی مجدد (restart) از کار افتاد. پچ کردن به نسخه 0.28.0 یا بالاتر آن باگ را برطرف می‌کند، اما این درس ماهیتی معماری دارد. اعتبارسنجی ورودی‌ها پیش از رسیدن به دستگاه: بررسی قرار داشتن شناسه‌های Token (token IDs) در محدوده مجاز، دیکود رسانه‌ها و بررسی ابعاد آن‌ها در یک پروسس مجزا، و محدود کردن اندازه درخواست‌ها در سطح Gateway. محدود کردن شعاع تخریب (blast radius): تفکیک رپلیکاها (replicas) یا استخرهای مجزا برای مستأجران غیرقابل اعتماد (untrusted tenants in multi-tenant) و برای اندپوینت‌هایی که به آن‌ها نیازی ندارید (غیرفعال کردن مسیرهای embeddings یا pooling در صورت عدم استفاده). تشخیص و بازیابی سریع: یک پروب آمادگی (readiness probe) که به جای فراخوانی ساده `/health` یک فرآیند تولید واقعی را اجرا کند (یک توصیه‌نامه امنیتی بعدی vLLM که در نسخه 0.31.0 برطرف شد، باعث هنگ کردن تمام فرآیندهای تولید می‌شد در حالی که `/health` همچنان کد 200 را برمی‌گرداند)، راه‌اندازی مجدد خودکار (automatic restart)، و کش کردن وزن‌ها به سبک Fast Start به گونه‌ای که راه‌اندازی مجدد چند ثانیه طول بکشد نه چند دقیقه. همین کلاس از ریسک را برای کش پیشوند (prefix cache) نیز مد نظر قرار دهید، چرا که این کش یک کانال جانبی بین‌مستأجری (cross-tenant side channel in multi-tenant) است، مگر اینکه تمام مسیرها آن را به ازای هر مستأجر (per tenant in multi-tenant) با یک مقدار تصادفی (salt) تفکیک کنند.
+
+### سوال: یک سطح دسترسی (Tier) پرمیوم با تاخیر کم (low-latency) را برای یک محصول مبتنی بر Agent که به تعداد بسیار بالایی Token در ثانیه به ازای هر کاربر (tokens per second per user) نیاز دارد، طراحی کنید.
+
+**پاسخ قوی:**
+در ابتدا بررسی می‌کنم که آیا خرید آن از ارائه‌دهندگان کفایت می‌کند یا خیر: سطح دسترسی Ultrafast متعلق به OpenAI (با سرعت ۶ برابر استاندارد، روی GPT-6 Astra و GPT-6.1 Sol) و حالت سریع (fast mode) شرکت Anthropic برای مدل Opus 5.5 (با سرعت ۲ برابر، که از ۱۵ اکتبر از حالت پیش‌نمایش پژوهشی خارج شده است) دقیقاً همین سرویس را ارائه می‌دهند، و برای اکثر تیم‌ها، پرداخت هزینه اضافی (price premium) ۲ تا ۶ برابری ارزان‌تر از ساخت و پیاده‌سازی داخلی آن تمام می‌شود. اگر بخواهیم هاستینگ را به صورت درون‌سازمانی (self-host) انجام دهیم، الگوی سال ۲۰۲۶ جداسازی بین‌تراشه‌ای (cross-chip disaggregation) است: GPUهای دارای حافظه HBM (مانند Vera Rubin) برای مرحله Prefill وابسته به توان پردازشی (compute-bound prefill)، و قطعات مبتنی بر SRAM یا مقیاس ویفر (Groq 3 LPX و Cerebras) برای دیکود وابسته به پهنای باند (bandwidth-bound decode)، به همراه یک روتر آگاه از کش KV (یک KV-aware router) که زمان تفکیک و جداسازی را انتخاب می‌کند. اعدادی که باید به درستی محاسبه شوند عبارتند از هزینه انتقال KV به ازای هر درخواست بین استخرها (صدها KiB به ازای هر Token برای مدل‌های متراکم (dense)، و به مراتب کمتر برای مکانیزم‌های توجه نهفته (latent attention) یا تنک (sparse attention))، و سقف دسته‌بندی (batch ceiling) دیکود محدود به SRAM (نشریه The Register تخمین می‌زند که یک رک LPX در کانتکست‌های ۱۰۰ هزار Tokenای حداکثر به batch size حدود ۱۲ می‌رسد)، که این مقدار هزینه به ازای هر کاربر را تعیین می‌کند. من دیکود حدسی (speculative decoding) را با مدل پیش‌نویس‌کننده ناشر (publisher's drafter) اضافه می‌کردم، تنها ترافیک حساس به تاخیر (Latency-critical traffic) را به این سطح دسترسی هدایت می‌نمودم، قیمت‌گذاری آن را به صورت مجزا تعیین می‌کردم و یک مسیر پشتیبان (fallback) صرفاً مبتنی بر GPU نگه می‌داشتم، زیرا این‌ها قطعات جدیدی هستند که دسترسی ابری (cloud availability) به آن‌ها محدود است.
+
+---
+
+## منابع
 - Narayanan et al. "Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM" (2021)
 - Shoeybi et al. "Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism" (2019)
-- vLLM. [Releases](https://github.com/vllm-project/vllm/releases) and ["Disaggregated serving guide"](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide) (2026)
-- SGLang. [Releases](https://github.com/sgl-project/sglang/releases)
-- llm-d. [v1.0.0 release](https://github.com/llm-d/llm-d/releases/tag/v1.0.0) (2026)
-- vLLM. [v0.33.0 release notes](https://github.com/vllm-project/vllm/releases/tag/v0.33.0rc3) and [GHSA-qrj2-j723-m6w8](https://github.com/vllm-project/vllm/security/advisories/GHSA-qrj2-j723-m6w8) (2026)
-- vLLM. [GHSA-4xqp-c3mv-qff7](https://github.com/vllm-project/vllm/security/advisories/GHSA-4xqp-c3mv-qff7) (engine hang behind a healthy `/health`) and [GHSA-h3rc-j82p-2c3h](https://github.com/vllm-project/vllm/security/advisories/GHSA-h3rc-j82p-2c3h) (CVE-2026-115915)
-- NVIDIA. [Dynamo releases](https://github.com/ai-dynamo/dynamo/releases) (v1.6.0 and v1.6.1), [TensorRT-LLM security bulletin](https://raw.githubusercontent.com/NVIDIA/product-security/main/2026/5883/5883.md) (October 27, 2026) and ["Groq 3 LPX now in full production"](https://nvidianews.nvidia.com/news/nvidia-groq-3-lpx-now-in-full-production-with-world-class-speed-for-agentic-ai) (2026)
-- Kubernetes SIGs. [Gateway API Inference Extension v1.6.0](https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/tag/v1.6.0)
-- MLCommons. [MLPerf Inference v6.1 results](https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/) (2026)
+- vLLM. [نسخه‌های منتشرشده](https://github.com/vllm-project/vllm/releases) و [«راهنمای سرویس‌دهی تفکیک‌شده»](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide) (2026)
+- SGLang. [نسخه‌های منتشرشده](https://github.com/sgl-project/sglang/releases)
+- llm-d. [انتشار نسخه v1.0.0](https://github.com/llm-d/llm-d/releases/tag/v1.0.0) (2026)
+- vLLM. [یادداشت‌های انتشار v0.33.0](https://github.com/vllm-project/vllm/releases/tag/v0.33.0rc3) و [GHSA-qrj2-j723-m6w8](https://github.com/vllm-project/vllm/security/advisories/GHSA-qrj2-j723-m6w8) (2026)
+- vLLM. [GHSA-4xqp-c3mv-qff7](https://github.com/vllm-project/vllm/security/advisories/GHSA-4xqp-c3mv-qff7) (هنگ کردن موتور در پشت یک پاسخ سالم `/health`) و [GHSA-h3rc-j82p-2c3h](https://github.com/vllm-project/vllm/security/advisories/GHSA-h3rc-j82p-2c3h) (CVE-2026-115915)
+- NVIDIA. [نسخه‌های منتشرشده Dynamo](https://github.com/ai-dynamo/dynamo/releases) (نسخه‌های v1.6.0 و v1.6.1)، [بولتن امنیتی TensorRT-LLM](https://raw.githubusercontent.com/NVIDIA/product-security/main/2026/5883/5883.md) (۲۷ اکتبر ۲۰۲۶) و [«Groq 3 LPX اکنون در مرحله تولید کامل است»](https://nvidianews.nvidia.com/news/nvidia-groq-3-lpx-now-in-full-production-with-world-class-speed-for-agentic-ai) (2026)
+- Kubernetes SIGs. [افزونه استنتاج (Inference Extension) در Gateway API نسخه v1.6.0](https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/tag/v1.6.0)
+- MLCommons. [نتایج MLPerf Inference v6.1](https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/) (2026)
 
 ---
 
-*Next: [Cost Optimization Playbook](07-cost-optimization-playbook.md)*
+*بعدی: [پلی‌بوک بهینه‌سازی هزینه](07-cost-optimization-playbook.md)*
+
+</div>

@@ -1,124 +1,128 @@
-# Diffusion Language Models
+<div dir="rtl">
 
-Almost every LLM you use is autoregressive (AR): it emits one token per forward pass, left to right. **Diffusion language models** take a different path borrowed from image generation: start from a fully masked sequence and iteratively denoise *all positions in parallel* over a handful of steps. The payoff is throughput, reported figures over 1,000 tokens per second, an order of magnitude above speed-optimized AR models. The cost is some quality, and the maturity is early. This chapter explains how they work, where they win, and what an engineer should actually do with them in 2026.
+# مدل‌های زبانی دیفیوژن (Diffusion Language Models)
 
-## Table of Contents
+تقریباً هر LLM که استفاده می‌کنید خودبازگشتی (Autoregressive یا AR) است: در هر عبور رو به جلو (forward pass)، یک Token را از چپ به راست تولید می‌کند. **مدل‌های زبانی دیفیوژن** مسیر متفاوتی را در پیش می‌گیرند که از تولید تصویر به عاریت گرفته شده است: شروع از یک توالی کاملاً ماسک‌شده و نویززدایی تکرارشونده‌ی *تمام موقعیت‌ها به‌طور موازی* در طول چند گام اندک. دستاورد این روش، توان عملیاتی (Throughput) است؛ ارقام گزارش‌شده حاکی از بیش از ۱,۰۰۰ Token در ثانیه است که یک مرتبه بزرگی بالاتر از مدل‌های AR بهینه‌سازی‌شده برای سرعت می‌باشد. بهای آن اندکی افت کیفیت است و این فناوری هنوز در مراحل اولیه بلوغ خود قرار دارد. این فصل نحوه کارکرد آن‌ها، نقاط قوتشان و آنچه یک مهندس در سال ۲۰۲۶ در عمل باید با آن‌ها انجام دهد را توضیح می‌دهد.
 
-- [How They Work](#how-they-work)
-- [The Speed Advantage and the Tradeoff](#the-speed-advantage-and-the-tradeoff)
-- [Diffusion Systems in 2026](#diffusion-systems-in-2026)
-- [Hybrids: Draft with Diffusion, Verify with AR](#hybrids-draft-with-diffusion-verify-with-ar)
-- [Where Diffusion Wins and Where AR Still Wins](#where-diffusion-wins-and-where-ar-still-wins)
-- [Maturity and What to Do Today](#maturity-and-what-to-do-today)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## How They Work
-
-An AR model factorizes a sequence left to right: each token is predicted from the past only, one per forward pass. A **masked diffusion model** instead learns to reconstruct a whole sequence from a corrupted (masked) version, refining all positions at once over a few denoising steps, with **bidirectional** attention (each position sees both past and future).
-
-The canonical reference is **LLaDA** (arXiv:2502.09992). The mechanism, at a teachable level:
-- **Forward process:** start from clean text; at noise level `t`, replace each token with a `[MASK]` with probability `t`. At `t=1` the sequence is fully masked.
-- **Reverse process:** a Transformer (a "mask predictor") is trained to predict the original token at every masked position simultaneously, optimizing a likelihood *lower bound* (not the exact likelihood AR models use).
-- **Sampling:** begin fully masked and denoise from `t=1` to `0`. At each step the model predicts all masked tokens, and an **unmasking schedule** decides how many of the highest-confidence predictions to commit and how many to re-mask for the next step. Fewer steps means faster and lower quality; one token per step approaches AR quality but forfeits the speed.
-
-Parallel decoding and bidirectional context fall out of this directly, and they give diffusion a notable trick: LLaDA reports beating GPT-4o on a reversal task (completing a poem backwards), because the objective is not locked to left-to-right order.
-
-The cleanest mental model is not "AR vs diffusion" but an **interpolation** between them, established by Block Diffusion (BD3-LMs, arXiv:2503.09573): split the sequence into blocks, go AR across blocks and diffusion within a block. This recovers two things pure diffusion struggles with, KV caching and variable-length output, and the block size is the knob (block size 1 is AR, block size equals the whole sequence is pure diffusion). Almost every fast 2026 system ships some block or semi-AR variant.
+- [نحوه کارکرد آن‌ها](#how-they-work)
+- [مزیت سرعت و موازنه آن](#the-speed-advantage-and-the-tradeoff)
+- [سیستم‌های دیفیوژن در سال ۲۰۲۶](#diffusion-systems-in-2026)
+- [مدل‌های هیبریدی: پیش‌نویس با دیفیوژن، تایید با AR](#hybrids-draft-with-diffusion-verify-with-ar)
+- [کجا دیفیوژن برنده می‌شود و کجا AR همچنان برتر است](#where-diffusion-wins-and-where-ar-still-wins)
+- [بلوغ و اقداماتی که امروزه باید انجام داد](#maturity-and-what-to-do-today)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Speed Advantage and the Tradeoff
+## نحوه کارکرد آن‌ها
 
-The speedup comes from one place: **tokens committed per forward pass.** AR emits one; diffusion commits many over a few steps, so wall-clock throughput rises when the model can confidently unmask several positions at once. It is a latency and throughput win, not inherently a quality win.
+یک مدل AR توالی را از چپ به راست تجزیه و فاکتورگیری می‌کند: هر Token تنها بر اساس گذشته پیش‌بینی می‌شود، یک مورد در هر عبور رو به جلو (forward pass). در مقابل، یک **مدل دیفیوژن ماسک‌شده (masked diffusion model)** بازسازی کل دنباله را از روی یک نسخه خراب‌شده (ماسک‌شده) یاد می‌گیرد و تمام موقعیت‌ها را به‌طور هم‌زمان در طول چند مرحله نویززدایی با استفاده از توجه **دو‌طرفه (bidirectional)** (که در آن هر موقعیت هم گذشته و هم آینده را می‌بیند) اصلاح و پالایش می‌کند.
 
-Reported throughput (all vendor or benchmark claims, conditions vary): commercial diffusion models report on the order of 700 to 1,500 tokens per second on a single datacenter GPU, which their makers frame as several times faster than speed-optimized AR baselines (up to ~10x for the best-case code-completion path, closer to ~5x for reasoning workloads). Independent measurement of one commercial model put it around 1,100 tokens per second.
+مرجع شاخص و اصلی در این زمینه **LLaDA** (arXiv:2502.09992) است. این سازوکار در یک سطح قابل آموزش به شرح زیر است:
+- **فرآیند رو به جلو (Forward process):** شروع از متن تمیز؛ در سطح نویز `t`، هر Token را با احتمال `t` با یک `[MASK]` جایگزین کنید. در `t=1` کل دنباله کاملاً ماسک می‌شود.
+- **فرآیند معکوس (Reverse process):** یک ترنسفورمر (یک «پیش‌بین ماسک») آموزش داده می‌شود تا Token اصلی را در هر موقعیت ماسک‌شده به‌طور هم‌زمان پیش‌بینی کند و یک *کران پایین (lower bound)* درست‌نمایی (likelihood) را بهینه‌سازی نماید (نه درست‌نمایی دقیقی که مدل‌های AR استفاده می‌کنند).
+- **نمونه‌برداری (Sampling):** فرآیند به‌صورت کاملاً ماسک‌شده آغاز می‌شود و نویززدایی از `t=1` تا `0` صورت می‌گیرد. در هر گام، مدل تمام Tokenهای ماسک‌شده را پیش‌بینی می‌کند و یک **برنامه زمان‌بندی ماسک‌برداری (unmasking schedule)** تصمیم می‌گیرد که چه تعداد از پیش‌بینی‌های دارای بالاترین اطمینان تثبیت (commit) شوند و چه تعداد برای مرحله بعدی مجدداً ماسک‌گذاری گردند. گام‌های کمتر به معنای سرعت بیشتر و کیفیت پایین‌تر است؛ تولید یک Token در هر گام به کیفیت AR نزدیک می‌شود اما مزیت سرعت را از بین می‌برد.
 
-The tradeoff is intrinsic to the unmasking schedule: committing more tokens per step is faster but can produce locally incoherent output, so the practical best quality comes from unmasking fewer tokens per step, which slows things down. Where the quality gap stands in 2026, as reported:
-- **On code, the gap is small.** Diffusion models roughly match similar-tier AR models on code-completion benchmarks; code is the consensus sweet spot.
-- **On knowledge and hard reasoning, the gap is larger**, and no diffusion model is frontier-class. A recognized theoretical headwind is that masked diffusion optimizes a likelihood *bound*, not exact likelihood.
+دیکودینگ موازی (Parallel decoding) و بافت دوطرفه مستقیماً از این سازوکار حاصل می‌شوند و ترفند قابل‌توجهی را در اختیار دیفیوژن قرار می‌دهند: LLaDA گزارش می‌دهد که در وظیفه معکوس‌سازی (تکمیل کردن یک شعر از انتها به ابتدا) مدل GPT-4o را شکست داده است، زیرا تابع هدف آن محدود و قفل‌شده به ترتیب چپ‌به‌راست نیست.
 
----
-
-## Diffusion Systems in 2026
-
-Treat versions, speeds, and prices as a perishable snapshot.
-
-| System | Type | Notes (reported) |
-|--------|------|------------------|
-| **Mercury 2.5** (Inception Labs) | Closed, general | The clearest production option: OpenAI-compatible API on Inception, Baseten, and OpenRouter. Inception reports 1,107 tokens/sec on widely available NVIDIA GPUs, a 260K context, and list pricing of $0.20 input / $0.75 output per 1M tokens (launch promotion $0.04 / $0.15). Marketed as a fast reasoning model, a claim some analysts dispute given diffusion's multi-step-reasoning limits; verify on your own evals. |
-| **Mercury Voice** (Inception Labs) | Closed, voice agents | Enterprise GA September 29, 2026: a diffusion reasoning model for voice agents with a reported 320 ms median time to first answer token (p95 750 ms), three reasoning-effort levels, 128K context, $0.40 / $1.50 per 1M list (50% off at launch). |
-| **Gemini Diffusion** (Google) | Closed demo | Impressive demo speeds; **no public API** (not on the Gemini API model list as of November 2, 2026). Do not architect around it. |
-| **DiffusionGemma** (Google) | Open weights | An open-weight Gemma-family diffusion model, reported over 1,000 tokens/sec on one datacenter GPU. Do not conflate it with Gemini Diffusion. |
-| **LLaDA / LLaDA 2.x** | Open weights | The foundational open model and its MoE successors; competitive with similar-size AR models, not frontier. LLaDA2.2-mini (Ant Group, September 5, 2026, Apache 2.0) is a 16B / 1.4B-active MoE with 128K context and edit tokens (DELETE and INSERT) so it can revise text, not just fill masks; vendor scores of 47.68 on BFCL v4 and 57.50 on tau2-Bench show agentic diffusion models exist but trail AR models on tool use. |
-| **Dream 7B** | Open weights | Reported to match or exceed similar-size AR models, with a tunable steps knob and strong planning (Sudoku, Countdown); a fully-open code variant exists. |
-| **DFlash 2** (Inco AI) | Diffusion drafter | Not a standalone chat model: a block-diffusion drafter for AR targets, reporting 2.7x to 3.4x throughput on Qwen3.8-27B (vendor-reported). Merged into SGLang, vLLM, and llama.cpp in late August 2026. |
+شفاف‌ترین مدل ذهنی، مقایسه «AR در برابر دیفیوژن» نیست، بلکه یک **درون‌یابی (interpolation)** میان آن‌هاست که توسط Block Diffusion (BD3-LMs, arXiv:2503.09573) پایه‌گذاری شد: دنباله را به بلوک‌ها تقسیم کنید، بین بلوک‌ها به‌صورت AR عمل نمایید و درون هر بلوک از دیفیوژن استفاده کنید. این رویکرد دو موردی را که دیفیوژن خالص با آن‌ها دست‌وپنجه نرم می‌کند بازیابی می‌کند: کش‌کردن KV (یا KV caching) و خروجی با طول متغیر؛ که در این میان اندازه بلوک همان پیچ تنظیم است (اندازه بلوک ۱ همان AR است، و اندازه بلوک برابر با کل دنباله همان دیفیوژن خالص است). تقریباً هر سیستم سریع در سال ۲۰۲۶ نوعی واریانت بلوکی یا شبه‌خودبازگشتی (semi-AR) را ارائه می‌دهد.
 
 ---
 
-## Hybrids: Draft with Diffusion, Verify with AR
+## مزیت سرعت و موازنه آن
 
-The most production-relevant work fuses the two paradigms:
+افزایش سرعت تنها از یک عامل ناشی می‌شود: **تعداد Tokenهای تثبیت‌شده در هر عبور رو به جلو (forward pass).** مدل AR در هر بار یک Token تولید می‌کند؛ اما دیفیوژن در طول چند مرحله چندین مورد را تثبیت می‌نماید، بنابراین هنگامی که مدل بتواند با اطمینان چند موقعیت را هم‌زمان از ماسک خارج کند، توان عملیاتی (Throughput) بر حسب زمان واقعی (wall-clock) افزایش می‌یابد. این یک برتری از نظر تاخیر (Latency) و توان عملیاتی (Throughput) است، نه لزوماً برتری در کیفیت.
 
-- **Diffusion as a speculative drafter, now shipping.** A diffusion model proposes a block of tokens in parallel and an AR model verifies them, preserving the AR target distribution, analogous to [speculative decoding](03-speculative-decoding.md). TiDAR (arXiv:2511.08923) reports roughly 5x the tokens per second of AR while closing the quality gap. The production version arrived in 2026: block-diffusion drafters (DFlash, arXiv:2602.06036; DFlash 2, August 18) were merged into SGLang (August 19), vLLM (August 21), and llama.cpp (August 27), and Ollama's MLX engine supports DFlash. Small open models are also shipping diffusion-decoding adapters, such as the "Uno" adapters for MBZUAI's K2 Horizon 0.9B and 7B.
-- **Block / semi-AR adaptation.** Fast-dLLM v2 (arXiv:2509.26328) adapts an existing AR model (Qwen) into a block-diffusion model with a block-wise KV cache and confidence-aware parallel decoding, the practical recipe for getting cacheable, fast diffusion decoding out of checkpoints you already have.
-- **RL for diffusion reasoning.** d1 (arXiv:2504.12216) is the first GRPO-style RL for masked diffusion LLMs (diffu-GRPO), pairing masked SFT with an efficient RL stage, and reports consistent gains over the base diffusion model on math and planning benchmarks.
+توان عملیاتی (Throughput) گزارش‌شده (همگی ادعاهای ارائه‌دهندگان یا بنچمارک‌ها هستند و شرایط آزمایش متفاوت است): مدل‌های تجاری دیفیوژن ارقامی در حدود ۷۰۰ تا ۱,۵۰۰ Token در ثانیه را روی یک GPU دیتاسنتری منفرد گزارش می‌کنند، که سازندگان آن‌ها این سرعت را چندین برابر سریع‌تر از خطوط پایه AR بهینه‌سازی‌شده برای سرعت توصیف می‌کنند (تا حدود ۱۰ برابر در بهترین حالت مسیر تکمیل کد، و نزدیک به ۵ برابر برای بارهای کاری استدلال). اندازه‌گیری مستقل یکی از مدل‌های تجاری، سرعت آن را در حدود ۱,۱۰۰ Token در ثانیه نشان داد.
 
-The near-term production path is not pure diffusion but these hybrids, which recover KV caching and quality while keeping much of the speed. The drafter half of that prediction has already happened: if you self-host an AR model on a mainstream engine, you can use diffusion today without changing models.
-
----
-
-## Where Diffusion Wins and Where AR Still Wins
-
-**Diffusion advantages (structural, not just hype):**
-- **Low-latency, high-throughput serving**, the headline use case, where round-trip latency dominates (interactive coding, autocomplete, real-time agents).
-- **Code**, where generation is iterative back-and-forth refinement rather than strictly sequential.
-- **Infilling and multi-region editing**, native to the masking objective: mask the relevant locations and regenerate all of them at once (for example, add a parameter consistently across a signature, its docstring, call sites, and tests in one shot) instead of orchestrating multiple AR calls.
-- **Reversal and order-insensitive reasoning and planning**, where bidirectional context helps.
-
-**Where AR still wins in 2026:** long context and agentic/tool-use workflows (a 2026 reality-check study documents diffusion weaknesses in long-context handling, KV-cache efficiency, and function calling); frontier quality on knowledge and hard reasoning; and very long or variable-length generation, which pure diffusion handles poorly and block/semi-AR variants exist to patch. AR also has years of serving-stack and KV-cache optimization that diffusion's ecosystem has not yet matched.
+این موازنه ذاتاً به برنامه زمان‌بندی ماسک‌برداری وابسته است: تثبیت Tokenهای بیشتر در هر گام سریع‌تر است اما می‌تواند منجر به خروجی‌هایی با عدم انسجام موضعی شود؛ بنابراین در عمل، بالاترین کیفیت زمانی به دست می‌آید که در هر گام Tokenهای کمتری ماسک‌برداری شوند، که این امر سرعت فرآیند را کاهش می‌دهد. وضعیت شکاف کیفی در سال ۲۰۲۶، طبق گزارش‌ها:
+- **در کدنویسی، این شکاف اندک است.** مدل‌های دیفیوژن در بنچمارک‌های تکمیل کد تقریباً با مدل‌های AR هم‌رده برابری می‌کنند؛ کدنویسی نقطه عطف و توافقی مطلوب (sweet spot) برای این مدل‌ها به شمار می‌رود.
+- **در پایگاه دانش و استدلال‌های پیچیده، این شکاف بزرگ‌تر است** و هیچ مدل دیفیوژنی در رده مدل‌های مرز دانش (frontier-class) قرار ندارد. یکی از موانع نظری شناخته‌شده این است که دیفیوژن ماسک‌شده، یک *کران* درست‌نمایی (likelihood bound) را بهینه می‌کند، نه درست‌نمایی دقیق را.
 
 ---
 
-## Maturity and What to Do Today
+## سیستم‌های دیفیوژن در سال ۲۰۲۶
 
-The honest read: mostly early, with a thin layer of real commercial offerings on a fast-moving open research base. What an engineer should do:
+نسخه‌ها، سرعت‌ها و قیمت‌ها را به عنوان تصویری گذرا و متغیر در نظر بگیرید.
 
-1. **Do not replace your AR frontier model** for quality-critical, long-context, or agentic work.
-2. **Do pilot diffusion where latency and throughput dominate and outputs are short-to-medium and structured**, code completion and infill, bulk transforms, structured extraction. A commercial OpenAI-compatible diffusion API is the lowest-friction A/B test; an open-weight model if you need to self-host.
-3. **Use the hybrids now.** A diffusion drafter for your existing AR model (DFlash 2 in vLLM, SGLang, or llama.cpp) is the lowest-risk way to get diffusion's speed, because the AR target still decides every token. Measure acceptance length and throughput at your real concurrency.
-4. **Benchmark on your tasks with realistic decoding settings.** The quality you get is a direct function of how aggressively you unmask, and vendor tokens-per-second numbers assume aggressive settings.
-5. **Treat "reasoning diffusion model" marketing skeptically** and verify on your own reasoning evals.
-
----
-
-## Interview Questions
-
-### Q: How does a diffusion language model differ from an autoregressive one, and where is that an advantage?
-
-**Strong answer:**
-An autoregressive model generates left to right, one token per forward pass, each conditioned only on the past. A diffusion language model starts from a fully masked sequence and iteratively denoises all positions in parallel over a few steps, with bidirectional attention. The practical advantage is throughput: it commits many tokens per forward pass instead of one, so reported speeds run over 1,000 tokens per second, several times faster than speed-optimized AR. Bidirectionality also helps on infilling and editing, where you mask several locations and regenerate them coherently in one shot, and on order-insensitive tasks. The cost is a quality gap on knowledge and hard reasoning, partly because masked diffusion optimizes a likelihood bound rather than exact likelihood, and weaker long-context and tool-use behavior. So I would reach for it on latency-critical, short-to-medium, structured generation like code, not as a frontier-model replacement.
-
-### Q: If diffusion LLMs are faster, why hasn't everyone switched?
-
-**Strong answer:**
-Because the speed comes with real tradeoffs and the ecosystem is young. The quality gap is still meaningful on knowledge and hard reasoning, and the speed itself is a function of how aggressively you unmask: the best quality comes from committing fewer tokens per step, which gives back much of the speed. Pure diffusion also handles long context and variable-length output poorly and lacks the mature KV-cache and serving optimizations AR has accumulated. The likely path is not a wholesale switch but hybrids, block or semi-autoregressive models and diffusion-as-a-speculative-drafter, that recover caching and quality while keeping much of the throughput. In 2026 the pragmatic move is to pilot diffusion where latency dominates and outputs are structured, and keep the AR frontier model for everything else.
+| سیستم | نوع | یادداشت‌ها (گزارش‌شده) |
+|--------|------|------------------------|
+| **Mercury 2.5** (Inception Labs) | بسته، عمومی | شفاف‌ترین گزینه برای محیط پروداکشن: API سازگار با OpenAI در Inception، Baseten و OpenRouter. شرکت Inception سرعت ۱,۱۰۷ Token در ثانیه روی GPUهای متداول NVIDIA، بافت ۲۶۰K و قیمت پایه ۰.۲۰ دلار ورودی / ۰.۷۵ دلار خروجی به ازای هر ۱ میلیون Token را گزارش کرده است (تخفیف اولیه زمان عرضه ۰.۰۴ / ۰.۱۵ دلار). این مدل به عنوان یک مدل استدلالی سریع بازاریابی می‌شود؛ ادعایی که برخی تحلیل‌گران با توجه به محدودیت‌های دیفیوژن در استدلال چندمرحله‌ای آن را به چالش می‌کشند؛ این ادعا را در ارزیابی‌های اختصاصی خود بسنجید. |
+| **Mercury Voice** (Inception Labs) | بسته، Agentهای صوتی | عرضه عمومی سازمانی (Enterprise GA) در ۲۹ سپتامبر ۲۰۲۶: یک مدل استدلالی دیفیوژن برای Agentهای صوتی با میانه زمان گزارش‌شده ۳۲۰ میلی‌ثانیه تا اولین Token پاسخ (صدک ۹۵ام ۷۵۰ میلی‌ثانیه)، سه سطح تلاش استدلالی، بافت ۱۲۸K، قیمت پایه ۰.۴۰ / ۱.۵۰ دلار به ازای هر ۱ میلیون (با ۵۰٪ تخفیف در زمان عرضه). |
+| **Gemini Diffusion** (گوگل) | دمو اختصاصی و بسته | سرعت‌های چشمگیر در دمو؛ **فاقد API عمومی** (تا تاریخ ۲ نوامبر ۲۰۲۶ در فهرست مدل‌های Gemini API وجود ندارد). معماری سیستم خود را بر پایه آن بنا نکنید. |
+| **DiffusionGemma** (گوگل) | وزن‌های باز (Open weights) | یک مدل دیفیوژن با وزن‌های باز از خانواده Gemma، با گزارش سرعت بیش از ۱,۰۰۰ Token در ثانیه روی یک GPU دیتاسنتری منفرد. آن را با Gemini Diffusion اشتباه نگیرید. |
+| **LLaDA / LLaDA 2.x** | وزن‌های باز (Open weights) | مدل باز بنیادین و جانشینان MoE آن؛ رقابتی با مدل‌های AR هم‌اندازه، اما نه در سطح مرز دانش. مدل LLaDA2.2-mini (از Ant Group، ۵ سپتامبر ۲۰۲۶، مجوز Apache 2.0) یک MoE با ۱۶ میلیارد پارامتر کل / ۱.۴ میلیارد پارامتر فعال و بافت ۱۲۸K است که از Tokenهای ویرایش (`DELETE` و `INSERT`) بهره می‌برد تا بتواند متن را بازنگری و ویرایش کند و نه فقط ماسک‌ها را پر نماید؛ امتیازهای ارائه‌دهنده شامل ۴۷.۶۸ در BFCL v4 و ۵۷.۵۰ در tau2-Bench نشان می‌دهد مدل‌های دیفیوژن مبتنی بر Agent وجود دارند اما در استفاده از ابزارها همچنان عقب‌تر از مدل‌های AR هستند. |
+| **Dream 7B** | وزن‌های باز (Open weights) | طبق گزارش‌ها با مدل‌های AR هم‌اندازه برابری می‌کند یا از آن‌ها فراتر می‌رود، دارای پیچ تنظیم گام‌ها و قابلیت برنامه‌ریزی قوی (سودوکو، شمارش معکوس) است؛ یک نسخه کد کاملاً باز از آن نیز وجود دارد. |
+| **DFlash 2** (Inco AI) | پیش‌نویس‌کننده دیفیوژن | یک مدل چت مستقل نیست: یک پیش‌نویس‌کننده بر پایه دیفیوژن بلوکی برای مدل‌های هدف AR است که طبق گزارش ارائه‌دهنده، توان عملیاتی (Throughput) را در Qwen3.8-27B بین ۲.۷ تا ۳.۴ برابر افزایش می‌دهد. در اواخر اوت ۲۰۲۶ در فریم‌ورک‌های SGLang، vLLM و llama.cpp ادغام شده است. |
 
 ---
 
-## References
+## مدل‌های هیبریدی: پیش‌نویس با دیفیوژن، تایید با AR
 
-- Nie et al., "Large Language Diffusion Models" (LLaDA) arXiv:2502.09992
-- Arriola et al., "Block Diffusion" (BD3-LMs) arXiv:2503.09573
-- "TiDAR: Think in Diffusion, Talk in Autoregression" arXiv:2511.08923
-- "Fast-dLLM v2" arXiv:2509.26328
-- Zhao et al., "d1: Scaling Reasoning in Diffusion LLMs via RL" arXiv:2504.12216
-- "Dream 7B" arXiv:2508.15487
-- Inception Labs, [Mercury](https://www.inceptionlabs.ai/) (commercial diffusion LLM) and ["Introducing Mercury 2.5"](https://www.inceptionlabs.ai/blog/introducing-mercury-2-5)
-- "DFlash" (block-diffusion speculative drafter) arXiv:2602.06036
+کاربردی‌ترین و مرتبط‌ترین تحقیقات با محیط پروداکشن، این دو الگو (پارادایم) را ادغام می‌کنند:
+
+- **دیفیوژن به عنوان پیش‌نویس‌کننده حدسی (speculative drafter)، اکنون در مرحله عرضه:** یک مدل دیفیوژن بلوکی از Tokenها را به‌صورت موازی پیشنهاد می‌دهد و یک مدل AR آن‌ها را تایید می‌کند؛ این کار توزیع آماری مدل هدف AR را حفظ می‌نماید، مشابه با [دیکودینگ حدسی (Speculative Decoding)](03-speculative-decoding.md). مدل TiDAR (arXiv:2511.08923) سرعت تولید Token در ثانیه را تقریباً ۵ برابر AR گزارش کرده در حالی که شکاف کیفی را نیز پوشش داده است. نسخه مخصوص پروداکشن در سال ۲۰۲۶ عرضه شد: پیش‌نویس‌کننده‌های دیفیوژن بلوکی (DFlash، arXiv:2602.06036؛ و DFlash 2 در ۱۸ اوت) در SGLang (۱۹ اوت)، vLLM (۲۱ اوت) و llama.cpp (۲۷ اوت) ادغام شدند و موتور MLX متعلق به Ollama نیز از DFlash پشتیبانی می‌کند. مدل‌های متن‌باز کوچک نیز آداپتورهای دیکودینگ دیفیوژن را عرضه می‌کنند، مانند آداپتورهای «Uno» برای مدل‌های K2 Horizon با سایزهای 0.9B و 7B از MBZUAI.
+- **انطباق بلوکی / شبه‌خودبازگشتی (semi-AR):** مدل Fast-dLLM v2 (arXiv:2509.26328) یک مدل AR موجود (مانند Qwen) را به یک مدل دیفیوژن بلوکی مجهز به KV Cache بلوکی و دیکودینگ موازی آگاه از میزان اطمینان تبدیل می‌کند؛ این راهکاری عملی برای دستیابی به دیکودینگ دیفیوژن سریع و با قابلیت کش‌گذاری، از روی چک‌پوینت‌هایی است که در حال حاضر در اختیار دارید.
+- **یادگیری تقویتی (RL) برای استدلال دیفیوژن:** مدل d1 (arXiv:2504.12216) نخستین روش RL به سبک GRPO برای LLMهای دیفیوژن ماسک‌شده (diffu-GRPO) است که SFT ماسک‌شده را با یک مرحله کارآمد RL همراه می‌سازد و بهبودهای مستمری را نسبت به مدل دیفیوژن پایه در بنچمارک‌های ریاضی و برنامه‌ریزی گزارش می‌کند.
+
+مسیر کوتاه‌مدت برای محیط پروداکشن دیفیوژن خالص نیست، بلکه همین سیستم‌های هیبریدی هستند که ضمن حفظ بخش عمده‌ای از سرعت، قابلیت کش‌گذاری KV و کیفیت را احیا می‌کنند. نیمه مربوط به پیش‌نویس‌کننده در این پیش‌بینی هم‌اکنون محقق شده است: اگر یک مدل AR را روی یک موتور متداول به‌صورت محلی میزبانی (self-host) می‌کنید، می‌توانید همین امروز بدون تغییر مدل اصلی از دیفیوژن بهره‌مند شوید.
 
 ---
 
-*Next: [On-Device and Edge Deployment](09-on-device-and-edge-deployment.md)*
+## کجا دیفیوژن برنده می‌شود و کجا AR همچنان برتر است
+
+**مزایای دیفیوژن (ساختاری، و نه صرفاً هیاهوی تبلیغاتی):**
+- **سرویس‌دهی با تاخیر (Latency) کم و توان عملیاتی (Throughput) بالا:** مهم‌ترین مورد کاربرد، جایی که تاخیر (Latency) رفت و برگشت عامل تعیین‌کننده است (کدنویسی تعاملی، تکمیل خودکار، Agentهای بی‌درنگ).
+- **تولید کد:** جایی که تولید متن بیشتر یک فرآیند اصلاح رفت‌وبرگشتی و تکرارشونده است تا یک توالی کاملاً ترتیبی.
+- **پر کردن جاهای خالی (Infilling) و ویرایش چندناحیه‌ای:** ویژگی ذاتی و بومی تابع هدف ماسک‌گذاری: ماسک‌کردن بخش‌های مربوطه و بازتولید هم‌زمان همه آن‌ها در یک گام (برای مثال، افزودن یک پارامتر به‌صورت منسجم و هم‌زمان در امضای تابع، docstring آن، فراخوانی‌ها و تست‌ها در یک نوبت)، به‌جای هماهنگ‌سازی و ارکستراسیون چندین فراخوانی AR.
+- **معکوس‌سازی و استدلال و برنامه‌ریزی غیرحساس به ترتیب:** جاهایی که بافت دوطرفه به حل مسئله کمک می‌کند.
+
+**جاهایی که AR در سال ۲۰۲۶ همچنان پیروز میدان است:** بافت‌های طولانی (long context) و گردش‌های کاری مبتنی بر Agent / ابزار (یک مطالعه واقع‌سنجی در سال ۲۰۲۶ ضعف‌های دیفیوژن را در مدیریت بافت طولانی، کارایی KV Cache و فراخوانی توابع یا Function Calling مستند کرده است)؛ کیفیت در سطح مرز دانش در زمینه پایگاه دانش و استدلال‌های پیچیده؛ و تولید محتوای بسیار طولانی یا با طول متغیر که دیفیوژن خالص در مدیریت آن عملکرد ضعیفی دارد و واریانت‌های بلوکی/شبه‌خودبازگشتی برای برطرف کردن این نقیصه توسعه یافته‌اند. علاوه بر این، مدل‌های AR از سال‌ها بهینه‌سازی در پشته سرویس‌دهی (serving stack) و KV Cache بهره می‌برند که اکوسیستم دیفیوژن هنوز به گرد پای آن نرسیده است.
+
+---
+
+## بلوغ و اقداماتی که امروزه باید انجام داد
+
+ارزیابی صادقانه: عمدتاً در مراحل اولیه، با لایه‌ای باریک از محصولات تجاری واقعی بر روی پایه‌ای از پژوهش‌های متن‌باز با پیشرفت سریع. کارهایی که یک مهندس باید انجام دهد:
+
+۱. **مدل مرز دانشی AR خود را تعویض نکنید؛** به ویژه برای کارهایی که کیفیت، بافت طولانی یا رفتار مبتنی بر Agent در آن‌ها حیاتی است.
+۲. **دیفیوژن را در پروژه‌های آزمایشی به کار بگیرید که در آن‌ها تاخیر (Latency) و توان عملیاتی (Throughput) عامل غالب هستند و خروجی‌ها کوتاه تا متوسط و ساختاریافته‌اند:** تکمیل کد و پر کردن جاهای خالی (infill)، تبدیلات گروهی (bulk transforms) و استخراج ساختاریافته. یک API دیفیوژن تجاری سازگار با OpenAI کم‌اصطکاک‌ترین روش برای اجرای تست A/B است؛ و در صورتی که نیاز به میزبانی محلی (self-host) دارید، از یک مدل با وزن‌های باز استفاده کنید.
+۳. **اکنون از مدل‌های هیبریدی استفاده کنید.** استفاده از یک پیش‌نویس‌کننده دیفیوژن برای مدل AR فعلی شما (مانند DFlash 2 در vLLM، SGLang یا llama.cpp) کم‌ریسک‌ترین شیوه برای دستیابی به سرعت دیفیوژن است، زیرا در نهایت مدل هدف AR تصمیم‌گیرنده نهایی درباره هر Token است. طول پذیرش (acceptance length) و توان عملیاتی (Throughput) را در هم‌زمانی (concurrency) واقعی خود اندازه‌گیری کنید.
+۴. **روی وظایف کاری خود با تنظیمات دیکودینگ واقع‌گرایانه بنچمارک بگیرید.** کیفیتی که دریافت می‌کنید تابعی مستقیم از میزان تهاجمی بودن فرآیند ماسک‌برداری است، و اعداد Token در ثانیه ارائه‌شده از سوی سازندگان بر اساس تنظیمات تهاجمی محاسبه شده‌اند.
+۵. **به تبلیغات بازاریابی پیرامون «مدل دیفیوژن استدلالی» با دیده‌ی تردید بنگرید** و آن را با ارزیابی‌های استدلالی خود اعتبارسنجی کنید.
+
+---
+
+## پرسش‌های مصاحبه
+
+### سوال: یک مدل زبانی دیفیوژن چه تفاوتی با یک مدل خودبازگشتی دارد و این تفاوت در کجا یک مزیت محسوب می‌شود؟
+
+**پاسخ قوی:**
+یک مدل خودبازگشتی متن را از چپ به راست تولید می‌کند؛ یک Token در هر عبور رو به جلو (forward pass) که هر یک فقط بر اساس گذشته شرطی‌سازی شده است. در مقابل، یک مدل زبانی دیفیوژن از یک توالی کاملاً ماسک‌شده شروع می‌کند و تمام موقعیت‌ها را به‌طور موازی و در طول چند گام، با استفاده از مکانیزم توجه دوطرفه، نویززدایی می‌نماید. مزیت عملی آن در توان عملیاتی (Throughput) است: این مدل به جای یک مورد، چندین Token را در هر عبور رو به جلو تثبیت می‌کند، به طوری که سرعت‌های گزارش‌شده فراتر از ۱,۰۰۰ Token در ثانیه است که چندین برابر سریع‌تر از مدل‌های AR بهینه‌سازی‌شده برای سرعت می‌باشد. توجه دوطرفه همچنین در پر کردن جاهای خالی (infilling) و ویرایش موثر است؛ جایی که چندین موقعیت را ماسک کرده و همه آن‌ها را به‌صورت یکپارچه در یک نوبت بازتولید می‌کنید، و همچنین در وظایف غیرحساس به ترتیب کارایی دارد. هزینه آن، شکاف کیفی در زمینه دانش و استدلال‌های پیچیده است؛ تا حدی به این دلیل که دیفیوژن ماسک‌شده به جای درست‌نمایی دقیق، یک کران درست‌نمایی را بهینه می‌کند، و همچنین رفتار ضعیف‌تری در بافت طولانی و استفاده از ابزارها دارد. بنابراین من برای تولید محتوای ساختاریافته، کوتاه تا متوسط و حساس به تاخیر (Latency) مانند کدنویسی به سراغ آن می‌روم، نه به عنوان جایگزینی برای مدل‌های سطح اول مرز دانش.
+
+### سوال: اگر LLMهای دیفیوژن سریع‌تر هستند، چرا همه به سمت آن‌ها مهاجرت نکرده‌اند؟
+
+**پاسخ قوی:**
+زیرا این سرعت با موازنه‌های واقعی همراه است و اکوسیستم آن هنوز جوان و نوپاست. شکاف کیفی در زمینه پایگاه دانش و استدلال‌های دشوار همچنان معنادار است، و خودِ سرعت نیز تابعی از شدت تهاجمی بودن فرآیند ماسک‌برداری است: بالاترین کیفیت از تثبیت Tokenهای کمتر در هر گام به دست می‌آید که این امر بخش عمده‌ای از سرعت به‌دست‌آمده را خنثی می‌کند. دیفیوژن خالص همچنین بافت‌های طولانی و خروجی‌های با طول متغیر را ضعیف مدیریت می‌کند و فاقد بهینه‌سازی‌های بالغ KV Cache و پشته سرویس‌دهی است که مدل‌های AR در طول سال‌ها انباشته کرده‌اند. مسیر محتمل، یک مهاجرت کامل و یک‌باره نیست، بلکه استفاده از سیستم‌های هیبریدی است؛ مدل‌های بلوکی یا شبه‌خودبازگشتی و دیفیوژن به عنوان پیش‌نویس‌کننده حدسی (speculative drafter)، که در عین حفظ بخش زیادی از توان عملیاتی (Throughput)، قابلیت کش‌گذاری و کیفیت را احیا می‌کنند. در سال ۲۰۲۶، اقدام عمل‌گرایانه این است که دیفیوژن را در جاهایی که تاخیر (Latency) اولویت اصلی است و خروجی‌ها ساختاریافته هستند به صورت آزمایشی اجرا کنید، و مدل مرز دانشی AR را برای سایر کاربردها نگه دارید.
+
+---
+
+## منابع
+
+- Nie و همکاران، «Large Language Diffusion Models» (LLaDA) arXiv:2502.09992
+- Arriola و همکاران، «Block Diffusion» (BD3-LMs) arXiv:2503.09573
+- «TiDAR: Think in Diffusion, Talk in Autoregression» arXiv:2511.08923
+- «Fast-dLLM v2» arXiv:2509.26328
+- Zhao و همکاران، «d1: Scaling Reasoning in Diffusion LLMs via RL» arXiv:2504.12216
+- «Dream 7B» arXiv:2508.15487
+- شرکت Inception Labs، [Mercury](https://www.inceptionlabs.ai/) (یک LLM دیفیوژن تجاری) و [«معرفی Mercury 2.5»](https://www.inceptionlabs.ai/blog/introducing-mercury-2-5)
+- «DFlash» (پیش‌نویس‌کننده حدسی دیفیوژن بلوکی) arXiv:2602.06036
+
+---
+
+*بخش بعدی: [استقرار روی دستگاه و لبه (On-Device and Edge Deployment)](09-on-device-and-edge-deployment.md)*
+
+</div>

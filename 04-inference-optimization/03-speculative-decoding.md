@@ -1,114 +1,118 @@
-# Speculative Decoding
+<div dir="rtl">
 
-Speculative decoding is a now-standard technique that allows large language models (LLMs) to generate multiple tokens per forward pass, effectively breaking the memory-bandwidth bottleneck for sequential decoding. In 2026 it is increasingly something the model publisher ships with the checkpoint rather than an optional serving trick.
+# رمزگشایی حدسی (Speculative Decoding)
 
-## Table of Contents
+رمزگشایی حدسی (Speculative Decoding) تکنیکی اکنون استاندارد است که به مدل‌های زبانی بزرگ (LLMها) امکان می‌دهد در هر گذر رفت (Forward pass) چندین Token تولید کنند و به‌طور موثری گلوگاه پهنای باند حافظه را برای رمزگشایی ترتیبی بشکنند. در سال ۲۰۲۶، این قابلیت به‌طور فزاینده‌ای چیزی است که ناشر مدل همراه با چک‌پوینت (Checkpoint) ارائه می‌دهد، نه صرفاً یک ترفند اختیاری برای سرویس‌دهی (Serving).
 
-- [The Core Concept](#the-core-concept)
-- [Draft-Verify Paradigm](#draft-verify-paradigm)
-- [Drafters in 2026: Heads, MTP, Diffusion, DSpark](#drafters-in-2026-heads-mtp-diffusion-dspark)
-- [Lookahead, N-gram, and Suffix Decoding](#lookahead-n-gram-and-suffix-decoding)
-- [Load-Aware Speculation (Adaptive Verification)](#load-aware-speculation-adaptive-verification)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The Core Concept
-
-LLM decoding is memory-bound: loading 140GB of weights (70B model) to produce a single 2-byte token is inefficient. 
-**Speculative Decoding** uses a cheaper method to "guess" the next $N$ tokens and uses the large model to verify them all in a single parallel "Prefill-style" pass.
+- [مفهوم اصلی](#the-core-concept)
+- [الگوی پیش‌نویس-تأیید](#draft-verify-paradigm)
+- [پیش‌نویس‌کننده‌ها در سال ۲۰۲۶: هدها، MTP، دیفیوژن، DSpark](#drafters-in-2026-heads-mtp-diffusion-dspark)
+- [رمزگشایی Lookahead، N-gram و Suffix](#lookahead-n-gram-and-suffix-decoding)
+- [حدس‌زنی آگاه از بار (تأیید انطباقی)](#load-aware-speculation-adaptive-verification)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Draft-Verify Paradigm
+## مفهوم اصلی
 
-1. **Drafting**: A cheap drafter (a small model, extra heads on the target, or a bundled module) proposes $K$ candidate tokens.
-2. **Verification**: The large "Target Model" processes all $K$ tokens at once.
-3. **Acceptance**: The target model's logits are used to accept or reject candidates. If token $i$ is rejected, all tokens after it are discarded.
+رمزگشایی در LLMها به حافظه محدود است (Memory-bound): بارگذاری ۱۴۰ گیگابایت وزن (مدل 70B) برای تولید یک Token منفرد ۲ بایتی ناکارآمد است. 
+**رمزگشایی حدسی (Speculative Decoding)** از روشی کم‌هزینه‌تر برای «حدس زدن» $N$ Token بعدی استفاده می‌کند و از مدل بزرگ می‌خواهد تا همه آن‌ها را در یک گذر موازی تک‌مرحله‌ای به سبک "Prefill" تأیید کند.
 
-Illustrative numbers for the classic separate-draft setup:
+---
 
-| Model | Size | Speed | Latency per token |
+## الگوی پیش‌نویس-تأیید
+
+۱. **پیش‌نویس (Drafting)**: یک پیش‌نویس‌کننده کم‌هزینه (یک مدل کوچک، هدهای اضافه روی مدل هدف، یا یک ماژول همراه) تعداد $K$ Token کاندید را پیشنهاد می‌کند.
+۲. **تأیید (Verification)**: «مدل هدف» بزرگ، تمام $K$ Token را به صورت یکجا پردازش می‌کند.
+۳. **پذیرش (Acceptance)**: لاجیت‌های (Logits) مدل هدف برای پذیرش یا رد کاندیدها استفاده می‌شوند. اگر Token $i$ رد شود، تمام Tokenهای بعد از آن دور ریخته می‌شوند.
+
+اعدادی برای نمونه جهت پیکربندی کلاسیک با پیش‌نویس مجزا:
+
+| مدل | اندازه | سرعت | تاخیر (Latency) به ازای هر Token |
 |-------|------|-------|-------------------|
-| **Draft** | 1B | Fast | 5ms |
-| **Target**| 70B| Slow | 50ms |
-| **Speculative**| - | **Fast**| **15ms - 25ms** |
+| **پیش‌نویس (Draft)** | 1B | سریع | 5ms |
+| **هدف (Target)**| 70B| کند | 50ms |
+| **حدسی (Speculative)**| - | **سریع**| **15ms - 25ms** |
 
-**Net Result**: 2x to 3x speedup in wall-clock time with **zero loss in quality** at low concurrency. The guarantee is exact: with standard speculative sampling the output distribution is provably the target's, and with greedy decoding the output is identical token for token. What varies is speed, which depends on the **acceptance length** (accepted tokens per verification step).
+**نتیجه نهایی**: ۲ تا ۳ برابر افزایش سرعت در زمان واقعی (Wall-clock time) با **بدون افت کیفیت** در همروندی (Concurrency) پایین. این تضمین دقیق است: با نمونه‌برداری حدسی استاندارد، توزیع خروجی از نظر ریاضی اثبات شده که دقیقاً همان توزیع مدل هدف است، و با رمزگشایی حریصانه (Greedy decoding)، خروجی Token به Token کاملاً یکسان است. آنچه تغییر می‌کند سرعت است که به **طول پذیرش (Acceptance length)** (Tokenهای پذیرفته‌شده در هر مرحله تأیید) بستگی دارد.
 
-The guarantee holds only for standard verification. Engines now ship opt-in lossy policies (vLLM v0.33.0 added FLy in November 2026, reporting 1.04x to 1.31x more decode throughput on MI355X and B300) that trade exact output for speed, so treat any non-default verification policy as a model change and rerun evals.
+این تضمین فقط برای تأیید استاندارد صادق است. موتورها اکنون سیاست‌های اختیاری با اتلاف (Lossy) را ارائه می‌دهند (vLLM v0.33.0 در نوامبر ۲۰۲۶ قابلیت FLy را اضافه کرد و ۱.۰۴ تا ۱.۳۱ برابر توان عملیاتی (Throughput) رمزگشایی بیشتری را روی MI355X و B300 گزارش داد) که خروجی دقیق را با سرعت معاوضه می‌کنند؛ بنابراین هر سیاست تأیید غیرپیش‌فرضی را به عنوان تغییر مدل در نظر بگیرید و ارزیابی‌ها (Evals) را مجدداً اجرا کنید.
 
 ---
 
-## Drafters in 2026: Heads, MTP, Diffusion, DSpark
+## پیش‌نویس‌کننده‌ها در سال ۲۰۲۶: هدها، MTP، دیفیوژن، DSpark
 
-The industry has moved away from separately trained draft models, which add VRAM, a second KV cache, and tokenizer-matching pain, toward drafters tied to the target. Medusa heads started that move. vLLM stopped documenting them first, then removed Medusa and the MLP speculator outright in v0.33.0 (November 2, 2026), and the methods below replaced them. A config that still sets `"method":"medusa"` fails on upgrade, so move it to EAGLE-3 or the model's own MTP module.
+صنعت از مدل‌های پیش‌نویس که به‌طور جداگانه آموزش دیده‌اند — که باعث افزایش VRAM، یک KV cache دوم و دردسر تطبیق Tokenizer می‌شوند — فاصله گرفته و به سمت پیش‌نویس‌کننده‌های گره‌خورده به مدل هدف حرکت کرده است. هدهای Medusa آغازگر این حرکت بودند. vLLM ابتدا مستندسازی آن‌ها را متوقف کرد، سپس در نسخه v0.33.0 (۲ نوامبر ۲۰۲۶) Medusa و حدس‌زننده MLP را کاملاً حذف کرد، و روش‌های زیر جایگزین آن‌ها شدند. پیکربندی‌ای که هنوز `"method":"medusa"` را تنظیم کند در ارتقا با شکست مواجه می‌شود، بنابراین آن را به EAGLE-3 یا ماژول MTP اختصاصی خود مدل منتقل کنید.
 
-| Method | What drafts | Notes |
+| روش | چه چیزی پیش‌نویس می‌کند | نکات |
 |--------|-------------|-------|
-| **EAGLE-3** | A light head fed by the target's hidden features from several layers | Paper reports up to 6.5x speedup and 1.38x throughput at batch 64 in SGLang; the common default for open models without native MTP |
-| **Native MTP** | Multi-token-prediction heads trained with the model (DeepSeek-V3 onward) | Shipped built in by MiMo-V2.6 and Qwen3.8-Flash-Next (a 4B MTP module) |
-| **DFlash / DFlash 2** | A small block-diffusion model that proposes a whole block in parallel | DFlash 2 (Inco AI, August 18, 2026) reports 2.7x to 3.4x throughput on Qwen3.8-27B (vendor-reported); merged into SGLang, vLLM, and llama.cpp between August 19 and 27 |
-| **DSpark** | DeepSeek's speculative module, shipped inside the checkpoint | DeepSeek ships the module inside its checkpoints: V4-Flash-DSpark and V4-Pro-DSpark (June 27, MIT) first, then V4-Flash-0731, V4-Pro-0813, and V4.1-Flash (September 10, including the October 17 build), all MIT; other DSpark drafts exist for Kimi K3 (RadixArk) and MiniMax-M3 (NVIDIA), and publishers ship their own for Nemotron 3.5 (NVIDIA) and LFM2.5 (Liquid) |
-| **Separate draft model** | A smaller model from the same family | Still useful when nothing above exists; PARD (parallel draft) variants cut drafting latency |
+| **EAGLE-3** | یک هد سبک که توسط ویژگی‌های پنهان لایه‌های مختلف مدل هدف تغذیه می‌شود | مقاله تا ۶.۵ برابر افزایش سرعت و ۱.۳۸ برابر توان عملیاتی (Throughput) را در Batch 64 در SGLang گزارش می‌کند؛ پیش‌فرض رایج برای مدل‌های باز بدون MTP بومی (Native MTP) |
+| **MTP بومی (Native MTP)** | هدهای پیش‌بینی چند-Tokenای (Multi-token-prediction) آموزش‌دیده همراه با مدل (از DeepSeek-V3 به بعد) | به‌صورت درون‌ساخت در MiMo-V2.6 و Qwen3.8-Flash-Next (یک ماژول 4B MTP) عرضه شده است |
+| **DFlash / DFlash 2** | یک مدل دیفیوژن بلوکی (Block-diffusion) کوچک که یک بلوک کامل را به صورت موازی پیشنهاد می‌کند | مدل DFlash 2 (شرکت Inco AI، ۱۸ اوت ۲۰۲۶) توان عملیاتی (Throughput) ۲.۷ تا ۳.۴ برابری را روی Qwen3.8-27B گزارش می‌کند (گزارش‌شده توسط توسعه‌دهنده)؛ بین ۱۹ تا ۲۷ اوت به SGLang، vLLM و llama.cpp اضافه (Merge) شد |
+| **DSpark** | ماژول حدسی DeepSeek، ارائه‌شده درون چک‌پوینت | شرکت DeepSeek این ماژول را درون چک‌پوینت‌های خود عرضه می‌کند: ابتدا V4-Flash-DSpark و V4-Pro-DSpark (۲۷ ژوئن، MIT)، سپس V4-Flash-0731، V4-Pro-0813 و V4.1-Flash (۱۰ سپتامبر، شامل بیلد ۱۷ اکتبر)، همگی با مجوز MIT؛ پیش‌نویس‌های DSpark دیگری برای Kimi K3 (شرکت RadixArk) و MiniMax-M3 (شرکت NVIDIA) وجود دارد، و ناشران پیش‌نویس‌های اختصاصی خود را برای Nemotron 3.5 (شرکت NVIDIA) و LFM2.5 (شرکت Liquid) عرضه می‌کنند |
+| **مدل پیش‌نویس مجزا** | یک مدل کوچک‌تر از همان خانواده | هنوز زمانی که هیچ‌کدام از موارد بالا وجود نداشته باشد مفید است؛ انواع PARD (پیش‌نویس موازی) تاخیر (Latency) پیش‌نویس را کاهش می‌دهند |
 
-Two consequences for system design:
-- **Self-host estimates should assume the publisher's drafter is on.** Enabling DSpark on vLLM is one flag: `--speculative-config '{"method":"dspark","num_speculative_tokens":7}'`. RadixArk's 2.25B Kimi-K3-DSpark draft reports acceptance lengths around 5.4 to 5.5 on GSM8K and HumanEval, so a large share of decode steps emit several tokens.
-- **Eval parity must include the speculative path.** Speculative decoding should be output-preserving, but kernels, sampling settings, and engine bugs are not. Run your evals with speculation on, the way production runs. Industry benchmarks have caught up: MLPerf Inference v6.1 allows speculative decoding in the gpt-oss-120b Interactive scenario.
-
----
-
-## Lookahead, N-gram, and Suffix Decoding
-
-Model-free alternatives find candidate continuations in text the system has already seen: lookahead decoding uses the model's own recent n-grams; n-gram (prompt lookup) and suffix decoding match against the prompt and prior outputs.
-- **Best For**: Structured data, code edits, RAG answers that quote the context, and highly repetitive technical writing. They cost almost nothing when they miss, which makes them a good default for agent loops that rewrite files.
+دو پیامد برای طراحی سیستم:
+- **تخمین‌های خودمیزبانی (Self-host) باید فرض کنند که پیش‌نویس‌کننده ناشر فعال است.** فعال‌سازی DSpark در vLLM با یک فلگ انجام می‌شود: `--speculative-config '{"method":"dspark","num_speculative_tokens":7}'`. پیش‌نویس 2.25B Kimi-K3-DSpark از RadixArk طول‌های پذیرش حدود ۵.۴ تا ۵.۵ را روی GSM8K و HumanEval گزارش می‌کند، بنابراین بخش بزرگی از گام‌های رمزگشایی چندین Token صادر می‌کنند.
+- **برابری ارزیابی (Eval parity) باید مسیر حدسی را در بر بگیرد.** رمزگشایی حدسی باید حفظ‌کننده خروجی (Output-preserving) باشد، اما کرنل‌ها، تنظیمات نمونه‌برداری و باگ‌های موتور همیشه این‌طور نیستند. ارزیابی‌های (Evals) خود را با فعال بودن حدس‌زنی اجرا کنید، درست همان‌طور که در محیط پروداکشن اجرا می‌شود. بنچمارک‌های صنعتی نیز همگام شده‌اند: MLPerf Inference v6.1 اجازه استفاده از رمزگشایی حدسی را در سناریوی تعاملی (Interactive) gpt-oss-120b می‌دهد.
 
 ---
 
-## Load-Aware Speculation (Adaptive Verification)
+## رمزگشایی Lookahead، N-gram و Suffix
 
-The classic objection: speculation spends spare compute, and at high batch there is none, so a static draft length $K$ hurts throughput. The 2026 answer is per-request, load-aware verification budgets.
-
-**vLLM adaptive verification** (introduced August 14, 2026 for DSpark) scores every (request, position) draft slot by its survival probability, the running product of the drafter's per-position confidences, and verifies only the global top-B slots, where B comes from a step-cost model profiled at startup. The data shows why a fixed $K$ wastes compute: on DeepSeek-V4-Pro-0813, the first token of a 7-token draft survives over 70% of the time and the last under 10%. With adaptive verification, vLLM reports speculation staying beneficial up to concurrency 256 while keeping long-draft gains at low concurrency (vendor-reported).
-
-Constraints to know:
-- At launch it was DSpark-only, required full CUDA graphs, and did not support LoRA or pipeline parallelism.
-- v0.29.0 added per-request acceptance stats in responses (`--per-request-spec-decode-metrics`), which you should log per tenant and per prompt type.
-- v0.30.0 extended it under Model Runner V2 to every draft-model speculator (MTP, EAGLE-3, DFlash) through an online acceptance estimator, provided the target's attention backend supports variable-length verification.
-
-Hardware is following the same idea: NVIDIA lists running a Groq 3 LPX rack as an external speculative drafter next to Vera Rubin GPUs as one of its supported serving modes.
+جایگزین‌های بدون مدل (Model-free)، ادامه‌های کاندید را در متنی که سیستم قبلاً دیده است پیدا می‌کنند: رمزگشایی lookahead از n-gramهای اخیر خود مدل استفاده می‌کند؛ رمزگشایی n-gram (جستجوی Prompt یا همان prompt lookup) و suffix decoding متن را با Prompt و خروجی‌های قبلی مطابقت می‌دهند.
+- **بهترین کاربرد برای**: داده‌های ساختاریافته، ویرایش‌های کد، پاسخ‌های RAG که زمینه (Context) را نقل قول می‌کنند، و نگارش‌های فنی بسیار تکراری. در صورت عدم تطابق تقریباً هیچ هزینه‌ای تحمیل نمی‌کنند، که همین امر آن‌ها را به یک پیش‌فرض مناسب برای حلقه‌های Agent که فایل‌ها را بازنویسی می‌کنند تبدیل می‌کند.
 
 ---
 
-## Interview Questions
+## حدس‌زنی آگاه از بار (تأیید انطباقی)
 
-### Q: Why doesn't Speculative Decoding work well for high-temperature creative writing?
+ایراد کلاسیک: حدس‌زنی از توان پردازشی مازاد استفاده می‌کند، و در Batchهای بزرگ توان مازادی وجود ندارد، بنابراین طول پیش‌نویس ایستا $K$ به توان عملیاتی (Throughput) آسیب می‌زند. پاسخ سال ۲۰۲۶ بودجه‌های تأیید آگاه از بار و به ازای هر درخواست است.
 
-**Strong answer:**
-Speculative decoding relies on the "Draft Model" being able to accurately predict what the "Target Model" would say. In high-temperature creative writing, the probability distribution is "flatter," and the model is encouraged to pick less-likely tokens. This leads to a very low **Acceptance Rate** (the draft model's guesses are frequently rejected). A rejection never costs correctness, because the verification pass still yields one corrected token, but at low acceptance you are doing roughly sequential decoding plus the drafter's latency and the wasted verification compute, so you end up slower than with speculation off.
+**تأیید انطباقی vLLM** (معرفی‌شده در ۱۴ اوت ۲۰۲۶ برای DSpark) به هر اسلات پیش‌نویس (request, position) بر اساس احتمال بقای آن — حاصل‌ضرب تجمعی اطمینان پیش‌نویس‌کننده در هر موقعیت — امتیاز می‌دهد و تنها اسلات‌های برتر B به صورت سراسری (Global top-B) را تأیید می‌کند، که در آن B از یک مدل هزینه هر گام (Step-cost model) که در زمان راه‌اندازی پروفایل شده به دست می‌آید. داده‌ها نشان می‌دهند چرا یک $K$ ثابت، توان محاسباتی را هدر می‌دهد: در DeepSeek-V4-Pro-0813، اولین Token از یک پیش‌نویس ۷-Tokenای بیش از ۷۰٪ مواقع باقی می‌ماند و آخرین مورد کمتر از ۱۰٪. با تأیید انطباقی، vLLM گزارش می‌دهد که حدس‌زنی تا همروندی (Concurrency) ۲۵۶ سودمند باقی می‌ماند، در حالی که مزایای پیش‌نویس‌های طولانی را در همروندی پایین حفظ می‌کند (گزارش‌شده توسط توسعه‌دهنده).
 
-### Q: How do draft heads (Medusa, EAGLE-3, native MTP) differ from a separate draft model?
+محدودیت‌هایی که باید بدانید:
+- در زمان عرضه فقط مختص DSpark بود، به گراف‌های کامل CUDA نیاز داشت و از LoRA یا موازی‌سازی خط لوله‌ای (Pipeline parallelism) پشتیبانی نمی‌کرد.
+- نسخه v0.29.0 آمار پذیرش به ازای هر درخواست را در پاسخ‌ها اضافه کرد (`--per-request-spec-decode-metrics`)، که باید آن را به ازای هر مستاجر (multi-tenant) و به ازای هر نوع Prompt لاگ کنید.
+- نسخه v0.30.0 آن را تحت Model Runner V2 به تمام حدس‌زننده‌های مدل پیش‌نویس (MTP، EAGLE-3، DFlash) از طریق یک برآوردگر پذیرش برخط (Online acceptance estimator) گسترش داد، مشروط بر اینکه بک‌اند توجه (Attention backend) مدل هدف از تأیید با طول متغیر پشتیبانی کند.
 
-**Strong answer:**
-A separate draft model takes up extra VRAM, needs its own KV cache, must share the tokenizer, and drifts out of sync when the target is updated. Draft heads attach to the target instead: Medusa adds heads that each predict a fixed offset from the final hidden state, EAGLE-3 runs a light head on hidden features from several target layers (higher acceptance than Medusa), and native MTP heads are trained with the model itself, so they match its distribution best. All of them reuse the target's forward pass and KV, which removes the second-model overhead. In 2026 the practical difference is ownership: publishers such as DeepSeek, Xiaomi, and Qwen ship the drafter in the checkpoint, so the default should be "use the bundled MTP or DSpark module, fall back to EAGLE-3 or a diffusion drafter, and only train your own if neither exists."
-
-### Q: "Speculative decoding hurts throughput at large batch, so turn it off in production." Do you agree?
-
-**Strong answer:**
-It was true for a static draft length: at high concurrency the GPU is already compute-saturated, so verifying seven speculative tokens per request mostly burns compute on tokens that get rejected, since acceptance falls off sharply with position. The current answer is to make the verification budget load-aware rather than to turn speculation off. vLLM's adaptive verification scores each draft position by its survival probability and verifies only the globally best slots within a step budget, so at low load requests get long drafts and at high load only high-confidence early positions are checked; vLLM reports a net benefit up to concurrency 256. I would enable it where the engine supports it, log per-request acceptance, and check feature interactions (at launch it did not support LoRA or pipeline parallelism). For workloads with very low acceptance, such as high-temperature generation, I would still disable it per route.
+سخت‌افزار نیز همین ایده را دنبال می‌کند: NVIDIA اجرای یک رک Groq 3 LPX را به عنوان پیش‌نویس‌کننده حدسی خارجی در کنار GPUهای Vera Rubin به عنوان یکی از حالت‌های سرویس‌دهی پشتیبانی‌شده خود فهرست می‌کند.
 
 ---
 
-## References
+## سوالات مصاحبه
+
+### پرسش: چرا رمزگشایی حدسی (Speculative Decoding) برای نگارش خلاقانه با دمای بالا خوب عمل نمی‌کند؟
+
+**پاسخ قوی:**
+رمزگشایی حدسی به این موضوع وابسته است که «مدل پیش‌نویس» بتواند به درستی پیش‌بینی کند «مدل هدف» چه چیزی خواهد گفت. در نگارش خلاقانه با دمای بالا (High-temperature)، توزیع احتمال «تخت‌تر» (Flatter) است و مدل تشویق می‌شود Tokenهای با احتمال کمتر را انتخاب کند. این امر منجر به **نرخ پذیرش (Acceptance Rate)** بسیار پایینی می‌شود (حدس‌های مدل پیش‌نویس مکرراً رد می‌شوند). یک رد شدن هرگز درستی خروجی را به خطر نمی‌اندازد، زیرا گذر تأیید همچنان یک Token تصحیح‌شده تولید می‌کند؛ اما در نرخ پذیرش پایین، شما تقریباً در حال انجام رمزگشایی ترتیبی به همراه تاخیر (Latency) پیش‌نویس‌کننده و محاسبات تلف‌شده تأیید هستید، بنابراین در نهایت کندتر از حالت بدون حدس‌زنی خواهید بود.
+
+### پرسش: هدهای پیش‌نویس (Medusa، EAGLE-3، MTP بومی) چه تفاوتی با یک مدل پیش‌نویس مجزا دارند؟
+
+**پاسخ قوی:**
+یک مدل پیش‌نویس مجزا مقدار بیشتری VRAM اشغال می‌کند، به KV cache اختصاصی خود نیاز دارد، باید از Tokenizer مشترک استفاده کند، و با به‌روزرسانی مدل هدف هماهنگی خود را از دست می‌دهد. در مقابل، هدهای پیش‌نویس به خود مدل هدف متصل می‌شوند: Medusa هدهایی اضافه می‌کند که هرکدام یک آفست ثابت را از وضعیت پنهان نهایی (Final hidden state) پیش‌بینی می‌کنند، EAGLE-3 یک هد سبک را روی ویژگی‌های پنهان لایه‌های متعدد مدل هدف اجرا می‌کند (پذیرش بالاتر نسبت به Medusa)، و هدهای MTP بومی همراه با خود مدل آموزش می‌بینند، بنابراین بهترین تطابق را با توزیع آن دارند. همه آن‌ها از گذر رفت (Forward pass) و KV مدل هدف استفاده مجدد می‌کنند که سربار مدل دوم را از بین می‌برد. در سال ۲۰۲۶ تفاوت عملی در مالکیت است: ناشرانی مانند DeepSeek، Xiaomi و Qwen پیش‌نویس‌کننده را درون چک‌پوینت عرضه می‌کنند، بنابراین رویکرد پیش‌فرض باید این باشد: «از ماژول MTP یا DSpark همراه مدل استفاده کنید، در صورت نبود به EAGLE-3 یا یک پیش‌نویس‌کننده دیفیوژن بازگردید، و تنها در صورتی که هیچ‌یک وجود نداشت مدل خود را آموزش دهید.»
+
+### پرسش: «رمزگشایی حدسی توان عملیاتی (Throughput) را در Batch بزرگ کاهش می‌دهد، بنابراین آن را در محیط پروداکشن خاموش کنید.» آیا موافقید؟
+
+**پاسخ قوی:**
+این گزاره برای طول پیش‌نویس ایستا درست بود: در همروندی بالا، GPU از قبل از نظر محاسباتی اشباع شده است (Compute-saturated)، بنابراین تأیید هفت Token حدسی به ازای هر درخواست، عمدتاً توان محاسباتی را برای Tokenهایی که رد می‌شوند می‌سوزاند، زیرا نرخ پذیرش با افزایش موقعیت به شدت کاهش می‌یابد. پاسخ کنونی این است که بودجه تأیید را به جای خاموش کردن حدس‌زنی، آگاه از بار کنیم. تأیید انطباقی vLLM به هر موقعیت پیش‌نویس بر اساس احتمال بقای آن امتیاز می‌دهد و تنها اسلات‌هایی را که از نظر سراسری در چارچوب بودجه هر گام بهترین هستند تأیید می‌کند؛ بنابراین در بار کاری کم، درخواست‌ها پیش‌نویس‌های طولانی دریافت می‌کنند و در بار کاری زیاد، فقط موقعیت‌های اولیه با اطمینان بالا بررسی می‌شوند؛ vLLM یک مزیت خالص را تا همروندی ۲۵۶ گزارش می‌کند. من این قابلیت را در جایی که موتور از آن پشتیبانی می‌کند فعال می‌کنم، نرخ پذیرش به ازای هر درخواست را لاگ می‌کنم، و تداخل ویژگی‌ها را بررسی می‌کنم (در زمان عرضه از LoRA یا موازی‌سازی خط لوله‌ای پشتیبانی نمی‌کرد). برای بارهای کاری با نرخ پذیرش بسیار پایین، مانند تولید متن با دمای بالا، همچنان آن را به ازای هر مسیر (Per route) غیرفعال می‌کنم.
+
+---
+
+## منابع
 - Leviathan et al. "Fast Inference from Transformers via Speculative Decoding" (2023); Chen et al. "Accelerating Large Language Model Decoding with Speculative Sampling" (2023)
 - Cai et al. "Medusa: Simple LLM Acceleration via Multiple Decoding Heads" (2024)
 - Li et al. "EAGLE-3: Scaling up Inference Acceleration of Large Language Models via Training-Time Test" arXiv:2503.01840 (2025)
 - DeepSeek-AI. "DeepSeek-V3 Technical Report" (multi-token prediction) arXiv:2412.19437
 - "DFlash" (block-diffusion drafter) arXiv:2602.06036; DeepSeek, "DSpark" arXiv:2607.05147
 - Fu et al. "Lookahead Decoding" (2024)
-- vLLM Blog. ["DSpark and adaptive verification"](https://vllm.ai/blog/2026-08-14-dspark-adaptive-verification) (2026)
+- vLLM Blog. [«DSpark و تأیید انطباقی»](https://vllm.ai/blog/2026-08-14-dspark-adaptive-verification) (2026)
 
 ---
 
-*Next: [Batching Strategies](04-batching-strategies.md)*
+*بخش بعدی: [استراتژی‌های دسته‌بندی (Batching Strategies)](04-batching-strategies.md)*
+
+</div>

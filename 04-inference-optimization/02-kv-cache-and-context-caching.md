@@ -1,138 +1,142 @@
-# KV Cache and Context Caching
+<div dir="rtl">
 
-The KV Cache is the most significant memory consumer in long-context AI systems. Managing this cache effectively is the difference between a system that scales to 1M+ tokens and one that crashes at 10k.
+# KV Cache و Context Caching
 
-## Table of Contents
+بخش KV Cache بزرگ‌ترین مصرف‌کننده حافظه در سیستم‌های هوش مصنوعی با کانتکست طولانی (long-context) است. مدیریت مؤثر این کش، مرز میان سیستمی است که تا بیش از ۱ میلیون Token مقیاس‌پذیر می‌شود و سیستمی که در ۱۰ هزار Token دچار کرش می‌شود.
 
-- [The KV Cache Problem](#the-kv-cache-problem)
-- [GQA: Grouped Query Attention](#gqa-grouped-query-attention)
-- [Context Caching (Self-hosted)](#context-caching-self-hosted)
-- [API-level Context Caching (Prompt Caching)](#api-level-context-caching-prompt-caching)
-- [KV Compression and Compact Architectures](#kv-compression-and-compact-architectures)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The KV Cache Problem
-
-During generation, the model needs the Key (K) and Value (V) tensors for all previous tokens. Storing these in memory is expensive.
-
-**VRAM Calculation (Llama 3.3 70B, standard GQA):**
-- **Tokens**: 128,000
-- **Precision**: BF16 (2 bytes per value)
-- **Memory**: `2 (KV) * layers (80) * context (128k) * kv_heads (8) * head_dim (128) * 2 bytes`
-- **Per token**: 320 KiB
-- **Total**: **~42 GB per user** in 128k context.
-
-This formula only holds for standard multi-head or grouped-query attention. Many 2026 open flagships use latent, sparse, sliding-window, or linear attention, where KV per token differs by two orders of magnitude or more (see [KV Compression and Compact Architectures](#kv-compression-and-compact-architectures)). Size each model with its own architecture.
+- [مسئله KV Cache](#the-kv-cache-problem)
+- [GQA: توجه پرسمان گروهی (Grouped Query Attention)](#gqa-grouped-query-attention)
+- [Context Caching (خودمیزبان)](#context-caching-self-hosted)
+- [Context Caching در سطح API (یا همان Prompt Caching)](#api-level-context-caching-prompt-caching)
+- [فشرده‌سازی KV و معماری‌های فشرده](#kv-compression-and-compact-architectures)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## GQA: Grouped Query Attention
+## مسئله KV Cache
 
-GQA is the standard way to reduce KV Cache size without losing performance in conventional transformers.
+در طول مرحله تولید (generation)، مدل به تنسورهای کلید (Key یا K) و مقدار (Value یا V) برای تمام Tokenهای قبلی نیاز دارد. ذخیره این تنسورها در حافظه بسیار پرهزینه است.
 
-| Method | Ratio | KV Cache Reduction | Quality Loss |
-|--------|-------|-------------------|--------------|
-| **Multi-Head (MHA)** | 1:1 | 1x (Baseline) | 0% |
-| **Grouped Query (GQA)** | 8:1 | **8x** | < 0.2% |
-| **Multi-Query (MQA)** | All:1 | 64x-128x | 2-3% |
-| **Multi-head Latent (MLA)** | Compressed latent per token | DeepSeek-V2 reported 93.3% less KV than its 67B MHA predecessor | Small (DeepSeek-reported) |
+**محاسبه VRAM (مدل Llama 3.3 70B، با GQA استاندارد):**
+- **تعداد Tokenها**: ۱۲۸,۰۰۰
+- **دقت (Precision)**: BF16 (۲ بایت به ازای هر مقدار)
+- **حافظه**: `2 (KV) * layers (80) * context (128k) * kv_heads (8) * head_dim (128) * 2 bytes`
+- **به ازای هر Token**: ۳۲۰ KiB
+- **مجموع**: **حدود ۴۲ گیگابایت به ازای هر کاربر** در کانتکست 128k.
 
-**Nuance**: GQA allows the model to attend to the same KV "memory" from multiple "reasoning" heads, drastically reducing the memory bandwidth needed during the Decode phase.
-
----
-
-## Context Caching (Self-hosted)
-
-Production systems use **Shared KV Caches** for prompts with common prefixes (e.g., a 100-page knowledge base shared by 1,000 users).
-
-### Tiered KV Storage
-- **GPU HBM**: Instant access, strictly limited size.
-- **Host DRAM**: Larger, a PCIe or NVLink-C2C hop away.
-- **Disk, shared storage, or peer nodes**: Slower, nearly unlimited.
-
-Both major open engines now implement this hierarchy. **SGLang HiCache** is three-tier (GPU, CPU host memory, storage through Mooncake, 3FS, or NIXL backends). **vLLM's tiered KV offloading** is host-centric: all KV flows through pinned host DRAM, GPU memory is freed as soon as the copy completes, and secondary tiers (filesystem, object store, remote peers) are fed from host; v0.28.0 added a disk tier. A canonical host layout means nodes with different tensor-parallel sizes can share cached chunks. NVIDIA Dynamo deprecated its separate KV block manager (KVBM) in favor of this engine-native offload, so do not start new designs on it.
-
-Two design consequences:
-- **Hybrid attention needs a smarter prefix cache.** SGLang v0.5.20 caches sliding-window state at the prefix branch point; on DeepSeek-V4-Flash with a shared system prompt, token hit rate rose from 43.8% to 60.8% and mean TTFT fell from 1.57 s to 1.07 s.
-- **Host DRAM is not free capacity.** Memory makers expect demand to exceed supply through 2028 (Micron, per The Register), and some models now park parameters there too: Qwen3.8-Flash-Next adds a 51B-parameter N-gram embedding designed to be offloaded to host memory with asynchronous prefetching, which competes with your KV tier for the same DRAM.
-- **Agent-edited caches break prefix-only keys.** Research engines now let an agent edit its own KV cache: AKV (arXiv 2610.28577, October 2026, open source on SGLang) supports "drop" (exclude cached tokens from future attention) and "repos" (re-rotate retained key positions), reporting up to 1.2x output throughput and 1.5x faster P95 latency (author-reported). Once caches are edited in place, two requests with identical tokens can hold different cache states, so the cache key has to include the edit history, not just the token prefix.
-
-**Multi-tenant caveat: the prefix cache is a side channel.** If tenants share a cache, a tenant can detect whether another tenant sent a given prefix from cache-hit timing. Engines mitigate this with a per-tenant `cache_salt`, but it must hold on every code path: vLLM fixed a bug (GHSA-935w-9g4m-p28p, fixed in v0.30.0) where tool-continuation turns on one API path dropped the salt and reopened the cross-tenant oracle. Salt by tenant, test it per endpoint, and stay on a patched engine.
+این فرمول تنها برای توجه چندسر (multi-head) یا پرسمان گروهی (grouped-query) استاندارد معتبر است. بسیاری از مدل‌های پیشرو متن‌باز در سال ۲۰۲۶ از مکانیزم‌های توجه پنهان (latent)، تنک (sparse)، پنجره لغزان (sliding-window) یا خطی (linear) استفاده می‌کنند، که در آن‌ها مقدار KV به ازای هر Token تا دو مرتبه بزرگی یا بیشتر تفاوت دارد (بخش [فشرده‌سازی KV و معماری‌های فشرده](#kv-compression-and-compact-architectures) را ببینید). ابعاد و ظرفیت حافظه هر مدل را متناسب با معماری خودش برآورد کنید.
 
 ---
 
-## API-level Context Caching (Prompt Caching)
+## GQA: توجه پرسمان گروهی (Grouped Query Attention)
 
-Major providers (OpenAI, Anthropic, Google, DeepSeek) offer **Prompt Caching** discounts, and the multipliers now differ by model, not just by vendor.
+مکانیزم GQA روشی استاندارد برای کاهش اندازه KV Cache بدون افت عملکرد در ترنسفورمرهای مرسوم است.
 
-| Provider | Feature Name | Pricing (per 1M tokens) | Notes |
-|----------|--------------|------------------------|----------|
-| **Anthropic** | Prompt caching (explicit breakpoints) | Reads 0.1x on most models (Haiku 5.5: $0.01), 0.05x on Opus 5.5 ($0.20) and Sonnet 5.5 ($0.10, since October 7), 0.025x on Fable 5.1 ($0.25). Writes 1.25x (5-minute TTL) or 2x (1-hour) | Opus 5.5 caches prompts from 512 tokens; a beta lets you add tools mid-conversation without invalidating the cache. On Haiku 5.5, cache reads and writes count toward the 100K-token prompt length above which the whole request bills at 5x |
-| **OpenAI** | Prompt caching (automatic) | GPT-5.6 and later: writes 1.25x (30-minute TTL) or 2.5x (12-hour TTL, since October 20); reads 0.1x (GPT-6 Sol $0.20), 0.05x on GPT-6.1 Sol ($0.10) and GPT-6.1 Terra ($0.05). Older models: no write fee | Minimum 1,024 tokens; choose the TTL by reuse interval |
-| **Google** | Context Caching (implicit and explicit) | Gemini 3.8 Flash: reads $0.075 (0.1x, promo price through December 31, 2026; $0.15 from January 1, 2027) plus storage $0.50 per 1M tokens per hour ($1.00 from January 1, 2027); Gemini 3.1 Pro Preview reads $0.20 under 200K | Storage is billed per hour, so long-lived explicit caches need enough traffic to cover it. Gemini 4 Argon supports implicit caching only |
-| **DeepSeek** | Context Caching (automatic) | V4.1-Flash cache hit $0.006 peak / $0.003 off-peak; V4-Pro $0.044 / $0.022 | Peak is 01:00-04:00 and 06:00-10:00 UTC on weekdays, excluding Chinese public holidays |
+| روش | نسبت | کاهش KV Cache | افت کیفیت |
+|---|---|---|---|
+| **چندسر (Multi-Head - MHA)** | 1:1 | ۱ برابر (مبنا / Baseline) | 0% |
+| **پرسمان گروهی (Grouped Query - GQA)** | 8:1 | **۸ برابر (8x)** | کمتر از 0.2% |
+| **چندپرسمانی (Multi-Query - MQA)** | All:1 | ۶۴ تا ۱۲۸ برابر (64x-128x) | 2-3% |
+| **پنهان چندسر (Multi-head Latent - MLA)** | متغیر پنهان فشرده به ازای هر Token | مدل DeepSeek-V2 کاهش ۹۳.۳ درصدی KV را نسبت به مدل سلف 67B MHA خود گزارش کرده است | اندک (گزارش‌شده توسط DeepSeek) |
 
-**Break-even nuance**: With a 1.25x write and a 0.1x read (Anthropic, and OpenAI on GPT-5.6+), caching pays for itself on the **first cache hit**, the second request within the TTL: 1.25 + 0.1 < 2. Anthropic's 1-hour write at 2x needs a second hit (2 + 0.1 > 2, but 2 + 0.2 < 3), and so does OpenAI's 12-hour write at 2.5x (2.5 + 0.2 < 3). Caching never lowers the prompt length a long-context threshold sees: a Haiku 5.5 request with a 120K-token cached prefix still bills at the 5x rate. The real failure mode is not break-even math but **hit rate**: TTL expiry between agent turns, prefixes that change (timestamps, reordered tools, per-user IDs near the top), and prompts below the minimum cacheable length. Both OpenAI (Responses API, September 8, 2026) and Anthropic (September 23) now expose cache diagnostics, so treat hit rate as an SLO and alert on it.
-
-**Price spread**: DeepSeek V4.1-Flash's peak cache-hit price ($0.006) is about 33x below GPT-6 Sol's cached input ($0.20) but less than 2x below GPT-6 Luna's and Claude Haiku 5.5's ($0.01). DeepSeek has repriced several times in 2026, most recently with peak and off-peak billing from August 16 and V4.1-Flash on September 10, so date-stamp any cost model built on these numbers.
+**نکته ظریف (Nuance)**: مکانیزم GQA به مدل این امکان را می‌دهد که از چندین هد «استدلال» (reasoning heads) به یک «حافظه» KV مشترک توجه کند، که این امر پهنای باند حافظه مورد نیاز را در فاز رمزگشایی (Decode phase) به شدت کاهش می‌دهد.
 
 ---
 
-## KV Compression and Compact Architectures
+## Context Caching (خودمیزبان)
 
-Beyond dtype (FP8 or 4-bit KV, covered in the [Quantization Deep Dive](../03-training-and-adaptation/07-quantization-deep-dive.md#kv-cache-quantization-the-vram-saver)), there are two families of ways to shrink KV.
+سیستم‌های محیط عملیاتی از **KV Cacheهای به اشتراک‌گذاشته‌شده** (Shared KV Caches) برای Promptهایی با پیشوندهای مشترک استفاده می‌کنند (به عنوان مثال، یک پایگاه دانش ۱۰۰ صفحه‌ای که بین ۱,۰۰۰ کاربر به اشتراک گذاشته شده است).
 
-**1. Architectural (trained into the model, lossless relative to that model).** The 2026 open flagships all ship a non-standard attention or KV scheme:
+### ذخیره‌سازی لایه‌بندی‌شده KV (Tiered KV Storage)
+- **حافظه HBM در GPU**: دسترسی آنی، با اندازه بسیار محدود.
+- **حافظه DRAM میزبان (Host DRAM)**: بزرگ‌تر، در فاصله یک پرش (hop) با PCIe یا NVLink-C2C.
+- **دیسک، فضای ذخیره‌سازی اشتراکی یا نودهای همتا (peer nodes)**: کندتر، تقریباً نامحدود.
 
-| Model | Scheme | KV implication |
-|-------|--------|----------------|
-| Llama 3.3 70B | GQA, BF16 | 320 KiB per token (baseline) |
-| DeepSeek V4.1-Flash | Causal encoder-decoder; decoder global KV projected from encoder states; Compressed Sparse Attention 2; FP4 main KV | About 890 bytes of global KV per token, roughly 4x below V4-Flash (DeepSeek-reported) |
-| MiMo-V2.6-Pro | 60 sliding-window layers (128-token window) plus 10 global layers | Only the 10 global layers grow with context |
-| Qwen3.8-Flash-Next | Gated DeltaNet linear attention in 3 of every 4 layers, Qwen Sparse Attention in the fourth | Linear layers keep a fixed-size state; only every fourth layer keeps a growing KV cache |
-| GLM-5.3-Flash | Hybrid of linear (KDA) and DeepSeek-style sparse attention | Linear layers keep fixed state; sparse layers cut attention compute more than KV size |
-| Tencent Hy4 preview | Gated DeepSeek-style sparse attention with an index cache | Needs engine kernels for the sparse path, or you pay dense cost |
+هر دو موتور متن‌باز اصلی اکنون این سلسله‌مراتب را پیاده‌سازی می‌کنند. معماری **HiCache در SGLang** سه‌لایه‌ای است (GPU، حافظه میزبان CPU، و فضای ذخیره‌سازی از طریق بک‌اند‌های Mooncake، 3FS یا NIXL). سیستم **تخلیه لایه‌بندی‌شده KV در vLLM (یا همان tiered KV offloading)** مبتنی بر میزبان (host-centric) است: تمام KV از طریق DRAM پین‌شده میزبان جریان می‌یابد، حافظه GPU به محض تکمیل کپی آزاد می‌شود، و لایه‌های ثانویه (سیستم فایل، ذخیره‌ساز شیء یا object store، نودهای همتای راه دور) از میزبان تغذیه می‌شوند؛ نسخه v0.28.0 یک لایه دیسک را اضافه کرد. یک چیدمان استاندارد و یکپارچه در میزبان (canonical host layout) به این معناست که نودهایی با اندازه‌های موازی‌سازی تنسور (tensor-parallel) متفاوت می‌توانند Chunkهای کش‌شده را با یکدیگر به اشتراک بگذارند. فریم‌ورک NVIDIA Dynamo مدیر بلوک KV مجزای خود (KVBM) را به نفع این تخلیه بار بومی موتور (engine-native offload) منسوخ (deprecate) کرده است، بنابراین طراحی‌های جدید را بر پایه آن شروع نکنید.
 
-**2. Runtime compression (applied at serving time, lossy).** Keep a few "attention sink" tokens plus a recent window (StreamingLLM), or evict tokens with low accumulated attention (H2O, SnapKV). These help long chat sessions but can silently drop the one fact a retrieval-heavy prompt needed, so run needle-style and task evals before enabling them.
+پیامدهای طراحی:
+- **مکانیزم توجه ترکیبی (Hybrid attention) به کش پیشوند هوشمندانه‌تری نیاز دارد.** فریم‌ورک SGLang در نسخه v0.5.20 وضعیت پنجره لغزان را در نقطه انشعاب پیشوند کش می‌کند؛ در مدل DeepSeek-V4-Flash با یک Prompt سیستمی مشترک، نرخ برخورد Tokenها از ۴۳.۸٪ به ۶۰.۸٪ افزایش یافت و میانگین TTFT (زمان تا اولین Token) از ۱.۵۷ ثانیه به ۱.۰۷ ثانیه کاهش پیدا کرد.
+- **حافظه DRAM میزبان یک ظرفیت نامحدود و رایگان نیست.** سازندگان حافظه انتظار دارند تقاضا تا سال ۲۰۲۸ از عرضه پیشی بگیرد (به گزارش Micron در The Register)، و برخی مدل‌ها اکنون پارامترها را نیز در آنجا مستقر می‌کنند: مدل Qwen3.8-Flash-Next یک امبدینگ N-gram با ۵۱ میلیارد پارامتر اضافه کرده است که برای تخلیه شدن به حافظه میزبان همراه با واکشی پیش‌دستانه ناهمگام (asynchronous prefetching) طراحی شده است؛ این بخش برای استفاده از همان DRAM با لایه KV شما رقابت می‌کند.
+- **کش‌های ویرایش‌شده توسط Agent، کلیدهای مبتنی بر پیشوند محض را از کار می‌اندازند.** موتورهای تحقیقاتی اکنون به یک Agent اجازه می‌دهند KV cache خود را ویرایش کند: پروژه AKV (مقاله arXiv 2610.28577، اکتبر ۲۰۲۶، متن‌باز روی SGLang) از «drop» (حذف Tokenهای کش‌شده از محاسبات توجه در آینده) و «repos» (چرخش مجدد موقعیت کلیدهای حفظ‌شده) پشتیبانی می‌کند، و بهبود تا ۱.۲ برابری در توان عملیاتی (Throughput) خروجی و ۱.۵ برابری در تاخیر (Latency) صدک P95 را گزارش داده است (گزارش‌شده توسط نویسندگان). زمانی که کش‌ها در محل (in place) ویرایش می‌شوند، دو درخواست با Tokenهای کاملاً یکسان می‌توانند وضعیت‌های کش متفاوتی داشته باشند؛ بنابراین کلید کش باید تاریخچه ویرایش‌ها را نیز در بر بگیرد، نه صرفاً پیشوند Tokenها را.
 
-The practical consequence: "how many concurrent 1M-token sessions fit on a node" now depends more on the architecture and the engine's support for it (sliding-window-aware prefix caching, sparse-attention kernels, host-resident sparse KV tiers such as vLLM's HiSparse) than on GPU count.
-
----
-
-## Interview Questions
-
-### Q: How does PagedAttention help with KV Cache management? (Simplified)
-
-**Strong answer:**
-Standard KV caches require contiguous memory allocation (one giant block of RAM). This leads to **External Fragmentation** (memory exists but is in unusable gaps). PagedAttention (used in vLLM) breaks the KV cache into small, fixed-size "pages" (like OS virtual memory). This allows the cache to be non-contiguous, meaning we can allocate memory exactly when needed and share pages between different requests that have the same prefix. The vLLM paper measured earlier systems wasting 60-80% of KV memory to fragmentation and over-reservation, against under 4% waste with paging, which is where the 2-4x throughput gain came from.
-
-### Q: Why is Context Caching better than RAG for a 50k token document?
-
-**Strong answer:**
-With cheap context caching (DeepSeek, Gemini, Anthropic), RAG is often "overkill" for medium-sized documents.
-1. **Recall**: Context caching gives 100% retrieval recall (the whole doc is in the window), whereas RAG depends on retrieval accuracy. The model can still miss details in a long window, so test with needle-style evals at your document length.
-2. **Coherence**: The model can see cross-references across the whole document.
-3. **Economics**: At 50k tokens, the cost of a cached input is often lower than the complexity of maintaining a vector database and retrieval pipeline.
-
-### Q: Your capacity plan used `2 × layers × kv_heads × head_dim × bytes` per token for every model in the fleet. What breaks?
-
-**Strong answer:**
-That formula is right only for standard MHA or GQA. The 2026 open flagships mostly are not: DeepSeek uses latent or compressed sparse attention with an FP4 main KV (about 890 bytes of global KV per token on V4.1-Flash, versus 320 KiB for a BF16 Llama-3.3-70B), MiMo uses mostly sliding-window layers, and Qwen's newest design uses linear attention in three of four layers, which keeps a fixed-size state. So per-token KV varies by more than 300x across models, and the formula overestimates memory for some by orders of magnitude while ignoring fixed state and sliding-window costs for others. I would compute KV per model from its config, confirm the engine actually implements the compact scheme (otherwise you pay full-size KV), include prefix-cache behavior (sliding-window models need branch-point-aware caching to get good hit rates), and validate with a load test at the target context length. Prefill and decode can even have different active-parameter counts now, so I would size those pools separately too.
+**نکته مهم در معماری چندمستأجری (multi-tenant): کش پیشوند یک کانال جانبی (side channel) است.** اگر مستأجران (tenants / multi-tenant) یک کش را به اشتراک بگذارند، یک مستأجر (tenant / multi-tenant) می‌تواند از روی زمان‌بندی برخورد کش (cache-hit timing) متوجه شود که آیا مستأجر (tenant / multi-tenant) دیگری پیشوند خاصی را ارسال کرده است یا خیر. موتورها این مشکل را با یک `cache_salt` به ازای هر مستأجر (per-tenant / multi-tenant) تعدیل می‌کنند، اما این ویژگی باید در تک‌تک مسیرهای کد حفظ شود: vLLM باگی را رفع کرد (شناسه GHSA-935w-9g4m-p28p، برطرف‌شده در نسخه v0.30.0) که در آن نوبت‌های ادامه‌دهنده ابزار (tool-continuation turns) در یک مسیر API مقدار salt را نادیده می‌گرفتند و مجدداً روزنه نفوذ بین مستأجران (cross-tenant / multi-tenant) را باز می‌کردند. نمک‌گذاری (Salt) را بر اساس هر مستأجر (tenant / multi-tenant) انجام دهید، آن را به ازای هر اندپوینت بررسی و تست کنید، و همواره از موتورهای ارائه‌دهنده با آخرین وصله‌های امنیتی استفاده نمایید.
 
 ---
 
-## References
-- Kwon et al. "Efficient Memory Management with PagedAttention" (2023)
-- DeepSeek-AI. "DeepSeek-V2" (MLA) arXiv:2405.04434 (2024)
-- Xiao et al. "Efficient Streaming Language Models with Attention Sinks" (StreamingLLM, 2023)
-- Anthropic. "Prompt Caching Documentation"
-- OpenAI. [Prompt caching guide](https://developers.openai.com/api/docs/guides/prompt-caching)
-- vLLM Blog. ["Tiered KV offloading"](https://vllm.ai/blog/2026-09-10-tiered-kv-offloading) (2026)
-- SGLang. [HiCache design](https://docs.sglang.io/advanced_features/hicache_design.html)
+## Context Caching در سطح API (یا همان Prompt Caching)
+
+ارائه‌دهندگان بزرگ (OpenAI، Anthropic، Google، DeepSeek) تخفیف‌های مربوط به **Prompt Caching** ارائه می‌دهند، و اکنون ضرایب تخفیف نه تنها بر اساس ارائه‌دهنده، بلکه به ازای هر مدل نیز تفاوت دارد.
+
+| ارائه‌دهنده | نام قابلیت | قیمت‌گذاری (به ازای هر ۱ میلیون Token) | نکات |
+|---|---|---|---|
+| **Anthropic** | قابلیت Prompt caching (نقاط شکست صریح / explicit breakpoints) | خواندن با ضریب 0.1x در اکثر مدل‌ها (مدل Haiku 5.5: معادل ۰.۰۱ دلار [\$0.01])، با ضریب 0.05x در Opus 5.5 (معادل ۰.۲۰ دلار [\$0.20]) و Sonnet 5.5 (معادل ۰.۱۰ دلار [\$0.10]، از ۷ اکتبر)، با ضریب 0.025x در Fable 5.1 (معادل ۰.۲۵ دلار [\$0.25]). نوشتن با ضریب 1.25x (با TTL پنج دقیقه‌ای) یا 2x (با TTL یک ساعته) | مدل Opus 5.5 پروسه کش Promptها را از ۵۱۲ Token آغاز می‌کند؛ یک نسخه بتا به شما امکان می‌دهد در میانه مکالمه بدون باطل شدن کش، ابزارها را اضافه کنید. در Haiku 5.5، خواندن و نوشتن‌های کش جزو آستانه طول Prompt معادل ۱۰۰ هزار Token محاسبه می‌شوند که فراتر از آن، کل درخواست با نرخ 5x محاسبه می‌شود |
+| **OpenAI** | قابلیت Prompt caching (خودکار / automatic) | مدل GPT-5.6 و بالاتر: نوشتن با ضریب 1.25x (با TTL سی دقیقه‌ای) یا 2.5x (با TTL دوازده ساعته، از ۲۰ اکتبر)؛ خواندن با ضریب 0.1x (در GPT-6 Sol معادل ۰.۲۰ دلار [\$0.20])، ضریب 0.05x در GPT-6.1 Sol (معادل ۰.۱۰ دلار [\$0.10]) و GPT-6.1 Terra (معادل ۰.۰۵ دلار [\$0.05]). مدل‌های قدیمی‌تر: بدون هزینه نوشتن | حداقل ۱,۰۲۴ Token؛ زمان TTL را بر اساس بازه زمانی استفاده مجدد انتخاب کنید |
+| **Google** | قابلیت Context Caching (ضمنی و صریح / implicit and explicit) | مدل Gemini 3.8 Flash: خواندن معادل ۰.۰۷۵ دلار [\$0.075] (با ضریب 0.1x، قیمت تبلیغاتی تا ۳۱ دسامبر ۲۰۲۶؛ و ۰.۱۵ دلار [\$0.15] از ۱ ژانویه ۲۰۲۷) به‌علاوه هزینه ذخیره‌سازی ۰.۵۰ دلار [\$0.50] به ازای هر ۱ میلیون Token در هر ساعت (۱.۰۰ دلار [\$1.00] از ۱ ژانویه ۲۰۲۷)؛ خواندن در Gemini 3.1 Pro Preview معادل ۰.۲۰ دلار [\$0.20] برای کانتکست زیر 200K | هزینه ذخیره‌سازی به ازای هر ساعت محاسبه می‌شود، بنابراین کش‌های صریح با عمر طولانی نیازمند ترافیک کافی برای توجیه هزینه هستند. مدل Gemini 4 Argon تنها از کش کردن ضمنی پشتیبانی می‌کند |
+| **DeepSeek** | قابلیت Context Caching (خودکار / automatic) | برخورد کش در مدل V4.1-Flash برابر با ۰.۰۰۶ دلار [\$0.006] در ساعات اوج مصرف (peak) / معادل ۰.۰۰۳ دلار [\$0.003] در ساعات غیر اوج (off-peak)؛ در مدل V4-Pro معادل ۰.۰۴۴ دلار [\$0.044] / معادل ۰.۰۲۲ دلار [\$0.022] | ساعات اوج مصرف برابر است با ۰۱:۰۰ الی ۰۴:۰۰ و ۰۶:۰۰ الی ۱۰:۰۰ به وقت UTC در روزهای کاری هفته، به‌جز تعطیلات رسمی چین |
+
+**نکته ظریف نقطه سربه‌سر (Break-even nuance)**: با هزینه نوشتن 1.25x و خواندن 0.1x (در Anthropic، و در OpenAI برای مدل GPT-5.6 به بعد)، کش کردن در همان **اولین برخورد کش (first cache hit)** هزینه خود را جبران می‌کند که همان دومین درخواست در بازه TTL است: \(1.25 + 0.1 < 2\). نوشتن یک‌ساعته در Anthropic با ضریب 2x به یک برخورد دوم نیاز دارد (زیرا \(2 + 0.1 > 2\)، اما \(2 + 0.2 < 3\))، و وضعیت برای نوشتن ۱۲ ساعته OpenAI با ضریب 2.5x نیز به همین صورت است (\(2.5 + 0.2 < 3\)). کش کردن هرگز طول Prompt مشاهده‌شده توسط آستانه کانتکست طولانی را کاهش نمی‌دهد: یک درخواست در مدل Haiku 5.5 با ۱۲۰ هزار Token پیشوند کش‌شده، همچنان با نرخ ضریب 5x صورت‌حساب می‌شود. حالت شکست واقعی (failure mode)، محاسبات ریاضی نقطه سربه‌سر نیست، بلکه **نرخ برخورد (Hit Rate)** است: انقضای TTL بین نوبت‌های کار Agent، پیشوندهایی که تغییر می‌کنند (برچسب‌های زمانی، تغییر ترتیب ابزارها، شناسه‌های کاربری در بالای متن)، و Promptهایی که کوتاه‌تر از حداقل طول قابل کش شدن هستند. اکنون هر دو شرکت OpenAI (در Responses API، ۸ سپتامبر ۲۰۲۶) و Anthropic (در ۲۳ سپتامبر) داده‌های تشخیصی کش را ارائه می‌دهند، بنابراین با نرخ برخورد (hit rate) به عنوان یک هدف سطح سرویس (SLO) برخورد کنید و هشدارهای نظارتی روی آن تنظیم نمایید.
+
+**اختلاف قیمت (Price spread)**: قیمت برخورد کش در ساعات اوج برای مدل DeepSeek V4.1-Flash (معادل ۰.۰۰۶ دلار [\$0.006]) حدود ۳۳ برابر ارزان‌تر از ورودی کش‌شده در مدل GPT-6 Sol (معادل ۰.۲۰ دلار [\$0.20]) است، اما کمتر از ۲ برابر از مدل‌های GPT-6 Luna و Claude Haiku 5.5 (معادل ۰.۰۱ دلار [\$0.01]) ارزان‌تر است. شرکت DeepSeek در سال ۲۰۲۶ چندین بار قیمت‌های خود را تغییر داده است؛ آخرین موارد شامل قیمت‌گذاری ساعات اوج و غیر اوج از ۱۶ اوت و عرضه مدل V4.1-Flash در ۱۰ سپتامبر بوده است؛ بنابراین برای هر مدل هزینه‌ای که بر اساس این ارقام می‌سازید، حتماً تاریخ ثبت کنید.
 
 ---
 
-*Next: [Speculative Decoding](03-speculative-decoding.md)*
+## فشرده‌سازی KV و معماری‌های فشرده
+
+فراتر از نوع داده یا dtype (مانند FP8 یا KV چهاربیتی، که در بخش [بررسی عمیق کوانتیزاسیون (Quantization Deep Dive)](../03-training-and-adaptation/07-quantization-deep-dive.md#kv-cache-quantization-the-vram-saver) به آن پرداخته شده است)، دو خانواده از روش‌ها برای کاهش حجم KV وجود دارد.
+
+**۱. روش‌های معماری (Architectural - آموزش‌داده‌شده درون مدل، بدون اتلاف کیفیت نسبت به آن مدل).** مدل‌های پیشرو متن‌باز در سال ۲۰۲۶ همگی با طرح‌های غیر استاندارد توجه یا KV عرضه می‌شوند:
+
+| مدل | طرح معماری (Scheme) | پیامد روی KV Cache |
+|---|---|---|
+| Llama 3.3 70B | مکانیزم GQA، با فرمت BF16 | ۳۲۰ KiB به ازای هر Token (حالت مبنا / Baseline) |
+| DeepSeek V4.1-Flash | ساختار کدگذار-کدگشای علی (Causal encoder-decoder)؛ پروجکشن KV سراسری دیکودر از وضعیت‌های انکودر؛ مکانیزم Compressed Sparse Attention 2؛ ذخیره KV اصلی به صورت FP4 | حدود ۸۹۰ بایت KV سراسری به ازای هر Token، تقریباً ۴ برابر کمتر از V4-Flash (گزارش‌شده توسط DeepSeek) |
+| MiMo-V2.6-Pro | ۶۰ لایه پنجره لغزان (پنجره ۱۲۸ تایی Token) به‌علاوه ۱۰ لایه سراسری | تنها ۱۰ لایه سراسری با افزایش طول کانتکست رشد می‌کنند |
+| Qwen3.8-Flash-Next | توجه خطی Gated DeltaNet در ۳ لایه از هر ۴ لایه، و مکانیزم Qwen Sparse Attention در لایه چهارم | لایه‌های خطی وضعیتی با اندازه ثابت نگه می‌دارند؛ تنها از هر ۴ لایه یک لایه دارای KV Cache با رشد افزایشی است |
+| GLM-5.3-Flash | ترکیبی از توجه خطی (KDA) و توجه تنک به سبک DeepSeek | لایه‌های خطی وضعیت با اندازه ثابت نگه می‌دارند؛ لایه‌های تنک محاسبات توجه را بیشتر از اندازه KV کاهش می‌دهند |
+| نسخه پیش‌نمایش Tencent Hy4 | توجه تنک گیت‌دار به سبک DeepSeek همراه با کش ایندکس (index cache) | نیازمند کرنل‌های موتور اختصاصی برای مسیر تنک است، در غیر این صورت هزینه محاسباتی متراکم (dense) را متحمل می‌شوید |
+
+**۲. فشرده‌سازی زمان اجرا (Runtime compression - اعمال‌شده در زمان سرویس‌دهی، با اتلاف کیفیت یا lossy).** نگهداری چند Token «چاهک توجه» (attention sink) به همراه یک پنجره از Tokenهای اخیر (مدل StreamingLLM)، یا بیرون انداختن (evict کردن) Tokenهایی با توجه انباشته پایین (روش‌های H2O و SnapKV). این روش‌ها به جلسات چت طولانی کمک می‌کنند اما ممکن است بی‌صدا همان داده و فکت کلیدی مورد نیاز یک Prompt وابسته به بازیابی اطلاعات (retrieval-heavy) را حذف کنند؛ بنابراین پیش از فعال‌سازی آن‌ها، ارزیابی‌های مبتنی بر تسک و ارزیابی‌های سبک «سوزن در انبار کاه» (needle-style evals) را اجرا کنید.
+
+پیامد عملی این موضوع: این پرسش که «چه تعداد نشست همزمان ۱ میلیون Token روی یک نود جا می‌شود»، اکنون بیش از آنکه به تعداد GPUها بستگی داشته باشد، به معماری مدل و پشتیبانی موتور از آن (کش پیشوند آگاه از پنجره لغزان، کرنل‌های توجه تنک، و لایه‌های KV تنک مستقر در حافظه میزبان مانند HiSparse در vLLM) وابسته است.
+
+---
+
+## سوالات مصاحبه
+
+### سوال: مکانیزم PagedAttention چگونه به مدیریت KV Cache کمک می‌کند؟ (به بیان ساده)
+
+**پاسخ قوی:**
+سیستم‌های سنتی KV Cache نیازمند تخصیص حافظه پیوسته (یک بلوک غول‌پیکر از رم) هستند. این امر منجر به **تکه‌تکه شدن خارجی حافظه (External Fragmentation)** می‌شود (حافظه وجود دارد اما در شکاف‌های غیرقابل استفاده پراکنده است). مکانیزم PagedAttention (مورد استفاده در vLLM) کش KV را به «صفحات» کوچک و با اندازه ثابت (مشابه حافظه مجازی در سیستم‌عامل) تقسیم می‌کند. این ویژگی امکان غیرپیوسته بودن کش را فراهم می‌سازد، به این معنا که می‌توانیم حافظه را دقیقاً در زمان نیاز تخصیص دهیم و صفحات را میان درخواست‌های متفاوتی که پیشوند یکسانی دارند به اشتراک بگذاریم. مقاله vLLM اندازه‌گیری کرد که سیستم‌های پیشین ۶۰ تا ۸۰ درصد از حافظه KV را به دلیل تکه‌تکه‌شدن و رزرو بیش از حد تلف می‌کردند، در حالی که این هدررفت با صفحه‌بندی (paging) به زیر ۴ درصد رسید؛ و منشأ دستیابی به ۲ تا ۴ برابر توان عملیاتی (Throughput) بالاتر نیز دقیقاً از همین‌جا شکل گرفت.
+
+### سوال: چرا Context Caching برای یک سند ۵۰ هزار Token بهتر از RAG است؟
+
+**پاسخ قوی:**
+با ارزان شدن Context Caching (در سرویس‌های DeepSeek، Gemini و Anthropic)، استفاده از RAG برای اسناد با اندازه متوسط اغلب «زیاده‌روی» (overkill) محسوب می‌شود.
+۱. **فراخوانی (Recall)**: روش Context Caching فراخوانی ۱۰۰ درصدی در بازیابی اطلاعات ارائه می‌دهد (تمام سند در پنجره کانتکست قرار دارد)، در حالی که RAG به دقت سیستم بازیابی وابسته است. البته مدل همچنان ممکن است جزئیاتی را در یک پنجره طولانی از دست بدهد، بنابراین تست‌هایی با ارزیابی‌های سوزن در انبار کاه در طول سند مورد نظرتان اجرا کنید.
+۲. **انسجام (Coherence)**: مدل قادر است ارجاعات متقابل (cross-references) را در سرتاسر کل سند مشاهده و درک کند.
+۳. **صرفه اقتصادی (Economics)**: در مقیاس ۵۰ هزار Token، هزینه ورودی کش‌شده معمولاً بسیار کمتر از بار و پیچیدگی نگهداری یک پایگاه داده برداری (Vector Database) و خط لوله بازیابی (retrieval pipeline) است.
+
+### سوال: در برنامه ظرفیت‌سنجی شما از فرمول `2 × layers × kv_heads × head_dim × bytes` به ازای هر Token برای تمام مدل‌های موجود در مجموعه (fleet) استفاده شده است. این محاسبات در کجا دچار شکست می‌شود؟
+
+**پاسخ قوی:**
+آن فرمول فقط برای MHA یا GQA استاندارد صحیح است. بیشتر مدل‌های پیشرو متن‌باز در سال ۲۰۲۶ از این الگو پیروی نمی‌کنند: مدل DeepSeek از توجه پنهان (latent) یا توجه تنک فشرده با فرمت FP4 برای KV اصلی استفاده می‌کند (حدود ۸۹۰ بایت KV سراسری به ازای هر Token در V4.1-Flash در مقایسه با ۳۲۰ KiB برای یک مدل BF16 در Llama-3.3-70B)، مدل MiMo عمدتاً از لایه‌های پنجره لغزان بهره می‌برد، و جدیدترین طراحی Qwen از توجه خطی در سه لایه از هر چهار لایه استفاده می‌کند که وضعیتی با اندازه ثابت را نگه می‌دارد. بنابراین مقدار KV به ازای هر Token بیش از ۳۰۰ برابر در میان مدل‌های مختلف متغیر است، و این فرمول حافظه را برای برخی چندین مرتبه بزرگی بیشتر تخمین می‌زند، در حالی که هزینه وضعیت‌های ثابت و پنجره‌های لغزان را برای مدل‌های دیگر نادیده می‌گیرد. من میزان KV هر مدل را از فایل پیکربندی (config) آن محاسبه می‌کنم، اطمینان حاصل می‌کنم که موتور سرویس‌دهی واقعاً طرح فشرده‌سازی را پیاده‌سازی کرده باشد (در غیر این صورت هزینه کامل اندازه KV متراکم را پرداخت خواهید کرد)، رفتار کش پیشوند را لحاظ می‌کنم (مدل‌های پنجره لغزان برای دستیابی به نرخ برخورد مناسب به کشینگ آگاه از نقطه انشعاب نیاز دارند)، و صحت آن را با یک آزمون بار (load test) در طول کانتکست هدف اعتبارسنجی می‌نمایم. حتی فازهای Prefill و Decode اکنون می‌توانند تعداد پارامترهای فعال متفاوتی داشته باشند، بنابراین استخرهای منابع (pools) آن‌ها را نیز به صورت تفکیک‌شده اندازه‌گذاری خواهم کرد.
+
+---
+
+## منابع
+- مقاله Kwon و همکاران. "Efficient Memory Management with PagedAttention" (2023)
+- تیم DeepSeek-AI. مقاله "DeepSeek-V2" (MLA) arXiv:2405.04434 (2024)
+- مقاله Xiao و همکاران. "Efficient Streaming Language Models with Attention Sinks" (StreamingLLM, 2023)
+- شرکت Anthropic. "مستندات Prompt Caching"
+- شرکت OpenAI. [راهنمای Prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)
+- وبلاگ vLLM. ["تخلیه لایه‌بندی‌شده KV"](https://vllm.ai/blog/2026-09-10-tiered-kv-offloading) (2026)
+- پروژه SGLang. [طراحی معماری HiCache](https://docs.sglang.io/advanced_features/hicache_design.html)
+
+---
+
+*بخش بعدی: [رمزگشایی حدسی (Speculative Decoding)](03-speculative-decoding.md)*
+
+</div>

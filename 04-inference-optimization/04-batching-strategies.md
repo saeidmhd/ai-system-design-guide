@@ -1,62 +1,66 @@
-# Batching Strategies
+<div dir="rtl">
 
-Batching is the primary lever for increasing LLM throughput and reducing cost. Serving frameworks have moved beyond simple request-level batching to sub-token, iteration-level orchestration, and at scale to splitting prefill and decode onto separate hardware.
+# استراتژی‌های دسته‌بندی (Batching)
 
-## Table of Contents
+دسته‌بندی (Batching) اهرم اصلی برای افزایش توان عملیاتی (Throughput) در LLMها و کاهش هزینه‌ها است. فریم‌ورک‌های سرویس‌دهی از دسته‌بندی ساده در سطح درخواست (request-level) فراتر رفته و به سمت هماهنگ‌سازی در سطح زیر-Token و سطح تکرار (iteration-level)، و در مقیاس‌های بالا به تفکیک فازهای Prefill و Decode روی سخت‌افزارهای مجزا حرکت کرده‌اند.
 
-- [Static vs. Dynamic Batching](#static-vs-dynamic-batching)
-- [Continuous Batching](#continuous-batching-iteration-level)
-- [In-Flight Batching (Prefill-Decode Fusion)](#in-flight-batching-prefill-decode-fusion)
-- [Chunked Prefill](#chunked-prefill)
-- [Disaggregated Prefill and Decode](#disaggregated-prefill-and-decode)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Static vs. Dynamic Batching
-
-In traditional ML (Classification), we use **Static Batching** where all requests must be the same size and start/end together. This is inefficient for LLMs due to variable response lengths. **Dynamic Batching** (as in NVIDIA Triton) waits up to a short timeout to collect requests into a batch, which improves utilization but still runs each batch to completion as a unit.
+- [دسته‌بندی ایستا در برابر پویا](#static-vs-dynamic-batching)
+- [دسته‌بندی پیوسته](#continuous-batching-iteration-level)
+- [دسته‌بندی حین اجرا (ادغام Prefill و Decode)](#in-flight-batching-prefill-decode-fusion)
+- [پیش‌تکمیل تکه‌تکه (Chunked Prefill)](#chunked-prefill)
+- [جداسازی Prefill و Decode](#disaggregated-prefill-and-decode)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Continuous Batching (Iteration-level)
+## دسته‌بندی ایستا در برابر پویا (Static vs. Dynamic Batching)
 
-Continuous batching (pioneered by Orca and vLLM) allows new requests to join the batch and finished requests to leave at the end of every individual token generation step.
-
-| Aspect | Static Batching | Continuous Batching |
-|--------|-----------------|---------------------|
-| **Join/Leave** | Only at start/end | Any iteration |
-| **GPU Utilization**| Low (waiting for longest) | High (always saturated) |
-| **Throughput** | 1x | **4x - 10x** |
-| **Latency** | Highest for shortest | Balanced |
-
-**Admission control matters as much as batching.** A continuous batcher will happily accept work until queueing delay destroys TTFT for everyone. vLLM v0.29.0 added `--max-num-queued-reqs` and `--max-num-queued-tokens` so the engine can reject excess load early, which the gateway can treat as a signal to send the request to another replica, instead of building an unbounded queue.
+در یادگیری ماشین سنتی (طبقه‌بندی / Classification)، از **دسته‌بندی ایستا (Static Batching)** استفاده می‌کنیم که در آن تمام درخواست‌ها باید اندازه یکسانی داشته باشند و هم‌زمان شروع و پایان یابند. این روش به دلیل طول متغیر پاسخ‌ها، برای LLMها ناکارآمد است. **دسته‌بندی پویا (Dynamic Batching)** (مشابه آنچه در NVIDIA Triton وجود دارد) تا یک مهلت زمانی (timeout) کوتاه منتظر می‌ماند تا درخواست‌ها را در یک دسته جمع‌آوری کند؛ این رویکرد بهره‌وری (utilization) را بهبود می‌بخشد، اما همچنان کل دسته را به عنوان یک واحد یکپارچه تا زمان تکمیل نهایی اجرا می‌کند.
 
 ---
 
-## In-Flight Batching (Prefill-Decode Fusion)
+## دسته‌بندی پیوسته (Continuous Batching - سطح تکرار)
 
-Previously, serving engines processed a batch of "Prefill" (heavy compute) OR a batch of "Decode" (heavy memory). 
-**In-Flight Batching** (TensorRT-LLM; vLLM and SGLang do the same through chunked prefill) allows mixing them:
-- 1 request is in the Prefill phase.
-- 15 requests are in the Decode phase.
-- **Benefit**: The Prefill request utilizes the GPU's idle compute cores while the Decode requests utilize the memory bandwidth.
+دسته‌بندی پیوسته (Continuous Batching که پیشگامان آن Orca و vLLM بودند) به درخواست‌های جدید اجازه می‌دهد به دسته ملحق شوند و به درخواست‌های خاتمه‌یافته اجازه می‌دهد در پایان هر گام مجزای تولید Token از دسته خارج شوند.
 
----
+| جنبه (Aspect) | دسته‌بندی ایستا (Static Batching) | دسته‌بندی پیوسته (Continuous Batching) |
+|---|---|---|
+| **پیوستن/خروج (Join/Leave)** | فقط در ابتدا/انتها | در هر تکرار (iteration) |
+| **بهره‌وری GPU** | پایین (در انتظار طولانی‌ترین) | بالا (همواره اشباع‌شده) |
+| **توان عملیاتی (Throughput)** | 1x | **4x - 10x** |
+| **تاخیر (Latency)** | بیشترین مقدار برای کوتاه‌ترین درخواست | متعادل |
 
-## Chunked Prefill
-
-Massive context prompts (1M+ tokens) can hang a batch for seconds during the Prefill phase, causing "stalls."
-
-**The fix: Chunked Prefill**
-Instead of prefilling 128k tokens at once, the engine breaks the prefill into smaller chunks and interleaves them with the ongoing Decode steps of other users. This maintains a steady **TPOT** even when heavy requests arrive. The per-step token budget is the tuning knob: vLLM raised the default `max_num_batched_tokens` from 8,192 to 16,384 in v0.28.0 (August 2026), trading slightly higher inter-token latency for better prefill throughput. Lower it if your SLO is ITL-bound.
+**کنترل پذیرش (Admission control) به اندازه دسته‌بندی اهمیت دارد.** یک سیستم Continuous Batching با کمال میل کارها را تا جایی می‌پذیرد که تاخیر صف، معیار TTFT را برای همه نابود کند. موتور vLLM در نسخه v0.29.0 گزینه‌های `--max-num-queued-reqs` و `--max-num-queued-tokens` را اضافه کرد تا موتور بتواند بار اضافی را زودتر رد کند؛ گیت‌وی (gateway) می‌تواند این موضوع را به عنوان سیگنالی برای هدایت درخواست به یک رپلیکای (replica) دیگر در نظر بگیرد، به جای اینکه صفی نامحدود تشکیل شود.
 
 ---
 
-## Disaggregated Prefill and Decode
+## دسته‌بندی حین اجرا (ادغام Prefill و Decode)
 
-Chunked prefill shares one GPU pool between two phases with opposite bottlenecks. **Disaggregated serving** gives each phase its own pool, sized and even built from different hardware, and moves the KV cache between them.
+پیش از این، موتورهای سرویس‌دهی یا دسته‌ای از "Prefill" (محاسبات سنگین) را پردازش می‌کردند یا دسته‌ای از "Decode" (حافظه سنگین).
+**دسته‌بندی حین اجرا (In-Flight Batching)** (در TensorRT-LLM؛ موتورهای vLLM و SGLang همین کار را از طریق Chunked Prefill انجام می‌دهند) امکان ترکیب این دو را فراهم می‌کند:
+- ۱ درخواست در فاز Prefill است.
+- ۱۵ درخواست در فاز Decode هستند.
+- **مزیت**: درخواست فاز Prefill از هسته‌های محاسباتی بیکار GPU استفاده می‌کند، در حالی که درخواست‌های فاز Decode از پهنای باند حافظه بهره می‌برند.
+
+---
+
+## پیش‌تکمیل تکه‌تکه (Chunked Prefill)
+
+Promptهای با کانتکست عظیم (بیش از ۱ میلیون Token) می‌توانند در طول فاز Prefill یک دسته را برای چندین ثانیه متوقف کنند و باعث بروز "وقفه" (stall) شوند.
+
+**راهکار: پیش‌تکمیل تکه‌تکه (Chunked Prefill)**
+موتور به جای prefill کردن هم‌زمان ۱۲۸ هزار Token، عملیات prefill را به تکه‌های کوچک‌تر تقسیم کرده و آن‌ها را با گام‌های Decode در حال اجرای سایر کاربران درهم‌می‌آمیزد (interleaves). این کار باعث حفظ یک **TPOT** پایدار حتی در زمان ورود درخواست‌های سنگین می‌شود. بودجه Token به ازای هر گام (per-step token budget) اهرم تنظیم آن است: موتور vLLM در نسخه v0.28.0 (آگوست ۲۰۲۶) مقدار پیش‌فرض `max_num_batched_tokens` را از ۸,۱۹۲ به ۱۶,۳۸۴ افزایش داد و تاخیر بین Tokenها (inter-token latency) اندکی بیشتر را با توان عملیاتی (Throughput) بهتر در فاز prefill معاوضه کرد. اگر توافق‌نامه سطح خدمت (SLO) شما وابسته به ITL است، این مقدار را کاهش دهید.
+
+---
+
+## جداسازی Prefill و Decode (Disaggregated Prefill and Decode)
+
+روش Chunked prefill یک استخر (pool) از GPUها را بین دو فازی به اشتراک می‌گذارد که دارای گلوگاه‌های متضاد هستند. **سرویس‌دهی تفکیک‌شده (Disaggregated serving)** به هر فاز استخر اختصاصی خودش را می‌دهد که اندازه آن متناسب با نیاز تعیین شده و حتی از سخت‌افزارهای متفاوتی ساخته شده است، و ساختار KV cache را بین آن‌ها جابه‌جا می‌کند.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -67,39 +71,43 @@ flowchart LR
     D --> S[Streamed tokens]
 ```
 
-- **Frame the win as goodput**, the request rate that meets both TTFT and ITL SLOs, not peak throughput. Prefill bursts no longer stall decode, and each pool scales independently.
-- **Price the KV transfer.** Llama-3.1-70B in BF16 stores 320 KiB per token, so a 10k-token prompt hands decode about 3 GB, roughly 65 ms at 400 Gb/s, added to TTFT. For short prompts the transfer costs more than it saves, which is why NVIDIA Dynamo v1.5 sends short requests straight to decode (conditional disaggregation bypass).
-- **The plumbing is upstream now.** vLLM ships more than a dozen KV connectors (NIXL, LMCache, Mooncake, FlexKV, AMD MoRI-IO, plus a chaining MultiConnector), and tokenization can move to a CPU-only frontend so GPUs see tokens in and tokens out.
-- **It goes beyond P/D.** Encoder disaggregation splits multimodal encoders out; an experimental vLLM plugin (July 2026) splits attention and FFN/expert layers into separately scaled services for MoE. Hardware vendors pitch cross-chip versions: GPU prefill with SRAM or wafer-scale decode (NVIDIA Rubin plus Groq 3 LPX, AMD Helios plus Cerebras), covered in [Serving Infrastructure](06-serving-infrastructure.md).
+</div>
+
+- **دستاورد اصلی را به عنوان بازده موثر (Goodput) در نظر بگیرید**؛ یعنی نرخ درخواستی که هر دو SLO مربوط به TTFT و ITL را برآورده می‌کند، نه صرفاً اوج توان عملیاتی (Peak Throughput). جهش‌های ناگهانی در فاز Prefill دیگر فاز Decode را دچار وقفه نمی‌کنند و هر استخر به‌طور مستقل مقیاس‌پذیر می‌شود.
+- **هزینه انتقال KV را محاسبه کنید.** مدل Llama-3.1-70B در فرمت BF16 به ازای هر Token مقدار ۳۲۰ کیلوبایت (KiB) ذخیره می‌کند؛ بنابراین یک Prompt با ۱۰ هزار Token حدود ۳ گیگابایت داده را به بخش Decode تحویل می‌دهد که با سرعت ۴۰۰ گیگابیت بر ثانیه (Gb/s)، تقریباً ۶۵ میلی‌ثانیه به TTFT اضافه می‌کند. برای Promptهای کوتاه، هزینه این انتقال بیشتر از صرفه‌جویی آن است؛ به همین دلیل NVIDIA Dynamo v1.5 درخواست‌های کوتاه را مستقیماً به Decode ارسال می‌کند (بای‌پس شرطی تفکیک یا conditional disaggregation bypass).
+- **زیرساخت‌های ارتباطی اکنون در نسخه اصلی (upstream) ادغام شده‌اند.** موتور vLLM بیش از دوازده رابط اتصال KV (از جمله NIXL، LMCache، Mooncake، FlexKV، AMD MoRI-IO، و همچنین یک MultiConnector زنجیره‌ای) ارائه می‌دهد و فرآیند Tokenization می‌تواند به یک فرانت‌اند اختصاصی CPU منتقل شود تا GPUها فقط ورود و خروج Tokenها را پردازش کنند.
+- **این تفکیک فراتر از P/D (Prefill/Decode) می‌رود.** تفکیک انکودر (Encoder disaggregation)، انکودرهای چندوجهی (multimodal) را جدا می‌کند؛ یک پلاگین آزمایشی vLLM (جولای ۲۰۲۶) لایه‌های Attention و لایه‌های FFN/expert را برای مدل‌های MoE به سرویس‌هایی با مقیاس‌بندی مجزا تقسیم می‌کند. تولیدکنندگان سخت‌افزار نسخه‌های بین‌تراشه‌ای (cross-chip) را پیشنهاد می‌دهند: Prefill روی GPU به همراه Decode روی SRAM یا پردازنده‌های در مقیاس ویفر (wafer-scale) (مانند NVIDIA Rubin به‌همراه Groq 3 LPX، یا AMD Helios به‌همراه Cerebras) که در [زیرساخت سرویس‌دهی](06-serving-infrastructure.md) پوشش داده شده است.
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: Why is Continuous Batching superior to Static Batching for LLMs?
+### پرسش: چرا Continuous Batching برای LLMها نسبت به Static Batching برتری دارد؟
 
-**Strong answer:**
-Static batching forces all requests in a batch to wait for the longest generation to complete (the "longest tail" problem). If one user asks for 500 tokens and another for 5 tokens, the GPU remains idle for the 5-token user for 495 cycles. Continuous batching allows the 5-token user's request to exit the GPU immediately after its last token, freeing up VRAM and compute slots for a new request from the queue. This maximizes "Tokens per Second" across the entire hardware cluster.
+**پاسخ قوی:**
+روش دسته‌بندی ایستا (Static batching) تمام درخواست‌های یک دسته را مجبور می‌کند تا زمان تکمیل طولانی‌ترین پاسخ منتظر بمانند (مشکل "طولانی‌ترین دنباله" یا longest tail). اگر کاربری ۵۰۰ عدد Token و کاربر دیگری ۵ عدد Token بخواهد، GPU برای آن کاربرِ ۵-Token به مدت ۴۹۵ چرخه بیکار می‌ماند. دسته‌بندی پیوسته (Continuous batching) به درخواست کاربر با ۵ Token اجازه می‌دهد بلافاصله پس از آخرین Token خود از GPU خارج شود و حافظه VRAM و ظرفیت‌های محاسباتی را برای درخواست جدیدی از صف آزاد کند. این امر معیار "Token بر ثانیه" (Tokens per Second) را در کل کلاستر سخت‌افزاری به حداکثر می‌رساند.
 
-### Q: What is a "stall" in LLM serving, and how does Chunked Prefill mitigate it?
+### پرسش: مفهوم "وقفه" (stall) در سرویس‌دهی LLM چیست و Chunked Prefill چگونه آن را کاهش می‌دهد؟
 
-**Strong answer:**
-A "stall" occurs when a massive new request arrives and its Prefill phase (which is compute-hungry) takes 2-3 seconds to complete. During this time, the GPU is so busy with the prefill that it cannot generate tokens for existing users in the "Decode" phase, causing their TPOT to spike. Chunked Prefill breaks that 3-second prefill into small 200ms "chunks," processing one chunk and then doing one round of decoding for everyone else, before returning to the next prefill chunk. This ensures a consistent, smooth experience for all users.
+**پاسخ قوی:**
+یک "وقفه" (stall) زمانی رخ می‌دهد که درخواست بسیار بزرگی وارد شود و فاز Prefill آن (که به محاسبات سنگینی نیاز دارد) بین ۲ تا ۳ ثانیه طول بکشد. در این مدت، GPU آن‌چنان درگیر فاز prefill است که نمی‌تواند برای کاربران فعلی در فاز "Decode" عمل تولید Token را انجام دهد، که این امر باعث جهش ناگهانی در شاخص TPOT آن‌ها می‌شود. روش Chunked Prefill آن پیش‌تکمیل ۳ ثانیه‌ای را به "تکه‌های" (chunks) کوچک ۲۰۰ میلی‌ثانیه‌ای تقسیم می‌کند؛ یک تکه را پردازش کرده و سپس یک دور decode برای بقیه کاربران انجام می‌دهد و پس از آن به تکه بعدی prefill بازمی‌گردد. این رویکرد تجربه‌ای یکنواخت و روان را برای تمام کاربران تضمین می‌کند.
 
-### Q: When does disaggregated prefill/decode beat chunked prefill on one pool?
+### پرسش: در چه شرایطی جداسازی prefill/decode بر chunked prefill روی یک استخر واحد برتری پیدا می‌کند؟
 
-**Strong answer:**
-When prompts are long and the SLO is tight on both TTFT and inter-token latency. Chunked prefill still makes decode steps share compute with prefill chunks, so ITL jitters under bursts of long prompts; disaggregation removes that interference and lets me scale prefill and decode capacity separately, which raises goodput. The cost is KV transfer: at about 320 KiB per token for a BF16 70B dense model, a 10k-token prompt moves about 3 GB, roughly 65 ms at 400 Gb/s, so I need fast interconnect and I should bypass disaggregation for short prompts. It also adds operational surface (two pools, a KV-aware router, connector failures). For short-prompt chat at moderate scale, a single pool with chunked prefill and prefix caching is simpler and usually good enough; for long-context agentic traffic at scale, disaggregation usually wins on goodput, and models with compact KV (latent or sparse attention) make the transfer cheaper.
+**پاسخ قوی:**
+زمانی که Promptها طولانی هستند و SLO هم از نظر TTFT و هم از نظر تاخیر بین Tokenها (inter-token latency) بسیار سخت‌گیرانه است. در روش Chunked prefill، گام‌های decode همچنان محاسبات را با تکه‌های prefill به اشتراک می‌گذارند، بنابراین در شرایط هجوم ناگهانی Promptهای طولانی، شاخص ITL دچار نوسان (jitter) می‌شود؛ تفکیک‌سازی (disaggregation) این تداخل را حذف کرده و امکان مقیاس‌بندی مجزای ظرفیت prefill و decode را فراهم می‌سازد که موجب افزایش بازده موثر (Goodput) می‌شود. هزینه این رویکرد، انتقال KV است: با حجم تقریبی ۳۲۰ کیلوبایت (KiB) به ازای هر Token برای یک مدل متراکم (dense) ۷۰ میلیاردی در فرمت BF16، یک Prompt با ۱۰ هزار Token حدود ۳ گیگابایت داده جابه‌جا می‌کند که با سرعت ۴۰۰ گیگابیت بر ثانیه، حدود ۶۵ میلی‌ثانیه زمان می‌برد؛ بنابراین به اتصالات داخلی (interconnect) پرسرعت نیاز دارم و باید برای Promptهای کوتاه از تفکیک‌سازی صرف‌نظر کنم (بای‌پس کنم). همچنین این معماری پیچیدگی عملیاتی را افزایش می‌دهد (دو استخر مجزا، مسیریاب آگاه از KV، و خطاهای احتمالی کانکتورها). برای چت‌های با Prompt کوتاه در مقیاس متوسط، یک استخر منفرد مجهز به chunked prefill و prefix caching ساده‌تر است و معمولاً کفایت می‌کند؛ اما برای ترافیک‌های مبتنی بر Agent با کانتکست طولانی در مقیاس وسیع، تفکیک‌سازی معمولاً از نظر Goodput برنده است، و مدل‌هایی با KV فشرده (توجه نهفته یا تنک / latent or sparse attention) هزینه انتقال را کاهش می‌دهند.
 
 ---
 
-## References
+## منابع
 - Yu et al. "Orca: A Distributed Serving System for Transformer-Based Generative Models" (2022)
 - NVIDIA. "TensorRT-LLM: In-Flight Batching" (2023)
 - vLLM Project. "Iteration-Level Scheduling" (2023)
 - Zhong et al. "DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving" (2024)
-- vLLM Blog. ["Disaggregated serving guide"](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide) (2026)
+- وبلاگ vLLM. ["راهنمای سرویس‌دهی تفکیک‌شده"](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide) (2026)
 
 ---
 
-*Next: [PagedAttention](05-paged-attention.md)*
+*مبحث بعدی: [PagedAttention](05-paged-attention.md)*
+
+</div>

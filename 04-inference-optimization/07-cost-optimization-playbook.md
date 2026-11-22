@@ -1,130 +1,134 @@
-# Cost Optimization Playbook
+<div dir="rtl">
 
-AI costs are no longer "magic." They are measurable, predictable, and highly optimizable. Per-token API prices keep falling at the mid and low tiers (in September 2026 GPT-6 Sol at $2/$10 and GPT-6 Luna at $0.10/$0.50 per 1M tokens at least halved the list prices of GPT-5.6 Sol and Luna, and Claude Opus 5.5 cut the Opus tier to $4/$20; in October Claude Haiku 5.5 launched at $0.10/$0.50, a tenth of Haiku 4.5, and GPT-6.1 Terra at $1/$5 against $2/$12 for GPT-5.6 Terra), while GPU rental prices rose through 2026. So the cost lever is mostly *routing*, *caching*, and *service-tier selection*, not just picking a cheaper provider. This chapter covers the strategies to reduce inference costs by 10x without sacrificing quality.
+# پلی‌بوک بهینه‌سازی هزینه (Cost Optimization Playbook)
 
-## Table of Contents
+هزینه‌های هوش مصنوعی دیگر یک «جادو» یا امری ناشناخته نیستند؛ بلکه قابل اندازه‌گیری، قابل پیش‌بینی و به‌شدت قابل بهینه‌سازی هستند. قیمت‌های API به ازای هر Token در سطوح میانی و پایین به‌طور مداوم در حال کاهش است (در سپتامبر ۲۰۲۶، مدل GPT-6 Sol با قیمت ۲ دلار/۱۰ دلار و GPT-6 Luna با قیمت ۰.۱۰ دلار/۰.۵۰ دلار به ازای هر ۱ میلیون Token، قیمت‌های رسمی GPT-5.6 Sol و Luna را حداقل به نصف کاهش دادند، و Claude Opus 5.5 قیمت سطح Opus را به ۴ دلار/۲۰ دلار رساند؛ در اکتبر Claude Haiku 5.5 با قیمت ۰.۱۰ دلار/۰.۵۰ دلار یعنی یک‌دهم Haiku 4.5 عرضه شد، و GPT-6.1 Terra با ۱ دلار/۵ دلار در مقایسه با ۲ دلار/۱۲ دلار برای GPT-5.6 Terra معرفی شد)، در حالی که قیمت‌های اجاره GPU در طول سال ۲۰۲۶ روندی صعودی داشتند. بنابراین اهرم اصلی هزینه عمدتاً *مسیریابی (routing)*، *کشینگ (caching)* و *انتخاب سطح سرویس (service-tier selection)* است، نه صرفاً انتخاب یک ارائه‌دهنده ارزان‌تر. این فصل استراتژی‌هایی را پوشش می‌دهد که هزینه‌های استنتاج (Inference) را تا ۱۰ برابر بدون فدا کردن کیفیت کاهش می‌دهند.
 
-- [The Unit Economics of AI](#the-unit-economics-of-ai)
-- [Model Cascading (Efficiency Tiers)](#model-cascading-efficiency-tiers)
-- [Small Language Models (SLMs)](#small-language-models-slms-for-production)
-- [Service Tiers and Price Multipliers](#service-tiers-and-price-multipliers)
-- [Spot Instances and GPU Pricing](#spot-instance-strategies)
-- [The "Token Tax" Optimization](#the-token-tax-optimization)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [اقتصاد واحد هوش مصنوعی (The Unit Economics of AI)](#the-unit-economics-of-ai)
+- [آبشار مدل‌ها (سطوح کارایی)](#model-cascading-efficiency-tiers)
+- [مدل‌های زبانی کوچک (SLMها) برای محیط عملیاتی](#small-language-models-slms-for-production)
+- [سطوح سرویس و ضرایب قیمتی](#service-tiers-and-price-multipliers)
+- [استراتژی‌های نمونه‌های Spot و قیمت‌گذاری GPU](#spot-instance-strategies)
+- [بهینه‌سازی «مالیات Token»](#the-token-tax-optimization)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Unit Economics of AI
+## اقتصاد واحد هوش مصنوعی (The Unit Economics of AI)
 
-We measure success by **Tokens per Dollar ($)** at a given quality bar and latency SLO.
+ما موفقیت را با **Token به ازای هر دلار ($)** در یک سطح کیفی مشخص و SLO تاخیر (Latency) معین می‌سنجیم.
 
-| Component | Cost Driver | Optimization |
+| مؤلفه | عامل هزینه | بهینه‌سازی |
 |-----------|-------------|--------------|
-| **Compute** | GPU Time ($/hr) | Better utilization (Batching). |
-| **VRAM** | KV Cache Size | GQA, Quantization. |
-| **Network** | Payload Size | Compression, Local serving. |
-| **API** | Per-token pricing | Caching, Model selection, Service tier. |
+| **محاسبات (Compute)** | زمان GPU (دلار/ساعت) | بهره‌وری بهتر (Batching). |
+| **VRAM** | اندازه KV Cache | استفاده از GQA، کوانتیزاسیون (Quantization). |
+| **شبکه (Network)** | اندازه Payload | فشرده‌سازی، ارائه محلی (Local serving). |
+| **API** | قیمت‌گذاری بر اساس هر Token | کشینگ (Caching)، انتخاب مدل، سطح سرویس. |
 
 ---
 
-## Model Cascading (Efficiency Tiers)
+## آبشار مدل‌ها (سطوح کارایی) (Model Cascading)
 
-The most effective cost-saving strategy is to use the **cheapest model capable of the task.**
+موثرترین استراتژی کاهش هزینه، استفاده از **ارزان‌ترین مدلی است که توانایی انجام تسک را دارد.**
 
-**The cascade pattern** (list prices per 1M input/output tokens as of November 2, 2026):
-1. **Classifier**: A tiny self-hosted model (0.5B) determines query complexity (near $0), or a hosted decision model does: OpenAI's Decisions API returns a typed answer with a probability and bills only input, at $0.10 per 1M uncached tokens ([Research Radar theme 16](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). Calibrate its thresholds on your own traffic; early papers on decision models report underconfident probabilities.
-2. **Tier 1 (Small/cheap)**: 90% of queries (greetings, simple Q&A, extraction) go to GPT-6 Luna ($0.10/$0.50), Claude Haiku 5.5 ($0.10/$0.50 for prompts up to 100K tokens), DeepSeek V4.1-Flash, or a self-hosted small model ($).
-3. **Tier 2 (Mid)**: 9% of queries (complex reasoning) go to GPT-6.1 Terra ($1/$5), Claude Sonnet 5.5 ($2/$10), GPT-6 Sol ($2/$10), or Gemini 3.8 Flash ($0.75/$3.75 introductory through December 31, 2026; $1.50/$7.50 from January 1, 2027) ($$$).
-4. **Tier 3 (Frontier reasoning)**: 1% of queries (expert-level) go to Claude Opus 5.5 ($4/$20), GPT-6 Astra ($10/$50), or Claude Fable 5.1 ($10/$50) at high reasoning effort ($$$$$).
+**الگوی آبشاری (Cascade)** (قیمت‌های رسمی به ازای هر ۱ میلیون Token ورودی/خروجی تا تاریخ ۲ نوامبر ۲۰۲۶):
+۱. **دسته‌بند (Classifier)**: یک مدل بسیار کوچک خودمیزبان (0.5B) پیچیدگی کوئری را تعیین می‌کند (نزدیک به ۰ دلار)، یا یک مدل تصمیم‌گیری میزبانی‌شده (hosted) این کار را بر عهده می‌گیرد: Decisions API شرکت OpenAI یک پاسخ تایپ‌شده را همراه با احتمال بازمی‌گرداند و تنها ورودی را با هزینه ۰.۱۰ دلار به ازای هر ۱ میلیون Token کش‌نشده محاسبه می‌کند ([موضوع ۱۶ رادار پژوهشی](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). آستانه‌های آن را متناسب با ترافیک خود کالیبره کنید؛ مقالات اولیه درباره مدل‌های تصمیم‌گیری از احتمالات با اطمینان کمتر از واقعیت (underconfident) گزارش می‌دهند.
+۲. **سطح ۱ (کوچک/ارزان)**: ۹۰٪ از کوئری‌ها (احوال‌پرسی‌ها، پرسش و پاسخ ساده، استخراج داده) به GPT-6 Luna (۰.۱۰ دلار/۰.۵۰ دلار)، Claude Haiku 5.5 (۰.۱۰ دلار/۰.۵۰ دلار برای Promptهای تا ۱۰۰ هزار Token)، DeepSeek V4.1-Flash یا یک مدل کوچک خودمیزبان ارسال می‌شوند ($).
+۳. **سطح ۲ (متوسط)**: ۹٪ از کوئری‌ها (استدلال‌های پیچیده) به GPT-6.1 Terra (۱ دلار/۵ دلار)، Claude Sonnet 5.5 (۲ دلار/۱۰ دلار)، GPT-6 Sol (۲ دلار/۱۰ دلار) یا Gemini 3.8 Flash (۰.۷۵ دلار/۳.۷۵ دلار قیمت مقدماتی تا ۳۱ دسامبر ۲۰۲۶؛ ۱.۵۰ دلار/۷.۵۰ دلار از ۱ ژانویه ۲۰۲۷) ارسال می‌شوند ($$$).
+۴. **سطح ۳ (استدلال پیشرو / Frontier)**: ۱٪ از کوئری‌ها (سطح کارشناسی و تخصصی) با تلاش استدلالی بالا به Claude Opus 5.5 (۴ دلار/۲۰ دلار)، GPT-6 Astra (۱۰ دلار/۵۰ دلار) یا Claude Fable 5.1 (۱۰ دلار/۵۰ دلار) ارسال می‌شوند ($$$$$).
 
-**Net result**: 80% cost reduction vs. sending all traffic to Tier 2.
+**نتیجه نهایی**: ۸۰٪ کاهش هزینه در مقایسه با ارسال تمام ترافیک به سطح ۲.
 
-**Caching breaks tier monotonicity.** Since October 7, Sonnet 5.5 reads cached input at 0.05x ($0.10 per 1M) and Opus 5.5 at 0.05x ($0.20), so a cached Opus 5.5 token costs a tenth of an uncached Sonnet 5.5 token ($2). For an agent loop that rereads a long cached context, Opus 5.5 can cost less than poorly cached Sonnet traffic. Price cascades on *effective* cost per task, including cache hit rate, not on list input prices.
+**کشینگ یکنواختی سطوح را برهم می‌زند.** از تاریخ ۷ اکتبر، مدل Sonnet 5.5 ورودی‌های کش‌شده را با ضریب 0.05x (۰.۱۰ دلار به ازای هر ۱ میلیون) و Opus 5.5 را با ضریب 0.05x (۰.۲۰ دلار) می‌خواند؛ بنابراین یک Token کش‌شده در Opus 5.5 هزینه‌ای معادل یک‌دهم یک Token کش‌نشده در Sonnet 5.5 (۲ دلار) دارد. برای یک حلقه Agent که یک کانتکست کش‌شده طولانی را مجدداً می‌خواند، Opus 5.5 می‌تواند ارزان‌تر از ترافیک با کش ضعیف در Sonnet تمام شود. سیستم‌های آبشاری قیمت را بر اساس هزینه *واقعی و مؤثر* به ازای هر تسک، شامل نرخ اصابت کش (Cache hit rate) تنظیم می‌کنند، نه صرفاً قیمت رسمی ورودی در لیست قیمت‌ها.
 
-**Prompt length breaks it too.** Claude Haiku 5.5 bills the whole request at $0.50/$2.50 (5x) once the prompt passes 100,000 tokens, and cache reads and writes count toward that length. A Tier 1 route that accumulates agent history drifts into a 5x price without any routing change, so cap or compact Haiku 5.5 context below the threshold, or route long prompts elsewhere.
-
----
-
-## Small Language Models (SLMs) for Production
-
-Small open models (IBM Granite 4.2 3B and 8B, Gemma 4 12B, Qwen3.8-27B) and the cheapest API tiers (GPT-6 Luna, Claude Haiku 5.5) now match or beat the original GPT-4 from 2023 on most benchmarks.
-- **Use Case**: Entity extraction, sentiment analysis, simple RAG, routing.
-- **Cost**: about 100x cheaper per token (GPT-6 Luna and Claude Haiku 5.5 at $0.10 / $0.50) than the $10 / $50 ceiling tier (Claude Fable 5.1, GPT-6 Astra); self-hosted small models only go lower at high utilization. Two caveats on Haiku 5.5: the rate holds only for prompts up to 100K tokens, and its newer tokenizer produces about 30% more tokens than Haiku 4.5 for the same text, so the real saving per unit of text is smaller than the rate card suggests.
-- **Latency**: < 100ms response times for short outputs.
-
-### The Price Floor: GPT-6 Luna and DeepSeek V4.1-Flash
-
-DeepSeek V4 Flash (released April 24, 2026) reset the floor at launch at $0.14 / $0.28 per 1M tokens. Pricing has moved since. DeepSeek introduced peak and off-peak billing on August 16, 2026, then released **V4.1-Flash** (`deepseek-flash`, September 10) at $0.30 input / $1.20 output at peak and half that off-peak ($0.15 / $0.60), with cache hits at $0.006 peak and $0.003 off-peak. Peak hours are 01:00-04:00 and 06:00-10:00 UTC on weekdays only, excluding Chinese public holidays, so weekends are entirely off-peak. **V4-Pro** (V4-Pro-0813) stays available at $1.32 / $3.96 peak and $0.66 / $1.98 off-peak; a planned September 14 reroute of V4-Pro traffic to V4.1-Flash was reversed on September 11.
-
-The cheapest closed tiers now undercut it: **GPT-6 Luna** at $0.10 / $0.50 (cached input $0.01) beats V4.1-Flash's uncached input and output prices even off-peak ($0.15 / $0.60), and **Claude Haiku 5.5** (October 7) matches Luna's list and cached prices for prompts up to 100K tokens. DeepSeek's remaining edges are its cache-hit price ($0.006 peak, $0.003 off-peak, versus $0.01) and MIT weights you can self-host; since October 17 the `deepseek-flash` alias has been served by the V4.1-Flash-1017 build, so rerun evals on the alias you call. For high-volume batch work the practical floor is "GPT-6 Luna or Claude Haiku 5.5, or DeepSeek V4.1-Flash scheduled off-peak for cache-heavy work (RAG over a shared knowledge base, codebase agents)," chosen by eval quality on your task. Verify on the [DeepSeek pricing page](https://api-docs.deepseek.com/quick_start/pricing) and [OpenAI pricing page](https://developers.openai.com/api/docs/pricing) before committing.
+**طول Prompt نیز این نظم را به هم می‌زند.** مدل Claude Haiku 5.5 به محض اینکه طول Prompt از ۱۰۰٬۰۰۰ Token فراتر رود، کل درخواست را با نرخ ۰.۵۰ دلار/۲.۵۰ دلار (5x) محاسبه می‌کند، و خواندن و نوشتن‌های کش نیز جزء همین طول به حساب می‌آیند. یک مسیر سطح ۱ که تاریخچه Agent را روی هم انباشته می‌کند، بدون هیچ تغییری در مسیریابی به‌طور ناخواسته به قیمت 5x وارد می‌شود؛ بنابراین کانتکست Haiku 5.5 را زیر آستانه محدود کنید یا فشرده سازید (compact)، یا Promptهای طولانی را به مقصد دیگری هدایت کنید.
 
 ---
 
-## Service Tiers and Price Multipliers
+## مدل‌های زبانی کوچک (SLMها) برای محیط عملیاتی (Production)
 
-The same model now spans roughly a 12x price range by tier alone, so a cost model needs a tier policy per workload class (interactive, agent inner loop, offline), not one per-token price.
+مدل‌های کوچک متن‌باز (IBM Granite 4.2 نسخه 3B و 8B، Gemma 4 نسخه 12B، Qwen3.8-27B) و ارزان‌ترین سطوح API (مانند GPT-6 Luna و Claude Haiku 5.5) اکنون در بیشتر بنچمارک‌ها با نسخه اصلی GPT-4 سال ۲۰۲۳ برابری می‌کنند یا از آن پیشی می‌گیرند.
+- **مورد استفاده (Use Case)**: استخراج موجودیت (Entity extraction)، تحلیل احساسات، RAG ساده، مسیریابی (Routing).
+- **هزینه**: حدود ۱۰۰ برابر ارزان‌تر به ازای هر Token (مدل‌های GPT-6 Luna و Claude Haiku 5.5 با ۰.۱۰ دلار / ۰.۵۰ دلار) نسبت به بالاترین سطح قیمتی ۱۰ دلار / ۵۰ دلار (مانند Claude Fable 5.1 و GPT-6 Astra)؛ مدل‌های کوچک خودمیزبان تنها در صورت بهره‌وری بسیار بالا هزینه‌ای کمتر خواهند داشت. دو نکته مهم درباره Haiku 5.5 وجود دارد: این نرخ تنها برای Promptهای تا ۱۰۰ هزار Token برقرار است، و Tokenizer جدیدتر آن حدود ۳۰٪ Tokenهای بیشتری نسبت به Haiku 4.5 برای متن مشابه تولید می‌کند، بنابراین صرفه‌جویی واقعی به ازای هر واحد متن کمتر از آن چیزی است که لیست قیمت نشان می‌دهد.
+- **تاخیر (Latency)**: زمان پاسخ کمتر از ۱۰۰ میلی‌ثانیه برای خروجی‌های کوتاه.
 
-| Lever | Multiplier on Standard | Where (as of November 2, 2026) |
+### کف قیمت: GPT-6 Luna و DeepSeek V4.1-Flash
+
+مدل DeepSeek V4 Flash (منتشرشده در ۲۴ آوریل ۲۰۲۶) هنگام عرضه با قیمت ۰.۱۴ دلار / ۰.۲۸ دلار به ازای هر ۱ میلیون Token کف قیمت را بازتعریف کرد. از آن زمان قیمت‌گذاری دستخوش تغییر شده است. DeepSeek در ۱۶ آگوست ۲۰۲۶ صورت‌حساب ساعات اوج (Peak) و غیر اوج (Off-peak) را معرفی کرد، سپس **V4.1-Flash** (`deepseek-flash`، ۱۰ سپتامبر) را با قیمت ۰.۳۰ دلار برای ورودی / ۱.۲۰ دلار برای خروجی در ساعات اوج و نصف آن در ساعات غیر اوج (۰.۱۵ دلار / ۰.۶۰ دلار)، با هزینه اصابت کش ۰.۰۰۶ دلار در اوج و ۰.۰۰۳ دلار در غیر اوج منتشر کرد. ساعات اوج مصرف فقط در روزهای کاری بین ۰۱:۰۰ تا ۰۴:۰۰ و ۰۶:۰۰ تا ۱۰:۰۰ به وقت UTC (به استثنای تعطیلات رسمی چین) است، بنابراین آخر هفته‌ها کاملاً ساعات غیر اوج به حساب می‌آیند. مدل **V4-Pro** (نسخه V4-Pro-0813) با قیمت ۱.۳۲ دلار / ۳.۹۶ دلار در اوج و ۰.۶۶ دلار / ۱.۹۸ دلار در غیر اوج در دسترس باقی مانده است؛ تغییر مسیر برنامه‌ریزی‌شده ترافیک V4-Pro به V4.1-Flash برای ۱۴ سپتامبر، در ۱۱ سپتامبر لغو شد.
+
+اکنون ارزان‌ترین سطوح مدل‌های اختصاصی (بسته‌سورس) قیمتی کمتر از آن ارائه می‌دهند: **GPT-6 Luna** با ۰.۱۰ دلار / ۰.۵۰ دلار (ورودی کش‌شده ۰.۰۱ دلار) حتی از قیمت‌های ورودی و خروجی کش‌نشده V4.1-Flash در ساعات غیر اوج (۰.۱۵ دلار / ۰.۶۰ دلار) ارزان‌تر است، و **Claude Haiku 5.5** (۷ اکتبر) با قیمت‌های رسمی و کش‌شده Luna برای Promptهای تا ۱۰۰ هزار Token برابری می‌کند. مزیت‌های باقی‌مانده DeepSeek شامل قیمت اصابت کش آن (۰.۰۰۶ دلار در اوج، ۰.۰۰۳ دلار در غیر اوج در مقایسه با ۰.۰۱ دلار) و وزن‌های مدل با مجوز MIT است که می‌توانید شخصاً میزبانی کنید؛ از ۱۷ اکتبر نام مستعار `deepseek-flash` توسط بیلد V4.1-Flash-1017 سرویس‌دهی می‌شود، بنابراین ارزیابی‌ها (Evals) را روی نام مستعاری که فراخوانی می‌کنید مجدداً اجرا نمایید. برای بارهای کاری دسته‌ای (Batch) با حجم بالا، کف قیمت عملیاتی عبارت است از «GPT-6 Luna یا Claude Haiku 5.5، یا DeepSeek V4.1-Flash زمان‌بندی‌شده در ساعات غیر اوج برای بارهای متکی به کش سنگین (مانند RAG روی یک پایگاه دانش مشترک یا Agentهای پایگاه کد)»، که انتخاب آن با توجه به کیفیت ارزیابی در تسک شما انجام می‌شود. پیش از تصمیم‌گیری نهایی، قیمت‌ها را در [صفحه قیمت‌گذاری DeepSeek](https://api-docs.deepseek.com/quick_start/pricing) و [صفحه قیمت‌گذاری OpenAI](https://developers.openai.com/api/docs/pricing) بررسی و تایید کنید.
+
+---
+
+## سطوح سرویس و ضرایب قیمتی (Service Tiers and Price Multipliers)
+
+قیمت یک مدل یکسان اکنون تنها بر اساس سطح سرویس تا حدود ۱۲ برابر نوسان دارد؛ بنابراین یک مدل برآورد هزینه، به جای یک قیمت واحد به ازای هر Token، به یک سیاست تعیین سطح به ازای هر کلاس بار کاری (تعاملی، حلقه درونی Agent، آفلاین) نیاز دارد.
+
+| اهرم | ضریب نسبت به حالت استاندارد | کجا (تا تاریخ ۲ نوامبر ۲۰۲۶) |
 |-------|------------------------|--------------------------------|
-| **Batch / Flex** | 0.5x | OpenAI Batch and Flex, Gemini Batch and Flex, Bedrock Flex, Anthropic Batch; OpenRouter's Batch API (September 22, 2026) is generally 50% off on 70+ models, with a median batch finishing in 7 minutes in beta |
-| **Off-peak scheduling** | 0.5x | DeepSeek off-peak hours and weekends |
-| **Cache reads** | 0.1x typical; 0.05x on Opus 5.5, Sonnet 5.5, GPT-6.1 Sol and GPT-6.1 Terra; 0.025x on Fable 5.1 | All major APIs. Writes cost 1.25x on Anthropic (5-minute TTL) and OpenAI GPT-5.6+ (30-minute TTL), 2x for Anthropic's 1-hour cache, and 2.5x for OpenAI's 12-hour cache (October 20) |
-| **Priority / Fast** | about 1.75x to 2.5x | OpenAI Fast 2x (2.5x on GPT-5.5); Gemini Priority about 1.8x; Bedrock Priority 1.75x; Anthropic fast mode on Opus 5.5 at $8/$40 (2x; out of research preview since October 15, on the Claude API, Claude Models on Google Cloud (Anthropic managed) and Foundry's Azure-hosted deployments; Opus 4.8 fast mode is removed November 30) |
-| **Ultrafast** | 6x | OpenAI: GA on GPT-6 Astra since September 29, 2026 (also offered for Astra on Bedrock), and on GPT-6.1 Sol for all API users since October 8 ($12/$60) |
-| **Long context** | Whole request repriced | OpenAI above 272K input tokens (GPT-6 Sol $4/$15, GPT-6.1 Terra $2/$7.50); Claude Haiku 5.5 above 100K prompt tokens, cache reads and writes included ($0.50/$2.50, 5x); xAI doubles all tokens at 200K+; other Claude 4.6 and later models are flat to 1M |
-| **Data residency** | about 1.1x | Anthropic `inference_geo: "us"`, OpenAI residency endpoints, regional Claude on Bedrock and Google Cloud, Mistral EU |
+| **Batch / Flex** | 0.5x | سرویس‌های OpenAI Batch و Flex، سرویس‌های Gemini Batch و Flex، سرویس Bedrock Flex، سرویس Anthropic Batch؛ سرویس Batch API در OpenRouter (۲۲ سپتامبر ۲۰۲۶) به‌طور کلی ۵۰٪ تخفیف روی بیش از ۷۰ مدل ارائه می‌دهد، و در فاز بتا میانه زمان اتمام یک بچ ۷ دقیقه است |
+| **زمان‌بندی غیر اوج (Off-peak scheduling)** | 0.5x | ساعات غیر اوج و آخر هفته‌های DeepSeek |
+| **خواندن از کش (Cache reads)** | معمولاً 0.1x؛ معادل 0.05x در Opus 5.5، Sonnet 5.5، GPT-6.1 Sol و GPT-6.1 Terra؛ معادل 0.025x در Fable 5.1 | تمامی APIهای اصلی. نوشتن در کش هزینه‌ای معادل 1.25x در Anthropic (با TTL پنج دقیقه‌ای) و OpenAI GPT-5.6+ (با TTL سی دقیقه‌ای)، 2x برای کش ۱ ساعته Anthropic، و 2.5x برای کش ۱۲ ساعته OpenAI دارد (۲۰ اکتبر) |
+| **اولویت‌دار / سریع (Priority / Fast)** | حدود 1.75x تا 2.5x | سرویس OpenAI Fast معادل 2x (و 2.5x در GPT-5.5)؛ Gemini Priority حدود 1.8x؛ Bedrock Priority معادل 1.75x؛ حالت سریع (fast mode) در Anthropic روی Opus 5.5 با قیمت ۸ دلار/۴۰ دلار (2x؛ از ۱۵ اکتبر از پیش‌نمایش پژوهشی خارج شده، روی Claude API، مدل‌های Claude در Google Cloud (تحت مدیریت Anthropic) و استقرارهای (Deployments) میزبانی‌شده Foundry در Azure در دسترس است؛ حالت سریع Opus 4.8 در ۳۰ نوامبر حذف می‌شود) |
+| **بسیار سریع (Ultrafast)** | 6x | شرکت OpenAI: دسترسی عمومی (GA) روی GPT-6 Astra از ۲۹ سپتامبر ۲۰۲۶ (همچنین برای Astra در Bedrock ارائه می‌شود)، و روی GPT-6.1 Sol برای تمام کاربران API از ۸ اکتبر (۱۲ دلار/۶۰ دلار) |
+| **کانتکست طولانی (Long context)** | قیمت‌گذاری مجدد کل درخواست | در OpenAI برای بیش از ۲۷۲ هزار Token ورودی (مدل GPT-6 Sol با ۴ دلار/۱۵ دلار، GPT-6.1 Terra با ۲ دلار/۷.۵۰ دلار)؛ Claude Haiku 5.5 برای بیش از ۱۰۰ هزار Token در Prompt، با احتساب خواندن و نوشتن‌های کش (۰.۵۰ دلار/۲.۵۰ دلار، 5x)؛ شرکت xAI تمام Tokenها را در ۲۰۰ هزار Token به بالا دو برابر محاسبه می‌کند؛ سایر مدل‌های Claude 4.6 و بالاتر تا ۱ میلیون Token نرخ ثابتی دارند |
+| **اقامتگاه داده (Data residency)** | حدود 1.1x | در Anthropic با `inference_geo: "us"`، اندپوینت‌های اقامت داده در OpenAI، مدل‌های منطقه‌ای Claude در Bedrock و Google Cloud، و Mistral در اتحادیه اروپا (Mistral EU) |
 
-Two traps. Long-context surcharges apply to the *whole* request once you cross the threshold: trimming a 280K-token GPT-6 Sol prompt to 270K halves its input rate and cuts its output rate by a third, and on Haiku 5.5 a 101K-token prompt costs about $0.05 in input against about $0.01 for a 99K one. And promotional prices should be budgeted at list: Gemini 4 Argon is $2/$10 only through November 30 and $4/$20 from December 1, Gemini 3.8 Flash's introductory rate ends December 31, and OpenAI commits to GPT-5.6 Sol's promo price only "at least through November 21, 2026."
-
----
-
-## Spot Instance Strategies
-
-For non-real-time workloads (batch processing, data extraction), use **GPU Spot Instances** (AWS Spot, Google Cloud Spot VMs, Azure Spot).
-
-- **Risk**: The GPU can be reclaimed with short notice: two minutes on AWS, about 30 seconds on Google Cloud and Azure.
-- **Mitigation**: Make work restartable. Checkpoint batch progress, keep requests idempotent, and requeue in-flight requests on the reclamation signal. Engines with tiered KV offload to shared storage can preserve prefix caches across a reclaim, but do not count on live migration of in-flight decode state.
-
-### GPU Pricing in 2026: Up, and Longer Terms Are Cheaper
-
-GPU rental prices rose through 2026 as memory-bound inference demand grew. Silicon Data's indexes on November 5, 2026 read B200 $6.70, B300 $7.56 (flat), H200 $3.51 and H100 $2.97 per GPU-hour. The B200 index rose about 14% in four weeks (from $5.88 on October 7 and $6.50 on November 1), after standing 27.6% up year to date entering September; read the daily table, because each index page's FAQ shows stale "current" prices. Term structure inverted the old advice: on September 7 the B200 index was $5.73 for 3-month terms and $5.39 for 12-month terms, so locking in longer was cheaper. RunPod's pricing page (updated November 4) lists community/secure H100 SXM $2.69/$3.99, B200 $5.98/$7.99 and B300 $6.94/$8.99, so secure-cloud prices rose 14 to 18% during October. Lambda has posted new on-demand prices that take effect November 16, 2026 (scheduled): 8x HGX H100 $4.59 and 8x HGX B200 $7.69 per GPU-hour, up about 15% from $3.99 and $6.69, which puts an 8x H100 node at about $26,806 a month. Every rise pushes self-host break-even further toward APIs. Read neocloud contract terms carefully; SemiAnalysis's ClusterMAX 3.0 flagged prepayments reaching 100% on some 1-year commitments.
+دو تله مهم: هزینه‌های اضافه کانتکست طولانی پس از عبور از آستانه، روی *کل* درخواست اعمال می‌شوند: کوتاه کردن یک Prompt مدل GPT-6 Sol از ۲۸۰ هزار Token به ۲۷۰ هزار Token، نرخ ورودی آن را به نصف رسانده و نرخ خروجی را یک‌سوم کاهش می‌دهد، و در Haiku 5.5 یک Prompt با ۱۰۱ هزار Token ورودی حدود ۰.۰۵ دلار هزینه دارد، در حالی که هزینه یک Prompt با ۹۹ هزار Token حدود ۰.۰۱ دلار است. همچنین قیمت‌های تبلیغاتی (Promotional) باید بر اساس قیمت رسمی در فهرست قیمت‌ها بودجه‌بندی شوند: مدل Gemini 4 Argon تنها تا ۳۰ نوامبر با قیمت ۲ دلار/۱۰ دلار عرضه می‌شود و از ۱ دسامبر به ۴ دلار/۲۰ دلار می‌رسد، نرخ اولیه Gemini 3.8 Flash در ۳۱ دسامبر به پایان می‌رسد، و تعهد OpenAI به قیمت تخفیفی GPT-5.6 Sol تنها «حداقل تا ۲۱ نوامبر ۲۰۲۶» معتبر است.
 
 ---
 
-## The "Token Tax" Optimization
+## استراتژی‌های Spot Instance
 
-- **Prompt caching**: Keep prefixes byte-stable (no timestamps or per-user IDs near the top, stable tool order) so repeated context bills at cache-read rates: 0.1x on most models, 0.05x on Opus 5.5, Sonnet 5.5, GPT-6.1 Sol and GPT-6.1 Terra, 0.025x on Fable 5.1. Match the TTL to the reuse interval: OpenAI's 12-hour cache (2.5x write) suits prefixes reused a few times a day that would miss its 30-minute window.
-- **Input dominates agent cost**: Anthropic's Claude Code telemetry (September 24, 2026, vendor-reported) shows the input-to-output token ratio rising from 189:1 to 324:1. At that ratio, cache hit rate and the cached-input price drive cost, not the output price. Cursor reported 7% lower user token costs after trimming about two-thirds of its system prompt and loading tools dynamically (vendor-reported).
-- **Reasoning effort**: Set it explicitly per route. Defaults differ by model and change between versions: Claude Opus 5.5 defaults to `medium` (Opus 5 was `high`), Sonnet 5.5 and Fable 5.1 to `high`, GPT-6.1 Sol and GPT-6.1 Terra to `medium`. Some newer models cannot turn thinking off at all, so effort is the remaining dial. A measured policy: arXiv 2610.34491 (October 25, 2026; AIME 2026, GPQA Diamond, Terminal-Bench 2.1, SWE-Bench Pro) found top effort cost up to 42x the lowest on tasks every level solved, that higher effort often failed tasks lower effort solved by lengthening trajectories, and that starting at the lowest effort and escalating only after a verified failure matched or beat fixed top effort on every model and benchmark while costing less for most proprietary models. That policy needs a verifier, which is the real engineering work.
-- **Output Truncation**: Strictly limit `max_tokens`.
-- **Concise-output instructions**: Asking for terse answers (and a fixed output schema) cuts output tokens; measure the saving on your own prompts rather than assuming a fixed percentage, since reasoning tokens often dominate and are not affected.
+برای بارهای کاری غیربلادرنگ (پردازش دسته‌ای، استخراج داده)، از **Spot Instanceهای GPU** (مانند AWS Spot، ماشین‌های مجازی Spot در Google Cloud و Azure Spot) استفاده کنید.
 
----
+- **ریسک**: امکان بازپس‌گیری (Reclaim) GPU با اطلاع‌رسانی کوتاه وجود دارد: دو دقیقه در AWS و حدود ۳۰ ثانیه در Google Cloud و Azure.
+- **راهکار کاهش ریسک**: کارها را قابل شروع مجدد (Restartable) کنید. از پیشرفت کارهای دسته‌ای چک‌پوینت (Checkpoint) بگیرید، درخواست‌ها را فاقد اثر جانبی مکرر (Idempotent) نگه دارید و با دریافت سیگنال بازپس‌گیری، درخواست‌های در حال پردازش (In-flight) را مجدداً در صف قرار دهید. موتورهایی با قابلیت تخلیه لایه‌ای KV (Tiered KV offload) به فضای ذخیره‌سازی اشتراکی می‌توانند کش‌های پیشوند (Prefix caches) را در جریان بازپس‌گیری حفظ کنند، اما روی مهاجرت زنده (Live migration) وضعیت رمزگشایی در حال پردازش (In-flight decode state) حساب نکنید.
 
-## Interview Questions
+### قیمت‌گذاری GPU در سال ۲۰۲۶: افزایش قیمت‌ها، و ارزان‌تر بودن دوره‌های طولانی‌تر
 
-### Q: How do you justify the cost of an AI system to a CFO?
-
-**Strong answer:**
-I focus on the **ROI of Efficiency.** First, I implement "Model Cascading" to ensure that 90% of our traffic is handled by models priced well under $1 per million tokens. Second, I implement "Semantic Caching" and prompt caching to prevent paying for the same answer, or the same context, twice. Third, I assign a service tier per workload (batch at half price for offline jobs, priority only where the SLO needs it). Fourth, I set up "Inference Quotas" and "Chargeback Models" so each business unit is accountable for their usage. By treating AI as a "Commodity Resource" with tiered pricing, we can transition from "unbounded experimentation" to a "predictable OpEx" model.
-
-### Q: When is a self-hosted individual GPU cluster cheaper than an API?
-
-**Strong answer:**
-The "Crossover Point" happens at **constant high throughput**, and it depends heavily on which API tier you are replacing. Worked with November 2026 inputs: two H100s at the Silicon Data index ($2.97 per GPU-hour on November 5) cost about $4,300 a month, enough for a 70B-class open model. At a 3:1 input-to-output blend, Claude Sonnet 5.5 or GPT-6 Sol ($2/$10) costs about $4 per million tokens, so the tie is around 1B tokens a month; against Opus 5.5 ($4/$20) it is about 540M, and against GPT-6.1 Terra ($1/$5, about $2 blended) about 2B. Against GPT-6 Luna or Claude Haiku 5.5 ($0.10/$0.50, about $0.20 blended) it is around 21B tokens a month, roughly 8,000 tokens per second around the clock, which is at or beyond what two GPUs serving a 70B model sustain, so in practice you will not beat the cheapest API tier on price alone. And a self-hosted 70B is not equivalent in quality to a frontier API, so compare against the API tier that meets your quality bar, not the most expensive one. Spiky or business-hours traffic pushes the answer toward APIs because they let you "pay for the silence," and API cache reads at 0.1x or less push break-even further out for agentic workloads. Self-hosting wins when utilization is steady and high, when data cannot leave your boundary, or when you need a fine-tuned open model, and rising GPU rental prices in 2026 raise the bar further.
+قیمت‌های اجاره GPU در طول سال ۲۰۲۶ هم‌زمان با رشد تقاضا برای استنتاج (Inference) محدود به حافظه (Memory-bound) افزایش یافت. شاخص‌های Silicon Data در تاریخ ۵ نوامبر ۲۰۲۶ برای هر GPU-ساعت، قیمت B200 را ۶.۷۰ دلار، B300 را ۷.۵۶ دلار (بدون تغییر)، H200 را ۳.۵۱ دلار و H100 را ۲.۹۷ دلار ثبت کرده‌اند. شاخص B200 پس از افزایش ۲۷.۶ درصدی از ابتدای سال تا آغاز سپتامبر، ظرف چهار هفته حدود ۱۴٪ رشد کرد (از ۵.۸۸ دلار در ۷ اکتبر و ۶.۵۰ دلار در ۱ نوامبر)؛ جدول روزانه را بررسی کنید، زیرا بخش FAQ در صفحه هر شاخص، قیمت‌های «فعلی» قدیمی را نشان می‌دهد. ساختار دوره‌ها (Term structure) توصیه‌های قدیمی را معکوس کرد: در ۷ سپتامبر، شاخص B200 برای دوره‌های ۳ ماهه ۵.۷۳ دلار و برای دوره‌های ۱۲ ماهه ۵.۳۹ دلار بود، بنابراین تعهد به دوره‌های طولانی‌تر ارزان‌تر تمام می‌شد. صفحه قیمت‌گذاری RunPod (به‌روزرسانی‌شده در ۴ نوامبر) برای H100 SXM عمومی/امن قیمت‌های ۲.۶۹/۳.۹۹ دلار، برای B200 قیمت‌های ۵.۹۸/۷.۹۹ دلار و برای B300 قیمت‌های ۶.۹۴/۸.۹۹ دلار را درج کرده است، بنابراین قیمت‌های ابری امن (Secure-cloud) در طول ماه اکتبر بین ۱۴ تا ۱۸ درصد افزایش یافته است. شرکت Lambda قیمت‌های جدید بر حسب تقاضا (On-demand) را اعلام کرده که از ۱۶ نوامبر ۲۰۲۶ (طبق برنامه‌ریزی) اعمال می‌شود: ۸x HGX H100 برابر با ۴.۵۹ دلار و ۸x HGX B200 برابر با ۷.۶۹ دلار به ازای هر GPU-ساعت، که حدود ۱۵٪ نسبت به ۳.۹۹ دلار و ۶.۶۹ دلار افزایش داشته است و هزینه یک نود ۸x H100 را به حدود ۲۶,۸۰۶ دلار در ماه می‌رساند. هر افزایشی نقطه سربه‌سر میزبانی شخصی (Self-host) را بیشتر به سمت APIها سوق می‌دهد. شرایط قراردادهای ارائه‌دهندگان ابری نوین (Neocloud) را با دقت بخوانید؛ گزارش ClusterMAX 3.0 از SemiAnalysis به پیش‌پرداخت‌هایی اشاره کرده که در برخی تعهدات ۱ ساله به ۱۰۰٪ می‌رسند.
 
 ---
 
-## References
+## بهینه‌سازی «مالیات Token» (Token Tax)
+
+- **کش کردن Prompt (Prompt caching)**: پیشوندها را از نظر بایتی پایدار (Byte-stable) نگه دارید (بدون برچسب زمانی یا شناسه‌های کاربری در بالای متون، و با ترتیب ابزار ثابت) تا هزینه زمینه (Context) تکراری با نرخ خواندن از کش (Cache-read) محاسبه شود: 0.1x در بیشتر مدل‌ها، 0.05x در Opus 5.5، Sonnet 5.5، GPT-6.1 Sol و GPT-6.1 Terra، و 0.025x در Fable 5.1. مقدار TTL را با فواصل استفاده مجدد مطابقت دهید: کش ۱۲ ساعته OpenAI (با هزینه نوشتن 2.5x) برای پیشوندهایی مناسب است که چند بار در روز استفاده می‌شوند و ممکن است پنجره ۳۰ دقیقه‌ای آن را از دست بدهند.
+- **غلبه ورودی بر هزینه Agent**: تله‌متری کدهای کلود (Claude Code) در شرکت Anthropic (۲۴ سپتامبر ۲۰۲۶، گزارش‌شده توسط ارائه‌دهنده) نشان می‌دهد که نسبت Token ورودی به خروجی از ۱۸۹:۱ به ۳۲۴:۱ افزایش یافته است. در این نسبت، نرخ اصابت کش (Cache hit rate) و قیمت ورودی کش‌شده تعیین‌کننده هزینه است، نه قیمت خروجی. شرکت Cursor گزارش داد که پس از حذف حدود دو سوم از Prompt سیستم خود و بارگذاری پویای ابزارها، هزینه‌های Token کاربر را ۷٪ کاهش داده است (گزارش‌شده توسط ارائه‌دهنده).
+- **میزان تلاش استدلال (Reasoning effort)**: آن را به طور صریح به ازای هر مسیر (Route) تعیین کنید. مقادیر پیش‌فرض بر اساس مدل تفاوت دارند و بین نسخه‌ها تغییر می‌کنند: Claude Opus 5.5 به طور پیش‌فرض روی `medium` است (Opus 5 روی `high` بود)، Sonnet 5.5 و Fable 5.1 روی `high`، و GPT-6.1 Sol و GPT-6.1 Terra روی `medium` هستند. برخی از مدل‌های جدیدتر اصلاً امکان خاموش کردن تفکر (Thinking) را ندارند، بنابراین میزان تلاش تنها اهرم تنظیمی باقی‌مانده است. یک خط‌مشی سنجیده: مقاله arXiv 2610.34491 (۲۵ اکتبر ۲۰۲۶؛ بر روی AIME 2026، GPQA Diamond، Terminal-Bench 2.1، SWE-Bench Pro) نشان داد که بالاترین میزان تلاش تا ۴۲ برابر کمترین حالت در کارهایی که تمام سطوح قادر به حل آن‌ها بودند هزینه داشت؛ تلاش بیشتر اغلب به دلیل طولانی‌تر کردن مسیرها (Trajectories)، در انجام کارهایی که تلاش کمتر موفق به حل آن‌ها شده بود شکست می‌خورد؛ و شروع از پایین‌ترین سطح تلاش و افزایش آن تنها پس از تأیید شکست، در تمامی مدل‌ها و بنچمارک‌ها عملکردی هم‌تراز یا بهتر از سطح تلاش بالای ثابت داشت و در عین حال برای اکثر مدل‌های اختصاصی هزینه کمتری ایجاد می‌کرد. این سیاست به یک اعتبارسنج (Verifier) نیاز دارد، که کار مهندسی اصلی نیز همین است.
+- **برش خروجی (Output Truncation)**: مقدار `max_tokens` را به‌طور دقیق محدود کنید.
+- **دستورالعمل‌های خروجی خلاصه (Concise-output instructions)**: درخواست پاسخ‌های موجز (و یک شمای خروجی ثابت) تعداد Tokenهای خروجی را کاهش می‌دهد؛ میزان صرفه‌جویی را بر روی Promptهای خود بسنجید نه اینکه درصدی ثابت را فرض کنید، زیرا Tokenهای استدلال اغلب غالب هستند و تحت تأثیر این دستورالعمل‌ها قرار نمی‌گیرند.
+
+---
+
+## سوالات مصاحبه
+
+### سوال: چگونه هزینه یک سیستم هوش مصنوعی را برای مدیر ارشد مالی (CFO) توجیه می‌کنید؟
+
+**پاسخ قوی:**
+من بر **نرخ بازگشت سرمایه بهره‌وری (ROI of Efficiency)** تمرکز می‌کنم. اول، «آبشاری کردن مدل‌ها» (Model Cascading) را پیاده‌سازی می‌کنم تا اطمینان حاصل شود که ۹۰٪ از ترافیک ما توسط مدل‌هایی با قیمت بسیار کمتر از ۱ دلار به ازای هر یک میلیون Token پردازش می‌شود. دوم، «کش کردن معنایی» (Semantic Caching) و کش کردن Prompt را پیاده‌سازی می‌کنم تا از پرداخت هزینه مجدد برای پاسخ یکسان یا زمینه یکسان جلوگیری شود. سوم، به ازای هر بار کاری یک سطح سرویس (Service tier) اختصاص می‌دهم (پردازش دسته‌ای با نصف قیمت برای کارهای آفلاین، و اولویت‌دار تنها در مواردی که SLO به آن نیاز دارد). چهارم، «سهمیه‌های استنتاج» (Inference Quotas) و «مدل‌های تسهیم هزینه» (Chargeback Models) را تنظیم می‌کنم تا هر واحد تجاری در قبال مصرف خود پاسخگو باشد. با برخورد با هوش مصنوعی به عنوان یک «منبع استاندارد و در دسترس» (Commodity Resource) با قیمت‌گذاری چندسطحی، می‌توانیم از وضعیت «آزمایش‌های نامحدود» به یک مدل «هزینه عملیاتی قابل پیش‌بینی» (Predictable OpEx) گذار کنیم.
+
+### سوال: چه زمانی یک کلاستر GPU مجزای خودمیزبان (Self-hosted) ارزان‌تر از یک API تمام می‌شود؟
+
+**پاسخ قوی:**
+«نقطه سربه‌سر» (Crossover Point) در **توان عملیاتی (Throughput) بالا و مداوم** رخ می‌دهد و به‌شدت به این بستگی دارد که کدام سطح از API را جایگزین می‌کنید. بر اساس داده‌های نوامبر ۲۰۲۶: دو پردازنده H100 طبق شاخص Silicon Data (۲.۹۷ دلار به ازای هر GPU-ساعت در ۵ نوامبر) ماهانه حدود ۴,۳۰۰ دلار هزینه دارند که برای یک مدل متن‌باز در رده 70B کافی است. با ترکیب ورودی به خروجی با نسبت ۳:۱، مدل‌های Claude Sonnet 5.5 یا GPT-6 Sol (با قیمت ۲/۱۰ دلار) حدود ۴ دلار به ازای هر یک میلیون Token هزینه دارند؛ بنابراین نقطه تلاقی حدود ۱ میلیارد Token در ماه است؛ در مقایسه با Opus 5.5 (با قیمت ۴/۲۰ دلار) این رقم حدود ۵۴۰ میلیون Token، و در مقایسه با GPT-6.1 Terra (با قیمت ۱/۵ دلار، حدود ۲ دلار در حالت ترکیبی) حدود ۲ میلیارد Token است. در برابر GPT-6 Luna یا Claude Haiku 5.5 (با قیمت ۰.۱۰/۰.۵۰ دلار، حدود ۰.۲۰ دلار در حالت ترکیبی) نقطه تلاقی حدود ۲۱ میلیارد Token در ماه است، یعنی تقریباً ۸,۰۰۰ Token در ثانیه به‌صورت شبانه‌روزی؛ رقمی که در حد توان پایداری دو GPU ارائه‌دهنده یک مدل 70B یا فراتر از آن است، بنابراین در عمل نمی‌توانید صرفاً بر اساس قیمت، ارزان‌ترین سطح API را شکست دهید. بعلاوه، یک مدل 70B خودمیزبان از نظر کیفیت معادل یک API پیشرو (Frontier API) نیست، بنابراین باید مقایسه را با آن سطح از API انجام دهید که حداقل کیفیت مدنظرتان را برآورده می‌کند، نه گران‌ترین سطح آن. ترافیک‌های ناگهانی (Spiky) یا محدود به ساعات کاری پاسخ را به نفع APIها تغییر می‌دهند، زیرا به شما امکان می‌دهند «تنها در زمان مصرف هزینه بدهید و برای زمان بی‌باری هزینه‌ای نپردازید» ("pay for the silence")، و خواندن از کش API با ضریب 0.1x یا کمتر، نقطه سربه‌سر را برای بارهای کاری مبتنی بر Agent (Agentic workloads) باز هم دورتر می‌برد. میزبانی شخصی (Self-hosting) زمانی برنده می‌شود که نرخ بهره‌برداری مداوم و بالا باشد، داده‌ها نتوانند از مرزهای امنیتی سازمان خارج شوند، یا به یک مدل متن‌باز تنظیم دقیق شده (Fine-tuned) نیاز داشته باشید؛ و البته افزایش قیمت اجاره GPU در سال ۲۰۲۶ این آستانه را حتی بالاتر برده است.
+
+---
+
+## منابع
 - Google Cloud. "Cost Optimization for Generative AI" (2024)
 - Anyscale. "LLM Inference: API vs. Self-Hosted Costs" (2024)
-- OpenAI. [API pricing](https://developers.openai.com/api/docs/pricing); Anthropic. [Pricing](https://platform.claude.com/docs/en/about-claude/pricing); DeepSeek. [Models and pricing](https://api-docs.deepseek.com/quick_start/pricing)
-- Silicon Data. [B200 rental index](https://www.silicondata.com/products/silicon-index/b200), [B300 index](https://www.silicondata.com/products/silicon-index/b300), [H200 index](https://www.silicondata.com/products/silicon-index/h200) and [H100 index](https://www.silicondata.com/products/silicon-index/h100)
-- OpenAI. [Decisions API guide](https://developers.openai.com/api/docs/guides/decisions)
-- RunPod. [Pricing](https://www.runpod.io/pricing); Lambda. [Instances](https://lambda.com/instances)
+- OpenAI. [قیمت‌گذاری API](https://developers.openai.com/api/docs/pricing)؛ Anthropic. [قیمت‌گذاری](https://platform.claude.com/docs/en/about-claude/pricing)؛ DeepSeek. [مدل‌ها و قیمت‌گذاری](https://api-docs.deepseek.com/quick_start/pricing)
+- Silicon Data. [شاخص اجاره B200](https://www.silicondata.com/products/silicon-index/b200)، [شاخص B300](https://www.silicondata.com/products/silicon-index/b300)، [شاخص H200](https://www.silicondata.com/products/silicon-index/h200) و [شاخص H100](https://www.silicondata.com/products/silicon-index/h100)
+- OpenAI. [راهنمای Decisions API](https://developers.openai.com/api/docs/guides/decisions)
+- RunPod. [قیمت‌گذاری](https://www.runpod.io/pricing)؛ Lambda. [نمونه‌ها (Instances)](https://lambda.com/instances)
 - Sun et al. "What Effort Level Should I Choose?" (arXiv 2610.34491, 2026)
 
 ---
 
-*Next: [Diffusion Language Models](08-diffusion-llms.md)*
+*بعدی: [مدل‌های زبانی پخشی (Diffusion Language Models)](08-diffusion-llms.md)*
+
+</div>

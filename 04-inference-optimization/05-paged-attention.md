@@ -1,85 +1,89 @@
+<div dir="rtl">
+
 # PagedAttention
 
-PagedAttention is the foundational algorithm behind high-throughput serving engines (vLLM, SGLang, TensorRT-LLM). It solves the "Memory Fragmentation" problem that previously limited LLM scalability.
+الگوریتم PagedAttention یک الگوریتم بنیادین در موتورهای ارائه سرویس با توان عملیاتی (Throughput) بالا (مانند vLLM، SGLang و TensorRT-LLM) است. این الگوریتم مسئله «تکه‌تکه شدن حافظه» (Memory Fragmentation) را که پیش از این مقیاس‌پذیری LLMها را محدود می‌کرد، حل می‌کند.
 
-## Table of Contents
+## فهرست مطالب
 
-- [The Contiguous Memory Problem](#the-contiguous-memory-problem)
-- [How PagedAttention Works](#how-pagedattention-works-vllm)
-- [Managing Virtual Memory (Block Manager)](#managing-virtual-memory-block-manager)
-- [KV Cache Sharing (Copy-on-Write)](#kv-cache-sharing-copy-on-write)
-- [Interview Questions](#interview-questions)
-- [References](#references)
-
----
-
-## The Contiguous Memory Problem
-
-Standard deep learning frameworks allocate memory in large, contiguous blocks. 
-For an LLM request, you might pre-allocate memory for a `max_sequence_length` of 8192 tokens.
-
-**The Waste:**
-1. **Internal Fragmentation**: If the user only generates 10 tokens, 99.9% of that reserved block is wasted.
-2. **External Fragmentation**: Memory is broken into gaps too small for a new "large block," even if total free memory is high.
+- [مسئله حافظه پیوسته](#the-contiguous-memory-problem)
+- [نحوه عملکرد PagedAttention](#how-pagedattention-works-vllm)
+- [مدیریت حافظه مجازی (Block Manager)](#managing-virtual-memory-block-manager)
+- [اشتراک‌گذاری KV Cache با (Copy-on-Write)](#kv-cache-sharing-copy-on-write)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## How PagedAttention Works (vLLM)
+## مسئله حافظه پیوسته
 
-PagedAttention draws inspiration from Virtual Memory in Operating Systems.
+فریم‌ورک‌های استاندارد یادگیری عمیق، حافظه را در بلوک‌های بزرگ و پیوسته تخصیص می‌دهند.
+برای یک درخواست LLM، ممکن است حافظه را از پیش برای یک `max_sequence_length` به اندازه ۸۱۹۲ Token تخصیص دهید.
 
-1. **Tokens to Blocks**: The KV cache for a request is broken into small, fixed-size **Blocks** (e.g., 16 tokens per block).
-2. **Logical vs. Physical**: The model thinks it's attending to a contiguous sequence (Logical memory), but the blocks are scattered throughout VRAM (Physical memory).
-3. **The Lookup Table**: A **Block Table** maps logic indices to physical addresses.
-
-**Primary Benefit**: Memory waste drops from ~60-80% down to **less than 4%**.
-
----
-
-## Managing Virtual Memory (Block Manager)
-
-Serving frameworks (vLLM, SGLang) act as "mini-OSs" for GPUs.
-
-- **Allocation**: When a new request starts, the Block Manager assigns it a set of empty physical blocks.
-- **Preemption**: If VRAM is full, the scheduler preempts lower-priority requests and frees their blocks, rebuilding the KV later by recomputation or by reloading it from a slower tier.
-- **Tiered offload**: Blocks no longer have to die when evicted from HBM. vLLM's tiered KV offloading copies blocks to pinned host DRAM and from there to disk, object storage, or peer nodes; SGLang's HiCache does the same across GPU, host memory, and storage backends. The block table is what makes this cheap: a block is a fixed-size unit that can be moved, hashed, and shared. See [KV Cache and Context Caching](02-kv-cache-and-context-caching.md#context-caching-self-hosted).
+**اتلاف حافظه:**
+۱. **تکه‌تکه شدن درونی (Internal Fragmentation)**: اگر کاربر تنها ۱۰ Token تولید کند، ۹۹.۹٪ از آن بلوک رزروشده هدر می‌رود.
+۲. **تکه‌تکه شدن بیرونی (External Fragmentation)**: حافظه به شکاف‌هایی بسیار کوچک برای یک «بلوک بزرگ» جدید تقسیم می‌شود، حتی اگر کل حافظه آزاد زیاد باشد.
 
 ---
 
-## KV Cache Sharing (Copy-on-Write)
+## نحوه عملکرد PagedAttention (vLLM)
 
-PagedAttention enables effortless sharing of "Common Prefixes."
+الگوریتم PagedAttention از حافظه مجازی (Virtual Memory) در سیستم‌عامل‌ها الهام گرفته است.
 
-**The Scenario**: 100 users are chatting with the same 5,000-token system prompt.
-- **Traditional**: Store that 5,000-token KV cache 100 times (**500k tokens** in VRAM).
-- **PagedAttention**: Store it **once** via the Block Table and have all 100 users point to the same physical blocks.
-- **Copy-on-Write**: If a user generates a unique token, a new block is created just for them, while the shared blocks remain unchanged.
+۱. **تبدیل Tokenها به بلوک‌ها**: KV cache برای یک درخواست به **بلوک‌های (Blocks)** کوچک و با اندازه ثابت (مثلاً ۱۶ Token در هر بلوک) تقسیم می‌شود.
+۲. **منطقی در برابر فیزیکی**: مدل تصور می‌کند در حال توجه (attending) به یک دنباله پیوسته است (حافظه منطقی - Logical memory)، اما بلوک‌ها در سرتاسر VRAM پراکنده هستند (حافظه فیزیکی - Physical memory).
+۳. **جدول جستجو (Lookup Table)**: یک **جدول بلوک (Block Table)** اندیس‌های منطقی را به آدرس‌های فیزیکی نگاشت می‌کند.
 
-**How engines find shared prefixes.** vLLM's automatic prefix caching hashes each full block together with the hash of everything before it, so identical prefixes map to identical block hashes; SGLang's RadixAttention keeps the same information in a radix tree. Two production details:
-- **Hashes must be deterministic across nodes** for distributed KV sharing to hit. vLLM v0.29.0 made its prefix-cache root hash deterministic, so you no longer need to pin `PYTHONHASHSEED` across replicas.
-- **Sharing must respect tenancy.** A shared block is also a timing side channel; engines mix a per-tenant `cache_salt` into the hash, and every API path has to apply it. vLLM learned this the hard way: tool-continuation turns on the Responses API (`/v1/responses`) dropped the salt until 0.30.0 (GHSA-935w-9g4m-p28p). The current vLLM security floor is set by later advisories, not this one; see [LLM Security](../12-security-and-access/01-llm-security.md).
+**مزیت اصلی**: اتلاف حافظه از حدود ۶۰ تا ۸۰ درصد به **کمتر از ۴٪** کاهش می‌یابد.
 
 ---
 
-## Interview Questions
+## مدیریت حافظه مجازی (Block Manager)
 
-### Q: Why does PagedAttention significantly increase throughput?
+فریم‌ورک‌های ارائه سرویس (vLLM، SGLang) مانند «سیستم‌عامل‌های کوچک» برای GPUها عمل می‌کنند.
 
-**Strong answer:**
-PagedAttention increases throughput by allowing for much larger **batch sizes**. Because it eliminates internal and external memory fragmentation, we can pack many more requests into the same GPU VRAM. In traditional serving, we might only fit 4 requests because we have to "reserve" max-length blocks; with PagedAttention, we can fit 20-30 requests because we only use memory for the tokens that actually exist. Larger batches lead to better GPU utilization and significantly higher aggregate tokens per second.
-
-### Q: Explain the "Block Table" in the context of vLLM.
-
-**Strong answer:**
-The Block Table is a mapping structure that bridges the gap between the model's expectation of contiguous data and the physical reality of scattered memory. Each entry in the table corresponds to a "Logical Block" of tokens. It stores the physical address of the GPU memory where that block's key and value tensors are stored. This allows the framework to dynamically allocate and free memory in small chunks, enabling prefix sharing with copy-on-write, preemption without fragmentation, and offloading blocks to host memory or disk and bringing them back.
+- **تخصیص (Allocation)**: هنگامی که یک درخواست جدید آغاز می‌شود، Block Manager مجموعه‌ای از بلوک‌های فیزیکی خالی را به آن اختصاص می‌دهد.
+- **پیش‌دستی (Preemption)**: اگر VRAM پر شود، زمان‌بند (scheduler) درخواست‌های با اولویت پایین‌تر را پیش‌دستی (preempt) کرده و بلوک‌های آن‌ها را آزاد می‌کند و بعداً با محاسبه مجدد یا بارگذاری مجدد از یک لایه حافظه کندتر، KV را بازسازی می‌نماید.
+- **تخلیه لایه‌ای (Tiered offload)**: بلوک‌ها دیگر مجبور نیستند هنگام اخراج (evict شدن) از HBM از بین بروند. تخلیه لایه‌ای KV در vLLM، بلوک‌ها را در حافظه DRAM پین‌شده میزبان (pinned host DRAM) و از آنجا به دیسک، فضای ذخیره‌سازی شیء (object storage) یا گره‌های همتا (peer nodes) کپی می‌کند؛ قابلیت HiCache در SGLang نیز همین کار را در سراسر GPU، حافظه میزبان و سیستم‌های ذخیره‌سازی زیرین (storage backends) انجام می‌دهد. جدول بلوک چیزی است که این فرآیند را کم‌هزینه می‌سازد: یک بلوک، واحدی با اندازه ثابت است که می‌توان آن را جابه‌جا، هش (hash) و به اشتراک گذاشت. به [KV Cache و ذخیره‌سازی موقت زمینه](02-kv-cache-and-context-caching.md#context-caching-self-hosted) مراجعه کنید.
 
 ---
 
-## References
+## اشتراک‌گذاری KV Cache با (Copy-on-Write)
+
+الگوریتم PagedAttention امکان اشتراک‌گذاری آسان «پیشوندهای مشترک» (Common Prefixes) را فراهم می‌کند.
+
+**سناریو**: ۱۰۰ کاربر در حال گفتگو با یک System Prompt مشترک با ۵۰۰۰ Token هستند.
+- **روش سنتی**: ذخیره آن KV cache با ۵۰۰۰ Token به تعداد ۱۰۰ بار (**۵۰۰ هزار Token** در VRAM).
+- **با PagedAttention**: ذخیره **تنها یک‌بار** از طریق جدول بلوک (Block Table) و ارجاع تمامی ۱۰۰ کاربر به همان بلوک‌های فیزیکی یکسان.
+- **کپی هنگام نوشتن (Copy-on-Write)**: اگر کاربری یک Token منحصربه‌فرد تولید کند، یک بلوک جدید منحصراً برای او ایجاد می‌شود، در حالی که بلوک‌های اشتراکی دست‌نخورده باقی می‌مانند.
+
+**نحوه یافتن پیشوندهای مشترک توسط موتورها:** قابلیت خودکار prefix caching در vLLM، هر بلوک کامل را به همراه هش تمام بخش‌های قبل از آن هش می‌کند، بنابراین پیشوندهای یکسان به هش‌های بلوک یکسانی نگاشت می‌شوند؛ قابلیت RadixAttention در SGLang همین اطلاعات را در یک درخت رادیکس (radix tree) نگهداری می‌کند. دو جزئیات مهم در محیط عملیاتی (production):
+- **هش‌ها باید در سرتاسر گره‌ها (Nodes) قطعی (Deterministic) باشند** تا اشتراک‌گذاری توزیع‌شده KV با موفقیت (hit) انجام شود. نسخه v0.29.0 فریم‌ورک vLLM ریشه هش کش پیشوند (prefix-cache root hash) را قطعی کرد، بنابراین دیگر نیازی به پین کردن `PYTHONHASHSEED` در رپلیکاها نخواهید داشت.
+- **اشتراک‌گذاری باید ملاحظات چندمستاجری (multi-tenant) را رعایت کند.** یک بلوک مشترک همچنین یک کانال جانبی زمان‌بندی (timing side channel) است؛ موتورها یک مقدار `cache_salt` اختصاصی به ازای هر مستاجر (multi-tenant) را با هش ترکیب می‌کنند و هر مسیر API باید آن را اعمال کند. vLLM این موضوع را به سختی آموخت: نوبت‌های ادامه ابزار (tool-continuation turns) در Responses API (`/v1/responses`) تا نسخه 0.30.0 مقدار salt را اعمال نمی‌کردند (GHSA-935w-9g4m-p28p). کف امنیتی فعلی vLLM توسط توصیه‌نامه‌های بعدی تعیین شده است، نه این مورد؛ به [امنیت LLM](../12-security-and-access/01-llm-security.md) مراجعه کنید.
+
+---
+
+## سوالات مصاحبه
+
+### سوال: چرا PagedAttention توان عملیاتی (Throughput) را به شکل چشمگیری افزایش می‌دهد؟
+
+**پاسخ قوی:**
+الگوریتم PagedAttention با امکان‌پذیر ساختن **اندازه دسته‌های (batch sizes)** بسیار بزرگ‌تر، توان عملیاتی (Throughput) را افزایش می‌دهد. از آنجا که این الگوریتم تکه‌تکه شدن درونی و بیرونی حافظه را حذف می‌کند، می‌توانیم تعداد بسیار بیشتری درخواست را در همان VRAM موجود در GPU جای دهیم. در ارائه سرویس به روش سنتی، شاید تنها بتوان ۴ درخواست را جای داد زیرا مجبوریم بلوک‌هایی با حداکثر طول را «رزرو» کنیم؛ اما با PagedAttention، می‌توان ۲۰ تا ۳۰ درخواست را جا داد زیرا فقط برای Tokenهایی که واقعاً وجود دارند حافظه مصرف می‌کنیم. دسته‌های بزرگ‌تر منجر به بهره‌وری بهتر از GPU و تعداد کل به مراتب بالاتری از Tokenها در ثانیه (tokens per second) می‌شوند.
+
+### سوال: «جدول بلوک» (Block Table) را در چارچوب vLLM توضیح دهید.
+
+**پاسخ قوی:**
+جدول بلوک (Block Table) یک ساختار نگاشت است که شکاف میان انتظار مدل از داده‌های پیوسته و واقعیت فیزیکی حافظه پراکنده را پر می‌کند. هر مدخل در این جدول مربوط به یک «بلوک منطقی» (Logical Block) از Tokenها است. این جدول آدرس فیزیکی حافظه GPU را که تانسورهای key و value آن بلوک در آن ذخیره شده‌اند، نگهداری می‌کند. این ساختار به فریم‌ورک اجازه می‌دهد حافظه را به صورت پویا در تکه‌های کوچک تخصیص دهد و آزاد کند، و امکان اشتراک‌گذاری پیشوند با کپی هنگام نوشتن (copy-on-write)، پیش‌دستی (preemption) بدون تکه‌تکه شدن حافظه، و تخلیه (offload) بلوک‌ها به حافظه میزبان یا دیسک و بازگرداندن آن‌ها را فراهم می‌سازد.
+
+---
+
+## منابع
 - Kwon et al. "Efficient Memory Management for Large Language Model Serving with PagedAttention" (SOSP 2023)
 - vLLM Documentation. "PagedAttention Logic" (2024)
 - Zheng et al. "SGLang: Efficient Execution of Structured Language Model Programs" (RadixAttention, 2024)
 
 ---
 
-*Next: [Serving Infrastructure](06-serving-infrastructure.md)*
+*بعدی: [زیرساخت ارائه سرویس](06-serving-infrastructure.md)*
+
+</div>

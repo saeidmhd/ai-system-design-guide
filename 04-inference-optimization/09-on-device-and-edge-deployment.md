@@ -1,188 +1,192 @@
-# On-Device and Edge Deployment
+<div dir="rtl">
 
-Not every model has to run in someone else's cloud. Running LLMs **locally**, on a laptop, a workstation GPU, a phone, or an edge box, is a real deployment target in 2026, driven by privacy, offline operation, latency, and cost at steady volume. The catch is that the tool that makes local models easy to *try* (Ollama) is not the tool that serves them in *production* (vLLM), and the two get conflated constantly. This chapter sorts out the runtime stack, the prototype-to-production path, the hardware limits, and when local actually beats an API.
+# استقرار (Deployment) روی دستگاه (On-Device) و لبه (Edge)
 
-## Table of Contents
+نیازی نیست هر مدلی در کلود (cloud) شخص دیگری اجرا شود. اجرای **محلی** LLMها روی لپ‌تاپ، یک GPU در ایستگاه کاری (workstation)، گوشی موبایل یا یک دستگاه لبه (edge box)، به یک هدف واقعی برای استقرار (Deployment) در سال ۲۰۲۶ تبدیل شده است که عواملی چون حریم خصوصی، عملکرد آفلاین، تاخیر (Latency) و هزینه در حجم کاری پایدار آن را به پیش می‌رانند. نکته اینجاست ابزاری که *امتحان کردن* مدل‌های محلی را آسان می‌سازد (Ollama)، همان ابزاری نیست که آن‌ها را در *محیط تولید (production)* سرو می‌کند (vLLM)؛ و این دو پیوسته با یکدیگر اشتباه گرفته می‌شوند. این فصل پشته زمان اجرا (runtime stack)، مسیر پیش‌نمونه به محیط تولید (prototype-to-production)، محدودیت‌های سخت‌افزاری، و زمان‌هایی که اجرای محلی واقعاً از یک API برتر است را تبیین می‌کند.
 
-- [The Runtime Stack](#the-runtime-stack)
-- [Platform Models: Apple Foundation Models](#platform-models-apple-foundation-models)
-- [Why Ollama Is Not a Production Server](#why-ollama-is-not-a-production-server)
-- [When Local Beats Cloud (and When It Does Not)](#when-local-beats-cloud-and-when-it-does-not)
-- [Quantization for Local Serving](#quantization-for-local-serving)
-- [Hardware](#hardware)
-- [Prototype to Production](#prototype-to-production)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [پشته زمان اجرا](#the-runtime-stack)
+- [مدل‌های پلتفرم: مدل‌های پایه اپل](#platform-models-apple-foundation-models)
+- [چرا Ollama یک سرور مناسب محیط تولید نیست](#why-ollama-is-not-a-production-server)
+- [چه زمانی اجرای محلی بر کلود برتری دارد (و چه زمانی ندارد)](#when-local-beats-cloud-and-when-it-does-not)
+- [کوانتایزیشن برای سرو محلی](#quantization-for-local-serving)
+- [سخت‌افزار](#hardware)
+- [از پیش‌نمونه تا محیط تولید](#prototype-to-production)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Runtime Stack
+## پشته زمان اجرا
 
-The key mental model: these tools are **not substitutes**. They occupy different layers.
+مدل ذهنی کلیدی: این ابزارها **جایگزین یکدیگر نیستند**. آن‌ها لایه‌های متفاوتی را اشغال می‌کنند.
 
-| Tool | Layer | What it is for |
+| ابزار | لایه | کاربرد |
 |------|-------|----------------|
-| **Ollama** | Experience layer / local daemon | One-command model pull and run, OpenAI-ish API, single-user dev. Builds on llama.cpp; on Apple Silicon it is moving to MLX by default for supported architectures (starting with the v0.40.0 release candidate, September 2026). Keep it on 0.35.0 or later and off untrusted networks (see below). |
-| **LM Studio** | Experience layer / GUI | A desktop GUI for browsing and running local models. Single-user focused. |
-| **llama.cpp** | Inference engine | Portable C/C++ CPU/GPU inference (the GGUF format); runs almost anywhere; powers the experience-layer tools. |
-| **MLX** | Inference engine | Apple's array framework; the fastest Apple Silicon path; research and fine-tuning. |
-| **vLLM** | Serving system | High-throughput concurrent serving with PagedAttention and continuous batching; OpenAI-compatible. The production answer. |
-| **vllm-metal** | Serving system (Apple Silicon) | vLLM's Apple Silicon plugin (v0.30.0, September 23, 2026): the vLLM scheduler, paged KV cache, continuous batching, and OpenAI server on MLX models, with batched MTP speculative decoding and a Homebrew install. |
-| **SGLang / TensorRT-LLM** | Serving system | High-throughput servers (SGLang with RadixAttention prefix caching; TensorRT-LLM for maximum NVIDIA performance); production. Hugging Face TGI is in maintenance mode (repository archived March 2026), and Hugging Face recommends vLLM or SGLang for new deployments. |
-| **ExecuTorch** | Embedded/mobile runtime | PyTorch-native on-device inference (phone to microcontroller); reached 1.0 in late 2025 and ships in apps for billions of users. Publishers now release official exports (Meta's Muse Glimmer 30B `.pte`, August 2026). |
-| **Apple Foundation Models framework** | OS-provided model | An on-device model that ships with the OS, so the app downloads nothing; see the next section. |
-| **Core ML / ONNX Runtime / MLC LLM** | Embedded/mobile runtime | Apple on-device, cross-platform, and compile-to-many-targets (including browser/WebGPU) respectively. |
+| **Ollama** | لایه تجربه کاربری / دیمن محلی (local daemon) | دریافت (pull) و اجرای مدل با یک دستور، API مشابه OpenAI، توسعه تک‌کاربره. بر پایه llama.cpp ساخته شده است؛ در Apple Silicon به صورت پیش‌فرض در حال مهاجرت به MLX برای معماری‌های پشتیبانی‌شده است (با شروع از کاندیدای انتشار نسخه v0.40.0، سپتامبر ۲۰۲۶). آن را در نسخه 0.35.0 یا بالاتر نگه دارید و دور از شبکه‌های غیرقابل اعتماد اجرا کنید (به بخش زیر مراجعه کنید). |
+| **LM Studio** | لایه تجربه کاربری / رابط کاربری گرافیکی (GUI) | یک GUI دسکتاپ برای مرور و اجرای مدل‌های محلی. متمرکز بر کاربر منفرد (تک‌کاربره). |
+| **llama.cpp** | موتور استنتاج (Inference) | استنتاج (Inference) پرتابل C/C++ بر روی CPU/GPU (فرمت GGUF)؛ تقریباً در هر جایی اجرا می‌شود؛ قدرت‌بخش ابزارهای لایه تجربه کاربری است. |
+| **MLX** | موتور استنتاج (Inference) | فریم‌ورک آرایه‌ای اپل؛ سریع‌ترین مسیر در Apple Silicon؛ پژوهش و Fine-tuning. |
+| **vLLM** | سامانه سرویس‌دهی (Serving) | سرویس‌دهی همزمان با توان عملیاتی (Throughput) بالا همراه با PagedAttention و دسته‌بندی پیوسته (continuous batching)؛ سازگار با OpenAI. پاسخ مناسب برای محیط تولید. |
+| **vllm-metal** | سامانه سرویس‌دهی (Apple Silicon) | پلاگین Apple Silicon برای vLLM (نسخه v0.30.0، ۲۳ سپتامبر ۲۰۲۶): زمان‌بند vLLM، کش KV صفحه‌بندی‌شده (paged KV cache)، دسته‌بندی پیوسته (continuous batching) و سرور OpenAI روی مدل‌های MLX، به همراه رمزگشایی گمانه‌زنانه (speculative decoding) چندگانه MTP و نصب از طریق Homebrew. |
+| **SGLang / TensorRT-LLM** | سامانه سرویس‌دهی | سرورهایی با توان عملیاتی (Throughput) بالا (SGLang مجهز به کش‌کردن پیشوند با RadixAttention؛ TensorRT-LLM برای حداکثر کارایی NVIDIA)؛ مناسب محیط تولید. ابزار Hugging Face TGI در حالت نگهداری (maintenance mode) قرار دارد (مخزن آن در مارس ۲۰۲۶ آرشیو شد)، و Hugging Face برای استقرار (Deployment)های جدید، vLLM یا SGLang را توصیه می‌کند. |
+| **ExecuTorch** | ران‌تایم تعبیه‌شده/موبایل (Embedded/mobile) | استنتاج (Inference) مبتنی بر بومی PyTorch روی دستگاه (از گوشی تا میکروکنترلر)؛ در اواخر سال ۲۰۲۵ به نسخه ۱.۰ رسید و در اپلیکیشن‌ها برای میلیاردها کاربر عرضه شده است. ناشران اکنون اکسپورت‌های رسمی آن را منتشر می‌کنند (فایل `.pte` مدل Muse Glimmer 30B از متا، آگوست ۲۰۲۶). |
+| **فریم‌ورک Apple Foundation Models** | مدل ارائه‌شده توسط سیستم‌عامل | یک مدل روی دستگاه که همراه با سیستم‌عامل ارائه می‌شود، بنابراین اپلیکیشن هیچ فایلی دانلود نمی‌کند؛ به بخش بعدی مراجعه کنید. |
+| **Core ML / ONNX Runtime / MLC LLM** | ران‌تایم تعبیه‌شده/موبایل | به ترتیب: درون‌دستگاهی اپل، چندپلتفرمی (cross-platform)، و کامپایل برای چندین مقصد مختلف (از جمله مرورگر/WebGPU). |
 
 ---
 
-## Platform Models: Apple Foundation Models
+## مدل‌های پلتفرم: مدل‌های پایه اپل (Apple Foundation Models)
 
-On iOS and macOS the first question is not which runtime to bundle but whether the OS model is enough. Apple's third-generation foundation model family (announced June 8, 2026, shipping in the iOS 27 cycle; App Store submissions for iOS 27 opened September 9) has five members:
+در iOS و macOS، سوال اول این نیست که کدام ران‌تایم (runtime) را همراه اپلیکیشن بسته‌بندی کنیم، بلکه این است که آیا مدل ارائه‌شده توسط سیستم‌عامل کافی است یا خیر. خانواده نسل سوم مدل‌های پایه اپل (معرفی‌شده در ۸ ژوئن ۲۰۲۶، که در چرخه انتشار iOS 27 عرضه می‌شود؛ ارسال برنامه‌ها به اپ‌استور برای iOS 27 از ۹ سپتامبر آغاز شد) دارای پنج عضو است:
 
-| Model | Where it runs | What it is |
+| مدل | محل اجرا | مشخصات |
 |-------|---------------|------------|
-| AFM 3 Core | On device | 3B dense |
-| AFM 3 Core Advanced | On device | 20B sparse, natively multimodal, activating 1B to 4B parameters per request; the full model lives in NAND flash and only the selected experts load into DRAM |
-| AFM 3 Cloud | Private Cloud Compute | Server model |
-| ADM 3 Cloud (Image) | Private Cloud Compute | Image generation and editing |
-| AFM 3 Cloud Pro | Private Cloud Compute, on NVIDIA GPUs in Google Cloud | Agentic tool use and complex reasoning |
+| AFM 3 Core | روی دستگاه | ۳ میلیاردی متراکم (3B dense) |
+| AFM 3 Core Advanced | روی دستگاه | ۲۰ میلیاردی تنک (20B sparse)، ذاتاً چندوجهی (natively multimodal)، با فعال‌سازی ۱ تا ۴ میلیارد پارامتر در هر درخواست؛ کل مدل در حافظه فلش NAND قرار دارد و تنها متخصص‌های (experts) انتخاب‌شده درون DRAM بارگذاری می‌شوند |
+| AFM 3 Cloud | سرویس Private Cloud Compute | مدل سروری |
+| ADM 3 Cloud (Image) | سرویس Private Cloud Compute | تولید و ویرایش تصویر |
+| AFM 3 Cloud Pro | سرویس Private Cloud Compute، روی GPUهای NVIDIA در گوگل کلود | استفاده ابزاری مبتنی بر Agent (Agentic tool use) و استدلال پیچیده |
 
-Apple says it trained with quantization-aware training and built the models in collaboration with Google. Two design lessons travel beyond Apple:
-- **Flash-resident sparse models** break the "phones run 1-3B models" rule for *total* parameters: keep the experts in storage and page in only what a request routes to, so DRAM holds the active slice. Latency then depends on flash bandwidth and how predictable routing is per request.
-- **The device-to-cloud escalation path is part of the platform.** An app can start on device and escalate to Private Cloud Compute under Apple's privacy guarantees, which is the hybrid architecture this chapter recommends, provided by the OS.
+اپل می‌گوید این مدل‌ها را با آموزش آگاه از کوانتایزیشن (quantization-aware training) آموزش داده و آن‌ها را با همکاری گوگل ساخته است. دو درس طراحی فراتر از اکوسیستم اپل کاربرد دارند:
+- **مدل‌های تنک مقیم در حافظه فلش (Flash-resident sparse models)** قاعده «گوشی‌ها فقط مدل‌های ۱ تا ۳ میلیاردی را اجرا می‌کنند» را برای تعداد *کل* پارامترها می‌شکنند: متخصص‌ها (experts) را در فضای ذخیره‌سازی نگه دارید و فقط بخش‌هایی را که یک درخواست به آن‌ها هدایت می‌شود پیج‌این (page in) کنید، به طوری که DRAM فقط بخش فعال را نگهداری کند. در این صورت، تاخیر (Latency) به پهنای باند فلش و میزان قابل پیش‌بینی بودن مسیریابی در هر درخواست بستگی پیدا می‌کند.
+- **مسیر ارتقا از دستگاه به کلود (device-to-cloud escalation path) بخشی از پلتفرم است.** یک اپلیکیشن می‌تواند کار خود را روی دستگاه شروع کند و بر اساس تضمین‌های حریم خصوصی اپل، درخواست را به Private Cloud Compute ارتقا دهد؛ این همان معماری هیبریدی است که این فصل توصیه می‌کند و مستقیماً توسط سیستم‌عامل ارائه می‌شود.
 
-Check which of these models the Foundation Models framework exposes to third-party apps on your target OS version, and plan a fallback for devices without Apple Intelligence.
-
----
-
-## Why Ollama Is Not a Production Server
-
-Ollama and LM Studio are excellent for prototyping and wrong for a shared production endpoint, for an architectural reason worth teaching.
-
-Ollama defaults to serving requests with very limited parallelism and queues excess requests first-in-first-out; a full queue returns an error. Each parallel slot also statically multiplies the context memory allocation. LM Studio is built for single-user scenarios without rate limiting or auth. Neither is designed to turn concurrent demand into throughput.
-
-Nor is either hardened for exposure. Ollama's CVE-2026-103663 (CVSS v4 9.4, October 2026) is a path traversal in the `/api/pull` model download path: a malicious layer digest can write a binary into Ollama's library directory, which is writable in most Docker images, and that binary runs as root on the next restart. An Ollama port reachable from a shared network is a remote-code-execution surface. Run 0.35.0 or later (the fixed release), bind to localhost or a private interface, never expose `/api/pull`, and pull models only from a registry you mirror.
-
-**vLLM** is, via two mechanisms: **PagedAttention** (the KV cache stored in non-contiguous blocks like OS paging, cutting the 60-80% KV memory waste of naive serving to under ~4%) and **continuous batching** (swap a finished request out and a queued one in mid-batch). The clearest first-party benchmark, from Red Hat: on a single datacenter GPU running an 8B model, vLLM reached roughly **793 tokens/sec versus Ollama's ~41**, about 19x, with far lower tail latency, and even a tuned Ollama trailed across all concurrency levels.
-
-The takeaway is not "vLLM is tuned better." It is structural: Ollama and LM Studio serialize, vLLM batches continuously and pages the KV cache. For one user the difference is small; under concurrency it becomes roughly 16-20x. One caveat for honesty: most public head-to-head numbers run on a datacenter GPU to isolate the *software* difference, so do not read "vLLM beats Ollama" as "GPU beats Mac."
-
-The Mac side of that gap is closing. vllm-metal brings vLLM's continuous batching and paged KV cache to Apple Silicon, so a shared endpoint on a large-memory Mac (a team server, an on-prem appliance) no longer forces you onto Ollama's serialized queue.
+بررسی کنید که فریم‌ورک Foundation Models کدام‌یک از این مدل‌ها را در نسخه سیستم‌عامل مدنظرتان در دسترس اپلیکیشن‌های شخص ثالث (third-party) قرار می‌دهد، و برای دستگاه‌های فاقد Apple Intelligence یک راهکار جایگزین (fallback) در نظر بگیرید.
 
 ---
 
-## When Local Beats Cloud (and When It Does Not)
+## چرا Ollama یک سرور مناسب محیط تولید نیست
 
-**Lean local or edge when:**
-- **Privacy or regulated data** that cannot leave the box (HIPAA, GDPR, contractual residency). A caveat to teach: the major API providers offer zero-data-retention enterprise tiers, so "privacy" alone no longer automatically decides for local. The counter-caveat: the newest frontier tiers come with strings. Claude Fable 5.1 requires 30-day retention unless Anthropic expressly authorizes ZDR, and both OpenAI (Private Safety Processing, in preview since August 19, 2026) and Anthropic (Enterprise Frontier Safeguards, announced September 1, with a phased rollout due to start later this fall) are pairing ZDR with automated safety monitoring. Read the retention terms per model, not per vendor.
-- **Offline or air-gapped** operation (field devices, critical infrastructure).
-- **A latency floor**: on-device removes the network round trip (often 50-200ms), which matters for tight interactive loops; total response latency still depends on the model and hardware.
-- **Cost at steady, high volume**: with October 2026 rental prices, two H100s (about $4,000 a month) running a 70B-class open model break even against a $2/$10 API tier at roughly 1B tokens a month (about 33M a day), while the tie point against the cheapest tiers such as GPT-6 Luna (about 20B tokens a month) is at or beyond what two GPUs can sustain (worked example in the [Cost Optimization Playbook](07-cost-optimization-playbook.md#interview-questions)). Owned edge hardware you already paid for changes the math, so the break-even is workload- and quality-bar-dependent.
+ابزارهای Ollama و LM Studio برای ساخت پیش‌نمونه (prototyping) فوق‌العاده‌اند اما برای یک اندپوینت اشتراکی در محیط تولید اشتباه هستند؛ این موضوع دلیل معماری مهمی دارد که ارزش آموزش دارد.
 
-**Stay on cloud APIs when** you need frontier quality, have spiky or unpredictable demand (you would pay for idle GPUs; batch endpoints at ~50% off often beat local at medium volume), run low-to-moderate volume (below break-even, total cost favors APIs), or lack the ops capacity to run vLLM with autoscaling and monitoring. The 2026 consensus is usually a **hybrid**: small, private, offline, or cost-sensitive paths local, heavy or frontier or spiky paths to the cloud, within one product.
+Ollama به صورت پیش‌فرض درخواست‌ها را با موازی‌سازی بسیار محدودی سرو می‌کند و درخواست‌های مازاد را به ترتیب ورود (FIFO) صف‌بندی می‌نماید؛ در صورت پر شدن صف، خطا بازمی‌گرداند. همچنین هر اسلات موازی به شکل استاتیک تخصیص حافظه کانتکست (context) را چند برابر می‌کند. LM Studio نیز برای سناریوهای تک‌کاربره، بدون محدودسازی نرخ درخواست (rate limiting) یا احراز هویت ساخته شده است. هیچ‌کدام برای تبدیل تقاضای همزمان به توان عملیاتی (Throughput) طراحی نشده‌اند.
+
+هیچ‌یک از آن‌ها نیز برای قرارگیری در معرض شبکه بیرونی مقاوم‌سازی (hardened) نشده‌اند. آسیب‌پذیری CVE-2026-103663 در Ollama (با امتیاز CVSS v4 معادل ۹.۴، اکتبر ۲۰۲۶) یک باگ پیمایش مسیر (path traversal) در مسیر دانلود مدل `/api/pull` است: یک دایجست لایه مخرب می‌تواند یک فایل باینری را در دایرکتوری کتابخانه Ollama بنویسد—که در بیشتر ایمیج‌های Docker قابل نوشتن است—و آن باینری در ری‌استارت بعدی با دسترسی root اجرا می‌شود. پورت باز Ollama که از طریق یک شبکه مشترک قابل دسترسی باشد، یک سطح حمله برای اجرای کد از راه دور (remote-code-execution) به شمار می‌رود. حتماً از نسخه 0.35.0 یا بالاتر (نسخه اصلاح‌شده) استفاده کنید، آن را به localhost یا یک اینترفیس خصوصی متصل (bind) کنید، هرگز `/api/pull` را در معرض دید عموم قرار ندهید، و مدل‌ها را تنها از یک رجیستری که خودتان آینه‌سازی (mirror) کرده‌اید دریافت (pull) کنید.
+
+اما **vLLM** از طریق دو سازوکار این کار را انجام می‌دهد: **PagedAttention** (ذخیره کش KV در بلوک‌های ناپیوسته همانند صفحه‌بندی سیستم‌عامل، که اتلاف ۶۰ تا ۸۰ درصدی حافظه KV در سرویس‌دهی سنتی و ساده را به کمتر از حدود ۴٪ کاهش می‌دهد) و **دسته‌بندی پیوسته (continuous batching)** (خارج کردن یک درخواست تکمیل‌شده و وارد کردن یک درخواست در صف در میانه Batch). روشن‌ترین بنچمارک رسمی از شرکت Red Hat نشان می‌دهد: روی یک GPU تک دیتاسنتری با اجرای یک مدل 8B، نرخ vLLM تقریباً به **۷۹۳ Token در ثانیه در مقایسه با حدود ۴۱ در Ollama** (حدود ۱۹ برابر) همراه با تاخیر دم (tail latency) به مراتب پایین‌تر رسید، و حتی یک نسخه تنظیم‌شده (tuned) از Ollama نیز در تمام سطوح همزمانی بسیار عقب‌تر بود.
+
+نتیجه‌گیری این نیست که "vLLM بهتر بهینه‌سازی (tune) شده است". این تفاوت ساختاری است: Ollama و LM Studio درخواست‌ها را به صورت متوالی (serialize) اجرا می‌کنند، در حالی که vLLM آن‌ها را پیوسته دسته‌بندی (continuous batch) کرده و کش KV را صفحه‌بندی (page) می‌نماید. برای یک کاربر منفرد این تفاوت اندک است؛ اما در شرایط همزمانی، به حدود ۱۶ تا ۲۰ برابر می‌رسد. برای رعایت صداقت یک نکته شایان ذکر است: بیشتر مقایسه‌های رودرروی عمومی روی یک GPU دیتاسنتری اجرا می‌شوند تا تفاوت *نرم‌افزاری* ایزوله شود؛ بنابراین عبارت "vLLM بر Ollama پیروز می‌شود" را به معنای "GPU بر Mac پیروز می‌شود" تلقی نکنید.
+
+سمت مک (Mac) این شکاف در حال بسته شدن است. پلاگین vllm-metal قابلیت دسته‌بندی پیوسته و کش KV صفحه‌بندی‌شده vLLM را به Apple Silicon می‌آورد، بنابراین وجود یک اندپوینت اشتراکی روی یک مک با حافظه رم بالا (یک سرور تیمی، یا یک تجهیزات محلی/on-prem) دیگر شما را مجبور نمی‌کند از صف متوالی (serialized queue) ابزار Ollama استفاده کنید.
 
 ---
 
-## Quantization for Local Serving
+## چه زمانی اجرای محلی بر کلود برتری دارد (و چه زمانی ندارد)
 
-Quantization is what makes local serving viable; the [Quantization Deep Dive](../03-training-and-adaptation/07-quantization-deep-dive.md) covers the math, so here is just the deployment layer.
+**به سمت اجرای محلی یا لبه (Edge) بروید هنگامی که:**
+- **حریم خصوصی یا داده‌های تحت نظارت و قوانین** که نباید از دستگاه خارج شوند (HIPAA، GDPR، الزامات قراردادی نگهداری داده در محل). نکته‌ای که باید در نظر داشت: ارائه‌دهندگان بزرگ API پلن‌های سازمانی با عدم نگهداری داده‌ها (Zero Data Retention یا ZDR) ارائه می‌دهند، بنابراین "حریم خصوصی" به تنهایی دیگر به طور خودکار تعیین‌کننده اجرای محلی نیست. اما نکته متقابل این است: جدیدترین پلن‌های مدل‌های پیشرو (frontier) دارای شرایط و قیودی هستند. مدل Claude Fable 5.1 به نگهداری ۳۰ روزه داده نیاز دارد مگر اینکه Anthropic صراحتاً مجوز ZDR را صادر کند؛ همچنین هر دو شرکت OpenAI (سرویس Private Safety Processing، در نسخه پیش‌نمایش از ۱۹ آگوست ۲۰۲۶) و Anthropic (سرویس Enterprise Frontier Safeguards، معرفی‌شده در ۱ سپتامبر، با عرضه مرحله‌ای از اواخر پاییز) در حال ترکیب ZDR با پایش خودکار ایمنی هستند. شرایط نگهداری داده‌ها را برای هر مدل به صورت جداگانه بررسی کنید، نه صرفاً بر اساس ارائه‌دهنده.
+- **عملکرد آفلاین یا ایزوله از شبکه (air-gapped)** (دستگاه‌های میدانی، زیرساخت‌های حیاتی).
+- **کاهش کف تاخیر (Latency)**: اجرای روی دستگاه رفت‌وبرگشت شبکه (network round trip که معمولاً ۵۰ تا ۲۰۰ میلی‌ثانیه است) را حذف می‌کند؛ امری که برای حلقه‌های تعاملی سریع و پیوسته اهمیت بالایی دارد؛ هرچند تاخیر (Latency) کل پاسخ همچنان به مدل و سخت‌افزار بستگی دارد.
+- **هزینه در حجم کاری بالا و پایدار**: با قیمت‌های اجاره در اکتبر ۲۰۲۶، دو عدد کارت H100 (حدود ۴,۰۰۰ دلار در ماه) با اجرای یک مدل متن‌باز در کلاس 70B، در برابر یک پلن API با قیمت ۲/۱۰ دلار در حدود ۱ میلیارد Token در ماه (تقریباً ۳۳ میلیون در روز) به نقطه سربه‌سر می‌رسند؛ در حالی که نقطه تلاقی با ارزان‌ترین پلن‌ها مانند GPT-6 Luna (حدود ۲۰ میلیارد Token در ماه) در مرز ظرفیت یا فراتر از توان پشتیبانی دو عدد GPU است (نمونه محاسبه‌شده در [کتابچه بهینه‌سازی هزینه](07-cost-optimization-playbook.md#interview-questions)). داشتن سخت‌افزار لبه اختصاصی که پیش‌تر هزینه آن پرداخت شده محاسبات را تغییر می‌دهد، بنابراین نقطه سربه‌سر به بار کاری و سطح کیفی مورد نظر وابسته است.
 
-**GGUF** is the local-model format used by llama.cpp, Ollama, and LM Studio. Common quant levels trade quality for size: Q4_K_M is the practical sweet spot (roughly 1-3% quality loss versus FP16 at about a quarter of the size), Q5_K_M is noticeably better for code and reasoning at under ~1% loss, Q8_0 is effectively lossless at about half FP16, and Q2/Q3 save the most memory but degrade math and reasoning by 5-10% or more.
+**در موارد زیر از APIهای کلود استفاده کنید:** زمانی که به کیفیت مدل‌های پیشرو (frontier) نیاز دارید، تقاضای ناگهانی یا غیرقابل پیش‌بینی دارید (در غیر این صورت باید هزینه GPUهای بیکار را بپردازید؛ اندپوینت‌های دسته‌ای (batch) با حدود ۵۰٪ تخفیف اغلب در حجم متوسط از اجرای محلی به‌صرفه‌تر هستند)، حجم کاری کم تا متوسط دارید (پایین‌تر از نقطه سربه‌سر، هزینه کل به نفع APIها است)، یا فاقد ظرفیت عملیاتی (ops) برای اجرای vLLM به همراه مقیاس‌پذیری خودکار (autoscaling) و پایش (monitoring) هستید. اجماع کلی در سال ۲۰۲۶ معمولاً بر روی یک رویکرد **هیبریدی (hybrid)** است: مسیرهای کوچک، خصوصی، آفلاین یا حساس به هزینه به صورت محلی اجرا می‌شوند، و مسیرهای سنگین، مدل‌های پیشرو یا دارای بارهای ناگهانی، همگی در قالب یک محصول واحد به کلود هدایت می‌شوند.
 
-That last rule holds for naive post-training quantization of a model trained at 16-bit. Models built for low bits behave differently. PrismML's **Ternary Bonsai 2 27B** (September 2026, Apache 2.0, derived from Qwen3.8-27B) averages 1.72 bits per weight in a 5.95 GB file and reports 98.2% of FP16 quality across 14 thinking-mode benchmarks, with about 130 tok/s decode on an RTX 5090 and about 28 tok/s on an M5 Pro (all vendor-reported). The catch: it runs only on PrismML's forks of llama.cpp and MLX. At the other extreme, Cactus Compute's **Needle 3** is a 121M-parameter tool-calling and extraction model compressed to about 2 bits per weight in an 8-29 MB file. Mixed-precision packing now reaches 70B-class MoE models: NVIDIA's **Nemotron 3.5 Bolt 74B-A9B 24GB** (October 15, 2026, OpenMDW-1.1) is a 74B-total, 9B-active MoE compressed from Nemotron 3.5 Super VL and shipped as a 24 GB checkpoint, with routed and shared experts in IQ2-XXS (about 2.06 bits per element), Mamba layers in NVFP4, and embedding and output layers in Q8_0, recovering accuracy through quantization-aware distillation. It supports up to 256K context, runs on llama.cpp, Ollama, LM Studio, and vLLM, and targets RTX PCs, RTX Spark laptops, and DGX Spark; a 4 GB Bolt E4B followed on October 23. Prefer vendor QAT builds like these (Google ships QAT int4 Gemma builds, including Gemma 4 12B) over quantizing yourself.
+---
 
-The **VRAM rule of thumb**:
+## کوانتیزاسیون برای سرو محلی (Local Serving)
+
+کوانتیزاسیون همان چیزی است که سرو محلی (Local Serving) را امکان‌پذیر می‌سازد؛ بخش [بررسی عمیق کوانتیزاسیون](../03-training-and-adaptation/07-quantization-deep-dive.md) مباحث ریاضیاتی را پوشش می‌دهد، بنابراین در اینجا صرفاً به لایه استقرار (Deployment) پرداخته می‌شود.
+
+فرمت **GGUF** همان فرمت مدل‌های محلی است که توسط llama.cpp، Ollama و LM Studio استفاده می‌شود. سطوح رایج کوانت، کیفیت را فدای حجم می‌کنند: سطح `Q4_K_M` نقطه بهینه کاربردی است (تقریباً ۱ تا ۳ درصد افت کیفیت در مقایسه با `FP16` در حدود یک‌چهارم اندازه آن)، سطح `Q5_K_M` برای کدنویسی و استدلال با افت کمتر از ۱٪ به شکل محسوسی بهتر است، `Q8_0` عملاً بدون افت کیفیت (lossless) و در حدود نصف اندازه `FP16` است، و `Q2`/`Q3` بیشترین میزان حافظه را ذخیره می‌کنند اما استدلال و ریاضیات را ۵ تا ۱۰ درصد یا بیشتر تضعیف می‌کنند.
+
+این قاعده آخر برای کوانتیزاسیون ساده پس از آموزش روی مدلی که با دقت ۱۶ بیتی آموزش دیده، صادق است. اما مدل‌هایی که اختصاصاً برای بیت‌های پایین ساخته شده‌اند، رفتار متفاوتی دارند. مدل **Ternary Bonsai 2 27B** از شرکت PrismML (سپتامبر ۲۰۲۶، مجوز Apache 2.0، مشتق‌شده از Qwen3.8-27B) به طور میانگین ۱.۷۲ بیت به ازای هر وزن در یک فایل ۵.۹۵ گیگابایتی دارد و ۹۸.۲٪ از کیفیت `FP16` را در ۱۴ بنچمارک حالت تفکر (thinking-mode) گزارش می‌کند، همراه با نرخ رمزگشایی حدود ۱۳۰ tok/s روی یک کارت RTX 5090 و حدود ۲۸ tok/s روی یک پردازنده M5 Pro (همگی طبق گزارش سازنده). نکته اینجاست (The catch): این مدل تنها روی فورک‌های اختصاصی PrismML از llama.cpp و MLX اجرا می‌شود. در نقطه مقابل، مدل **Needle 3** از Cactus Compute یک مدل فراخوانی ابزار و استخراج با ۱۲۱ میلیون پارامتر است که تا حدود ۲ بیت به ازای هر وزن در یک فایل ۸ تا ۲۹ مگابایتی فشرده شده است. بسته‌بندی با دقت ترکیبی (Mixed-precision packing) اکنون به مدل‌های MoE در کلاس 70B نیز رسیده است: مدل **Nemotron 3.5 Bolt 74B-A9B 24GB** از NVIDIA (۱۵ اکتبر ۲۰۲۶، مجوز OpenMDW-1.1) یک مدل MoE با در مجموع ۷۴ میلیارد پارامتر و ۹ میلیارد پارامتر فعال است که از Nemotron 3.5 Super VL فشرده شده و به عنوان یک چک‌پوینت ۲۴ گیگابایتی عرضه شده است؛ این مدل دارای کارشناسان (experts) هدایت‌شده و اشتراکی در قالب `IQ2-XXS` (حدود ۲.۰۶ بیت به ازای هر المان)، لایه‌های Mamba در `NVFP4`، و لایه‌های embedding و خروجی در `Q8_0` است و دقت خود را از طریق تقطیر آگاه از کوانتیزاسیون (quantization-aware distillation) بازیابی می‌کند. این مدل تا کانتکست 256K را پشتیبانی می‌کند، روی llama.cpp، Ollama، LM Studio و vLLM اجرا می‌شود و سیستم‌های RTX PC، لپ‌تاپ‌های RTX Spark و DGX Spark را هدف قرار می‌دهد؛ به دنبال آن، مدل ۴ گیگابایتی Bolt E4B نیز در ۲۳ اکتبر منتشر شد. نسخه‌های رسمی QAT شرکت‌های سازنده مانند این موارد (گوگل نسخه‌های QAT int4 مدل‌های Gemma از جمله Gemma 4 12B را عرضه می‌کند) را به کوانتیزاسیون دستی توسط خودتان ترجیح دهید.
+
+**قاعده سرانگشتی VRAM**:
 
 ```
 VRAM (GB) ≈ (params in billions × bits per weight) / 8   # model weights only
 ```
 
-then add the KV cache (it grows with context length times concurrent requests) plus roughly 10-20% runtime overhead. So a 7B model's weights are roughly 14GB at FP16, ~7.7GB at Q8_0, and ~4.5GB at Q4_K_M, before that overhead. The operating rule everyone repeats: **use the highest-quality quant that fits with 10-20% headroom** for KV cache, activations, and context.
+سپس حافظه موقت کلید-مقدار (KV cache) را اضافه کنید (که با طول کانتکست ضربدر درخواست‌های هم‌روند افزایش می‌یابد) به علاوه تقریباً ۱۰ تا ۲۰ درصد اورهد زمان اجرا (runtime overhead). بنابراین وزن‌های یک مدل 7B قبل از اعمال این اورهد، تقریباً ۱۴ گیگابایت در `FP16`، حدود ۷.۷ گیگابایت در `Q8_0` و حدود ۴.۵ گیگابایت در `Q4_K_M` است. قاعده عملیاتی که همه تکرار می‌کنند این است: **از باکیفیت‌ترین کوانتی استفاده کنید که با در نظر گرفتن ۱۰ تا ۲۰ درصد فضای خالی (headroom)** برای KV cache، اکتیویشن‌ها و کانتکست در حافظه جای می‌گیرد.
 
 ---
 
-## Hardware
+## سخت‌افزار
 
-A model-size-to-hardware guide (Q4 quant assumed; planning guidance, not guarantees):
+راهنمای تطبیق اندازه مدل با سخت‌افزار (با فرض کوانت Q4؛ به عنوان راهنمای برنامه‌ریزی، نه تضمین قطعی):
 
-| Model size (Q4) | Min VRAM/RAM | Realistic hardware |
-|-----------------|--------------|--------------------|
-| 1-3B | 4-6 GB | Any modern GPU; high-end phones (NPU); AI PCs |
-| 7-8B | 8 GB | Mainstream GPU; 16 GB Mac |
-| 13-14B | 12 GB | Upper-mainstream GPU; 16-24 GB Mac |
-| 32-35B | 24 GB | A 24 GB consumer GPU; 36-48 GB Mac |
-| 27B ternary (~1.7 bits) | ~6-8 GB | 8 GB+ GPU or 16 GB Mac, with the vendor's runtime fork |
-| 70B | ~40 GB+ | High-end or dual GPU; 64 GB+ Mac; or a datacenter card |
-| 74B MoE, vendor-packed ~2-bit experts (Nemotron 3.5 Bolt) | ~24 GB | A 24 GB consumer GPU, RTX Spark laptop, or DGX Spark |
-| 200B+ | 48 GB+, often multi-GPU / 128 GB+ unified | Multi-GPU rigs; large-unified-memory workstations |
+| اندازه مدل (Q4) | حداقل VRAM/RAM | سخت‌افزار واقع‌بینانه |
+|-----------------|----------------|----------------------|
+| 1-3B | 4-6 GB | هر GPU مدرن؛ گوشی‌های بالارده (NPU)؛ سیستم‌های AI PC |
+| 7-8B | 8 GB | یک GPU میان‌رده (Mainstream)؛ مک ۱۶ گیگابایتی |
+| 13-14B | 12 GB | یک GPU میان‌رده به بالا (Upper-mainstream)؛ مک ۱۶ تا ۲۴ گیگابایتی |
+| 32-35B | 24 GB | یک GPU مصرفی (Consumer) ۲۴ گیگابایتی؛ مک ۳۶ تا ۴۸ گیگابایتی |
+| 27B سه‌تایی (~1.7 bits) | ~6-8 GB | یک GPU با حافظه +8 GB یا مک ۱۶ گیگابایتی، همراه با فورک زمان اجرای ارائه‌دهنده |
+| 70B | ~40 GB+ | یک GPU رده‌بالا یا دوگانه؛ مک +64 GB؛ یا یک کارت مرکز داده |
+| 74B MoE، کارشناسان ۲ بیتی بسته‌بندی‌شده سازنده (Nemotron 3.5 Bolt) | ~24 GB | یک GPU مصرفی ۲۴ گیگابایتی، لپ‌تاپ RTX Spark، یا DGX Spark |
+| 200B+ | 48 GB+، اغلب چند GPU / حافظه یکپارچه +128 GB | ریگ‌های چند GPU؛ ورک‌استیشن‌هایی با حافظه یکپارچه بزرگ |
 
-Notes:
-- **Consumer GPUs** top out at 24-32 GB of VRAM, which is the binding constraint on local model size.
-- **Apple Silicon** shares one memory pool between CPU and GPU, so system RAM doubles as VRAM, letting a large-RAM Mac hold models a same-priced discrete GPU cannot. Apple's MLX path keeps improving: Ollama's MLX backend reports sizable prefill and decode gains on Apple Silicon from exploiting unified memory and is becoming the default for supported architectures, and a separate update adds NVFP4, NVIDIA's 4-bit floating-point format (not Apple's), reported around 20% faster than Q4_K_M.
-- **NPUs** in phones and AI PCs advertise high TOPS, but a teaching nuance: TOPS alone does not predict LLM speed, because limited operator support and memory bandwidth gate real performance. NPUs suit lightweight, battery-efficient tasks; discrete GPUs still win for heavy local inference.
-- **Mobile** is bandwidth-bound and memory-constrained: realistic *dense* on-phone models are sub-1B to about 3B (MBZUAI positions its open K2 Horizon 3.7B and 7B for phones and the 0.9B for watches), available app RAM is often under 4 GB even on flagships, and mobile memory bandwidth is 30-50x below a datacenter GPU. The on-device standard is 4-bit quantization. Sparse models with flash-resident experts raise the total-parameter ceiling (Apple's 20B AFM 3 Core Advanced activates 1-4B per request) without raising the DRAM budget.
+نکات:
+- **GPUهای مصرفی** حداکثر به ۲۴ تا ۳۲ گیگابایت VRAM محدود می‌شوند، که محدودیت اصلی بر اندازه مدل‌های محلی است.
+- **اپل سیلیکون (Apple Silicon)** یک استخر حافظه مشترک بین CPU و GPU دارد، بنابراین رم سیستم به عنوان VRAM نیز عمل می‌کند و به یک مک با رم بالا اجازه می‌دهد مدل‌هایی را بارگذاری کند که یک GPU مجزای هم‌قیمت توانایی نگهداری آن را ندارد. مسیر MLX اپل مدام در حال پیشرفت است: بک‌اند MLX در Ollama به دلیل بهره‌برداری از حافظه یکپارچه، بهبودهای چشمگیری را در فازهای پیش‌تکمیل (prefill) و رمزگشایی (decode) روی اپل سیلیکون گزارش کرده و در حال تبدیل شدن به گزینه پیش‌فرض برای معماری‌های پشتیبانی‌شده است؛ همچنین یک به‌روزرسانی مجزا، پشتیبانی از `NVFP4` یعنی فرمت ممیز شناور ۴ بیتی انویدیا (و نه اپل) را اضافه کرده که گزارش شده حدود ۲۰٪ سریع‌تر از `Q4_K_M` است.
+- **واحدهای NPU** در گوشی‌ها و سیستم‌های AI PC ارقام TOPS بالایی را تبلیغ می‌کنند، اما یک ظرافت آموزشی وجود دارد: معیار TOPS به تنهایی سرعت LLM را پیش‌بینی نمی‌کند، زیرا پشتیبانی محدود از عملگرها و پهنای باند حافظه، گلوگاه‌های عملکرد واقعی هستند. واحدهای NPU برای وظایف سبک و بهینه از نظر مصرف باتری مناسب هستند؛ اما GPUهای مجزا همچنان برای استنتاج (Inference) سنگین محلی برنده هستند.
+- **دستگاه‌های موبایل** محدود به پهنای باند و حافظه هستند: مدل‌های *متراکم* واقع‌بینانه روی گوشی از زیر 1B تا حدود 3B هستند (دانشگاه MBZUAI مدل‌های متن‌باز K2 Horizon با اندازه 3.7B و 7B را برای گوشی‌ها و مدل 0.9B را برای ساعت‌ها معرفی کرده است)، رم در دسترس برنامه‌ها حتی در گوشی‌های پرچم‌دار اغلب زیر ۴ گیگابایت است و پهنای باند حافظه موبایل ۳۰ تا ۵۰ برابر کمتر از یک GPU مرکز داده است. استاندارد روی دستگاه، کوانتیزاسیون ۴ بیتی است. مدل‌های تنک (Sparse) با کارشناسان مستقر در حافظه فلش (flash-resident experts)، سقف کل پارامترها را بدون افزایش بودجه DRAM بالا می‌برند (مدل 20B موسوم به AFM 3 Core Advanced از اپل، ۱ تا ۴ میلیارد پارامتر را به ازای هر درخواست فعال می‌کند).
 
-### Small Models Specialize
+### تخصصی شدن مدل‌های کوچک
 
-The useful on-device answer is often several small specialists rather than one general model:
+پاسخ کاربردی روی دستگاه اغلب استفاده از چند مدل کوچک متخصص به جای یک مدل عمومی است:
 
-| Job | Example open model (2026) | Notes |
-|-----|---------------------------|-------|
-| Tool calling, routing, extraction | Cactus Needle 3 (121M, Apache 2.0) | Single 8-29 MB file; vendor claims it beats models 10x its size on mobile tool calls |
-| General assistant on phone or watch | K2 Horizon 0.9B / 3.7B / 7B (Apache 2.0, open training data) | 0.9B at 128K context; 3.7B and 7B at 512K |
-| Enterprise-friendly small model, no Chinese-origin weights | IBM Granite 4.2 3B / 8B (Apache 2.0) | Official FP8, MXFP4, NVFP4, GGUF, and MLX builds |
-| Laptop-class multimodal (text, image, audio, video) | Gemma 4 12B (Apache 2.0) | Encoder-free design; official QAT int4 builds |
-| Single-GPU reasoning, Apache 2.0 | Nanbeige4.3-33B (October 24, 2026; 33B dense, up to 524K context) | FP8, INT8, and INT4 builds since October 31; Artificial Analysis Intelligence Index v5.0.1 scores it 20, tying Qwen3.8-27B at xhigh, but it used 160M output tokens on the index against a 77.7M median, so cost per task is higher; no public API |
-| Local coding agent | MiMo-V2.6-Distill-Qwen-9B (MIT) | Vendor-reported 61.1% SWE-bench Verified |
-| Reasoning on a laptop | Ternary Bonsai 2 27B (Apache 2.0) | Needs PrismML runtime forks |
+| وظیفه | نمونه مدل متن‌باز (۲۰۲۶) | نکات |
+|-------|--------------------------|------|
+| فراخوانی ابزار، مسیریابی، استخراج | Cactus Needle 3 (121M, Apache 2.0) | یک فایل تک ۸ تا ۲۹ مگابایتی؛ شرکت سازنده مدعی است در فراخوانی ابزار روی موبایل مدل‌هایی با ۱۰ برابر اندازه خود را شکست می‌دهد |
+| دستیار عمومی روی گوشی یا ساعت | K2 Horizon 0.9B / 3.7B / 7B (Apache 2.0، داده‌های آموزشی باز) | مدل 0.9B با کانتکست 128K؛ مدل‌های 3.7B و 7B با کانتکست 512K |
+| مدل کوچک مناسب سازمان‌ها، بدون وزن‌هایی با منشأ چینی | IBM Granite 4.2 3B / 8B (Apache 2.0) | نسخه‌های رسمی FP8، MXFP4، NVFP4، GGUF و MLX |
+| چندوجهی در کلاس لپ‌تاپ (متن، تصویر، صوت، ویدیو) | Gemma 4 12B (Apache 2.0) | طراحی بدون انکودر (Encoder-free)؛ نسخه‌های رسمی QAT int4 |
+| استدلال روی یک GPU واحد، مجوز Apache 2.0 | Nanbeige4.3-33B (۲۴ اکتبر ۲۰۲۶؛ 33B متراکم، تا کانتکست 524K) | نسخه‌های FP8، INT8 و INT4 از ۳۱ اکتبر؛ در شاخص هوش Artificial Analysis نسخه 5.0.1 امتیاز ۲۰ را کسب کرده و هم‌تراز با Qwen3.8-27B در سطح xhigh قرار می‌گیرد، اما ۱۶۰ میلیون Token خروجی در این شاخص مصرف کرده (در مقایسه با میانه ۷۷.۷ میلیونی)، بنابراین هزینه به ازای هر تسک بالاتر است؛ فاقد API عمومی |
+| Agent کدنویسی محلی | MiMo-V2.6-Distill-Qwen-9B (MIT) | ۶۱.۱٪ در SWE-bench Verified طبق گزارش سازنده |
+| استدلال روی لپ‌تاپ | Ternary Bonsai 2 27B (Apache 2.0) | نیازمند فورک‌های زمان اجرای PrismML |
 
-Check a model card's engine pins before you ship it. IBM's **Granite Switch 4.1** (8B and 30B, Apache 2.0, model cards dated October 14, 2026) packs a Granite 4.1 base, two aLoRA adapters (guardian-core for safety detection, decision for scoring labeled options), and a 470M Granite Speech 5.0 encoder behind one endpoint, which is a neat way to ship several specialists as one model. But its optional vLLM backend is pinned to `>= 0.26.0, < 0.31.0`, below this guide's vLLM security floor (see [Serving Infrastructure](06-serving-infrastructure.md#operational-posture)), so serving it on vLLM means running an engine with known advisories. Fail CI when a model's pinned engine range excludes your floor.
-
----
-
-## Prototype to Production
-
-1. **Prototype** with Ollama (CLI) or LM Studio (GUI) on a GGUF Q4_K_M model; validate quality and prompts on the smallest model that passes.
-2. **Pick the largest model and best quant** that fits the target hardware with KV-cache headroom.
-3. **Switch the serving engine** for any concurrent endpoint: vLLM (NVIDIA or AMD), vllm-metal (Apple Silicon), SGLang, or TensorRT-LLM (max NVIDIA). Keep the OpenAI-compatible API so application code barely changes.
-4. **For mobile or edge**, first check the platform model (Apple's Foundation Models framework on iOS 27). Otherwise export to ExecuTorch, Core ML, or ONNX Runtime / MLC LLM, quantize to 4-bit (prefer vendor QAT builds), and budget for under 4 GB of RAM and the bandwidth limit.
-
-Common pitfalls: treating Ollama or LM Studio as a server (it serializes under load); forgetting the KV cache when sizing memory (long context times parallel slots can dominate); over-quantizing (Q2/Q3 hurts reasoning); conflating "vLLM beats Ollama" with "GPU beats Mac"; assuming NPU TOPS equals LLM speed; mismatching engine to hardware (vLLM is GPU-first but now runs on Apple Silicon through vllm-metal, MLX is Apple-only, llama.cpp is the portability fallback); and adopting an exotic low-bit format without checking that your runtime can load it.
-
-**Maturity:** server-side local serving is production-mature (vLLM is widely deployed with an OpenAI-compatible API). On-device and mobile is production-ready for *small* dense models (sub-1B to 3B) and for OS-provided models, and not for frontier ones. NPU-as-LLM-engine is still early; a discrete GPU and a large-unified-memory Mac remain the serious local paths in 2026. Benchmarks are catching up: MLPerf Inference v6.1 added an Edge Agentic test with growing multi-turn context.
+پیش از عرضه مدل، نسخه‌های فیکس‌شده موتور (engine pins) در شناسنامه مدل (model card) را بررسی کنید. مدل **Granite Switch 4.1** متعلق به IBM (نسخه‌های 8B و 30B، مجوز Apache 2.0، شناسنامه‌های مدل مورخ ۱۴ اکتبر ۲۰۲۶) یک پایه Granite 4.1، دو آداپتور aLoRA (یکی guardian-core برای تشخیص ایمنی، و دیگری decision برای امتیازدهی به گزینه‌های برچسب‌دار)، و یک انکودر 470M با نام Granite Speech 5.0 را پشت یک اندپوینت قرار داده است؛ روشی جالب برای عرضه چند متخصص در قالب یک مدل واحد. اما بک‌اند اختیاری vLLM آن به `>= 0.26.0, < 0.31.0` محدود شده است که پایین‌تر از حداقل سطح امنیتی vLLM در این راهنما قرار دارد (بخش [زیرساخت سروینگ](06-serving-infrastructure.md#operational-posture) را ببینید)، بنابراین سرو آن روی vLLM به معنای اجرای موتوری با هشدارهای امنیتی شناخته‌شده است. اگر محدوده نسخه موتور فیکس‌شده یک مدل حداقل سطح مجاز شما را پوشش نمی‌دهد، فرایند CI را متوقف کنید (Fail CI).
 
 ---
 
-## Interview Questions
+## از پیش‌نمونه تا تولید (Prototype to Production)
 
-### Q: A team prototyped on Ollama and wants to ship it as a shared API. What changes and why?
+۱. **ساخت پیش‌نمونه (Prototype)** با Ollama (رابط خط فرمان یا CLI) یا LM Studio (رابط گرافیکی یا GUI) روی یک مدل GGUF با کوانت `Q4_K_M`؛ کیفیت و Promptها را روی کوچک‌ترین مدلی که آزمون‌ها را با موفقیت پشت سر می‌گذارد اعتبارسنجی کنید.
+۲. **بزرگ‌ترین مدل و بهترین کوانت** را انتخاب کنید که همراه با فضای خالی برای KV cache در سخت‌افزار مقصد جای می‌گیرد.
+۳. **موتور سرو را تغییر دهید** برای هر اندپوینت هم‌روند: vLLM (برای NVIDIA یا AMD)، vllm-metal (برای Apple Silicon)، SGLang، یا TensorRT-LLM (حداکثر کارایی NVIDIA). ساختار API سازگار با OpenAI را حفظ کنید تا کدهای برنامه به ندرت نیاز به تغییر پیدا کنند.
+۴. **برای موبایل یا Edge**، ابتدا مدل پیش‌فرض پلتفرم را بررسی کنید (فریم‌ورک Foundation Models اپل در iOS 27). در غیر این صورت، مدل را به ExecuTorch، Core ML، یا ONNX Runtime / MLC LLM خروجی بگیرید، آن را به ۴ بیتی کوانتیزه کنید (نسخه‌های QAT ارائه‌شده توسط سازنده را ترجیح دهید)، و بودجه‌بندی را برای کمتر از ۴ گیگابایت رم و محدودیت پهنای باند در نظر بگیرید.
 
-**Strong answer:**
-Ollama is the wrong tool for a shared endpoint. It serves with limited parallelism and queues excess requests first-in-first-out, so under concurrency latency spikes and requests start failing. The fix is to switch the serving engine to vLLM (or SGLang or TensorRT-LLM), keeping the same OpenAI-compatible API so the app barely changes. vLLM wins structurally, not by tuning: PagedAttention stores the KV cache in non-contiguous blocks to eliminate most of the memory waste, and continuous batching swaps finished requests out and queued ones in mid-batch, so concurrent demand becomes throughput. First-party benchmarks show roughly an order-of-magnitude higher throughput and far lower tail latency under load. I would also right-size the model and quant to the target GPU with KV-cache headroom, and add autoscaling and monitoring, which Ollama does not provide.
+اشتباهات رایج: در نظر گرفتن Ollama یا LM Studio به عنوان سرور (که زیر بار، درخواست‌ها را به صورت متوالی پردازش می‌کند)؛ فراموش کردن KV cache هنگام تعیین اندازه حافظه (کانتکست طولانی ضربدر اسلات‌های موازی می‌تواند بخش عمده حافظه را اشغال کند)؛ کوانتیزاسیون بیش از حد (نسخه‌های `Q2`/`Q3` به استدلال لطمه می‌زنند)؛ اشتباه گرفتن عبارت «vLLM برتر از Ollama است» با «GPU برتر از Mac است»؛ فرض اینکه TOPS یک NPU برابر با سرعت LLM است؛ عدم تطابق موتور با سخت‌افزار (vLLM اساساً برای GPU طراحی شده اما اکنون از طریق vllm-metal روی Apple Silicon نیز اجرا می‌شود، MLX فقط مخصوص اپل است، و llama.cpp گزینه جایگزین برای قابلیت حمل بالا است)؛ و به‌کارگیری یک فرمت نامتعارف با بیت‌های پایین بدون بررسی اینکه آیا محیط زمان اجرای شما قادر به بارگذاری آن است یا خیر.
 
-### Q: When would you choose local or on-device inference over a cloud API?
-
-**Strong answer:**
-When data cannot leave the box for privacy or residency reasons, when the system must work offline or air-gapped, when I need the lowest possible latency by cutting the network round trip, or when I have steady high volume where reserved GPUs beat per-token pricing: two rented H100s break even against a $2/$10 API tier at roughly 1B tokens a month, but not against the cheapest API tiers. I would stay on an API for frontier quality, spiky demand where idle GPUs waste money, low volume below break-even, or when the team lacks the ops capacity to run a serving stack. In practice it is usually a hybrid: small, private, or offline paths run local on quantized models, and heavy or frontier or bursty paths go to the cloud. On phones specifically, I would plan for sub-1B-to-3B dense models, since mobile is memory and bandwidth constrained, or use the OS-provided model where one exists. I would also check retention terms model by model before assuming the cloud path is ZDR, since some frontier tiers now require retention or safety monitoring.
-
-### Q: You are shipping an AI feature in an iOS app. Do you bundle your own model or use Apple's Foundation Models?
-
-**Strong answer:**
-Start with the OS model and earn the right to bundle. Apple's on-device models ship with the OS, so there is no download, no app-size hit, and no memory competition from a second model; the third-generation family adds a 20B sparse on-device model whose experts live in flash and page into DRAM per request, plus an escalation path to Private Cloud Compute for heavier reasoning. I would prototype the feature against it with my own eval set. I would bundle my own model only if evals show the OS model cannot do the task (a domain it was not tuned for, a strict output format it misses), if I need identical behavior across iOS and Android, or if I must support devices without Apple Intelligence. If I bundle, I pick the smallest specialist that passes (a sub-200M tool caller or a 1-3B dense model), use a vendor QAT int4 build, export through Core ML or ExecuTorch, and keep the OS model as the default path where it is available. Either way the eval set is the asset, because the OS model will change under me with each OS release.
+**میزان بلوغ (Maturity):** سرو محلی در سمت سرور به بلوغ مناسب برای محیط پروداکشن رسیده است (vLLM به طور گسترده همراه با یک API سازگار با OpenAI استقرار یافته است). اجرا روی دستگاه و موبایل برای مدل‌های متراکم *کوچک* (زیر 1B تا 3B) و برای مدل‌های ارائه‌شده توسط سیستم‌عامل آماده استفاده در محیط تولید است، اما نه برای مدل‌های پیشرو (frontier). استفاده از NPU به عنوان موتور اجرای LLM هنوز در مراحل اولیه است؛ یک GPU مجزا و یک مک با حافظه یکپارچه بالا، در سال ۲۰۲۶ همچنان مسیرهای جدی برای اجرای محلی هستند. بنچمارک‌ها نیز در حال ارتقا هستند: بنچمارک MLPerf Inference v6.1 یک آزمون Edge Agentic با کانتکست چندمرحله‌ای در حال رشد اضافه کرده است.
 
 ---
 
-## References
+## سوالات مصاحبه (Interview Questions)
 
-- Red Hat Developer, ["Ollama vs vLLM: a deep dive into performance benchmarking"](https://developers.redhat.com/articles/2025/08/08/ollama-vs-vllm-deep-dive-performance-benchmarking)
-- vLLM, [docs](https://docs.vllm.ai/) and the [PagedAttention blog](https://blog.vllm.ai/2023/06/20/vllm.html)
-- Ollama, [now powered by MLX on Apple Silicon](https://ollama.com/blog/mlx) and the [concurrency FAQ](https://docs.ollama.com/faq)
-- PyTorch, [Introducing ExecuTorch 1.0](https://pytorch.org/blog/introducing-executorch-1-0/)
-- Chandra and Krishnamoorthi (Meta), ["On-Device LLMs: State of the Union, 2026"](https://v-chandra.github.io/on-device-llms/)
-- Apple Machine Learning Research, ["Introducing the third generation of Apple Foundation Models"](https://machinelearning.apple.com/research/introducing-third-generation-of-apple-foundation-models)
-- vLLM, [vllm-metal releases](https://github.com/vllm-project/vllm-metal/releases)
-- PrismML, [Ternary Bonsai 2 27B](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)
+### پرسش: تیمی پیش‌نمونه‌ای را روی Ollama پیاده‌سازی کرده و اکنون می‌خواهد آن را به عنوان یک API اشتراکی عرضه کند. چه چیزهایی تغییر می‌کند و چرا؟
+
+**پاسخ قوی:**
+ابزار Ollama انتخاب اشتباهی برای یک اندپوینت اشتراکی است. این ابزار با موازی‌سازی محدودی پاسخ می‌دهد و درخواست‌های مازاد را به صورت صف فرست‌این-فرست‌اوت (FIFO) قرار می‌دهد، بنابراین تحت بارهای هم‌روند، تاخیر (Latency) به شدت افزایش می‌یابد و درخواست‌ها با خطا مواجه می‌شوند. راه‌حل این است که موتور سروینگ را به vLLM (یا SGLang یا TensorRT-LLM) تغییر دهیم، در حالی که همان ساختار API سازگار با OpenAI حفظ می‌شود تا برنامه به ندرت نیازمند تغییر باشد. برتری vLLM ساختاری است و نه صرفاً با تنظیم و تیونینگ: الگوریتم PagedAttention برای حذف بخش عمده هدررفت حافظه، حافظه موقت کلید-مقدار (KV cache) را در بلوک‌های ناپیوسته ذخیره می‌کند، و دسته‌بندی پیوسته (continuous batching) درخواست‌های خاتمه‌یافته را خارج کرده و درخواست‌های در صف را در میانه دسته جایگزین می‌کند، در نتیجه تقاضای هم‌روند به توان عملیاتی (Throughput) تبدیل می‌شود. بنچمارک‌های مرجع نشان‌دهنده تقریباً یک مرتبه بزرگی توان عملیاتی (Throughput) بالاتر و تاخیر دم (Tail Latency) به مراتب کمتر در زیر بار ترافیکی هستند. من همچنین اندازه مدل و سطح کوانت را متناسب با GPU مقصد با در نظر گرفتن فضای آزاد برای KV cache بهینه‌سازی کرده و مقیاس‌پذیری خودکار (autoscaling) و مانیتورینگ را که Ollama ارائه نمی‌دهد، اضافه می‌کردم.
+
+### پرسش: در چه شرایطی استنتاج (Inference) محلی یا روی دستگاه را به یک API ابری ترجیح می‌دهید؟
+
+**پاسخ قوی:**
+زمانی که به دلایل حریم خصوصی یا الزامات محل نگهداری داده‌ها (residency)، اطلاعات نباید از سیستم محلی خارج شوند؛ زمانی که سیستم باید به صورت آفلاین یا در یک شبکه ایزوله (air-gapped) کار کند؛ هنگامی که به کمترین تاخیر (Latency) ممکن با حذف رفت‌وبرگشت شبکه (network round trip) نیاز دارم؛ یا زمانی که حجم ترافیک پایدار و بالایی وجود دارد که در آن GPUهای اختصاصی از قیمت‌گذاری بر مبنای هر Token به‌صرفه‌تر هستند: هزینه اجاره دو پردازنده H100 در مقایسه با یک سطح قیمتی API با نرخ ۲ دلار / ۱۰ دلار، در حدود ۱ میلیارد Token در ماه به نقطه سر‌به‌سر می‌رسد، هرچند در مقایسه با ارزان‌ترین سطوح API به این نقطه نمی‌رسد. اما در صورت نیاز به کیفیت مدل‌های پیشرو (frontier)، وجود تقاضای ناگهانی و پرنوسان (spiky) که در آن GPUهای بیکار باعث هدررفت هزینه می‌شوند، حجم ترافیک پایین کمتر از نقطه سر‌به‌سر، یا عدم وجود ظرفیت تیم عملیات برای اجرای یک استک سروینگ، همچنان از API استفاده می‌کردم. در عمل، معماری معمولاً به صورت هیبریدی است: فرآیندهای کوچک، حساس از نظر حریم خصوصی یا آفلاین به صورت محلی روی مدل‌های کوانتیزه‌شده اجرا می‌شوند، و فرآیندهای سنگین، وابسته به مدل‌های پیشرو یا دارای بار ترافیکی ناگهانی به ابر ارسال می‌گردند. به طور خاص در تلفن‌های همراه، مدل‌های متراکم زیر 1B تا 3B را در نظر می‌گرفتم چرا که موبایل با محدودیت حافظه و پهنای باند مواجه است، یا در صورت وجود، از مدل ارائه‌شده توسط سیستم‌عامل استفاده می‌کردم. همچنین پیش از آنکه فرض کنم مسیر ابری الزامات عدم ذخیره داده (ZDR) را رعایت می‌کند، شرایط نگهداری داده‌ها را مدل به مدل بررسی می‌کردم، زیرا برخی از سطوح پیشرو اکنون نیازمند نگهداری داده‌ها یا نظارت ایمنی هستند.
+
+### پرسش: در حال عرضه یک قابلیت مبتنی بر هوش مصنوعی در یک برنامه iOS هستید. آیا مدل اختصاصی خود را همراه با برنامه بسته‌بندی (bundle) می‌کنید یا از Foundation Models اپل استفاده می‌نمایید؟
+
+**پاسخ قوی:**
+کار را با مدل سیستم‌عامل شروع کنید و تنها در صورت اثبات ضرورت، مدل اختصاصی خود را همراه برنامه بسته‌بندی نمایید (Start with the OS model and earn the right to bundle). مدل‌های روی دستگاه اپل همراه با سیستم‌عامل عرضه می‌شوند، بنابراین نیازی به دانلود وجود ندارد، حجم برنامه افزایش نمی‌یابد و هیچ رقابتی بر سر حافظه با یک مدل دوم شکل نمی‌گیرد؛ نسل سوم این خانواده یک مدل تنک 20B روی دستگاه را اضافه کرده است که کارشناسان (experts) آن در حافظه فلش مستقر بوده و به ازای هر درخواست به DRAM منتقل (page) می‌شوند، به همراه یک مسیر ارجاع به Private Cloud Compute برای استدلال‌های سنگین‌تر. من ابتدا با مجموعه ارزیابی (eval set) اختصاصی خودم این ویژگی را روی آن پیش‌نمونه‌سازی می‌کردم. تنها زمانی مدل خودم را همراه برنامه ارائه می‌دادم که ارزیابی‌ها نشان دهند مدل سیستم‌عامل توانایی انجام تسک را ندارد (حوزه‌ای که برای آن بهینه‌سازی نشده است، یا قالب خروجی دقیقی که مدل آن را رعایت نمی‌کند)، یا اگر به رفتاری کاملاً یکسان در هر دو پلتفرم iOS و Android نیاز داشته باشم، و یا اگر ملزم به پشتیبانی از دستگاه‌های فاقد Apple Intelligence باشم. در صورت بسته‌بندی مدل اختصاصی، کوچک‌ترین مدل متخصصی را انتخاب می‌کردم که در آزمون‌ها قبول شود (یک مدل فراخوانی ابزار زیر ۲۰۰ میلیون پارامتر یا یک مدل متراکم ۱ تا ۳ میلیارد پارامتری)، از یک نسخه رسمی QAT int4 سازنده استفاده می‌کردم، آن را از طریق Core ML یا ExecuTorch خروجی می‌گرفتم و در جاهایی که مدل سیستم‌عامل در دسترس است، آن را به عنوان مسیر پیش‌فرض حفظ می‌کردم. در هر دو حالت، مجموعه ارزیابی (eval set) سرمایه اصلی من است، چرا که مدل سیستم‌عامل با هر نسخه جدید سیستم‌عامل تغییر خواهد کرد.
 
 ---
 
-*Next: [Prompt Engineering Fundamentals](../05-prompting-and-context/01-prompt-engineering-fundamentals.md)*
+## مراجع (References)
+
+- شرکت Red Hat Developer، ["مقایسه Ollama و vLLM: بررسی عمیق بنچمارک‌های عملکردی"](https://developers.redhat.com/articles/2025/08/08/ollama-vs-vllm-deep-dive-performance-benchmarking)
+- فریم‌ورک vLLM، [مستندات](https://docs.vllm.ai/) و [پست بلاگ PagedAttention](https://blog.vllm.ai/2023/06/20/vllm.html)
+- ابزار Ollama، [اکنون با پشتیبانی از MLX روی اپل سیلیکون](https://ollama.com/blog/mlx) و [پرسش‌های متداول هم‌روندی](https://docs.ollama.com/faq)
+- فریم‌ورک PyTorch، [معرفی ExecuTorch 1.0](https://pytorch.org/blog/introducing-executorch-1-0/)
+- نویسندگان چاندرا و کریشنامورتی (متا)، ["مدل‌های LLM روی دستگاه: وضعیت جامع در سال ۲۰۲۶"](https://v-chandra.github.io/on-device-llms/)
+- پژوهش‌های یادگیری ماشین اپل، ["معرفی نسل سوم Foundation Models اپل"](https://machinelearning.apple.com/research/introducing-third-generation-of-apple-foundation-models)
+- فریم‌ورک vLLM، [انتشارهای vllm-metal](https://github.com/vllm-project/vllm-metal/releases)
+- شرکت PrismML، [مدل Ternary Bonsai 2 27B](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)
+
+---
+
+*مطلب بعدی: [مبانی مهندسی Prompt](../05-prompting-and-context/01-prompt-engineering-fundamentals.md)*
+
+</div>
