@@ -1,9 +1,21 @@
-مجوز MIT (MIT License)
+MIT License
 
-حق نشر (c) 2026 Om Bharatiya
+Copyright (c) 2026 Saeid Mohammadi
 
-بدین‌وسیله به هر شخصی که نسخه‌ای از این نرم‌افزار و فایل‌های مستندات مربوطه («نرم‌افزار») را دریافت می‌کند، بدون پرداخت هزینه، اجازه داده می‌شود تا بدون هیچ‌گونه محدودیتی با نرم‌افزار رفتار کند؛ از جمله و بدون محدودیت، حقوق مربوط به استفاده، کپی، تغییر، ادغام، انتشار، توزیع، اعطای مجوز فرعی (Sublicense) و/یا فروش نسخه‌های نرم‌افزار، و اجازه دادن به اشخاصی که نرم‌افزار در اختیار آن‌ها قرار می‌گیرد تا همین کار را انجام دهند، مشروط به رعایت شرایط زیر:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-اعلامیه حق نشر بالا و این اعلامیه مجوز باید در تمام نسخه‌ها یا بخش‌های عمده نرم‌افزار گنجانده شود.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-این نرم‌افزار «به همان صورت که هست» (AS IS)، بدون هرگونه ضمانت، صریح یا ضمنی، از جمله و نه محدود به ضمانت‌های تجاری بودن (قابلیت فروش)، مناسب بودن برای یک هدف خاص و عدم نقض حق دیگران ارائه می‌شود. در هیچ حالتی، نویسندگان یا دارندگان حق نشر در قبال هرگونه ادعا، خسارت یا سایر مسئولیت‌ها، خواه در یک اقدام قراردادی، شبه‌جرم (Tort) یا غیر آن، ناشی از نرم‌افزار، در ارتباط با آن، یا استفاده یا سایر معاملات در نرم‌افزار، مسئول نخواهند بود.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
