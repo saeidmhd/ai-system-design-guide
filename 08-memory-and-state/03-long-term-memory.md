@@ -1,97 +1,101 @@
-# Long-Term Memory
+<div dir="rtl">
 
-Long-term memory (L2 & L3) provides persistence across sessions. Production stacks have moved from simple "History RAG" to **Multi-Representation Stores** that combine Vector, Graph, Relational, and file-based data. Dedicated memory services now take three distinct shapes: fact stores on top of your vector database (Mem0), temporal knowledge graphs (Zep/Graphiti, Cognee), and git-backed memory files (Letta MemFS, the Claude memory tool).
+# حافظه بلندمدت
 
-## Table of Contents
+حافظه بلندمدت (L2 و L3) پایداری داده‌ها را در طول جلسات (sessions) مختلف فراهم می‌کند. استک‌های پروداکشن از «RAG مبتنی بر تاریخچه» ساده فراتر رفته و به سمت **مخازن چندنمایشی (Multi-Representation Stores)** حرکت کرده‌اند که داده‌های برداری (Vector)، گرافی (Graph)، رابطه‌ای (Relational) و مبتنی بر فایل را ترکیب می‌کنند. سرویس‌های اختصاصی حافظه اکنون سه شکل متمایز به خود گرفته‌اند: مخازن فکت (fact stores) روی پایگاه داده برداری (Vector Database) شما (مانند Mem0)، گراف‌های دانش زمانی (temporal knowledge graphs مانند Zep/Graphiti و Cognee)، و فایل‌های حافظه مبتنی بر git (مانند Letta MemFS و ابزار حافظه Claude).
 
-- [Episodic Memory: The Personal Log](#episodic-memory-the-personal-log)
-- [Semantic Memory: The Fact Store](#semantic-memory-the-fact-store)
-- [Hybrid Vector-Graph Storage](#hybrid-vector-graph-storage)
-- [Memory Pruning and Decay](#memory-pruning-and-decay)
-- [Privacy and Multi-Tenancy](#privacy-and-multi-tenancy)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Episodic Memory: The Personal Log
-
-Episodic memory stores **Trajectories**: sequences of events and their outcomes.
-- **Data Structure**: `(Timestamp, Interaction_ID, Trajectory_Summary, Embedding)`.
-- **The Rationale**: If an agent successfully built a React component using a specific tool sequence last month, it should "Recall" that success when asked to build another one today.
-- **Implementation Note**: We store the *Summary* for retrieval and the *Raw Logs* in cold storage (S3/GCS) for forensic analysis. Keeping raw logs also enables read-time curation: Just-in-Time Memory (arXiv 2609.27334) curates raw trajectories for the current task at read time and beat the strongest write-time memory baseline on ALFWorld, WebShop, and tau2-bench.
+- [حافظه رویدادی: لاگ شخصی](#episodic-memory-the-personal-log)
+- [حافظه معنایی: مخزن فکت‌ها](#semantic-memory-the-fact-store)
+- [ذخیره‌سازی ترکیبی برداری-گرافی](#hybrid-vector-graph-storage)
+- [هرس و زوال حافظه](#memory-pruning-and-decay)
+- [حریم خصوصی و چندمستأجری (multi-tenant)](#privacy-and-multi-tenancy)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Semantic Memory: The Fact Store
+## حافظه رویدادی: لاگ شخصی
 
-Semantic memory stores **Discovered Facts** about entities.
-- **Entity Identification**: Using a "Fact Extraction Agent" to parse every user turn.
-- **Example triplets**:
+حافظه رویدادی (Episodic memory) **مسیرها (Trajectories)** را ذخیره می‌کند: توالی رویدادها و نتایج آن‌ها.
+- **ساختار داده (Data Structure)**: `(Timestamp, Interaction_ID, Trajectory_Summary, Embedding)`.
+- **منطق و دلیل (The Rationale)**: اگر یک Agent ماه گذشته یک کامپوننت React را با استفاده از توالی خاصی از ابزارها با موفقیت ساخته باشد، هنگامی که امروز از آن خواسته می‌شود کامپوننت دیگری بسازد، باید آن موفقیت را «به یاد آورد» (Recall).
+- **نکته پیاده‌سازی (Implementation Note)**: ما *خلاصه (Summary)* را برای بازیابی و *لاگ‌های خام (Raw Logs)* را در حافظه سرد (S3/GCS) برای تحلیل‌های قانونی و موشکافانه (forensic analysis) ذخیره می‌کنیم. نگهداری لاگ‌های خام همچنین امکان مدیریت در زمان خواندن (read-time curation) را فراهم می‌کند: سیستم حافظه درست‌به‌موقع (Just-in-Time Memory - arXiv 2609.27334) مسیرهای خام را برای تسک فعلی در زمان خواندن گزینش می‌کند و قوی‌ترین خط مبنای (baseline) حافظه در زمان نوشتن را روی ALFWorld ،WebShop و tau2-bench شکست داده است.
+
+---
+
+## حافظه معنایی: مخزن فکت‌ها
+
+حافظه معنایی (Semantic memory) **فکت‌های کشف‌شده (Discovered Facts)** درباره موجودیت‌ها (entities) را ذخیره می‌کند.
+- **شناسایی موجودیت (Entity Identification)**: استفاده از یک «Fact Extraction Agent» (Agent استخراج فکت) برای تحلیل و پارس کردن هر نوبت گفتگو (turn) کاربر.
+- **سه‌گانه‌های نمونه (Example triplets)**:
   - `(User_1, HAS_PREFERENCE, Dark_Mode)`
   - `(Company_X, USES_SDK, Stripe)`
-- **Technology**: Knowledge Graphs (Neo4j, AWS Neptune) combined with relational tagging, or a fact store inside the vector database with an entity index (Mem0 v2).
+- **فناوری (Technology)**: گراف‌های دانش (Knowledge Graphs نظیر Neo4j و AWS Neptune) همراه با برچسب‌گذاری رابطه‌ای، یا یک مخزن فکت درون پایگاه داده برداری (Vector Database) با یک شاخص موجودیت (Mem0 v2).
 
 ---
 
-## Hybrid Vector-Graph Storage
+## ذخیره‌سازی ترکیبی برداری-گرافی
 
-Staff-level engineers use **GraphRAG-style Memory** where relationships carry the value.
-- **Vector Search** finds "Related" nodes.
-- **Graph Traversal** finds "Connected" nodes.
-- **The Win**: If I search for "Project Alpha," vector search finds the name, but graph traversal finds the 10 developers, the deadline, and the linked code repos.
+مهندسان سطح Staff از **حافظه سبک GraphRAG** استفاده می‌کنند که در آن روابط حامل ارزش هستند.
+- **جستجوی برداری (Vector Search)** نودهای «مرتبط» (Related) را پیدا می‌کند.
+- **پیمایش گراف (Graph Traversal)** نودهای «متصل» (Connected) را پیدا می‌کند.
+- **مزیت و دستاورد (The Win)**: اگر عبارت «Project Alpha» را جستجو کنم، جستجوی برداری نام آن را پیدا می‌کند، اما پیمایش گراف ۱۰ توسعه‌دهنده، ددلاین، و مخازن کد (code repos) مرتبط را می‌یابد.
 
-**The counter-argument got stronger in 2026.** Mem0 v2.0.0 (April 2026) removed its Neo4j, Memgraph, Kuzu, and Apache AGE drivers (about 4,000 lines) and instead stores entity links in a parallel collection inside the existing vector store, fusing semantic similarity, BM25, and entity boosting into one retrieval score. The bet: for user-preference memory, entity-aware retrieval captures most of the graph's benefit without running a second database. Use a real graph when you need multi-hop traversal or **temporal validity** ("what was true on March 12?"), which is Zep/Graphiti's strength: every edge carries `valid_at` / `invalid_at` (when the fact was true in the world) alongside `created_at` / `expired_at` (when the system learned and retired it).
-
----
-
-## Memory Pruning and Decay
-
-Memory is a liability if it grows unchecked.
-- **Temporal Decay**: Older memories lose their "relevance score" unless frequently accessed.
-- **Consolidation**: Merging 10 separate interactions about "billing" into one high-quality summary node. This increasingly runs **off the request path**: Anthropic's Dreams research preview reads a memory store plus past transcripts and writes a reorganized store, and Mem0's Dream does merging and superseding on its paid plans.
-- **Explicit Forgetting**: Honoring GDPR "Right to be Forgotten" by deleting all episodic and semantic clusters associated with a user ID, including derived summaries, backups, and git history for file-based memory.
-- **Gated injection**: retrieval relevance is not the same as usefulness. On MemTrapBench (arXiv 2608.20202) tasks built to trigger memory traps, correct, semantically relevant memories still caused reasoning fixation and belief distortion, and every memory strategy it tested underperformed no memory. Decide per request whether memory goes into context at all.
+**دیدگاه مخالف در سال ۲۰۲۶ قوی‌تر شد.** نسخه Mem0 v2.0.0 (آوریل ۲۰۲۶) درایورهای Neo4j ،Memgraph ،Kuzu و Apache AGE خود را (حدود ۴,۰۰۰ خط کد) حذف کرد و به جای آن پیوندهای موجودیت را در یک کالکشن موازی درون پایگاه داده برداری موجود ذخیره می‌کند و تشابه معنایی، BM25 و تقویت مبتنی بر موجودیت (entity boosting) را در یک امتیاز بازیابی ادغام می‌نماید. ایده این است: برای حافظه ترجیحات کاربر، بازیابی آگاه از موجودیت (entity-aware retrieval) بخش عمده مزایای گراف را بدون نیاز به اجرای یک پایگاه داده دوم به دست می‌آورد. زمانی از یک گراف واقعی استفاده کنید که به پیمایش چندمرحله‌ای (multi-hop traversal) یا **اعتبار زمانی (temporal validity)** نیاز دارید («در ۱۲ مارس چه چیزی درست بوده است؟»)، که این نقطه قوت Zep/Graphiti است: هر یال در کنار `created_at` / `expired_at` (زمانی که سیستم آن را یاد گرفت و بازنشسته کرد)، برچسب‌های `valid_at` / `invalid_at` (زمانی که فکت در دنیای واقعی صادق بود) را حمل می‌کند.
 
 ---
 
-## Privacy and Multi-Tenancy
+## هرس و زوال حافظه
+
+حافظه در صورتی که بدون کنترل رشد کند، یک بار اضافه و بدهی فنی (liability) خواهد بود.
+- **زوال زمانی (Temporal Decay)**: خاطرات قدیمی‌تر «امتیاز ارتباط» (relevance score) خود را از دست می‌دهند مگر اینکه مکرراً به آن‌ها دسترسی پیدا شود.
+- **یکپارچه‌سازی و تثبیت (Consolidation)**: ادغام ۱۰ تعامل جداگانه درباره «صورت‌حساب» (billing) در یک نود خلاصه باکیفیت بالا. این فرآیند به‌طور فزاینده‌ای **خارج از مسیر درخواست (off the request path)** اجرا می‌شود: پیش‌نمایش تحقیقاتی Dreams از شرکت Anthropic یک مخزن حافظه را به همراه متن رونوشت‌های گذشته می‌خواند و یک مخزن بازسازماندهی‌شده می‌نویسد، و قابلیت Dream در Mem0 نیز ادغام و جایگزینی موارد منسوخ را در پلن‌های پولی خود انجام می‌دهد.
+- **فراموشی صریح (Explicit Forgetting)**: رعایت قانون «حق فراموش شدن» (Right to be Forgotten) در GDPR با حذف تمام کلاسترهای رویدادی و معنایی مرتبط با یک شناسه کاربر (user ID)، از جمله خلاصه‌های مشتق‌شده، نسخه‌های پشتیبان، و تاریخچه git برای حافظه مبتنی بر فایل.
+- **تزریق کنترل‌شده (Gated injection)**: ارتباط در بازیابی (retrieval relevance) با مفید بودن یکسان نیست. در تسک‌های MemTrapBench (arXiv 2608.20202) که برای تحریک تله‌های حافظه ساخته شده‌اند، خاطرات صحیح و از نظر معنایی مرتبط همچنان باعث تثبیت نامناسب استدلال (reasoning fixation) و تحریف باورها شدند، و تمام استراتژی‌های حافظه آزمایش‌شده عملکرد ضعیف‌تری نسبت به عدم استفاده از حافظه نشان دادند. بر اساس هر درخواست تصمیم بگیرید که آیا حافظه اصلاً باید وارد context شود یا خیر.
+
+---
+
+## حریم خصوصی و چندمستأجری (multi-tenant)
 
 > [!CAUTION]
-> **Cross-Session Leakage** is the #1 security risk in global memory.
-> Ensure that the `user_id` is a hard partition key in your vector DB metadata. Never rely on the LLM to filter results by user.
+> **نشت داده میان جلسات (Cross-Session Leakage)** خطر امنیتی رتبه ۱ در حافظه سراسری است.
+> اطمینان حاصل کنید که `user_id` یک کلید افراز سخت (hard partition key) در متادیتای پایگاه داده برداری (Vector Database) شما باشد. هرگز برای فیلتر کردن نتایج بر اساس کاربر، به LLM اتکا نکنید.
 
-Two further controls:
-- **Write-gate shared memory.** Memory that many users can write to is a poisoning target. Asana (September 2026) lets anyone give an agent feedback on a task, but only admins and editors can commit it to permanent shared memory or delete from it; everyone else's feedback applies only to the current task.
-- **Operator-blind storage when required.** For memory the provider itself must not read, the reference design is client-held keys with enclave processing and publicly attested server software. Google described this for Private AI Compute on September 23, 2026, as a plan with no product dates.
+دو راهکار کنترلی دیگر:
+- **کنترل نوشتن در حافظه مشترک (Write-gate shared memory).** حافظه‌ای که چندین کاربر می‌توانند روی آن بنویسند، هدف مسموم‌سازی (poisoning) است. آسانا (Asana - سپتامبر ۲۰۲۶) به هر کسی اجازه می‌دهد در مورد یک تسک به یک Agent بازخورد دهد، اما فقط ادمین‌ها و ویرایشگران می‌توانند آن را در حافظه مشترک دائمی ثبت (commit) کنند یا از آن حذف نمایند؛ بازخورد سایر کاربران فقط برای تسک فعلی اعمال می‌شود.
+- **ذخیره‌سازی غیرقابل‌مشاهده برای اپراتور در صورت نیاز (Operator-blind storage when required).** برای حافظه‌ای که خود ارائه‌دهنده سرویس نباید بتواند آن را بخواند، طرح مرجع (reference design) استفاده از کلیدهای در اختیار کلاینت (client-held keys) همراه با پردازش در انکلاو امن (enclave processing) و نرم‌افزار سرور با گواهی عمومی (publicly attested) است. گوگل این رویکرد را برای پردازش خصوصی هوش مصنوعی (Private AI Compute) در ۲۳ سپتامبر ۲۰۲۶ به عنوان برنامه‌ای بدون تاریخ مشخص برای عرضه محصول تشریح کرد.
 
-See [Agent Memory and State](../07-agentic-systems/05-agent-memory-and-state.md) for memory poisoning and tenant-isolation interview questions.
-
----
-
-## Interview Questions
-
-### Q: How do you choose between a Vector DB and a Knowledge Graph for long-term memory?
-
-**Strong answer:**
-I use **Vector DBs** for **Episodic Context** (unstructured logs, past conversations) because I need a "Fuzzy" match on meaning. I use **Knowledge Graphs** for **Structural Semantic Knowledge** (relationships, attributes, hierarchies) because I need "Deterministic" traversal. A production system uses a **Hybrid** approach: the vector index points to graph IDs, allowing the system to find the right "Starting Node" and then traverse for high-precision context. Before adding the graph, though, I check whether entity-aware retrieval in the vector store is enough; Mem0 dropped graph databases in v2 on exactly that bet. The graph earns its operational cost when queries are multi-hop or time-scoped.
-
-### Q: What is "Catastrophic Forgetting" in the context of learned agentic memory?
-
-**Strong answer:**
-In fine-tuned agents, catastrophic forgetting happens when new training data wipes out old knowledge. In **Agentic Memory (RAG-based)**, it refers to **Index Overload**. If an agent adds 1,000 low-quality new "facts" to its memory, the retrieval precision drops, effectively making it "forget" the older, higher-quality facts because they are buried in noise. ADD-only write paths (Mem0 v2 has no update or delete pass) make this more likely unless something consolidates later. We mitigate this with **Quality-Weighted Retrieval** (memories with high "Verification Scores" from a supervisor are boosted over raw logs) and a scheduled consolidation job that merges duplicates and supersedes stale facts.
+برای سوالات مصاحبه درباره مسموم‌سازی حافظه و جداسازی مستأجرها (multi-tenant)، بخش [حافظه و وضعیت Agent](../07-agentic-systems/05-agent-memory-and-state.md) را ببینید.
 
 ---
 
-## References
-- [Zep: A Temporal Knowledge Graph Architecture for Agent Memory (arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
-- [Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory (arXiv 2504.19413)](https://arxiv.org/abs/2504.19413)
-- [Mem0 v2.0.0 release notes](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
+## سوالات مصاحبه
+
+### سوال: چگونه بین یک پایگاه داده برداری (Vector DB) و یک گراف دانش (Knowledge Graph) برای حافظه بلندمدت انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+من از **پایگاه‌های داده برداری (Vector DBs)** برای **زمینه رویدادی (Episodic Context)** (لاگ‌های ساختارنیافته، گفتگوهای گذشته) استفاده می‌کنم زیرا به تطبیق تقریبی معنایی (Fuzzy match) نیاز دارم. از **گراف‌های دانش (Knowledge Graphs)** برای **دانش معنایی ساختاریافته (Structural Semantic Knowledge)** (روابط، ویژگی‌ها، سلسله‌مراتب‌ها) استفاده می‌کنم زیرا به پیمایش قطعی (Deterministic traversal) نیاز دارم. یک سیستم پروداکشن از یک رویکرد **ترکیبی (Hybrid)** استفاده می‌کند: شاخص برداری به شناسه‌های گراف اشاره می‌کند که به سیستم اجازه می‌دهد «نود شروع» (Starting Node) مناسب را پیدا کند و سپس برای دستیابی به زمینه با دقت بالا در گراف پیمایش کند. با این حال، قبل از افزودن گراف، بررسی می‌کنم که آیا بازیابی آگاه از موجودیت در مخزن برداری کافی است یا خیر؛ Mem0 پایگاه‌های داده گرافی را در نسخه v2 دقیقاً با تکیه بر همین ایده کنار گذاشت. گراف زمانی هزینه عملیاتی خود را توجیه می‌کند که کوئری‌ها چندمرحله‌ای (multi-hop) یا دارای بازه زمانی مشخص باشند.
+
+### سوال: «فراموشی فاجعه‌بار» (Catastrophic Forgetting) در چارچوب حافظه Agentic یادگرفته‌شده به چه معناست؟
+
+**پاسخ قوی:**
+در Agentهای Fine-tune شده، فراموشی فاجعه‌بار زمانی رخ می‌دهد که داده‌های آموزشی جدید، دانش قدیمی را پاک کنند. در **حافظه Agentic (مبتنی بر RAG)**، این موضوع به **سربار شاخص (Index Overload)** اشاره دارد. اگر یک Agent تعداد ۱,۰۰۰ «فکت» جدید با کیفیت پایین را به حافظه خود بیفزاید، دقت بازیابی کاهش می‌یابد و عملاً باعث می‌شود فکت‌های قدیمی‌تر و باکیفیت‌تر را به دلیل غرق شدن در نویز «فراموش کند». مسیرهای نوشتن صرفاً افزایشی (مسیرهای ADD-only؛ نسخه Mem0 v2 فاقد مرحله به‌روزرسانی یا حذف است) احتمال این اتفاق را افزایش می‌دهند مگر اینکه فرآیندی بعداً کار یکپارچه‌سازی و تثبیت را انجام دهد. ما این مشکل را با **بازیابی وزن‌دهی‌شده با کیفیت (Quality-Weighted Retrieval)** (حافظه‌هایی با «امتیاز راستی‌آزمایی» بالا از یک ناظر، نسبت به لاگ‌های خام تقویت می‌شوند) و یک تسک زمان‌بندی‌شده تثبیت که موارد تکراری را ادغام کرده و جایگزین فکت‌های منسوخ می‌شود، کاهش می‌دهیم.
+
+---
+
+## منابع
+- [Zep: معماری گراف دانش زمانی برای حافظه Agent (arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
+- [Mem0: ساخت Agentهای هوش مصنوعی آماده پروداکشن با حافظه بلندمدت مقیاس‌پذیر (arXiv 2504.19413)](https://arxiv.org/abs/2504.19413)
+- [یادداشت‌های انتشار نسخه Mem0 v2.0.0](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
 - Edge et al. "From Local to Global: A Graph RAG Approach to Query-Focused Summarization" (2024)
 - [MemTrapBench (arXiv 2608.20202)](https://arxiv.org/abs/2608.20202)
 - [Just-in-Time Memory (arXiv 2609.27334)](https://arxiv.org/abs/2609.27334)
-- [Anthropic. "Agents you can coach: how Asana builds human-agent teams with Claude" (September 2026)](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude)
+- [Anthropic. «Agentهایی که می‌توانید هدایت کنید: چگونه آسانا تیم‌های انسان-Agent را با Claude می‌سازد» (سپتامبر ۲۰۲۶)](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude)
 
 ---
 
-*Next: [Agentic Memory with Mem0](04-agentic-memory-mem0.md)*
+*بعدی: [حافظه Agentic با Mem0](04-agentic-memory-mem0.md)*
+
+</div>

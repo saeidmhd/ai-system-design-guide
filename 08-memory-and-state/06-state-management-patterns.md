@@ -1,23 +1,26 @@
-# State Management Patterns
+<div dir="rtl">
 
-State management in AI systems has moved from simple "sessions" to **Stateful Agent Graphs**. Managing the flow and persistence of an agent's "mind" is as critical as the LLM itself: it is one of the main reasons LangGraph (1.2.19, released October 30, 2026) has become the default control-flow runtime for LangChain-built agents. In 2026 a second question joined "how do I structure state?": **who holds it**, your checkpointer, a durable workflow engine, or a managed agent platform.
+# الگوهای مدیریت وضعیت (State Management Patterns)
 
-## Table of Contents
+مدیریت وضعیت در سیستم‌های هوش مصنوعی از «جلسات» (sessions) ساده به **گراف‌های Agent دارای وضعیت (Stateful Agent Graphs)** تکامل یافته است. مدیریت جریان و ماندگاری (persistence) «ذهن» یک Agent به اندازه خود LLM حیاتی است: این موضوع یکی از دلایل اصلی تبدیل شدن LangGraph (نسخه 1.2.19، منتشرشده در ۳۰ اکتبر ۲۰۲۶) به ران‌تایم پیش‌فرض جریان کنترل برای Agentهای ساخته‌شده با LangChain است. در سال ۲۰۲۶، پرسش دومی به «چگونه وضعیت را ساختاردهی کنم؟» اضافه شد: **چه کسی آن را نگهداری می‌کند**؛ چک‌پوینتر شما، یک موتور جریان کاری بادوام (durable workflow engine)، یا یک پلتفرم مدیریت‌شده Agent.
 
-- [The State Object](#the-state-object)
-- [State Machines (LangGraph)](#state-machines-langgraph)
-- [Checkpointing and Resume](#checkpointing-and-resume)
-- [Where State Lives](#where-state-lives)
-- [Parallel State (Fork/Join)](#parallel-state-forkjoin)
-- [Time-Travel (State Rewriting)](#time-travel-state-rewriting)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [آبجکت وضعیت (The State Object)](#the-state-object)
+- [ماشین‌های وضعیت (LangGraph)](#state-machines-langgraph)
+- [چک‌پوینت‌گذاری و ازسرگیری (Checkpointing and Resume)](#checkpointing-and-resume)
+- [محل نگهداری وضعیت (Where State Lives)](#where-state-lives)
+- [وضعیت موازی (Fork/Join)](#parallel-state-forkjoin)
+- [سفر در زمان: بازنویسی وضعیت (Time-Travel)](#time-travel-state-rewriting)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The State Object
+## آبجکت وضعیت (The State Object)
 
-The "State" is the **Single Source of Truth** for an agent session.
+«وضعیت» (State) **تنها منبع حقیقت (Single Source of Truth)** برای یک جلسه کاری (session) متعلق به یک Agent است.
+
 ```python
 from typing import Annotated, Any, TypedDict
 
@@ -33,85 +36,88 @@ class AgentState(TypedDict):
     user_context: dict[str, Any]
     iteration_count: int
 ```
-**Best practice**: State should be **Strictly Typed** and **Append-Only** whenever possible to prevent data loss during long execution loops. Append-only now matters for the model too: the newest Claude models invalidate thinking blocks when earlier messages change, so a state reducer that rewrites `messages` in place silently costs you reasoning continuity.
+
+**بهترین شیوه (Best practice)**: وضعیت باید تا حد امکان دارای **نوع‌بندی صریح (Strictly Typed)** و **فقط‌افزودنی (Append-Only)** باشد تا از دست رفتن داده‌ها در حین حلقه‌های اجرایی طولانی جلوگیری شود. رویکرد فقط‌افزودنی اکنون برای خود مدل نیز اهمیت دارد: جدیدترین مدل‌های Claude در صورت تغییر پیام‌های قبلی، بلوک‌های تفکر (thinking blocks) را باطل (invalidate) می‌کنند؛ بنابراین یک کاهنده وضعیت (state reducer) که `messages` را به‌صورت درجا بازنویسی می‌کند، در سکوت به قیمت از بین رفتن پیوستگی استدلال (reasoning continuity) شما تمام می‌شود.
 
 ---
 
-## State Machines (LangGraph)
+## ماشین‌های وضعیت (LangGraph)
 
-Industry has converged on **Cyclic Graphs** (State Machines).
-- **Nodes**: Functions that take the state and return an update.
-- **Edges**: Conditional logic that determines the next node based on state values (e.g., `if state['error'] -> goto 'recovery_node'`).
+صنعت روی **گراف‌های چرخه‌ای (Cyclic Graphs)** (ماشین‌های وضعیت) همگرا شده است.
+- **گره‌ها (Nodes)**: توابعی که وضعیت را دریافت کرده و یک به‌روزرسانی برمی‌گردانند.
+- **یال‌ها (Edges)**: منطق شرطی که گره بعدی را بر اساس مقادیر وضعیت تعیین می‌کند (مثلاً `if state['error'] -> goto 'recovery_node'`).
 
-LangGraph's lead has narrowed: CrewAI added checkpointing in 1.14, Microsoft Agent Framework ships workflow checkpointing and reconnectable background responses, and Google ADK 2.x added graph workflows. See [LangGraph Orchestration](../09-frameworks-and-tools/02-langgraph-orchestration.md).
-
----
-
-## Checkpointing and Resume
-
-In production, agents can run for minutes or hours.
-- **Persistence Layer**: Every state update is saved to a DB (Postgres/Redis).
-- **Resiliency**: If the server crashes, the orchestrator retrieves the last `checkpoint_id` and resumes exactly where it left off.
-- **Side effects**: Resuming replays from the last checkpoint, so any tool call after it may run twice. Give side-effecting tools idempotency keys, or record their results before advancing the checkpoint.
-- **UX**: This allows for **Asynchronous Agents** where the user gets an "I'm working on it" message and a notification 10 minutes later when the state is "Complete."
+پیشتازی LangGraph کاهش یافته است: CrewAI قابلیت چک‌پوینت‌گذاری را در نسخه 1.14 اضافه کرد، Microsoft Agent Framework از چک‌پوینت‌گذاری جریان کاری و پاسخ‌های پس‌زمینه با قابلیت اتصال مجدد پشتیبانی می‌کند، و Google ADK 2.x جریان‌های کاری مبتنی بر گراف را افزوده است. بخش [ارکستراسیون LangGraph](../09-frameworks-and-tools/02-langgraph-orchestration.md) را ببینید.
 
 ---
 
-## Where State Lives
+## چک‌پوینت‌گذاری و ازسرگیری (Checkpointing and Resume)
 
-| Option | Who holds the state | Strengths | Costs |
+در محیط‌های عملیاتی (production)، ممکن است Agentها دقایق یا ساعت‌ها اجرا شوند.
+- **لایه ماندگاری (Persistence Layer)**: هر به‌روزرسانی وضعیت در یک پایگاه داده (Postgres/Redis) ذخیره می‌شود.
+- **تاب‌آوری (Resiliency)**: در صورت خرابی (crash) سرور، ارکستریتور آخرین `checkpoint_id` را بازیابی کرده و دقیقاً از همان‌جایی که متوقف شده بود، کار را از سر می‌گیرد.
+- **عوارض جانبی (Side effects)**: ازسرگیری مجدد (Resuming)، اجرا را از آخرین چک‌پوینت بازپخش می‌کند؛ بنابراین هرگونه فراخوانی ابزار (tool call) پس از آن ممکن است دو بار اجرا شود. برای ابزارهای دارای عوارض جانبی از کلیدهای پایاپایی (idempotency keys) استفاده کنید یا نتایج آن‌ها را پیش از جلو بردن چک‌پوینت ثبت نمایید.
+- **تجربه کاربری (UX)**: این امر امکان ساخت **Agentهای ناهمگام (Asynchronous Agents)** را فراهم می‌کند که در آن کاربر پیام «در حال کار روی آن هستم» را دریافت کرده و ۱۰ دقیقه بعد، زمانی که وضعیت به «تکمیل‌شده» (Complete) تغییر کرد، اعلانی دریافت می‌کند.
+
+---
+
+## محل نگهداری وضعیت (Where State Lives)
+
+| گزینه | چه کسی وضعیت را نگه می‌دارد | نقاط قوت | هزینه‌ها و چالش‌ها |
 |--------|---------------------|-----------|-------|
-| **Graph checkpointer** (LangGraph + Postgres) | You, per super-step | Full control, inspectable state, time travel | You build retries, timeouts, and idempotency yourself |
-| **Durable workflow engine** (Temporal, Durable Functions) | The engine's event history | Retries, timers, and exactly-once workflow logic; model and tool calls become activities with retry policies | Determinism rules for workflow code; another system to run |
-| **Managed agent platform** (Claude Managed Agents, OpenAI Agents API, Bedrock Managed Agents in preview) | The provider's session | No loop or state store to operate; versioned agent configs; session budgets | Data residency and retention follow the vendor (the OpenAI Agents API, in public beta since September 10, 2026, is US residency only and has no ZDR); lock-in |
+| **چک‌پوینتر گرافی** (LangGraph + Postgres) | خودتان، به ازای هر ابر-گام (super-step) | کنترل کامل، وضعیت قابل بررسی و بازرسی، امکان سفر در زمان | تلاش مجدد (retries)، مهلت زمانی (timeouts) و پایاپایی (idempotency) را باید خودتان بسازید |
+| **موتور جریان کاری بادوام** (Temporal، Durable Functions) | تاریخچه رخدادهای موتور (Event history) | تلاش مجدد، تایمرها، و منطق جریان کاری دقیقاً-یک‌بار (exactly-once)؛ فراخوانی‌های مدل و ابزار به فعالیت‌هایی با سیاست‌های تلاش مجدد تبدیل می‌شوند | قواعد قطعیت (determinism) برای کد جریان کاری؛ یک سیستم دیگر برای اجرا و نگهداری |
+| **پلتفرم مدیریت‌شده Agent** (مانند Claude Managed Agents، OpenAI Agents API، Bedrock Managed Agents در نسخه پیش‌نمایش) | سشن (session) ارائه‌دهنده | عدم نیاز به مدیریت حلقه یا ذخیره‌ساز وضعیت؛ پیکربندی‌های دارای نسخه برای Agentها؛ بودجه‌بندی جلسات | محل نگهداری و حفظ داده‌ها از ارائه‌دهنده تبعیت می‌کند (OpenAI Agents API که از ۱۰ سپتامبر ۲۰۲۶ در بتای عمومی است، فقط اقامت در آمریکا دارد و فاقد ZDR است)؛ وابستگی به ارائه‌دهنده (lock-in) |
 
-Frontier labs use durable execution too (Temporal reported OpenAI's usage up 60x in under a year), and managed runtimes are attacking cold starts: AWS announced AgentCore Runtime V2 on September 18, 2026, reporting a P75 cold start of about 2 seconds versus roughly 5.4 to 30 seconds on the original runtime, billed at a higher rate for far fewer GB-hours (vendor-reported). The tradeoffs and an interview question on build versus rent are in [Durable Execution](../07-agentic-systems/11-durable-execution.md#managed-agent-runtimes-renting-the-durable-loop).
-
----
-
-## Parallel State (Fork/Join)
-
-For complex tasks, we **Fork** the state.
-1. **Fan-out**: Send the state to 3 sub-agents (e.g., Researcher A, B, and C).
-2. **Fan-in (Join)**: A "Manager" agent receives the outputs of all three and merges them back into the main state object.
-
-Define the merge with a reducer (append, union, or last-writer-wins per field) rather than letting branches overwrite shared keys, and cap fan-out: OpenAI's Agents API, for example, defaults `max_concurrent_subagents` to 6.
+آزمایشگاه‌های پیشرو (Frontier labs) نیز از اجرای بادوام استفاده می‌کنند (Temporal گزارش داد که مصرف OpenAI در کمتر از یک سال ۶۰ برابر شده است)، و ران‌تایم‌های مدیریت‌شده در حال مقابله با شروع‌های سرد (cold starts) هستند: AWS در ۱۸ سپتامبر ۲۰۲۶ نسخه AgentCore Runtime V2 را معرفی کرد و شروع سرد صدک ۷۵ (P75 cold start) را حدود ۲ ثانیه در مقایسه با تقریباً ۵.۴ تا ۳۰ ثانیه در ران‌تایم اصلی گزارش نمود که با نرخ بالاتری برای گیگابایت-ساعت‌های بسیار کمتر محاسبه می‌شود (بر اساس گزارش ارائه‌دهنده). موازنه‌ها و یک سوال مصاحبه درباره ساخت در برابر اجاره (build versus rent) در بخش [اجرای بادوام](../07-agentic-systems/11-durable-execution.md#managed-agent-runtimes-renting-the-durable-loop) آمده است.
 
 ---
 
-## Time-Travel (State Rewriting)
+## وضعیت موازی (Fork/Join)
 
-As covered in [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md), state management allows for **Human Intervention**.
-- A developer can browse the session history, find a "bad turn," edit the state object at that specific timestamp, and **Re-run** the graph from that point.
-- **Treat a rewrite as a fork, not an edit.** On Claude Fable 5.1, Opus 5.5, and Sonnet 5.5, thinking blocks are bound to the exact prefix that produced them. Re-running from an edited checkpoint with the old thinking blocks still attached gets a 400 on accounts created on or after August 31, 2026 (or drops the blocks under the `drop_block` beta option). Replay from the edit point with fresh model calls, and keep the original branch for audit.
+برای وظایف پیچیده، وضعیت را **منشعب (Fork)** می‌کنیم.
+1. **انشعاب به بیرون (Fan-out)**: ارسال وضعیت به ۳ زیر-Agent (به‌عنوان مثال، پژوهشگر A، B و C).
+2. **تجمیع به درون (Fan-in / Join)**: یک Agent «مدیر» (Manager) خروجی‌های هر سه را دریافت کرده و آن‌ها را مجدداً با آبجکت وضعیت اصلی ادغام (merge) می‌کند.
 
----
-
-## Interview Questions
-
-### Q: Why use a "Graph-based" State Machine (LangGraph) instead of a simple "While loop" for agents?
-
-**Strong answer:**
-A While loop is **Opaque and Brittle**. You can't easily visualize the logic, and error handling becomes a mess of nested if-statements. A Graph-based approach is **Observable and Modular**. You can visualize the Entire Flow (as a Mermaid diagram), unit-test individual nodes, and implement complex features like "Backtracking" or "Parallel execution" simply by adding new edges. It also makes **State Persistence** trivial because the framework handles the saving/loading between nodes. The honest counterpoint: for a single agent with one tool loop, a while loop plus a durable checkpoint is often enough, and the graph earns its complexity when you have branches, human interrupts, or parallel sub-agents.
-
-### Q: How do you prevent "State Bloat" in long-running agent sessions?
-
-**Strong answer:**
-We use **State Pruning** and **Message Summarization**. Instead of carrying the entire `tool_results` dictionary through the whole graph, we trim it once a sub-task is complete, keeping a reference to the full output in storage. For the `messages` list, we compact history when it crosses a token threshold, preferably with the provider's compaction (which keeps prefix caching and thinking blocks valid), rather than a homemade summarizer that rewrites earlier turns. The summary is treated as untrusted output: we keep the raw transcript and check that the summary does not introduce instructions the original did not contain.
-
-### Q: Your team edits a bad turn in LangGraph and replays from that checkpoint. After switching to Claude Opus 5.5, replays start failing with 400 errors. What happened?
-
-**Strong answer:**
-Opus 5.5 binds each thinking block to the model and to the exact conversation prefix that produced it. Editing an earlier turn changes the prefix, so when the replay sends the old thinking blocks back, the API detects the mismatch and, for accounts created on or after August 31, 2026, returns a 400. The fix is to treat time travel as a fork: strip the thinking blocks after the edit point and let the model reason afresh, or use the `drop_block` behavior under the binding-controls beta while migrating. I would also make the main path append-only, using mid-conversation system messages for corrections instead of edits, so only deliberate debugging sessions pay the cost.
+عملیات ادغام را با یک کاهنده یا ردیوسر (مانند append، union یا last-writer-wins به ازای هر فیلد) تعریف کنید، نه اینکه اجازه دهید شاخه‌ها کلیدهای مشترک را بازنویسی کنند؛ همچنین برای انشعاب به بیرون سقف تعیین کنید: برای مثال، OpenAI Agents API مقدار پیش‌فرض `max_concurrent_subagents` را روی ۶ قرار داده است.
 
 ---
 
-## References
-- [LangGraph persistence and checkpointing documentation](https://docs.langchain.com/oss/python/langgraph/persistence)
-- [Temporal. Amazon Bedrock AgentCore with Temporal Serverless Workers (September 2026)](https://temporal.io/blog/amazon-bedrock-agentcore-with-temporal-serverless-workers)
-- [AWS. The new AgentCore Runtime (September 2026)](https://aws.amazon.com/blogs/machine-learning/the-new-agentcore-runtime-elastic-optimized-and-consistently-fast-starts/)
-- [Anthropic. Preserved thinking (thinking-block binding)](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)
+## سفر در زمان: بازنویسی وضعیت (Time-Travel)
+
+همان‌طور که در [الگوهای انسان در چرخه (Human-in-the-Loop)](../07-agentic-systems/08-human-in-the-loop-patterns.md) بررسی شد، مدیریت وضعیت امکان **مداخله انسانی (Human Intervention)** را فراهم می‌کند.
+- یک توسعه‌دهنده می‌تواند تاریخچه جلسه را مرور کند، یک «نوبت نامناسب» (bad turn) را بیابد، آبجکت وضعیت را در آن برچسب زمانی (timestamp) خاص ویرایش کند، و گراف را از همان نقطه **مجدداً اجرا (Re-run)** نماید.
+- **با بازنویسی مانند یک انشعاب (fork) برخورد کنید، نه یک ویرایش ساده.** در مدل‌های Claude Fable 5.1، Opus 5.5 و Sonnet 5.5، بلوک‌های تفکر (thinking blocks) دقیقاً به پیشوندی مقید هستند که آن‌ها را تولید کرده است. اجرای مجدد از یک چک‌پوینت ویرایش‌شده در حالی که بلوک‌های تفکر قدیمی هنوز به آن پیوست هستند، در حساب‌های ایجادشده در تاریخ ۳۱ اوت ۲۰۲۶ یا پس از آن منجر به خطای 400 می‌شود (یا تحت گزینه بتای `drop_block`، این بلوک‌ها را حذف می‌کند). از نقطه ویرایش، بازپخش را با فراخوانی‌های تازه مدل انجام دهید و شاخه اصلی را برای بازرسی و حسابرسی (audit) نگه دارید.
 
 ---
 
-*Next: [Section 09: Frameworks and Tools](../09-frameworks-and-tools/01-langchain-deep-dive.md)*
+## سوالات مصاحبه
+
+### پرسش: چرا به‌جای یک «حلقه While» ساده، از یک ماشین وضعیت «مبتنی بر گراف» (LangGraph) برای Agentها استفاده کنیم؟
+
+**پاسخ قوی:**
+یک حلقه While **مبهم و شکننده (Opaque and Brittle)** است. شما نمی‌توانید به‌راحتی منطق را مصورسازی کنید، و مدیریت خطا به کلافی سردرگم از دستورات شرطی if تودرتو تبدیل می‌شود. رویکرد مبتنی بر گراف، **مشاهده‌پذیر و ماژولار (Observable and Modular)** است. شما می‌توانید کل جریان (به‌عنوان یک نمودار Mermaid) را مصورسازی کنید، گره‌های منفرد را تحت تست واحد قرار دهید، و قابلیت‌های پیچیده‌ای مانند «عقب‌گرد» (Backtracking) یا «اجرای موازی» (Parallel execution) را صرفاً با افزودن یال‌های جدید پیاده‌سازی نمایید. همچنین این رویکرد **ماندگاری وضعیت (State Persistence)** را به امری ساده تبدیل می‌کند زیرا فریم‌ورک ذخیره‌سازی و بارگذاری بین گره‌ها را مدیریت می‌نماید. نکته متقابل صادقانه این است: برای یک Agent منفرد با یک حلقه ابزار ساده، معمولاً یک حلقه while به‌همراه یک چک‌پوینت بادوام کفایت می‌کند؛ پیچیدگی گراف زمانی موجه است که شاخه‌ها، وقفه‌های انسانی (human interrupts)، یا زیر-Agentهای موازی داشته باشید.
+
+### پرسش: چگونه از «تورم وضعیت» (State Bloat) در جلسات طولانی‌مدت Agent جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+ما از **هرس وضعیت (State Pruning)** و **خلاصه‌سازی پیام‌ها (Message Summarization)** استفاده می‌کنیم. به‌جای حمل کل دیکشنری `tool_results` در تمام طول گراف، به‌محض تکمیل یک زیر-وظیفه (sub-task) آن را هرس کرده و صرفاً ارجاعی به خروجی کامل در حافظه ذخیره‌سازی نگه می‌داریم. برای فهرست `messages`، هنگامی که تاریخچه از یک آستانه Token عبور می‌کند، آن را فشرده (compact) می‌سازیم؛ ترجیحاً با فشرده‌سازی خود ارائه‌دهنده (که کش پیشوند یا prefix caching و بلوک‌های تفکر را معتبر نگه می‌دارد)، نه یک خلاصه‌ساز دست‌ساز که نوبت‌های قبلی را بازنویسی کند. با این خلاصه به‌عنوان یک خروجی غیرقابل اعتماد برخورد می‌شود: ما رونوشت خام (raw transcript) را نگه می‌داریم و بررسی می‌کنیم که خلاصه حاوی دستورالعمل‌هایی نباشد که در نسخه اصلی وجود نداشتند.
+
+### پرسش: تیم شما یک نوبت نامناسب (bad turn) را در LangGraph ویرایش کرده و از آن چک‌پوینت بازپخش (replay) انجام می‌دهد. پس از تغییر مدل به Claude Opus 5.5، بازپخش‌ها با خطای 400 مواجه می‌شوند. چه اتفاقی رخ داده است؟
+
+**پاسخ قوی:**
+مدل Opus 5.5 هر بلوک تفکر (thinking block) را به مدل و به پیشوند دقیق مکالمه که آن را تولید کرده، مقید (bind) می‌کند. ویرایش یک نوبت قبلی، پیشوند را تغییر می‌دهد؛ بنابراین وقتی بازپخش، بلوک‌های تفکر قدیمی را به API بازمی‌گرداند، API این عدم تطابق را تشخیص داده و برای حساب‌های ایجادشده در تاریخ ۳۱ اوت ۲۰۲۶ یا پس از آن، خطای 400 برمی‌گرداند. راهکار این است که با سفر در زمان مانند یک انشعاب برخورد کنید: بلوک‌های تفکر بعد از نقطه ویرایش را حذف کنید تا مدل مجدداً استدلال کند، یا در حین مهاجرت از رفتار `drop_block` تحت نسخه بتای binding-controls بهره ببرید. من همچنین مسیر اصلی را فقط‌افزودنی (append-only) می‌کردم و برای اصلاحات به‌جای ویرایش، از پیام‌های سیستمیِ اواسط گفت‌وگو استفاده می‌کردم تا تنها جلسات دیباگ عمدی متحمل این هزینه شوند.
+
+---
+
+## منابع
+- [مستندات ماندگاری و چک‌پوینت‌گذاری LangGraph](https://docs.langchain.com/oss/python/langgraph/persistence)
+- [Temporal. وبلاگ Amazon Bedrock AgentCore با کارگران سرورلس Temporal (سپتامبر ۲۰۲۶)](https://temporal.io/blog/amazon-bedrock-agentcore-with-temporal-serverless-workers)
+- [AWS. ران‌تایم جدید AgentCore (سپتامبر ۲۰۲۶)](https://aws.amazon.com/blogs/machine-learning/the-new-agentcore-runtime-elastic-optimized-and-consistently-fast-starts/)
+- [Anthropic. تفکر حفظ‌شده (اتصال بلوک تفکر - thinking-block binding)](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)
+
+---
+
+*بعدی: [بخش ۰۹: فریم‌ورک‌ها و ابزارها](../09-frameworks-and-tools/01-langchain-deep-dive.md)*
+
+</div>

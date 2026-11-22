@@ -1,90 +1,94 @@
-# Short-Term Context Management
+<div dir="rtl">
 
-Short-term context (L1 Memory) is the high-speed interface where reasoning happens. Managing it well is no longer about "message lists" but about **KV Cache Optimization**, **Dynamic Context Allocation**, and keeping the conversation in a shape the provider can cache and the model can keep reasoning over.
+# مدیریت زمینه (Context) کوتاه‌مدت
 
-## Table of Contents
+زمینه کوتاه‌مدت (Short-term context یا حافظه L1)، رابط پرسرعتی است که استدلال در آن رخ می‌دهد. مدیریت بهینه آن دیگر صرفاً به معنای «لیست پیام‌ها» نیست، بلکه درباره **بهینه‌سازی KV Cache**، **تخصیص پویای زمینه (Dynamic Context Allocation)** و حفظ مکالمه در ساختاری است که ارائه‌دهنده بتواند آن را کش کند و مدل بتواند به استدلال روی آن ادامه دهد.
 
-- [The Context Lifecycle](#the-context-lifecycle)
-- [KV Cache Tiling and PagedAttention](#kv-cache-tiling)
-- [Prefix Caching (System Prompt Preservation)](#prefix-caching)
-- [Sliding Windows vs. Summarization](#sliding-windows-vs-summarization)
-- [Contextual Compression (Selective Dropping)](#contextual-compression)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The Context Lifecycle
-
-Context goes through three stages:
-1. **Intake**: User query + recent history + system instructions.
-2. **Processing**: The GPU computes the KV cache for the new tokens.
-3. **Eviction**: Removing old tokens to make room for new ones once the limit is reached.
-
-On hosted APIs you do not control eviction directly; you control what you send. On the newest Claude models that has a constraint: earlier turns must not be edited, or the thinking blocks after them are invalidated. Eviction there happens through provider compaction or context editing, not by rewriting the message list (see [Context Engineering](../05-prompting-and-context/05-context-engineering.md#append-only-context-thinking-is-bound-to-the-conversation)).
+- [چرخه حیات زمینه](#the-context-lifecycle)
+- [تایل‌بندی KV Cache و PagedAttention](#kv-cache-tiling)
+- [کش کردن پیشوند (حفظ System Prompt)](#prefix-caching)
+- [پنجره‌های لغزان در برابر خلاصه‌سازی](#sliding-windows-vs-summarization)
+- [فشرده‌سازی زمینه‌ای (حذف انتخابی)](#contextual-compression)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## KV Cache Tiling
+## چرخه حیات زمینه (The Context Lifecycle)
 
-Modern inference engines (vLLM, SGLang, TensorRT-LLM) use **PagedAttention** or an equivalent block-based allocator.
-- **Idea**: Instead of allocating a contiguous block of GPU memory for the context, memory is broken into **Blocks** (pages).
-- **Efficiency**: The vLLM paper measured that earlier serving systems wasted 60-80% of KV cache memory to fragmentation and over-reservation; paging cut the waste to under 4%, allowing significantly larger batch sizes and longer context windows on the same hardware.
-- **Tiers**: the KV cache now spills from GPU HBM to host DRAM and then to local disk, object storage, or peer nodes (vLLM added a disk tier in v0.28.0; SGLang's HiCache spans GPU, CPU, and storage), so a long session's prefix can survive eviction from the GPU. See [PagedAttention](../04-inference-optimization/05-paged-attention.md) and [KV Cache and Context Caching](../04-inference-optimization/02-kv-cache-and-context-caching.md).
+زمینه سه مرحله را طی می‌کند:
+1. **ورود (Intake)**: پرس‌وجوی کاربر + تاریخچه اخیر + دستورالعمل‌های سیستم (System instructions).
+2. **پردازش (Processing)**: واحد پردازش گرافیکی (GPU) مقادیر KV cache را برای Tokenهای جدید محاسبه می‌کند.
+3. **تخلیه (Eviction)**: حذف Tokenهای قدیمی برای باز کردن فضا برای موارد جدید پس از رسیدن به سقف محدودیت.
 
----
-
-## Prefix Caching
-
-This is the **Holy Grail of Latency** for any production LLM stack.
-- **The Problem**: Every time an agent calls an LLM, it sends the same 2,000-token System Prompt + 50 Tool Schemas. This wastes compute.
-- **The Solution**: **Persistent Prefix Caching**. The server keeps the KV cache for the "Static" part of the prompt (the prefix) in memory.
-- **Result**: You only pay full price for (and wait for) the compute on the *new* part of the message. Hosted cache reads now cost about 0.02x to 0.25x of the input price depending on the model (0.1x on most).
-- **Multi-tenant caution (self-hosted)**: a shared prefix cache is a timing side channel, because a cache hit is measurably faster. vLLM's control is a per-request `cache_salt`, so cache entries are only shared within a tenant; set it wherever prompts contain private data. The salt has to survive every code path: vLLM v0.30.0 fixed GHSA-935w-9g4m-p28p, where tool-continuation turns on one Responses API path dropped `cache_salt` and reopened the cross-tenant oracle. The current security floor is v0.32.0 (October 18, 2026), which also fixes CVE-2026-115912 and CVE-2026-115915, so run that or later.
+در APIهای میزبانی‌شده (Hosted APIs)، شما تخلیه را مستقیماً کنترل نمی‌کنید؛ بلکه آنچه را که ارسال می‌کنید تحت کنترل دارید. در جدیدترین مدل‌های Claude این موضوع با یک قید و محدودیت همراه است: نوبت‌های قبلی نباید ویرایش شوند، در غیر این صورت بلوک‌های تفکر (Thinking blocks) پس از آن‌ها نامعتبر (Invalidated) می‌شوند. در این حالت، تخلیه از طریق فشرده‌سازی ارائه‌دهنده (Provider compaction) یا ویرایش زمینه (Context editing) انجام می‌گیرد، نه از طریق بازنویسی لیست پیام‌ها (به [مهندسی زمینه (Context Engineering)](../05-prompting-and-context/05-context-engineering.md#append-only-context-thinking-is-bound-to-the-conversation) مراجعه کنید).
 
 ---
 
-## Sliding Windows vs. Summarization
+## تایل‌بندی KV Cache (KV Cache Tiling)
 
-| Method | Mechanics | Pro | Con |
-|--------|-----------|-----|-----|
-| **Sliding Window** | Keep last N tokens exactly. | High fidelity for recent. | "Dory" effect (forgets start). |
-| **Summarization** | Compress old turns into text. | Preserves "Key Facts". | Loses nuance/formatting. |
-| **Hybrid** | Keep last 10 turns + 1 summary. | Best of both worlds. | Slightly higher complexity. |
-| **Provider compaction** | The API summarizes old turns and returns a compaction block you send back (Claude API, beta; on-demand mode added September 14, 2026). | Keeps prefix-caching and thinking-block rules intact. | Less control over what is kept; the summary is a trust boundary, so keep the raw transcript. |
+موتورهای استنتاج (Inference) مدرن (مانند vLLM، SGLang و TensorRT-LLM) از **PagedAttention** یا یک تخصیص‌دهنده مبتنی بر بلوک معادل استفاده می‌کنند.
+- **ایده**: به جای تخصیص یک بلوک پیوسته از حافظه GPU برای زمینه، حافظه به **بلوک‌ها (Blocks)** (صفحات یا Pages) شکسته می‌شود.
+- **کارایی**: مقاله vLLM اندازه‌گیری کرده است که سیستم‌های سرویس‌دهی اولیه، ۶۰ تا ۸۰ درصد از حافظه KV cache را به دلیل تکه‌تکه شدن (Fragmentation) و رزرو بیش از حد ظرفیت (Over-reservation) هدر می‌دادند؛ صفحه‌بندی (Paging) این هدررفت را به زیر ۴ درصد رساند و امکان استفاده از اندازه‌های Batch به‌مراتب بزرگ‌تر و پنجره‌های زمینه طولانی‌تر را روی همان سخت‌افزار فراهم کرد.
+- **سطوح حافظه (Tiers)**: اکنون KV cache از حافظه HBM پردازنده گرافیکی (GPU) به حافظه DRAM میزبان و سپس به دیسک محلی، ذخیره‌سازی شیءمحور (Object storage) یا گره‌های همتا (Peer nodes) سرریز (Spill) می‌شود (vLLM در نسخه v0.28.0 یک سطح دیسک اضافه کرد؛ و HiCache در SGLang سطوح GPU، CPU و فضای ذخیره‌سازی را پوشش می‌دهد)، بنابراین پیشوند (Prefix) یک نشست طولانی می‌تواند پس از تخلیه از GPU نیز باقی بماند. به [PagedAttention](../04-inference-optimization/05-paged-attention.md) و [KV Cache و Context Caching](../04-inference-optimization/02-kv-cache-and-context-caching.md) مراجعه کنید.
 
 ---
 
-## Contextual Compression
+## کش کردن پیشوند (Prefix Caching)
 
-Current frontier stacks support several forms of **selective dropping**:
-- **Clear stale tool results**: provider context editing (for example, Anthropic's `clear_tool_uses` strategy) removes old tool outputs and thinking blocks server-side, instead of you deleting them from the message list.
-- **Offload large outputs**: persist a 20K-token search result to a file and keep a one-line reference in context.
-- **Token Pruning**: Using a smaller model (LLMLingua-2 style) to compress a long retrieved document or user message before it reaches the "Reasoning" model. Apply it only to volatile, uncached content.
-
----
-
-## Interview Questions
-
-### Q: What is the difference between "Model Context Window" and "Application Context Window"?
-
-**Strong answer:**
-The **Model Context Window** is the hard limit defined by the architecture (e.g., 128K for GPT-4o, 1.05M for GPT-6.1 Sol). The **Application Context Window** is a configuration set by the engineer (e.g., 64K limit) to manage **Latency and Cost**. In production, we rarely use the full model window for every turn because attention overhead increases with context size, leading to slower generation, and quality degrades well before the limit (context rot). We use a **Buffer Zone** to leave space for the model's response, which on reasoning models must include the thinking tokens, since they count against `max_tokens`.
-
-### Q: How does "Prefix Caching" change how you design System Prompts?
-
-**Strong answer:**
-It forces me to move **Static content to the front** and **Dynamic content to the back**. Early-LLM patterns often put the user's name or date at the very top. That breaks the prefix cache. I put "Immutable Rules" and "Tool Schemas" at the beginning and the "User Context" (which changes every turn) at the end. This ensures the first 5,000 tokens are identical across all users, maximizing cache hits on the inference server. When tools or instructions must change mid-session, I append the change (a mid-conversation system message, or an inline tool addition on Claude) rather than editing the prefix, and I track cache hit rate as an SLO now that both OpenAI and Anthropic expose cache diagnostics.
+این قابلیت، **جام مقدس کاهش تاخیر (Latency)** برای هر استک تولیدی (Production) مبتنی بر LLM است.
+- **مسئله**: هر بار که یک Agent مدلی از نوع LLM را فراخوانی می‌کند، همان System Prompt به اندازه ۲,۰۰۰ Token به همراه ۵۰ اسکیمای ابزار (Tool Schema) را ارسال می‌نماید. این کار محاسبات را هدر می‌دهد.
+- **راه‌حل**: **کش پایدار پیشوند (Persistent Prefix Caching)**. سرور، KV cache را برای بخش «ایستا» (Static) از Prompt (یعنی همان پیشوند) در حافظه نگه می‌دارد.
+- **نتیجه**: شما تنها هزینه کامل محاسبات بخش *جدید* پیام را می‌پردازید (و در انتظار پردازش آن می‌مانید). خواندن کش میزبانی‌شده (Hosted cache reads) اکنون بسته به مدل، حدود 0.02x تا 0.25x قیمت ورودی هزینه دارد (در اکثر مدل‌ها 0.1x).
+- **هشدار چندمستاجری (multi-tenant) (خودمیزبان)**: یک کش پیشوند مشترک، یک کانال جانبی زمان‌بندی (Timing side channel) محسوب می‌شود؛ زیرا اصابت به کش (Cache hit) به شکل قابل‌اندازه‌گیری سریع‌تر است. سازوکار کنترلی vLLM یک `cache_salt` به ازای هر درخواست است، به طوری که ورودی‌های کش فقط در داخل یک مستاجر (tenant / multi-tenant) به اشتراک گذاشته می‌شوند؛ هر جا که Promptها شامل داده‌های محرمانه هستند، آن را تنظیم کنید. این salt باید در تمام مسیرهای کد باقی بماند: vLLM نسخه v0.30.0 آسیب‌پذیری GHSA-935w-9g4m-p28p را رفع کرد، که در آن نوبت‌های ادامه‌یافته ابزار در یک مسیر Responses API، مقدار `cache_salt` را حذف می‌کردند و مجدداً روزنه نشت اطلاعات میان‌مستاجری (cross-tenant / multi-tenant oracle) را باز می‌کردند. حداقل سطح امنیتی فعلی نسخه v0.32.0 (۱۸ اکتبر ۲۰۲۶) است که CVE-2026-115912 و CVE-2026-115915 را نیز اصلاح می‌کند؛ بنابراین از این نسخه یا نسخه‌های پس از آن استفاده نمایید.
 
 ---
 
-## References
-- Kwon et al. "Efficient Memory Management for Large Language Model Serving with PagedAttention" (SOSP 2023)
-- Zheng et al. "SGLang: Efficient Execution of Structured Language Model Programs" (RadixAttention, 2024)
-- NVIDIA. "Optimizing Inference with TensorRT-LLM" (2025)
-- Anthropic. "Prompt Caching: Scale while reducing costs" (2024/2025)
-- [Claude API release notes (compaction, context editing)](https://platform.claude.com/docs/en/release-notes/overview)
+## پنجره‌های لغزان در برابر خلاصه‌سازی (Sliding Windows vs. Summarization)
+
+| روش (Method) | سازوکار (Mechanics) | مزایا (Pro) | معایب (Con) |
+|---|---|---|---|
+| **پنجره لغزان (Sliding Window)** | نگهداری دقیق N تا Token آخر. | وفاداری بالا به محتوای اخیر. | اثر «دوری» ("Dory" effect - فراموشی ابتدای گفتگو). |
+| **خلاصه‌سازی (Summarization)** | فشرده‌سازی نوبت‌های قدیمی به متن. | حفظ «حقایق کلیدی» (Key Facts). | از دست رفتن ظرافت‌ها و قالب‌بندی (Nuance/formatting). |
+| **رویکرد ترکیبی (Hybrid)** | نگهداری ۱۰ نوبت آخر + ۱ خلاصه. | بهره‌مندی از مزایای هر دو روش. | پیچیدگی اندکی بالاتر. |
+| **فشرده‌سازی ارائه‌دهنده (Provider compaction)** | سرویس API نوبت‌های قدیمی را خلاصه کرده و یک بلوک فشرده‌سازی (Compaction block) برمی‌گرداند که شما آن را بازپس می‌فرستید (Claude API، نسخه بتا؛ حالت درخواستی (On-demand) در ۱۴ سپتامبر ۲۰۲۶ اضافه شد). | قوانین Prefix Caching و بلوک‌های تفکر (Thinking-block) را دست‌نخورده نگه می‌دارد. | کنترل کمتر بر آنچه نگهداری می‌شود؛ خلاصه یک مرز اعتماد (Trust boundary) است، بنابراین رونوشت خام (Raw transcript) را نگه دارید. |
 
 ---
 
-*Next: [Long-Term Memory](03-long-term-memory.md)*
+## فشرده‌سازی زمینه‌ای (Contextual Compression)
+
+استک‌های پیشرو فعلی از چندین شکل **حذف انتخابی (Selective dropping)** پشتیبانی می‌کنند:
+- **پاک‌سازی نتایج بیات و قدیمی ابزارها (Clear stale tool results)**: ویرایش زمینه ارائه‌دهنده (به عنوان مثال، استراتژی `clear_tool_uses` در Anthropic) خروجی‌های قدیمی ابزار و بلوک‌های تفکر را در سمت سرور حذف می‌کند، به جای اینکه شما آن‌ها را از لیست پیام‌ها پاک کنید.
+- **تخلیه خروجی‌های حجیم (Offload large outputs)**: ذخیره پایدار یک نتیجه جستجوی ۲۰ هزار Tokenای (20K-token) در یک فایل و نگهداری یک ارجاع تک‌خطی به آن در زمینه.
+- **هرس Token (Token Pruning)**: استفاده از یک مدل کوچک‌تر (به سبک LLMLingua-2) برای فشرده‌سازی یک سند بازیابی‌شده طولانی یا پیام کاربر قبل از رسیدن به مدل «استدلال» (Reasoning). این روش را تنها برای محتوای متغیر و کش‌نشده اعمال کنید.
+
+---
+
+## سوالات مصاحبه
+
+### پرسش: تفاوت بین «پنجره زمینه مدل» (Model Context Window) و «پنجره زمینه برنامه» (Application Context Window) چیست؟
+
+**پاسخ قوی:**
+**پنجره زمینه مدل (Model Context Window)** محدودیت سختی است که توسط معماری مدل تعریف می‌شود (مانند 128K برای GPT-4o یا 1.05M برای GPT-6.1 Sol). اما **پنجره زمینه برنامه (Application Context Window)** پیکربندی تعیین‌شده توسط مهندس است (مانند سقف 64K) تا **تاخیر (Latency) و هزینه** را مدیریت کند. در محیط پروداکشن، ما به ندرت از کل پنجره مدل برای هر نوبت استفاده می‌کنیم، زیرا سربار توجه (Attention overhead) با افزایش اندازه زمینه بیشتر می‌شود، سرعت تولید را کاهش می‌دهد و کیفیت پاسخ‌ها نیز بسیار پیش از رسیدن به سقف محدودیت افت می‌کند (فرسودگی زمینه یا Context rot). ما از یک **ناحیه حائل (Buffer Zone)** استفاده می‌کنیم تا فضا برای پاسخ مدل باقی بماند؛ این فضا در مدل‌های استدلالی باید Tokenهای تفکر (Thinking tokens) را نیز در بر بگیرد، چرا که آن‌ها نیز بخشی از سقف `max_tokens` شمرده می‌شوند.
+
+### پرسش: «کش کردن پیشوند» (Prefix Caching) چگونه نحوه طراحی System Promptها را تغییر می‌دهد؟
+
+**پاسخ قوی:**
+این ویژگی مرا ملزم می‌کند که **محتوای ایستا (Static) را به ابتدا** و **محتوای پویا (Dynamic) را به انتها** منتقل کنم. الگوهای اولیه LLM معمولاً نام کاربر یا تاریخ را در بالاترین نقطه قرار می‌دادند که این کار کش پیشوند را باطل می‌کرد. من «قوانین تغییرناپذیر» (Immutable Rules) و «اسکیماهای ابزار» (Tool Schemas) را در ابتدا، و «زمینه کاربر» (User Context را که در هر نوبت تغییر می‌کند) در انتهای پیام قرار می‌دهم. این کار تضمین می‌کند که ۵,۰۰۰ Token اول برای تمام کاربران یکسان باشد و اصابت به کش (Cache hits) روی سرور استنتاج (Inference) به حداکثر برسد. هنگامی که ابزارها یا دستورالعمل‌ها باید در میانه نشست تغییر کنند، به جای ویرایش پیشوند، تغییرات را اضافه می‌کنم (یک پیام سیستمی در میانه مکالمه، یا افزودن ابزار به صورت درون‌خطی در Claude). همچنین اکنون که هر دو سرویس OpenAI و Anthropic ابزارهای تشخیصی کش را ارائه می‌دهند، نرخ اصابت به کش را به عنوان یک SLO پیگیری و رصد می‌کنم.
+
+---
+
+## منابع
+- مقاله Kwon و همکاران تحت عنوان "Efficient Memory Management for Large Language Model Serving with PagedAttention" (SOSP 2023)
+- مقاله Zheng و همکاران تحت عنوان "SGLang: Efficient Execution of Structured Language Model Programs" (RadixAttention, 2024)
+- مستندات NVIDIA تحت عنوان "Optimizing Inference with TensorRT-LLM" (2025)
+- مستندات Anthropic تحت عنوان "Prompt Caching: Scale while reducing costs" (2024/2025)
+- [یادداشت‌های انتشار Claude API (فشرده‌سازی، ویرایش زمینه)](https://platform.claude.com/docs/en/release-notes/overview)
+
+---
+
+*بخش بعدی: [حافظه بلندمدت](03-long-term-memory.md)*
+
+</div>

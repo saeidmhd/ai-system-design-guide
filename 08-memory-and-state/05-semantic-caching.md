@@ -1,117 +1,121 @@
-# Semantic Caching
+<div dir="rtl">
 
-Caching has evolved from exact string matching to **Semantic Matching**. Semantic caching reuses completions for "equivalent" queries, cutting latency from seconds to milliseconds on a hit. The savings depend entirely on how repetitive your traffic is: FAQ-style support traffic can see large reductions, while open-ended agent work rarely repeats. It is also distinct from provider prompt caching, which discounts repeated *input* rather than skipping the call.
+# کش معنایی (Semantic Caching)
 
-## Table of Contents
+فرایند کش‌کردن (Caching) از تطابق دقیق رشته‌ای (Exact String Matching) به **تطابق معنایی (Semantic Matching)** تکامل یافته است. کش معنایی پاسخ‌های تولیدشده (Completions) را برای پرس‌وجوهای «معادل» مجدداً استفاده می‌کند و در صورت اصابت به کش (Hit)، تاخیر (Latency) را از چند ثانیه به چند میلی‌ثانیه کاهش می‌دهد. میزان صرفه‌جویی حاصل کاملاً به میزان تکراری بودن ترافیک شما بستگی دارد: ترافیک پشتیبانی مبتنی بر سوالات متداول (FAQ) می‌تواند شاهد کاهش‌های چشمگیری باشد، در حالی که فعالیت‌های باز و بدون ساختار در Agentها به‌ندرت تکرار می‌شوند. همچنین این سازوکار با Prompt Caching ارائه‌دهندگان متفاوت است؛ چرا که آن روش به جای نادیده گرفتن و صرف‌نظر کردن از کل فراخوانی، برای *ورودی‌های* تکراری تخفیف اعمال می‌کند.
 
-- [Exact Cache vs. Semantic Cache](#exact-cache-vs-semantic-cache)
-- [Semantic Cache vs. Provider Prompt Cache](#semantic-cache-vs-provider-prompt-cache)
-- [The Semantic Matching Pipeline](#the-semantic-matching-pipeline)
-- [RedisVL and GPTCache](#redisvl-and-gptcache)
-- [Evaluation: Hit Rate vs. Semantic Drift](#evaluation-hit-rate-vs-semantic-drift)
-- [Multimodal Semantic Caching](#multimodal-semantic-caching)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [کش دقیق در برابر کش معنایی](#exact-cache-vs-semantic-cache)
+- [کش معنایی در برابر Prompt Caching ارائه‌دهنده](#semantic-cache-vs-provider-prompt-cache)
+- [پایپ‌لاین تطابق معنایی](#the-semantic-matching-pipeline)
+- [RedisVL و GPTCache](#redisvl-and-gptcache)
+- [ارزیابی: نرخ اصابت در برابر انحراف معنایی](#evaluation-hit-rate-vs-semantic-drift)
+- [کش معنایی چندحالته (Multimodal)](#multimodal-semantic-caching)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Exact Cache vs. Semantic Cache
+## کش دقیق در برابر کش معنایی
 
-| Feature | Exact Cache (Redis/Memcached) | Semantic Cache (RedisVL/Qdrant) |
+| ویژگی | کش دقیق (Redis/Memcached) | کش معنایی (RedisVL/Qdrant) |
 |---------|-------------------------------|---------------------------------|
-| **Key** | Hashed query string | Query embedding vector |
-| **Match**| 100% string identity | Cosine Similarity > Threshold |
-| **Efficiency**| Low (Minor typos break cache) | High (Understands intent) |
-| **Risk** | Zero | Semantic Drift (Returning wrong answer) |
+| **کلید (Key)** | رشته هش‌شده پرس‌وجو | بردار امبدینگ پرس‌وجو |
+| **تطابق (Match)**| همسانی ۱۰۰٪ رشته‌ای | شباهت کسینوسی > آستانه (Cosine Similarity > Threshold) |
+| **کارایی (Efficiency)**| پایین (اشتباهات تایپی جزئی کش را از کار می‌اندازند) | بالا (قصد و نیت را درک می‌کند) |
+| **ریسک (Risk)** | صفر | انحراف معنایی (Semantic Drift) (بازگرداندن پاسخ نادرست) |
 
 ---
 
-## Semantic Cache vs. Provider Prompt Cache
+## کش معنایی در برابر Prompt Caching ارائه‌دهنده
 
-These solve different problems and stack well together:
+این دو روش مسائل متفاوتی را حل می‌کنند و به‌خوبی در کنار یکدیگر قرار می‌گیرند:
 
-| | Semantic cache (yours) | Provider prompt cache |
+| | کش معنایی (متعلق به شما) | Prompt Caching ارائه‌دهنده |
 |---|------------------------|-----------------------|
-| **What is reused** | The whole response | The KV cache of a repeated input prefix |
-| **Saves** | The entire LLM call: input, output, and latency | Input cost and prefill time only |
-| **Discount** | 100% on a hit | Cache reads at 0.1x input on most models, 0.05x on Claude Opus 5.5, Claude Sonnet 5.5, GPT-6.1 Sol and GPT-6.1 Terra, 0.025x on Claude Fable 5.1 |
-| **Correctness risk** | A near-match can return the wrong answer | None: the model still generates a fresh answer |
-| **Best for** | Repetitive questions with stable answers | Long shared prefixes: system prompts, tools, documents |
+| **آنچه مجدداً استفاده می‌شود** | کل پاسخ | کش KV مربوط به پیشوند ورودی تکراری |
+| **میزان صرفه‌جویی** | کل فراخوانی LLM: ورودی، خروجی و تاخیر (Latency) | تنها هزینه ورودی و زمان پیش‌تکمیل (Prefill) |
+| **تخفیف** | ۱۰۰٪ در صورت اصابت به کش (Hit) | خواندن از کش با ضریب 0.1x ورودی در اکثر مدل‌ها، 0.05x در Claude Opus 5.5، Claude Sonnet 5.5، GPT-6.1 Sol و GPT-6.1 Terra، و 0.025x در Claude Fable 5.1 |
+| **ریسک صحت و درستی** | یک تطابق نزدیک ممکن است پاسخ اشتباه بازگرداند | صفر: مدل همچنان یک پاسخ تازه تولید می‌کند |
+| **بهترین کاربرد برای** | سوالات تکراری با پاسخ‌های پایدار | پیشوندهای مشترک طولانی: Promptهای سیستم، ابزارها، اسناد |
 
-Deep prompt-cache discounts shrank the case for semantic caching on input-heavy workloads: if most of a request's cost is a long shared prefix, the provider cache already removes 90% or more of it with no drift risk. Semantic caching still wins when **output tokens or latency** dominate, because only a response cache skips generation entirely.
-
----
-
-## The Semantic Matching Pipeline
-
-1. **Embed**: The incoming query is converted into a vector (e.g., using `text-embedding-3-small`).
-2. **Search**: Search the cache for the nearest neighbor, filtered by tenant and permission scope.
-3. **Threshold Check**: If `distance < 0.05` (very similar), return the cached result.
-4. **LLM Verification**: For high-stakes queries, a small "Verifier Model" (e.g., GPT-6 Luna, Claude Haiku 5.5, Gemini 3.8 Flash) checks if the cached response actually answers the new query.
-5. **Update**: If no hit, call the LLM and store the new result in the vector cache.
-
-**The cache key must include scope.** A response generated from user A's documents, permissions, or memory must never be served to user B, however similar the question. Partition the cache by tenant (and by permission set where answers depend on access), and never cache responses that embed personal data unless the partition is per user.
+تخفیف‌های چشمگیر Prompt Cache کاربرد کش معنایی را در بارهای کاری با ورودی سنگین (input-heavy workloads) کاهش داده است: اگر بخش عمده هزینه یک درخواست مربوط به یک پیشوند مشترک طولانی باشد، کش ارائه‌دهنده در حال حاضر ۹۰٪ یا بیشتر از آن را بدون هیچ‌گونه ریسک انحراف معنایی حذف می‌کند. با این حال، کش معنایی همچنان زمانی که **Tokenهای خروجی یا تاخیر (Latency)** غالب هستند برتری دارد؛ زیرا تنها یک کش پاسخ (Response Cache) است که مرحله تولید را به‌طور کامل رد می‌کند.
 
 ---
 
-## RedisVL and GPTCache
+## پایپ‌لاین تطابق معنایی
 
-Standard stack:
-- **RedisVL**: Provides low-latency vector search directly within a Redis instance.
-- **Hybrid Caching**: Using Redis for both metadata (keys) and vector payloads.
-- **TTL**: Semantic caches should have a TTL (Time-To-Live). The common pattern is **Dynamic TTL**: popular answers live longer while "stale" information is evicted regularly.
-- **Invalidate on change**: version the cache by model ID, system prompt version, and source-data version, so a prompt change or a document update cannot serve answers generated under the old ones.
+1. **امبدینگ (Embed)**: پرس‌وجوی ورودی به یک بردار تبدیل می‌شود (مثلاً با استفاده از `text-embedding-3-small`).
+2. **جستجو (Search)**: کش برای نزدیک‌ترین همسایه جستجو می‌شود که بر اساس مستأجر (multi-tenant) و دامنه مجوزها (Permission Scope) فیلتر شده است.
+3. **بررسی آستانه (Threshold Check)**: اگر `distance < 0.05` باشد (بسیار مشابه)، نتیجه کش‌شده بازگردانده می‌شود.
+4. **تأیید توسط LLM (LLM Verification)**: برای پرس‌وجوهای با حساسیت بالا، یک «مدل اعتبارسنج» کوچک (مانند GPT-6 Luna، Claude Haiku 5.5، Gemini 3.8 Flash) بررسی می‌کند که آیا پاسخ کش‌شده واقعاً به پرس‌وجوی جدید پاسخ می‌دهد یا خیر.
+5. **به‌روزرسانی (Update)**: اگر اصابتی رخ ندهد (Miss)، LLM فراخوانی می‌شود و نتیجه جدید در کش برداری ذخیره می‌گردد.
+
+**کلید کش باید شامل دامنه (Scope) باشد.** پاسخی که از اسناد، مجوزها یا حافظه کاربر A تولید شده است، هر چقدر هم که سوال مشابه باشد، هرگز نباید به کاربر B ارائه شود. کش را بر اساس مستأجر (multi-tenant) (و بر اساس مجموعه‌مجوزها در جایی که پاسخ‌ها به سطح دسترسی وابسته‌اند) پارتیشن‌بندی کنید، و هرگز پاسخ‌هایی را که حاوی داده‌های شخصی هستند کش نکنید، مگر اینکه پارتیشن‌بندی به ازای هر کاربر (per-user) انجام شده باشد.
 
 ---
 
-## Evaluation: Hit Rate vs. Semantic Drift
+## RedisVL و GPTCache
 
-Measure the cache like a classifier, because every hit is a prediction that two queries are equivalent:
+پشته استاندارد (Standard Stack):
+- **RedisVL**: امکان جستجوی برداری با تاخیر کم را مستقیماً درون یک نمونه Redis فراهم می‌کند.
+- **کش‌کردن ترکیبی (Hybrid Caching)**: استفاده از Redis برای متادیتا (کلیدها) و بار مفید برداری (Vector Payloads).
+- **TTL**: کش‌های معنایی باید دارای TTL (یا همان Time-To-Live / طول عمر) باشند. الگوی رایج **TTL پویا (Dynamic TTL)** است: پاسخ‌های پرطرفدار بیشتر در حافظه باقی می‌مانند در حالی که اطلاعات «بیات» (stale) به‌طور منظم حذف (Evict) می‌شوند.
+- **نامعتبرسازی در صورت تغییر (Invalidate on change)**: کش را بر اساس شناسه مدل (Model ID)، نسخه Prompt سیستم و نسخه داده‌های منبع نسخه‌گذاری کنید، تا تغییر یک Prompt یا به‌روزرسانی اسناد نتواند به ارائه پاسخ‌های تولیدشده تحت نسخه‌های قدیمی منجر شود.
 
-| Metric | What it tells you |
+---
+
+## ارزیابی: نرخ اصابت در برابر انحراف معنایی
+
+کش را مانند یک دسته‌بند (Classifier) ارزیابی و اندازه‌گیری کنید؛ زیرا هر اصابت به کش (Hit) در واقع پیش‌بینی این است که دو پرس‌وجو با یکدیگر معادل هستند:
+
+| معیار | آنچه به شما می‌گوید |
 |--------|-------------------|
-| **Hit rate** | Share of requests served from cache (the savings side) |
-| **False-hit rate** | Share of hits where the cached answer is wrong for the new query, measured by sampling hits and grading them with a judge or humans |
-| **Latency on hit and on miss** | A miss pays embedding plus vector search on top of the LLM call |
-| **Staleness** | Share of hits served after the underlying data changed |
+| **نرخ اصابت (Hit rate)** | سهم درخواست‌های ارائه‌شده از کش (جنبه صرفه‌جویی) |
+| **نرخ اصابت کاذب (False-hit rate)** | سهم اصابت‌هایی که در آن‌ها پاسخ کش‌شده برای پرس‌وجوی جدید نادرست است؛ با نمونه‌گیری از اصابت‌ها و امتیازدهی توسط یک قاضی (Judge) یا انسان‌ها سنجیده می‌شود |
+| **تاخیر در اصابت و عدم اصابت (Latency on hit and on miss)** | در صورت عدم اصابت (Miss)، علاوه بر فراخوانی LLM، هزینه امبدینگ به‌علاوه جستجوی برداری نیز پرداخت می‌شود |
+| **کهنگی (Staleness)** | سهم اصابت‌های ارائه‌شده پس از تغییر داده‌های زیربنایی |
 
-Tune the threshold on a labeled set of query pairs (equivalent and not equivalent) to the false-hit rate the product can tolerate, then let the hit rate fall where it falls. A cache with a 40% hit rate and a 0.1% false-hit rate is a better product than one with 70% hits and 5% wrong answers.
-
----
-
-## Multimodal Semantic Caching
-
-With natively multimodal models (Gemini 3.8 Flash, GPT-6.1 Sol, Claude Opus 5.5), we now cache **Image and Audio queries**.
-- **Visual Similarity**: Caching the description of an image if a semantically similar image was processed before.
-- **Audio Fingerprinting**: Caching transcripts for similar voice commands.
+آستانه شباهت را روی مجموعه‌ای برچسب‌گذاری‌شده از جفت‌های پرس‌وجو (معادل و غیرمعادل) متناسب با نرخ اصابت کاذبی که محصول توان تحمل آن را دارد تنظیم (Tune) کنید، سپس اجازه دهید نرخ اصابت در هر حدی که حاصل می‌شود قرار گیرد. کشی با نرخ اصابت ۴۰٪ و نرخ اصابت کاذب ۰.۱٪، محصول به مراتب بهتری از کشی با ۷۰٪ اصابت و ۵٪ پاسخ اشتباه است.
 
 ---
 
-## Interview Questions
+## کش معنایی چندحالته (Multimodal Semantic Caching)
 
-### Q: What is "Semantic Drift" in caching, and how do you prevent it?
-
-**Strong answer:**
-Semantic Drift occurs when the similarity threshold is too loose (e.g., 0.8 instead of 0.95). A query like *"How do I fix my car?"* might match a cached response for *"How do I wash my car?"*. To prevent this, we use **Multi-Stage Validation**: 1) Vector similarity check, 2) **Entity-Match check** (ensures both queries involve "Car" and the same "Verb"), and 3) **Threshold Tightening**: for technical or medical queries, we require $>0.98$ similarity to return a cached result. We also sample hits continuously and grade them, so the false-hit rate is a tracked metric rather than an assumption.
-
-### Q: Why is a Semantic Cache sometimes *more* expensive than a raw LLM call at low volume?
-
-**Strong answer:**
-Because every request, hit or miss, pays the cache's overhead: an embedding call and a vector search. The embedding itself is nearly free (`text-embedding-3-small` is $0.02 per 1M tokens, so a 50-token query costs about a millionth of a dollar), but the search adds latency, often 5 to 20 ms in-process and more across a network, plus the cost of running and maintaining the cache. At a low hit rate, most requests pay that overhead and still call the LLM, so median latency gets worse and the savings are small. Add the false-hit risk and the engineering cost, and semantic caching only becomes a clear win at **High Scale** with repetitive traffic, where the hit rate is high enough to offset the "Embedding Tax."
-
-### Q: You already use provider prompt caching. Should you also add a semantic cache?
-
-**Strong answer:**
-It depends on where the cost sits. Prompt caching discounts the repeated input prefix (reads at 0.1x or less of the input price) with no correctness risk, so for agent workloads that are input-dominated it captures most of the savings already. A semantic cache skips the call entirely, so it pays off when output tokens and latency dominate and the questions repeat: support FAQs, product lookups, documentation answers. I would check the traffic first: cluster a week of queries, estimate the hit rate at a threshold tuned for an acceptable false-hit rate, and compare the projected savings against the drift risk and the per-tenant partitioning work. Often the answer is a semantic cache for a narrow, high-volume intent and prompt caching everywhere else.
+با وجود مدل‌های اصالتاً چندحالته (مانند Gemini 3.8 Flash، GPT-6.1 Sol و Claude Opus 5.5)، اکنون ما **پرس‌وجوهای تصویر و صوت** را نیز کش می‌کنیم.
+- **شباهت بصری (Visual Similarity)**: کش‌کردن توصیف یک تصویر در صورتی که تصویری از نظر معنایی مشابه قبلاً پردازش شده باشد.
+- **انگشت‌نگاری صوتی (Audio Fingerprinting)**: کش‌کردن متن پیاده‌شده (Transcripts) برای دستورات صوتی مشابه.
 
 ---
 
-## References
+## سوالات مصاحبه
+
+### پرسش: «انحراف معنایی» (Semantic Drift) در کش‌کردن چیست و چگونه از آن جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+انحراف معنایی زمانی رخ می‌دهد که آستانه شباهت بیش از حد آسان‌گیرانه باشد (مثلاً 0.8 به جای 0.95). در این حالت، پرس‌وجویی مانند *«چگونه ماشینم را تعمیر کنم؟»* ممکن است با پاسخ کش‌شده برای *«چگونه ماشینم را بشویم؟»* تطابق پیدا کند. برای جلوگیری از این مشکل، ما از **اعتبارسنجی چندمرحله‌ای (Multi-Stage Validation)** استفاده می‌کنیم: ۱) بررسی شباهت برداری، ۲) **بررسی تطابق موجودیت‌ها (Entity-Match check)** (تضمین می‌کند که هر دو پرس‌وجو شامل «ماشین» و همان «فعل» یکسان باشند)، و ۳) **سخت‌گیرانه‌تر کردن آستانه (Threshold Tightening)**: برای پرس‌وجوهای فنی یا پزشکی، برای بازگرداندن نتیجه کش‌شده به شباهت $>0.98$ نیاز داریم. ما همچنین اصابت‌ها را به‌طور مداوم نمونه‌گیری کرده و به آن‌ها امتیاز می‌دهیم تا نرخ اصابت کاذب به جای یک فرض، یک معیار اندازه‌گیری‌شده و تحت نظر باشد.
+
+### پرسش: چرا یک کش معنایی در حجم‌های پایین گاهی اوقات *گران‌تر* از یک فراخوانی خام LLM تمام می‌شود؟
+
+**پاسخ قوی:**
+زیرا هر درخواست، چه اصابت کند و چه نکند (Hit or Miss)، هزینه بالاسری (Overhead) کش را پرداخت می‌کند: یک فراخوانی امبدینگ و یک جستجوی برداری. خود امبدینگ تقریباً رایگان است (`text-embedding-3-small` برابر با ۰.۰۲ دلار به ازای هر ۱ میلیون Token است، بنابراین یک پرس‌وجوی ۵۰-Token حدوداً یک‌میلیونیوم دلار هزینه دارد)، اما جستجو به تاخیر (Latency) می‌افزاید؛ اغلب ۵ تا ۲۰ میلی‌ثانیه به صورت درون‌فرآیندی (in-process) و حتی بیشتر در بستر شبکه، به علاوه هزینه اجرا و نگهداری خود کش. در نرخ‌های پایین اصابت، بیشتر درخواست‌ها آن هزینه بالاسری را متحمل می‌شوند و همچنان ناچار به فراخوانی LLM هستند؛ بنابراین میانه تاخیر بدتر شده و میزان صرفه‌جویی ناچیز خواهد بود. با افزودن ریسک اصابت کاذب و هزینه‌های مهندسی، کش معنایی تنها در **مقیاس بالا (High Scale)** با ترافیک تکراری به یک برتری قطعی تبدیل می‌شود؛ جایی که نرخ اصابت به اندازه کافی بالا است تا «مالیات امبدینگ» (Embedding Tax) را جبران کند.
+
+### پرسش: شما در حال حاضر از Prompt Caching ارائه‌دهنده استفاده می‌کنید. آیا باید یک کش معنایی نیز اضافه کنید؟
+
+**پاسخ قوی:**
+این موضوع به این بستگی دارد که عمده هزینه در کجا قرار دارد. مکانیزم Prompt Caching برای پیشوند ورودی تکراری تخفیف اعمال می‌کند (خواندن از کش با نرخ 0.1x یا کمتر از قیمت ورودی) بدون اینکه هیچ ریسکی برای درستی پاسخ وجود داشته باشد؛ بنابراین برای بارهای کاری Agentها که مبتنی بر ورودی سنگین هستند، بخش اعظم صرفه‌جویی را از قبل به دست می‌آورد. در مقابل، یک کش معنایی کل فراخوانی را رد می‌کند؛ بنابراین زمانی بازدهی دارد که Tokenهای خروجی و تاخیر (Latency) عامل اصلی باشند و سوالات تکرار شوند: سوالات متداول پشتیبانی، جستجوی مشخصات محصولات، پاسخ‌های مستندات. من ابتدا ترافیک را بررسی می‌کنم: پرس‌وجوهای یک هفته را خوشه‌بندی کرده، نرخ اصابت را بر اساس آستانه‌ای که برای یک نرخ اصابت کاذب قابل‌قبول تنظیم شده تخمین می‌زنم، و صرفه‌جویی پیش‌بینی‌شده را با ریسک انحراف معنایی و کار لازم برای پارتیشن‌بندی به ازای هر مستأجر (multi-tenant) مقایسه می‌کنم. در اغلب موارد، پاسخ عبارت است از یک کش معنایی برای یک قصد و نیت مشخص و پرترافیک، و استفاده از Prompt Caching برای سایر بخش‌ها.
+
+---
+
+## منابع
 - Redis. "RedisVL: Python Client for Redis Vector Library" (2025)
 - Bang, F. "GPTCache: An Open-Source Semantic Cache for LLM Applications Enabling Faster Answers and Cost Savings" (NLP-OSS 2023)
-- [OpenAI. Prompt caching guide](https://developers.openai.com/api/docs/guides/prompt-caching)
-- See also [FinOps and Token Economics](../11-infrastructure-and-mlops/04-finops-and-token-economics.md) for provider cache pricing.
+- [راهنمای Prompt Caching در OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching)
+- همچنین برای مشاهده قیمت‌گذاری کش ارائه‌دهندگان، بخش [FinOps و اقتصاد Token](../11-infrastructure-and-mlops/04-finops-and-token-economics.md) را ببینید.
 
 ---
 
-*Next: [State Management Patterns](06-state-management-patterns.md)*
+*بعدی: [الگوهای مدیریت وضعیت (State Management Patterns)](06-state-management-patterns.md)*
+
+</div>

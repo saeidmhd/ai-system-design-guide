@@ -1,126 +1,130 @@
-# Memory Architectures
+<div dir="rtl">
 
-LLM memory has evolved from "history buffers" to a **Three-Tiered Cognitive Architecture**. This hierarchy mimics human cognitive systems (L1-L3) to balance speed, cost, and recall capacity. Production agent stacks now lean on dedicated memory layers (Mem0, Zep, Letta, Cognee) or on the memory features of managed agent platforms rather than rolling their own, and in 2026 a third substrate joined vectors and graphs: **plain files**, versioned in git and navigated by path. For the agent-centric four-layer view (adding procedural memory), see [Agent Memory and State](../07-agentic-systems/05-agent-memory-and-state.md).
+# معماری‌های حافظه
 
-## Table of Contents
+حافظه LLM از «بافرهای تاریخچه» (history buffers) به یک **معماری شناختی سه سطحی** (Three-Tiered Cognitive Architecture) تکامل یافته است. این سلسله‌مراتب برای ایجاد تعادل میان سرعت، هزینه و ظرفیت بازیابی، از سیستم‌های شناختی انسان (L1 تا L3) الگوبرداری می‌کند. پشته‌های Agent در محیط پروداکشن (تولید) اکنون به جای توسعه راه‌حل‌های اختصاصی خود، بر لایه‌های حافظه اختصاصی (مانند Mem0، Zep، Letta و Cognee) یا ویژگی‌های حافظه در پلتفرم‌های مدیریت‌شده Agent تکیه می‌کنند؛ و در سال ۲۰۲۶، بستر سومی به بردارها و گراف‌ها پیوست: **فایل‌های متنی ساده** (plain files) که با git نسخه‌بندی شده و بر اساس مسیر (path) پیمایش می‌شوند. برای دیدگاه چهارلایه‌ای Agent-محور (با افزودن حافظه رویه‌ای)، [حافظه و وضعیت Agent](../07-agentic-systems/05-agent-memory-and-state.md) را ببینید.
 
-- [The Three-Tiered Hierarchy](#the-three-tiered-hierarchy)
-- [Tier 1: Working Memory (L1)](#tier-1-working-memory-l1)
-- [Tier 2: Episodic Memory (L2)](#tier-2-episodic-memory-l2)
-- [Tier 3: Semantic Memory (L3)](#tier-3-semantic-memory-l3)
-- [File-Based Memory: Retrieval by Path](#file-based-memory-retrieval-by-path)
-- [Memory Consolidation Patterns](#memory-consolidation-patterns)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [سلسله‌مراتب سه سطحی](#the-three-tiered-hierarchy)
+- [سطح ۱: حافظه کاری (L1)](#tier-1-working-memory-l1)
+- [سطح ۲: حافظه رویدادی (L2)](#tier-2-episodic-memory-l2)
+- [سطح ۳: حافظه معنایی (L3)](#tier-3-semantic-memory-l3)
+- [حافظه مبتنی بر فایل: بازیابی بر اساس مسیر](#file-based-memory-retrieval-by-path)
+- [الگوهای تثبیت حافظه](#memory-consolidation-patterns)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Three-Tiered Hierarchy
+## سلسله‌مراتب سه سطحی
 
-| Tier | Type | Human Analogy | Technology | Latency |
+| سطح | نوع | تشبیه انسانی | فناوری | تاخیر (Latency) |
 |------|------|---------------|------------|---------|
-| **L1** | Working Memory | Immediate focus | Context Window / KV Cache | <50ms |
-| **L2** | Episodic Memory | Past experiences | Vector DB / raw trajectory logs | 100-300ms |
-| **L3** | Semantic Memory | General knowledge | Fact store (Mem0), temporal graph (Zep/Graphiti), SQL, memory files | >500ms |
+| **L1** | حافظه کاری (Working Memory) | تمرکز فوری | Context Window / KV Cache | <50ms |
+| **L2** | حافظه رویدادی (Episodic Memory) | تجربیات گذشته | پایگاه داده برداری (Vector Database) / لاگ‌های خام مسیر | 100-300ms |
+| **L3** | حافظه معنایی (Semantic Memory) | دانش عمومی | مخزن حقایق (Mem0)، گراف زمانی (Zep/Graphiti)، SQL، فایل‌های حافظه | >500ms |
 
 ---
 
-## Tier 1: Working Memory (L1)
+## سطح ۱: حافظه کاری (L1)
 
-L1 is the **active focus** of the model.
-- **Context Window**: about 1M tokens on current frontier models (Claude Opus 5.5 and Sonnet 5.5 at 1M, GPT-6.1 Sol at 1.05M, Gemini 4 Argon at 1M shared with output); fast tiers match it (Gemini 3.8 Flash at 1,048,576, GPT-6 Luna at 1.05M); 128K to 1M on open-weight models.
-- **KV Cache**: The GPU "RAM" that stores pre-computed keys and values.
-- **Management Strategy**: **Sliding Windows**, **Compaction**, and **Prefix Caching** (vLLM/PagedAttention, SGLang RadixAttention).
-- **Redundancy Note**: We only keep the most recent turns and critical system instructions in L1.
-
----
-
-## Tier 2: Episodic Memory (L2)
-
-L2 stores "What happened previously" in this session or past sessions with this user.
-- **Storage**: Vector databases (Pinecone, Weaviate, Qdrant), with raw logs in object storage.
-- **Retrieval**: Semantic search. If the user asks "What did we talk about last Tuesday?", L2 provides the answer.
-- **Pattern**: **Experience Replay**. Agents retrieve successful past trajectories to guide current decisions.
+سطح L1، **تمرکز فعال** مدل است.
+- **Context Window**: حدود ۱ میلیون Token در مدل‌های پیشرو (frontier) فعلی (Claude Opus 5.5 و Sonnet 5.5 با ۱M، مدل GPT-6.1 Sol با ۱.۰۵M، مدل Gemini 4 Argon با ۱M مشترک با خروجی)؛ سطوح سریع نیز با آن برابری می‌کنند (Gemini 3.8 Flash با ۱,۰۴۸,۵۷۶، GPT-6 Luna با ۱.۰۵M)؛ و ۱۲۸K تا ۱M در مدل‌های با وزن باز (open-weight).
+- **KV Cache**: همان «RAM» در GPU است که کلیدها و مقادیر (keys and values) از پیش محاسبه‌شده را ذخیره می‌کند.
+- **استراتژی مدیریت (Management Strategy)**: **پنجره‌های لغزان (Sliding Windows)**، **فشرده‌سازی (Compaction)**، و **Prefix Caching** (مانند vLLM/PagedAttention و SGLang RadixAttention).
+- **نکته افزونگی (Redundancy Note)**: ما فقط جدیدترین نوبت‌ها (turns) و دستورالعمل‌های سیستمی حیاتی را در L1 نگه می‌داریم.
 
 ---
 
-## Tier 3: Semantic Memory (L3)
+## سطح ۲: حافظه رویدادی (L2)
 
-L3 stores **Durable Facts** and **Learned Rules** that should hold until something supersedes them.
-- **Knowledge Graphs**: Store relationships (e.g., `User` -- `WORKS_FOR` --> `Company_X`), with validity intervals when "when did this become true?" matters (Zep/Graphiti).
-- **Mem0**: An open-source library and managed platform that extracts facts (e.g., "User likes Dark Mode") and makes them available across sessions. Since v2.0.0 (April 2026) it stores them in your vector store with a parallel entity index rather than a graph database.
-- **Truth Anchoring**: L3 acts as the "Ground Truth" when L1 and L2 provide conflicting information, which only works if conflicts are resolved somewhere (at write time, in a scheduled consolidation job, or at read time).
+سطح L2 «آنچه قبلاً رخ داده است» را در این نشست (session) یا نشست‌های گذشته با این کاربر ذخیره می‌کند.
+- **ذخیره‌سازی**: پایگاه‌های داده برداری (Vector Databases مانند Pinecone، Weaviate، Qdrant) به همراه لاگ‌های خام در فضای ذخیره‌سازی ابری شیء (object storage).
+- **بازیابی**: جستجوی معنایی (Semantic search). اگر کاربر بپرسد «سه‌شنبه گذشته درباره چه چیزی صحبت کردیم؟»، L2 پاسخ را فراهم می‌کند.
+- **الگو**: **بازپخش تجربه (Experience Replay)**. در این الگو Agentها مسیرهای موفق گذشته را برای هدایت تصمیمات فعلی بازیابی می‌کنند.
 
 ---
 
-## File-Based Memory: Retrieval by Path
+## سطح ۳: حافظه معنایی (L3)
 
-The biggest architectural shift of 2026 is memory stored as **files the agent reads and edits with ordinary tools**, instead of rows retrieved by embedding similarity.
+سطح L3 **حقایق پایدار** و **قوانین آموخته‌شده‌ای** را ذخیره می‌کند که باید تا زمانی که چیزی جایگزین آن‌ها نشود، معتبر بمانند.
+- **گراف‌های دانش (Knowledge Graphs)**: روابط را ذخیره می‌کنند (مثلاً `User` -- `WORKS_FOR` --> `Company_X`)، همراه با بازه‌های اعتبار زمانی در مواردی که پرسش «این موضوع از چه زمانی درست شد؟» اهمیت دارد (مانند Zep/Graphiti).
+- **پلتفرم Mem0**: یک کتابخانه متن‌باز و پلتفرم مدیریت‌شده که حقایق را استخراج می‌کند (مثلاً «کاربر تم دارک را دوست دارد») و آن‌ها را در طول نشست‌های مختلف در دسترس قرار می‌دهد. از نسخه v2.0.0 (آوریل ۲۰۲۶)، این پلتفرم حقایق را به جای پایگاه داده گرافی، در پایگاه داده برداری شما با یک نمایه موجودیت (entity index) موازی ذخیره می‌کند.
+- **لنگر حقیقت (Truth Anchoring)**: در صورت بروز تضاد اطلاعاتی میان L1 و L2، سطح L3 به عنوان «حقیقت مرجع» (Ground Truth) عمل می‌کند؛ این قابلیت تنها زمانی به درستی کار می‌کند که تضادها در جایی (در زمان نوشتن، در یک جاب زمان‌بندی‌شده تثبیت، یا در زمان خواندن) برطرف شوند.
 
-| System | How it works |
+---
+
+## حافظه مبتنی بر فایل: بازیابی بر اساس مسیر
+
+بزرگ‌ترین تحول معماری در سال ۲۰۲۶، حافظه‌ای است که به عنوان **فایل‌هایی که Agent با ابزارهای معمولی می‌خواند و ویرایش می‌کند** ذخیره می‌شود، به جای ردیف‌هایی که با شباهت امبدینگ بازیابی می‌شوند.
+
+| سیستم | نحوه عملکرد |
 |--------|--------------|
-| **Letta MemFS** | Letta archived its MemGPT-era server on August 16, 2026. All agents now use MemFS: long-term memory is a git repository of Markdown files with YAML frontmatter. Files at the memory root load into the system prompt every turn; directories with their own `MEMORY.md` index stay out of context and are signposted. No vector index by default. |
-| **Claude memory tool and Managed Agents memory stores** | A `/memories` directory the model reads and writes through a tool; Managed Agents mount stores per session, and self-hosted sandboxes gained memory stores on August 19, 2026. |
-| **Coding agents** | `CLAUDE.md`, `AGENTS.md`, and skill files: project memory that humans can review in a pull request. |
+| **Letta MemFS** | پلتفرم Letta سرور دوران MemGPT خود را در ۱۶ آگوست ۲۰۲۶ آرشیو کرد. اکنون تمام Agentها از MemFS استفاده می‌کنند: حافظه بلندمدت یک مخزن git از فایل‌های Markdown با YAML frontmatter است. فایل‌های موجود در ریشه حافظه در هر نوبت در Prompt سیستمی بارگذاری می‌شوند؛ دایرکتوری‌هایی که نمایه `MEMORY.md` اختصاصی خود را دارند خارج از زمینه باقی مانده و نشانه‌گذاری (signposted) می‌شوند. به طور پیش‌فرض هیچ ایندکس برداری وجود ندارد. |
+| **ابزار حافظه Claude و مخازن حافظه Managed Agents** | یک دایرکتوری `/memories` که مدل از طریق یک ابزار آن را می‌خواند و در آن می‌نویسد؛ سرویس Managed Agents مخازن را به ازای هر نشست متصل (mount) می‌کند و سندباکس‌های خودمیزبان در ۱۹ آگوست ۲۰۲۶ به مخازن حافظه مجهز شدند. |
+| **Agentهای کدنویسی** | فایل‌های `CLAUDE.md`، `AGENTS.md` و فایل‌های مهارتی (skill files): حافظه پروژه که انسان‌ها می‌توانند در یک Pull Request آن را بررسی و بازبینی کنند. |
 
-**Why it is winning for agents**: humans can read, diff, and review it; git gives versioning and rollback for free; and the agent navigates by structure (index files, directories) rather than hoping the right chunk scores highest. **Where it loses**: large or high-churn fact sets, cross-user aggregation, and fuzzy recall over thousands of episodes, which is still vector territory.
+**چرا این روش برای Agentها برنده میدان است**: انسان‌ها می‌توانند آن را بخوانند، تفاوت‌ها را مقایسه کنند (diff) و بررسی نمایند؛ git قابلیت نسخه‌بندی و بازگشت به عقب (rollback) را بدون هزینه اضافه فراهم می‌کند؛ و Agent به جای امید بستن به اینکه قطعه متن (chunk) مناسب بالاترین امتیاز را کسب کند، بر اساس ساختار (فایل‌های نمایه، دایرکتوری‌ها) مسیر خود را پیدا می‌کند. **نقاط ضعف آن کجاست**: مجموعه‌حقایق بزرگ یا با تغییرات مداوم (high-churn)، تجمیع داده‌ها میان چند کاربر، و بازیابی فازی در میان هزاران رویداد، که همچنان در قلمرو پایگاه‌های داده برداری قرار دارند.
 
 ---
 
-## Memory Consolidation Patterns
+## الگوهای تثبیت حافظه
 
-Memories move between tiers via **Consolidation**:
-1. **Extraction**: An LLM "Reviewer" extracts facts from L1 at the end of a session.
-2. **Indexing**: Facts are stored in L2 (as vectors) and L3 (as facts, graph edges, or memory files).
-3. **Decay**: Old, non-reinforced episodic memories are archived to cold storage or deleted; promoted facts in L3 are superseded, not silently decayed.
+حافظه‌ها از طریق فرایند **تثبیت (Consolidation)** میان سطوح جابجا می‌شوند:
+1. **استخراج (Extraction)**: یک LLM در نقش «بازبین» (Reviewer) در انتهای هر نشست، حقایق را از L1 استخراج می‌کند.
+2. **نمایه‌سازی (Indexing)**: حقایق در L2 (به صورت بردار) و در L3 (به عنوان حقایق، یال‌های گراف، یا فایل‌های حافظه) ذخیره می‌شوند.
+3. **زوال (Decay)**: حافظه‌های رویدادی قدیمی که تقویت نشده‌اند به حافظه سرد آرشیو شده یا حذف می‌گردند؛ حقایق ارتقایافته در L3 منسوخ و جایگزین می‌شوند، نه اینکه به صورت خاموش از بین بروند.
 
-The design axis interviewers now probe is **when** consolidation runs:
+محور طراحی که مصاحبه‌کنندگان اکنون به چالش می‌کشند این است که تثبیت **چه زمانی** اجرا می‌شود:
 
-| Timing | Example | Tradeoff |
+| زمان‌بندی | مثال | بده‌بستان (Tradeoff) |
 |--------|---------|----------|
-| **Write time** | Mem0 v2: one ADD-only extraction call per `add()` | Cheap reads; extraction errors are baked in |
-| **Sleep time** | Anthropic Dreams (research preview), Mem0's Dream (paid plans) | Off the request path; staleness between runs |
-| **Read time** | Just-in-Time Memory (arXiv 2609.27334): keep raw trajectories, curate per task | Beat the strongest write-time baseline by 3.9 to 16.3 success-rate points; curation cost moves onto reads |
+| **زمان نوشتن (Write time)** | نسخه Mem0 v2: یک فراخوانی استخراج ADD-only به ازای هر `add()` | خواندن ارزان؛ خطاهای استخراج تثبیت و ماندگار می‌شوند |
+| **زمان خواب (Sleep time)** | سرویس Anthropic Dreams (پیش‌نمایش تحقیقاتی)، سرویس Dream در Mem0 (پلن‌های پولی) | خارج از مسیر پردازش درخواست؛ احتمال کهنگی داده‌ها (staleness) میان اجراها |
+| **زمان خواندن (Read time)** | حافظه در لحظه نیاز (Just-in-Time Memory، مقاله arXiv 2609.27334): نگهداری مسیرهای خام، گزینش به ازای هر تسک | ۳.۹ تا ۱۶.۳ امتیاز در نرخ موفقیت بهتر از قوی‌ترین خط مبنای زمان نوشتن؛ هزینه گزینش به زمان خواندن منتقل می‌شود |
 
-More memory is not automatically better: on MemTrapBench (arXiv 2608.20202) tasks built to trigger memory traps, every memory strategy it tested underperformed the no-memory setting because correct, relevant memories still caused reasoning fixation. Gate memory injection, and evaluate task success with and without it.
+حافظه بیشتر الزاماً به معنای عملکرد بهتر نیست: در ارزیابی MemTrapBench (مقاله arXiv 2608.20202) با تسک‌هایی که برای فعال کردن تله‌های حافظه طراحی شده‌اند، تمامی استراتژی‌های حافظه آزمایش‌شده عملکرد ضعیف‌تری نسبت به حالت بدون حافظه ثبت کردند؛ چرا که حافظه‌های درست و مرتبط همچنان باعث تثبیت و انجماد استدلال (reasoning fixation) می‌شدند. تزریق حافظه را با دروازه‌های اعتبارسنجی (gate) کنترل کنید و موفقیت تسک را با و بدون آن بسنجید.
 
-The baseline to beat is plain retrieval over raw history. arXiv 2610.30755 ("Is Complex Agentic Memory Always Needed?", October 22, 2026) ran Raw-RAG (dense retrieval plus reranking over the raw conversation log) against 12 memory systems, including Mem0, A-MEM, MemoryOS and MemMachine, on LoCoMo, LongMemEval, MEME and MemoryAgentBench. Raw-RAG ranked first in 6 of 7 benchmark-model settings, by 0.13 to 5.53 points (LoCoMo with GPT-4o-mini: 89.07 vs MemMachine's 88.12), and readers given full access to the transformed memory stores still trailed the raw evidence. The margins are small; the point is that extraction, summarization and graphs often buy nothing, so ship a Raw-RAG baseline first and make every memory layer prove it beats that.
-
----
-
-## Interview Questions
-
-### Q: Why not just use a 1M-token context window for all memory (L1-L3)?
-
-**Strong answer:**
-While possible, it is **Economically and Cognitively inefficient**.
-1. **Cost**: A 1M-token call to Claude Opus 5.5 costs $4.00 of input uncached, or $0.20 even fully cached, on every turn; a 10K-token call with retrieved context costs $0.04. Caching narrowed the gap but did not close it, and OpenAI bills the whole request at long-context rates once input passes 272K tokens.
-2. **Attention Dilution**: Even with "Long Context" models, "Lost in the Middle" and context rot remain factors. If the context is cluttered with irrelevant historical turns, the model's reasoning on the *current* task degrades.
-3. **Latency**: TTFT (Time to First Token) scales with uncached context size, and decoding over a long context is slower per token.
-A staff-level architecture uses **Strategic Retrieval** to keep the context window lean and focused.
-
-### Q: How do you handle "Privacy Leakage" in Tier 3 (Global Semantic Memory)?
-
-**Strong answer:**
-Tier 3 (Semantic Memory) must be **Sharded by Namespace**. Each user or organization gets a unique `namespace_id` in the vector DB and Knowledge Graph, derived from the authenticated identity, never from a caller-supplied label. LangGraph's Postgres and SQLite stores showed why: they joined namespace labels with ".", so `("tenant.bob",)` resolved to the same namespace as `("tenant", "bob")`, and only `put` rejected dotted labels (CVE-2026-115883, October 21, 2026; see [LangGraph Orchestration](../09-frameworks-and-tools/02-langgraph-orchestration.md) for fixed versions). We implement **RLS (Row Level Security)** at the database layer underneath, so a key-construction bug cannot become a cross-tenant read. Additionally, we use a **PII-Scrubbing Layer** during the Consolidation step to ensure that sensitive data (passwords, PII) never moves from the transient L1 context into the persistent L3 knowledge store. If the requirement is that even the operator cannot read the memory, the reference design is client-held keys plus processing in a hardware enclave: Google described (September 23, 2026, as a plan with no product dates) server-side memory for its Private AI Compute platform where storage keys live only on the user's devices, an attested enclave decrypts per request and re-encrypts, and the server software is published to a tamper-proof public record so devices can verify it before sending data. That is the same pattern as Apple's Private Cloud Compute.
-
-### Q: When would you store agent memory as files instead of in a vector database?
-
-**Strong answer:**
-Files when the memory is **small, curated, and needs human oversight**: project conventions, user preferences, procedures, and decisions. A few hundred Markdown files with an index fit the agent's navigation style, every change is a reviewable git diff, and rollback is a revert. That is why Letta moved all agents to git-backed MemFS and why coding agents converged on `CLAUDE.md` and `AGENTS.md`. Vectors when the memory is **large, append-heavy, and recalled fuzzily**: thousands of past conversations or trajectories where you cannot know in advance which ones matter. Most production systems end up with both: files for the semantic and procedural layer, vectors (or raw logs with read-time curation) for the episodic layer. One operational catch with files: deleting a user's data under GDPR means purging git history, not just the current commit.
+خط مبنایی (baseline) که باید شکست داده شود، بازیابی ساده روی تاریخچه خام است. مقاله arXiv 2610.30755 با عنوان «آیا حافظه پیچیده Agentic همیشه مورد نیاز است؟»، ۲۲ اکتبر ۲۰۲۶، روش Raw-RAG (بازیابی متراکم به‌علاوه بازرتبه‌بندی روی لاگ خام مکالمات) را در برابر ۱۲ سیستم حافظه از جمله Mem0، A-MEM، MemoryOS و MemMachine روی بنچ‌مارک‌های LoCoMo، LongMemEval، MEME و MemoryAgentBench آزمایش کرد. روش Raw-RAG در ۶ مورد از ۷ پیکربندی مدل-بنچ‌مارک با اختلاف ۰.۱۳ تا ۵.۵۳ امتیاز رتبه نخست را کسب کرد (در LoCoMo با GPT-4o-mini امتیاز ۸۹.۰۷ در برابر ۸۸.۱۲ برای MemMachine)، و حتی مدل‌های خواننده‌ای که دسترسی کامل به مخازن حافظه تبدیل‌شده داشتند، همچنان عقب‌تر از شواهد خام قرار گرفتند. این اختلاف‌ها اندک است؛ نکته اصلی این است که استخراج، خلاصه‌سازی و گراف‌ها اغلب فایده ملموسی اضافه نمی‌کنند، بنابراین ابتدا یک خط مبنای Raw-RAG پیاده‌سازی کنید و از هر لایه حافظه بخواهید که برتری خود را نسبت به آن اثبات کند.
 
 ---
 
-## References
-- Park et al. "Generative Agents: Interactive Simulacra of Human Behavior" (2023)
-- Packer et al. "MemGPT: Towards LLMs as Operating Systems" (2023)
-- [Mem0 v2.0.0 release notes](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
-- [Letta Code repository (MemFS, git-tracked memory)](https://github.com/letta-ai/letta-code); the retired V1 server lives on the archive branch of [letta-ai/letta](https://github.com/letta-ai/letta).
-- [Just-in-Time Memory (arXiv 2609.27334)](https://arxiv.org/abs/2609.27334)
-- [MemTrapBench (arXiv 2608.20202)](https://arxiv.org/abs/2608.20202)
-- [Is Complex Agentic Memory Always Needed? Naive RAG Is Stronger Than We Thought (arXiv 2610.30755)](https://arxiv.org/abs/2610.30755)
-- [Google DeepMind. "Advancing Private AI Compute with secure server-side memory" (September 2026)](https://deepmind.google/blog/advancing-private-ai-compute-with-secure-server-side-memory/)
+## سوالات مصاحبه
+
+### سوال: چرا فقط از یک Context Window با ظرفیت ۱M Token برای تمام حافظه (L1 تا L3) استفاده نکنیم؟
+
+**پاسخ قوی:**
+اگرچه این کار امکان‌پذیر است، اما **از نظر اقتصادی و شناختی ناکارآمد است**.
+1. **هزینه (Cost)**: یک فراخوانی ۱M Token به Claude Opus 5.5 در هر نوبت، ۴.۰۰ دلار برای ورودی بدون کش (uncached) هزینه دارد، یا حتی در صورت کش کامل، ۰.۲۰ دلار تمام می‌شود؛ در حالی که یک فراخوانی ۱۰K Token با زمینه بازیابی‌شده تنها ۰.۰۴ دلار هزینه خواهد داشت. کشینگ این فاصله را کمتر کرده اما آن را از بین نبرده است، و OpenAI به محض عبور ورودی از ۲۷۲K Token، تمام درخواست را با نرخ‌های مربوط به زمینه طولانی (long-context) محاسبه می‌کند.
+2. **رقیق شدن توجه (Attention Dilution)**: حتی در مدل‌های با زمینه طولانی («Long Context»)، پدیده‌هایی مانند «گم شدن در میانه» (Lost in the Middle) و پوسیدگی زمینه (context rot) همچنان پابرجا هستند. اگر زمینه با نوبت‌های نامرتبط تاریخی شلوغ شود، قدرت استدلال مدل روی تسک *فعلی* تضعیف می‌گردد.
+3. **تاخیر (Latency)**: شاخص زمان تا نخستین Token (معیار TTFT یا Time to First Token) متناسب با اندازه زمینه بدون کش افزایش می‌یابد، و دیکودینگ (decoding) بر روی یک زمینه طولانی به ازای هر Token کندتر است.
+یک معماری در سطح Staff از **بازیابی استراتژیک (Strategic Retrieval)** بهره می‌گیرد تا Context Window را سبک و متمرکز نگه دارد.
+
+### سوال: چگونه «نشت حریم خصوصی» (Privacy Leakage) را در سطح ۳ (حافظه معنایی سراسری) مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+سطح ۳ (حافظه معنایی) باید **بر اساس فضای نام (Namespace) بخش‌بندی (Shard) شود**. هر کاربر یا سازمان یک `namespace_id` یکتا در پایگاه داده برداری (Vector Database) و گراف دانش دریافت می‌کند که از هویت احراز هویت‌شده مشتق شده است و هرگز از برچسب ارائه‌شده توسط فراخوان‌کننده تعیین نمی‌شود. مخازن ذخیره‌سازی Postgres و SQLite در LangGraph دلیل این امر را به خوبی نشان دادند: آن‌ها برچسب‌های فضای نام را با نقطه (".") به هم متصل می‌کردند، بنابراین `("tenant.bob",)` به همان فضای نامی اشاره می‌کرد که `("tenant", "bob")` اشاره داشت، و فقط دستور `put` برچسب‌های دارای نقطه را رد می‌کرد (آسیب‌پذیری CVE-2026-115883، مورخ ۲۱ اکتبر ۲۰۲۶؛ برای نسخه‌های اصلاح‌شده، به [ارکستراسیون LangGraph](../09-frameworks-and-tools/02-langgraph-orchestration.md) مراجعه کنید). ما ویژگی **امنیت در سطح سطر (RLS یا Row Level Security)** را در لایه زیرین پایگاه داده پیاده‌سازی می‌کنیم تا یک باگ در ساخت کلید نتواند به یک خواندن میان چند مستأجر (multi-tenant) تبدیل شود. علاوه بر این، ما در طول مرحله تثبیت از یک **لایه پاک‌سازی اطلاعات هویتی حساس (PII-Scrubbing Layer)** استفاده می‌کنیم تا اطمینان حاصل شود داده‌های حساس (رمزهای عبور، اطلاعات هویتی شخصی یا PII) هرگز از زمینه موقت L1 به مخزن ماندگار دانش L3 منتقل نمی‌شوند. اگر الزام این باشد که حتی اپراتور سیستم نیز نتواند حافظه را بخواند، معماری مرجع استفاده از کلیدهای نگهداری‌شده توسط کلاینت به همراه پردازش در محفظه امن سخت‌افزاری (hardware enclave) است: گوگل (در ۲۳ سپتامبر ۲۰۲۶، به عنوان طرحی بدون تاریخ مشخص محصول) حافظه سمت سرور را برای پلتفرم Private AI Compute خود تشریح کرد که در آن کلیدهای ذخیره‌سازی تنها روی دستگاه‌های کاربر باقی می‌مانند، یک enclave تایید‌شده به ازای هر درخواست داده‌ها را رمزگشایی و دوباره رمزگذاری می‌کند، و نرم‌افزار سرور در یک سند عمومی غیرقابل دستکاری منتشر می‌شود تا دستگاه‌ها بتوانند پیش از ارسال داده‌ها، صحت آن را تایید کنند. این دقیقاً همان الگویی است که Apple در Private Cloud Compute استفاده می‌کند.
+
+### سوال: چه زمانی حافظه Agent را به جای پایگاه داده برداری، به صورت فایل ذخیره می‌کنید؟
+
+**پاسخ قوی:**
+استفاده از فایل زمانی مناسب است که حافظه **کوچک، گزینش‌شده و نیازمند نظارت انسانی** باشد: قراردادهای پروژه، ترجیحات کاربر، رویه‌ها و تصمیمات. چند صد فایل Markdown به همراه یک نمایه (index) به خوبی با شیوه ناوبری Agent سازگار هستند، هر تغییر یک تفاوت (git diff) قابل بررسی است، و بازگشت به نسخه قبل با یک دستور revert انجام می‌شود. به همین دلیل است که Letta تمام Agentها را به سامانه MemFS مبتنی بر git منتقل کرد و Agentهای کدنویسی روی فایل‌های `CLAUDE.md` و `AGENTS.md` همگرا شدند. پایگاه‌های داده برداری زمانی کاربرد دارند که حافظه **بزرگ، با عملیات افزودن مداوم (append-heavy) و نیازمند بازیابی فازی (fuzzy recall)** باشد: مانند هزاران مکالمه یا مسیر گذشته که در آن‌ها نمی‌توانید از قبل بدانید کدام موارد اهمیت خواهند داشت. بیشتر سیستم‌های تولیدی (production) در نهایت از هر دو استفاده می‌کنند: فایل‌ها برای لایه معنایی و رویه‌ای، و بردارها (یا لاگ‌های خام با گزینش در زمان خواندن) برای لایه رویدادی. یک چالش عملیاتی در کار با فایل‌ها این است: حذف داده‌های کاربر بر اساس قوانین GDPR به معنای پاکسازی کامل تاریخچه git است، نه صرفاً حذف در کامیت فعلی.
 
 ---
 
-*Next: [Short-Term Context Management](02-short-term-context.md)*
+## منابع
+- پارک و همکاران. "Generative Agents: Interactive Simulacra of Human Behavior" (2023)
+- پکر و همکاران. "MemGPT: Towards LLMs as Operating Systems" (2023)
+- [یادداشت‌های انتشار Mem0 v2.0.0](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
+- [مخزن کد Letta (سامانه MemFS، حافظه ردیابی‌شده با git)](https://github.com/letta-ai/letta-code)؛ سرور بازنشسته‌شده V1 در شاخه archive از [letta-ai/letta](https://github.com/letta-ai/letta) قرار دارد.
+- [حافظه در لحظه نیاز (Just-in-Time Memory، مقاله arXiv 2609.27334)](https://arxiv.org/abs/2609.27334)
+- [ارزیابی MemTrapBench (مقاله arXiv 2608.20202)](https://arxiv.org/abs/2608.20202)
+- [آیا حافظه پیچیده Agentic همیشه مورد نیاز است؟ Naive RAG قوی‌تر از آن چیزی است که فکر می‌کردیم (arXiv 2610.30755)](https://arxiv.org/abs/2610.30755)
+- [گوگل دیپ‌مایند. "Advancing Private AI Compute with secure server-side memory" (سپتامبر ۲۰۲۶)](https://deepmind.google/blog/advancing-private-ai-compute-with-secure-server-side-memory/)
+
+---
+
+*بخش بعدی: [مدیریت زمینه کوتاه‌مدت](02-short-term-context.md)*
+
+</div>

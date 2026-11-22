@@ -1,31 +1,35 @@
-# Agentic Memory with Mem0
+<div dir="rtl">
 
-**Mem0** (and its peers Zep, Letta, Cognee) represents the shift from "passive logs" to **Active Memory**. These systems automatically digest conversations to create a persistent, evolving user profile that enhances personalization across every interaction. Pick Mem0 for the broadest standalone memory layer; Zep for temporal-aware production pipelines; Letta for long-running agents whose memory should be human-reviewable files (it moved from MemGPT-style paging to git-backed MemFS in 2026); Cognee for knowledge-graph-first RAG.
+# حافظه Agentic با Mem0
 
-## Table of Contents
+**Mem0** (و همتایان آن Zep، Letta و Cognee) نمایانگر گذار از «لاگ‌های غیرفعال» به **حافظه فعال (Active Memory)** است. این سیستم‌ها گفت‌وگوها را به‌طور خودکار هضم و تحلیل (digest) می‌کنند تا یک پروفایل کاربری ماندگار و در حال تکامل بسازند که شخصی‌سازی را در تمام تعاملات بهبود می‌بخشد. Mem0 را برای جامع‌ترین لایه حافظه مستقل (standalone)؛ Zep را برای پایپ‌لاین‌های محیط عملیاتی آگاه از زمان (temporal-aware)؛ Letta را برای Agentهای با اجرای طولانی‌مدت که حافظه آن‌ها باید به‌صورت فایل‌های قابل بررسی توسط انسان باشد (این ابزار در سال ۲۰۲۶ از صفحه‌بندی به سبک MemGPT به MemFS مبتنی بر Git مهاجرت کرد)؛ و Cognee را برای RAG اولویت‌دار بر پایه گراف دانش (knowledge-graph-first) انتخاب کنید.
 
-- [The Mem0 Philosophy](#the-mem0-philosophy)
-- [How it Works: The Digest Loop](#how-it-works-the-digest-loop)
-- [Self-Updating Memories](#self-updating-memories)
-- [Integrating Mem0 with LangGraph](#integrating-mem0-with-langgraph)
-- [Personalization at Scale](#personalization-at-scale)
-- [Choosing a Memory Layer](#choosing-a-memory-layer)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## جدول مطالب
 
----
-
-## The Mem0 Philosophy
-
-Traditional memory stores *everything*.
-Mem0 stores **Insights**.
-Instead of storing "The user said they like blue coffee mugs, but only for work," Mem0 stores a short fact such as "Prefers blue coffee mugs at work," tagged with the user and linked to the entities it mentions.
+- [فلسفه Mem0](#the-mem0-philosophy)
+- [نحوه کار: حلقه هضم و تحلیل](#how-it-works-the-digest-loop)
+- [حافظه‌های خودبه‌روزرسان](#self-updating-memories)
+- [یکپارچه‌سازی Mem0 با LangGraph](#integrating-mem0-with-langgraph)
+- [شخصی‌سازی در مقیاس بالا](#personalization-at-scale)
+- [انتخاب یک لایه حافظه](#choosing-a-memory-layer)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## How it Works: The Digest Loop
+## فلسفه Mem0
 
-Mem0's Python SDK changed its write path in v2.0.0 (April 16, 2026); the current release is v2.2.1 (September 25, 2026).
+حافظه سنتی *همه چیز* را ذخیره می‌کند.
+اما Mem0 **بینش‌ها (Insights)** را ذخیره می‌کند.
+به‌جای ذخیره «کاربر گفت که ماگ‌های قهوه آبی را دوست دارد، اما فقط برای محیط کار»، Mem0 یک حقیقت کوتاه مانند «ماگ‌های قهوه آبی را در محل کار ترجیح می‌دهد» را ذخیره می‌کند که با کاربر برچسب‌گذاری شده و به موجودیت‌هایی که ذکر می‌کند پیوند داده شده است.
+
+---
+
+## نحوه کار: حلقه هضم و تحلیل
+
+مسیر نوشتن در Python SDK مربوط به Mem0 در نسخه v2.0.0 (۱۶ آوریل ۲۰۲۶) تغییر کرد؛ نسخه فعلی v2.2.1 (۲۵ سپتامبر ۲۰۲۶) است.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -38,27 +42,29 @@ flowchart LR
     S -.->|"paid plans: Dream merges, supersedes, and runs scheduled synthesis"| S
 ```
 
-1. **Observe**: The agent sends conversation turns to `add()`.
-2. **Extract**: A single LLM call identifies memorable facts and **adds** them. v2 is ADD-only: there is no compare-and-update or delete pass, only hash deduplication.
-3. **Store**: Facts go into your existing vector store, with entity links in a parallel `{collection}_entities` collection.
-4. **Retrieve**: Semantic similarity, BM25, and entity boosting are fused into one score.
+</div>
 
-**Where did conflict handling go?** The v1 loop compared each new fact with existing ones and updated or deleted conflicting records. In v2 that moved to the platform's **Dream** feature (launched August 4, 2026, Pro and Enterprise only), which merges and supersedes during extraction and runs scheduled synthesis off the request path. If you run the open-source SDK, contradictions ("lives in Berlin", later "moved to Lisbon") both persist, and you must resolve them at read time (prefer recency, show both) or run your own consolidation job.
+1. **مشاهده (Observe)**: Agent نوبت‌های گفت‌وگو را به `add()` ارسال می‌کند.
+2. **استخراج (Extract)**: یک فراخوانی منفرد LLM حقایق به‌یادماندنی را شناسایی کرده و آن‌ها را **اضافه** می‌کند. نسخه v2 فقط افزودنی (ADD-only) است: هیچ مرحله مقایسه و به‌روزرسانی یا حذف وجود ندارد و فقط حذف داده‌های تکراری با هش (hash deduplication) انجام می‌شود.
+3. **ذخیره‌سازی (Store)**: حقایق در پایگاه داده برداری (Vector Database) موجود شما قرار می‌گیرند، همراه با پیوندهای موجودیت در یک مجموعه موازی `{collection}_entities`.
+4. **بازیابی (Retrieve)**: شباهت معنایی، BM25 و تقویت مبتنی بر موجودیت در یک امتیاز واحد با هم ادغام (fused) می‌شوند.
 
----
-
-## Self-Updating Memories
-
-Modern agentic memory is **Recursive**.
-- If a user mentions a task: "I need to finish the budget by Friday."
-- On Thursday, the agent should recall this and ask: "How is the budget coming along?"
-- This is achieved by **Periodic Reflection**: a scheduled job reviews active "Goal Nodes" and generates "Proactive Reminders." Sleep-time consolidation is now a product category: Mem0's Dream on paid plans, and Anthropic's Dreams research preview for Managed Agents memory stores, which writes a reorganized store with duplicates merged and stale entries replaced rather than editing the live one.
+**مدیریت تعارض به کجا منتقل شد؟** حلقه نسخه v1 هر حقیقت جدید را با حقایق موجود مقایسه می‌کرد و رکوردهای دارای تعارض را به‌روزرسانی یا حذف می‌نمود. در v2 این قابلیت به ویژگی **Dream** پلتفرم منتقل شد (راه‌اندازی شده در ۴ اوت ۲۰۲۶، فقط برای پلن‌های Pro و Enterprise)، که در طول استخراج عملیات ادغام و جایگزینی را انجام می‌دهد و سنتز زمان‌بندی‌شده را خارج از مسیر درخواست اجرا می‌کند. اگر از SDK متن‌باز استفاده می‌کنید، هر دو تناقض («ساکن برلین است»، و سپس «به لیسبون نقل مکان کرد») باقی می‌مانند، و شما باید آن‌ها را در زمان خواندن حل کنید (اولویت دادن به جدیدتر بودن، نمایش هر دو) یا فرآیند یکپارچه‌سازی (consolidation job) اختصاصی خود را اجرا نمایید.
 
 ---
 
-## Integrating Mem0 with LangGraph
+## حافظه‌های خودبه‌روزرسان
 
-In a state-machine architecture, Mem0 acts as an **External State Provider**.
+حافظه Agentic مدرن **بازگشتی (Recursive)** است.
+- اگر کاربری به یک وظیفه اشاره کند: «باید تا روز جمعه بودجه را تمام کنم.»
+- در روز پنج‌شنبه، Agent باید این موضوع را به یاد بیاورد و بپرسد: «بودجه چطور پیش می‌رود؟»
+- این امر با **بازاندیشی دوره‌ای (Periodic Reflection)** محقق می‌شود: یک فرآیند زمان‌بندی‌شده، «گره‌های هدف» (Goal Nodes) فعال را بررسی کرده و «یادآورهای پیشگیرانه» (Proactive Reminders) تولید می‌کند. یکپارچه‌سازی در زمان خواب (Sleep-time consolidation) اکنون به یک دسته‌بندی محصول تبدیل شده است: قابلیت Dream در پلن‌های پولی Mem0، و پیش‌نمایش تحقیقاتی Dreams متعلق به Anthropic برای مخازن حافظه Managed Agents، که به‌جای ویرایش مستقیم مخزن زنده، یک مخزن بازسازماندهی‌شده می‌نویسد که داده‌های تکراری در آن ادغام و ورودی‌های قدیمی جایگزین شده‌اند.
+
+---
+
+## یکپارچه‌سازی Mem0 با LangGraph
+
+در یک معماری ماشین وضعیت (state-machine)، ابزار Mem0 به‌عنوان یک **ارائه‌دهنده وضعیت خارجی (External State Provider)** عمل می‌کند.
 
 ```python
 # Conceptual LangGraph node (Mem0 OSS SDK)
@@ -86,50 +92,52 @@ def remember_node(state: AgentState):
 
 ---
 
-## Personalization at Scale
+## شخصی‌سازی در مقیاس بالا
 
-For enterprise apps (millions of users), Mem0 manages:
-- **Consistency**: The AI "remembers" the user's name across the Web App, Mobile App, and Slack Bot.
-- **Friction Reduction**: Not asking the same qualifying questions twice.
+برای برنامه‌های سازمانی (میلیون‌ها کاربر)، Mem0 موارد زیر را مدیریت می‌کند:
+- **سازگاری و یکپارچگی (Consistency)**: هوش مصنوعی نام کاربر را در سراسر وب‌اپلیکیشن، اپلیکیشن موبایل و ربات Slack «به یاد می‌آورد».
+- **کاهش اصطکاک (Friction Reduction)**: نپرسیدن مجدد سوالات احراز صلاحیت مشابه.
 
 ---
 
-## Choosing a Memory Layer
+## انتخاب یک لایه حافظه
 
-| Layer | Substrate | Pick it when |
+| لایه | بستر | چه زمانی آن را انتخاب کنیم |
 |-------|-----------|--------------|
-| **Mem0 v2** | Facts in your vector store plus an entity index | Cross-session personalization; you want one LLM call per write and no extra database |
-| **Zep / Graphiti** | Temporal knowledge graph (`valid_at` / `invalid_at` per edge) | Facts change over time and you need "what was true then?" queries |
-| **Letta (MemFS)** | Git-backed Markdown files, no vector index by default | Long-running agents where humans review and version the memory |
-| **Claude memory tool / Managed Agents memory stores** | Files mounted into the agent's workspace | You already run on Claude Managed Agents or Claude Code-style harnesses |
-| **Cognee** | Knowledge graph built from documents | Memory that is mostly ingested knowledge rather than conversation |
+| **Mem0 v2** | حقایق در پایگاه داده برداری (Vector Database) شما به همراه یک نمایه موجودیت | شخصی‌سازی میان‌نشستی (Cross-session)؛ زمانی که برای هر عملیات نوشتن یک فراخوانی LLM می‌خواهید و نیازی به دیتابیس اضافی ندارید |
+| **Zep / Graphiti** | گراف دانش زمانی (`valid_at` / `invalid_at` به ازای هر یال) | حقایق در طول زمان تغییر می‌کنند و به پرس‌وجوهای «در آن زمان چه چیزی درست بود؟» نیاز دارید |
+| **Letta (MemFS)** | فایل‌های Markdown با پشتیبانی Git، به‌طور پیش‌فرض بدون نمایه برداری | Agentهای با اجرای طولانی‌مدت که در آن‌ها انسان‌ها حافظه را بازبینی و نسخه‌گذاری می‌کنند |
+| **Claude memory tool / Managed Agents memory stores** | فایل‌های مونت‌شده در فضای کاری Agent | از قبل روی Claude Managed Agents یا بسترهای به سبک Claude Code اجرا می‌شوید |
+| **Cognee** | گراف دانش ساخته‌شده از اسناد | حافظه‌ای که بخش عمده آن دانش بارگذاری‌شده است تا مکالمه |
 
-**Evaluate on your own tasks, not vendor tables.** Mem0's DolphinBench (September 22, 2026; 600 tool-using tests over simulated histories of about 500K tokens per persona) is a useful harness, but its results are vendor-reported: Mem0 scored 70.67% versus 65.67% for built-in memory on the Hermes harness with GPT-5.6 Luna, and 32.33% versus 26.33% on Claude Code with Claude Sonnet 5, where Honcho scored higher at 35.83%. Always include a no-memory arm: MemTrapBench found every memory strategy it tested underperformed no memory.
-
----
-
-## Interview Questions
-
-### Q: Why use a dedicated service like Mem0 instead of a custom Python script that writes to Postgres?
-
-**Strong answer:**
-Scale and **Deduplication**, plus retrieval quality. A custom script often creates duplicate records or struggles with **Conflicting Identity Resolution** (e.g., the user is "Om" in Slack but "om.bharatiya" in Discord). Mem0 provides tested extraction prompts, entity linking, hybrid retrieval (semantic, BM25, and entity boosting fused into one score), and per-user scoping. The design question I would raise is **where conflict resolution lives**: Mem0 v2's open-source path is ADD-only, and merging or superseding moved to the paid Dream feature. So "use Mem0" still leaves me to choose between paying for consolidation, writing a nightly job, or resolving contradictions at read time with recency rules.
-
-### Q: How do you handle "Memory Fatigue" where an agent brings up too many irrelevant past details?
-
-**Strong answer:**
-We use **Thresholded Relevance**. Mem0 returns a relevance score for every recalled fact, and we only inject facts above a threshold calibrated on our own eval set; the score is not comparable across versions (v2's fused score is not v1's cosine similarity), so recalibrate on upgrade. Additionally, we use **Negative Retrieval**: the agent is instructed to only use memory if it directly contradicts a potential hallucination or answers a current "Unknown." We also perform **Memory Pruning** where "Low-Value" memories (e.g., "The user mentioned it's raining") are automatically deleted after 24 hours. Finally, I measure task success with memory on and off, because MemTrapBench showed relevant, correct memories can still pull the model toward the wrong answer.
+**ارزیابی را روی وظایف خودتان انجام دهید، نه جداول ارائه‌دهندگان.** آزمون DolphinBench مربوط به Mem0 (۲۲ سپتامبر ۲۰۲۶؛ ۶۰۰ آزمایش مبتنی بر استفاده از ابزار روی تاریخچه‌های شبیه‌سازی‌شده حدود 500K از Tokenها به ازای هر پرسنونا) یک بستر آزمون مفید است، اما نتایج آن توسط ارائه‌دهنده گزارش شده است: Mem0 روی بستر Hermes با GPT-5.6 Luna امتیاز ۷۰.۶۷٪ را در مقایسه با ۶۵.۶۷٪ برای حافظه داخلی کسب کرد، و روی Claude Code با Claude Sonnet 5 امتیاز ۳۲.۳۳٪ در برابر ۲۶.۳۳٪ را به دست آورد، جایی که Honcho با ۳۵.۸۳٪ امتیاز بالاتری ثبت کرد. همیشه یک بازوی بدون حافظه (no-memory arm) را برای مقایسه در نظر بگیرید: بررسی MemTrapBench نشان داد تمام استراتژی‌های حافظه آزمایش‌شده عملکرد ضعیف‌تری نسبت به حالت بدون حافظه داشتند.
 
 ---
 
-## References
-- [Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory (arXiv 2504.19413)](https://arxiv.org/abs/2504.19413)
-- [Mem0 v2.0.0 release notes](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
-- [Mem0 releases (v2.2.1, September 25, 2026)](https://github.com/mem0ai/mem0/releases)
-- [Letta Code repository (MemFS, git-tracked memory)](https://github.com/letta-ai/letta-code); the retired V1 server lives on the archive branch of [letta-ai/letta](https://github.com/letta-ai/letta).
-- [Zep: A Temporal Knowledge Graph Architecture for Agent Memory (arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
-- [MemTrapBench (arXiv 2608.20202)](https://arxiv.org/abs/2608.20202)
+## سوالات مصاحبه
+
+### پرسش: چرا باید به‌جای یک اسکریپت سفارشی Python که در Postgres می‌نویسد، از یک سرویس اختصاصی مانند Mem0 استفاده کنیم؟
+
+**پاسخ قوی:**
+مقیاس‌پذیری و **حذف داده‌های تکراری (Deduplication)**، به‌علاوه کیفیت بازیابی. یک اسکریپت سفارشی اغلب رکوردهای تکراری ایجاد می‌کند یا در **حل هویت متناقض (Conflicting Identity Resolution)** با مشکل مواجه می‌شود (به‌عنوان مثال، کاربر در Slack با نام «Om» و در Discord با نام «om.bharatiya» شناخته می‌شود). Mem0 ابزارهایی شامل Promptهای استخراج آزمایش‌شده، پیوند موجودیت‌ها (entity linking)، بازیابی ترکیبی (شباهت معنایی، BM25 و تقویت موجودیت ادغام‌شده در یک امتیاز واحد) و تفکیک محدوده به ازای هر کاربر را ارائه می‌دهد. پرسش طراحی که من مطرح می‌کنم این است که **محل مدیریت تعارض کجاست**: مسیر متن‌باز Mem0 v2 فقط افزودنی (ADD-only) است و عملیات ادغام یا جایگزینی به ویژگی پولی Dream منتقل شده است. بنابراین «استفاده از Mem0» همچنان من را با این انتخاب مواجه می‌کند که هزینه یکپارچه‌سازی را بپردازم، یک تسک شبانه بنویسم، یا تناقضات را در زمان خواندن با قوانین اولویت تازگی حل کنم.
+
+### پرسش: چگونه با «خستگی حافظه» (Memory Fatigue) که در آن یک Agent جزئیات گذشته نامربوط بیش از حدی را مطرح می‌کند، برخورد می‌کنید؟
+
+**پاسخ قوی:**
+ما از **ارتباط آستانه‌گذاری‌شده (Thresholded Relevance)** استفاده می‌کنیم. Mem0 برای هر حقیقت بازیابی‌شده یک امتیاز ارتباط برمی‌گرداند، و ما تنها حقایقی را تزریق می‌کنیم که امتیازی بالاتر از آستانه کالیبره‌شده روی مجموعه ارزیابی اختصاصی خودمان داشته باشند؛ این امتیاز بین نسخه‌ها قابل مقایسه نیست (امتیاز ادغام‌شده v2 با شباهت کسینوسی v1 یکسان نیست)، بنابراین پس از ارتقای نسخه، آن را مجدداً کالیبره کنید. علاوه بر این، از **بازیابی منفی (Negative Retrieval)** استفاده می‌کنیم: به Agent دستور داده می‌شود که تنها در صورتی از حافظه استفاده کند که مستقیماً با یک توهم (hallucination) احتمالی در تضاد باشد یا به یک «مورد ناشناخته» (Unknown) فعلی پاسخ دهد. ما همچنین **هرس حافظه (Memory Pruning)** را انجام می‌دهیم که در آن حافظه‌های «کم‌ارزش» (مانند «کاربر اشاره کرد که باران می‌بارد») پس از ۲۴ ساعت به‌طور خودکار حذف می‌شوند. در نهایت، من موفقیت وظایف را با فعال و غیرفعال بودن حافظه می‌سنجَم، زیرا MemTrapBench نشان داد حافظه‌های مرتبط و صحیح نیز می‌توانند مدل را به سمت پاسخ اشتباه سوق دهند.
 
 ---
 
-*Next: [Semantic Caching](05-semantic-caching.md)*
+## منابع
+- [Mem0: ساخت Agentهای هوش مصنوعی آماده محیط عملیاتی با حافظه بلندمدت مقیاس‌پذیر (arXiv 2504.19413)](https://arxiv.org/abs/2504.19413)
+- [یادداشت‌های انتشار Mem0 v2.0.0](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
+- [انتشارهای Mem0 (نسخه v2.2.1، ۲۵ سپتامبر ۲۰۲۶)](https://github.com/mem0ai/mem0/releases)
+- [مخزن Letta Code (سیستم MemFS، حافظه ردیابی‌شده با Git)](https://github.com/letta-ai/letta-code)؛ سرور بازنشسته‌شده V1 در شاخه بایگانی [letta-ai/letta](https://github.com/letta-ai/letta) قرار دارد.
+- [Zep: یک معماری گراف دانش زمانی برای حافظه Agent (مقاله arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
+- [پایگاه محک MemTrapBench (مقاله arXiv 2608.20202)](https://arxiv.org/abs/2608.20202)
+
+---
+
+*بعدی: [کَشینگ معنایی](05-semantic-caching.md)*
+
+</div>
