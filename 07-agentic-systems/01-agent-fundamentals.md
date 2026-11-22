@@ -1,106 +1,110 @@
-# Agent Fundamentals
+<div dir="rtl">
 
-Agents are LLM-powered systems that move beyond "chat" into "autonomous problem solving." The definition has shifted from simple ReAct loops to **Closed-Loop Reasoning Systems** that use built-in "System 2" thinking: adaptive thinking with an effort dial on Claude Opus 5.5 and Fable 5.1, five reasoning-effort levels (low to max) on GPT-6 Astra, and thinking levels on Gemini 3.8 Flash.
+# مبانی Agent
 
-## Table of Contents
+Agentها سیستم‌های مبتنی بر LLM هستند که از مرز «چت» فراتر رفته و به سوی «حل مسئله خودمختار» حرکت می‌کنند. این تعریف از حلقه‌های ساده ReAct به سمت **سیستم‌های استدلال حلقه-بسته (Closed-Loop Reasoning Systems)** تغییر یافته است که از تفکر داخلی «سیستم ۲» استفاده می‌کنند: تفکر تطبیقی همراه با درجه تنظیم تلاش (effort dial) در Claude Opus 5.5 و Fable 5.1، پنج سطح تلاش استدلال (از کم تا حداکثر) در GPT-6 Astra، و سطوح تفکر در Gemini 3.8 Flash.
 
-- [The Agent Formula](#the-agent-formula)
-- [System 1 (LLM) vs. System 2 (Reasoning Model)](#system-1-vs-system-2-thinking)
-- [Agency Levels (Autonomous Spectrum)](#agency-levels)
-- [Core Components](#core-components)
-- [The Agent Lifecycle](#the-agent-lifecycle)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [فرمول Agent](#the-agent-formula)
+- [سیستم ۱ (LLM) در برابر سیستم ۲ (Reasoning Model)](#system-1-vs-system-2-thinking)
+- [سطوح عاملیت (طیف خودمختاری)](#agency-levels)
+- [مؤلفه‌های اصلی](#core-components)
+- [چرخه حیات Agent](#the-agent-lifecycle)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Agent Formula
+## فرمول Agent
 
-Modern agency is often described as:
+عاملیت مدرن اغلب به این صورت توصیف می‌شود:
 `Agent = Reasoning Model + Tool Use + Persistent Memory + Environment Feedback`
 
-**Nuance**: In 2023, agents were "wrappers" around chat models. Today, agents are increasingly **Integrated**. Frontier models (Claude Opus 5.5, GPT-6 Astra, Gemini 3.8 Flash) have the "Thinking" process trained in through reinforcement-learning post-training and interleave it between tool calls, making the agent loop more stable and less prone to "stalling."
+**نکته ظریف**: در سال ۲۰۲۳، Agentها صرفاً «پوشش‌هایی» (wrappers) به دور مدل‌های چت بودند. امروزه، Agentها به‌طور فزاینده‌ای **یکپارچه (Integrated)** شده‌اند. مدل‌های پیشرو (Claude Opus 5.5، GPT-6 Astra و Gemini 3.8 Flash) فرایند «تفکر» (Thinking) را از طریق پس‌آموزش یادگیری تقویتی آموزش دیده‌اند و آن را در بین فراخوانی‌های ابزار جای می‌دهند که باعث می‌شود حلقه Agent پایدارتر شده و کمتر مستعد «توقف و درجا زدن» (stalling) باشد.
 
 ---
 
-## System 1 vs. System 2 Thinking
+## تفکر سیستم ۱ در برابر سیستم ۲
 
-Architecting an agent requires choosing the right "Thinking Mode":
+معماری یک Agent مستلزم انتخاب «حالت تفکر» (Thinking Mode) مناسب است:
 
-| Mode | Cognitive Type | Analogy | Current stack (November 2026) |
+| حالت (Mode) | نوع شناختی (Cognitive Type) | تمثیل (Analogy) | پشته فعلی (نوامبر ۲۰۲۶) |
 |------|----------------|---------|---------------|
-| **System 1** | Fast, intuitive, reactive | Reflexes | Claude Haiku 5.5 / GPT-6 Luna / Gemini 3.8 Flash at `low` thinking |
-| **System 2** | Slow, logical, planning | Deliberation | Claude Opus 5.5 or Fable 5.1 at high effort / GPT-6 Astra or GPT-6.1 Sol at high effort or above |
+| **سیستم ۱** | سریع، شهودی، واکنشی | بازتاب‌ها (Reflexes) | Claude Haiku 5.5 / GPT-6 Luna / Gemini 3.8 Flash در تفکر `low` |
+| **سیستم ۲** | کند، منطقی، برنامه‌ریزی‌کننده | تفکر عمیق (Deliberation) | Claude Opus 5.5 یا Fable 5.1 در تلاش بالا / GPT-6 Astra یا GPT-6.1 Sol در تلاش بالا یا بالاتر |
 
-**The Design Pattern**: Use System 1 models for "Fast UI" and "Routing." Use System 2 models for "Decision Gates" and "Complex Planning."
+**الگوی طراحی**: از مدل‌های سیستم ۱ برای «رابط کاربری سریع» (Fast UI) و «مسیریابی» (Routing) استفاده کنید. از مدل‌های سیستم ۲ برای «دروازه‌های تصمیم‌گیری» (Decision Gates) و «برنامه‌ریزی پیچیده» (Complex Planning) بهره ببرید.
 
-A third shape arrived in October 2026: **decision models** (sometimes marketed as "System One models") that return a typed answer, such as a predicate, a choice, or a score, with a probability instead of text, served by a hosted API (OpenAI's Decisions API, GA October 22), by vLLM and SGLang, and locally by Ollama. They fit routers and gates well because the output needs no parsing, but papers report underconfident probabilities, so calibrate thresholds on your own labeled traffic before trusting them. [Research Radar, theme 16](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities) covers the options and failure modes.
+شکل سومی نیز در اکتبر ۲۰۲۶ پدیدار شد: **مدل‌های تصمیم‌گیری (decision models)** (که گاهی تحت عنوان «مدل‌های سیستم یک» به بازار عرضه می‌شوند) که به جای متن، یک پاسخ تایپ‌شده مانند یک گزاره منطقی (predicate)، یک انتخاب یا یک امتیاز را به همراه احتمال بازمی‌گردانند؛ این مدل‌ها توسط یک API میزبانی‌شده (مانند Decisions API شرکت OpenAI، عرضه عمومی در ۲۲ اکتبر)، توسط vLLM و SGLang، و به‌صورت محلی توسط Ollama ارائه می‌شوند. این مدل‌ها برای مسیریاب‌ها و دروازه‌ها بسیار مناسب هستند زیرا خروجی نیازی به تجزیه ندارد، اما مقالات از احتمالات با اطمینان کمتر از حد واقعی (underconfident probabilities) گزارش می‌دهند؛ بنابراین پیش از اعتماد به آن‌ها، آستانه‌ها را روی ترافیک برچسب‌گذاری‌شده خودتان کالیبره کنید. [رادار پژوهش، موضوع ۱۶](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities) گزینه‌ها و حالت‌های شکست را پوشش می‌دهد.
 
-**The line is now a dial, not a model swap.** On the newest frontier models thinking cannot be fully switched off: Opus 5.5 rejects disabling it, Sonnet 5.5's lowest setting is `between_tools`, and GPT-6 Astra has no `none` effort. You set depth per call with the effort parameter, which means effort is part of your agent's configuration and must be pinned. Defaults move under you: Opus 5.5 defaults to `medium` effort where Opus 5 defaulted to `high`, so an unpinned migration silently changes latency and quality.
+**این مرز اکنون یک درجه تنظیم است، نه تعویض مدل.** در جدیدترین مدل‌های پیشرو، تفکر را نمی‌توان به‌طور کامل خاموش کرد: Opus 5.5 غیرفعال‌سازی آن را رد می‌کند، پایین‌ترین تنظیمات Sonnet 5.5 مقدار `between_tools` است، و GPT-6 Astra هیچ سطح تلاش `none` ندارد. شما عمق تفکر را در هر فراخوانی با پارامتر تلاش (effort) تنظیم می‌کنید؛ بدین معنا که تلاش بخشی از پیکربندی Agent شماست و باید پین (ثابت) شود. پیش‌فرض‌ها بدون اطلاع شما تغییر می‌کنند: Opus 5.5 به‌طور پیش‌فرض از تلاش `medium` استفاده می‌کند در حالی که Opus 5 پیش‌فرض `high` داشت؛ بنابراین یک مهاجرت بدون پین کردن، به‌صورت خاموش تاخیر (Latency) و کیفیت را تغییر می‌دهد.
 
-**Harness defaults move too, and they swap the model itself.** OpenAI Agents SDK 0.20.0 made `gpt-5.6-luna` its implicit default model, Codex CLI switched its default to GPT-6.1 Sol on September 29, and Claude Code moved its default Opus and Sonnet to the 5.5 models within days of each launch (and its default Haiku to Haiku 5.5 in 2.1.293, October 2026). Small model swaps carry API changes, too: Haiku 5.5 rejects `temperature`, `top_p`, `top_k`, and assistant prefill, and bills the whole request at 5x once a prompt passes 100,000 tokens. Pin model IDs as well as effort, and re-run evals on every SDK or harness upgrade.
-
----
-
-## Agency Levels
-
-Not every autonomous system is an "Agent." We categorize them by the **Level of Agency**:
-
-1. **L0: Scripted Chains**: Fixed sequence (e.g., standard LangChain).
-2. **L1: Tool-Enabled**: Model picks a tool but doesn't plan.
-3. **L2: ReAct Agent**: Simple loop of "Thought -> Action -> Observation."
-4. **L3: Autonomous Planner**: Decomposes a goal into a graph of sub-tasks.
-5. **L4: Ambient Agent**: Runs in the background, intervenes only when necessary.
-
-L4 became a product category in September 2026: OpenAI's dots (announced September 29) run always-on on their own cloud computer and do only read-only research when idle, Meta's Muse runs in a dedicated cloud VM, and Microsoft's Copilot Autopilot (private preview) gets its own identity, memory, and computer inside the customer tenant. The design questions at L4 shift from "can it finish the task" to tenancy, agent identity, approval policy, and billing.
+**پیش‌فرض‌های مهارکننده (Harness) نیز تغییر می‌کنند و خود مدل را عوض می‌کنند.** نسخه 0.20.0 از OpenAI Agents SDK مدل `gpt-5.6-luna` را به مدل پیش‌فرض ضمنی خود تبدیل کرد، Codex CLI پیش‌فرض خود را در ۲۹ سپتامبر به GPT-6.1 Sol تغییر داد، و Claude Code پیش‌فرض Opus و Sonnet خود را ظرف چند روز پس از عرضه به مدل‌های ۵.۵ منتقل کرد (و مدل پیش‌فرض Haiku خود را در نسخه 2.1.293، در اکتبر ۲۰۲۶ به Haiku 5.5 تغییر داد). تعویض مدل‌های کوچک نیز تغییرات API به همراه دارد: Haiku 5.5 پارامترهای `temperature`، `top_p`، `top_k` و پیش‌پر کردن دستیار (assistant prefill) را رد می‌کند و به محض اینکه یک Prompt از ۱۰۰,۰۰۰ Token بگذرد، کل درخواست را با ضریب 5x محاسبه می‌کند. شناسه‌های مدل را در کنار تلاش (effort) پین کنید و با هر ارتقای SDK یا Harness، ارزیابی‌ها (evals) را مجدداً اجرا نمایید.
 
 ---
 
-## Core Components
+## سطوح عاملیت
 
-### 1. The Reasoning Model (The Executive)
-The CPU of the agent. It determines the "Path to Success."
+هر سیستم خودمختاری یک «Agent» محسوب نمی‌شود. ما آن‌ها را بر اساس **سطح عاملیت (Level of Agency)** دسته‌بندی می‌کنیم:
 
-### 2. Tools (The Limbs)
-Interfaces (APIs, Browsers, DBs) that allow the agent to affect the world.
+1. **سطح L0: زنجیره‌های اسکریپت‌شده (Scripted Chains)**: توالی ثابت (برای مثال، LangChain استاندارد).
+2. **سطح L1: مجهز به ابزار (Tool-Enabled)**: مدل ابزاری را انتخاب می‌کند اما برنامه‌ریزی انجام نمی‌دهد.
+3. **سطح L2: ساختار ReAct Agent**: حلقه ساده‌ای از «تفکر -> اقدام -> مشاهده» ("Thought -> Action -> Observation").
+4. **سطح L3: برنامه‌ریز خودمختار (Autonomous Planner)**: یک هدف را به گرافی از زیروظایف تجزیه می‌کند.
+5. **سطح L4: ساختار Ambient Agent**: در پس‌زمینه اجرا می‌شود و تنها در صورت لزوم مداخله می‌کند.
+
+سطح L4 در سپتامبر ۲۰۲۶ به یک دسته‌بندی محصول تبدیل شد: dots از شرکت OpenAI (معرفی‌شده در ۲۹ سپتامبر) به‌صورت همواره فعال روی رایانه ابری اختصاصی خود اجرا می‌شود و در زمان بیکاری تنها به پژوهش‌های فقط-خواندنی می‌پردازد، Muse از شرکت Meta در یک ماشین مجازی ابری اختصاصی اجرا می‌شود، و Copilot Autopilot از شرکت Microsoft (نسخه پیش‌نمایش خصوصی) هویت، حافظه و رایانه اختصاصی خود را در مستأجر مشتری (customer tenant / multi-tenant) دریافت می‌کند. پرسش‌های طراحی در سطح L4 از «آیا می‌تواند وظیفه را به پایان برساند» به سمت چندمستأجری (tenancy / multi-tenant)، هویت Agent، خط‌مشی تایید و صورت‌حساب تغییر می‌یابد.
+
+---
+
+## مؤلفه‌های اصلی
+
+### ۱. مدل استدلال (The Executive)
+واحد پردازش مرکزی (CPU) مربوط به Agent. این بخش «مسیر موفقیت» را تعیین می‌کند.
+
+### ۲. ابزارها (The Limbs)
+رابط‌هایی (مانند APIها، مرورگرها، پایگاه‌های داده) که به Agent امکان می‌دهند بر جهان پیرامون اثر بگذارند.
 > [!Note]
-> The **Model Context Protocol (MCP)** is now the industry standard for tool interoperability, with adoption from Anthropic, OpenAI, Google, Microsoft, and AWS. Governance moved to the Linux Foundation's Agentic AI Foundation in December 2025; the foundation has also hosted the A2A agent-to-agent protocol since August 2026.
+> اکنون **Model Context Protocol (MCP)** استاندارد صنعتی برای تعامل‌پذیری ابزارهاست و توسط شرکت‌های Anthropic، OpenAI، Google، Microsoft و AWS پذیرفته شده است. حاکمیت آن در دسامبر ۲۰۲۵ به بنیاد هوش مصنوعی عامل‌محور (Agentic AI Foundation) در بنیاد لینوکس واگذار شد؛ این بنیاد همچنین از اوت ۲۰۲۶ میزبان پروتکل Agent-به-Agent موسوم به A2A بوده است.
 
-### 3. Memory (The Experience)
-- **Short-term**: Context window (KV Cache).
-- **Long-term**: Vector DBs, persistent state (e.g., Mem0), or file-based memory (Letta's git-backed MemFS, Claude's memory tool).
-
----
-
-## The Agent Lifecycle
-
-1. **Intake**: Receive user goal.
-2. **Decomposition**: Break goal into sub-steps.
-3. **Execution**: Call tools and handle results.
-4. **Reflection**: Evaluate if the observation got the agent closer to the goal.
-5. **Completion**: Synthesize final proof for the user.
+### ۳. حافظه (The Experience)
+- **کوتاه‌مدت**: پنجره زمینه (Context window / KV Cache).
+- **بلندمدت**: پایگاه‌های داده برداری (Vector Databases)، وضعیت پایدار (مانند Mem0)، یا حافظه مبتنی بر فایل (MemFS پشتیبانی‌شده با git در Letta، ابزار حافظه Claude).
 
 ---
 
-## Interview Questions
+## چرخه حیات Agent
 
-### Q: Why is a "Reasoning Model" (like Claude Opus 5.5 or GPT-6 Astra) better for agency than a standard LLM?
-
-**Strong answer:**
-Standard LLMs (System 1) predict the *very next token* based on pattern matching. When they encounter an error in a tool call, they often hallucinate a fix instead of admitting the failure. Reasoning Models use **Chain-of-Thought (CoT)** during inference, and the current generation thinks between tool calls, not only before the first one. For an agent, this means higher **Path Reliability**: the model is less likely to enter an infinite loop or retry the same failing action because it reasons about the failure before choosing the next step. It is not a substitute for harness guards. Reasoning models still loop, so the harness keeps repetition detectors and budgets regardless (see [Loop Engineering](12-loop-engineering.md)).
-
-### Q: How do you prevent "Agentic Drift" in long-running tasks?
-
-**Strong answer:**
-Agentic Drift occurs when the sub-steps take the agent so far from the original goal that it loses context. The standard solution is **Goal Anchoring**: include the "Original Objective" as a pinned system message and use a **Secondary Observer Model** (a smaller, cheaper model) to score every agent action against the original objective. If the score drops below a threshold, the agent is forced to "re-plan" from the root.
+1. **دریافت (Intake)**: دریافت هدف کاربر.
+2. **تجزیه (Decomposition)**: تقسیم هدف به زیرمراحل.
+3. **اجرا (Execution)**: فراخوانی ابزارها و مدیریت نتایج.
+4. **بازتاب (Reflection)**: ارزیابی اینکه آیا مشاهده انجام‌شده، Agent را به هدف نزدیک‌تر کرده است یا خیر.
+5. **تکمیل (Completion)**: تدوین اثبات نهایی برای کاربر.
 
 ---
 
-## References
-- Kahneman, D. "Thinking, Fast and Slow" (2011), the source of the System 1 / System 2 framing
-- OpenAI. "Learning to Reason with LLMs" (2024)
-- DeepSeek-AI. "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning" (2025)
+## پرسش‌های مصاحبه
+
+### پرسش: چرا یک «مدل استدلال» (مانند Claude Opus 5.5 یا GPT-6 Astra) برای عاملیت بهتر از یک LLM استاندارد است؟
+
+**پاسخ قوی:**
+LLMهای استاندارد (سیستم ۱) *دقیقاً Token بعدی* را بر اساس تطبیق الگو پیش‌بینی می‌کنند. هنگامی که آن‌ها در فراخوانی یک ابزار با خطا مواجه می‌شوند، اغلب به جای پذیرش شکست، یک راه‌حل توهم‌آمیز ارائه می‌دهند. مدل‌های استدلال از **زنجیره تفکر (Chain-of-Thought / CoT)** در طول استنتاج (Inference) بهره می‌برند و نسل فعلی نه تنها پیش از نخستین فراخوانی ابزار، بلکه در بین فراخوانی‌های ابزار نیز تفکر می‌کند. برای یک Agent، این به معنای **قابلیت اطمینان بالاتر در مسیر (Path Reliability)** است: احتمال ورود مدل به یک حلقه بی‌نهایت یا تلاش مجدد برای همان اقدام ناموفق کمتر است، زیرا پیش از انتخاب گام بعدی، درباره شکست رخ‌داده استدلال می‌کند. این سازوکار جایگزینی برای گاردها و محافظ‌های مهارکننده (Harness) نیست. مدل‌های استدلال همچنان دچار حلقه می‌شوند؛ بنابراین Harness در هر صورت آشکارسازهای تکرار و بودجه‌ها را حفظ می‌کند (به [مهندسی حلقه](12-loop-engineering.md) مراجعه کنید).
+
+### پرسش: چگونه از «انحراف Agentic» (Agentic Drift) در وظایف طولانی‌مدت جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+انحراف Agentic زمانی رخ می‌دهد که زیرمراحل، Agent را آن‌چنان از هدف اصلی دور می‌کنند که زمینه (Context) خود را از دست می‌دهد. راهکار استاندارد **تثبیت هدف (Goal Anchoring)** است: گنجاندن «هدف اصلی» به عنوان یک پیام سیستمی پین‌شده و استفاده از یک **مدل ناظر ثانویه (Secondary Observer Model)** (مدلی کوچک‌تر و ارزان‌تر) برای امتیازدهی به هر اقدام Agent در مقایسه با هدف اصلی. اگر امتیاز از یک حد آستانه پایین‌تر بیاید، Agent مجبور می‌شود از ریشه دوباره «برنامه‌ریزی مجدد» کند.
 
 ---
 
-*Next: [Reasoning Loops: ReAct and Beyond](02-reasoning-loops-react-and-beyond.md)*
+## منابع
+- کانمن، د. «تفکر، سریع و کند» (Thinking, Fast and Slow - ۲۰۱۱)، منبع اصلی چارچوب تفکر سیستم ۱ / سیستم ۲
+- شرکت OpenAI. «یادگیری استدلال با LLMها» ("Learning to Reason with LLMs" - ۲۰۲۴)
+- شرکت DeepSeek-AI. «DeepSeek-R1: تقویت توانایی استدلال در LLMها از طریق یادگیری تقویتی» ("DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning" - ۲۰۲۵)
+
+---
+
+*بعدی: [حلقه‌های استدلال: ReAct و فراتر از آن](02-reasoning-loops-react-and-beyond.md)*
+
+</div>

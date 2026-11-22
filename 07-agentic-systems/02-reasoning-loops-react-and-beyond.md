@@ -1,45 +1,49 @@
-# Reasoning Loops: ReAct and Beyond
+<div dir="rtl">
 
-Reasoning Loops define the control flow of an agent. While **ReAct** was the 2023 baseline, current systems use more sophisticated patterns like **Plan-and-Solve**, **Self-Reflexion**, and **Inference-Time Scaling** running on top of reasoning-native models.
+# حلقه‌های استدلال: ReAct و فراتر از آن
 
-## Table of Contents
+حلقه‌های استدلال جریان کنترل یک Agent را تعریف می‌کنند. در حالی که **ReAct** خط مبنای سال ۲۰۲۳ بود، سیستم‌های امروزی از الگوهای پیچیده‌تری مانند **Plan-and-Solve**، **Self-Reflexion** و **مقیاس‌پذیری در زمان استنتاج (Inference-Time Scaling)** استفاده می‌کنند که بر روی مدل‌های با قابلیت استدلال بومی (reasoning-native) اجرا می‌شوند.
 
-- [The Evolution of the Loop](#the-evolution-of-the-loop)
-- [ReAct: The Classic Pattern](#react-reasoning--acting)
-- [Self-Reflexion Loops](#self-reflexion-loops)
-- [Plan-and-Solve](#plan-and-solve)
-- [Flow Engineering (The LangGraph Pattern)](#flow-engineering-langgraph)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [تکامل حلقه](#the-evolution-of-the-loop)
+- [ReAct: الگوی کلاسیک](#react-reasoning--acting)
+- [حلقه‌های Self-Reflexion](#self-reflexion-loops)
+- [الگوی Plan-and-Solve](#plan-and-solve)
+- [مهندسی جریان (الگوی LangGraph)](#flow-engineering-langgraph)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Evolution of the Loop
+## تکامل حلقه
 
-| Era | Pattern | Core Philosophy |
+| دوره | الگو | فلسفه اصلی |
 |-----|---------|-----------------|
-| **2023** | ReAct | Interleave thought and action. |
-| **2024** | Reflexion | Evaluate errors and re-try. |
-| **2025** | System 2 Loops | Use hidden CoT for reliable multi-step logic. |
-| **2026** | Engineered harness loops | Thinking interleaved between tool calls, with the harness owning termination, verification, and budgets (see [Loop Engineering](12-loop-engineering.md)). |
+| **2023** | ReAct | درهم‌آمیختن فکر و عمل (Thought and Action). |
+| **2024** | Reflexion | ارزیابی خطاها و تلاش مجدد. |
+| **2025** | حلقه‌های سیستم ۲ (System 2 Loops) | استفاده از زنجیره فکر پنهان (Hidden CoT) برای منطق چندمرحله‌ای قابل اتکا. |
+| **2026** | حلقه‌های مهاربندی‌شده مهندسی‌شده (Engineered harness loops) | تفکر درهم‌آمیخته بین فراخوانی ابزارها، در حالی که بستر مهارکننده (Harness) مدیریت خاتمه، اعتبارسنجی و بودجه‌ها را بر عهده دارد (ببینید: [مهندسی حلقه](12-loop-engineering.md)). |
 
 ---
 
-## ReAct: Reasoning + Acting
+## الگوی ReAct: استدلال + اقدام (Reasoning + Acting)
 
-The fundamental loop for 90% of agents:
-1. **Thought**: "I need to find X."
-2. **Action**: `search_engine("X")`
-3. **Observation**: "X is at Y."
-4. **Repeat**.
+حلقه بنیادین برای ۹۰٪ از Agentها:
+۱. **تفکر (Thought)**: "من باید X را پیدا کنم."
+۲. **اقدام (Action)**: `search_engine("X")`
+۳. **مشاهده (Observation)**: "X در Y قرار دارد."
+۴. **تکرار (Repeat)**.
 
-**Critique**: ReAct is fragile. If the search returns "No results," a naive ReAct agent will often try the same search again. Modern loops inject **"Negative Constraints"** (e.g., "Don't try search results we've already seen").
+**نقد و بررسی (Critique)**: الگوی ReAct شکننده است. اگر جستجو نتیجه "هیچ نتیجه‌ای یافت نشد" را برگرداند، یک Agent ساده‌لوح مبتنی بر ReAct اغلب همان جستجو را دوباره امتحان می‌کند. حلقه‌های مدرن **"محدودیت‌های منفی" (Negative Constraints)** را تزریق می‌کنند (برای مثال، "نتایج جستجویی را که قبلاً دیده‌ایم دوباره امتحان نکن").
 
 ---
 
-## Self-Reflexion Loops
+## حلقه‌های بازتاب شخصی (Self-Reflexion Loops)
 
-Reflexion adds a **"Critic"** step to the loop.
+الگوی Reflexion یک مرحله **"نقاد" (Critic)** را به حلقه اضافه می‌کند.
+
+<div dir="ltr">
 
 ```mermaid
 graph TD
@@ -51,52 +55,56 @@ graph TD
     F --> B
 ```
 
-**Benefit**: By storing these "Reflections" in short-term memory, the agent builds a "Mental Map" of what doesn't work during the current session.
+</div>
+
+**مزیت**: با ذخیره این "تأملات" (Reflections) در حافظه کوتاه‌مدت، Agent یک "نقشه ذهنی" (Mental Map) از آنچه در طول نشست (Session) فعلی کارساز نیست ایجاد می‌کند.
 
 ---
 
-## Plan-and-Solve
+## الگوی برنامه‌ریزی و حل (Plan-and-Solve)
 
-Instead of deciding one step at a time (greedy approach), the agent creates a **Static Plan** first, then executes it.
+به جای تصمیم‌گیری مرحله به مرحله (رویکرد حریصانه / Greedy)، Agent ابتدا یک **برنامه ایستا (Static Plan)** ایجاد می‌کند و سپس آن را اجرا می‌نماید.
 
-1. **Planner**: "I will do A, then B, then C."
-2. **Executor**: Carries out the steps.
-3. **Re-planner**: If step B fails, trigger a full re-plan rather than a local fix.
+۱. **برنامه‌ریز (Planner)**: "من ابتدا A، سپس B و بعد C را انجام خواهم داد."
+۲. **مجری (Executor)**: مراحل را به اجرا درمی‌آورد.
+۳. **برنامه‌ریز مجدد (Re-planner)**: اگر مرحله B با شکست مواجه شود، به جای یک اصلاح محلی، برنامه‌ریزی مجدد کامل را فعال می‌کند.
 
-**Why?**: Planning reduces "Stochastic Errors." By committing to a path, the model is less likely to get distracted by noisy tool results.
-
----
-
-## Flow Engineering (LangGraph)
-
-Modern agentic systems have moved from "Chat interfaces" to **"State Machines."**
-
-- **Cyclic Graphs**: Instead of a linear sequence, we define a graph where the model can loop back to a "Cleaning" node or a "Validation" node multiple times.
-- **Micro-Agents**: Each node in the graph is a specialized "Prompt" or "Tool."
-
-**Key Nuance**: The "Agent" is no longer just the LLM; the agent is the **Graph Execution Engine**.
+**چرا؟**: برنامه‌ریزی "خطاهای تصادفی" (Stochastic Errors) را کاهش می‌دهد. با متعهد شدن به یک مسیر مشخص، احتمال اینکه مدل توسط نتایج پر سر و صدای ابزارها دچار انحراف شود بسیار کمتر خواهد بود.
 
 ---
 
-## Interview Questions
+## مهندسی جریان (LangGraph)
 
-### Q: When would you use a "Reasoning Loop" (ReAct) vs. a "Plan-and-Solve" architecture?
+سیستم‌های Agentic مدرن از "رابط‌های چت" به سمت **"ماشین‌های حالت" (State Machines)** حرکت کرده‌اند.
 
-**Strong answer:**
-I choose **ReAct** for **Exploratory** tasks where the environment is unpredictable (e.g., browsing a new website where you don't know the URL structure yet). The agent needs to react to every observation. I choose **Plan-and-Solve** for **Predictable** but complex workflows (e.g., generating a financial report from 5 known APIs). Planning prevents the model from "meandering" and allows for better parallelization of steps that don't depend on each other.
+- **گراف‌های چرخه‌ای (Cyclic Graphs)**: به جای یک توالی خطی، ما گرافی را تعریف می‌کنیم که در آن مدل می‌تواند چندین بار به یک گره "پاک‌سازی" یا گره "اعتبارسنجی" برگردد.
+- **میکرو-Agentها (Micro-Agents)**: هر گره در گراف یک Prompt یا ابزار تخصصی است.
 
-### Q: What is "Inference-Time Scaling" and how does it relate to Agentic Loops?
-
-**Strong answer:**
-Inference-Time Scaling (popularized by OpenAI's o1 in 2024) refers to spending more compute *during the response generation* rather than just during training. In current APIs it surfaces as an **effort** setting: GPT-6 Astra exposes five levels from low to max, and Claude Opus 5.5 and Fable 5.1 scale adaptive thinking with an effort parameter. In an agentic context, more thinking means the model weighs alternatives before committing to an action, which can cut the number of "Real World" tool calls and the failure rate. Two things I keep separate in an interview. First, vendors have not said their reasoning models run explicit tree search internally; if I want **Search Trees** (best-of-N, MCTS with a verifier), I build them in the harness, where I can see and score the branches. Second, effort is a cost and latency knob I tune per step, so I run the planner at high effort and the routine executor steps at low effort rather than paying maximum thinking on every tool call.
+**نکته ظریف و کلیدی**: دیگر "Agent" صرفاً همان LLM نیست؛ بلکه Agent همان **موتور اجرای گراف (Graph Execution Engine)** است.
 
 ---
 
-## References
-- Yao et al. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
-- Shinn et al. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
-- Wang et al. "Plan-and-Solve Prompting" (2023). https://arxiv.org/abs/2305.04091
+## پرسش‌های مصاحبه
+
+### پرسش: چه زمانی از یک "حلقه استدلال" (ReAct) در برابر معماری "Plan-and-Solve" استفاده می‌کنید؟
+
+**پاسخ قوی:**
+من **ReAct** را برای کارهای **اکتشافی (Exploratory)** که در آن‌ها محیط غیرقابل پیش‌بینی است انتخاب می‌کنم (برای مثال، مرور وب‌سایت جدیدی که هنوز ساختار URL آن را نمی‌دانید). در این حالت Agent باید به هر مشاهده واکنش نشان دهد. من **Plan-and-Solve** را برای جریان‌های کاری **قابل پیش‌بینی** اما پیچیده انتخاب می‌کنم (برای مثال، تولید یک گزارش مالی از ۵ API شناخته‌شده). برنامه‌ریزی از "سردرگمی و انحراف" مدل جلوگیری می‌کند و امکان موازی‌سازی بهتر مراحلی را که به یکدیگر وابسته نیستند فراهم می‌سازد.
+
+### پرسش: "مقیاس‌پذیری در زمان استنتاج" (Inference-Time Scaling) چیست و چه ارتباطی با حلقه‌های Agentic دارد؟
+
+**پاسخ قوی:**
+مقیاس‌پذیری در زمان استنتاج (Inference-Time Scaling) (که توسط مدل o1 شرکت OpenAI در سال ۲۰۲۴ محبوب شد) به معنای صرف توان محاسباتی بیشتر *در حین تولید پاسخ* به جای صرف آن صرفاً در طول آموزش است. در APIهای کنونی، این قابلیت به صورت تنظیمات **تلاش (effort)** ظاهر می‌شود: مدل GPT-6 Astra پنج سطح از کم (low) تا حداکثر (max) را ارائه می‌دهد، و Claude Opus 5.5 و Fable 5.1 تفکر تطبیقی را با یک پارامتر effort مقیاس‌بندی می‌کنند. در یک کانتکست Agentic، تفکر بیشتر به این معناست که مدل قبل از اقدام به یک عمل، گزینه‌های جایگزین را می‌سنجد که می‌تواند تعداد فراخوانی‌های ابزار در "دنیای واقعی" و نرخ شکست را کاهش دهد. دو موضوع وجود دارد که من در مصاحبه آن‌ها را تفکیک می‌کنم. نخست، ارائه‌دهندگان اعلام نکرده‌اند که مدل‌های استدلال آن‌ها در داخل به صورت صریح جستجوی درختی (Tree Search) را اجرا می‌کنند؛ اگر من **درخت‌های جستجو (Search Trees)** (مانند best-of-N، MCTS با یک اعتبارسنج) را بخواهم، آن‌ها را در بستر مهار (Harness) پیاده‌سازی می‌کنم، جایی که می‌توانم شاخه‌ها را مشاهده کرده و به آن‌ها امتیاز دهم. دوم اینکه، تلاش (effort) یک اهرم تنظیم برای هزینه و تاخیر (Latency) است که من آن را برای هر مرحله تنظیم می‌کنم؛ بنابراین به جای پرداخت هزینه حداکثر تفکر برای تک‌تک فراخوانی‌های ابزار، برنامه‌ریز (Planner) را با تلاش بالا (high effort) و مراحل روتین مجری (Executor) را با تلاش پایین (low effort) اجرا می‌کنم.
 
 ---
 
-*Next: [Tool Use and the Model Context Protocol (MCP)](03-tool-use-and-mcp.md)*
+## منابع
+- یائو و همکاران. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
+- شین و همکاران. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
+- وانگ و همکاران. "Plan-and-Solve Prompting" (2023). https://arxiv.org/abs/2305.04091
+
+---
+
+*بعدی: [استفاده از ابزار و پروتکل کانتکست مدل (MCP)](03-tool-use-and-mcp.md)*
+
+</div>

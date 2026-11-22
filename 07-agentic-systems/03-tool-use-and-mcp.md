@@ -1,70 +1,72 @@
-# Tool Use and MCP
+<div dir="rtl">
 
-Tools are the "hands" of an agent. The industry has standardized on the **Model Context Protocol (MCP)**, which replaces fragmented custom tool definitions with one communication layer that runs locally over stdio or remotely over Streamable HTTP. Streamable HTTP and OAuth 2.1 authorization arrived in the 2025 spec revisions (commentary often calls this "MCP 2.0", but no spec release carries that name, and the SDK 2.x majors of July 2026 are a separate numbering), and the **2026-07-28 revision** rebuilt the protocol core as stateless, the largest overhaul since MCP launched (see [the stateless rewrite](#mcp-2026-07-28-the-stateless-rewrite) below). In parallel, **Agent-to-Agent (A2A)** complements MCP's tool-access layer with agent coordination, and since August 2026 both protocols sit under the same Linux Foundation umbrella, the Agentic AI Foundation.
+# استفاده از ابزار و MCP
 
-## Table of Contents
+ابزارها «دستان» یک Agent هستند. صنعت بر روی **Model Context Protocol (MCP)** استانداردسازی شده است، پروتکلی که تعاریف ابزار سفارشی و پراکنده را با یک لایه ارتباطی واحد جایگزین می‌کند که به صورت محلی روی stdio یا از راه دور روی Streamable HTTP اجرا می‌شود. مجوزدهی OAuth 2.1 و Streamable HTTP در بازنگری‌های مشخصات سال ۲۰۲۵ ارائه شدند (تحلیل‌ها و تفاسیر اغلب این را «MCP 2.0» می‌نامند، اما هیچ نسخه‌ای از مشخصات چنین نامی ندارد و نسخه‌های اصلی SDK 2.x در ژوئیه ۲۰۲۶ شماره‌گذاری مجزایی دارند)، و **بازنگری ۲۰۲۶-۰۷-۲۸** هسته پروتکل را به صورت بدون حالت (stateless) بازسازی کرد که بزرگ‌ترین بازطراحی اساسی از زمان عرضه MCP محسوب می‌شود (بخش [بازنویسی بدون حالت](#mcp-2026-07-28-the-stateless-rewrite) در ادامه را ببینید). به موازات آن، پروتکل **Agent-to-Agent (A2A)** لایه دسترسی به ابزار MCP را با هماهنگی میان Agentها تکمیل می‌کند و از اوت ۲۰۲۶ هر دو پروتکل زیر چتر واحد بنیاد لینوکس، یعنی Agentic AI Foundation قرار گرفته‌اند.
 
-- [The Tool-Use Mechanism](#the-tool-use-mechanism)
-- [Model Context Protocol (MCP)](#model-context-protocol-mcp)
-- [Defining High-Precision Tools](#defining-high-precision-tools)
-- [MCP vs. OpenAI Function Calling](#mcp-vs-openai-function-calling)
-- [Streaming Tool Calls](#streaming-tool-calls)
-- [The 2025 Revisions: Streamable HTTP and Auth](#the-2025-revisions-streamable-http-and-auth)
-- [MCP 2026-07-28: The Stateless Rewrite](#mcp-2026-07-28-the-stateless-rewrite)
-- [MCP Extensions and Ecosystem (November 2026)](#mcp-extensions-and-ecosystem-november-2026)
-- [Agent Plugins](#agent-plugins)
-- [Agent-to-Agent Protocol (A2A)](#agent-to-agent-protocol-a2a)
-- [The Protocol Landscape: Tools, Agents, and Payments](#the-protocol-landscape-tools-agents-and-payments)
-- [A2A v1.0 and MCP in Production](#a2a-v10-and-mcp-in-production)
-- [Computer-Use Tools (Anthropic)](#computer-use-tools-anthropic)
-- [Context7: Live Documentation MCP](#context7-live-documentation-mcp)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [مکانیسم استفاده از ابزار](#the-tool-use-mechanism)
+- [پروتکل Model Context Protocol (MCP)](#model-context-protocol-mcp)
+- [تعریف ابزارهای با دقت بالا](#defining-high-precision-tools)
+- [مقایسه MCP در برابر OpenAI Function Calling](#mcp-vs-openai-function-calling)
+- [استریم فراخوانی‌های ابزار](#streaming-tool-calls)
+- [بازنگری‌های ۲۰۲۵: Streamable HTTP و احراز هویت](#the-2025-revisions-streamable-http-and-auth)
+- [ام‌سی‌پی ۲۰۲۶-۰۷-۲۸: بازنویسی بدون حالت](#mcp-2026-07-28-the-stateless-rewrite)
+- [اکوسیستم و افزونه‌های MCP (نوامبر ۲۰۲۶)](#mcp-extensions-and-ecosystem-november-2026)
+- [پلاگین‌های Agent](#agent-plugins)
+- [پروتکل Agent-to-Agent (A2A)](#agent-to-agent-protocol-a2a)
+- [چشم‌انداز پروتکل‌ها: ابزارها، Agentها و پرداخت‌ها](#the-protocol-landscape-tools-agents-and-payments)
+- [نسخه A2A v1.0 و MCP در پروداکشن](#a2a-v10-and-mcp-in-production)
+- [ابزارهای استفاده از کامپیوتر (Anthropic)](#computer-use-tools-anthropic)
+- [سرویس Context7: سرور MCP مستندات زنده](#context7-live-documentation-mcp)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Tool-Use Mechanism
+## مکانیسم استفاده از ابزار
 
-Tool use occurs in a 3-step cycle:
-1. **Schema Presentation**: The model is given a JSON schema of the tools.
-2. **Intent & Extraction**: The model outputs a "Call" (e.g., `{"tool": "get_weather", "args": {"city": "Tokyo"}}`).
-3. **Execution & Contextualization**: The system runs the function and feeds the result back into the prompt.
+استفاده از ابزار در یک چرخه ۳ مرحله‌ای رخ می‌دهد:
+1. **ارائه اسکیما (Schema Presentation)**: اسکمای JSON مربوط به ابزارها در اختیار مدل قرار می‌گیرد.
+2. **قصد و استخراج (Intent & Extraction)**: مدل یک فراخوانی یا «Call» خروجی می‌دهد (مانند `{"tool": "get_weather", "args": {"city": "Tokyo"}}`).
+3. **اجرا و زمینه‌سازی (Execution & Contextualization)**: سیستم تابع را اجرا کرده و نتیجه را مجدداً به Prompt بازمی‌گرداند.
 
-**Nuance**: Production stacks no longer "hardcode" tool definitions into the system prompt. They use **Dynamic Manifests** that fetch only necessary tools based on the user's intent.
+**نکته ظریف**: پشته‌های پروداکشن دیگر تعاریف ابزار را در Prompt سیستم به صورت هاردکد قرار نمی‌دهند، بلکه از **مانیفست‌های پویا (Dynamic Manifests)** استفاده می‌کنند که تنها ابزارهای لازم را بر اساس نیت کاربر واکشی می‌نمایند.
 
-Five provider-side changes in 2026 matter for harness code:
+پنج تغییر در سمت ارائه‌دهندگان مدل در سال ۲۰۲۶ برای کد هارنس حائز اهمیت است:
 
-- **Forced tool use is gone on the largest Claude models.** Fable 5.1, Mythos 5.1, Opus 5.5, and Sonnet 5.5 return HTTP 400 for `tool_choice` of `any` or `tool`; only `auto` and `none` remain. Haiku 5.5 still accepts a forced `tool_choice`, but the response then starts with the tool call and carries no thinking block. The old "force a tool call to get JSON" extraction pattern must move to `auto` plus strict tool use, or to structured outputs.
-- **Tools can change mid-conversation without losing the cache.** Anthropic's `inline-tools-2026-09-15` beta (September 22) defines, replaces, or removes tools inside a mid-conversation system message without invalidating the prompt cache, and can pin a fetched MCP tool list in an `mcp_tool_listing` block so a server cannot swap definitions mid-session.
-- **Tool calling on GPT-6 Astra requires the Responses API**, and Astra drops `temperature`, `top_p`, and logprobs, so harnesses that tuned sampling or read logprobs for tool routing need another mechanism.
-- **Sampling knobs are gone on Claude too.** Under Anthropic API version `2026-10-21` (October 21), `temperature`, `top_p`, and `top_k` return HTTP 400 on every model, even at their default values. All eight new SDK and CLI majors (Python 2.0.0, TypeScript 1.0.0, C# 13.0.0, Go 2.0.0, Java 3.0.0, PHP 1.0.0, Ruby 2.0.0, and the `ant` CLI 2.0.0) send that version by default and are relicensed Apache 2.0, so a routine SDK upgrade breaks any tool-routing code that still passes `temperature=0`.
-- **Server-side threads freeze the tool list.** Anthropic's message threads beta (November 2, 2026) accepts system and tools only on the create request and rejects a changed `tool_choice` or `mcp_servers` with 400 `thread_fingerprint_mismatch`, which conflicts with mid-conversation tool changes; threads can also 404 at any time, so the harness keeps the transcript and replays (see [Agent Memory and State](05-agent-memory-and-state.md#production-implementations)).
+- **قابلیت فراخوانی اجباری ابزار در بزرگ‌ترین مدل‌های Claude حذف شده است.** مدل‌های Fable 5.1، Mythos 5.1، Opus 5.5 و Sonnet 5.5 برای مقدار `any` یا `tool` در پارامتر `tool_choice` خطای HTTP 400 برمی‌گردانند؛ تنها مقادیر `auto` و `none` باقی مانده‌اند. مدل Haiku 5.5 همچنان مقدار اجباری `tool_choice` را می‌پذیرد، اما پاسخ در این حالت مستقیماً با فراخوانی ابزار شروع شده و حاوی هیچ بلاک تفکری (thinking block) نخواهد بود. الگوی استخراج قدیمی «اجبار به فراخوانی ابزار برای دریافت JSON» اکنون باید به `auto` به همراه استفاده دقیق از ابزار (strict tool use) یا خروجی‌های ساختاریافته (structured outputs) منتقل شود.
+- **ابزارها می‌توانند در میانه گفتگو بدون از دست رفتن کش تغییر کنند.** نسخه بتای `inline-tools-2026-09-15` شرکت Anthropic (منتشرشده در ۲۲ سپتامبر) امکان تعریف، جایگزینی یا حذف ابزارها را درون یک پیام سیستم در میانه گفتگو بدون باطل کردن کش Prompt فراهم می‌کند و می‌تواند فهرست ابزارهای MCP واکشی‌شده را در یک بلاک `mcp_tool_listing` پین (Pin) کند تا سرور نتواند تعاریف را در میانه نشست تعویض نماید.
+- **فراخوانی ابزار در GPT-6 Astra نیازمند Responses API است**، و Astra پارامترهای `temperature`، `top_p` و logprobs را نادیده می‌گیرد؛ بنابراین هارنس‌هایی که نمونه‌برداری را تنظیم می‌کردند یا logprobs را برای مسیریابی ابزار می‌خواندند، به مکانیسم دیگری نیاز دارند.
+- **اهرم‌های تنظیم نمونه‌برداری در Claude نیز حذف شده‌اند.** تحت نسخه `2026-10-21` از Anthropic API (۲۱ اکتبر)، پارامترهای `temperature`، `top_p` و `top_k` روی همه مدل‌ها، حتی با مقادیر پیش‌فرض خود، خطای HTTP 400 بازمی‌گردانند. هر هشت نسخه اصلی جدید SDK و CLI (شامل Python 2.0.0، TypeScript 1.0.0، C# 13.0.0، Go 2.0.0، Java 3.0.0، PHP 1.0.0، Ruby 2.0.0 و `ant` CLI 2.0.0) این نسخه را به صورت پیش‌فرض ارسال می‌کنند و تحت مجوز Apache 2.0 بازنشر شده‌اند؛ از این رو، یک ارتقای معمول SDK هر کد مسیریابی ابزاری را که هنوز `temperature=0` ارسال می‌کند، دچار شکستگی خواهد کرد.
+- **رشته‌های سمت سرور فهرست ابزارها را تثبیت می‌کنند.** نسخه بتای رشته‌های پیام Anthropic (۲ نوامبر ۲۰۲۶) پارامترهای system و tools را فقط هنگام درخواست ایجاد می‌پذیرد و تغییر در `tool_choice` یا `mcp_servers` را با خطای 400 `thread_fingerprint_mismatch` رد می‌کند، که این امر با تغییر ابزارها در میانه گفتگو تداخل دارد؛ همچنین رشته‌ها در هر لحظه ممکن است با خطای 404 مواجه شوند، بنابراین هارنس رونوشت‌ها (Transcript) را نگه داشته و دوباره بازپخش می‌کند (بخش [حافظه و وضعیت Agent](05-agent-memory-and-state.md#production-implementations) را ببینید).
 
 ---
 
 ## Model Context Protocol (MCP)
 
-Developed by Anthropic (released November 2024) and now the universal tool-integration standard across Anthropic, OpenAI, Google, Microsoft, and AWS, MCP allows models to interact with data and tools regardless of where they live. Governance moved to the Linux Foundation's Agentic AI Foundation in December 2025.
+پروتکل MCP توسط شرکت Anthropic توسعه یافته (منتشرشده در نوامبر ۲۰۲۴) و اکنون استاندارد جهانی یکپارچه‌سازی ابزارها در میان Anthropic، OpenAI، Google، Microsoft و AWS است و به مدل‌ها اجازه می‌دهد فارغ از محل قرارگیری داده‌ها و ابزارها، با آن‌ها تعامل داشته باشند. حاکمیت این پروتکل در دسامبر ۲۰۲۵ به بنیاد Agentic AI Foundation وابسته به بنیاد لینوکس واگذار شد.
 
-- **MCP Client**: The AI application (e.g., your agent code).
-- **MCP Server**: A standalone process that exposes Tools (Functions), Resources (Data), and Prompts (Templates).
-- **Communication**: Uses JSON-RPC over stdio (local) or Streamable HTTP (remote).
+- **کلاینت MCP (MCP Client)**: برنامه هوش مصنوعی (مانند کد Agent شما).
+- **سرور MCP (MCP Server)**: یک پروسه مستقل که ابزارها یا Tools (توابع)، منابع یا Resources (داده‌ها) و Promptها (قالب‌ها) را ارائه می‌دهد.
+- **ارتباطات**: از JSON-RPC بر بستر stdio (محلی) یا Streamable HTTP (از راه دور) استفاده می‌کند.
 
-### Why MCP?
-- **Security**: Tools run in their own process, not in the model logic.
-- **Portability**: Write a "Postgres Tool" once, use it in Claude, GPT, or Llama.
-- **Discoverability**: Standardized `tools/list`, `resources/read`, and `prompts/list` methods, plus the `server/discover` RPC that the 2026-07-28 revision made mandatory.
+### چرا MCP؟
+- **امنیت**: ابزارها در پروسه مستقل خود اجرا می‌شوند، نه در منطق مدل.
+- **قابلیت حمل (Portability)**: یک بار یک «ابزار Postgres» بنویسید و از آن در Claude، GPT یا Llama استفاده کنید.
+- **کشف‌پذیری (Discoverability)**: متدهای استانداردشده `tools/list`، `resources/read` و `prompts/list` به همراه فراخوانی RPC با متد `server/discover` که در بازنگری ۲۰۲۶-۰۷-۲۸ اجباری شد.
 
 ---
 
-## Defining High-Precision Tools
+## تعریف ابزارهای با دقت بالا
 
-A production-quality tool must include:
+یک ابزار مناسب محیط‌های پروداکشن باید شامل موارد زیر باشد:
 
-1. **Strict Type Validation**: Use Pydantic or Zod to enforce schemas before the call executes, and turn on the provider's strict tool mode so arguments are constrained to the schema at generation time.
-2. **Detailed Docstrings**: Describe *when NOT* to use the tool.
-3. **Confidence Thresholds**: Require the model to output a `confidence` score for the tool call. Treat it as a routing hint, not a calibrated probability.
-4. **Deliberate, Model-Visible Errors**: Since MCP Python SDK 2.1.0, an unexpected exception in a handler is logged and the client sees only `Error executing tool <name>`; raise `ToolError` for messages the model should act on. That default is right (stack traces leak internals), but it means actionable errors must be designed, not leaked.
+1. **اعتبارسنجی دقیق نوع داده (Strict Type Validation)**: از Pydantic یا Zod برای اعمال اسکیماها پیش از اجرای فراخوانی استفاده کنید، و حالت ابزار سخت‌گیرانه (strict tool mode) ارائه‌دهنده را فعال نمایید تا آرگومان‌ها در زمان تولید محدود به اسکیما باشند.
+2. **داک‌استرینگ‌های تفصیلی (Detailed Docstrings)**: توضیح دهید که *چه زمانی نباید* از ابزار استفاده شود.
+3. **آستانه‌های اطمینان (Confidence Thresholds)**: مدل را ملزم کنید که یک امتیاز `confidence` برای فراخوانی ابزار در خروجی ارائه دهد. با آن به عنوان یک سرنخ مسیریابی برخورد کنید، نه یک احتمال کالیبره‌شده.
+4. **خطاهای تعمدی و قابل مشاهده برای مدل (Deliberate, Model-Visible Errors)**: از نسخه 2.1.0 مربوط به MCP Python SDK، خطاهای غیرمنتظره در یک هندلر لاگ می‌شوند و کلاینت تنها عبارت `Error executing tool <name>` را می‌بیند؛ برای پیام‌هایی که مدل باید بر اساس آن‌ها اقدام کند، `ToolError` صادر کنید. این رفتار پیش‌فرض درست است (زیرا ردگیری پشته یا stack trace جزئیات داخلی را افشا می‌کند)، اما به این معنی است که خطاهای قابل اقدام باید به صورت هدفمند طراحی شوند، نه اینکه نشت پیدا کنند.
 
 ```python
 # MCP Python SDK 2.x: `pip install mcp` now resolves to 2.x, and FastMCP was renamed MCPServer.
@@ -83,43 +85,47 @@ def execute_sql(query: str) -> list[dict]:
 
 ---
 
-## MCP vs. OpenAI Function Calling
+## مقایسه MCP با OpenAI Function Calling
 
-| Feature | OpenAI Native | MCP |
+| ویژگی | OpenAI Native | MCP |
 |---------|---------------|-----|
-| **Coupling** | High (OpenAI specific) | Low (Agnostic) |
-| **Transport** | JSON in API body | JSON-RPC (Local/Remote) |
-| **Data Access**| No native data "Resource" | Native `Resources` support |
-| **Best For** | Prototyping | Enterprise Orchestration |
+| **میزان وابستگی (Coupling)** | بالا (مخصوص OpenAI) | پایین (مستقل / Agnostic) |
+| **لایه انتقال (Transport)** | ارسال JSON در بدنه API | پروتکل JSON-RPC (محلی / از راه دور) |
+| **دسترسی به داده (Data Access)**| بدون «منبع» بومی داده (Resource) | پشتیبانی بومی از `Resources` |
+| **بهترین کاربرد (Best For)** | نمونه‌سازی اولیه (Prototyping) | ارکستراسیون سازمانی (Enterprise Orchestration) |
 
-The comparison is less either/or than the table suggests. OpenAI's Responses API, its Agents SDK, and the managed Agents API (public beta September 10, 2026) all consume remote MCP servers, so function calling is the wire format inside a provider API and MCP is how the tool is packaged, secured, and reached.
-
----
-
-## Streaming Tool Calls
-
-Frontier models support **Partial Tool Speculation**.
-Instead of waiting for the full JSON to generate, the system starts "prefetching" tool results as soon as the tool name and critical IDs are visible in the stream. This reduces perceived latency by **400-800ms**.
+این مقایسه کمتر از آنچه جدول نشان می‌دهد حالت «یا این یا آن» دارد. سرویس Responses API متعلق به OpenAI، کیت توسعه نرم‌افزار Agents SDK آن، و همچنین Managed Agents API (نسخه بتای عمومی در ۱۰ سپتامبر ۲۰۲۶) همگی سرورهای MCP از راه دور را مصرف می‌کنند؛ بنابراین function calling فرمت ارتباطی درون API ارائه‌دهنده است و MCP نحوه بسته‌بندی، ایمن‌سازی و دسترسی به ابزار را مشخص می‌کند.
 
 ---
 
-## The 2025 Revisions: Streamable HTTP and Auth
+## استریم فراخوانی‌های ابزار
 
-MCP spec revisions are dated, not numbered: 2024-11-05, 2025-03-26, 2025-06-18, 2025-11-25, and 2026-07-28 (current). The **2025-03-26** revision (March 2025) introduced the two changes that made remote MCP practical, and the 2025-06-18 revision hardened the auth model into the shape used today. "MCP 2.0 ratified in March 2026" is a common misdating of the same changes, one year late.
+مدل‌های پیشرو از **حدس و گمان جزئی ابزار (Partial Tool Speculation)** پشتیبانی می‌کنند.
+سیستم به جای انتظار برای تولید کامل JSON، به محض اینکه نام ابزار و شناسه‌های حیاتی در جریان استریم پدیدار شوند، شروع به «پیش‌واکشی» (Prefetching) نتایج ابزار می‌کند. این کار تاخیر (Latency) ادراک‌شده را تا **۴۰۰ الی ۸۰۰ میلی‌ثانیه** کاهش می‌دهد.
 
-### 1. Streamable HTTP Transport
-Launch-era MCP used stdio locally or HTTP with a separate Server-Sent Events channel remotely. **Streamable HTTP** replaced HTTP+SSE with a single endpoint: the client POSTs JSON-RPC messages to it, and the server answers with a plain JSON response, or with an SSE stream when it needs to send several messages.
+---
+
+## بازنگری‌های ۲۰۲۵: Streamable HTTP و احراز هویت
+
+بازنگری‌های مشخصات فنی MCP تاریخ‌گذاری می‌شوند و شماره‌گذاری نمی‌شوند: 2024-11-05، 2025-03-26، 2025-06-18، 2025-11-25، و 2026-07-28 (نسخه فعلی). بازنگری **2025-03-26** (مارس ۲۰۲۵) دو تغییر را معرفی کرد که MCP راه دور را کاربردی ساخت، و بازنگری 2025-06-18 مدل احراز هویت را به شکلی که امروزه استفاده می‌شود استحکام بخشید. عبارت «تصویب MCP 2.0 در مارس ۲۰۲۶» یک اشتباه متداول در تاریخ‌گذاری همین تغییرات با یک سال تاخیر است.
+
+### ۱. لایه انتقال Streamable HTTP
+پروتکل MCP در بدو انتشار، از stdio به صورت محلی یا از HTTP همراه با یک کانال مجزای Server-Sent Events از راه دور استفاده می‌کرد. **Streamable HTTP** ترکیب HTTP+SSE را با یک اندپوینت واحد جایگزین کرد: کلاینت پیام‌های JSON-RPC را به آن POST می‌کند، و سرور با یک پاسخ ساده JSON، یا در صورت نیاز به ارسال چندین پیام با یک استریم SSE پاسخ می‌دهد.
+
+<div dir="ltr">
 
 ```
 [MCP Client] ──── POST /mcp (JSON-RPC) ────→ [MCP Server]
              ←─── JSON response, or an SSE stream ───
 ```
 
-- Enables MCP servers deployed as cloud microservices (not just local processes)
-- stdio remains the local transport; HTTP+SSE has been deprecated since 2025-03-26, and the 2026-07-28 revision moved it onto the spec's formal deprecation track
+</div>
 
-### 2. OAuth 2.1 Authorization
-Remote MCP servers can require OAuth 2.1 with PKCE. Since 2025-06-18 the MCP server is an OAuth **resource server**: it advertises its authorization server through Protected Resource Metadata (RFC 9728), and clients must send the RFC 8707 `resource` parameter so every token is audience-bound to one server. A request without a token gets a challenge that tells the client where to start:
+- استقرار (Deployment) سرورهای MCP به عنوان میکروسرویس‌های ابری (نه صرفاً پروسه‌های محلی) را ممکن می‌سازد.
+- پروتکل stdio همچنان به عنوان لایه انتقال محلی باقی می‌ماند؛ پروتکل HTTP+SSE از تاریخ 2025-03-26 منسوخ شده است و بازنگری 2026-07-28 آن را در مسیر رسمی منسوخ‌سازی مشخصات قرار داد.
+
+### ۲. مجوزدهی با OAuth 2.1
+سرورهای MCP از راه دور می‌توانند OAuth 2.1 همراه با PKCE را الزامی کنند. از تاریخ 2025-06-18 سرور MCP یک **سرور منبع (Resource Server)** تحت پروتکل OAuth است: سرور مجوزدهی خود را از طریق فراداده منبع محافظت‌شده (Protected Resource Metadata بر اساس RFC 9728) اعلام می‌کند و کلاینت‌ها باید پارامتر `resource` در RFC 8707 را ارسال کنند تا هر Token منحصراً وابسته به مخاطب هدف (Audience-bound) در یک سرور مشخص باشد. درخواستی که فاقد Token باشد با یک چالش مواجه می‌شود که به کلاینت می‌گوید از کجا شروع کند:
 
 ```http
 HTTP/1.1 401 Unauthorized
@@ -127,15 +133,17 @@ WWW-Authenticate: Bearer resource_metadata="https://mcp.example.com/.well-known/
                          scope="files:read"
 ```
 
-This enables enterprise MCP servers with fine-grained, per-server access control. The 2025-11-25 revision added Client ID Metadata Documents as a recommended registration mechanism and incremental scope consent, where a server answers HTTP 403 `insufficient_scope` with the scope it needs (step-up). The 2026-07-28 revision then deprecated Dynamic Client Registration in favor of those metadata documents and made clients validate the RFC 9207 `iss` parameter when the authorization server sends it, both covered below.
+این امر سرورهای سازمانی MCP را با کنترل دسترسی دقیق به ازای هر سرور امکان‌پذیر می‌سازد. بازنگری 2025-11-25 اسناد فراداده شناسه کلاینت (Client ID Metadata Documents) را به عنوان مکانیسم پیشنهادی ثبت‌نام و موافقت تدریجی با محدوده دسترسی (Incremental scope consent) اضافه کرد؛ جایی که سرور در پاسخ به HTTP 403 `insufficient_scope`، محدوده مورد نیاز خود را اعلام می‌کند (افزایش سطح دسترسی یا step-up). سپس بازنگری 2026-07-28 ثبت پویای کلاینت (Dynamic Client Registration) را به نفع این اسناد فراداده منسوخ کرد و کلاینت‌ها را ملزم نمود تا در صورت ارسال پارامتر `iss` در RFC 9207 توسط سرور مجوزدهی، آن را اعتبارسنجی کنند؛ هر دوی این موارد در ادامه بررسی شده‌اند.
 
 ---
 
-## MCP 2026-07-28: The Stateless Rewrite
+## نسخه 2026-07-28 پروتکل MCP: بازنویسی بدون وضعیت (Stateless Rewrite)
 
-On July 28, 2026 the MCP project finalized spec revision **2026-07-28**, the largest protocol overhaul since MCP launched, after a ten-week release-candidate freeze. The headline: **the protocol core is now stateless**. The `initialize` handshake and the `Mcp-Session-Id` header are gone; every request carries the protocol version and client capabilities in `_meta`, and servers identify themselves in result `_meta`. Cross-call state moves into explicit server-minted handles passed as ordinary tool arguments. The practical consequence is that a remote MCP server can now run as a horizontally scaled deployment behind a plain round-robin load balancer with zero shared session state, which previously required sticky sessions or a shared session store.
+در تاریخ ۲۸ ژوئیه ۲۰۲۶، پروژه MCP بازنگری مشخصات (spec revision) **2026-07-28** را پس از یک دوره فریز ده‌هفته‌ای نسخه کاندیدای انتشار (release-candidate freeze) نهایی کرد؛ این بزرگ‌ترین بازنگری اساسی پروتکل از زمان راه‌اندازی MCP به شمار می‌رود. نکته برجسته اصلی: **هسته پروتکل اکنون بدون وضعیت (stateless) است**. دست‌دهی (handshake) `initialize` و هدر `Mcp-Session-Id` حذف شده‌اند؛ اکنون هر درخواست، نسخه پروتکل و قابلیت‌های کلاینت را در `_meta` حمل می‌کند و سرورها نیز هویت خود را در `_meta` نتایج اعلام می‌نمایند. وضعیت میان‌فراخوانی (cross-call state) به شناسه/هندل‌های صریح ایجادشده توسط سرور منتقل شده است که به عنوان آرگومان‌های معمولی ابزار ارسال می‌شوند. نتیجه عملی این است که یک سرور راه دور (remote) پروتکل MCP اکنون می‌تواند به صورت یک استقرار (Deployment) با مقیاس‌پذیری افقی در پشت یک متعادل‌کننده بار ساده با الگوریتم round-robin و با صفر وضعیت نشست مشترک اجرا شود؛ قابلیتی که پیش از این نیازمند نشست‌های چسبنده (sticky sessions) یا یک حافظه ذخیره‌سازی نشست مشترک بود.
 
-### How MCP Got Here
+### چگونه MCP به این نقطه رسید
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -147,24 +155,28 @@ flowchart LR
     F --> G["Oct 2026<br>Extension maturity stages;<br>next release moved to Mar 30, 2027"]
 ```
 
-### Three Generations of MCP, Compared
+</div>
 
-| Dimension | Launch (Nov 2024) | Streamable HTTP era (2025 revisions) | 2026-07-28 revision |
-|-----------|-------------------|--------------------------------------|---------------------|
-| **Session model** | Stateful `initialize` handshake | Stateful, `Mcp-Session-Id` over Streamable HTTP | Stateless; version and capabilities ride in `_meta` on every request |
-| **Transport** | stdio, HTTP+SSE | Adds Streamable HTTP | Streamable HTTP with mandatory `Mcp-Method` / `Mcp-Name` routing headers; HTTP+SSE formally deprecated |
-| **Server-initiated requests** | Sampling, roots (server push) | Adds elicitation | Removed; replaced by Multi Round-Trip Requests (client retries with state) |
-| **Mid-call user input** | None | `elicitation/create` push | `input_required` result + client retry with `requestState` |
-| **Long-running work** | None | Experimental | Tasks official extension (poll-based handles) |
-| **Server-rendered UI** | None | MCP Apps ships as an extension (Jan 2026) | MCP Apps folded into the formal extensions framework |
-| **Auth** | None standardized | OAuth 2.1 + PKCE, Dynamic Client Registration; CIMD and step-up scope consent added in 2025-11-25 | OAuth hardened: RFC 9207 `iss` validation, issuer-bound credentials, CIMD replaces DCR; EMA extension for enterprise IdPs |
-| **List caching** | None | None | Required `ttlMs` + `cacheScope` on list and read results; deterministic tool ordering for prompt-cache hits |
-| **Stream recovery** | None | SSE `Last-Event-ID` resumability | Removed; clients re-issue the request, durable work uses Tasks |
-| **Horizontal scaling** | Single process | Sticky sessions behind a load balancer | Any instance serves any request; no shared state |
+### مقایسه سه نسل از MCP
 
-### Multi Round-Trip Requests (MRTR)
+| ابعاد (Dimension) | زمان راه‌اندازی (نوامبر ۲۰۲۴) | دوران Streamable HTTP (بازنگری‌های ۲۰۲۵) | بازنگری 2026-07-28 |
+|---|---|---|---|
+| **مدل نشست (Session model)** | دست‌دهی باوضعیت (Stateful) `initialize` | باوضعیت (Stateful)، هدر `Mcp-Session-Id` روی Streamable HTTP | بدون وضعیت (Stateless)؛ نسخه و قابلیت‌ها در هر درخواست داخل `_meta` قرار می‌گیرند |
+| **لایه انتقال (Transport)** | stdio، HTTP+SSE | افزودن Streamable HTTP | پروتکل Streamable HTTP به همراه هدرهای مسیریابی اجباری `Mcp-Method` / `Mcp-Name`؛ پروتکل HTTP+SSE رسماً منسوخ (deprecated) شده است |
+| **درخواست‌های آغازشده توسط سرور** | Sampling، roots (پوش سرور / server push) | افزودن elicitation | حذف شده؛ جایگزین‌شده با درخواست‌های چند رفت‌وبرگشتی (Multi Round-Trip Requests) (تلاش مجدد کلاینت همراه با وضعیت) |
+| **ورودی کاربر در میانه فراخوانی** | ندارد | پوش `elicitation/create` | نتیجه `input_required` + تلاش مجدد کلاینت به همراه `requestState` |
+| **کارهای طولانی‌مدت (Long-running work)** | ندارد | آزمایشی (Experimental) | افزونه رسمی Tasks (هندل‌های مبتنی بر نظرسنجی یا poll-based) |
+| **رابط کاربری رندرشده توسط سرور** | ندارد | عرضه MCP Apps به عنوان یک افزونه (ژانویه ۲۰۲۶) | ادغام MCP Apps در فریم‌ورک رسمی افزونه‌ها |
+| **احراز هویت (Auth)** | بدون استاندارد مشخص | پروتکل OAuth 2.1 به همراه PKCE، ثبت پویای کلاینت (Dynamic Client Registration)؛ افزودن CIMD و رضایت دامنه سطح‌بالا (step-up scope consent) در نسخه 2025-11-25 | مقاوم‌سازی OAuth: اعتبارسنجی `iss` مطابق RFC 9207، اعتبارات متصل به صادرکننده (issuer-bound credentials)، جایگزینی DCR با CIMD؛ افزونه EMA برای IdPهای سازمانی |
+| **کش کردن لیست‌ها (List caching)** | ندارد | ندارد | الزام `ttlMs` + `cacheScope` در نتایج لیست و خواندن؛ ترتیب قطعی ابزارها برای اصابت به حافظه پنهان Prompt (Prompt-cache hits) |
+| **بازیابی استریم (Stream recovery)** | ندارد | قابلیت ازسرگیری با `Last-Event-ID` در SSE | حذف شده؛ کلاینت‌ها درخواست را مجدداً ارسال می‌کنند، کارهای پایدار از افزونه Tasks استفاده می‌کنند |
+| **مقیاس‌پذیری افقی (Horizontal scaling)** | تک‌پردازه (Single process) | نشست‌های چسبنده (Sticky sessions) در پشت متعادل‌کننده بار | هر نمونه به هر درخواستی پاسخ می‌دهد؛ بدون وضعیت مشترک |
 
-The server-initiated request pattern (`elicitation/create`, `sampling/createMessage`, `roots/list`) is removed. When a server needs mid-call user input, it returns a result with `resultType: "input_required"`, an `inputRequests` array, and an opaque `requestState` blob; the client collects the input and retries the original request with `inputResponses` attached. Because the state rides in the retry, any server instance behind the load balancer can resume the interrupted call. This is what makes human-in-the-loop approval gates compatible with stateless horizontal scaling.
+### درخواست‌های چند رفت‌وبرگشتی (Multi Round-Trip Requests یا MRTR)
+
+الگوی درخواست‌های آغازشده توسط سرور (`elicitation/create`، `sampling/createMessage`، `roots/list`) حذف شده است. زمانی که یک سرور در میانه فراخوانی به ورودی کاربر نیاز پیدا می‌کند، نتیجه‌ای با `resultType: "input_required"`، یک آرایه `inputRequests` و یک شیء مات (opaque blob) به نام `requestState` بازمی‌گرداند؛ کلاینت ورودی را جمع‌آوری کرده و درخواست اصلی را به همراه `inputResponses` پیوست‌شده مجدداً ارسال (retry) می‌کند. از آنجا که وضعیت درون درخواست مجدد حمل می‌شود، هر نمونه‌ای از سرور در پشت متعادل‌کننده بار می‌تواند فراخوانی متوقف‌شده را از سر بگیرد. این همان چیزی است که گیت‌های تأیید با دخالت انسان (human-in-the-loop approval gates) را با مقیاس‌پذیری افقیِ بدون وضعیت سازگار می‌سازد.
+
+<div dir="ltr">
 
 ```mermaid
 sequenceDiagram
@@ -182,125 +194,129 @@ sequenceDiagram
     S2-->>C: resultType complete
 ```
 
-All results now carry a required `resultType` field (`complete` or `input_required`; extensions such as Tasks add further values); results from older servers that lack it are treated as `complete`.
+</div>
 
-### What Is Deprecated or Removed
+اکنون همه نتایج شامل یک فیلد اجباری `resultType` هستند (`complete` یا `input_required`؛ افزونه‌هایی نظیر Tasks مقادیر بیشتری به آن می‌افزایند)؛ نتایج حاصل از سرورهای قدیمی‌تر که فاقد این فیلد هستند به عنوان `complete` در نظر گرفته می‌شوند.
 
-The revision also adopts a formal feature lifecycle (Active, Deprecated, Removed) with a minimum twelve-month deprecation window and a public deprecated-features registry. For features newly deprecated in this revision (Roots, Sampling, Logging, DCR) the earliest removal is July 28, 2027; HTTP+SSE, deprecated back in March 2025, runs on an earlier clock. Under the March and September release cadence adopted in October (SEP-3398), the first release that could actually drop the 2026-07-28 deprecations is the September 2027 one, which gives server fleets a concrete migration deadline to plan against.
+### چه مواردی منسوخ یا حذف شده‌اند
 
-| Feature | Status in 2026-07-28 | Migrate to |
-|---------|----------------------|------------|
-| `initialize` handshake, `Mcp-Session-Id` | Removed | Version and capabilities in `_meta` per request; `server/discover` RPC for probing |
-| `elicitation/create`, `sampling/createMessage`, `roots/list` | Removed | Multi Round-Trip Requests |
-| SSE stream resumability (`Last-Event-ID`) | Removed | Re-issue the request; Tasks extension for durable work |
-| Roots | Deprecated | Pass directories via tool parameters, resource URIs, or server config |
-| Sampling | Deprecated | Call the LLM provider API directly |
-| Logging | Deprecated | stderr (stdio) or OpenTelemetry |
-| HTTP+SSE transport | Formally deprecated | Streamable HTTP |
-| Dynamic Client Registration (RFC 7591) | Deprecated | Client ID Metadata Documents (client ID is a URL hosting the client's metadata) |
+این بازنگری همچنین یک چرخه حیات رسمی برای ویژگی‌ها (شامل Active ،Deprecated ،Removed) با یک بازه حداقل دوازده‌ماهه برای منسوخ‌شدن (deprecation window) و یک رجیستری عمومی از ویژگی‌های منسوخ‌شده اتخاذ کرده است. برای ویژگی‌هایی که به تازگی در این بازنگری منسوخ شده‌اند (Roots ،Sampling ،Logging ،DCR)، زودترین زمان حذف ۲۸ ژوئیه ۲۰۲۷ خواهد بود؛ پروتکل HTTP+SSE که در مارس ۲۰۲۵ منسوخ شده بود، بر اساس زمان‌بندی قبلی خود پیش می‌رود. بر اساس توالی انتشار ماه‌های مارس و سپتامبر که در اکتبر (SEP-3398) به تصویب رسید، اولین نسخه‌ای که می‌تواند قابلیت‌های منسوخ‌شده در نسخه 2026-07-28 را عملاً حذف کند، نسخه سپتامبر ۲۰۲۷ است که به ناوگان سرورها یک ضرب‌الاجل مهاجرت مشخص و قابل برنامه‌ریزی می‌دهد.
 
-The RPC mechanisms (`elicitation/create`, `sampling/createMessage`, `roots/list`) are removed from the core protocol while the features they served are deprecated with migration paths, which is why both kinds of rows appear above.
+| ویژگی (Feature) | وضعیت در 2026-07-28 | مسیر مهاجرت (Migrate to) |
+|---|---|---|
+| دست‌دهی `initialize`، هدر `Mcp-Session-Id` | حذف شده (Removed) | نسخه و قابلیت‌ها در `_meta` به ازای هر درخواست؛ فراخوانی RPC با `server/discover` برای بررسی و سنجش (probing) |
+| `elicitation/create`، `sampling/createMessage`، `roots/list` | حذف شده (Removed) | درخواست‌های چند رفت‌وبرگشتی (Multi Round-Trip Requests) |
+| قابلیت ازسرگیری استریم در SSE (`Last-Event-ID`) | حذف شده (Removed) | ارسال مجدد درخواست؛ استفاده از افزونه Tasks برای کارهای پایدار |
+| قابلیت Roots | منسوخ شده (Deprecated) | ارسال دایرکتوری‌ها از طریق پارامترهای ابزار، URIهای منبع، یا پیکربندی سرور |
+| قابلیت Sampling | منسوخ شده (Deprecated) | فراخوانی مستقیم API ارائه‌دهنده LLM |
+| لاگ‌گیری (Logging) | منسوخ شده (Deprecated) | خروجی خطای استاندارد stderr (در stdio) یا OpenTelemetry |
+| لایه انتقال HTTP+SSE | رسماً منسوخ شده (Formally deprecated) | پروتکل Streamable HTTP |
+| ثبت پویای کلاینت یا Dynamic Client Registration (مطابق RFC 7591) | منسوخ شده (Deprecated) | اسناد فراداده شناسه کلاینت (Client ID Metadata Documents) (شناسه کلاینت یک URL است که فراداده کلاینت را میزبانی می‌کند) |
 
-Two smaller but design-relevant transport changes: `Mcp-Method` and `Mcp-Name` HTTP headers are now mandatory on Streamable HTTP POSTs, so load balancers, gateways, and WAFs can route and filter MCP traffic without parsing JSON-RPC bodies; and list results (`tools/list`, `prompts/list`, `resources/list`) must declare `ttlMs` and `cacheScope`, giving clients a principled answer to caching tool catalogs.
+سازوکارهای RPC (`elicitation/create`، `sampling/createMessage`، `roots/list`) از پروتکل اصلی حذف شده‌اند، در حالی که ویژگی‌هایی که به آنها خدمت می‌کردند منسوخ شده و دارای مسیرهای مهاجرت هستند؛ به همین دلیل است که هر دو نوع سطر در جدول بالا دیده می‌شوند.
 
-### The Extensions Framework
+دو تغییر کوچک‌تر اما مهم در طراحی لایه انتقال: هدرهای HTTP با نام‌های `Mcp-Method` و `Mcp-Name` اکنون در درخواست‌های POST مبتنی بر Streamable HTTP اجباری هستند، تا متعادل‌کننده‌های بار، درگاه‌ها (gateways) و WAFها بتوانند ترافیک MCP را بدون نیاز به تجزیه بدنه JSON-RPC مسیریابی و فیلتر کنند؛ همچنین نتایج لیست‌ها (`tools/list`، `prompts/list`، `resources/list`) باید `ttlMs` و `cacheScope` را اعلام کنند، که رویکردی اصولی برای کش کردن کاتالوگ ابزارها در اختیار کلاینت‌ها قرار می‌دهد.
 
-The core is now deliberately small; everything else is an **extension**, identified by reverse-DNS ID, versioned independently of the core spec, and governed through an Extensions Track in the SEP process.
+### فریم‌ورک افزونه‌ها (Extensions Framework)
 
-**Maturity stages (SEP-3392, Final October 29, 2026).** Every extension now sits in one of three stages, and the spec directory it lives in (`specification/experimental/`, `beta/`, or `stable/`) shows which:
+هسته اکنون عمداً کوچک نگه داشته شده است؛ هر چیز دیگری یک **افزونه (extension)** است که با یک شناسه معکوس دامنه (reverse-DNS ID) مشخص می‌شود، به صورت مستقل از مشخصات هسته نسخه‌بندی می‌گردد و از طریق یک مسیر اختصاصی افزونه‌ها (Extensions Track) در فرآیند SEP مدیریت می‌شود.
 
-| Stage | What can change | What you can rely on |
-|-------|-----------------|----------------------|
-| **Experimental** | Anything, at any time, without notice | Nothing; the design may disappear |
-| **Beta** | Any change; breaking changes should be rare, batched, and documented | Real usage is welcome, but budget for breaks |
-| **Stable** | Only alongside a new core protocol revision | Behavior is fixed within a protocol revision |
+**مراحل بلوغ (SEP-3392، نهایی‌شده در ۲۹ اکتبر ۲۰۲۶).** اکنون هر افزونه در یکی از سه مرحله قرار می‌گیرد و دایرکتوری مشخصات که در آن مستقر است (`specification/experimental/`، `beta/` یا `stable/`) نشان‌دهنده آن است:
 
-Promotion into the core specification is an exit, not a fourth stage. From Beta an extension either becomes Stable or a Standards Track SEP promotes it into core, and a Stable extension can be promoted later. Once promoted in protocol revision R, the feature is core behavior for requests that declare R or later, the extension's final revision still governs earlier revisions, and its spec moves to `specification/archived/`. Each Beta extension states its intended destination: Tasks is headed for core, while Skills and Server Cards have not named one.
+| مرحله (Stage) | چه چیزهایی می‌توانند تغییر کنند | روی چه مواردی می‌توانید حساب کنید |
+|---|---|---|
+| **آزمایشی (Experimental)** | هر چیزی، در هر زمان و بدون اطلاع قبلی | هیچ چیز؛ این طراحی ممکن است به کلی ناپدید شود |
+| **بتا (Beta)** | هر تغییری؛ تغییرات شکننده (breaking changes) باید نادر، دسته‌ای و مستند باشند | استفاده واقعی مورد استقبال است، اما تغییرات شکننده را هم در نظر داشته باشید |
+| **پایدار (Stable)** | فقط همگام با یک بازنگری جدید در هسته پروتکل | رفتار در طول یک بازنگری پروتکل ثابت می‌ماند |
 
-The initial classification put MCP Apps and enterprise auth at **Stable**; Tasks, Skills, and Server Cards at **Beta**; and interceptors, variants, triggers and events, and tool annotations at **Experimental**. The lesson for interviews: a Final SEP is not a stable interface. Skills and Server Cards both have Final SEPs and can still break.
+ارتقا به مشخصات هسته یک نقطه خروج است، نه مرحله چهارم. یک افزونه از مرحله Beta یا به Stable تبدیل می‌شود یا یک سند SEP در مسیر استانداردها (Standards Track SEP) آن را به هسته ارتقا می‌دهد؛ یک افزونه Stable نیز می‌تواند بعداً ارتقا یابد. پس از ارتقا در بازنگری R پروتکل، این قابلیت برای درخواست‌هایی که نسخه R یا بالاتر را اعلام می‌کنند به عنوان رفتار هسته عمل می‌کند، آخرین بازنگری افزونه همچنان بر بازنگری‌های قبلی حاکم است و مشخصات آن به دایرکتوری `specification/archived/` منتقل می‌شود. هر افزونه Beta مقصد نهایی مورد نظر خود را اعلام می‌کند: افزونه Tasks در مسیر پیوستن به هسته است، در حالی که Skills و Server Cards مقصدی را اعلام نکرده‌اند.
 
-The official extensions include:
+طبقه‌بندی اولیه، MCP Apps و احراز هویت سازمانی را در مرحله **Stable**؛ Tasks ،Skills و Server Cards را در مرحله **Beta**؛ و رهگیرها (interceptors)، نسخه‌ها (variants)، تریگرها و رویدادها (triggers and events) و حاشیه‌نویسی‌های ابزار (tool annotations) را در مرحله **Experimental** قرار داد. نکته آموزنده برای مصاحبه‌ها: یک SEP نهایی‌شده الزاماً یک رابط پایدار نیست. هر دو قابلیت Skills و Server Cards دارای SEPهای نهایی هستند و همچنان ممکن است دستخوش تغییرات شکننده شوند.
 
-| Extension | Status | What it does |
-|-----------|--------|--------------|
-| **Tasks** (`io.modelcontextprotocol/tasks`) | Beta; redesigned poll-based lifecycle, contributed by AWS | A tool call can answer with a task handle; the client polls `tasks/get`, pushes mid-task input with `tasks/update`, cancels with `tasks/cancel`. The standard answer for work that outlives a request. |
-| **MCP Apps** | Stable; official since January 26, 2026 | A tool declares a `ui://` template; the host renders it in a sandboxed iframe (no DOM access, deny-by-default CSP), UI-to-host communication is postMessage-carried JSON-RPC, and UI-triggered actions go through the same tool-call consent path. Rendered by Claude, ChatGPT, VS Code, Goose, and Microsoft 365 Copilot, among others. |
-| **Enterprise-Managed Authorization (EMA)** | Stable; shipped June 18, 2026 | An organization provisions MCP server access centrally through its IdP: an OIDC or SAML assertion is exchanged (RFC 8693) for an ID-JAG, which a JWT bearer grant (RFC 7523) trades for an MCP access token, with no per-user consent screens. Okta was the first supported IdP; Claude and VS Code shipped support at launch. Since October 30, 2026 the docs list Okta, Ping Identity (PingFederate 13.1+), Descope, Athenz, Janssen, and ThunderID as issuing and accepting ID-JAGs, Auth0, WorkOS AuthKit, and Scalekit as accepting in early access, Stytch and AuthPlane as accepting, and Keycloak as experimental (26.7.0 and later behind a feature flag); Okta's issuing is capped at 250 ID-JAGs per user per resource app per month unless you buy Okta for AI Agents, a real ceiling for agent fleets, and implementations track different draft revisions. The ID-JAG grant itself is still an IETF OAuth working-group Internet-Draft (-04), not an RFC, so expect wire-level changes. |
+افزونه‌های رسمی عبارتند از:
 
-### Migration Checklist
+| افزونه (Extension) | وضعیت (Status) | عملکرد آن (What it does) |
+|---|---|---|
+| **Tasks** (`io.modelcontextprotocol/tasks`) | بتا (Beta)؛ چرخه حیات بازطراحی‌شده مبتنی بر نظرسنجی (poll-based)، با مشارکت AWS | یک فراخوانی ابزار می‌تواند با یک هندل تسک (task handle) پاسخ دهد؛ کلاینت `tasks/get` را به صورت دوره‌ای استعلام (poll) می‌کند، ورودی‌های حین تسک را با `tasks/update` ارسال می‌کند و با `tasks/cancel` آن را لغو می‌نماید. این راهکار استاندارد برای کارهایی است که عمرشان فراتر از یک درخواست طول می‌کشد. |
+| **MCP Apps** | پایدار (Stable)؛ رسمی از ۲۶ ژانویه ۲۰۲۶ | یک ابزار الگوی `ui://` را اعلام می‌کند؛ هاست آن را درون یک iframe در محیط ایزوله (sandboxed) بدون دسترسی به DOM و با سیاست امنیتی رد پیش‌فرض (deny-by-default CSP) رندر می‌کند، ارتباط میان رابط کاربری و هاست به صورت JSON-RPC از طریق postMessage منتقل می‌شود و اقدامات ناشی از رابط کاربری از همان مسیر رضایت فراخوانی ابزار (tool-call consent path) عبور می‌کنند. این قابلیت توسط Claude ،ChatGPT ،VS Code ،Goose و Microsoft 365 Copilot و دیگر پلتفرم‌ها رندر می‌شود. |
+| **مجوزدهی مدیریت‌شده توسط سازمان (EMA / Enterprise-Managed Authorization)** | پایدار (Stable)؛ عرضه‌شده در ۱۸ ژوئن ۲۰۲۶ | یک سازمان دسترسی به سرور MCP را به صورت متمرکز از طریق IdP خود فراهم (provision) می‌کند: یک assertion مربوط به OIDC یا SAML طبق RFC 8693 با یک ID-JAG مبادله می‌شود که سپس از طریق اعطای حامل JWT یا JWT bearer grant (طبق RFC 7523) با یک Token دسترسی MCP مبادله می‌گردد، بدون اینکه صفحات رضایت به ازای هر کاربر نمایش داده شوند. سرویس Okta اولین IdP پشتیبانی‌شده بود؛ Claude و VS Code از همان زمان راه‌اندازی، پشتیبانی از آن را عرضه کردند. از ۳۰ اکتبر ۲۰۲۶، مستندات رسمی سرویس‌های Okta ،Ping Identity (نسخه PingFederate 13.1 به بالا) ،Descope ،Athenz ،Janssen و ThunderID را به عنوان صادرکننده و پذیرنده ID-JAG؛ سرویس‌های Auth0 ،WorkOS AuthKit و Scalekit را به عنوان پذیرنده در دسترسی زودهنگام (early access)؛ سرویس‌های Stytch و AuthPlane را به عنوان پذیرنده؛ و Keycloak را به صورت آزمایشی (نسخه 26.7.0 و بالاتر در پشت یک پرچم ویژگی / feature flag) فهرست کرده‌اند؛ صدور ID-JAG در Okta به ۲۵۰ عدد ID-JAG به ازای هر کاربر، به ازای هر برنامه منبع در هر ماه محدود شده است مگر اینکه Okta for AI Agents را خریداری کنید که یک سقف واقعی برای ناوگان‌های Agentها به شمار می‌رود، و پیاده‌سازی‌های مختلف از نسخه‌های پیش‌نویس متفاوتی پیروی می‌کنند. سازوکار اعطای ID-JAG خود هنوز یک پیش‌نویس اینترنتی (Internet-Draft نسخه -04) از کارگروه OAuth در IETF است و یک RFC به حساب نمی‌آید، بنابراین باید انتظار تغییرات در سطح پروتکل ارتباطی (wire-level changes) را داشته باشید. |
 
-- Remove `initialize` / session-ID logic; send version and capabilities in `_meta`, and implement the `server/discover` RPC (now a MUST).
-- Convert elicitation and sampling flows to MRTR: return `input_required` with `requestState`, accept retries with `inputResponses`.
-- Move any cross-call state into explicit handles passed as tool arguments, or adopt the Tasks extension.
-- Emit `Mcp-Method` / `Mcp-Name` headers, declare `ttlMs` / `cacheScope` on list results, and return tools in deterministic order.
-- Plan the auth migration from DCR to Client ID Metadata Documents; validate `iss` per RFC 9207 and never reuse client credentials across issuers.
-- Budget real work: the maintainers themselves warn that custom implementations face significant uplift.
+### چک‌لیست مهاجرت
 
-Sources: modelcontextprotocol.io/specification/2026-07-28/changelog, blog.modelcontextprotocol.io
+- حذف منطق `initialize` و شناسه نشست (session-ID)؛ ارسال نسخه و قابلیت‌ها در `_meta`، و پیاده‌سازی RPC با نام `server/discover` (که اکنون الزامی / MUST است).
+- تبدیل جریان‌های elicitation و sampling به MRTR: بازگرداندن `input_required` به همراه `requestState`، و پذیرش تلاش‌های مجدد به همراه `inputResponses`.
+- انتقال هرگونه وضعیت بین‌فراخوانی (cross-call state) به هندل‌های صریحی که به عنوان آرگومان‌های ابزار ارسال می‌شوند، یا به‌کارگیری افزونه Tasks.
+- ارسال هدرهای `Mcp-Method` و `Mcp-Name`، اعلام `ttlMs` و `cacheScope` در نتایج لیست‌ها، و بازگرداندن ابزارها با ترتیبی قطعی (deterministic order).
+- برنامه‌ریزی برای مهاجرت احراز هویت از DCR به Client ID Metadata Documents؛ اعتبارسنجی `iss` مطابق RFC 9207 و عدم استفاده مجدد از اعتبارات کلاینت (client credentials) در میان صادرکنندگان مختلف.
+- برآورد و تخصیص زمان و تلاش واقعی: خود نگه‌دارندگان هشدار می‌دهند که پیاده‌سازی‌های سفارشی با فرآیند ارتقا و بازنویسی قابل‌توجهی (significant uplift) مواجه خواهند شد.
+
+منابع: modelcontextprotocol.io/specification/2026-07-28/changelog، blog.modelcontextprotocol.io
 
 ---
 
-## MCP Extensions and Ecosystem (November 2026)
+## اکستنشن‌ها و اکوسیستم MCP (نوامبر ۲۰۲۶)
 
-The roadmap items this chapter tracked through May 2026 have largely shipped. Status as of early November 2026:
+مواردی از نقشه راه که این فصل تا مه ۲۰۲۶ دنبال می‌کرد، تا حد زیادی عرضه شده‌اند. وضعیت تا اوایل نوامبر ۲۰۲۶ به شرح زیر است:
 
-| Roadmap item (May 2026 framing) | Status (November 2026) |
+| آیتم نقشه راه (چارچوب مه ۲۰۲۶) | وضعیت (نوامبر ۲۰۲۶) |
 |---------------------------------|------------------------|
-| Transport scalability / stateless core | **Shipped** in the 2026-07-28 revision (see [the stateless rewrite](#mcp-2026-07-28-the-stateless-rewrite)). The August 22 roadmap goes further: Streamable HTTP as the single binding, spoken over stdin/stdout for local servers too |
-| MCP Apps (server-rendered UIs) | **Stable.** Shipped January 26, 2026 as the first official extension; rendered by Claude, ChatGPT, VS Code, Goose, and Microsoft 365 Copilot, among others. The Apps SDK moved onto the v2 TypeScript packages in ext-apps 2.0.0 (September 8) with the wire protocol unchanged, so 2.x Views run in 1.x hosts and 2.x hosts render 1.x Views: SDK-level breaks without wire breaks, which is what the extensions framework was designed for |
-| Tasks extension (long-running work) | **Beta.** Shipped as `io.modelcontextprotocol/tasks` in the 2026-07-28 revision, redesigned around poll-based task handles, but the extension repository still carries only v0.2.x pre-release tags, and the Beta stage allows documented breaking changes, so treat the interface as settling. A new Tasks and Events Working Group (formed in October) owns it. The August 22 roadmap targets Tasks (SEP-2663) for eventual inclusion in the core protocol, after a composition review so tasks, subscriptions, and progress notifications share one lifecycle, cancellation model, and error surface |
-| Enterprise authentication | **Stable.** Shipped June 18, 2026 as the Enterprise-Managed Authorization extension (Okta first IdP; Claude and VS Code at launch). By October 30 the support table had grown to a dozen IdPs and auth vendors, with uneven draft-revision interop. Next is agent identity: DPoP sender-constrained tokens (SEP-1932) and Workload Identity Federation (SEP-1933) are still open drafts, though the TypeScript client 2.1.0 already ships DPoP |
-| MCP Server Cards (pre-connection discovery) | **Beta.** SEP-2127 went Final on October 6 (extension `io.modelcontextprotocol/server-card`). A card can live at any URI; `<streamable-http-url>/server-card` is the recommended location, not a required one. Clients find cards through the domain's AI Catalog at `/.well-known/ai-catalog.json`, a cross-protocol index maintained by the Agent Card Working Group under the Linux Foundation that also lists A2A agent cards and Claude Code plugins. Cards deliberately carry no tool, resource, or prompt lists, so a client still learns the tool surface from runtime list calls. Distinct from the core `server/discover` RPC |
-| MCP Registry | Still in preview (`registry.modelcontextprotocol.io`), API frozen at v0.1; GA timing unannounced. Release v1.8.1 (August 6) fixed a GitHub Pages organization-namespace takeover |
-| Skills over MCP (new) | **Beta.** The SEP (SEP-2640) went Final September 13, 2026 as the `io.modelcontextprotocol/skills` extension, and the TypeScript SDK shipped it in 2.4.0 (October 23); see below |
+| مقیاس‌پذیری انتقال (Transport) / هسته بدون وضعیت (Stateless) | **عرضه شده** در بازنگری ۲۰۲۶-۰۷-۲۸ (ببینید: [بازنویسی بدون وضعیت](#mcp-2026-07-28-the-stateless-rewrite)). نقشه راه ۲۲ اوت فراتر می‌رود: Streamable HTTP به عنوان اتصال (Binding) واحد، که برای سرورهای محلی نیز روی stdin/stdout به کار گرفته می‌شود |
+| برنامه‌های MCP (رابط‌های کاربری سمت سرور یا Server-rendered UIs) | **پایدار (Stable).** در ۲۶ ژانویه ۲۰۲۶ به عنوان نخستین اکستنشن رسمی عرضه شد؛ توسط Claude، ChatGPT، VS Code، Goose و Microsoft 365 Copilot، در میان سایر ابزارها، رندر می‌شود. بسته Apps SDK بدون تغییر پروتکل ارتباطی (Wire Protocol)، در ext-apps 2.0.0 (۸ سپتامبر) به پکیج‌های تایپ‌اسکریپت نسخه ۲ منتقل شد، بنابراین نماهای (Views) نسخه 2.x در میزبان‌های (Hosts) نسخه 1.x اجرا می‌شوند و میزبان‌های نسخه 2.x نیز نماهای نسخه 1.x را رندر می‌کنند: شکست‌ها در سطح SDK بدون شکست در پروتکل ارتباطی رخ داده‌اند، که فریم‌ورک اکستنشن‌ها دقیقاً برای همین هدف طراحی شده بود |
+| اکستنشن وظایف (کارهای طولانی‌مدت / Long-running work) | **بتا (Beta).** با عنوان `io.modelcontextprotocol/tasks` در بازنگری ۲۰۲۶-۰۷-۲۸ عرضه شد و پیرامون هندل‌های وظیفه مبتنی بر نظرسنجی (Poll-based task handles) بازطراحی گردید، اما مخزن اکستنشن همچنان فقط حامل تگ‌های پیش‌انتشار v0.2.x است و مرحله بتا امکان اعمال تغییرات ساختارشکن (Breaking Changes) مستندشده را می‌دهد، بنابراین این رابط را در حال تثبیت در نظر بگیرید. کارگروه جدید وظایف و رویدادها (Tasks and Events Working Group که در اکتبر تشکیل شد) مالکیت آن را بر عهده دارد. نقشه راه ۲۲ اوت، Tasks (SEP-2663) را برای گنجاندن نهایی در هسته پروتکل هدف‌گذاری کرده است، پس از یک بررسی ترکیب‌پذیری (Composition review) به گونه‌ای که وظایف، اشتراک‌ها (Subscriptions) و اعلان‌های پیشرفت، چرخه حیات، مدل لغو (Cancellation) و سطح خطای یکسانی را به اشتراک بگذارند |
+| احراز هویت سازمانی (Enterprise) | **پایدار (Stable).** در ۱۸ ژوئن ۲۰۲۶ به عنوان اکستنشن Enterprise-Managed Authorization عرضه شد (Okta اولین ارائه‌دهنده هویت یا IdP بود؛ Claude و VS Code در زمان عرضه). تا ۳۰ اکتبر جدول پشتیبانی به دوازده IdP و ارائه‌دهنده احراز هویت گسترش یافته بود، با سازگاری متقابل (Interop) ناهمگون میان پیش‌نویس‌های بازنگری. گام بعدی هویت Agent است: Tokenهای محدود به فرستنده DPoP (SEP-1932) و فدراسیون هویت بار کاری (Workload Identity Federation / SEP-1933) هنوز پیش‌نویس‌های باز هستند، هرچند کلاینت تایپ‌اسکریپت نسخه 2.1.0 هم‌اکنون DPoP را ارائه می‌دهد |
+| کارت‌های سرور MCP (کشف پیش از اتصال / Pre-connection discovery) | **بتا (Beta).** سند SEP-2127 در ۶ اکتبر نهایی شد (اکستنشن `io.modelcontextprotocol/server-card`). یک کارت می‌تواند در هر URI قرار داشته باشد؛ `<streamable-http-url>/server-card` مکان پیشنهادی است و نه الزامی. کلاینت‌ها کارت‌ها را از طریق AI Catalog دامنه در `/.well-known/ai-catalog.json` می‌یابند، یک نمایه بین‌پروتکلی که توسط کارگروه Agent Card تحت بنیاد لینوکس نگهداری می‌شود و کارت‌های Agent مربوط به A2A و افزونه‌های Claude Code را نیز فهرست می‌کند. کارت‌ها عمداً هیچ فهرستی از ابزارها، منابع یا Promptها ندارند، بنابراین کلاینت همچنان ساختار ابزارها را از فراخوانی‌های فهرستی در زمان اجرا دریافت می‌کند. متمایز از `server/discover` RPC در هسته پروتکل |
+| رجیستری MCP (MCP Registry) | همچنان در حالت پیش‌نمایش (`registry.modelcontextprotocol.io`)، API در نسخه v0.1 فریز شده است؛ زمان‌بندی عرضه عمومی (GA) اعلام نشده است. نسخه v1.8.1 (۶ اوت) مشکل تصاحب فضای نام سازمان (Organization-namespace takeover) در GitHub Pages را برطرف کرد |
+| مهارت‌ها روی MCP (جدید) | **بتا (Beta).** این SEP (SEP-2640) در ۱۳ سپتامبر ۲۰۲۶ به عنوان اکستنشن `io.modelcontextprotocol/skills` نهایی شد و TypeScript SDK آن را در نسخه 2.4.0 (۲۳ اکتبر) عرضه کرد؛ در ادامه را ببینید |
 
-**Discovery now has two layers worth keeping straight:** pre-connection discovery through a domain's AI Catalog pointing at server cards (a Beta extension; feeds registries, crawlers, and allowlisting) versus the in-protocol `server/discover` RPC (mandatory core since 2026-07-28; feeds version negotiation). Because the same catalog document indexes MCP servers and A2A agents, an enterprise platform can allowlist remote capabilities of both kinds from one place, but present it as direction, not standard.
+**اکنون فرآیند کشف (Discovery) دارای دو لایه متمایز است که تفکیک آن‌ها حائز اهمیت است:** کشف پیش از اتصال از طریق AI Catalog یک دامنه که به کارت‌های سرور اشاره دارد (یک اکستنشن بتا؛ تأمین‌کننده داده‌های رجیستری‌ها، خزنده‌ها و لیست‌های مجاز / Allowlisting) در مقابل `server/discover` RPC درون پروتکل (هسته اجباری از تاریخ ۲۰۲۶-۰۷-۲۸؛ تأمین‌کننده مذاکره نسخه / Version negotiation). از آنجا که همین سند کاتالوگ سرورهای MCP و Agentهای A2A را نمایه می‌کند، یک پلتفرم سازمانی می‌تواند قابلیت‌های ریموت هر دو نوع را از یک نقطه در لیست مجاز قرار دهد، اما این موضوع را به عنوان یک رویکرد و جهت‌گیری در نظر بگیرید، نه یک استاندارد قطعی.
 
-### What the August 22 Roadmap Prioritizes
+### اولویت‌های نقشه راه ۲۲ اوت
 
-The core maintainers published a 6-to-12-month roadmap on August 22, 2026, with expedited SEP review for five areas.
+نگهدارندگان اصلی پروتکل در ۲۲ اوت ۲۰۲۶ یک نقشه راه ۶ تا ۱۲ ماهه را منتشر کردند که شامل بررسی تسریع‌شده SEP برای پنج حوزه می‌شود.
 
-**When the next revision lands.** SEP-3398 (Accepted, merged October 27) moves the release that had been targeted for December 2026 to **March 30, 2027**, "subject to confirmation in the transition calendar," and sets spec releases generally on the last Tuesday of March and September. Each release runs an eight-month cycle: a soft freeze 2.5 months out, SDK betas 1.5 months out, and a hard freeze one month out. A SEP now needs a working group or Core Maintainer sponsor before formal review. Two planning consequences: anything not Final by a soft freeze slips a full six months, and SDK upgrades can be scheduled against fixed dates instead of tracked as surprises.
+**زمان ارائه بازنگری بعدی.** سند SEP-3398 (پذیرفته‌شده، ادغام‌شده در ۲۷ اکتبر) انتشار برنامه‌ریزی‌شده برای دسامبر ۲۰۲۶ را به **۳۰ مارس ۲۰۲۷** موکول می‌کند، «مشروط به تأیید در تقویم گذار»، و زمان انتشار مشخصات (Spec) را به طور کلی در آخرین سه‌شنبه ماه‌های مارس و سپتامبر تعیین می‌نماید. هر انتشار یک چرخه هشت‌ماهه را طی می‌کند: فریز اولیه (Soft Freeze) از ۲.۵ ماه قبل، نسخه‌های بتای SDK از ۱.۵ ماه قبل، و فریز نهایی (Hard Freeze) از یک ماه قبل. اکنون یک SEP پیش از بررسی رسمی، به حامی مالی یا سازمانی از سوی یک کارگروه یا نگهدارنده اصلی (Core Maintainer) نیاز دارد. دو پیامد برنامه‌ریزی: هر موردی که تا زمان فریز اولیه نهایی نشود، شش ماه کامل به تعویق می‌افتد، و ارتقای SDKها می‌تواند بر اساس تاریخ‌های ثابت برنامه‌ریزی شود، به جای اینکه به عنوان اتفاقات غافلگیرکننده دنبال شوند.
 
-| Priority area | What it means for builders |
-|---------------|----------------------------|
-| **Agentic messaging primitives** | Server-initiated events and webhooks (now owned by the Tasks and Events WG); Tasks, subscriptions, and progress notifications converge on one lifecycle |
-| **HTTP-native transport** | One binding (Streamable HTTP) everywhere, including over stdio for local servers; caching extended from `ttlMs` / `cacheScope` to ETags, including versioned tool-call results |
-| **Agent identity and enterprise security** | An Agent Identity WG (forming) to finalize DPoP and a delegated identity model built on workload identity federation, ID-JAG, and RFC 8693 token exchange, coordinated with the IETF OAuth and WIMSE groups; attesting whether a human is present (interactive client vs headless agent) is under discussion |
-| **Improved primitives** | Redesign the `tools/call` result shape (returning both `content` and `structuredContent` produced diverging implementations); an experimental server-side progressive discovery mechanism for large tool catalogs |
-| **SDK developer experience** | A formal extension contract; an experiment that generates a Tier 1 SDK and quickstarts from the spec and conformance suite |
+| حوزه اولویت | معنای آن برای توسعه‌دهندگان |
+|-------------|-----------------------------|
+| **پریمیتیوهای پیام‌رسانی Agentic** | رویدادهای آغازشده توسط سرور (Server-initiated events) و وبهوک‌ها (اکنون تحت مالکیت کارگروه وظایف و رویدادها)؛ وظایف (Tasks)، اشتراک‌ها (Subscriptions) و اعلان‌های پیشرفت روی یک چرخه حیات واحد همگرا می‌شوند |
+| **انتقال مبتنی بر HTTP (یا HTTP-native transport)** | یک اتصال واحد (Streamable HTTP) در همه جا، از جمله روی stdio برای سرورهای محلی؛ گسترش کش‌گذاری از `ttlMs` / `cacheScope` به ETagها، شامل نتایج نسخه‌بندی‌شده فراخوانی ابزار |
+| **هویت Agent و امنیت سازمانی** | کارگروه هویت Agent (در حال تشکیل) برای نهایی‌سازی DPoP و یک مدل هویت واگذارشده (Delegated identity) مبتنی بر فدراسیون هویت بار کاری، ID-JAG و تبادل Token در RFC 8693، با هماهنگی گروه‌های OAuth و WIMSE در IETF؛ تصدیق حضور انسان (کلاینت تعاملی در مقابل Agent بدون رابط یا Headless Agent) در دست بحث است |
+| **پریمیتیوهای بهبودیافته** | بازطراحی ساختار خروجی `tools/call` (بازگرداندن همزمان `content` و `structuredContent` منجر به پیاده‌سازی‌های واگرا شده بود)؛ یک مکانیزم آزمایشی کشف تدریجی (Progressive discovery) در سمت سرور برای کاتالوگ‌های بزرگ ابزار |
+| **تجربه توسعه‌دهنده SDK** | یک قرارداد رسمی برای اکستنشن‌ها؛ آزمایشی برای تولید یک Tier 1 SDK و راهنماهای شروع سریع (Quickstarts) از روی مشخصات و مجموعه آزمون انطباق (Conformance suite) |
 
-The two forward-looking interview questions this sets up: how a headless agent with its own identity reaches an MCP server, and how you serve a 2,000-tool catalog without blowing the context window.
+دو پرسش مصاحبه آینده‌نگرانه که این موارد ایجاد می‌کنند عبارتند از: چگونه یک Agent بدون رابط (Headless Agent) با هویت اختصاصی خود به یک سرور MCP دسترسی پیدا می‌کند، و چگونه بدون پر کردن پنجره زمینه (Context Window)، یک کاتالوگ با ۲۰۰۰ ابزار را ارائه می‌دهید.
 
-### Skills over MCP
+### مهارت‌ها روی MCP (Skills over MCP)
 
-Agent Skills (`SKILL.md` folders) left beta on the Claude API on August 19, 2026, and the format itself became an Agentic AI Foundation project on October 22. The MCP skills extension (SEP Final September 13, Beta stage since October 29) lets a server publish skills next to the tools they describe instead of copying them into a filesystem or plugin. Servers that declare it implement `skills/list` and `skills/get`, and skill files are read with ordinary `resources/read`. Each skill entry carries its frontmatter and a complete file manifest with a per-file SHA-256 digest and size.
+مهارت‌های Agent (پوشه‌های `SKILL.md`) در ۱۹ اوت ۲۰۲۶ از وضعیت بتا در Claude API خارج شدند و خود این فرمت در ۲۲ اکتبر به پروژه‌ای تحت بنیاد هوش مصنوعی Agentic (یا Agentic AI Foundation) تبدیل شد. اکستنشن مهارت‌های MCP (که SEP آن در ۱۳ سپتامبر نهایی شد و از ۲۹ اکتبر در مرحله بتا قرار دارد) به سرور امکان می‌دهد مهارت‌ها را در کنار ابزارهایی که توصیف می‌کنند منتشر کند، به جای اینکه آن‌ها را درون یک فایل‌سیستم یا افزونه کپی کند. سرورهایی که این قابلیت را تعریف می‌کنند، متدهای `skills/list` و `skills/get` را پیاده‌سازی می‌نمایند و فایل‌های مهارتی با متد معمولی `resources/read` خوانده می‌شوند. هر مدخل مهارت، اطلاعات مقدماتی (Frontmatter) و یک مانیفست کامل فایل همراه با اندازه و خلاصه پیام (Digest) رمزنگاری‌شده SHA-256 به ازای هر فایل را به همراه دارد.
 
-The host rules are the part to learn, because they answer "how do you stop a remote server from silently changing the instructions my agent loads," the skill version of a tool rug pull:
+قوانین میزبان (Host) بخشی هستند که باید به خوبی فراگرفت، چرا که به این پرسش پاسخ می‌دهند: «چگونه مانع از آن می‌شوید که یک سرور ریموت بی‌سر و صدا دستورالعمل‌هایی را که Agent من بارگذاری می‌کند تغییر دهد؟»؛ این در واقع نسخه مهارتی از ترفند زیر پا خالی کردن ناگهانی ابزار (Tool Rug Pull) است:
 
-- Hosts **must** verify size, digest, and frontmatter before use, and **must** bind any persisted approval to the whole manifest, so a changed, added, or removed file revokes approval.
-- Hosts **must not** prefetch skill files and **must** treat skill content as untrusted.
-- A skill's `allowed-tools` grants or any host-side code execution need explicit per-skill approval, and a cross-server read needs per-call approval naming both servers.
+- میزبان‌ها **باید** پیش از استفاده، اندازه، Digest و Frontmatter را اعتبارسنجی کنند و **باید** هرگونه تأییدیه پایدارشده را به کل مانیفست مقید سازند، به طوری که تغییر، اضافه یا حذف شدن یک فایل موجب ابطال تأییدیه شود.
+- میزبان‌ها **نباید** فایل‌های مهارتی را پیش‌واکشی (Prefetch) کنند و **باید** محتوای مهارت را به عنوان غیرقابل اعتماد در نظر بگیرند.
+- دسترسی‌های `allowed-tools` مربوط به یک مهارت یا هرگونه اجرای کد در سمت میزبان نیازمند تأیید صریح به ازای هر مهارت است، و خواندن متقابل میان سرورها (Cross-server read) نیازمند تأیید به ازای هر فراخوانی با ذکر نام هر دو سرور است.
 
-Adoption is early. Hugging Face's MCP server implements it, and the TypeScript SDK 2.4.0 (October 23) ships Skills over MCP (`loadSkills` on the server, and a `SkillsClient` that verifies size, digest, and frontmatter on every read; only the `attach` wiring is marked experimental); the Python SDK's latest release (2.3.0, October 2) predates it. Because the extension is Beta, pin the SDK version and expect a documented break before it reaches Stable. Skills are becoming versioned production artifacts elsewhere too (AWS added `update-skill` commands for its agent toolkit on September 30), so give them the same pinning and update review as package dependencies.
+پذیرش این قابلیت هنوز در مراحل اولیه است. سرور MCP مربوط به Hugging Face آن را پیاده‌سازی کرده است، و TypeScript SDK نسخه 2.4.0 (۲۳ اکتبر) قابلیت مهارت‌ها روی MCP را ارائه می‌دهد (`loadSkills` در سمت سرور، و یک `SkillsClient` که اندازه، Digest و Frontmatter را در هر بار خواندن اعتبارسنجی می‌کند؛ تنها ساختار اتصالی `attach` به عنوان آزمایشی علامت‌گذاری شده است)؛ آخرین نسخه منتشرشده از Python SDK (نسخه 2.3.0، ۲ اکتبر) پیش از این تاریخ عرضه شده است. از آنجا که این اکستنشن در وضعیت بتا قرار دارد، نسخه SDK را ثابت (Pin) کنید و پیش از رسیدن به وضعیت پایدار (Stable)، انتظار تغییرات ساختارشکن مستند را داشته باشید. مهارت‌ها در سایر پلتفرم‌ها نیز در حال تبدیل شدن به مصنوعات تولیدی (Production artifacts) نسخه‌بندی‌شده هستند (AWS در ۳۰ سپتامبر دستورات `update-skill` را برای جعبه‌ابزار Agent خود اضافه کرد)، بنابراین همانند وابستگی‌های بسته‌ها، برای آن‌ها نیز فرآیند تثبیت نسخه (Pinning) و بررسی به‌روزرسانی در نظر بگیرید.
 
-**Ecosystem scale:** SDK downloads run in the hundreds of millions per month. The protocol's own July 28 release post cited close to half a billion monthly across Tier 1 SDKs; Anthropic separately reported 400M monthly and a 4x increase across the year, so treat the aggregate as an order of magnitude rather than a precise figure and check the metric definition before quoting it. In August one connector directory alone listed **over 950 MCP servers**. At the July 28 final release AWS, Cloudflare, Google Cloud, Microsoft, and Netlify announced launch support. Microsoft rolled out MCP-based Federated Copilot Connectors manageable from the Microsoft 365 admin center, Apple made Xcode an MCP host for external coding agents, and Bloomberg has published a production case study of MCP as its internal agent-tool layer.
+**مقیاس اکوسیستم:** دانلودهای SDK به صدها میلیون بار در ماه می‌رسد. پست انتشار خود پروتکل در ۲۸ ژوئیه، آماری نزدیک به نیم میلیارد دانلود ماهانه را در میان Tier 1 SDKها اعلام کرد؛ Anthropic نیز به طور جداگانه ۴۰۰ میلیون دانلود ماهانه و رشد ۴ برابری در طول سال را گزارش داد، بنابراین این آمار تجمیعی را بیشتر به عنوان مرتبه بزرگی (Order of magnitude) در نظر بگیرید تا یک عدد دقیق، و پیش از استناد به آن، تعریف متریک را بررسی کنید. در ماه اوت، تنها یک دایرکتوری کانکتورها **بیش از ۹۵۰ سرور MCP** را فهرست کرده بود. در نسخه نهایی ۲۸ ژوئیه، شرکت‌های AWS، Cloudflare، Google Cloud، Microsoft و Netlify پشتیبانی رسمی خود را اعلام کردند. مایکروسافت Federated Copilot Connectors مبتنی بر MCP را معرفی کرد که از طریق مرکز مدیریت Microsoft 365 قابل مدیریت است، اپل محیط Xcode را به یک میزبان MCP برای Agentهای کدنویسی خارجی تبدیل کرد، و بلومبرگ یک مطالعه موردی عملیاتی از به کارگیری MCP به عنوان لایه ابزار-Agent داخلی خود منتشر نموده است.
 
-**The migration to the stateless revision is real but slow.** npm downloads for October 2026: about 245.8M for the v1 TypeScript SDK (`@modelcontextprotocol/sdk`) against about 62.1M for `@modelcontextprotocol/core`, 49.2M for `@modelcontextprotocol/server`, and 32.9M for `@modelcontextprotocol/client`. On a single-package comparison v2 is now roughly 13 to 25 percent of v1 volume, about double September's 8 to 13 percent, and v1 is still growing (about 207M in the 30 days to August 14, 231.9M in September). Downloads count CI installs and transitive dependencies, so read the ratio as a trend, not a census of servers. Plan for a long dual-version period: the C# SDK v2.2.0 (August 13) added an `HttpServerSessionMode` that lets a single endpoint serve both 2025-11-25 stateful clients and 2026-07-28 stateless clients, the pattern to copy if you operate a server fleet with mixed clients.
+**مهاجرت به بازنگری بدون وضعیت (Stateless) واقعی اما کند است.** آمار دانلود npm برای اکتبر ۲۰۲۶: حدود ۲۴۵.۸ میلیون دانلود برای نسخه v1 از TypeScript SDK (`@modelcontextprotocol/sdk`) در مقابل حدود ۶۲.۱ میلیون برای `@modelcontextprotocol/core`، ۴۹.۲ میلیون برای `@modelcontextprotocol/server`، و ۳۲.۹ میلیون برای `@modelcontextprotocol/client`. در یک مقایسه تک‌پکیجی، حجم نسخه v2 اکنون تقریباً ۱۳ تا ۲۵ درصد حجم نسخه v1 است که حدوداً دو برابر بازه ۸ تا ۱۳ درصدی ماه سپتامبر محسوب می‌شود، در حالی که نسخه v1 همچنان در حال رشد است (حدود ۲۰۷ میلیون در بازه ۳۰ روزه منتهی به ۱۴ اوت، ۲۳۱.۹ میلیون در سپتامبر). آمار دانلودها شامل نصب‌های CI و وابستگی‌های گذرا (Transitive dependencies) نیز می‌شود، بنابراین این نسبت را به عنوان یک روند در نظر بگیرید، نه آمارگیری دقیق سرورها. برای یک دوره طولانی همزیستی دو نسخه برنامه‌ریزی کنید: C# SDK v2.2.0 (۱۳ اوت) قابلیت `HttpServerSessionMode` را اضافه کرد که به یک اندپوینت واحد امکان می‌دهد به طور همزمان به کلاینت‌های باوضعیت (Stateful) نگارش ۲۰۲۵-۱۱-۲۵ و کلاینت‌های بدون وضعیت (Stateless) نگارش ۲۰۲۶-۰۷-۲۸ سرویس‌دهی کند؛ الگویی که در صورت مدیریت ناوگانی از سرورها با کلاینت‌های ناهمگن باید از آن الگوبرداری کرد.
 
-The SDK majors break code even where the wire protocol does not. In Python, `pip install mcp` has resolved to 2.x since 2.0.0 (July 28): `FastMCP` became `MCPServer`, a single `Client` replaced v1's transport-plus-`ClientSession` layering, and v1 gets security and critical fixes only, so tutorials that import `FastMCP` break on a fresh install. Agent frameworks followed within weeks (OpenAI Agents SDK 0.20.0 supports both majors; LangChain 1.4.0 gates MCP interrupt routing on the negotiated protocol era), which shows the blast radius of a major version in a dependency every framework shares. Tier 1 SDKs are now TypeScript, Python, C#, Go, Rust (promoted August 21), and Ruby (promoted September 28); Java is Tier 2, and Swift, PHP, and Kotlin are Tier 3. The conformance suite publishes frozen requirement sets for the revision (still 0.2.0-alpha.12 in early November).
+نسخه‌های اصلی (Major) بسته SDK کد را می‌شکنند، حتی در مواردی که پروتکل ارتباطی دست‌نخورده باقی مانده باشد. در پایتون، دستور `pip install mcp` از زمان نسخه 2.0.0 (۲۸ ژوئیه) به نگارش 2.x متصل می‌شود: `FastMCP` به `MCPServer` تبدیل شد، یک `Client` واحد جایگزین لایه‌بندی انتقال بعلاوه `ClientSession` در نسخه v1 گردید، و نسخه v1 تنها اصلاحات امنیتی و حیاتی را دریافت می‌کند؛ بنابراین آموزش‌هایی که `FastMCP` را وارد (Import) می‌کنند در نصب‌های جدید با خطا مواجه می‌شوند. فریم‌ورک‌های Agent ظرف چند هفته این مسیر را دنبال کردند (OpenAI Agents SDK 0.20.0 از هر دو نسخه اصلی پشتیبانی می‌کند؛ LangChain 1.4.0 مسیریابی وقفه MCP را مشروط به دوره پروتکل مورد توافق قرار می‌دهد)، که نشان‌دهنده شعاع اثر (Blast radius) یک نسخه اصلی در وابستگی مشترک تمام فریم‌ورک‌ها است. اکنون Tier 1 SDKها شامل TypeScript، Python، C#، Go، Rust (ارتقایافته در ۲۱ اوت) و Ruby (ارتقایافته در ۲۸ سپتامبر) هستند؛ جاوا در سطح Tier 2 و زبان‌های Swift، PHP و Kotlin در سطح Tier 3 قرار دارند. مجموعه آزمون انطباق، مجموعه‌های نیازمندی منجمدشده را برای بازنگری منتشر می‌کند (که در اوایل نوامبر هنوز در نسخه 0.2.0-alpha.12 است).
 
-**Governance**: MCP is governed under the Linux Foundation's Agentic AI Foundation (AAIF), which on October 22 added four projects (Agent Skills from Anthropic, Open Responses from OpenAI, OpenEnv from Hugging Face, and OpenSandbox from Alibaba) to the original six (MCP, goose, AGENTS.md, agentgateway, A2A, and Agent Router, the former Envoy AI Gateway), for **10 hosted projects and 305 member organizations**. The practical point: the skills format, an open Responses-style API, agent environments, and sandboxes now share the foundation that governs the tool protocol, so the "is this a single-vendor bet" question has the same answer for most of the agent stack. The Governance Working Group runs a Contributor Ladder and a delegation model allowing domain-specific working groups to accept SEPs (Specification Enhancement Proposals) without full core-maintainer review; the 2026-07-28 revision added a formal Extensions Track, since September 28 SEP authors must discuss a proposal with the relevant working or interest group before opening the SEP pull request, and under SEP-3398 a SEP needs a working group or Core Maintainer sponsor before formal review. AAIF also launched the first vendor-neutral MCP credential on September 14, the Model Context Protocol Associate (MCPA): $250, 90 minutes, aligned to 2026-07-28, with 24 percent of the exam on security and governance.
+**حکمرانی (Governance):** پروتکل MCP تحت نظارت بنیاد هوش مصنوعی Agentic در بنیاد لینوکس (AAIF) اداره می‌شود که در ۲۲ اکتبر چهار پروژه جدید (Agent Skills از Anthropic، Open Responses از OpenAI، OpenEnv از Hugging Face و OpenSandbox از Alibaba) را به شش پروژه اولیه (MCP، goose، AGENTS.md، agentgateway، A2A و Agent Router، که قبلاً Envoy AI Gateway نام داشت) اضافه کرد و اکنون به مجموع **۱۰ پروژه میزبانی‌شده و ۳۰۵ سازمان عضو** رسیده است. نکته کاربردی: فرمت مهارت‌ها، یک API باز به سبک Responses، محیط‌های Agent و محیط‌های ایزوله (Sandboxها) اکنون بنیاد مشترکی دارند که بر پروتکل ابزار نظارت می‌کند، بنابراین پرسش «آیا این سرمایه‌گذاری متکی بر یک ارائه‌دهنده منفرد است» برای بیشتر بخش‌های پشته فناوری Agent پاسخ یکسانی دارد. کارگروه حکمرانی یک نردبان مشارکت‌کنندگان (Contributor Ladder) و یک مدل تفویض اختیار را اجرا می‌کند که به کارگروه‌های تخصصی اجازه می‌دهد پیشنهادات بهبود مشخصات یا SEPs (Specification Enhancement Proposals) را بدون نیاز به بررسی کامل نگهدارندگان اصلی بپذیرند؛ بازنگری ۲۰۲۶-۰۷-۲۸ یک مسیر رسمی اکستنشن‌ها (Extensions Track) را اضافه کرد، از ۲۸ سپتامبر نویسندگان SEP باید پیش از ایجاد Pull Request برای SEP، پروپوزال را با کارگروه یا گروه علاقه‌مندی مرتبط مورد بحث قرار دهند، و طبق SEP-3398 یک SEP پیش از بررسی رسمی نیازمند حامی مالی/سازمانی از میان کارگروه‌ها یا نگهدارندگان اصلی است. بنیاد AAIF همچنین اولین مدرک MCP مستقل از ارائه‌دهنده را در ۱۴ سپتامبر تحت عنوان همکار پروتکل زمینه مدل یا Model Context Protocol Associate (MCPA) معرفی کرد: ۲۵۰ دلار، ۹۰ دقیقه، منطبق با بازنگری ۲۰۲۶-۰۷-۲۸، که ۲۴ درصد از آزمون به مباحث امنیت و حکمرانی اختصاص دارد.
 
-Sources: modelcontextprotocol.io (specification, roadmap, extensions), blog.modelcontextprotocol.io, github.com/modelcontextprotocol, aaif.io
+منابع: modelcontextprotocol.io (مشخصات، نقشه راه، اکستنشن‌ها)، blog.modelcontextprotocol.io، github.com/modelcontextprotocol، aaif.io
 
 ---
 
-## Agent Plugins
+## پلاگین‌های Agent (Agent Plugins)
 
-MCP standardizes how an agent reaches a tool. **Agent Plugins**, which reached 1.0.0 on August 6, 2026, standardizes how you *ship* a bundle of capability to an agent. It is a vendor-neutral packaging format governed by a technical steering committee drawn from Amazon, Cursor, Microsoft, OpenAI, and Vercel, and GitHub made it generally available across VS Code, Copilot CLI, the Copilot SDK, and the Copilot app on August 12. 1.0.0 is still the only published version; a 1.1.0 working draft opened August 19 with proposals for namespaced skill discovery, portable display names and icons, and per-server MCP extension data, all still inside the skills-plus-MCP boundary described below.
+پروتکل MCP نحوه دسترسی یک Agent به یک ابزار را استانداردسازی می‌کند. **پلاگین‌های Agent (Agent Plugins)** که در ۶ اوت ۲۰۲۶ به نسخه 1.0.0 رسید، نحوه *ارائه و ارسال (ship)* بسته‌ای از قابلیت‌ها به یک Agent را استانداردسازی می‌کند. این مشخصه، یک فرمت بسته‌بندی مستقل از ارائه‌دهنده (vendor-neutral) است که توسط یک کمیته راهبری فنی (technical steering committee) متشکل از Amazon ،Cursor ،Microsoft ،OpenAI و Vercel هدایت می‌شود، و GitHub در ۱۲ اوت آن را به طور عمومی در دسترس VS Code، Copilot CLI، Copilot SDK و اپلیکیشن Copilot قرار داد. نسخه 1.0.0 همچنان تنها نسخه منتشرشده است؛ یک پیش‌نویس کاری (working draft) برای نسخه 1.1.0 در ۱۹ اوت با پیشنهادهایی برای کشف مهارت‌های دارای فضای نام (namespaced skill discovery)، نام‌های نمایشی و آیکون‌های پرتابل (قابل‌حمل)، و داده‌های افزونه MCP به ازای هر سرور باز شد که همگی همچنان در محدوده مهارت‌ها به‌علاوه MCP که در ادامه شرح داده شده است، قرار دارند.
 
-A plugin is a directory:
+یک پلاگین در واقع یک دایرکتوری است:
+
+<div dir="ltr">
 
 ```
 my-plugin/
@@ -312,11 +328,15 @@ my-plugin/
 └── com.example.client/  # optional: client-specific extras, namespaced
 ```
 
-The `mcp.json` schema supports three server shapes (stdio with command, args, and env; Streamable HTTP; and SSE), and reserves two environment variables, `PLUGIN_ROOT` and `PLUGIN_DATA`, that the client injects at load time.
+</div>
 
-The design decision worth studying is what the spec **refuses** to standardize. Only two component types are portable: skills and MCP servers. Commands, hooks, subagents, rules, and LSP servers stay client-specific unless carried in a namespaced directory. That keeps the portable surface small enough that a plugin genuinely runs everywhere, and pushes the fast-moving, client-specific parts into namespaces where they cannot break interoperability.
+طرحواره (اسکیما) فایل `mcp.json` از سه ساختار سرور پشتیبانی می‌کند (stdio همراه با command، args و env؛ پروتکل Streamable HTTP؛ و SSE) و دو متغیر محیطی `PLUGIN_ROOT` و `PLUGIN_DATA` را رزرو می‌نماید که کلاینت در زمان بارگذاری (load time) آن‌ها را تزریق می‌کند.
 
-### How the Three Layers Fit
+تصمیم طراحی که ارزش بررسی دارد این است که این مشخصه فنی از استانداردسازی چه مواردی **خودداری می‌کند**. تنها دو نوع مؤلفه قابل‌حمل (portable) هستند: مهارت‌ها (skills) و سرورهای MCP. دستورات (Commands)، قلاب‌ها (hooks)، ساب‌ایجنت‌ها (subagents)، قوانین (rules) و سرورهای LSP همگی خاص کلاینت باقی می‌مانند مگر اینکه در یک دایرکتوری دارای فضای نام حمل شوند. این کار سطح پرتابل را به اندازه کافی کوچک نگه می‌دارد تا یک پلاگین حقیقتاً در همه‌جا اجرا شود، و بخش‌های سریعاً در حال تغییر و وابسته به کلاینت را به فضاهای نامی منتقل می‌کند که در آنجا نتوانند قابلیت همکاری متقابل (interoperability) را مختل کنند.
+
+### نحوه انطباق سه لایه در کنار یکدیگر
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -327,38 +347,42 @@ flowchart TD
     A -->|delegates across orgs| A2[A2A: other agents]
 ```
 
-| Layer | Standardizes | Unit | Governance |
+</div>
+
+| لایه | استانداردسازی می‌کند | واحد | راهبری (Governance) |
 |-------|--------------|------|------------|
-| **Agent Skills** (`SKILL.md`) | Procedures and domain knowledge the agent applies | A folder with frontmatter plus optional scripts and assets; can also be served remotely through the MCP skills extension | Linux Foundation, Agentic AI Foundation (since October 22, 2026); spec at agentskills.io |
-| **MCP** | Access to tools, data, and resources | A server speaking JSON-RPC over stdio or Streamable HTTP | Linux Foundation, Agentic AI Foundation |
-| **Agent Plugins** | Distribution and installation of the two above | A directory with `plugin.json` | Agent Plugins TSC |
-| **A2A** | Delegation between agents across vendor or org boundaries | An agent endpoint described by an Agent Card (signing optional) | Linux Foundation, Agentic AI Foundation (since August 2026) |
+| **Agent Skills** (`SKILL.md`) | رویه‌ها و دانش دامنه‌ای که Agent به کار می‌گیرد | یک پوشه حاوی frontmatter به‌علاوه اسکریپت‌ها و دارایی‌های (assets) اختیاری؛ همچنین می‌تواند از راه دور از طریق افزونه مهارت‌های MCP سرویس‌دهی شود | بنیاد لینوکس (Linux Foundation)، بنیاد Agentic AI (از ۲۲ اکتبر ۲۰۲۶)؛ مشخصات در agentskills.io |
+| **MCP** | دسترسی به ابزارها، داده‌ها و منابع | یک سرور که با JSON-RPC بر بستر stdio یا Streamable HTTP ارتباط برقرار می‌کند | بنیاد لینوکس (Linux Foundation)، بنیاد Agentic AI |
+| **Agent Plugins** | توزیع و نصب دو لایه فوق | یک دایرکتوری حاوی `plugin.json` | کمیته هدایت فنی پلاگین‌های Agent (Agent Plugins TSC) |
+| **A2A** | تفویض وظایف بین Agentها فراتر از مرزهای ارائه‌دهنده یا سازمان | یک اندپوینت Agent که توسط یک Agent Card توصیف شده است (امضا اختیاری است) | بنیاد لینوکس (Linux Foundation)، بنیاد Agentic AI (از اوت ۲۰۲۶) |
 
-The practical consequence for platform teams: enterprise administration now has one control point. GitHub reuses the existing `managed-settings.json` so plugin installation, marketplace access, and MCP server allowlists are all managed through the same file. If you are standing up an internal agent platform, the plugin is the unit you review, sign, and distribute, not the individual server.
+نتیجه عملی برای تیم‌های پلتفرم: مدیریت سازمانی اکنون یک نقطه کنترل واحد دارد. GitHub از فایل موجود `managed-settings.json` مجدداً استفاده می‌کند تا نصب پلاگین، دسترسی به مارکت‌پلیس و لیست‌های مجاز سرور MCP همگی از طریق یک فایل یکسان مدیریت شوند. اگر در حال راه‌اندازی یک پلتفرم داخلی Agent هستید، پلاگین همان واحدی است که آن را بازبینی (review)، امضا و توزیع می‌کنید، نه سرور منفرد.
 
-**The security caveat that comes with it:** a plugin bundles instructions (skills) with capability (MCP servers), so installing one is closer to installing a package than adding a bookmark. Static analysis of skills has a hard detection ceiling, with published results showing 93% detection for data exfiltration but only 42% for natural-language prompt injection and **0% for host destruction**, because destructive skills use ordinary shell commands that look identical to legitimate ones. Adaptive attackers push further: the Pretext attack (arXiv 2609.39607) evaded an LLM-assisted skill scanner up to 97% of the time by moving payloads from code into natural language and splitting them across files. Review plugins like dependencies: pin versions, prefer signed sources, and never let a plugin widen the action surface of the agent that loads it.
+**هشدار امنیتی همراه با آن:** یک پلاگین، دستورالعمل‌ها (مهارت‌ها) را با قابلیت‌ها (سرورهای MCP) بسته‌بندی می‌کند، بنابراین نصب یک پلاگین بیشتر شبیه به نصب یک پکیج است تا افزودن یک نشانک (bookmark). تحلیل ایستا (Static analysis) بر روی مهارت‌ها سقف تشخیص سختی دارد؛ نتایج منتشرشده نشان‌دهنده ۹۳٪ تشخیص برای سرقت داده‌ها (data exfiltration)، اما تنها ۴۲٪ برای تزریق Prompt با زبان طبیعی (natural-language prompt injection) و **۰٪ برای تخریب هاست (host destruction)** هستند، زیرا مهارت‌های مخرب از دستورات شل معمولی استفاده می‌کنند که کاملاً مشابه دستورات مجاز به نظر می‌رسند. مهاجمان انطباق‌پذیر (Adaptive attackers) فراتر می‌روند: حمله Pretext (arXiv 2609.39607) با انتقال پی‌لودها از کد به زبان طبیعی و تقسیم آن‌ها بین فایل‌های مختلف، در ۹۷٪ مواقع توانست از اسکنر مهارت مبتنی بر LLM فرار کند. پلاگین‌ها را مانند وابستگی‌ها (dependencies) بازبینی کنید: نسخه‌ها را پین (pin) کنید، منابع امضاشده را ترجیح دهید، و هرگز اجازه ندهید یک پلاگین سطح عمل (action surface) متعلق به Agent بارگذاری‌کننده خود را گسترش دهد.
 
-**And verify the pin.** Plugin4Shell (AIR Security, September 17, 2026) showed Claude Code, Codex, GitHub Copilot, and Gemini CLI installing plugins pinned to a 40-hex commit SHA without checking that the checked-out tree matched the pin. Git prefers a branch whose name equals the SHA, so on hosts that accept hash-shaped branch names the repo owner could swap already-approved code, and background updates pulled it with no click. Claude Code (2.1.179) and Codex (0.146.0) fixed it; Copilot had no fix at disclosure. The control is to resolve the commit actually present in the working tree after checkout and abort on mismatch. The stakes keep rising as harness extensions gain power: Claude Code mods (2.1.287, October 1) are plugin-distributed TypeScript functions that can rewrite tool calls and approve or deny permission requests, and Anthropic warns they are not sandboxed, so plugin review is now part of the agent's trust boundary.
+**و پین را اعتبارسنجی کنید.** آسیب‌پذیری Plugin4Shell (شرکت AIR Security، ۱۷ سپتامبر ۲۰۲۶) نشان داد که Claude Code ،Codex ،GitHub Copilot و Gemini CLI پلاگین‌های پین‌شده به یک SHA کامیت ۴۰ کاراکتری هگزادسیمال را بدون بررسی اینکه آیا درخت بررسی‌شده (checked-out tree) با پین مطابقت دارد یا خیر، نصب می‌کردند. گیت (Git) شاخه‌ای را ترجیح می‌دهد که نام آن برابر با SHA باشد؛ بنابراین در هاست‌هایی که نام‌های شاخه به شکل هش را می‌پذیرند، مالک مخزن می‌توانست کدهای از قبل تأییدشده را جابجا کند، و به‌روزرسانی‌های پس‌زمینه بدون هیچ کلیکی آن را دریافت (pull) می‌کردند. نرم‌افزارهای Claude Code (2.1.179) و Codex (0.146.0) این مشکل را برطرف کردند؛ Copilot در زمان افشای آسیب‌پذیری هیچ اصلاحیه‌ای ارائه نداده بود. راهکار کنترلی این است که کامیتی که در واقع پس از checkout در درخت کاری (working tree) وجود دارد شناسایی (resolve) شود و در صورت عدم تطابق، عملیات متوقف گردد. با افزایش قدرت افزونه‌های مهاربند (harness extensions)، ریسک و حساسیت همچنان رو به افزایش است: مادهای Claude Code (نسخه 2.1.287، ۱ اکتبر) توابع TypeScript توزیع‌شده با پلاگین هستند که می‌توانند فراخوانی ابزارها (tool calls) را بازنویسی کنند و درخواست‌های مجوز را تأیید یا رد نمایند؛ و شرکت Anthropic هشدار می‌دهد که این توابع سندباکس (sandboxed) نشده‌اند، بنابراین بازبینی پلاگین اکنون بخشی از مرز اعتماد (trust boundary) متعلق به Agent است.
 
 ---
 
-## Agent-to-Agent Protocol (A2A)
+## پروتکل Agent-to-Agent (A2A)
 
-Google introduced the **Agent2Agent (A2A)** protocol in April 2025 to solve a problem MCP does not address: how do **agents from different vendors** communicate with each other (not just with tools)?
+گوگل در آوریل ۲۰۲۵ پروتکل **Agent2Agent (A2A)** را برای حل مشکلی معرفی کرد که MCP به آن نمی‌پردازد: چگونه **Agentهای متعلق به ارائه‌دهندگان مختلف** با یکدیگر (و نه فقط با ابزارها) ارتباط برقرار کنند؟
 
-### What A2A Solves
+### A2A چه مشکلی را حل می‌کند
 
-MCP defines how an agent connects to **tools and data**. A2A defines how an **orchestrator agent delegates tasks to a specialist agent** from a different vendor or framework, even when they do not share memory, tools, or context.
+پروتکل MCP مشخص می‌کند که چگونه یک Agent به **ابزارها و داده‌ها** متصل شود. پروتکل A2A مشخص می‌کند که چگونه یک **Agent هماهنگ‌کننده وظایف را به یک Agent متخصص** از ارائه‌دهنده یا فریم‌ورک متفاوت تفویض کند، حتی زمانی که آن‌ها حافظه، ابزارها یا زمینه (context) مشترکی ندارند.
 
-### Technical Foundation
+### مبانی فنی (Technical Foundation)
 
-- Built on HTTP with three bindings in v1.0: **JSON-RPC, gRPC, and REST** (the same web foundation as MCP, for easy integration)
-- Supports enterprise-grade authentication with parity to OpenAPI auth schemes
-- **Agent Cards**: JSON metadata documents that describe an agent's capabilities, skills, and endpoint, served at `GET /.well-known/agent-card.json` (not `agent.json`). Signing them with JWS is optional
+- ساخته‌شده بر بستر HTTP با سه بایندینگ در نسخه v1.0: **JSON-RPC، gRPC و REST** (همان پایه و اساس وب مانند MCP، جهت یکپارچه‌سازی آسان)
+- پشتیبانی از احراز هویت در سطح سازمانی با برابری نسبت به الگوهای احراز هویت OpenAPI
+- **کارت‌های Agent (Agent Cards)**: اسناد متادیتای JSON که قابلیت‌ها، مهارت‌ها و اندپوینت یک Agent را توصیف می‌کنند و در آدرس `GET /.well-known/agent-card.json` (نه `agent.json`) ارائه می‌شوند. امضای آن‌ها با JWS اختیاری است
 
-### A2A Task Lifecycle
+### چرخه حیات تسک در A2A (Task Lifecycle)
 
-The v1.0 methods are `SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, and `SubscribeToTask`, with REST bindings such as `POST /message:send` and `GET /tasks/{id}`. There is no `POST /tasks` or `tasks.create`: the client sends a **message**, and the server decides whether to answer directly or create a **task**. That is the design choice interviewers probe.
+متدهای نسخه v1.0 عبارتند از `SendMessage`، `SendStreamingMessage`، `GetTask`، `ListTasks`، `CancelTask` و `SubscribeToTask` با بایندینگ‌های REST نظیر `POST /message:send` و `GET /tasks/{id}`. هیچ متدی به عنوان `POST /tasks` یا `tasks.create` وجود ندارد: کلاینت یک **پیام** ارسال می‌کند، و سرور تصمیم می‌گیرد که آیا مستقیماً پاسخ دهد یا یک **تسک** ایجاد کند. این دقیقاً همان انتخاب طراحی است که مصاحبه‌کنندگان به بررسی آن می‌پردازند.
+
+<div dir="ltr">
 
 ```
 [Client Agent] ── SendMessage (POST /message:send) ──→ [Remote Agent]
@@ -369,32 +393,36 @@ The v1.0 methods are `SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTask
                ←── Task completed (final artifact)
 ```
 
-A2A tasks support long-running operations with streaming status updates, making it suitable for enterprise workflows spanning minutes or hours.
+</div>
 
-**What v1.1 adds (unreleased).** Work on the `dev-1.1` branch includes a monotonically increasing `Task.generation` field (merged August 12, 2026). Clients use it to detect missed events, long-poll with `current_generation`, and do compare-and-set with `if_generation_match`, which fails with HTTP 412 or gRPC `ABORTED` on a mismatch. That is the textbook answer to several clients safely steering one long-running remote task without lost updates. October added more to the same branch: a `SendLiveMessage` method for bidirectional interaction (merged October 19), client-written artifacts on `SendMessage` (October 20), `SubscribeToTask` moved from POST to GET (October 13), and discovery guidance that now prefers the AI Catalog over `/.well-known/agent-card.json` (October 21). The official A2A CLI for coding-harness integration, a roadmap item in September, was introduced October 2 (a2a-cli v0.3.1 on October 16).
+تسک‌های A2A از عملیات طولانی‌مدت همراه با به‌روزرسانی‌های جریانی (streaming) وضعیت پشتیبانی می‌کنند، که این امر آن را برای جریان‌های کاری سازمانی که دقایق یا ساعت‌ها به طول می‌انجامند مناسب می‌سازد.
 
-### Industry Adoption
+**آنچه نسخه v1.1 اضافه می‌کند (منتشرنشده).** کار بر روی شاخه `dev-1.1` شامل یک فیلد یکنواخت صعودی (monotonically increasing) به نام `Task.generation` است (ادغام‌شده در ۱۲ اوت ۲۰۲۶). کلاینت‌ها از آن برای تشخیص رویدادهای ازدست‌رفته، long-poll با `current_generation`، و انجام مقایسه و جایگزینی (compare-and-set) با `if_generation_match` استفاده می‌کنند که در صورت عدم تطابق، با خطای HTTP 412 یا کد `ABORTED` در gRPC شکست می‌خورد. این پاسخ کلاسیک برای هدایت ایمن یک تسک ریموت طولانی‌مدت توسط چندین کلاینت بدون از دست رفتن به‌روزرسانی‌ها (lost updates) است. در ماه اکتبر موارد بیشتری به همین شاخه اضافه شد: متد `SendLiveMessage` برای تعامل دوطرفه (ادغام‌شده در ۱۹ اکتبر)، آرتیفکت‌های نوشته‌شده توسط کلاینت در `SendMessage` (۲۰ اکتبر)، انتقال `SubscribeToTask` از متد POST به GET (۱۳ اکتبر)، و راهنمای کشف که اکنون کاتالوگ هوش مصنوعی (AI Catalog) را به `/.well-known/agent-card.json` ترجیح می‌دهد (۲۱ اکتبر). رابط خط فرمان رسمی A2A CLI برای یکپارچه‌سازی با مهاربندهای کدنویسی (coding-harness)، که یک آیتم از نقشه راه در سپتامبر بود، در ۲ اکتبر معرفی شد (a2a-cli v0.3.1 در ۱۶ اکتبر).
 
-- Backed by 50+ technology partners at launch, including Atlassian, Salesforce, SAP, LangChain, and PayPal
-- Donated to the **Linux Foundation** in June 2025, and accepted into the **Agentic AI Foundation** as a Growth Stage project on August 17, 2026, so MCP and A2A now share one neutral foundation; AAIF cites 150+ supporting organizations and native A2A support in Google Cloud, Amazon Bedrock AgentCore, and Microsoft Azure AI Foundry
-- **Version 0.3** (July 2025) added gRPC support, signed Agent Cards, and extended Python SDK support. **v1.0.0** shipped March 12, 2026, and **v1.0.1** (May 28, 2026) is still the latest specification release in early November 2026; there is no protocol v1.2. Higher numbers belong to SDKs: a2a-python 1.3.0 (October 27; the 1.2 line added a multi-replica cluster mode), a2a-js 1.3.0, a2a-java 1.4.0.Final, and a2a-go v2.7.0 (October 21)
-- NIST launched an "AI Agent Standards Initiative" in February 2026 partly in response to A2A/MCP momentum
+### پذیرش در صنعت (Industry Adoption)
 
-Sources: github.com/a2aproject/A2A (releases, specification, roadmap), aaif.io/blog/a2a-joins-aaif
+- تحت حمایت بیش از ۵۰ شریک فناوری در زمان عرضه، از جمله Atlassian ،Salesforce ،SAP ،LangChain و PayPal
+- اهدا به **بنیاد لینوکس (Linux Foundation)** در ژوئن ۲۰۲۵ و پذیرش در **بنیاد Agentic AI** به عنوان یک پروژه در مرحله رشد (Growth Stage) در ۱۷ اوت ۲۰۲۶، به طوری که MCP و A2A اکنون بنیاد بی‌طرف مشترکی دارند؛ AAIF به بیش از ۱۵۰ سازمان حامی و پشتیبانی بومی از A2A در Google Cloud، پلتفرم Amazon Bedrock AgentCore و Microsoft Azure AI Foundry اشاره می‌کند
+- **نسخه 0.3** (ژوئیه ۲۰۲۵) پشتیبانی از gRPC، کارت‌های Agent امضاشده و پشتیبانی گسترده از Python SDK را اضافه کرد. **نسخه v1.0.0** در ۱۲ مارس ۲۰۲۶ عرضه شد و **v1.0.1** (۲۸ مه ۲۰۲۶) تا اوایل نوامبر ۲۰۲۶ همچنان آخرین انتشار مشخصات فنی است؛ هیچ نسخه 1.2 از پروتکل وجود ندارد. شماره‌های بالاتر متعلق به SDKها هستند: a2a-python 1.3.0 (۲۷ اکتبر؛ سری 1.2 یک حالت کلاستر چندنسخه‌ای اضافه کرد)، a2a-js 1.3.0، a2a-java 1.4.0.Final و a2a-go v2.7.0 (۲۱ اکتبر)
+- موسسه NIST در فوریه ۲۰۲۶ یک «ابتکار استانداردهای AI Agent» را تا حدی در واکنش به شتاب و استقبال از A2A/MCP راه‌اندازی کرد
+
+منابع: github.com/a2aproject/A2A (انتشارها، مشخصات فنی، نقشه راه)، aaif.io/blog/a2a-joins-aaif
 
 ---
 
-## The Protocol Landscape: Tools, Agents, and Payments
+## چشم‌انداز پروتکل‌ها: ابزارها، Agentها و پرداخت‌ها
 
-In production enterprise systems, multiple protocols operate at different layers simultaneously:
+در سیستم‌های سازمانی در محیط عملیاتی (production)، چندین پروتکل به طور همزمان در لایه‌های مختلف عمل می‌کنند:
 
-| Protocol | Layer | Purpose | Governed By |
+| پروتکل | لایه | هدف | متولی راهبری |
 |----------|-------|---------|-------------|
-| **MCP** | Agent-to-Tool | Universal tool and data access | Linux Foundation (Agentic AI Foundation) |
-| **A2A** | Agent-to-Agent | Cross-vendor agent delegation | Linux Foundation (Agentic AI Foundation, since August 2026) |
-| **ACP** (Agent Communication Protocol) | Agent Communication | Lightweight async agent messaging (REST) | IBM-originated; merged into A2A in August 2025 |
+| **MCP** | ارتباط Agent با ابزار (Agent-to-Tool) | دسترسی همگانی به ابزار و داده | بنیاد لینوکس (بنیاد Agentic AI) |
+| **A2A** | ارتباط Agent با Agent (Agent-to-Agent) | تفویض وظایف بین Agentها فراتر از ارائه‌دهندگان مختلف | بنیاد لینوکس (بنیاد Agentic AI، از اوت ۲۰۲۶) |
+| **ACP** (پروتکل ارتباطی Agent) | ارتباطات Agent | پیام‌رسانی ناهمگام و سبک بین Agentها (REST) | با مبدا IBM؛ ادغام‌شده در A2A در اوت ۲۰۲۵ |
 
-### How They Complement Each Other
+### چگونه یکدیگر را تکمیل می‌کنند
+
+<div dir="ltr">
 
 ```
 ┌──────────────────────────────────────────┐
@@ -412,32 +440,36 @@ In production enterprise systems, multiple protocols operate at different layers
 └──────────────────────────────────────────┘
 ```
 
-**Key insight**: MCP and A2A are complementary, not competing. MCP handles agent-to-tool connections; A2A handles agent-to-agent coordination. Production systems use both.
+</div>
 
-**ACP note**: The IBM-originated Agent Communication Protocol (ACP) team merged its work into A2A in August 2025 to develop a unified agent communication standard. New projects should target A2A as the primary agent-to-agent protocol.
+**بینش کلیدی**: MCP و A2A مکمل یکدیگر هستند، نه رقیب. MCP اتصال Agent به ابزار را مدیریت می‌کند؛ A2A هماهنگی Agent با Agent را مدیریت می‌نماید. سیستم‌های عملیاتی (production) از هر دو استفاده می‌کنند.
 
-### The Commerce Layer
+**نکته درباره ACP**: تیم پروتکل ارتباطی Agent یا ACP (که مبدا آن IBM بود) فعالیت‌های خود را در اوت ۲۰۲۵ در A2A ادغام کرد تا یک استاندارد یکپارچه ارتباط میان Agentها توسعه یابد. پروژه‌های جدید باید A2A را به عنوان پروتکل اصلی ارتباط Agent-to-Agent در نظر بگیرند.
 
-Agents that buy things need a third layer: proving user intent, handling step-up authentication mid-checkout, and paying for metered tools. Four efforts cover it, at very different maturity:
+### لایه تجارت (Commerce Layer)
 
-| Protocol | Covers | Status (October 2026) |
+Agentهایی که اقدام به خرید می‌کنند به یک لایه سوم نیاز دارند: اثبات قصد کاربر (user intent)، مدیریت احراز هویت تکمیلی (step-up authentication) در میانه فرایند تسویه‌حساب (checkout)، و پرداخت هزینه ابزارهای سنجش‌شده و مصرفی (metered tools). چهار ابتکار مختلف این لایه را پوشش می‌دهند که از نظر سطح بلوغ بسیار متفاوت هستند:
+
+| پروتکل | مواردی که پوشش می‌دهد | وضعیت (اکتبر ۲۰۲۶) |
 |----------|--------|-----------------------|
-| **UCP** (Universal Commerce Protocol) | Discovery, cart, and checkout across Shopping, Payment, and Common verticals | Release v2026-08-25 added an Actions primitive for out-of-band steps such as vendor-agnostic 3DS2, payment schedules and split payments, and delegated identity providers; a Lodging Booking draft merged September 24 |
-| **Agentic Commerce Protocol** (OpenAI and Stripe) | Cart, product feed, orders, authentication, MCP | Still labeled beta; latest dated spec 2026-04-17 |
-| **AP2** (Agent Payments Protocol, Google) | Payment mandates that prove what the user authorized | v0.2.0 (April 28, 2026); no release since |
-| **x402** | Pay-per-call over HTTP using the 402 status code; cards and stablecoins | x402 Foundation launched under the Linux Foundation July 14, 2026; 50+ members by October 1 |
+| **UCP** (پروتکل تجارت فراگیر / Universal Commerce Protocol) | کشف، سبد خرید و تسویه‌حساب در بخش‌های خرید، پرداخت و حوزه‌های مشترک | انتشار v2026-08-25 ساختار اولیه Actions را برای مراحل خارج از باند (out-of-band) مانند 3DS2 مستقل از ارائه‌دهنده، برنامه‌ریزی‌های پرداخت و پرداخت‌های خرد (split payments)، و ارائه‌دهندگان هویت تفویض‌شده اضافه کرد؛ پیش‌نویس رزرو اقامتگاه (Lodging Booking) در ۲۴ سپتامبر ادغام شد |
+| **پروتکل Agentic Commerce** (OpenAI و Stripe) | سبد خرید، فید محصولات، سفارش‌ها، احراز هویت، MCP | همچنان دارای برچسب بتا؛ آخرین مشخصات دارای تاریخ ۲۰۲۶-۰۴-۱۷ |
+| **AP2** (پروتکل پرداخت‌های Agent، گوگل) | دستورهای پرداخت (Payment mandates) که اثبات می‌کنند کاربر چه چیزی را مجاز کرده است | نسخه v0.2.0 (۲۸ آوریل ۲۰۲۶)؛ بدون انتشار جدید از آن زمان تاکنون |
+| **x402** | پرداخت به ازای هر فراخوانی (Pay-per-call) بر بستر HTTP با استفاده از کد وضعیت 402؛ کارت‌ها و استیبل‌کوین‌ها | بنیاد x402 تحت بنیاد لینوکس در ۱۴ ژوئیه ۲۰۲۶ راه‌اندازی شد؛ بیش از ۵۰ عضو تا ۱ اکتبر |
 
-Watch the acronym collision: in older material "ACP" means IBM's Agent Communication Protocol (now part of A2A); in commerce material it means the OpenAI and Stripe Agentic Commerce Protocol. For system design, x402 is the piece most likely to touch a non-commerce agent: it is a standard way to meter and pay for API and MCP tool calls, which turns an agent's tool budget into real spend that needs the same caps as token spend.
+به تداخل نام‌های اختصاری (acronym collision) توجه داشته باشید: در منابع قدیمی‌تر، "ACP" به معنای پروتکل ارتباطی Agent متعلق به IBM است (که اکنون بخشی از A2A است)؛ در منابع مربوط به تجارت، به معنای پروتکل Agentic Commerce شرکت‌های OpenAI و Stripe است. برای طراحی سیستم، پروتکل x402 بخشی است که به احتمال زیاد با یک Agent غیرتجاری ارتباط پیدا می‌کند: این پروتکل روشی استاندارد برای سنجش و پرداخت هزینه‌های فراخوانی‌های ابزاری API و MCP است که بودجه ابزار یک Agent را به هزینه‌کرد واقعی تبدیل می‌کند که به سقف‌های محدودیتی مشابه با مصرف Token نیاز دارد.
 
 ---
 
-## A2A v1.0 and MCP in Production
+## نسخه ۱.۰ پروتکل A2A و MCP در محیط عملیاتی (Production)
 
-A2A v1.0.0 shipped on March 12, 2026 (not at Google Cloud Next in April, as often repeated), and the project did not move under the Agentic AI Foundation until August 2026, when AAIF counted 150+ supporting organizations. **Agent Card signing predates v1.0**: v0.3.0 already defined JWS (RFC 7515) signatures, and v1.0 added the normative signing procedure (RFC 8785 JSON canonicalization, with the signatures field excluded from the signed content) while keeping signing optional. That is what lets a client agent verify that a remote agent at `https://refunds.acme.com/.well-known/agent-card.json` actually belongs to ACME before issuing a task, provided ACME signs its card and the client checks the signature. Native A2A client/server support ships in Google ADK, LangGraph, CrewAI, LlamaIndex, Semantic Kernel, and Microsoft Agent Framework (AutoGen's successor).
+نسخه ۱.۰.۰ پروتکل A2A در ۱۲ مارس ۲۰۲۶ عرضه شد (نه در رویداد Google Cloud Next در ماه آوریل، همان‌طور که اغلب به اشتباه تکرار می‌شود)، و این پروژه تا اوت ۲۰۲۶ که بنیاد Agentic AI Foundation بیش از ۱۵۰ سازمان حامی داشت، تحت نظارت آن قرار نگرفت. **امضای Agent Card پیش از نسخه ۱.۰ وجود داشته است**: نسخه ۰.۳.۰ پیش از این امضاهای JWS (RFC 7515) را تعریف کرده بود، و نسخه ۱.۰ رویه استاندارد امضا (نرمال‌سازی JSON بر اساس RFC 8785، با حذف فیلد امضاها از محتوای امضاشده) را ضمن اختیاری نگه داشتن امضا اضافه کرد. همین سازوکار به یک Agent کلاینت اجازه می‌دهد قبل از صدور وظیفه بررسی کند که آیا یک Agent از راه دور در آدرس `https://refunds.acme.com/.well-known/agent-card.json` واقعاً به شرکت ACME تعلق دارد یا خیر، مشروط بر اینکه ACME کارت خود را امضا کرده باشد و کلاینت امضا را اعتبارسنجی کند. پشتیبانی بومی کلاینت/سرور از A2A در Google ADK، LangGraph، CrewAI، LlamaIndex، Semantic Kernel و Microsoft Agent Framework (جانشین AutoGen) ارائه شده است.
 
-### Composition Pattern: Support Agent Delegating Refunds
+### الگوی ترکیب (Composition Pattern): تفویض استرداد وجه توسط Agent پشتیبانی (Support Agent)
 
-A LangGraph customer-support agent owns conversation state and a set of MCP tools (CRM, ticket search, knowledge base). When the user asks for a refund, that work belongs to a different team's Finance refund agent, which lives behind an A2A endpoint and enforces its own policy, audit log, and SOX controls. The support agent does not call the refund database directly; it sends an A2A message and lets the Finance agent decide, including whether to open a long-running task.
+یک Agent پشتیبانی مشتریان در LangGraph، وضعیت مکالمه و مجموعه‌ای از ابزارهای MCP (شامل CRM، جستجوی تیکت، پایگاه دانش) را در اختیار دارد. زمانی که کاربر درخواست استرداد وجه می‌کند، این کار متعلق به Agent مالی استرداد وجه (Finance refund agent) از تیمی دیگر است که پشت یک اندپوینت A2A قرار دارد و سیاست‌ها، لاگ‌های حسابرسی (Audit Log) و کنترل‌های SOX خود را اعمال می‌کند. Agent پشتیبانی مستقیماً پایگاه داده استرداد را فراخوانی نمی‌کند؛ بلکه یک پیام A2A ارسال می‌کند و اجازه می‌دهد Agent مالی تصمیم‌گیری کند، از جمله اینکه آیا یک وظیفه طولانی‌مدت باز شود یا خیر.
+
+<div dir="ltr">
 
 ```mermaid
 sequenceDiagram
@@ -461,84 +493,88 @@ sequenceDiagram
     Support-->>User: refund confirmed
 ```
 
-The Support agent never sees the ledger. The Refund agent owns ledger access through its own MCP server and enforces a different policy. The A2A task is asynchronous: the Support agent can yield to the user with a hold message while the refund processes and reattach when the artifact arrives.
+</div>
 
-### MCP 2026 Roadmap Highlights: Both Shipped
+Agent پشتیبانی هرگز دفتر کل مالی (Ledger) را مشاهده نمی‌کند. Agent استرداد وجه از طریق سرور MCP اختصاصی خود مالکیت دسترسی به دفتر کل را دارد و سیاست متفاوتی را اعمال می‌کند. وظیفه A2A ناهمگام (Asynchronous) است: Agent پشتیبانی می‌تواند در حین پردازش استرداد وجه، با پیامی مبنی بر انتظار، نوبت را به کاربر واگذار کند و پس از رسیدن خروجی (Artifact) مجدداً به جریان متصل شود.
 
-The two roadmap items this section tracked in mid-2026, transport scalability and enterprise-managed auth, have both landed. Transport scalability arrived not as session resumption but as the opposite design: the 2026-07-28 revision removed sessions from the protocol core entirely (see [the stateless rewrite](#mcp-2026-07-28-the-stateless-rewrite)). Enterprise-managed auth shipped as the Enterprise-Managed Authorization extension in June 2026. The RFC 8707 posture still holds and is now hardened further: MCP servers are OAuth Resource Servers, tokens are audience-bound to a specific server URI and cannot be replayed across servers. The next set of priorities is in the [August 22 roadmap](#what-the-august-22-roadmap-prioritizes).
+### نکات برجسته نقشه راه ۲۰۲۶ پروتکل MCP: هر دو قابلیت عرضه شدند
 
-### MCP Production Hardening
+دو مورد از نقشه راه که این بخش در اواسط سال ۲۰۲۶ دنبال می‌کرد، یعنی مقیاس‌پذیری لایه انتقال (Transport Scalability) و احراز هویت مدیریت‌شده سازمانی (Enterprise-Managed Auth)، هر دو عملیاتی شده‌اند. مقیاس‌پذیری انتقال نه در قالب بازیابی نشست (Session Resumption)، بلکه با طراحی معکوس تحقق یافت: بازنگری مورخ ۲۰۲۶-۰۷-۲۸ نشست‌ها را به طور کامل از هسته پروتکل حذف کرد (به [بازنویسی بدون وضعیت](#mcp-2026-07-28-the-stateless-rewrite) مراجعه کنید). احراز هویت سازمانی نیز تحت عنوان افزونه Enterprise-Managed Authorization در ژوئن ۲۰۲۶ عرضه شد. رویکرد مبتنی بر RFC 8707 همچنان پابرجاست و اکنون تقویت و امن‌تر (Hardened) شده است: سرورهای MCP در واقع سرورهای منبع OAuth (OAuth Resource Servers) هستند، Tokenها از طریق فیلد مخاطب (Audience-bound) به یک URI مشخص سرور مقید شده‌اند و نمی‌توان آن‌ها را میان سرورها بازپخش (Replay) کرد. مجموعه بعدی اولویت‌ها در [نقشه راه ۲۲ اوت](#what-the-august-22-roadmap-prioritizes) قرار دارد.
 
-STDIO MCP servers implicitly assume that the process boundary is the trust boundary, and 2026 kept proving that assumption wrong. The launch path is itself an attack surface: in Chainlit (CVE-2026-45018, critical, fixed in 2.12.0) the MCP stdio endpoint checked only the executable name against an allowlist, so `npx -y -c <payload>` passed and ran arbitrary shell commands, and a missing `allowed_executables` setting meant allow-all. Allowlist the full command and its arguments, not the binary name. The architectural fix is two-step:
+### امن‌سازی MCP برای محیط عملیاتی (MCP Production Hardening)
 
-1. **Migrate STDIO MCP servers to HTTP transport with TLS** wherever possible. HTTP transport forces an explicit trust boundary (the network) and enables OAuth 2.1 Resource Server enforcement, which STDIO cannot provide. HTTP is not automatically safer, though: a local HTTP server bound to `0.0.0.0` without auth is reachable from any browser tab through DNS rebinding. mysql_mcp_server before 0.4.2 (CVE-2026-59971, CVSS 10.0) shipped exactly that in SSE mode, letting a victim's browser call `execute_sql` unauthenticated, while its default stdio mode was unaffected. Bind local servers to loopback, require auth, and validate `Origin` and `Host`.
-2. **For STDIO servers that cannot migrate**, run each server in a dedicated container with no host filesystem mounts, no network egress, a strict CPU and memory budget, and a read-only image. Treat the container as the trust boundary; the blast radius of compromise is the container. Isolation without egress policy is not enough: ToolHive (CVE-2026-58197) let containerized MCP servers reach host services through `host.docker.internal`.
+سرورهای MCP مبتنی بر STDIO به صورت ضمنی فرض می‌کنند که مرز فرآیند (Process Boundary) همان مرز اعتماد (Trust Boundary) است، و سال ۲۰۲۶ پیوسته اثبات کرد که این فرضیه نادرست است. خودِ مسیر اجرای فرآیند یک سطح حمله (Attack Surface) محسوب می‌شود: در Chainlit (شناسه CVE-2026-45018، بحرانی، رفع‌شده در نسخه ۲.۱۲.۰)، اندپوینت MCP stdio تنها نام فایل اجرایی را با یک فهرست مجاز (Allowlist) بررسی می‌کرد؛ بنابراین دستور `npx -y -c <payload>` تأیید می‌شد و دستورات دلخواه Shell را اجرا می‌کرد، و نبود تنظیمات `allowed_executables` نیز به معنای مجاز بودن همه دستورات بود. باید کل دستور و آرگومان‌های آن در فهرست مجاز قرار گیرد، نه صرفاً نام فایل باینری. راهکار معماری برای رفع این مشکل دو مرحله دارد:
 
-### State-Handle Hijacking: The Stateless Core's New Attack Surface
+۱. **مهاجرت سرورهای MCP مبتنی بر STDIO به بستر انتقال HTTP با TLS** تا جای ممکن. انتقال از طریق HTTP یک مرز اعتماد صریح (شبکه) را تحمیل می‌کند و امکان اعمال الزامات Resource Server در OAuth 2.1 را فراهم می‌سازد، قابلیتی که STDIO قادر به ارائه آن نیست. با این حال، HTTP به صورت خودکار امن‌تر نیست: یک سرور HTTP محلی که روی `0.0.0.0` بدون احراز هویت تنظیم (Bind) شده باشد، از طریق بازپیوند DNS (DNS Rebinding) از هر تب مرورگری قابل دسترس است. ابزار mysql_mcp_server قبل از نسخه ۰.۴.۲ (شناسه CVE-2026-59971 با امتیاز CVSS 10.0) دقیقاً همین آسیب‌پذیری را در حالت SSE داشت و به مرورگر قربانی اجازه می‌داد بدون احراز هویت متد `execute_sql` را فراخوانی کند، در حالی که حالت پیش‌فرض stdio آن تحت تأثیر قرار نگرفته بود. سرورهای محلی را به Loopback متصل (Bind) کنید، احراز هویت را اجباری نمایید، و هدرهای `Origin` و `Host` را اعتبارسنجی کنید.
+۲. **برای سرورهای STDIO که امکان مهاجرت ندارند**، هر سرور را در یک کانتینر اختصاصی بدون Mount کردن سیستم فایل میزبان، بدون خروجی شبکه (Egress)، با بودجه‌بندی دقیق CPU و حافظه، و با یک ایمیج فقط‌خواندنی (Read-only) اجرا کنید. کانتینر را به عنوان مرز اعتماد در نظر بگیرید؛ شعاع آسیب نفوذ (Blast Radius) محدود به کانتینر خواهد بود. ایزوله‌سازی بدون سیاست کنترل ترافیک خروجی کافی نیست: ابزار ToolHive (شناسه CVE-2026-58197) به سرورهای MCP کانتینری اجازه می‌داد از طریق `host.docker.internal` به سرویس‌های هاست میزبان دسترسی پیدا کنند.
 
-The 2026-07-28 stateless rewrite removed protocol-level sessions, so a server that needs cross-request state now mints an explicit handle (a cart ID, a workflow ID) and returns it as an ordinary tool argument. The revised security best-practices document names the resulting attack: **state-handle hijacking**, where an unauthorized party obtains or guesses a handle and uses it to read or modify another user's state.
+### سرقت هندل وضعیت (State-Handle Hijacking): سطح حمله جدید هسته بدون وضعیت
 
-The requirements follow directly, and they are worth memorizing because the failure mode is silent:
+بازنویسی بدون وضعیت مورخ ۲۰۲۶-۰۷-۲۸ نشست‌های سطح پروتکل را حذف کرد؛ بنابراین سروری که نیازمند حفظ وضعیت در طول چندین درخواست است، اکنون یک هندل (Handle) صریح (مانند شناسه سبد خرید یا شناسه گردش کار) ایجاد کرده و آن را به عنوان یک آرگومان ابزار معمولی بازمی‌گرداند. سند اصلاح‌شده بهترین شیوه‌های امنیتی، حمله ناشی از این ساختار را **سرقت هندل وضعیت (state-handle hijacking)** می‌نامد، که در آن یک طرف غیرمجاز هندل را به دست آورده یا حدس می‌زند و از آن برای خواندن یا تغییر وضعیت کاربری دیگر استفاده می‌کند.
 
-- A server implementing authorization **must verify every inbound request** and **must not treat possession of a state handle as authentication**. A handle is a name, not a credential.
-- Handles **should be non-deterministic**, drawn from a secure random number generator.
-- Handles **should be bound server-side to the authenticated user**, for example by keying state as `<user_id>:<handle>` where the user ID derives from the verified token rather than from anything the client sends.
+الزامات امنیتی مستقیماً از این موضوع نتیجه می‌شوند و به خاطر سپردن آن‌ها اهمیت بالایی دارد، زیرا حالت بروز خطا در این سناریو خاموش و بی‌صدا (Silent) است:
 
-The reason this matters more than it sounds: in the stateful era the session itself carried identity, so a sloppy server accidentally got some isolation for free. Statelessly, nothing is free. Every request must re-establish who is asking before the handle means anything.
+- سروری که احراز هویت و مجوزها را پیاده‌سازی می‌کند **باید تک‌تک درخواست‌های ورودی را اعتبارسنجی کند** و **نباید در اختیار داشتن هندل وضعیت را به عنوان احراز هویت تلقی کند**. یک هندل صرفاً یک نام است، نه یک گواهی‌نامه هویتی (Credential).
+- هندل‌ها **باید غیرقطعی (Non-deterministic) باشند** و توسط یک مولد اعداد تصادفی امن تولید شوند.
+- هندل‌ها **باید در سمت سرور به کاربر احراز هویت شده مقید شوند**؛ به عنوان مثال با کلیدگذاری وضعیت به صورت `<user_id>:<handle>`، به‌طوری که شناسه کاربر از Token تاییدشده استخراج شود و نه از هر داده‌ای که کلاینت ارسال می‌کند.
 
-**How bad is the field today?** The first large-scale dynamic audit of internet-facing MCP servers (arXiv 2608.00150, July 31, 2026) discovered over 21,000 publicly reachable instances, confirmed 640 as production, and dynamically tested 414 of them. It found **91.8% had no OAuth authentication at all**, and 687 tool instances exposed uncontrolled shell execution. Treat any MCP server reachable from the public internet as needing an authorization review before it needs a feature.
+دلیل اینکه این موضوع اهمیتی فراتر از ظاهرش دارد این است: در عصر مبتنی بر وضعیت (Stateful)، خودِ نشست حامل هویت بود؛ بنابراین یک سرور سهل‌انگار نیز به طور تصادفی و رایگان تا حدی از ایزوله‌سازی بهره‌مند می‌شد. اما در معماری بدون وضعیت (Stateless)، هیچ چیز رایگان نیست. هر درخواست باید پیش از اینکه هندل معنایی پیدا کند، مجدداً مشخص سازد چه کسی درخواست‌کننده است.
 
-The advisory flow since then confirms it. Between August 15 and October 1, 2026 the GitHub Advisory Database published 73 reviewed advisories with MCP in the title (9 critical), led by arbitrary file read, write, or path traversal (about 24), authentication or authorization bypass (about 20), SSRF, and DNS rebinding or missing Origin checks (8). The popular community **mcp-atlassian** server (Jira and Confluence) took 25 on one day, September 22 (fixed in 0.22.0): the critical one (CVE-2026-77244) was an HTTP-transport token verifier that accepted any non-empty string, and several `upload_attachment` flaws read arbitrary server-local files and exfiltrated them as Jira or Confluence attachments. IBM's ContextForge sandbox server (CVE-2026-53710, CVSS 10.0, fixed in 1.0.2) showed that a regex-guarded Python sandbox is not a sandbox: dunder names built at runtime walked the class hierarchy to `subprocess.Popen` through the `execute_code` tool. Four rules fall out: verify tokens cryptographically, never by presence; treat upload and attachment tools as exfiltration channels; allowlist arguments, not executables; and give containers an egress policy, not just isolation.
+**وضعیت دنیای واقعی امروز چقدر وخیم است؟** نخستین ممیزی پویا در مقیاس بزرگ روی سرورهای MCP متصل به اینترنت عمومی (arXiv 2608.00150، ۳۱ ژوئیه ۲۰۲۶) بیش از ۲۱,۰۰۰ نمونه عمومی در دسترس را شناسایی کرد، ۶۴۰ مورد را به عنوان محیط عملیاتی (Production) تایید نمود و ۴۱۴ مورد از آن‌ها را به صورت پویا آزمایش کرد. این ممیزی نشان داد که **۹۱.۸٪ آن‌ها اصلاً هیچ احراز هویت مبتنی بر OAuth نداشتند** و ۶۸۷ نمونه ابزار، امکان اجرای کنترل‌نشده Shell را در معرض خطر قرار داده بودند. هر سرور MCP قابل دسترس از اینترنت عمومی را باید پیش از اینکه به قابلیت جدیدی نیاز داشته باشد، نیازمند بازبینی مجوزها و احراز هویت دانست.
 
-### Stateless Protocol, Shared Object: CVE-2026-111770
+روند انتشار توصیه‌نامه‌های امنیتی (Advisories) از آن زمان تاکنون این موضوع را تایید می‌کند. بین ۱۵ اوت تا ۱ اکتبر ۲۰۲۶، پایگاه داده توصیه‌نامه‌های گیت‌هاب (GitHub Advisory Database) تعداد ۷۳ توصیه‌نامه بازبینی‌شده با عنوان MCP منتشر کرد (۹ مورد بحرانی)، که در رأس آن‌ها خواندن یا نوشتن دلخواه فایل یا پیمایش مسیر (Path Traversal) با حدود ۲۴ مورد، دور زدن احراز هویت یا مجوزها با حدود ۲۰ مورد، آسیب‌پذیری SSRF، و بازپیوند DNS یا عدم بررسی هدر Origin با ۸ مورد قرار داشتند. سرور محبوب اجتماعی **mcp-atlassian** (برای Jira و Confluence) در یک روز، یعنی ۲۲ سپتامبر، ۲۵ آسیب‌پذیری دریافت کرد (رفع‌شده در نسخه ۰.۲۲.۰): آسیب‌پذیری بحرانی آن (شناسه CVE-2026-77244) مربوط به اعتبارسنج Token در بستر HTTP بود که هر رشته غیرخالی را قبول می‌کرد، و چندین نقص در `upload_attachment` فایل‌های محلی سرور را به صورت دلخواه می‌خواندند و آن‌ها را به عنوان پیوست‌های Jira یا Confluence به بیرون نشت می‌دادند (Exfiltrate). سرور ساندباکس ContextForge شرکت IBM (شناسه CVE-2026-53710 با امتیاز CVSS 10.0، رفع‌شده در ۱.۰.۲) نشان داد که یک ساندباکس پایتون محافظت‌شده با Regex یک ساندباکس واقعی نیست: متدهای خاص (Dunder Names) ساخته‌شده در زمان اجرا، سلسله‌مراتب کلاس‌ها را پیمایش کرده و از طریق ابزار `execute_code` به `subprocess.Popen` رسیدند. از این تجربیات چهار قانون اساسی به دست می‌آید: Tokenها را به صورت رمزنگاری‌شده اعتبارسنجی کنید و هرگز صرف وجود داشتن آن‌ها را ملاک قرار ندهید؛ ابزارهای آپلود و پیوست فایل را به عنوان مجاری نشت داده‌ها (Exfiltration) تلقی کنید؛ آرگومان‌ها را در فهرست مجاز قرار دهید، نه صرفاً فایل‌های اجرایی را؛ و به کانتینرها علاوه بر ایزوله‌سازی، سیاست کنترل ترافیک خروجی (Egress Policy) اختصاص دهید.
 
-The stateless core invites a tempting shortcut: if no request depends on a session, build one server object and one transport at startup and let every client use them. In the official TypeScript SDK that pattern was a cross-tenant leak. **CVE-2026-111770** (CVSS 7.7, October 2026): a server or transport shared across clients could deliver one client's responses to another. It affects `@modelcontextprotocol/server` 2.0.0 through 2.2.x and is fixed in 2.3.0, but the fix is not a drop-in upgrade: 2.3.0 enforces one server and one transport per request (stateless) or per session, so applications that created them once at startup must be restructured.
+### پروتکل بدون وضعیت، شیء اشتراکی: CVE-2026-111770
 
-The same release cycle exposed a second default worth knowing. The audience check that rejects tokens issued for some other service (CVE-2026-111771) is fixed in `sdk` 1.32.0 and `server` 2.3.0, but it is **opt-in**: nothing changes until you pass `expectedResource`. Upgrading without configuring it leaves the hole open. A third arrived on October 15, 2026: **CVE-2026-111768** (CVSS 7.5) showed that servers did not limit how many array elements and object keys they validated per request, so one unauthenticated request inside the default 4 MiB body limit could exhaust heap memory (`sdk` 1.3.0 to 1.31.0, `server` 2.0.0 to 2.2.0). The fix in 1.32.0 and 2.3.0 adds a `maxToolInputElements` option on `McpServer` that is off by default; the advisory's own words are "Upgrading alone changes nothing", and it also tells you to lower `maxRequestBodySize`.
+هسته بدون وضعیت یک میانبر وسوسه‌انگیز را ایجاد می‌کند: اگر هیچ درخواستی به نشست وابسته نیست، در زمان راه‌اندازی (Startup) یک شیء سرور و یک بستر انتقال بسازید و اجازه دهید تمام کلاینت‌ها از آن‌ها استفاده کنند. در SDK رسمی TypeScript این الگو منجر به نشت اطلاعات میان مستأجرها (cross-tenant / multi-tenant) شد. آسیب‌پذیری **CVE-2026-111770** (با امتیاز CVSS 7.7، اکتبر ۲۰۲۶): سرور یا بستر انتقالی که بین کلاینت‌ها به اشتراک گذاشته می‌شد، می‌توانست پاسخ‌های یک کلاینت را به کلاینت دیگری تحویل دهد. این مشکل نسخه‌های ۲.۰.۰ تا 2.2.x از `@modelcontextprotocol/server` را تحت تأثیر قرار می‌دهد و در نسخه ۲.۳.۰ برطرف شده است، اما رفع آن یک ارتقای سرراست (Drop-in upgrade) نیست: نسخه ۲.۳.۰ داشتن یک سرور و یک بستر انتقال به ازای هر درخواست (حالت بدون وضعیت) یا به ازای هر نشست را اجباری می‌کند؛ بنابراین برنامه‌هایی که در زمان راه‌اندازی آن‌ها را فقط یک بار ایجاد می‌کردند، باید بازسازی و تغییر ساختار داده شوند.
 
-The shared-object bug class is not MCP-specific. Strands Agents' A2A server (**CVE-2026-115419**, CVSS 8.1, October 22) shared conversation history across callers with different `context_id` values, so in a multi-user deployment one authenticated caller could read another's history or steer the model for others; `strands-agents` 1.43.0 and `@strands-agents/sdk` 1.5.0 build the agent through a factory per `context_id`, and the stated workaround is one A2A server per tenant.
+همان چرخه انتشار، یک پیش‌فرض دوم را نیز آشکار ساخت که ارزش دانستن دارد. بررسی مخاطب (Audience Check) که Tokenهای صادرشده برای سرویسی دیگر را رد می‌کند (شناسه CVE-2026-111771)، در نسخه‌های `sdk` 1.32.0 و `server` 2.3.0 برطرف شده است، اما این قابلیت **اختیاری (Opt-in)** است: تا زمانی که مقدار `expectedResource` را پاس ندهید، هیچ تغییری رخ نمی‌دهد. ارتقا بدون پیکربندی این مورد، رخنه امنیتی را باز می‌گذارد. آسیب‌پذیری سومی در ۱۵ اکتبر ۲۰۲۶ پدیدار شد: **CVE-2026-111768** (با امتیاز CVSS 7.5) نشان داد سرورها تعداد عناصر آرایه و کلیدهای اشیایی را که در هر درخواست اعتبارسنجی می‌کردند محدود نمی‌ساختند، به طوری که یک درخواست احراز هویت‌نشده در محدوده پیش‌فرض حجم ۴ مبی‌بایت (MiB) بدنه درخواست، می‌توانست حافظه Heap را پر کند (`sdk` 1.3.0 تا 1.31.0، و `server` 2.0.0 تا 2.2.0). راه‌حل ارائه‌شده در نسخه 1.32.0 و 2.3.0 گزینه `maxToolInputElements` را به `McpServer` اضافه می‌کند که به طور پیش‌فرض غیرفعال است؛ متن خود توصیه‌نامه امنیتی چنین است: «ارتقا به تنهایی هیچ چیزی را تغییر نمی‌دهد» و همچنین توصیه می‌کند که مقدار `maxRequestBodySize` را کاهش دهید.
 
-Identity binding has to fail closed too. The MCP C# SDK advisory GHSA-x863-g495-4cjc (CVSS 7.5, November 3) bound a stateful Streamable HTTP session to its user by the `NameIdentifier`, `sub`, or UPN claim only, so two principals lacking all three compared as `null == null`, and a second user holding the victim's `Mcp-Session-Id` could act inside and terminate the victim's session. It needs a custom auth handler that emits none of those claims, but the rule is general: a missing identity claim is an error, never a comparable value. `ModelContextProtocol.AspNetCore` 1.4.2 and 2.3.1 fix it; 1.4.2 also validates PKCE support and the metadata issuer, so servers relying on metadata-free 2025-03-26 OAuth discovery must opt in with `ModelContextProtocol.Authentication.AllowLegacyOAuthMetadataFallback`.
+کلاس خطای شیء اشتراکی مختص به MCP نیست. سرور A2A فریم‌ورک Strands Agents (شناسه **CVE-2026-115419** با امتیاز CVSS 8.1، ۲۲ اکتبر) تاریخچه مکالمه را میان فراخوانندگانی با مقادیر مختلف `context_id` به اشتراک می‌گذاشت؛ بنابراین در یک استقرار (Deployment) چندکاربره، یک فراخواننده احراز هویت شده می‌توانست تاریخچه کاربری دیگر را بخواند یا مدل را برای دیگران هدایت کند؛ نسخه‌های `strands-agents` 1.43.0 و `@strands-agents/sdk` 1.5.0 این Agent را از طریق یک کارخانه (Factory) به ازای هر `context_id` می‌سازند، و راه‌حل موقت اعلام‌شده، اختصاص یک سرور A2A به ازای هر مستأجر (tenant / multi-tenant) است.
 
-The lessons generalize beyond one SDK:
+اتصال هویت (Identity Binding) نیز باید از نوع Fail-closed باشد (در صورت بروز خطا، دسترسی مسدود شود). توصیه‌نامه امنیتی SDK سی‌شارپ MCP به شناسه GHSA-x863-g495-4cjc (با امتیاز CVSS 7.5، ۳ نوامبر) یک نشست Streamable HTTP مبتنی بر وضعیت را تنها از طریق کلیم‌های (Claims) `NameIdentifier`، `sub` یا UPN به کاربرش متصل می‌کرد؛ بنابراین اگر دو کاربر هیچ‌کدام از این سه کلیم را نداشتند، مقایسه آن‌ها به صورت `null == null` انجام می‌شد و کاربر دوم با در اختیار داشتن `Mcp-Session-Id` کاربر قربانی می‌توانست در نشست او فعالیت کرده و آن را خاتمه دهد. این سناریو به یک مدیریت‌کننده احراز هویت سفارشی (Custom Auth Handler) نیاز دارد که هیچ‌یک از این کلیم‌ها را صادر نکند، اما این قاعده کلی است: فقدان یک کلیم هویتی یک خطا محسوب می‌شود، نه یک مقدار قابل مقایسه. نسخه‌های ۱.۴.۲ و ۲.۳.۱ از `ModelContextProtocol.AspNetCore` این مورد را برطرف کرده‌اند؛ نسخه ۱.۴.۲ همچنین پشتیبانی از PKCE و صادرکننده متادیتا (Metadata Issuer) را اعتبارسنجی می‌کند، بنابراین سرورهایی که به کشف OAuth فاقد متادیتای مورخ ۲۰۲۵-۰۳-۲۶ تکیه دارند، باید صراحتاً با گزینه `ModelContextProtocol.Authentication.AllowLegacyOAuthMetadataFallback` آن را فعال سازند.
 
-- **"Stateless" describes the wire, not your process.** Response routing, in-flight request maps, and buffers still live in memory; scope those objects to a request or session, and test with two concurrent clients whose responses must never cross.
-- **A security fix can require code changes**, so a dependency bot that bumps the version and passes CI is not evidence the vulnerability is gone. Read the advisory, not just the changelog.
-- **Opt-in fixes need an owner.** Track them as configuration work items, and add a test that a token minted for another resource is rejected.
+درس‌های آموخته‌شده فراتر از یک SDK تعمیم‌پذیر هستند:
 
-### OAuth Mix-Up: The Multi-Server Client Is the Confused Deputy
+- **«بدون وضعیت» (Stateless) رسانه انتقال را توصیف می‌کند، نه فرآیند شما را.** مسیریابی پاسخ، نقشه‌های درخواست‌های در حال پردازش (In-flight Request Maps) و بافرها همچنان در حافظه نگهداری می‌شوند؛ دامنه (Scope) این اشیاء را به یک درخواست یا نشست محدود کنید، و با دو کلاینت همزمان تست کنید که پاسخ‌های آن‌ها هرگز با یکدیگر تداخل نداشته باشند.
+- **یک اصلاح امنیتی می‌تواند نیازمند تغییر کد باشد**، بنابراین ربات مدیریت وابستگی که صرفاً نسخه را ارتقا می‌دهد و تست‌های CI را پاس می‌کند، مدرکی بر رفع آسیب‌پذیری نیست. به جای بررسی صرف تغییرات نسخه (Changelog)، حتماً متن توصیه‌نامه امنیتی (Advisory) را مطالعه کنید.
+- **اصلاحات اختیاری (Opt-in) نیازمند مسئول و مالک هستند.** آن‌ها را به عنوان وظایف پیکربندی پیگیری کنید و تستی اضافه نمایید تا اطمینان حاصل شود که یک Token صادرشده برای منبعی دیگر رد می‌شود.
 
-On September 28 and 30, 2026 the official SDKs published advisories for an authorization-server mix-up (TypeScript CVE-2026-104850 / GHSA-6qxp-vccf-f47h and Python GHSA-qx49-fqc8-xw99, both CVSS 7.5). The SDK OAuth clients let the MCP server decide which authorization server received the client's credentials, so a malicious or compromised server could name its own authorization server and, with no user interaction, receive stored refresh tokens, client secrets, or a bundled provider's signed assertion. Fixed in TypeScript 1.31.0 / 2.2.0 and Python 1.30.0 / 2.2.0, but upgrading is not the whole fix:
+### تداخل OAuth (OAuth Mix-Up): کلاینت چندسروری همان نایب سردرگم (Confused Deputy) است
 
-- Machine-to-machine providers (client credentials, private-key JWT, cross-app access) must be given the expected issuer explicitly (`expectedIssuer`; Python `issuer=`, required in 3.0).
-- Credentials persisted before the upgrade carry no issuer and stay exposed until they are tagged or cleared.
-- New interactive sign-ins still go to whatever authorization server the MCP server names. The spec's RFC 9207 `iss` validation catches a swapped authorization response, but on its own it does not stop a client from sending stored credentials to a server-chosen issuer.
+در تاریخ‌های ۲۸ و ۳۰ سپتامبر ۲۰۲۶، SDKهای رسمی هشدارهای امنیتی مربوط به تداخل سرور مجوزدهی (authorization-server mix-up) را منتشر کردند (برای TypeScript شناسه CVE-2026-104850 / GHSA-6qxp-vccf-f47h و برای Python شناسه GHSA-qx49-fqc8-xw99، هر دو با امتیاز CVSS 7.5). کلاینت‌های OAuth در SDK به سرور MCP اجازه می‌دادند مشخص کند کدام سرور مجوزدهی اطلاعات اعتباری (credentials) کلاینت را دریافت کند؛ بنابراین یک سرور مخرب یا نفوذیافته می‌توانست سرور مجوزدهی اختصاصی خود را معرفی کند و بدون هیچ‌گونه تعامل کاربری، Tokenهای تازه‌سازی (refresh tokens) ذخیره‌شده، اسرار کلاینت (client secrets) یا اظهارنامه امضاشده (signed assertion) یک ارائه‌دهنده یکپارچه‌شده را به دست آورد. این مشکل در نسخه‌های 1.31.0 / 2.2.0 در TypeScript و نسخه‌های 1.30.0 / 2.2.0 در Python برطرف شد، اما ارتقای نسخه کل راه‌حل نیست:
 
-The design rule: **bind every credential to its issuer, and never let a resource server choose where secrets go.**
+- به ارائه‌دهندگان ارتباط ماشین‌به‌ماشین (مانند اعتبارسنجی کلاینت (client credentials)، کلید خصوصی JWT و دسترسی بین‌برنامه‌ای)، صادرکننده موردانتظار باید به‌صورت صریح داده شود (`expectedIssuer`؛ در پایتون `issuer=`، که در نسخه 3.0 الزامی است).
+- اطلاعات اعتباری ذخیره‌شده پیش از ارتقا، فاقد صادرکننده هستند و تا زمان برچسب‌گذاری یا پاکسازی در معرض افشا باقی می‌مانند.
+- فرآیندهای ورود تعاملی جدید همچنان به هر سرور مجوزدهی که سرور MCP نام ببرد مراجعه می‌کنند. اعتبارسنجی `iss` طبق استاندارد RFC 9207 پاسخ‌های مجوزدهیِ جابه‌جاشده را شناسایی می‌کند، اما به‌تنهایی مانع از ارسال اطلاعات اعتباری ذخیره‌شده توسط کلاینت به صادرکننده انتخابی سرور نمی‌شود.
 
-### SDK Defaults and Per-Tool Authorization
+قاعده طراحی: **هر داده اعتباری را به صادرکننده آن مقید کنید و هرگز اجازه ندهید یک سرور منبع تعیین کند که اسرار به کجا فرستاده شوند.**
 
-**Limits the SDKs now enforce by default.** A cluster of denial-of-service fixes (August 19 to September 30) changed defaults worth copying to any MCP endpoint: TypeScript 2.1.0 and Python cap request bodies at 4 MiB (HTTP 413) and TypeScript caps JSON-RPC batches at 100; Python 1.30.0 and 2.2.0 close legacy stateful sessions idle for 30 minutes and cap a server at 10,000 sessions (503 beyond), after CVE-2026-59951 showed unreclaimed stateful sessions exhausting memory; Go 1.8.0 bounds JSON nesting, SSE event size, and stdio line length. The client is attackable too: Python's client fetched any `$ref` in a server-declared `outputSchema` synchronously with no timeout (GHSA-rwrf-2pqf-9j8j), enabling SSRF and local file reads. FastMCP's client was worse (GHSA-gpgx-58w2-xwwf, critical, October 16): a malicious server could return an `outputSchema` whose self-referencing title went unsanitized into Python's `ForwardRef`, so parsing a successful structured tool result executed attacker code with the client's privileges, and the exception handler only logged, so the call looked successful (fixed in 3.4.8 and 4.0.11; server-supplied form-elicitation schemas are a second path). Browsers are a client too: the Java SDK's stateless servlet transport (GHSA-hp8w-r5wh-cw9q, CVSS 7.1, October 20) parsed JSON-RPC regardless of `Content-Type`, so a web page could make a visitor's browser send a `tools/call` as a `text/plain` no-cors simple request with no CORS preflight and no DNS rebinding needed (fixed in `mcp-core` 0.18.5, 1.1.5, and 2.1.0; the same day brought GHSA-2hm9-qff2-hrpj, an unauthenticated `initialize` flood of never-reclaimed sessions). Per-session server state is a DoS surface, which is the operational argument for the stateless revision, and tool output schemas are attacker-controlled input to the client.
+### پیش‌فرض‌های SDK و مجوزدهی به تفکیک ابزار
 
-**Per-tool authorization ahead of the spec.** The TypeScript server 2.1.0 (September 23) adds request-time scope challenges per tool, resource, and prompt (`requireScopes`), answering HTTP 403 `insufficient_scope` before the handler runs, and the TypeScript client 2.1.0 adds DPoP sender-constrained tokens (RFC 9449, following draft SEP-1932), so a stolen bearer token alone is not enough.
+**محدودیت‌هایی که SDKها اکنون به‌طور پیش‌فرض اعمال می‌کنند.** مجموعه‌ای از وصله‌های امنیتی مربوط به حملات منع سرویس (از ۱۹ اوت تا ۳۰ سپتامبر) مقادیر پیش‌فرضی را تغییر دادند که شایسته است در هر اندپوینت MCP پیاده‌سازی شوند: نسخه 2.1.0 در TypeScript و Python بدنه درخواست‌ها را به 4 MiB محدود می‌کنند (کد خطای HTTP 413) و TypeScript پردازش دسته‌ای پیام‌های JSON-RPC را به ۱۰۰ عدد محدود می‌سازد؛ نسخه‌های 1.30.0 و 2.2.0 در Python نشست‌های وضعیت‌دار (stateful) قدیمی را که ۳۰ دقیقه غیرفعال بوده‌اند می‌بندند و تعداد نشست‌های یک سرور را به ۱۰,۰۰۰ عدد محدود می‌کنند (فراتر از آن با خطای 503 مواجه می‌شود)، پس از آن‌که آسیب‌پذیری CVE-2026-59951 نشان داد نشست‌های وضعیت‌دارِ بازیافت‌نشده باعث اتمام حافظه می‌شوند؛ نسخه 1.8.0 در Go عمق تودرتویی JSON، اندازه رخدادهای SSE و طول خطوط stdio را محدود می‌کند. کلاینت نیز در معرض حمله است: کلاینت Python هر مقداری از `$ref` در یک `outputSchema` اعلام‌شده از سوی سرور را به‌صورت همگام و بدون مهلت زمانی واکشی می‌کرد (GHSA-rwrf-2pqf-9j8j) که امکان جعل درخواست سمت سرور (SSRF) و خواندن فایل‌های محلی را فراهم می‌کرد. کلاینت FastMCP حتی وضعیتی وخیم‌تر داشت (GHSA-gpgx-58w2-xwwf، بحرانی، ۱۶ اکتبر): یک سرور مخرب می‌توانست یک `outputSchema` برگرداند که عنوان خودارجاعِ آن بدون پاکسازی وارد `ForwardRef` پایتون می‌شد؛ بنابراین پارس کردن یک نتیجه ساختاریافته موفق از ابزار، کد مهاجم را با اختیارات کلاینت اجرا می‌کرد و از آنجا که مدیریت‌کننده استثنا صرفاً لاگ ثبت می‌کرد، فراخوانی موفقیت‌آمیز به نظر می‌رسید (در نسخه‌های 3.4.8 و 4.0.11 رفع شد؛ اسکیماهای گردآوری فرم ارائه‌شده توسط سرور مسیر حمله دوم بودند). مرورگرها نیز نوعی کلاینت هستند: انتقال مبتنی بر سرولت بدون وضعیت در Java SDK (شناسه GHSA-hp8w-r5wh-cw9q، با امتیاز CVSS 7.1، در ۲۰ اکتبر) بدون توجه به `Content-Type` به پارس JSON-RPC می‌پرداخت، به طوری که یک صفحه وب می‌توانست مرورگر بازدیدکننده را وادار به ارسال یک درخواست ساده `text/plain` از نوع no-cors حاوی `tools/call` کند، بدون اینکه به بررسی مقدماتی CORS یا بازپیوند DNS نیازی باشد (این مورد در `mcp-core` نسخه‌های 0.18.5، 1.1.5 و 2.1.0 برطرف شد؛ در همان روز آسیب‌پذیری GHSA-2hm9-qff2-hrpj نیز ثبت شد که شامل سیل درخواست‌های احرازهویت‌نشده `initialize` با نشست‌های هرگز بازیافت‌نشده بود). وضعیت سرور به ازای هر نشست، یک سطح حمله DoS است که استدلال عملیاتی اصلی برای بازنگری به سمت معماری بدون وضعیت محسوب می‌شود، و اسکیماهای خروجی ابزار نیز ورودی‌های تحت کنترل مهاجم برای کلاینت هستند.
 
-### Defense-in-Depth Checklist for Production MCP
+**مجوزدهی به تفکیک ابزار، پیش از استانداردسازی رسمی.** سرور TypeScript نسخه 2.1.0 (۲۳ سپتامبر) چالش‌های محدوده دسترسی در زمان درخواست را به ازای هر ابزار، منبع و Prompt اضافه می‌کند (`requireScopes`) و پیش از اجرای هندلر خطای HTTP 403 `insufficient_scope` را برمی‌گرداند؛ همچنین کلاینت TypeScript نسخه 2.1.0 امکان استفاده از Tokenهای مقید به فرستنده DPoP (مطابق استاندارد RFC 9449 و پیش‌نویس SEP-1932) را اضافه کرده است تا یک Token حامل (bearer Token) سرقت‌شده به‌تنهایی کافی نباشد.
 
-- All remote MCP servers run behind OAuth 2.1 with PKCE and audience-bound tokens (RFC 8707), and verify signature, issuer, and audience on every request. The SDK audience checks are off by default (`expectedResource` in TypeScript), so turn them on explicitly, along with the input-size limit `maxToolInputElements` (TypeScript 1.32.0 / 2.3.0), which also ships off.
-- A session or state handle binds to a non-null user identity; a request whose identity claim is missing is rejected, never compared (C# SDK 1.4.2 / 2.3.1).
-- Server and transport objects are created per request or per session, never shared across clients (CVE-2026-111770).
-- Clients bind every stored credential to its issuer and refuse to send it to an authorization server the MCP server names.
-- Write-capable and sensitive tools demand step-up scopes (403 `insufficient_scope`); high-value deployments use DPoP-bound tokens.
-- Local HTTP servers bind to loopback, require `Content-Type: application/json`, validate `Origin` and `Host`, and authenticate even on loopback; request bodies are capped (4 MiB) and server sessions are capped and reclaimed.
-- STDIO servers run inside a container with `network: none`, read-only root filesystem, no host volume mounts, and a `nproc` and `memory` cap; their launch commands are allowlisted with arguments.
-- Every tool invocation is logged with user identity, bound token audience, tool name, argument hash, and result hash. Logs ship to an append-only store.
-- A rate limiter sits in front of every MCP server, scoped by user identity. Burst budgets are tight for write-capable tools.
-- Tool arguments pass through a content filter before reaching the server: pattern-based prompt-injection detection on string fields, schema validation on structured fields, hard rejection for shell metacharacters in tools that do not need them.
-- Clients treat server-declared output and elicitation schemas as attacker input and run patched libraries (FastMCP 3.4.8 / 4.0.11 or later).
-- Tool results pass through an output validator before being fed back to the model: PII detection, secret detection, size cap, content filter for known exfiltration markers.
-- Dangerous tools (file write, shell execution, outbound HTTP) require a human approval step or a signed capability token rather than relying on the model to call them safely.
+### چک‌لیست دفاع در عمق برای MCP در محیط پروداکشن
 
-Request flow with all defensive layers:
+- تمام سرورهای ریموت MCP پشت OAuth 2.1 همراه با PKCE و Tokenهای مقید به مخاطب (RFC 8707) اجرا شوند، و امضا، صادرکننده و مخاطب را در هر درخواست اعتبارسنجی کنند. بررسی‌های مخاطب در SDK به‌طور پیش‌فرض غیرفعال هستند (`expectedResource` در TypeScript)، بنابراین آن‌ها را به‌همراه محدودیت اندازه ورودی `maxToolInputElements` (در TypeScript 1.32.0 / 2.3.0) که آن هم به‌طور پیش‌فرض غیرفعال است، به‌صورت صریح فعال کنید.
+- هندل نشست یا وضعیت به یک هویت کاربری غیر تهی مقید شود؛ درخواستی که فاقد ادعای هویت است رد می‌شود و هرگز مقایسه نمی‌گردد (C# SDK 1.4.2 / 2.3.1).
+- اشیای سرور و ترنسپورت به ازای هر درخواست یا هر نشست ایجاد شوند و هرگز بین کلاینت‌ها به اشتراک گذاشته نشوند (CVE-2026-111770).
+- کلاینت‌ها هر داده اعتباری ذخیره‌شده را به صادرکننده آن مقید کنند و از ارسال آن به سرور مجوزدهی معرفی‌شده توسط سرور MCP خودداری ورزند.
+- ابزارهای دارای قابلیت نوشتن و ابزارهای حساس نیازمند محدوده‌های دسترسی ارتقایافته باشند (خطای 403 `insufficient_scope`)؛ در استقرار (Deployment)های باارزش از Tokenهای مقید به DPoP استفاده شود.
+- سرورهای محلی HTTP به لوپ‌بک مقید شوند، `Content-Type: application/json` را الزامی کنند، هدرهای `Origin` و `Host` را اعتبارسنجی نمایند، و حتی روی لوپ‌بک نیز احراز هویت را انجام دهند؛ بدنه درخواست‌ها محدود شود (4 MiB) و نشست‌های سرور دارای سقف معین بوده و بازیافت شوند.
+- سرورهای STDIO درون کانتینری با پیکربندی `network: none`، سیستم فایل ریشه فقط‌خواندنی، بدون مانت کردن حجم‌های میزبان، و با اعمال محدودیت سقف برای `nproc` و `memory` اجرا شوند؛ دستورات راه‌اندازی آن‌ها به‌همراه آرگومان‌ها در لیست مجاز قرار گیرند.
+- هر فراخوانی ابزار همراه با هویت کاربر، مخاطبِ Token مقیدشده، نام ابزار، هش آرگومان و هش نتیجه لاگ شود. لاگ‌ها به یک منبع ذخیره‌سازی فقط‌افزودنی ارسال شوند.
+- یک محدودکننده نرخ درخواست در مقابل هر سرور MCP قرار گیرد که محدوده آن بر اساس هویت کاربر تعریف می‌شود. بودجه‌های بار ناگهانی برای ابزارهای با قابلیت نوشتن باید سخت‌گیرانه و محدود باشند.
+- آرگومان‌های ابزار پیش از رسیدن به سرور از یک فیلتر محتوا عبور کنند: تشخیص تزریق Prompt (Prompt injection) مبتنی بر الگو روی فیلدهای متنی، اعتبارسنجی اسکیما روی فیلدهای ساختاریافته، و رد قطعی کاراکترهای کنترلی شل در ابزارهایی که به آن‌ها نیازی ندارند.
+- کلاینت‌ها با اسکیماهای خروجی و گردآوریِ اعلام‌شده از سوی سرور به عنوان ورودی مهاجم برخورد کنند و کتابخانه‌های وصله‌شده را به کار گیرند (FastMCP نسخه 3.4.8 / 4.0.11 یا بالاتر).
+- نتایج ابزار پیش از بازگشت به مدل از یک اعتبارسنج خروجی عبور کنند: تشخیص اطلاعات حساس هویتی (PII)، تشخیص اسرار امنیتی، سقف اندازه، و فیلتر محتوا برای نشانگرهای شناخته‌شده استخراج غیرمجاز داده‌ها.
+- ابزارهای خطرناک (نوشتن فایل، اجرای شل، درخواست‌های HTTP خروجی) نیازمند مرحله تایید انسانی یا یک Token قابلیت امضاشده باشند و برای فراخوانی ایمن به مدل اتکا نشود.
+
+جریان درخواست با در نظر گرفتن تمامی لایه‌های دفاعی:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -556,36 +592,38 @@ flowchart TD
     H --> I[Return result to model]
 ```
 
-The pipeline is deliberately conservative. Every layer can reject; only the result that survives all five gates reaches the model.
+</div>
 
-**Sources for this section:**
-- [A2A v1.0.1 release](https://github.com/a2aproject/A2A/releases/tag/v1.0.1) and [A2A joins AAIF](https://aaif.io/blog/a2a-joins-aaif)
-- [MCP roadmap](https://modelcontextprotocol.io/development/roadmap) and [The New MCP Roadmap (August 22, 2026)](https://blog.modelcontextprotocol.io/posts/mcp-roadmap/)
-- [MCP TypeScript SDK OAuth mix-up advisory (GHSA-6qxp-vccf-f47h)](https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-6qxp-vccf-f47h)
-- [MCP TypeScript SDK shared server and transport advisory, CVE-2026-111770 (GHSA-jm63-cq47-j5jp)](https://github.com/advisories/GHSA-jm63-cq47-j5jp)
-- [MCP TypeScript SDK input-element exhaustion advisory, CVE-2026-111768 (GHSA-46jr-4wx8-v453)](https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-46jr-4wx8-v453)
-- [FastMCP client outputSchema code execution (GHSA-gpgx-58w2-xwwf)](https://github.com/PrefectHQ/fastmcp/security/advisories/GHSA-gpgx-58w2-xwwf)
-- [MCP Java SDK Content-Type advisory (GHSA-hp8w-r5wh-cw9q)](https://github.com/modelcontextprotocol/java-sdk/security/advisories/GHSA-hp8w-r5wh-cw9q)
-- [MCP C# SDK session identity binding (GHSA-x863-g495-4cjc)](https://github.com/modelcontextprotocol/csharp-sdk/security/advisories/GHSA-x863-g495-4cjc)
-- [Strands Agents A2A shared history, CVE-2026-115419 (GHSA-4v6f-7vjh-6x4m)](https://github.com/strands-agents/sdk-python/security/advisories/GHSA-4v6f-7vjh-6x4m)
-- [MCP Enterprise-Managed Authorization implementation support](https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization)
-- [GitHub Advisory Database: reviewed MCP advisories](https://github.com/advisories?query=type%3Areviewed+mcp)
-- [RFC 8707: Resource Indicators for OAuth 2.0](https://www.rfc-editor.org/rfc/rfc8707)
-- [Adversa AI: Top MCP Security Resources May 2026](https://adversa.ai/blog/top-mcp-security-resources-may-2026/)
-- [Anthropic Constitutional Classifiers](https://www.anthropic.com/research/constitutional-classifiers)
+این پایپ‌لاین تعمداً محافظه‌کارانه طراحی شده است. هر لایه می‌تواند درخواست را رد کند؛ تنها نتیجه‌ای که از هر پنج دروازه عبور کند به مدل می‌رسد.
+
+**منابع این بخش:**
+- [انتشار نسخه v1.0.1 در A2A](https://github.com/a2aproject/A2A/releases/tag/v1.0.1) و [پیوستن A2A به AAIF](https://aaif.io/blog/a2a-joins-aaif)
+- [نقشه راه MCP](https://modelcontextprotocol.io/development/roadmap) و [نقشه راه جدید MCP (۲۲ اوت ۲۰۲۶)](https://blog.modelcontextprotocol.io/posts/mcp-roadmap/)
+- [هشدار امنیتی تداخل OAuth در MCP TypeScript SDK (شناسه GHSA-6qxp-vccf-f47h)](https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-6qxp-vccf-f47h)
+- [هشدار امنیتی سرور و ترنسپورت اشتراکی در MCP TypeScript SDK، شناسه CVE-2026-111770 (شناسه GHSA-jm63-cq47-j5jp)](https://github.com/advisories/GHSA-jm63-cq47-j5jp)
+- [هشدار امنیتی اتمام المان‌های ورودی در MCP TypeScript SDK، شناسه CVE-2026-111768 (شناسه GHSA-46jr-4wx8-v453)](https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-46jr-4wx8-v453)
+- [اجرای کد در کلاینت FastMCP از طریق outputSchema (شناسه GHSA-gpgx-58w2-xwwf)](https://github.com/PrefectHQ/fastmcp/security/advisories/GHSA-gpgx-58w2-xwwf)
+- [هشدار امنیتی Content-Type در MCP Java SDK (شناسه GHSA-hp8w-r5wh-cw9q)](https://github.com/modelcontextprotocol/java-sdk/security/advisories/GHSA-hp8w-r5wh-cw9q)
+- [مقیدسازی هویت نشست در MCP C# SDK (شناسه GHSA-x863-g495-4cjc)](https://github.com/modelcontextprotocol/csharp-sdk/security/advisories/GHSA-x863-g495-4cjc)
+- [تاریخچه اشتراکی A2A در Strands Agents، شناسه CVE-2026-115419 (شناسه GHSA-4v6f-7vjh-6x4m)](https://github.com/strands-agents/sdk-python/security/advisories/GHSA-4v6f-7vjh-6x4m)
+- [پشتیبانی از پیاده‌سازی مجوزدهی مدیریت‌شده سازمانی در MCP](https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization)
+- [پایگاه داده هشدارهای امنیتی گیت‌هاب: هشدارهای بازبینی‌شده MCP](https://github.com/advisories?query=type%3Areviewed+mcp)
+- [استاندارد RFC 8707: نشانگرهای منبع برای OAuth 2.0](https://www.rfc-editor.org/rfc/rfc8707)
+- [Adversa AI: برترین منابع امنیتی MCP در مه ۲۰۲۶](https://adversa.ai/blog/top-mcp-security-resources-may-2026/)
+- [دسته‌بندی‌کننده‌های مشروطه (Constitutional Classifiers) انتروپیک](https://www.anthropic.com/research/constitutional-classifiers)
 
 ---
 
-## Computer-Use Tools (Anthropic)
+## ابزارهای کار با کامپیوتر (Computer-Use Tools) انتروپیک
 
-Anthropic shipped computer use as a beta with Claude 3.5 Sonnet in October 2024. It reached general availability on the Claude API on August 19, 2026 (Google Cloud on August 20; still beta on Bedrock, Claude Platform on AWS, and Foundry) as a client **toolset**, `computer_toolset_20260801`: one tools-array entry that expands into 17 member tools (screenshot, zoom, clicks, drag, typing, key presses, scroll, wait), with per-member configs and no beta header. Display size now comes from the screenshots you return; the older `name`, `display_width_px`, `display_height_px`, and `display_number` fields are rejected.
+شرکت انتروپیک (Anthropic) قابلیت استفاده از کامپیوتر (computer use) را در اکتبر ۲۰۲۴ به صورت بتا در مدل Claude 3.5 Sonnet عرضه کرد. این قابلیت در ۱۹ اوت ۲۰۲۶ روی Claude API (و در ۲۰ اوت روی Google Cloud؛ همچنان در فاز بتا روی Bedrock، پلتفرم Claude در AWS و Foundry) به عنوان یک **مجموعه ابزار (toolset)** سمت کلاینت با نام `computer_toolset_20260801` به مرحله دسترسی عمومی (GA) رسید: یک ورودی منفرد در آرایه ابزارها که به ۱۷ ابزار عضو (اسکرین‌شات، زوم، کلیک‌ها، کشیدن (drag)، تایپ، فشردن کلیدها، اسکرول، انتظار) با پیکربندی‌های اختصاصی برای هر عضو و بدون نیاز به هدر بتا بسط می‌یابد. ابعاد نمایشگر اکنون از اسکرین‌شات‌هایی که بازمی‌گردانید به دست می‌آید؛ فیلدهای قدیمی‌تر `name`، `display_width_px`، `display_height_px` و `display_number` رد می‌شوند.
 
-| Tool | Capability | Notes |
+| ابزار | قابلیت | توضیحات |
 |------|------------|-------|
-| `bash` (`bash_20250124`) | Run shell commands | Persistent session across turns |
-| `text_editor` (`text_editor_20250728`, name `str_replace_based_edit_tool`) | Read, create, and edit files | `view`, `create`, `str_replace`, `insert` |
-| `computer_toolset_20260801` | Mouse, keyboard, screenshot, zoom | 17 members; batch actions; GA on Claude API and Google Cloud |
-| `browser_toolset_20260801` | Drive a browser your application hosts | 31 members (4 opt-in); targets accessibility-tree element refs as well as pixels; Claude API and Google Cloud only |
+| `bash` (`bash_20250124`) | اجرای دستورات شل | نشست پایدار در طول نوبت‌ها |
+| `text_editor` (`text_editor_20250728`, با نام `str_replace_based_edit_tool`) | خواندن، ایجاد و ویرایش فایل‌ها | `view`, `create`, `str_replace`, `insert` |
+| `computer_toolset_20260801` | ماوس، صفحه‌کلید، اسکرین‌شات، زوم | ۱۷ عضو؛ اقدامات دسته‌ای؛ عرضه عمومی روی Claude API و Google Cloud |
+| `browser_toolset_20260801` | هدایت مرورگری که برنامه شما میزبان آن است | ۳۱ عضو (۴ مورد اختیاری / opt-in)؛ هدف‌گیری مراجع عناصر درخت دسترسی‌پذیری و همچنین پیکسل‌ها؛ فقط روی Claude API و Google Cloud |
 
 ```python
 import anthropic
@@ -604,23 +642,23 @@ response = client.messages.create(  # GA: no beta namespace or beta header
 )
 ```
 
-**Migration trap:** the Claude 5.5 models (Opus, Sonnet, and Haiku) return HTTP 400 for the older `computer_20251124` tool on the Claude API and Google Cloud (Bedrock still accepts it), and samples that target `claude-3-7-sonnet-20250219` or `claude-sonnet-4-20250514` point at retired models.
+**دام مهاجرت:** مدل‌های Claude 5.5 (شامل Opus، Sonnet و Haiku) برای ابزار قدیمی‌تر `computer_20251124` روی Claude API و Google Cloud خطای HTTP 400 برمی‌گردانند (Bedrock هنوز آن را می‌پذیرد)، و نمونه‌هایی که `claude-3-7-sonnet-20250219` یا `claude-sonnet-4-20250514` را هدف قرار می‌دهند به مدل‌های بازنشسته‌شده اشاره دارند.
 
-**Batch actions move the human gate.** Claude can now return several computer `tool_use` blocks in one turn. The executor runs them in order and halts at the first failure, answering each later block with `is_error` and "Not executed: an earlier computer action in this turn failed." One model round trip can therefore complete a multistep consequential action, which cuts per-step latency and cost but means a confirmation placed between model turns arrives too late. Anthropic's docs put the human check before each block runs: inspect every action in the batch when it arrives, and pause before each consequential one executes, including one in the middle of a batch. Treat a rejection like a failure: return `is_error` for that block, answer the rest of the batch with the halt text, and let the model replan.
+**اقدامات دسته‌ای دروازه بررسی انسانی را جابه‌جا می‌کنند.** مدل Claude اکنون می‌تواند چندین بلوک `tool_use` مربوط به کامپیوتر را در یک نوبت بازگرداند. مجری (executor) آن‌ها را به ترتیب اجرا می‌کند و با وقوع اولین شکست متوقف می‌شود، و به هر بلوک بعدی با `is_error` و پیام "Not executed: an earlier computer action in this turn failed." پاسخ می‌دهد. بنابراین یک رفت‌وبرگشت مدل می‌تواند یک اقدام چندمرحله‌ای پیامددار را به انجام برساند که تاخیر (Latency) و هزینه هر مرحله را کاهش می‌دهد، اما بدین معناست که تاییدیه‌ای که بین نوبت‌های مدل قرار گیرد بسیار دیر خواهد بود. مستندات Anthropic بررسی انسانی را پیش از اجرای هر بلوک قرار می‌دهد: تمام اقدامات درون دسته را هنگام دریافت بازبینی کنید و پیش از اجرای هر اقدام پیامددار، حتی در میانه یک دسته، متوقف شوید. با رد کردن اقدام مانند یک شکست برخورد کنید: برای آن بلوک `is_error` بازگردانید، باقی دسته را با متن توقف پاسخ دهید و اجازه دهید مدل دوباره برنامه‌ریزی کند.
 
-**Element refs are the reliability lever for web tasks.** In the browser toolset, `read_page` returns the accessibility tree with references such as `[ref_2]`, and clicks, form input, and uploads can target refs instead of coordinates. Refs survive layout shifts but are scoped to a tab and go stale after navigation. Anthropic scans returned page text and screenshots for prompt injection, and its security guidance doubles as a least-privilege checklist: a fresh browser profile with no credentials, a network-layer domain allowlist that blocks loopback, link-local, and private ranges, http/https URLs only, and the opt-in members (`javascript_exec`, `file_upload`, `read_console`, `read_network`) left off unless the task needs them.
+**مراجع عناصر (Element refs) اهرم قابلیت اطمینان در وظایف وب هستند.** در مجموعه ابزار مرورگر، ابزار `read_page` درخت دسترسی‌پذیری را با مراجعی نظیر `[ref_2]` بازمی‌گرداند، و کلیک‌ها، ورودی فرم و آپلودها می‌توانند به جای مختصات، این مراجع را هدف قرار دهند. این مراجع در برابر جابه‌جایی چیدمان پایدار می‌مانند اما محدود به یک تب هستند و پس از ناوبری منقضی می‌شوند. انتروپیک متن و اسکرین‌شات‌های بازگشتی صفحه را برای تزریق Prompt (Prompt injection) بررسی می‌کند، و راهنمای امنیتی آن هم‌زمان به عنوان یک چک‌لیست حداقل دسترسی عمل می‌کند: یک پروفایل مرورگر تازه و بدون اطلاعات اعتباری، یک لیست مجاز دامنه‌ها در لایه شبکه که آدرس‌های loopback، link-local و محدوده‌های خصوصی را مسدود می‌کند، صرفاً آدرس‌های http/https، و غیرفعال بودن اعضای اختیاری (`javascript_exec`، `file_upload`، `read_console`، `read_network`) مگر آن‌که وظیفه جاری به آن‌ها نیاز داشته باشد.
 
-**Production safety rules for computer-use:**
-1. Always run in a sandboxed VM (Docker + VNC, or E2B cloud)
-2. Screenshot-validate critical state before destructive actions
-3. Use HITL (Human-in-the-Loop) for irreversible actions (file deletion, form submission), checked before each such action executes, even mid-batch
-4. Cap runaway loops in the harness, not the model: a maximum iteration count plus a spend ceiling enforced outside the agent (Claude Managed Agents sessions accept a hard budget that pauses with `budget_reached`). Anthropic's docs estimate roughly 1,000 to 1,800 input tokens per screenshot, so long sessions are input-dominated; resize screenshots to 2000 px or less per side, or keep 20 or fewer images per request
+**قواعد ایمنی پروداکشن برای استفاده از کامپیوتر:**
+1. همواره در یک ماشین مجازی ایزوله‌شده/سندباکس (Docker + VNC، یا ابر E2B) اجرا شود
+2. وضعیت بحرانی را پیش از اقدامات مخرب با اسکرین‌شات اعتبارسنجی کنید
+3. برای اقدامات بازگشت‌ناپذیر (حذف فایل، ارسال فرم) از نظارت انسان در حلقه (HITL) استفاده کنید که پیش از اجرای هر کدام از این اقدامات، حتی در میانه دسته، بررسی شود
+4. حلقه‌های مهارنشدنی را درون هارنس مهار کنید، نه با اتکا به مدل: حداکثر تعداد تکرار به همراه یک سقف هزینه که خارج از Agent اعمال شود (نشست‌های Claude Managed Agents بودجه قطعی را می‌پذیرند که با رسیدن به آن با وضعیت `budget_reached` متوقف می‌شوند). مستندات Anthropic تخمین می‌زند که هر اسکرین‌شات تقریباً ۱,۰۰۰ تا ۱,۸۰۰ Token ورودی مصرف می‌کند، بنابراین نشست‌های طولانی تحت سلطه Tokenهای ورودی قرار می‌گیرند؛ ابعاد اسکرین‌شات‌ها را به ۲۰۰۰ پیکسل یا کمتر در هر ضلع تغییر دهید، یا در هر درخواست ۲۰ تصویر یا کمتر ارسال کنید
 
 ---
 
-## Context7: Live Documentation MCP
+## ابزار Context7: سرور MCP برای مستندات زنده
 
-One of the most practical MCP servers in 2026 is **Context7**. It resolves the "stale training data" problem for coding agents:
+یکی از کاربردی‌ترین سرورهای MCP در سال ۲۰۲۶، سرور **Context7** است. این ابزار مشکل «داده‌های آموزشی قدیمی» را برای Agentهای کدنویسی حل می‌کند:
 
 ```
 # Without Context7:
@@ -634,7 +672,7 @@ MCP -> Agent: Returns current 1.x docs
 Agent: "I'll use the 1.x `create_agent` API..."
 ```
 
-**Setup as a remote server (Claude Code `.mcp.json`):**
+**راه‌اندازی به عنوان یک سرور ریموت (فایل `.mcp.json` در Claude Code):**
 ```json
 {
   "mcpServers": {
@@ -647,68 +685,70 @@ Agent: "I'll use the 1.x `create_agent` API..."
 }
 ```
 
-Context7 also ships a guided installer (`npx ctx7 setup`) that creates the API key and configures the coding agent. Its two tools are `resolve-library-id` and `query-docs`; the agent calls them before writing code against a library whose API may have changed since the model's training cutoff. The shift from a local `npx` stdio server to a hosted HTTP endpoint with a bearer key is the same local-to-remote move the whole ecosystem is making.
+همچنین Context7 یک نصاب هدایت‌شده (`npx ctx7 setup`) ارائه می‌دهد که کلید API را ایجاد کرده و Agent کدنویسی را پیکربندی می‌کند. دو ابزار آن `resolve-library-id` و `query-docs` هستند؛ Agent پیش از نوشتن کد بر اساس کتابخانه‌ای که ممکن است API آن پس از تاریخ نهایی آموزش مدل تغییر کرده باشد، این ابزارها را فراخوانی می‌کند. گذار از یک سرور محلی stdio مبتنی بر `npx` به یک اندپوینت میزبانی‌شده HTTP با کلید حامل (bearer key)، همان حرکت از محلی به ریموت است که کل این اکوسیستم در حال پیمودن آن است.
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه
 
-### Q: How does MCP solve the "Too Many Tools" problem (Schema Overload)?
+### پرسش: پروتکل MCP چگونه مسئله «ابزارهای بیش از حد» (سرریز اسکما / Schema Overload) را حل می‌کند؟
 
-**Strong answer:**
-MCP itself does not solve it. The protocol supplies the catalog (`tools/list`, which since 2026-07-28 must declare `ttlMs` and `cacheScope` so clients can cache it), and the client decides what the model sees. In 2023, loading 50 schemas degraded tool selection and burned context. The current answer has three parts. First, **deferred loading and tool search**: keep most tools out of the prompt, let the model search the catalog, and load a schema only when it is needed. Cursor reported (vendor figures) that moving MCP tools into dynamic context cut total tokens by 46.9% in sessions that called an MCP tool, because most tools are needed in a minority of conversations. Second, **cache-preserving changes**: adding a tool used to invalidate the prompt cache from that point, so dynamic loading fought caching. Anthropic's `inline-tools-2026-09-15` beta adds tools in a mid-conversation system message without busting the cache, and can pin a fetched MCP tool list so a server cannot swap definitions mid-session. Third, **server-side progressive discovery**, which the August 22 MCP roadmap lists as an experimental priority for catalogs in the thousands. Past roughly 30 tools I also split the surface by subagent or skill so each context carries only what it needs.
+**پاسخ قوی:**
+خودِ MCP این مسئله را حل نمی‌کند. این پروتکل کاتالوگ را ارائه می‌دهد (`tools/list` که از تاریخ ۲۰۲۶-۰۷-۲۸ باید `ttlMs` و `cacheScope` را اعلام کند تا کلاینت‌ها بتوانند آن را کش کنند)، و کلاینت تصمیم می‌گیرد که مدل چه چیزی را ببیند. در سال ۲۰۲۳، بارگذاری ۵۰ اسکما (Schema) کیفیت انتخاب ابزار را کاهش می‌داد و کانتکست را می‌سوزاند. پاسخ فعلی سه بخش دارد. نخست، **بارگذاری به تعویق افتاده و جستجوی ابزار (deferred loading and tool search)**: بیشتر ابزارها را خارج از Prompt نگه دارید، به مدل اجازه دهید کاتالوگ را جستجو کند، و اسکما را تنها در صورت نیاز بارگذاری کنید. کِرسِر (Cursor) گزارش داد (آمارهای ارائه‌دهنده) که انتقال ابزارهای MCP به کانتکست پویا، در نشست‌هایی که یک ابزار MCP را فراخوانی می‌کردند، مجموع Tokenها را تا ۴۶.۹٪ کاهش داد، چرا که اکثر ابزارها تنها در اقلیتی از مکالمات مورد نیاز هستند. دوم، **تغییرات با حفظ کش (cache-preserving changes)**: در گذشته، افزودن یک ابزار کشِ Prompt را از آن نقطه به بعد باطل می‌کرد، در نتیجه بارگذاری پویا در تقابل با کش کردن قرار می‌گرفت. نسخه بتای `inline-tools-2026-09-15` شرکت Anthropic ابزارها را در یک پیام سیستمی در میانه مکالمه بدون باطل کردن کش اضافه می‌کند، و می‌تواند فهرست ابزارهای دریافت‌شده MCP را پین (Pin) کند تا سرور نتواند تعاریف را در میانه نشست جابه‌جا و تغییر دهد. سوم، **کشف تدریجی سمت سرور (server-side progressive discovery)**، که نقشه راه ۲۲ اوت MCP آن را به عنوان یک اولویت آزمایشی برای کاتالوگ‌هایی با چندین هزار ابزار فهرست کرده است. فراتر از حدود ۳۰ ابزار، من سطح تعامل را از طریق Subagent یا مهارت (Skill) نیز تفکیک می‌کنم تا هر کانتکست تنها آنچه را که واقعاً نیاز دارد حمل کند.
 
-### Q: Why is it important to separate "Tool Logic" from the "Agent App" using MCP servers?
+### پرسش: چرا جداسازی «منطق ابزار» (Tool Logic) از «برنامه Agent» (Agent App) با استفاده از سرورهای MCP اهمیت دارد؟
 
-**Strong answer:**
-Separation of concerns. If the tool logic (e.g., a Python scraper) lives in a separate MCP server, I can scale the scraping infrastructure independently of the LLM orchestrator. More importantly, it provides a **Security Sandbox**. If a model tries to perform an injection through a tool argument, it only affects the MCP server process, which can be containerized with zero network access to the core Agent state. The boundary cuts both ways, though: the 2026 advisories (OAuth mix-up, `outputSchema` `$ref` SSRF in the Python client) show the client must also treat every server as untrusted input.
+**پاسخ قوی:**
+تفکیک دغدغه‌ها (Separation of concerns). اگر منطق ابزار (برای مثال یک اسکرپر پایتون) در یک سرور MCP جداگانه قرار گیرد، می‌توانم زیرساخت اسکرپینگ را مستقل از ارکستریتور LLM مقیاس‌بندی کنم. مهم‌تر از آن، این کار یک **ساندباکس امنیتی (Security Sandbox)** فراهم می‌آورد. اگر یک مدل تلاش کند از طریق آرگومان ابزار عمل تزریق (Injection) را انجام دهد، این کار تنها فرآیند سرور MCP را تحت تأثیر قرار می‌دهد، که می‌تواند در یک کانتینر با دسترسی شبکه صفر به وضعیت هسته Agent ایزوله شود. با این حال، این مرز دولبه است: توصیه‌نامه‌های امنیتی سال ۲۰۲۶ (تداخل OAuth یا OAuth mix-up، و آسیب‌پذیری SSRF مربوط به `$ref` در `outputSchema` در کلاینت پایتون) نشان می‌دهند که کلاینت نیز باید با هر سروری به عنوان ورودی غیرقابل اعتماد برخورد کند.
 
-### Q: How do MCP and A2A work together in a production multi-agent system?
+### پرسش: پروتکل‌های MCP و A2A چگونه در یک سیستم Multi-Agent در محیط عملیاتی با یکدیگر کار می‌کنند؟
 
-**Strong answer:**
-They address **different communication layers**. MCP is the agent-to-tool protocol: it gives any agent standardized access to databases, APIs, and files through MCP servers. A2A is the agent-to-agent protocol: it enables an orchestrator agent (from Vendor X) to delegate a task to a specialist agent (from Vendor Y) without sharing memory or context. In production, I use MCP for every tool connection and A2A when I need cross-vendor agent coordination. For example, a procurement orchestrator built on LangGraph uses MCP to query an inventory database, then sends an A2A `SendMessage` to a compliance agent hosted by a different team, which decides whether to open a long-running task. The key design principle is: MCP within an agent's own tool stack, A2A across organizational or vendor boundaries. Both now sit under the Agentic AI Foundation, which answers the "who controls the protocols we are betting on" governance question better than a single-vendor spec would.
+**پاسخ قوی:**
+آن‌ها به **لایه‌های ارتباطی متفاوتی** می‌پردازند. پروتکل MCP پروتکل Agent به ابزار (agent-to-tool) است: این پروتکل دسترسی استاندارد به پایگاه‌های داده، APIها و فایل‌ها را از طریق سرورهای MCP برای هر Agent فراهم می‌سازد. پروتکل A2A پروتکل Agent به Agent (agent-to-agent) است: این پروتکل به یک Agent هماهنگ‌کننده (از ارائه‌دهنده یا Vendor X) امکان می‌دهد بدون به اشتراک گذاشتن حافظه یا کانتکست، وظیفه‌ای را به یک Agent متخصص (از Vendor Y) تفویض کند. در محیط عملیاتی، من برای هر اتصال ابزاری از MCP استفاده می‌کنم و هر زمان که به هماهنگی میان Agentهای ارائه‌دهندگان مختلف (Cross-vendor) نیاز داشته باشم، از A2A بهره می‌گیرم. برای مثال، یک ارکستریتور تدارکات ساخته‌شده با LangGraph از MCP برای پرس‌وجو از یک پایگاه داده موجودی کالا استفاده می‌کند، سپس یک پیام `SendMessage` پروتکل A2A را به یک Agent تطبیق قوانین (Compliance Agent) که توسط تیمی دیگر میزبانی می‌شود ارسال می‌نماید، و آن Agent تصمیم می‌گیرد که آیا یک وظیفه طولانی‌مدت باز شود یا خیر. اصل کلیدی طراحی چنین است: MCP در داخل استک ابزارهای اختصاصی یک Agent، و A2A در فراتر از مرزهای سازمانی یا ارائه‌دهندگان (Vendorها). اکنون هر دو پروتکل تحت نظارت بنیاد Agentic AI Foundation قرار دارند، که به پرسش حاکمیتیِ «چه کسی پروتکل‌هایی را که روی آن‌ها سرمایه‌گذاری می‌کنیم کنترل می‌کند؟» بسیار بهتر از مشخصات ارائه‌شده توسط یک ارائه‌دهنده واحد پاسخ می‌دهد.
 
-### Q: Your agent connects to a dozen third-party MCP servers over OAuth. How do you stop one malicious server from stealing credentials meant for the others?
+### پرسش: Agent شما از طریق OAuth به ده‌ها سرور MCP شخص ثالث متصل می‌شود. چگونه از سرقت اطلاعات هویتی (Credentials) مخصوص سایر سرورها توسط یک سرور مخرب جلوگیری می‌کنید؟
 
-**Strong answer:**
-This is the OAuth mix-up attack with the agent client as the confused deputy, and it was a live bug class in the official SDKs until late September 2026 (CVE-2026-104850 in TypeScript, GHSA-qx49-fqc8-xw99 in Python): the server could name its own authorization server and collect stored refresh tokens and client secrets. My controls:
+**پاسخ قوی:**
+این همان حمله تداخل OAuth (OAuth mix-up attack) با کلاینتِ Agent در نقش معاون فریب‌خورده (Confused Deputy) است، و تا اواخر سپتامبر ۲۰۲۶ یک دسته باگ فعال در SDKهای رسمی بود (شناسه CVE-2026-104850 در TypeScript، و شناسه GHSA-qx49-fqc8-xw99 در Python): سرور می‌توانست سرور احراز هویت (Authorization Server) خود را معرفی کرده و Refresh Tokenها و کلیدهای محرمانه کلاینت (Client Secrets) ذخیره‌شده را جمع‌آوری کند. کنترل‌های من به این ترتیب است:
 
-1. **Issuer binding.** Every stored refresh token, client secret, or signed assertion records the issuer it came from, and the client refuses to present it anywhere else, whatever the server's metadata says. For machine-to-machine providers I configure the expected issuer explicitly rather than discovering it.
-2. **Validate the authorization response.** Record the expected issuer before redirecting and check the RFC 9207 `iss` parameter on return; the 2026-07-28 spec requires this whenever the authorization server sends it.
-3. **Audience-bound, short-lived tokens** (RFC 8707), so a token one server does obtain cannot be replayed to its siblings, plus DPoP where supported so a stolen token is useless without the key.
-4. **An allowlist of acceptable authorization servers per MCP server**, held in a credential vault the model never sees.
-5. **Post-patch hygiene.** Upgrading the SDK did not protect credentials saved before the upgrade, so I would tag or wipe those and force re-consent.
+1. **مقیدسازی به صادرکننده (Issuer binding):** هر Refresh Token، کلید محرمانه کلاینت، یا ادعای امضاشده (Signed Assertion) ذخیره‌شده، صادرکننده‌ای را که از آن آمده است ثبت می‌کند، و کلاینت فارغ از آنچه متادیتای سرور می‌گوید، از ارائه آن در هر جای دیگری امتناع می‌ورزد. برای ارائه‌دهندگان ماشین به ماشین (M2M)، من صادرکننده مورد انتظار را به جای کشف خودکار، به صورت صریح پیکربندی می‌کنم.
+2. **اعتبارسنجی پاسخ احراز هویت (Validate the authorization response):** صادرکننده مورد انتظار را قبل از هدایت مجدد (Redirect) ثبت کرده و هنگام بازگشت، پارامتر `iss` مربوط به RFC 9207 را بررسی کنید؛ مشخصات مورخ ۲۰۲۶-۰۷-۲۸ در هر حالتی که سرور احراز هویت آن را ارسال کند، این بررسی را الزامی کرده است.
+3. **Tokenهای مقید به مخاطب و کوتاه‌مدت (Audience-bound, short-lived tokens)** (بر اساس RFC 8707)، تا اگر سروری به یک Token دست یافت، امکان بازپخش (Replay) آن برای سایر سرورهای همتا وجود نداشته باشد، به همراه DPoP در صورت پشتیبانی، تا یک Token سرقت‌شده بدون کلید مربوطه عملاً بی‌فایده باشد.
+4. **یک فهرست مجاز (Allowlist) از سرورهای احراز هویت قابل قبول به ازای هر سرور MCP**، که در یک مخزن اطلاعات هویتی (Credential Vault) دور از دسترس مدل نگهداری می‌شود.
+5. **پاکسازی پس از اعمال وصله (Post-patch hygiene):** ارتقای SDK از اطلاعات هویتی ذخیره‌شده پیش از ارتقا محافظت نمی‌کرد؛ بنابراین من آن‌ها را نشانه‌گذاری یا پاک (Wipe) می‌کردم و فرآیند دریافت مجدد رضایت (Re-consent) را اجباری می‌ساختم.
 
-The principle: a resource server never gets to choose where secrets go.
+اصل بنیادین: یک سرور منبع (Resource Server) هرگز اجازه ندارد تعیین کند که اسرار (Secrets) به کجا فرستاده شوند.
 
-### Q: The 2026-07-28 revision made MCP stateless. Can you now run one server object for all clients behind a load balancer?
+### پرسش: بازنگری مورخ ۲۰۲۶-۰۷-۲۸ پروتکل MCP را بدون وضعیت (Stateless) کرد. آیا اکنون می‌توانید یک شیء سرور واحد را برای تمام کلاینت‌ها در پشت یک متعادل‌کننده بار (Load Balancer) اجرا کنید؟
 
-**Strong answer:**
-Run many instances, yes; share one object across clients, no. Stateless means no protocol session ties a client to an instance, so any replica can serve any request. It does not mean the in-process objects are safe to share: the server and transport still hold in-flight request maps and response routing. The official TypeScript SDK proved it with CVE-2026-111770: a server or transport shared across clients could hand one client's responses to another, and the fix in 2.3.0 required code changes, one server and transport per request or session. My design: construct the server per request on stateless endpoints, keep cross-call state in server-minted handles bound to the authenticated user, turn on the SDK audience check and input-element limit explicitly (both ship off), and add a concurrency test with two tenants whose responses must never cross. I would also expect wrappers built on the SDK to pick up such fixes weeks later, so I check which SDK version my framework actually bundles.
-
----
-
-## References
-- Model Context Protocol. "Specification revision 2026-07-28: Changelog" (July 2026). https://modelcontextprotocol.io/specification/2026-07-28/changelog
-- Model Context Protocol. "Authorization" (revision 2026-07-28). https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
-- Model Context Protocol blog. "The New MCP Roadmap" (August 22, 2026). https://blog.modelcontextprotocol.io/posts/mcp-roadmap/
-- Model Context Protocol. "Skills extension overview" (September 2026). https://modelcontextprotocol.io/extensions/skills/overview
-- Model Context Protocol. "SEP-3398: Release Cycle Updates" (accepted October 2026). https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/3398-release-cycle-updates.md
-- Model Context Protocol. "SEP-3392: Extension Lifecycle" (final October 2026). https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/3392-extension-lifecycle.md
-- Model Context Protocol. "Extensions overview" (stages, promotion to core, and each extension's current stage). https://modelcontextprotocol.io/extensions/overview
-- Model Context Protocol. "SEP-2127: MCP Server Cards" (final October 2026). https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2127
-- Linux Foundation. "Agentic AI Foundation announces four new projects" (October 22, 2026). https://www.linuxfoundation.org/press/agentic-ai-foundation-announces-four-new-projects-agent-skills-open-responses-openenv-and-opensandbox
-- Model Context Protocol blog. "Enterprise-Managed Authorization" (June 2026). https://blog.modelcontextprotocol.io/posts/enterprise-managed-auth/
-- Anthropic. "The Model Context Protocol Specification" (2025)
-- A2A Project. "Agent2Agent Protocol Specification v1.0.1" (May 2026). https://github.com/a2aproject/A2A/releases/tag/v1.0.1
-- Agentic AI Foundation. "A2A joins AAIF's open agentic stack" (August 2026). https://aaif.io/blog/a2a-joins-aaif
-- Linux Foundation. "Agent2Agent Protocol Project" (2025)
-- AIR Security. "Plugin4Shell" (September 2026). https://www.air.security/blog-posts/plugin4shell
-- Anthropic. "Computer use tool" documentation. https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool
-- NIST. "AI Agent Standards Initiative" (Feb 2026)
-- JSON-RPC 2.0 Specification.
-- Pydantic Documentation.
+**پاسخ قوی:**
+اجرای نمونه‌های متعدد (Instances)، بله؛ اشتراک‌گذاری یک شیء میان چندین کلاینت، خیر. بدون وضعیت بودن به این معناست که هیچ نشست پروتکلی کلاینت را به یک نمونه خاص گره نمی‌زند، بنابراین هر نمونه مشابه (Replica) می‌تواند به هر درخواستی پاسخ دهد. این به معنای ایمن بودن اشتراک‌گذاری اشیاء درون‌فرآیندی نیست: سرور و بستر انتقال (Transport) همچنان نقشه‌های درخواست‌های در حال پردازش (In-flight request maps) و مسیریابی پاسخ‌ها را در خود نگه می‌دارند. SDK رسمی TypeScript با آسیب‌پذیری CVE-2026-111770 این موضوع را اثبات کرد: یک سرور یا بستر انتقال که میان چندین کلاینت به اشتراک گذاشته شده بود، می‌توانست پاسخ‌های یک کلاینت را به کلاینت دیگری تحویل دهد، و اصلاحیه نسخه ۲.۳.۰ نیازمند تغییر در کد بود: یک سرور و بستر انتقال به ازای هر درخواست یا نشست. طراحی من: ساخت شیء سرور به ازای هر درخواست در اندپوینت‌های بدون وضعیت، نگهداری وضعیتِ میان‌فراخوانی‌ها در هندل‌های (Handles) صادرشده از سرور که به کاربر احراز هویت شده مقید هستند، فعال‌سازی صریح بررسی مخاطب (Audience check) و محدودیت تعداد عناصر ورودی در SDK (هر دو ویژگی به صورت پیش‌فرض غیرفعال هستند)، و افزودن یک تست همزمانی با دو مستأجر (tenant / multi-tenant) که پاسخ‌های آن‌ها هرگز نباید با یکدیگر تلاقی پیدا کند. همچنین من انتظار دارم رپرهای (Wrappers) ساخته‌شده روی SDK این‌گونه اصلاحات را با چند هفته تاخیر دریافت کنند؛ بنابراین بررسی می‌کنم که فریم‌ورک من در عمل چه نسخه‌ای از SDK را بسته‌بندی (Bundle) کرده است.
 
 ---
 
-*Next: [Multi-Agent Orchestration](04-multi-agent-orchestration.md)*
+## منابع
+- پروتکل Model Context Protocol. "Specification revision 2026-07-28: Changelog" (ژوئیه ۲۰۲۶). https://modelcontextprotocol.io/specification/2026-07-28/changelog
+- پروتکل Model Context Protocol. "Authorization" (بازنگری ۲۰۲۶-۰۷-۲۸). https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+- وبلاگ Model Context Protocol. "The New MCP Roadmap" (۲۲ اوت ۲۰۲۶). https://blog.modelcontextprotocol.io/posts/mcp-roadmap/
+- پروتکل Model Context Protocol. "Skills extension overview" (سپتامبر ۲۰۲۶). https://modelcontextprotocol.io/extensions/skills/overview
+- پروتکل Model Context Protocol. "SEP-3398: Release Cycle Updates" (پذیرفته‌شده در اکتبر ۲۰۲۶). https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/3398-release-cycle-updates.md
+- پروتکل Model Context Protocol. "SEP-3392: Extension Lifecycle" (نسخه نهایی اکتبر ۲۰۲۶). https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/3392-extension-lifecycle.md
+- پروتکل Model Context Protocol. "Extensions overview" (مراحل، ارتقا به هسته، و وضعیت فعلی هر افزونه). https://modelcontextprotocol.io/extensions/overview
+- پروتکل Model Context Protocol. "SEP-2127: MCP Server Cards" (نسخه نهایی اکتبر ۲۰۲۶). https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2127
+- بنیاد Linux Foundation. "Agentic AI Foundation announces four new projects" (۲۲ اکتبر ۲۰۲۶). https://www.linuxfoundation.org/press/agentic-ai-foundation-announces-four-new-projects-agent-skills-open-responses-openenv-and-opensandbox
+- وبلاگ Model Context Protocol. "Enterprise-Managed Authorization" (ژوئن ۲۰۲۶). https://blog.modelcontextprotocol.io/posts/enterprise-managed-auth/
+- شرکت Anthropic. "The Model Context Protocol Specification" (2025)
+- پروژه A2A Project. "Agent2Agent Protocol Specification v1.0.1" (مه ۲۰۲۶). https://github.com/a2aproject/A2A/releases/tag/v1.0.1
+- بنیاد Agentic AI Foundation. "A2A joins AAIF's open agentic stack" (اوت ۲۰۲۶). https://aaif.io/blog/a2a-joins-aaif
+- بنیاد Linux Foundation. "Agent2Agent Protocol Project" (2025)
+- شرکت AIR Security. "Plugin4Shell" (سپتامبر ۲۰۲۶). https://www.air.security/blog-posts/plugin4shell
+- شرکت Anthropic. مستندات "Computer use tool". https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool
+- موسسه NIST. "AI Agent Standards Initiative" (فوریه ۲۰۲۶)
+- مشخصات JSON-RPC 2.0 Specification.
+- مستندات Pydantic Documentation.
+
+---
+
+*بعدی: [ارکستراسیون چند-Agent (Multi-Agent)](04-multi-agent-orchestration.md)*
+
+</div>

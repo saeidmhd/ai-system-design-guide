@@ -1,147 +1,151 @@
-# Durable Execution for Long-Running Agents
+<div dir="rtl">
 
-An agent run is not a request/response handler. It calls tools, reads documents, triggers actions, waits for approvals, and carries state across steps that may run for minutes, hours, or days. That collides with ordinary infrastructure: processes get killed, nodes get recycled, and deploys roll pods. A naive agent loop holding state in memory loses everything on any of those events, and a naive retry re-runs side effects. **Durable execution** is the discipline that makes long-running agents survive all of it. This chapter covers the model, the tools, how it maps onto agent loops, and when it is worth the complexity.
+# اجرای پایدار (Durable Execution) برای Agentهای طولانی‌مدت
 
-## Table of Contents
+یک اجرای Agent صرفاً یک کنترل‌کننده درخواست/پاسخ (request/response handler) نیست. این اجرا ابزارها را فرا می‌خواند، اسناد را می‌خواند، اقداماتی را آغاز می‌کند، منتظر تأییدیه‌ها می‌ماند و وضعیتی (state) را در مراحلی منتقل می‌کند که ممکن است دقایق، ساعت‌ها یا روزها طول بکشد. این موضوع با زیرساخت‌های متداول در تعارض است: فرآیندها متوقف (kill) می‌شوند، نودها بازیافت می‌گردند، و استقرارها (Deploymentها) پادها را به‌صورت چرخشی جایگزین (roll) می‌کنند. یک حلقه ساده‌لوحانه Agent که وضعیت را در حافظه نگه می‌دارد، با رخ دادن هر یک از این رویدادها همه‌چیز را از دست می‌دهد، و یک تلاش مجدد (retry) ساده‌لوحانه، اثرات جانبی (side effects) را دوباره اجرا می‌کند. **اجرای پایدار (Durable execution)** نظمی مهندسی است که باعث می‌شود Agentهای طولانی‌مدت در برابر همه این اتفاقات بقا یابند. این فصل مدل، ابزارها، نحوه نگاشت آن بر حلقه‌های Agent، و زمان‌هایی را که ارزش این پیچیدگی را دارد، پوشش می‌دهد.
 
-- [Why Agents Break the Normal Failure Model](#why-agents-break-the-normal-failure-model)
-- [The Durable-Execution Model](#the-durable-execution-model)
-- [Tools](#tools)
-- [Mapping Durable Execution onto Agent Loops](#mapping-durable-execution-onto-agent-loops)
-- [Managed Agent Runtimes: Renting the Durable Loop](#managed-agent-runtimes-renting-the-durable-loop)
-- [When You Need It](#when-you-need-it)
-- [Do You Need Durable Execution?](#do-you-need-durable-execution)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Why Agents Break the Normal Failure Model
-
-Agents are long-running, stateful, side-effecting processes, which breaks three assumptions:
-
-- **Exactly-once side effects.** If a tool call succeeds but the agent crashes before recording it, a resumed run may retry the call, meaning duplicate payments, tickets, or deploys. The core ambiguity is that after a mid-activity crash you cannot tell whether the side effect committed or only its acknowledgment was lost, so a naive retry sends it twice.
-- **Human-in-the-loop pauses that survive restarts.** An agent may need to block on an approval for hours or a day without losing progress or burning compute. A pause held in process memory dies on the next deploy.
-- **Recorded nondeterminism.** You cannot replay an LLM call and pretend it is the same event; the same prompt can produce a different response. The output must be recorded the first time and reused during recovery.
-
-Naive retries re-run side effects; naive checkpoints that save state only between steps still leave an unsafe window between executing a side effect and recording its result. The distinction to teach: **checkpoints capture state, but durable execution captures the journal of steps**, and you cannot safely resume mid-side-effect from a state snapshot alone.
+- [چرا Agentها مدل معمول خرابی را برهم می‌زنند](#why-agents-break-the-normal-failure-model)
+- [مدل اجرای پایدار](#the-durable-execution-model)
+- [ابزارها](#tools)
+- [نگاشت اجرای پایدار بر حلقه‌های Agent](#mapping-durable-execution-onto-agent-loops)
+- [محیط‌های اجرای مدیریت‌شده Agent: اجاره حلقه پایدار](#managed-agent-runtimes-renting-the-durable-loop)
+- [چه زمانی به آن نیاز دارید](#when-you-need-it)
+- [آیا به اجرای پایدار نیاز دارید؟](#do-you-need-durable-execution)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Durable-Execution Model
+## چرا Agentها مدل معمول خرابی را برهم می‌زنند
 
-The core pattern is **workflows-as-code plus an append-only event history plus deterministic replay.** Systems like Temporal record an immutable event history for each workflow; if a worker crashes at step 5 of 10, another worker replays the history to reconstruct in-memory state and resumes at step 6.
+Agentها فرآیندهایی طولانی‌مدت، دارای وضعیت (stateful) و دارای اثرات جانبی (side-effecting) هستند که سه فرض اساسی را برهم می‌زنند:
 
-Where the determinism constraints come from is the load-bearing concept: recovery works *by replay*, so during a replay the steps in the execution must match the steps in the log, or the system cannot guarantee recovery. That means **workflow code itself must be deterministic**: no direct calls to the current time, no random numbers or UUIDs, no direct network calls, no nondeterministic thread interleaving inside workflow code. Nondeterminism and side effects are pushed into **activities** (steps) whose results are recorded once and replayed from the log thereafter.
+- **اثرات جانبی دقیقاً یک‌بار (Exactly-once side effects).** اگر فراخوانی یک ابزار موفقیت‌آمیز باشد اما Agent پیش از ثبت آن دچار خرابی (crash) شود، یک اجرای از سر گرفته‌شده ممکن است فراخوانی را مجدداً تکرار کند، که به معنای پرداخت‌ها، تیکت‌ها یا استقرارها (Deploymentهای) تکراری است. ابهام اصلی این است که پس از خرابی در حین فعالیت (mid-activity crash)، نمی‌توانید تشخیص دهید که آیا اثر جانبی اعمال (commit) شده است یا فقط تاییدیه دریافت (acknowledgment) آن از دست رفته است؛ بنابراین یک تلاش مجدد (retry) ساده‌لوحانه آن را دو بار ارسال می‌کند.
+- **توقف‌های انسان در حلقه (Human-in-the-loop) که پس از راه‌اندازی مجدد (restart) دوام می‌آورند.** یک Agent ممکن است لازم باشد ساعت‌ها یا یک روز برای دریافت تأیید متوقف (block) شود، بدون اینکه پیشرفت خود را از دست بدهد یا توان پردازشی هدر دهد. توقفی که در حافظه فرآیند نگه‌داری شود، با استقرار (Deployment) بعدی از بین می‌رود.
+- **غیرقطعی بودنِ ثبت‌شده (Recorded nondeterminism).** شما نمی‌توانید یک فراخوانی LLM را مجدداً پخش (replay) کنید و وانمود کنید همان رویداد قبلی است؛ یک Prompt یکسان می‌تواند پاسخ متفاوتی تولید کند. خروجی باید در اولین بار ثبت شده و در طول بازیابی (recovery) مجدداً استفاده شود.
 
-The building blocks:
-- **Activities** are the only place side effects and nondeterminism live; each is independently retried.
-- **Exactly-once activities** use idempotency keys, often derived from the workflow and step IDs, so a retried tool call does not double-execute.
-- **Durable timers** are persisted and survive worker restarts and deploys, so a workflow can wait days without holding a process open.
-- **Signals** push external events (an approval, a cancellation) into a running workflow; paired **queries** read its current state without mutating it (status, monitoring). While a workflow awaits a signal or timer, the worker idles and consumes no compute until the event arrives, when it replays the history and resumes.
-
-The cost of replay-based determinism is **versioning**: because long-running workflows replay old histories, changing workflow code can break replay and cause incidents unless versioned carefully. This is the single most-cited operational hazard.
+تلاش‌های مجدد ساده‌لوحانه، اثرات جانبی را دوباره اجرا می‌کنند؛ چک‌پوینت‌های (checkpoints) ساده‌لوحانه‌ای که وضعیت را فقط بین مراحل ذخیره می‌کنند، همچنان یک پنجره ناامن بین اجرای یک اثر جانبی و ثبت نتیجه آن باقی می‌گذارند. تمایزی که باید آموخت: **چک‌پوینت‌ها وضعیت را ثبت می‌کنند، اما اجرای پایدار ژورنال مراحل (journal of steps) را ثبت می‌کند**، و شما نمی‌توانید به‌طور ایمن از روی یک تصویر لحظه‌ای وضعیت (state snapshot) در میانه یک اثر جانبی کار را از سر بگیرید.
 
 ---
 
-## Tools
+## مدل اجرای پایدار
 
-| Tool | Where state lives | Footprint | Notes |
+الگوی اصلی عبارت است از **گردش‌های کاری به‌صورت کد (workflows-as-code) به همراه تاریخچه رویدادهای فقط-افزودنی (append-only event history) و بازپخش قطعی (deterministic replay).** سیستم‌هایی مانند Temporal یک تاریخچه رویداد تغییرناپذیر را برای هر گردش کار (workflow) ثبت می‌کنند؛ اگر یک worker در مرحله ۵ از ۱۰ دچار خرابی شود، worker دیگری تاریخچه را بازپخش می‌کند تا وضعیت داخل حافظه را بازسازی کرده و از مرحله ۶ کار را از سر بگیرد.
+
+منشأ محدودیت‌های قطعیت، مفهوم بنیادین و حیاتی زیر است: بازیابی *از طریق بازپخش (replay)* کار می‌کند؛ بنابراین در حین یک بازپخش، مراحلِ اجرا باید دقیقاً با مراحلِ موجود در لاگ تطابق داشته باشند، در غیر این صورت سیستم نمی‌تواند بازیابی را تضمین کند. این بدان معناست که **خود کد گردش کار (workflow code) باید قطعی (deterministic) باشد**: بدون فراخوانی مستقیم زمان جاری، بدون اعداد تصادفی یا UUIDها، بدون فراخوانی‌های مستقیم شبکه، و بدون تداخل غیرقطعی ریسه‌ها (thread interleaving) در داخل کد گردش کار. ویژگی غیرقطعی بودن و اثرات جانبی به درون **فعالیت‌ها (activities)** (مراحل) رانده می‌شوند؛ فعالیت‌هایی که نتایج آن‌ها یک‌بار ثبت شده و از آن پس از روی لاگ بازپخش می‌شوند.
+
+اجزای سازنده:
+- **فعالیت‌ها (Activities)** تنها جایی هستند که اثرات جانبی و رفتارهای غیرقطعی در آن‌ها قرار دارند؛ هر یک از آن‌ها به‌طور مستقل تلاش مجدد (retry) می‌شود.
+- **فعالیت‌های دقیقاً یک‌بار (Exactly-once activities)** از کلیدهای برابری‌پیوستگی (idempotency keys) استفاده می‌کنند که اغلب از شناسه گردش کار (workflow ID) و مرحله مشتق می‌شوند، به‌طوری که یک فراخوانی ابزارِ دوباره تلاش‌شده دو بار اجرا نشود.
+- **تایمرهای پایدار (Durable timers)** ماندگار می‌شوند و از راه‌اندازی‌های مجدد worker و استقرارها (Deploymentها) جان سالم به در می‌برند، بنابراین یک گردش کار می‌تواند روزها بدون باز نگه داشتن یک فرآیند منتظر بماند.
+- **سیگنال‌ها (Signals)** رویدادهای خارجی (یک تأییدیه، یک لغو) را به درون یک گردش کار در حال اجرا ارسال می‌کنند؛ و **پرس‌وجوهای (queries)** متناظر، وضعیت جاری آن را بدون تغییر دادن آن می‌خوانند (وضعیت، مانیتورینگ). در حالی که یک گردش کار منتظر سیگنال یا تایمر است، worker بیکار (idle) می‌ماند و هیچ توان پردازشی تا زمان رسیدن رویداد مصرف نمی‌کند؛ در آن زمان، تاریخچه را بازپخش کرده و کار را از سر می‌گیرد.
+
+هزینه قطعیتِ مبتنی بر بازپخش، **نسخه‌بندی (versioning)** است: از آنجا که گردش‌های کاری طولانی‌مدت تاریخچه‌های قدیمی را بازپخش می‌کنند، تغییر دادن کد گردش کار می‌تواند بازپخش را بشکند و باعث بروز حادثه (incident) شود، مگر اینکه با دقت نسخه‌بندی شده باشد. این مورد، پرتکرارترین خطای عملیاتی گزارش‌شده است.
+
+---
+
+## ابزارها
+
+| ابزار | محل نگه‌داری وضعیت | ردپا (Footprint) | توضیحات |
 |------|-------------------|-----------|-------|
-| **Temporal** (reference) | A separate cluster (or Temporal Cloud) | High | Event history plus deterministic replay; many languages; proven at large scale; deepest agent-framework integrations. |
-| **Restate** | Lightweight engine, sidecar or embedded | Low | Journals each step; adds Virtual Objects (stateful sessions keyed by user/session with automatic concurrency control). |
-| **DBOS** | Postgres rows | Lowest | A library you import; workflow state and transactional side effects can share one Postgres transaction for exactly-once on DB steps; no separate cluster. |
-| **Inngest** | Managed, event-driven | Low | Independently retried steps with AI-specific primitives and built-in concurrency and throttling for LLM rate limits. |
-| **AWS Step Functions** | AWS-managed | Managed | Workflow as a declarative state machine (not general code); recently added agent-runtime integrations. |
+| **Temporal** (مرجع) | یک کلاستر مجزا (یا Temporal Cloud) | بالا (High) | تاریخچه رویداد به‌علاوه بازپخش قطعی؛ زبان‌های متعدد؛ اثبات‌شده در مقیاس‌های بزرگ؛ عمیق‌ترین یکپارچه‌سازی‌ها با فریم‌ورک‌های Agent. |
+| **Restate** | موتور سبک‌وزن، سایدکار (sidecar) یا تعبیه‌شده (embedded) | پایین (Low) | هر مرحله را ژورنال می‌کند؛ آبجکت‌های مجازی (Virtual Objects) را اضافه می‌کند (جلسات دارای وضعیت با کلید کاربر/نشست همراه با کنترل همزمانی خودکار). |
+| **DBOS** | سطرهای Postgres | کمترین (Lowest) | کتابخانه‌ای که import می‌کنید؛ وضعیت گردش کار و اثرات جانبی تراکنشی می‌توانند یک تراکنش Postgres مشترک را برای تضمین دقیقاً یک‌بار در مراحل پایگاه داده به کار گیرند؛ بدون کلاستر مجزا. |
+| **Inngest** | مدیریت‌شده، رویدادمحور (event-driven) | پایین (Low) | مراحلی که مستقلاً تلاش مجدد می‌شوند، همراه با پرایمتیوهای ویژه هوش مصنوعی، و همزمانی داخلی و کنترل نرخ (throttling) برای محدودیت‌های نرخ (rate limits) در LLM. |
+| **AWS Step Functions** | مدیریت‌شده توسط AWS | مدیریت‌شده (Managed) | گردش کار به‌عنوان یک ماشین وضعیت اعلانی (declarative state machine) و نه کد عمومی؛ به‌تازگی یکپارچه‌سازی‌هایی با محیط‌های اجرای Agent اضافه کرده است. |
 
-The approaches differ in where they put the durability boundary. Temporal trades operational overhead for scale; DBOS collapses durability into your existing database; Restate is HTTP/gRPC-native with durable sessions; Inngest is event-driven and TS-first; Step Functions is AWS-native but declarative rather than general-purpose code.
-
----
-
-## Mapping Durable Execution onto Agent Loops
-
-The core mapping: the **agent loop becomes a workflow, and each model call and tool call becomes a durable activity.** On a crash, completed model calls and tool invocations replay from the log rather than re-execute, so you do not re-pay tokens or re-fire side effects, and you can even fix a bug and resume a running app.
-
-The integration landscape in 2026:
-- **Temporal's framework integrations went GA on October 30, 2026** for Google ADK (Python, Go, TypeScript), the OpenAI Agents SDK in TypeScript (Python was already GA from early 2026), AWS Strands Agents (Python, TypeScript), LangGraph (Python), LangSmith (Python, TypeScript), the Vercel AI SDK, and the Gemini SDK, each wrapping agent invocations and tool calls as durable activities. Pydantic AI, Mastra, and Braintrust have partner-built integrations; the Claude Agent SDK is not on the list. The ADK wrappers remain notable for needing minimal code change (they detect whether they are running inside a workflow and fall back to direct execution otherwise).
-- **LangGraph** also provides lighter-weight, framework-native durability through **checkpointers** that save graph state at each super-step to persistent storage, with selectable durability modes (checkpoint at exit, asynchronously, or synchronously before each step). Its guidance mirrors the determinism rule: keep the workflow deterministic and idempotent and wrap side effects in tasks.
-- **DBOS and Restate** integrate at the library level with agent frameworks, wrapping agent runs and sub-agent calls as durable workflows and child workflows.
-- **Temporal + Amazon Bedrock AgentCore Runtime** entered prerelease on September 21, 2026: a Temporal workflow runs the durable agent loop, model and tool calls are activities with retry policies, Strands Agents supplies the programming model, and AgentCore Runtime is the compute behind Temporal Serverless Workers.
-
-The honest tension to teach: **framework-native checkpointing recovers *state*; a full durable-execution engine additionally gives exactly-once side effects, durable timers, signals, and replay semantics across deploys.** The gap matters most when tool calls have irreversible external effects. For agents that are mostly LLM reasoning with recoverable, idempotent tools, framework checkpointing plus idempotency keys on the few non-idempotent tools is often enough.
-
-The canonical pattern that ties it together: when a proposed action is risky, the workflow pauses and waits for human approval via a signal, consuming no compute while it waits, then resumes durably, exactly the [human-in-the-loop](08-human-in-the-loop-patterns.md) approval gate, made crash-proof.
+رویکردها در این تفاوت دارند که مرز پایداری (durability boundary) را در کجا قرار می‌دهند. Temporal بار عملیاتی را با مقیاس‌پذیری مبادله می‌کند؛ DBOS پایداری را به درون پایگاه داده موجود شما منتقل و فشرده می‌کند؛ Restate به‌صورت بومی بر پایه HTTP/gRPC همراه با نشست‌های پایدار (durable sessions) است؛ Inngest رویدادمحور و اولویت‌دار برای تایپ‌اسکریپت (TS-first) است؛ Step Functions به‌صورت بومی روی AWS است، اما به‌جای کد همه‌منظوره، اعلانی (declarative) است.
 
 ---
 
-## Managed Agent Runtimes: Renting the Durable Loop
+## نگاشت اجرای پایدار بر حلقه‌های Agent
 
-As of September 2026 both Anthropic and OpenAI sell the agent harness itself as a managed runtime with durable sessions built in (OpenAI's Agents API joined Claude Managed Agents on September 10), and AWS offers OpenAI's inside its own cloud. That adds a third option next to "framework checkpointing" and "run a durable-execution engine": rent the loop. None of the three vendor-hosted agent runtimes below (Claude Managed Agents, OpenAI's Agents API, Bedrock Managed Agents) had reached GA by early November 2026, so treat their APIs, prices, and compliance terms as beta terms. The exception is AWS's own **Bedrock AgentCore managed harness**, GA since June 17, 2026 in every commercial region where AgentCore runs: it runs the orchestration loop, executes tools, manages context, persists state, lets you choose any model and switch providers mid-session, and exports to Strands-based code (Claude Agent SDK export is "coming soon"), which is a direct answer to the lock-in objection. AgentCore CLI 1.0 (`@aws/agentcore` 1.0.0) went GA on October 28 with `agentcore migrate` for existing projects.
+نگاشت اصلی بدین صورت است: **حلقه Agent به یک گردش کار تبدیل می‌شود، و هر فراخوانی مدل و فراخوانی ابزار به یک فعالیت پایدار (durable activity) تبدیل می‌گردد.** در هنگام وقوع خرابی، فراخوانی‌های تکمیل‌شده مدل و احضارهای ابزار به‌جای اجرای مجدد، از روی لاگ بازپخش می‌شوند؛ بنابراین شما هزینه مجددی بابت Tokenها پرداخت نمی‌کنید یا اثرات جانبی را دوباره تحریک نمی‌کنید، و حتی می‌توانید یک باگ را برطرف کرده و اجرای یک برنامه فعال را از سر بگیرید.
 
-| Platform | Status (November 2, 2026) | Durability and control features | Constraints to check |
+چشم‌انداز یکپارچه‌سازی در سال ۲۰۲۶:
+- **یکپارچه‌سازی‌های فریم‌ورک Temporal در تاریخ ۳۰ اکتبر ۲۰۲۶ به مرحله عرضه عمومی (GA) رسیدند**؛ این یکپارچه‌سازی‌ها شامل Google ADK (پایتون، Go، تایپ‌اسکریپت)، OpenAI Agents SDK در تایپ‌اسکریپت (نسخه پایتون از اوایل ۲۰۲۶ در وضعیت GA بود)، AWS Strands Agents (پایتون، تایپ‌اسکریپت)، LangGraph (پایتون)، LangSmith (پایتون، تایپ‌اسکریپت)، Vercel AI SDK، و Gemini SDK است که هر یک از آن‌ها فراخوانی‌های Agent و ابزارها را به‌عنوان فعالیت‌های پایدار کپسوله‌سازی می‌کنند. ابزارهای Pydantic AI، Mastra و Braintrust دارای یکپارچه‌سازی‌های ساخته‌شده توسط همکاران تجاری (partner-built) هستند؛ Claude Agent SDK در این فهرست قرار ندارد. پوشش‌دهنده‌های (wrappers) ADK از این جهت قابل توجه هستند که به حداقل تغییر کد نیاز دارند (آن‌ها تشخیص می‌دهند که آیا درون یک گردش کار اجرا می‌شوند یا خیر و در غیر این صورت به اجرای مستقیم بازمی‌گردند).
+- **LangGraph** همچنین از طریق **چک‌پوینترها (checkpointers)** پایداریِ سبک‌وزن‌تر و بومیِ فریم‌ورک را فراهم می‌کند که وضعیت گراف را در هر سوپر-مرحله (super-step) در حافظه پایدار ذخیره می‌سازند، با حالت‌های پایداری قابل انتخاب (چک‌پوینت هنگام خروج، به‌صورت غیرهمگام، یا به‌صورت همگام پیش از هر مرحله). راهنمای آن بازتاب‌دهنده قاعده قطعیت است: گردش کار را قطعی و برابری‌پیوسته (idempotent) نگه دارید و اثرات جانبی را در taskها بپیچید.
+- **DBOS و Restate** در سطح کتابخانه با فریم‌ورک‌های Agent یکپارچه می‌شوند و اجراهای Agent و فراخوانی‌های sub-agent را به‌عنوان گردش‌های کاری پایدار و گردش‌های کاری فرزند (child workflows) کپسوله‌سازی می‌کنند.
+- **Temporal + Amazon Bedrock AgentCore Runtime** در ۲۱ سپتامبر ۲۰۲۶ وارد نسخه پیش‌انتشار (prerelease) شد: یک گردش کار Temporal حلقه پایدار Agent را اجرا می‌کند، فراخوانی‌های مدل و ابزار فعالیت‌هایی با سیاست‌های تلاش مجدد (retry policies) هستند، Strands Agents مدل برنامه‌نویسی را ارائه می‌دهد، و AgentCore Runtime توان پردازشی پشت Temporal Serverless Workers است.
+
+چالش و تعارض صادقانه‌ای که باید آموزش داد: **چک‌پوینت‌گذاری بومیِ فریم‌ورک *وضعیت (state)* را بازیابی می‌کند؛ اما یک موتور کامل اجرای پایدار علاوه بر آن، اثرات جانبی دقیقاً یک‌بار، تایمرهای پایدار، سیگنال‌ها، و معناشناسی بازپخش در طول استقرارها (Deploymentها) را فراهم می‌آورد.** این شکاف زمانی بیشترین اهمیت را پیدا می‌کند که فراخوانی‌های ابزار دارای اثرات خارجی برگشت‌ناپذیر باشند. برای Agentهایی که عمدتاً استدلال‌های LLM با ابزارهای قابل بازیابی و برابری‌پیوسته (idempotent) هستند، چک‌پوینت‌گذاری فریم‌ورک به‌همراه کلیدهای برابری‌پیوستگی روی معدود ابزارهای غیربرابری‌پیوسته معمولاً کافی است.
+
+الگوی استانداردی که همه این‌ها را به یکدیگر پیوند می‌دهد: هنگامی که یک اقدام پیشنهادی پرخطر است، گردش کار متوقف شده و از طریق یک سیگنال منتظر تأیید انسانی می‌ماند، در حالی که در حین انتظار هیچ توان پردازشی مصرف نمی‌کند، سپس به‌طور پایدار کار را از سر می‌گیرد؛ دقیقاً همان گیت تأیید [انسان در حلقه](08-human-in-the-loop-patterns.md) که در برابر خرابی (crash) مقاوم شده است.
+
+---
+
+## زمان‌های اجرای مدیریت‌شده Agent: اجاره حلقه بادوام
+
+تا سپتامبر ۲۰۲۶، هم Anthropic و هم OpenAI خود بستر اجرایی Agent (Agent harness) را به‌عنوان یک زمان اجرای مدیریت‌شده با نشست‌های بادوام داخلی به فروش می‌رسانند (Agents API متعلق به OpenAI در ۱۰ سپتامبر به Claude Managed Agents پیوست)، و AWS نیز نسخه OpenAI را درون ابر اختصاصی خود ارائه می‌دهد. این امر گزینه سومی را در کنار «چک‌پوینت‌گذاری فریم‌ورک» و «اجرای یک موتور اجرای بادوام»: اجاره کردن حلقه، اضافه می‌کند. هیچ‌یک از سه زمان اجرای Agent میزبانی‌شده توسط ارائه‌دهنده در ادامه (Claude Managed Agents، OpenAI Agents API، Bedrock Managed Agents) تا اوایل نوامبر ۲۰۲۶ به مرحله عرضه عمومی (GA) نرسیده بودند؛ بنابراین با APIها، قیمت‌ها و شرایط انطباق‌پذیری آن‌ها مانند شرایط نسخه بتا برخورد کنید. استثنا در این میان، **بستر اجرایی مدیریت‌شده Bedrock AgentCore** خود AWS است که از ۱۷ ژوئن ۲۰۲۶ در تمام مناطق تجاری که AgentCore در آن‌ها اجرا می‌شود، به عرضه عمومی (GA) رسیده است: این سیستم حلقه هماهنگ‌سازی را اجرا می‌کند، ابزارها را به کار می‌اندازد، کانتکست را مدیریت می‌نماید، وضعیت را پایدار می‌کند، به شما امکان می‌دهد هر مدلی را انتخاب کرده و ارائه‌دهندگان را در میانه نشست تغییر دهید، و خروجی کد مبتنی بر Strands تولید می‌کند (خروجی به Claude Agent SDK نیز «به‌زودی» اضافه می‌شود) که پاسخی مستقیم به ایراد وابستگی به ارائه‌دهنده (lock-in) است. نسخه AgentCore CLI 1.0 (بسته `@aws/agentcore` نسخه 1.0.0) در ۲۸ اکتبر با دستور `agentcore migrate` برای پروژه‌های موجود، به مرحله GA رسید.
+
+| پلتفرم | وضعیت (۲ نوامبر ۲۰۲۶) | ویژگی‌های دوام‌پذیری و کنترل | محدودیت‌هایی که باید بررسی شوند |
 |----------|--------------------------|---------------------------------|----------------------|
-| **Claude Managed Agents** | Beta (header `managed-agents-2026-04-01`) on the Claude API, Claude Platform on AWS, and, since October 22, Claude on Google Cloud | Durable sessions; hard session budgets that pause with `budget_reached` (August 7); cron-scheduled deployments (since June 9); agents-as-code via `ant apply` with a committed `claude-lock.json` (ant CLI 1.30.0, September 3); server-evaluated auto permission policy and live terminal attach (September 10) | Bills tokens plus $0.08 per session-hour of running time (idle time free); no Batch discount |
-| **OpenAI Agents API** | Public beta since September 10; no GA announced | Managed Codex harness: durable sessions, context compaction, recovery, subagent delegation, MCP servers over HTTP, mid-run steering; OpenAI-hosted or self-hosted sandboxes; hosted-browser computer use (September 29) | US data residency only and no Zero Data Retention at launch; billed at model, tool, and container rates (hosted containers $0.03 for 1 GB to $1.92 for 64 GB per 20-minute session, billed by the minute with a 5-minute minimum). Since October 9, OpenAI-hosted sandbox compute bills only during active turns, so idle time between turns, such as a wait for human approval, no longer costs sandbox time, matching Claude's running-time meter |
-| **Amazon Bedrock Managed Agents** (powered by OpenAI) | Public preview since September 29 | A customized OpenAI Agents API running inside AWS: per-agent IAM role, CloudTrail logging, durable sessions, human approval before consequential actions | us-east-1, us-east-2, and us-west-2 only; no extra charge during preview |
-| **AWS AgentCore Runtime V2** | Announced September 18 | Restores each instance from a snapshot of an initialized agent; P75 cold start about 2 s versus roughly 5.4 s to 30 s on the original runtime (AWS-reported) | Opt in with `platformVersion` V2; higher rate on far fewer GB-hours |
-| **Microsoft Foundry Agent Service** | Routines GA (September 24) | Recurring, one-shot timer, and event-based triggers for published agents | Network egress controls still in preview |
+| **Claude Managed Agents** | بتا (هدر `managed-agents-2026-04-01`) روی Claude API، پلتفرم Claude روی AWS، و از ۲۲ اکتبر، Claude روی Google Cloud | نشست‌های بادوام؛ بودجه‌های سخت‌گیرانه برای نشست که با `budget_reached` متوقف می‌شوند (۷ اوت)؛ استقرارهای (Deployments) زمان‌بندی‌شده با cron (از ۹ ژوئن)؛ معماری Agentها به‌صورت کد از طریق `ant apply` با فایل کامیت‌شده `claude-lock.json` (در ant CLI 1.30.0، ۳ سپتامبر)؛ خط‌مشی اعطای مجوز خودکار ارزیابی‌شده در سرور و اتصال زنده به ترمینال (۱۰ سپتامبر) | صورت‌حساب بر اساس Tokenها به‌علاوه ۰٫۰۸ دلار به ازای هر ساعت اجرای نشست (زمان بیکاری رایگان است)؛ بدون تخفیف دسته‌ای (Batch) |
+| **OpenAI Agents API** | بتای عمومی از ۱۰ سپتامبر؛ زمان عرضه عمومی (GA) اعلام نشده است | بستر اجرایی مدیریت‌شده Codex: نشست‌های بادوام، فشرده‌سازی کانتکست، بازیابی، واگذاری به subagent، سرورهای MCP روی HTTP، هدایت در میانه اجرا؛ محیط‌های ایزوله (sandboxes) میزبانی‌شده توسط OpenAI یا خودمیزبان؛ استفاده کامپیوتری از مرورگر میزبانی‌شده (۲۹ سپتامبر) | تنها ماندگاری داده در آمریکا و عدم وجود عدم‌ذخیره‌سازی داده (Zero Data Retention) در زمان عرضه؛ صورت‌حساب بر اساس نرخ‌های مدل، ابزار و کانتینر (کانتینرهای میزبانی‌شده از ۰٫۰۳ دلار برای ۱ گیگابایت تا ۱٫۹۲ دلار برای ۶۴ گیگابایت در هر نشست ۲۰ دقیقه‌ای، با محاسبه دقیقه‌ای و حداقل ۵ دقیقه). از ۹ اکتبر، پردازش محیط ایزوله میزبانی‌شده توسط OpenAI فقط در طول نوبت‌های فعال محاسبه می‌شود؛ بنابراین زمان بیکاری بین نوبت‌ها، مانند انتظار برای تایید انسانی، دیگر هزینه زمان sandbox ندارد و با شیوه محاسبه زمان اجرای Claude مطابقت دارد |
+| **Amazon Bedrock Managed Agents** (قدرت‌گرفته از OpenAI) | پیش‌نمایش عمومی از ۲۹ سپتامبر | یک نسخه سفارشی از OpenAI Agents API که درون AWS اجرا می‌شود: نقش IAM اختصاصی به ازای هر Agent، لاگ‌گیری در CloudTrail، نشست‌های بادوام، تایید انسانی پیش از اقدامات پیامددار | فقط در us-east-1، us-east-2 و us-west-2؛ بدون هزینه اضافی در طول دوره پیش‌نمایش |
+| **AWS AgentCore Runtime V2** | معرفی‌شده در ۱۸ سپتامبر | بازیابی هر نمونه (instance) از یک اسنپ‌شات از یک Agent مقداردهی اولیه شده؛ استارت سرد در صدک P75 حدود ۲ ثانیه در مقایسه با تقریباً ۵٫۴ ثانیه تا ۳۰ ثانیه در زمان اجرای اصلی (گزارش‌شده توسط AWS) | فعال‌سازی اختیاری با `platformVersion` نسخه V2؛ نرخ بالاتر بر روی گیگابایت-ساعت بسیار کمتر |
+| **Microsoft Foundry Agent Service** | عرضه عمومی روتین‌ها (۲۴ سپتامبر) | تریگرهای تکرارشونده، تایمر تک‌باره و مبتنی بر رویداد برای Agentهای منتشرشده | کنترل‌های خروج ترافیک شبکه (Network egress) هنوز در مرحله پیش‌نمایش است |
 
-What renting buys: crash recovery, compaction, triggers, budgets, and approvals without operating a cluster. What it does not buy: **exactly-once semantics for your own side-effecting tools**. A managed runtime can resume a session, but it cannot know whether your payment API committed before the crash, so non-idempotent tools still need idempotency keys and, for multi-step side effects, your own durable workflow behind the tool. The other costs are lock-in at the harness layer (agents-as-code files, session semantics, and event formats are vendor-specific) and residency or retention gaps, which can rule a platform out for regulated data before any technical comparison starts. Bedrock Managed Agents running OpenAI's harness inside AWS is the clearest sign that the harness, not the model endpoint, is becoming the integration unit.
-
----
-
-## When You Need It
-
-Durable execution is the emerging answer to *production* agent reliability, and the 2026 traction is real: Temporal followed its earlier Series D with a $550M Series E at a $12.55B valuation (September 14, 2026), reporting 1.9 trillion billable actions in August (up more than 350% year over year), more than 4,300 paying customers, and OpenAI's Temporal usage up 60x in under a year (company-reported figures). A widely cited vendor case study describes a deep-research agent that **migrated from a framework prototype to a durable-execution engine** after hitting race conditions, fragile custom retry logic, and stale-state bugs that became costly to support (a vendor-published account, so read the direction as real and the framing as theirs).
-
-But it is a deliberate complexity trade. The constraints (determinism, versioning hazards, a new testing and monitoring model) are real, and for agents that are mostly read-only, short-lived, or single-shot, **framework-native checkpointing or a queue plus idempotency keys is often enough** and far cheaper to operate. DBOS and Restate lower the entry cost materially versus a full cluster, so if the objection is operational overhead, the library-and-Postgres approach may get most of the value.
+آنچه اجاره کردن به ارمغان می‌آورد: بازیابی پس از خرابی، فشرده‌سازی، تریگرها، بودجه‌بندی‌ها و تاییدها بدون نیاز به مدیریت یک کلاستر. آنچه به ارمغان نمی‌آورد: **معناشناسی دقیقاً یک‌بار (exactly-once semantics) برای ابزارهای دارای اثر جانبی خودتان**. یک زمان اجرای مدیریت‌شده می‌تواند یک نشست را از سر بگیرد، اما نمی‌تواند بداند که آیا API پرداخت شما قبل از خرابی کامیت شده است یا خیر؛ بنابراین ابزارهای غیرتکرارپذیر همچنان به کلیدهای تکرارپذیری (idempotency keys) و برای آثار جانبی چندمرحله‌ای، به گردش کار بادوام خودتان در پشت ابزار نیاز دارند. سایر هزینه‌ها عبارت‌اند از وابستگی (lock-in) در لایه بستر اجرایی (فایل‌های agents-as-code، معناشناسی نشست و فرمت رویدادها مختص هر ارائه‌دهنده هستند) و شکاف‌های ماندگاری یا حفظ داده‌ها، که می‌توانند یک پلتفرم را برای داده‌های مشمول مقررات پیش از آغاز هرگونه مقایسه فنی رد صلاحیت کنند. اجرای بستر کنترلی OpenAI توسط Bedrock Managed Agents در داخل AWS واضح‌ترین نشانه است که بستر اجرایی، و نه نقطه انتهایی مدل، در حال تبدیل شدن به واحد یکپارچه‌سازی است.
 
 ---
 
-## Do You Need Durable Execution?
+## چه زمانی به آن نیاز دارید
 
-Walk these in order:
+اجرای بادوام پاسخی نوظهور برای قابلیت اطمینان Agent در محیط *عملیاتی* (production) است، و استقبال از آن در سال ۲۰۲۶ کاملاً ملموس است: شرکت Temporal پس از دوره قبلی جذب سرمایه سری D خود، یک دوره سرمایه‌گذاری سری E به مبلغ ۵۵۰ میلیون دلار با ارزش‌گذاری ۱۲٫۵۵ میلیارد دلار را به سرانجام رساند (۱۴ سپتامبر ۲۰۲۶)، و از ۱٫۹ تریلیون اقدام قابل‌شارژ در ماه اوت (افزایش بیش از ۳۵۰ درصدی نسبت به سال گذشته)، بیش از ۴٬۳۰۰ مشتری پرداخت‌کننده، و افزایش ۶۰ برابری استفاده OpenAI از Temporal در کمتر از یک سال خبر داد (آمارهای گزارش‌شده توسط شرکت). یک مطالعه موردی پرارجاع از سوی یکی از ارائه‌دهندگان، یک Agent پژوهش عمیق را توصیف می‌کند که پس از برخورد با شرایط رقابتی (race conditions)، منطق شکننده تلاش مجدد سفارشی و باگ‌های وضعیت کهنه که پشتیبانی از آن پرهزینه شده بود، **از یک نمونه اولیه فریم‌ورک به یک موتور اجرای بادوام مهاجرت کرد** (این گزارش توسط ارائه‌دهنده منتشر شده است، بنابراین سمت‌وسوی کلی را واقعی و نحوه بیان را مطابق منافع آن‌ها در نظر بگیرید).
 
-1. **Does any tool call have an irreversible external side effect** (payment, email, deploy, ticket, cross-system write)? No: framework checkpointing or a retry/queue likely suffices. Yes: continue.
-2. **Can a single run outlast your process or deploy cycle, or must it pause for human approval across restarts?** No: in-memory plus a checkpoint on completion is probably fine. Yes: you need durable timers and durable pauses.
-3. **Would re-running the whole agent on a crash be unacceptable** in cost, duplicate effects, or lost multi-hour progress? Yes: you need replay and exactly-once, so durable execution is justified.
-4. **Pick the weight class:** DBOS if side effects are mostly writes to your own Postgres and you want one deploy; Restate for low-ops, HTTP-native, stateful sessions; Inngest for event-driven, TS-first, AI-native rate-limit control; Step Functions if you are all-in on AWS and fine with a declarative state machine; Temporal for large scale, complex long-running processes, and the deepest agent-framework integrations; a managed agent runtime (Claude Managed Agents, OpenAI Agents API, Bedrock Managed Agents) when its residency, retention, and pricing fit and you would rather rent the loop than run it; or stay with framework-native durability (LangGraph checkpointers) plus idempotency keys when the agent is mostly reasoning with recoverable tools.
-
-It is overkill for simple CRUD, sub-millisecond hot paths, pure high-throughput streaming, or a tiny team whose needs a queue with a dead-letter handler already covers.
+اما این یک مصالحه آگاهانه بر سر پیچیدگی است. محدودیت‌ها (قطعیت، خطرات نسخه‌بندی، مدل تست و مانیتورینگ جدید) واقعی هستند، و برای Agentهایی که عمدتاً فقط‌خواندنی، کوتاه‌عمر یا تک‌باره هستند، **چک‌پوینت‌گذاری بومی فریم‌ورک یا یک صف به‌همراه کلیدهای تکرارپذیری اغلب کافی است** و هزینه عملیاتی بسیار کمتری دارد. DBOS و Restate هزینه ورود را در مقایسه با یک کلاستر کامل به‌طور محسوسی کاهش می‌دهند، بنابراین اگر مانع اصلی بار عملیاتی است، رویکرد مبتنی بر کتابخانه و Postgres می‌تواند بیشترین ارزش را به ارمغان آورد.
 
 ---
 
-## Interview Questions
+## آیا به اجرای بادوام نیاز دارید؟
 
-### Q: Why are naive retries and checkpoints insufficient for a production agent with side effects?
+این موارد را به ترتیب دنبال کنید:
 
-**Strong answer:**
-Because an agent crash creates an ambiguity a retry cannot resolve safely. If the agent calls a tool that charges a card and then crashes, you cannot tell from a state snapshot whether the charge committed before the crash or whether only the acknowledgment was lost, so a naive retry risks charging twice. A plain checkpoint that saves state between steps still leaves an unsafe window between executing the side effect and recording that it happened. Durable execution closes this by capturing the journal of steps, not just the latest state: each side-effecting step is a recorded activity with an idempotency key, so on replay a completed activity returns its recorded result instead of re-running. That gives exactly-once semantics for the side effect and lets the workflow resume from the exact point it failed rather than from the beginning.
+۱. **آیا فراخوانی هیچ‌یک از ابزارها اثر جانبی خارجی غیرقابل‌بازگشت دارد** (پرداخت، ایمیل، استقرار (deploy)، تیکت، نوشتن بین‌سیستمی)؟ خیر: چک‌پوینت‌گذاری فریم‌ورک یا تلاش مجدد/صف احتمالاً کافی است. بله: ادامه دهید.
+۲. **آیا یک اجرای منفرد می‌تواند بیشتر از فرایند شما یا چرخه استقرار (deploy cycle) طول بکشد، یا باید برای تایید انسانی در طول راه‌اندازی‌های مجدد متوقف بماند؟** خیر: نگهداری در حافظه به‌علاوه یک چک‌پوینت پس از تکمیل احتمالاً مناسب است. بله: شما به تایمرهای بادوام و توقف‌های بادوام نیاز دارید.
+۳. **آیا اجرای مجدد کل Agent در صورت خرابی غیرقابل‌قبول است** (از نظر هزینه، آثار تکراری یا از دست رفتن پیشرفت چند ساعته)؟ بله: شما به بازپخش (replay) و معناشناسی دقیقاً یک‌بار نیاز دارید، بنابراین اجرای بادوام توجیه‌پذیر است.
+۴. **رده وزنی مناسب را انتخاب کنید:** اگر آثار جانبی عمدتاً نوشتن در Postgres خودتان است و یک استقرار (deploy) واحد می‌خواهید، از DBOS استفاده کنید؛ برای نشست‌های حالت‌دار، بومی HTTP و با عملیات نگهداری اندک، از Restate بهره بگیرید؛ برای کنترل نرخ مصرف رویدادمحور، اولویت با تایپ‌اسکریپت و بومی هوش مصنوعی، از Inngest استفاده نمایید؛ اگر کاملاً متکی به AWS هستید و با یک ماشین حالت اعلانی مشکلی ندارید، Step Functions را به کار ببرید؛ برای مقیاس‌های بزرگ، فرایندهای طولانی‌مدت پیچیده و عمیق‌ترین یکپارچه‌سازی‌های فریم‌ورک Agent، از Temporal استفاده کنید؛ از یک زمان اجرای مدیریت‌شده Agent (مانند Claude Managed Agents، OpenAI Agents API و Bedrock Managed Agents) زمانی استفاده کنید که ماندگاری داده، حفظ داده و قیمت‌گذاری آن مناسب است و ترجیح می‌دهید حلقه را به جای اجرا کردن اجاره کنید؛ یا اگر Agent عمدتاً مشغول استدلال با ابزارهای قابل‌بازیابی است، با دوام‌پذیری بومی فریم‌ورک (چک‌پوینت‌گذارهای LangGraph) به‌همراه کلیدهای تکرارپذیری کار را ادامه دهید.
 
-### Q: When is durable execution overkill, and what would you use instead?
-
-**Strong answer:**
-It is overkill when the agent has no irreversible side effects, runs short enough to fit inside a process and deploy cycle, and would be fine to simply re-run on failure, for example a read-only research or summarization agent with idempotent tools. There I would use framework-native durability like a LangGraph checkpointer to recover state, plus idempotency keys on the few non-idempotent calls, and a retry queue with a dead-letter handler. The determinism constraints and versioning hazards of a full engine like Temporal are a real cost, so I would only take them on once the agent has irreversible effects, must pause for human approval across restarts, or is long enough that re-running on a crash is unacceptable. If operational overhead is the blocker but I still need durability, a library approach like DBOS that uses my existing Postgres gets much of the value without running a cluster.
-
-### Q: Would you build your agent on Temporal or rent a managed agent runtime like the OpenAI Agents API or Claude Managed Agents?
-
-**Strong answer:**
-I separate the agent loop from the side effects. Renting the loop is attractive: durable sessions, compaction, triggers, session spend caps, and policy-evaluated approvals arrive without a cluster, and the vendor tunes the harness to its models. But I check three things first. Compliance: the OpenAI Agents API launched with US-only data residency and no Zero Data Retention, which can end the conversation for regulated data. Semantics: a managed runtime resumes the session, but it cannot give exactly-once guarantees for my payment or ticketing tools, so those still need idempotency keys or a durable workflow of their own behind the tool interface. Lock-in: agents-as-code files, event formats, and session semantics are vendor-specific, so moving later is a rewrite, and model choice gets coupled to harness choice. My usual answer is a hybrid: rent the loop for agents that are mostly reasoning plus idempotent tools, and keep irreversible multi-step operations (refunds, provisioning) in Temporal or DBOS workflows exposed to the agent as single tools, so the part that must be exactly-once lives where I control it.
+این رویکرد برای عملیات ساده CRUD، مسیرهای بحرانی زیر میلی‌ثانیه، استریم خالص با توان عملیاتی (Throughput) بالا، یا یک تیم کوچک که نیازهایشان پیش‌تر توسط یک صف با مدیریت‌کننده پیام‌های ناموفق پوشش داده شده است، زیاده‌روی محسوب می‌شود.
 
 ---
 
-## References
+## سوالات مصاحبه
 
-- Resonate, ["From where do deterministic constraints come?"](https://journal.resonatehq.io/p/from-where-do-deterministic-constraints)
-- Restate, ["What is durable execution?"](https://www.restate.dev/what-is-durable-execution)
-- Temporal, [OpenAI Agents SDK integration](https://temporal.io/blog/announcing-openai-agents-sdk-integration), [Series D announcement](https://temporal.io/news/temporal-raises-300M-to-make-agentic-ai-real-for-companies), and [Series E announcement](https://temporal.io/news/temporal-raises-550m-at-a-12-55b-valuation)
-- OpenAI, [Agents API overview](https://developers.openai.com/api/docs/guides/agents-api/overview)
-- Anthropic, [Claude Platform release notes (Managed Agents)](https://platform.claude.com/docs/en/release-notes/overview)
-- Temporal, [prototype to production-ready agentic AI: a Grid Dynamics case study](https://temporal.io/blog/prototype-to-prod-ready-agentic-ai-grid-dynamics)
-- Google ADK, [Temporal integration](https://adk.dev/integrations/temporal/)
-- LangChain, [durable execution in LangGraph](https://docs.langchain.com/oss/python/langgraph/durable-execution)
-- Diagrid, ["Checkpoints are not durable execution"](https://www.diagrid.io/blog/checkpoints-are-not-durable-execution-why-langgraph-crewai-google-adk-and-others-fall-short-for-production-agent-workflows)
+### سوال: چرا تلاش‌های مجدد ساده‌لوحانه و چک‌پوینت‌ها برای یک Agent عملیاتی دارای آثار جانبی ناکافی هستند؟
+
+**پاسخ قوی:**
+زیرا خرابی یک Agent ابهامی ایجاد می‌کند که یک تلاش مجدد نمی‌تواند آن را با اطمینان حل کند. اگر Agent ابزاری را فراخوانی کند که از یک کارت بانکی کسر وجه انجام می‌دهد و سپس دچار خرابی شود، شما از روی اسنپ‌شات وضعیت نمی‌توانید تشخیص دهید که آیا تراکنش قبل از خرابی کامیت شده است یا فقط پیام تایید از دست رفته است؛ بنابراین یک تلاش مجدد ساده‌لوحانه خطر دو بار کسر وجه را به همراه دارد. یک چک‌پوینت ساده که وضعیت را بین مراحل ذخیره می‌کند نیز همچنان یک بازه زمانی ناامن بین اجرای اثر جانبی و ثبت وقوع آن باقی می‌گذارد. اجرای بادوام این خلاء را با ثبت دفترچه وقایع گام‌ها، و نه صرفاً آخرین وضعیت، برطرف می‌کند: هر مرحله دارای اثر جانبی، یک فعالیت ثبت‌شده همراه با کلید تکرارپذیری است، بنابراین هنگام بازپخش، یک فعالیت تکمیل‌شده به جای اجرای مجدد، نتیجه ثبت‌شده خود را بازمی‌گرداند. این امر معناشناسی دقیقاً یک‌بار را برای اثر جانبی فراهم می‌کند و به گردش کار اجازه می‌دهد از همان نقطه دقیقی که شکست خورده است از سر گرفته شود، نه اینکه از ابتدا شروع کند.
+
+### سوال: چه زمانی اجرای بادوام زیاده‌روی است، و به جای آن از چه چیزی استفاده می‌کنید؟
+
+**پاسخ قوی:**
+زمانی زیاده‌روی است که Agent هیچ اثر جانبی غیرقابل‌بازگشتی نداشته باشد، مدت اجرای آن‌قدر کوتاه باشد که در یک فرایند و چرخه استقرار بگنجد، و اجرای مجدد ساده آن در صورت بروز شکست بلامانع باشد؛ به عنوان مثال، یک Agent پژوهشی یا خلاصه‌سازی فقط‌خواندنی با ابزارهای تکرارپذیر. در چنین حالتی، من از دوام‌پذیری بومی فریم‌ورک مانند چک‌پوینت‌گذار LangGraph برای بازیابی وضعیت، به‌همراه کلیدهای تکرارپذیری روی معدود فراخوانی‌های غیرتکرارپذیر و یک صف تلاش مجدد با مدیریت‌کننده پیام‌های ناموفق استفاده می‌کنم. محدودیت‌های قطعیت و خطرات نسخه‌بندی یک موتور کامل مانند Temporal هزینه‌ای واقعی هستند، بنابراین تنها زمانی آن‌ها را می‌پذیرم که Agent آثار غیرقابل‌بازگشت داشته باشد، نیازمند توقف برای تایید انسانی در طول راه‌اندازی‌های مجدد باشد، یا آن‌قدر طولانی باشد که اجرای مجدد در پی خرابی غیرقابل‌قبول باشد. اگر بار عملیاتی مانع اصلی باشد اما همچنان به دوام‌پذیری نیاز داشته باشم، رویکرد کتابخانه‌ای مانند DBOS که از Postgres موجود من استفاده می‌کند، بخش عمده‌ای از این ارزش را بدون راه‌اندازی کلاستر محقق می‌سازد.
+
+### سوال: آیا Agent خود را روی Temporal می‌سازید یا یک زمان اجرای مدیریت‌شده Agent مانند OpenAI Agents API یا Claude Managed Agents را اجاره می‌کنید؟
+
+**پاسخ قوی:**
+من حلقه Agent را از آثار جانبی تفکیک می‌کنم. اجاره کردن حلقه جذاب است: نشست‌های بادوام، فشرده‌سازی، تریگرها، سقف هزینه‌های نشست و تاییدهای ارزیابی‌شده بر اساس خط‌مشی، همگی بدون نیاز به کلاستر مهیا می‌شوند و ارائه‌دهنده نیز بستر اجرایی را برای مدل‌های خود بهینه‌سازی می‌کند. اما من ابتدا سه مورد را بررسی می‌کنم. انطباق‌پذیری (Compliance): ابزار OpenAI Agents API تنها با ماندگاری داده در آمریکا و بدون عدم‌ذخیره‌سازی داده عرضه شد، که این می‌تواند بحث استفاده برای داده‌های مشمول مقررات را خاتمه دهد. معناشناسی (Semantics): یک زمان اجرای مدیریت‌شده نشست را از سر می‌گیرد، اما نمی‌تواند تضمین‌های دقیقاً یک‌بار را برای ابزارهای پرداخت یا صدور تیکت من فراهم کند؛ بنابراین آن‌ها همچنان در پشت واسط ابزار، به کلیدهای تکرارپذیری یا گردش کار بادوام اختصاصی خود نیاز دارند. قفل‌شدگی یا وابستگی (Lock-in): فایل‌های agents-as-code، فرمت‌های رویداد و معناشناسی نشست مختص هر ارائه‌دهنده هستند، بنابراین جابه‌جایی در آینده به منزله بازنویسی کد خواهد بود و انتخاب مدل نیز با انتخاب بستر اجرایی جفت می‌شود. پاسخ معمول من یک رویکرد ترکیبی است: اجاره حلقه برای Agentهایی که عمدتاً شامل استدلال به‌همراه ابزارهای تکرارپذیر هستند، و نگهداری عملیات چندمرحله‌ای برگشت‌ناپذیر (استرداد وجه، تدارک منابع) در گردش‌های کاری Temporal یا DBOS که به عنوان ابزارهای منفرد در اختیار Agent قرار می‌گیرند؛ بدین ترتیب بخشی که باید حتماً به‌صورت دقیقاً یک‌بار اجرا شود، در جایی قرار می‌گیرد که تحت کنترل من است.
 
 ---
 
-*Next: [Loop Engineering](12-loop-engineering.md)*
+## منابع
+
+- Resonate، [«محدودیت‌های قطعی (deterministic) از کجا می‌آیند؟»](https://journal.resonatehq.io/p/from-where-do-deterministic-constraints)
+- Restate، [«اجرای بادوام چیست؟»](https://www.restate.dev/what-is-durable-execution)
+- Temporal، [یکپارچه‌سازی با OpenAI Agents SDK](https://temporal.io/blog/announcing-openai-agents-sdk-integration)، [اعلامیه سرمایه‌گذاری سری D](https://temporal.io/news/temporal-raises-300M-to-make-agentic-ai-real-for-companies) و [اعلامیه سرمایه‌گذاری سری E](https://temporal.io/news/temporal-raises-550m-at-a-12-55b-valuation)
+- OpenAI، [بررسی اجمالی Agents API](https://developers.openai.com/api/docs/guides/agents-api/overview)
+- Anthropic، [یادداشت‌های انتشار پلتفرم Claude (زمان‌های اجرای مدیریت‌شده Agent)](https://platform.claude.com/docs/en/release-notes/overview)
+- Temporal، [از نمونه اولیه تا هوش مصنوعی Agentic آماده بهره‌برداری: مطالعه موردی Grid Dynamics](https://temporal.io/blog/prototype-to-prod-ready-agentic-ai-grid-dynamics)
+- Google ADK، [یکپارچه‌سازی با Temporal](https://adk.dev/integrations/temporal/)
+- LangChain، [اجرای بادوام در LangGraph](https://docs.langchain.com/oss/python/langgraph/durable-execution)
+- Diagrid، [«چک‌پوینت‌ها اجرای بادوام نیستند»](https://www.diagrid.io/blog/checkpoints-are-not-durable-execution-why-langgraph-crewai-google-adk-and-others-fall-short-for-production-agent-workflows)
+
+---
+
+*بعدی: [مهندسی حلقه (Loop Engineering)](12-loop-engineering.md)*
+
+</div>

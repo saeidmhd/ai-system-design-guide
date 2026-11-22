@@ -1,107 +1,111 @@
-# Planning and Decomposition
+<div dir="rtl">
 
-Planning is the "System 2" component that allows agents to solve multi-stage problems without "wandering." Production agents have moved from simple "Chain-of-Thought" to **Recursive Decomposition** and **Tree Search**, with reasoning-native models (Claude Opus 5.5 and Fable 5.1, GPT-6 Astra and GPT-6.1 Sol) doing the heavy planning internally at whatever effort level you set.
+# برنامه‌ریزی و تجزیه
 
-## Table of Contents
+برنامه‌ریزی مؤلفه «سیستم ۲» (System 2) است که به Agentها اجازه می‌دهد مسائل چندمرحله‌ای را بدون «سردرگمی و انحراف» حل کنند. Agentهای عملیاتی از «زنجیره تفکر» (Chain-of-Thought) ساده به سمت **تجزیه بازگشتی (Recursive Decomposition)** و **جستجوی درختی (Tree Search)** حرکت کرده‌اند؛ در این میان، مدل‌های بومی استدلال (مانند Claude Opus 5.5 و Fable 5.1، GPT-6 Astra و GPT-6.1 Sol) برنامه‌ریزی‌های سنگین را به‌صورت درونی و در هر سطح تلاشی (effort level) که تعیین کنید، به دوش می‌کشند.
 
-- [The Planning Spectrum](#the-planning-spectrum)
-- [Static vs. Dynamic Planning](#static-vs-dynamic-planning)
-- [Clarify Before You Decompose](#clarify-before-you-decompose)
-- [Chain-of-Thought (CoT) and Reasoning Models](#cot-and-reasoning-models)
-- [Recursive Task Decomposition](#recursive-task-decomposition)
-- [Tree Search (MCTS) for Agent Paths](#tree-search-mcts)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [طیف برنامه‌ریزی](#the-planning-spectrum)
+- [برنامه‌ریزی ایستا در برابر پویا](#static-vs-dynamic-planning)
+- [شفاف‌سازی پیش از تجزیه](#clarify-before-you-decompose)
+- [زنجیره تفکر (CoT) و مدل‌های استدلال](#cot-and-reasoning-models)
+- [تجزیه بازگشتی وظایف](#recursive-task-decomposition)
+- [جستجوی درختی (MCTS) برای مسیرهای Agent](#tree-search-mcts)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Planning Spectrum
+## طیف برنامه‌ریزی
 
-| Method | Strategy | Complexity | Best For |
+| روش | استراتژی | پیچیدگی | بهترین کاربرد برای |
 |--------|----------|------------|----------|
-| **Linear** | One step at a time | Low | Simple tools |
-| **Branching** | If-Then-Else logic | Medium | Conditional flows |
-| **Hierarchical** | Master-Plan -> Sub-Plans | High | Software engineering |
-| **Search-Based** | Try multiple paths internally | Max | Scientific Research |
+| **خطی (Linear)** | یک گام در هر لحظه | کم | ابزارهای ساده |
+| **شاخه‌ای (Branching)** | منطق شرطی (If-Then-Else) | متوسط | جریان‌های شرطی |
+| **سلسله‌مراتبی (Hierarchical)** | طرح کلان (Master-Plan) -> برنامه‌های فرعی (Sub-Plans) | بالا | مهندسی نرم‌افزار |
+| **مبتنی بر جستجو (Search-Based)** | امتحان چندین مسیر به‌صورت درونی | حداکثر | تحقیقات علمی |
 
 ---
 
-## Static vs. Dynamic Planning
+## برنامه‌ریزی ایستا در برابر پویا
 
-### Static (Plan-and-Solve)
-The agent writes a 10-step plan and follows it strictly.
-- **Pros**: High performance, easy to parallelize.
-- **Cons**: Brittle. If step 2 fails, steps 3-10 are useless.
+### ایستا (طرح‌ریزی و حل - Plan-and-Solve)
+مدل Agent یک برنامه ۱۰ مرحله‌ای تدوین کرده و دقیقاً از آن پیروی می‌کند.
+- **مزایا**: عملکرد بالا، قابلیت موازی‌سازی آسان.
+- **معایب**: شکننده است. اگر مرحله ۲ با شکست مواجه شود، مراحل ۳ تا ۱۰ بی‌فایده خواهند بود.
 
-### Dynamic (Adaptive)
-The agent writes a plan, but **Re-evaluates** after every tool call.
-- **Best practice**: Use **Checkpointed Planning**. The agent is forced to "Commit" its progress to a state store after every major sub-goal to allow for recovery and "Backtracking" if the plan fails.
-
----
-
-## Clarify Before You Decompose
-
-The most expensive planning error is decomposing the wrong goal, and 2026 measurements say agents rarely ask. In Sierra's hyper-tau-bench (September 2026), where a developer agent must recover requirements from business records and a client interview and then build a customer-service agent, Claude Opus 5 working alone in Claude Code passed 23.9% of held-out tests, while the same class of model paired with an engineer who had deep context reached 82.2%. The developer agents opened fewer than 80 of roughly 1,700 available banking files and asked at most 4 client questions when the client alone held 20 to 25 requirements. One sentence of architecture advice doubled a telecom score from 31% to 67%. OSWorld 2.0's failure analysis names the same gap for desktop agents: missing information, because agents rarely ask to clarify.
-
-Design consequences:
-
-- **Make requirement elicitation an explicit plan step** with its own budget, not something the model may choose to skip.
-- **Ask only where the answer changes the plan.** OpenAI describes GPT-6 Astra in Codex as asking focused questions only for consequential decisions and continuing with work that does not depend on the answer. That is the right shape: a blocking question per fork, not a questionnaire.
-- **Feed in the architecture hint.** If a human knows the right shape, one sentence in the plan prompt is cheaper than any amount of agent exploration.
+### پویا (انطباق‌پذیر - Adaptive)
+مدل Agent برنامه‌ای تدوین می‌کند، اما پس از هر فراخوانی ابزار، آن را **ارزیابی مجدد (Re-evaluate)** می‌نماید.
+- **بهترین رویکرد (Best practice)**: از **برنامه‌ریزی مبتنی بر نقطه بازرسی (Checkpointed Planning)** استفاده کنید. در این حالت Agent ملزم می‌شود پس از هر زیرهدفِ اصلی، پیشرفت خود را در یک ذخیره‌ساز وضعیت ثبت (Commit) کند تا در صورت شکست برنامه، امکان بازیابی و «عقب‌گرد (Backtracking)» فراهم باشد.
 
 ---
 
-## CoT and Reasoning Models
+## شفاف‌سازی پیش از تجزیه
 
-The model's internal "Thinking" window (Inference scaling) acts as a **Hidden Planner**.
-- Instead of using a separate "Planner LLM," we use a reasoning model (Claude Opus 5.5, GPT-6 Astra) to generate a "Mental Draft."
-- This draft is translated into a **Task DAG (Directed Acyclic Graph)** that the orchestrator executes.
-- **Effort is the planning budget.** Run the planning call at high effort and execution steps at low effort on the same model, rather than switching models. Pin effort explicitly: defaults change between versions (Opus 5.5 defaults to `medium`, Opus 5 defaulted to `high`).
+پرهزینه‌ترین خطای برنامه‌ریزی، تجزیه کردن یک هدف نادرست و اشتباه است، و ارزیابی‌های سال ۲۰۲۶ نشان می‌دهند که Agentها به‌ندرت سؤال می‌پرسند. در بنچمارک hyper-tau-bench شرکت Sierra (سپتامبر ۲۰۲۶)، جایی که یک Agent توسعه‌دهنده باید نیازمندی‌ها را از سوابق تجاری و مصاحبه با مشتری استخراج کرده و سپس یک Agent خدمات مشتریان بسازد، مدل Claude Opus 5 که به‌تنهایی در Claude Code کار می‌کرد تنها ۲۳.۹٪ از آزمون‌های اعتبارسنجی (held-out) را پشت سر گذاشت؛ در حالی که همین کلاس از مدل، زمانی که با یک مهندس دارای زمینه‌ی کاری عمیق (deep context) همراه شد، به ۸۲.۲٪ موفقیت دست یافت. Agentهای توسعه‌دهنده از میان حدود ۱,۷۰۰ فایل بانکی موجود، کمتر از ۸۰ فایل را باز کردند و در شرایطی که مشتری به‌تنهایی حامل ۲۰ تا ۲۵ نیازمندی بود، حداکثر ۴ سؤال از مشتری پرسیدند. ارائه تنها یک جمله راهنمایی معماری، امتیاز یک پروژه مخابراتی را از ۳۱٪ به ۶۷٪ دو برابر کرد. تحلیل شکست‌ها در OSWorld 2.0 نیز دقیقاً همین شکاف را برای Agentهای دسکتاپ نشان می‌دهد: اطلاعات از دست‌رفته، زیرا Agentها به‌ندرت برای شفاف‌سازی سؤال می‌پرسند.
 
----
+پیامدهای طراحی:
 
-## Recursive Task Decomposition
-
-For massive tasks (e.g., "Build a full-stack app"), we use **Sub-Agent Spawning**.
-1. **Master Agent**: Decomposes "Project" into "Frontend," "Backend," and "DB."
-2. **Sub-Agents**: Each receives a "Sub-Goal" and performs its own decomposition.
-3. **Consolidation**: The Master Agent merges the results.
-
-**Critical Nuance**: Each sub-agent is given a **Minimal Context** (only what it needs) to prevent token bloat and hallucination.
-
-**Bound the fan-out at the platform, not in the prompt.** Coordinator products now spawn subagents at scale (Cursor's Projects beta delegates to as many parallel subagents as a plan needs), so the cap has to live outside the model: OpenAI's Agents API exposes `max_concurrent_subagents` (default 6), and a total budget for the whole tree belongs at the gateway.
+- **استخراج نیازمندی‌ها را به یک گام صریح در برنامه تبدیل کنید** که بودجه مختص به خود را دارد، نه چیزی که مدل بتواند از آن صرف‌نظر کند.
+- **تنها در مواردی سؤال بپرسید که پاسخ، برنامه را تغییر می‌دهد.** شرکت OpenAI عملکرد GPT-6 Astra در Codex را به‌گونه‌ای توصیف می‌کند که تنها برای تصمیمات تعیین‌کننده سؤالات متمرکز می‌پرسد و به کارهایی که به پاسخ وابسته نیستند ادامه می‌دهد. این همان الگوی صحیح است: یک سؤال مسدودکننده (blocking question) به ازای هر انشعاب، نه یک پرسشنامه طولانی.
+- **سرنخ‌های معماری را وارد کنید.** اگر انسان ساختار صحیح را می‌داند، درج یک جمله در Prompt برنامه‌ریزی، بسیار کم‌هزینه‌تر از هر میزان کاوش و جستجو توسط Agent است.
 
 ---
 
-## Tree Search (MCTS)
+## زنجیره تفکر (CoT) و مدل‌های استدلال
 
-For high-stakes decisions, we use **Monte Carlo Tree Search (MCTS)** within the agent loop.
-- The agent "Simulates" 10 possible tool calls.
-- A **Reward Model** (or a separate LLM prompt) scores each simulation.
-- The agent follows the path with the highest reward.
-
----
-
-## Interview Questions
-
-### Q: How do you prevent an agent from "Infinite Recursion" during task decomposition?
-
-**Strong answer:**
-We implement **Decomposition Depth Limits** (usually 3 levels) and **Granularity Checks**. Before spawning a sub-agent, we ask the Supervisor model: "Is this task small enough to be solved by a single tool call?" If yes, we execute. If no, we decompose. We also use a **Global Controller** that tracks the total "Agent Count" to prevent a recursive bomb (fork bomb) that could drain the API budget. On a managed runtime I set the platform's own concurrency cap (for example `max_concurrent_subagents` in OpenAI's Agents API) and a session spend cap (Claude Managed Agents pauses with `budget_reached`), because a limit the model can talk itself past is not a limit.
-
-### Q: Why is "Plan Revision" often more expensive than "Plan Generation"?
-
-**Strong answer:**
-Plan generation is a "Fresh Start." Plan revision requires **Context Re-evaluation**: the model must understand what was *already done*, why the *previous step failed*, and how to fix it without undoing previous successes. This requires a much higher "Reasoning Density." In production, we spend more on the **Revision** step than on the initial plan: either a stronger model (e.g., Claude Opus 5.5 or GPT-6 Astra) or, more often now, the same model at a higher effort setting, which keeps the context and cache intact while buying more thinking.
+پنجره درونی «تفکر» مدل (مقیاس‌پذیری استنتاج (Inference)) به عنوان یک **برنامه‌ریز پنهان (Hidden Planner)** عمل می‌کند.
+- به‌جای استفاده از یک «LLM برنامه‌ریز» مجزا، از یک مدل استدلال (مانند Claude Opus 5.5 یا GPT-6 Astra) برای ایجاد یک «پیش‌نویس ذهنی» (Mental Draft) استفاده می‌کنیم.
+- این پیش‌نویس به یک **DAG وظایف (گراف جهت‌دار بدون دور - Directed Acyclic Graph)** ترجمه می‌شود که ارکستریتور (Orchestrator) آن را اجرا می‌کند.
+- **سطح تلاش (Effort) همان بودجه برنامه‌ریزی است.** فراخوانی برنامه‌ریزی را با تلاش بالا (high effort) و گام‌های اجرایی را با تلاش پایین (low effort) روی همان مدل اجرا کنید، نه اینکه مدل‌ها را تعویض نمایید. سطح تلاش را به‌طور صریح پین کنید؛ زیرا مقادیر پیش‌فرض میان نسخه‌ها تغییر می‌کنند (پیش‌فرض Opus 5.5 روی `medium` است، در حالی که پیش‌فرض Opus 5 روی `high` بود).
 
 ---
 
-## References
-- Silver et al. "Mastering the game of Go with deep neural networks and tree search" (Nature, 2016), the origin of MCTS-plus-learned-value search applied to LLM agents
-- Wang et al. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (2022). https://arxiv.org/abs/2203.11171
-- LangGraph. "Multi-Agent Planning Patterns" (2025)
-- Sierra. "hyper-tau-bench: evaluating agents that build agents" (September 2026). https://sierra.ai/blog/hyper-t-bench-evaluating-agents-that-build-agents
+## تجزیه بازگشتی وظایف
+
+برای وظایف حجیم و کلان (مانند «ساخت یک برنامه فول‌استک»)، از **ایجاد Sub-Agent (Sub-Agent Spawning)** استفاده می‌کنیم.
+1. **Master Agent**: «پروژه» را به بخش‌های «Frontend»، «Backend» و «پایگاه داده (DB)» تجزیه می‌کند.
+2. **Sub-Agentها**: هر یک «زیرهدف» مشخصی دریافت کرده و تجزیه مختص به خود را انجام می‌دهند.
+3. **تجمیع (Consolidation)**: مدل Master Agent نتایج را ادغام و یکپارچه می‌کند.
+
+**نکته ظریف و حیاتی**: به هر Sub-Agent یک **زمینه مینیمال (Minimal Context)** (تنها آنچه نیاز دارد) داده می‌شود تا از تورم Tokenها (token bloat) و توهم (hallucination) جلوگیری شود.
+
+**میزان انشعاب (Fan-out) را در پلتفرم محدود کنید، نه درون Prompt.** محصولات هماهنگ‌کننده (Coordinator) امروزه Sub-Agentها را در مقیاس وسیع ایجاد می‌کنند (نسخه بتای Projects در Cursor به هر تعداد Sub-Agent موازی که برنامه نیاز داشته باشد وظایف را واگذار می‌کند)؛ بنابراین، سقف محدودیت باید در خارج از مدل قرار گیرد: در Agents API شرکت OpenAI پارامتر `max_concurrent_subagents` (با مقدار پیش‌فرض ۶) ارائه شده است، و بودجه کل برای تمام درخت باید در گیت‌وی (Gateway) مدیریت شود.
 
 ---
 
-*Next: [Error Handling and Recovery](07-error-handling-and-recovery.md)*
+## جستجوی درختی (MCTS)
+
+برای تصمیم‌گیری‌های حساس و حیاتی، از **جستجوی درختی مونت کارلو (MCTS)** در حلقه Agent استفاده می‌کنیم.
+- مدل Agent تعداد ۱۰ فراخوانی احتمالی ابزار را «شبیه‌سازی» می‌کند.
+- یک **مدل پاداش (Reward Model)** (یا یک Prompt مجزا در LLM) به هر شبیه‌سازی امتیاز می‌دهد.
+- مدل Agent مسیری را که بالاترین پاداش را دارد دنبال می‌کند.
+
+---
+
+## پرسش‌های مصاحبه
+
+### پرسش: چگونه از بروز «بازگشت بی‌پایان» (Infinite Recursion) در Agent حین تجزیه وظایف جلوگیری می‌کنید؟
+
+**پاسخ قدرتمند:**
+ما **محدودیت عمق تجزیه (Decomposition Depth Limits)** (معمولاً ۳ سطح) و **بررسی‌های سطح دانه‌بندی (Granularity Checks)** را پیاده‌سازی می‌کنیم. پیش از ایجاد یک Sub-Agent، از مدل ناظر (Supervisor) می‌پرسیم: «آیا این وظیفه به اندازه کافی کوچک است که با یک فراخوانی ابزار حل شود؟» اگر بله، آن را اجرا می‌کنیم. اگر خیر، آن را تجزیه می‌نماییم. ما همچنین از یک **کنترل‌کننده سراسری (Global Controller)** استفاده می‌کنیم که تعداد کل Agentها را ردیابی می‌کند تا از بمب بازگشتی (fork bomb) که می‌تواند بودجه API را تخلیه کند، جلوگیری شود. در یک محیط اجرای مدیریت‌شده (Managed Runtime)، من سقف همزمانی اختصاصی پلتفرم (به‌عنوان مثال `max_concurrent_subagents` در Agents API شرکت OpenAI) و سقف هزینه جلسه (جلسات در Claude Managed Agents با وضعیت `budget_reached` متوقف می‌شوند) را تنظیم می‌کنم، زیرا محدودیتی که مدل بتواند با استدلال کلامی از آن عبور کند، اصلاً محدودیت به حساب نمی‌آید.
+
+### پرسش: چرا «بازبینی برنامه» (Plan Revision) اغلب پرهزینه‌تر از «تولید برنامه» (Plan Generation) است؟
+
+**پاسخ قدرتمند:**
+تولید برنامه یک «آغاز مجدد و تازه» است. بازبینی برنامه نیازمند **ارزیابی مجدد زمینه (Context Re-evaluation)** است: مدل باید درک کند چه کارهایی *تاکنون انجام شده*، چرا *مرحله قبلی شکست خورده*، و چگونه می‌توان آن را بدون ابطال موفقیت‌های پیشین برطرف ساخت. این امر مستلزم «تراکم استدلال» بسیار بالاتری است. در محیط‌های عملیاتی، ما برای مرحله **بازبینی (Revision)** هزینه بیشتری نسبت به برنامه اولیه اختصاص می‌دهیم: یا با استفاده از مدلی قوی‌تر (مانند Claude Opus 5.5 یا GPT-6 Astra) یا، که امروزه رایج‌تر است، همان مدل با تنظیمات تلاش (effort) بالاتر، که با حفظ زمینه و حافظه پنهان (Cache)، قدرت تفکر بیشتری را مهیا می‌سازد.
+
+---
+
+## منابع
+- مقاله سیلور و همکاران با عنوان "Mastering the game of Go with deep neural networks and tree search" (منتشر شده در Nature، ۲۰۱۶)، سرمنشأ جستجوی MCTS همراه با یادگیری ارزش اعمال‌شده در Agentهای LLM
+- وانگ و همکاران. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (سال ۲۰۲۲). https://arxiv.org/abs/2203.11171
+- شرکت LangGraph. سند "Multi-Agent Planning Patterns" (سال ۲۰۲۵)
+- شرکت Sierra. مقاله "hyper-tau-bench: evaluating agents that build agents" (سپتامبر ۲۰۲۶). https://sierra.ai/blog/hyper-t-bench-evaluating-agents-that-build-agents
+
+---
+
+*بخش بعدی: [مدیریت خطا و بازیابی](07-error-handling-and-recovery.md)*
+
+</div>

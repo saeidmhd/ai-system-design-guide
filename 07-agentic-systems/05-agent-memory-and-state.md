@@ -1,423 +1,427 @@
-# Agent Memory and State
+<div dir="rtl">
 
-Memory is what allows an agent to learn and maintain context over time. Agent memory has matured from "Chat History" into a **Multi-Tiered Cognitive Architecture** with four named layers (Working, Episodic, Semantic, Procedural), each with its own write pattern, latency budget, and failure modes. Production systems (Mem0, Letta, Anthropic Memory Tool + Skills, Zep/Graphiti, LangMem) now treat memory selection as a first-class architecture decision. The 2026 shift to watch: several of them converged on **file-based memory** that the agent navigates by path (Letta's MemFS, Claude's memory tool, coding-agent instruction files), while the market-leading library dropped its graph store.
+# حافظه و وضعیت Agent
 
-The 2026 research wave shaping this chapter: A-MEM (NeurIPS 2025), HippoRAG (multi-hop graph retrieval), Multi-Layered Memory Architectures, HaluMem (operation-level memory hallucination benchmark), MINJA / MemoryGraft (query-only memory poisoning attacks), and TTT-E2E (a multi-lab effort spanning Stanford, Berkeley, UCSD, NVIDIA, and Astera), a test-time-training approach that compresses context into weights.
+حافظه همان چیزی است که به یک Agent امکان می‌دهد در طول زمان یاد بگیرد و زمینه (Context) را حفظ کند. حافظه Agent از صرفاً «تاریخچه چت» (Chat History) به یک **معماری شناختی چندلایه (Multi-Tiered Cognitive Architecture)** با چهار لایه مشخص (کاری (Working)، رویدادی (Episodic)، معنایی (Semantic) و رویه‌ای (Procedural)) تکامل یافته است که هر یک الگوی نوشتن، بودجه تاخیر (Latency) و حالت‌های شکست (Failure Modes) مختص به خود را دارند. سیستم‌های پروداکشن (مانند Mem0، Letta، Anthropic Memory Tool + Skills، Zep/Graphiti و LangMem) اکنون انتخاب حافظه را به عنوان یک تصمیم معماری درجه یک تلقی می‌کنند. تحول قابل توجه سال ۲۰۲۶: چندین مورد از آن‌ها به سمت **حافظه مبتنی بر فایل (file-based memory)** همگرا شده‌اند که Agent از طریق مسیر (Path) در آن پیمایش می‌کند (مانند MemFS در Letta، ابزار حافظه Claude، و فایل‌های دستورالعمل Agentهای کدنویسی)، در حالی که کتابخانه پیشرو بازار، ذخیره‌ساز گرافی خود را کنار گذاشت.
 
-## Table of Contents
+موج پژوهش‌های سال ۲۰۲۶ که این فصل را شکل می‌دهد: A-MEM (کنفرانس NeurIPS 2025)، HippoRAG (بازیابی گرافی چندمرحله‌ای / Multi-hop Graph Retrieval)، معماری‌های حافظه چندلایه (Multi-Layered Memory Architectures)، بنچمارک HaluMem (بنچمارک توهم حافظه در سطح عملیات)، MINJA / MemoryGraft (حملات مسموم‌سازی حافظه فقط از طریق پرس‌وجو / Query-only)، و TTT-E2E (یک تلاش مشترک بین چندین آزمایشگاه شامل استنفورد، برکلی، UCSD، NVIDIA و Astera)، یک رویکرد آموزش در زمان آزمون (Test-Time-Training) که زمینه (Context) را در وزن‌ها فشرده می‌کند.
 
-- [The Memory Hierarchy](#the-memory-hierarchy)
-- [Short-Term: The Reasoning Trace](#short-term-the-reasoning-trace)
-- [Episodic Memory: Past Experiences](#episodic-memory-past-experiences)
-- [Semantic Memory: The Persona](#semantic-memory-the-persona)
-- [Procedural Memory: Learned Skills and Workflows](#procedural-memory-learned-skills-and-workflows)
-- [Tradeoffs: Where Does Fact X Go?](#tradeoffs-where-does-fact-x-go)
-- [Production Implementations](#production-implementations)
-- [Failure Modes and Mitigations](#failure-modes-and-mitigations)
-- [Mem0 and Personalization](#mem0-and-agentic-personalization)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [سلسله‌مراتب حافظه](#the-memory-hierarchy)
+- [کوتاه‌مدت: ردپای استدلال](#short-term-the-reasoning-trace)
+- [حافظه رویدادی: تجربیات گذشته](#episodic-memory-past-experiences)
+- [حافظه معنایی: پرسنونا](#semantic-memory-the-persona)
+- [حافظه رویه‌ای: مهارت‌ها و گردش‌کارهای آموخته‌شده](#procedural-memory-learned-skills-and-workflows)
+- [موازنه‌ها: فکت X در کجا قرار می‌گیرد؟](#tradeoffs-where-does-fact-x-go)
+- [پیاده‌سازی‌های پروداکشن](#production-implementations)
+- [حالت‌های شکست و راهکارهای کاهش آن‌ها](#failure-modes-and-mitigations)
+- [Mem0 و شخصی‌سازی Agentic](#mem0-and-agentic-personalization)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Memory Hierarchy
+## سلسله‌مراتب حافظه
 
-Agents use a tiered approach to storage:
+Agentها از یک رویکرد لایه‌بندی‌شده برای ذخیره‌سازی استفاده می‌کنند:
 
-| Tier | Type | Technology | Purpose |
+| لایه | نوع | فناوری | هدف |
 |------|------|------------|---------|
-| **L1** | Working Memory | Context Window / KV Cache | Current task steps, local vars |
-| **L2** | Episodic Memory | Vector DB / Graph | "What did I do last time?" |
-| **L3** | Semantic Memory | SQL / Knowledge Graph | User preferences, "The Truth" |
-| **L4** | Procedural Memory | Skills Registry / Tool Policies / Workflow Graph | "How do I perform this task?" |
+| **L1** | حافظه کاری (Working Memory) | پنجره زمینه (Context Window) / KV Cache | مراحل وظیفه جاری، متغیرهای محلی |
+| **L2** | حافظه رویدادی (Episodic Memory) | پایگاه داده برداری (Vector Database) / گراف | «دفعه قبل چه کار کردم؟» |
+| **L3** | حافظه معنایی (Semantic Memory) | SQL / گراف دانش (Knowledge Graph) | اولویت‌های کاربر، «حقیقت» |
+| **L4** | حافظه رویه‌ای (Procedural Memory) | رجیستری مهارت‌ها / سیاست‌های ابزار / گراف گردش‌کار | «چگونه این وظیفه را انجام دهم؟» |
 
-### Practical Properties of Each Tier
+### ویژگی‌های کاربردی هر لایه
 
-The tiers differ on more than purpose. Read pattern, write pattern, latency budget, and freshness expectations each push toward different storage tech:
+تفاوت این لایه‌ها فراتر از هدف آن‌هاست. الگوی خواندن، الگوی نوشتن، بودجه تاخیر (Latency) و انتظارات از به‌روز بودن داده‌ها، هر یک فناوری ذخیره‌سازی متفاوتی را می‌طلبند:
 
-| Dimension | L1 Working | L2 Episodic | L3 Semantic | L4 Procedural |
+| بعد | L1 کاری (Working) | L2 رویدادی (Episodic) | L3 معنایی (Semantic) | L4 رویه‌ای (Procedural) |
 |---|---|---|---|---|
-| **What it holds** | Active turn, tool outputs, scratchpad, system prompt | Past sessions, trajectories, observations with timestamps | Distilled facts, preferences, entity relationships | Skills, playbooks, system-prompt instructions, code/tool sequences |
-| **Read pattern** | Every token, every turn (in-attention) | Top-k on similarity + recency + importance | Triggered lookup on entity/topic mention | Loaded when matching task signature |
-| **Write pattern** | Continuous append by inference engine; KV-cache mutation | Append-only log; commit at turn boundary | Extract, dedupe, upsert; conflict resolution at write | Reflective write after success/failure; explicit human or self-edit |
-| **Latency budget** | <50ms (resident in GPU HBM) | 100-300ms (vector ANN + rerank) | 200-800ms (graph traversal + LLM extraction) | 50-500ms (file read or small index lookup) |
-| **Freshness expectation** | Token-fresh; lost at session end | Hours to months; tolerates staleness | Should reflect *current* state; staleness is a bug | Slow-changing; updates are deliberate |
-| **Storage tech** | KV cache in HBM (vLLM PagedAttention blocks) | Vector DB (Pinecone, Weaviate, Qdrant), append-only log | Knowledge graph (Neo4j, Graphiti), KV store, bitemporal relational rows | Filesystem (Claude `/memories/`, Skills as `SKILL.md`), prompt registry, fine-tuned LoRA |
-| **Query semantics** | Position + attention | Similarity + recency + importance (Park et al. weighted) | Entity-relation match, structured query, bitemporal filter | Task-signature match, often filename or tag lookup |
-| **Eviction** | Sliding window, LRU on KV block hash | Decay scoring, consolidation into L3, archival to cold storage | Supersession by closing the old fact's validity (`invalid_at`); explicit deletion for GDPR | Manual deprecation, A/B against newer skill, version pinning |
+| **محتوا** | نوبت فعال، خروجی ابزارها، چرک‌نویس (Scratchpad)، System Prompt | نشست‌های گذشته، مسیرها (Trajectories)، مشاهدات به همراه برچسب زمانی | فکت‌های خلاصه‌شده، اولویت‌ها، روابط بین موجودیت‌ها | مهارت‌ها، راهنماها (Playbooks)، دستورالعمل‌های System Prompt، توالی‌های کد/ابزار |
+| **الگوی خواندن** | هر Token، در هر نوبت (در توجه / In-attention) | بازیابی k مورد برتر (Top-k) بر اساس شباهت + تازگی + اهمیت | جستجوی فعال‌شده با اشاره به موجودیت/موضوع (Triggered lookup) | بارگذاری در صورت تطابق با مشخصه وظیفه (Task signature) |
+| **الگوی نوشتن** | الحاق پیوسته توسط موتور استنتاج (Inference)؛ تغییر در KV-cache | لاگ فقط الحاقی (Append-only)؛ ثبت در مرز نوبت | استخراج، حذف تکراری‌ها، درج یا به‌روزرسانی (Upsert)؛ حل تعارض در زمان نوشتن | نوشتن بازتابی (Reflective) پس از موفقیت/شکست؛ ویرایش صریح توسط انسان یا خود سیستم |
+| **بودجه تاخیر (Latency)** | کمتر از ۵۰ میلی‌ثانیه (مستقر در HBM مربوط به GPU) | ۱۰۰ تا ۳۰۰ میلی‌ثانیه (ANN برداری + بازرتبه‌بندی / Rerank) | ۲۰۰ تا ۸۰۰ میلی‌ثانیه (پیمایش گراف + استخراج توسط LLM) | ۵۰ تا ۵۰۰ میلی‌ثانیه (خواندن فایل یا جستجو در ایندکس کوچک) |
+| **انتظار از به‌روز بودن** | به‌روز در حد Token؛ از دست رفتن در پایان نشست | از ساعت‌ها تا ماه‌ها؛ تحمل قدیمی بودن داده (Staleness) را دارد | باید منعکس‌کننده وضعیت *فعلی* باشد؛ قدیمی بودن یک باگ محسوب می‌شود | تغییرات کند؛ به‌روزرسانی‌ها سنجیده و هدفمند هستند |
+| **فناوری ذخیره‌سازی** | حافظه نهان KV در HBM (بلاک‌های PagedAttention در vLLM) | پایگاه داده برداری (Vector Database) (Pinecone، Weaviate، Qdrant)، لاگ فقط الحاقی (Append-only) | گراف دانش (Neo4j، Graphiti)، ذخیره‌ساز کلید-مقدار (KV store)، ردیف‌های رابطه‌ای دو-زمانی (Bitemporal relational rows) | سیستم فایل (Claude `/memories/`، مهارت‌ها به صورت `SKILL.md`)، رجیستری Prompt، مدل Fine-tuning شده با LoRA |
+| **معناشناسی پرس‌وجو (Query semantics)** | موقعیت + توجه (Attention) | شباهت + تازگی + اهمیت (وزن‌دهی‌شده بر اساس Park et al.) | تطابق موجودیت-رابطه، پرس‌وجوی ساختاریافته، فیلتر دو-زمانی (Bitemporal) | تطابق با مشخصه وظیفه (Task-signature)، اغلب جستجوی نام فایل یا برچسب (Tag) |
+| **تخلیه حافظه (Eviction)** | پنجره لغزان (Sliding window)، الگوریتم LRU روی هش بلاک KV | امتیازدهی زوال (Decay scoring)، تجمیع در L3، بایگانی در ذخیره‌ساز سرد (Cold storage) | جایگزینی با بستن بازه اعتبار فکت قدیمی (`invalid_at`)؛ حذف صریح برای انطباق با GDPR | منسوخ‌سازی دستی (Manual deprecation)، تست A/B در برابر مهارت جدیدتر، پین کردن نسخه (Version pinning) |
 
-**What this means in practice:** when a fact arrives, the architecture question is not "should we remember it?" but "*at which tier*, with which freshness contract, and with which eviction rule?" Picking the wrong tier produces predictable failure modes (a session preference promoted to L3 leaks across sessions; a stable user fact left in L2 gets evicted in two weeks). See [Tradeoffs: Where Does Fact X Go?](#tradeoffs-where-does-fact-x-go) below.
-
----
-
-## Short-Term: The Reasoning Trace
-
-Production agents no longer just store the "Messages"; they store the **State Object**.
-- **The Scratchpad**: A dedicated section of the prompt where the agent "writes notes" to itself that are NOT shown to the user.
-- **KV Cache Tiling**: For long-running agents, we use **Prefix Caching** to keep the "System Instruction" and "Standard Tools" warm in GPU memory, only swapping the dynamic task state.
-- **Offloading Large Results**: Tool outputs are the fastest way to flood working memory. Agno 3.0 (August 2026) writes any tool result over 16,000 characters to a file store and replaces it in context with an envelope plus `read_result` and `search_result` tools, so the agent pulls back only what it needs.
-- **Notes Instead of One Summary**: An experimental Codex feature that shipped with GPT-6 Astra keeps searchable notes across context windows rather than compressing history into a single summary. It is a vendor-shipped alternative to summary compaction for long-horizon work: instead of one lossy summary, the agent keeps an index it can query.
+**معنای عملی این موضوع:** هنگامی که یک فکت جدید دریافت می‌شود، پرسش معماری این نیست که «آیا باید آن را به خاطر بسپاریم؟»، بلکه این است که «*در کدام لایه*، با چه قرارداد به‌روز بودنی، و با چه قانون تخلیه‌ای (Eviction)؟» انتخاب لایه اشتباه منجر به حالت‌های شکست قابل پیش‌بینی می‌شود (ارتقای اولویت یک نشست به L3 باعث نشت آن در میان نشست‌های مختلف می‌گردد؛ رها کردن یک فکت پایدار مربوط به کاربر در L2 باعث می‌شود ظرف دو هفته تخلیه و حذف شود). بخش [موازنه‌ها: فکت X در کجا قرار می‌گیرد؟](#tradeoffs-where-does-fact-x-go) را در ادامه ببینید.
 
 ---
 
-## Episodic Memory: Past Experiences
+## کوتاه‌مدت: ردپای استدلال
 
-Episodic memory stores "Runs" or "Trajectories."
-- If an agent failed to scrape a website last Tuesday, episodic memory should prevent it from trying the same failing selector today.
-- **Pattern**: When a task completes, summarize the "Lessons Learned" and store them in a vector DB. At the start of a new task, perform a **Self-Search** for similar previous tasks.
-
----
-
-## Semantic Memory: The Persona
-
-Semantic memory stores "Facts" about the user or the environment.
-- *"The user prefers JSON output."*
-- *"The production DB is offline between 3 AM and 4 AM."*
-
-**Best practice**: Use a **Knowledge Graph** for semantic memory. Unlike vector search (which is fuzzy), a graph provides deterministic retrieval of entities and relationships (e.g., `User` -- `OWNER_OF` --> `Project_A`).
-
-Treat the graph database as a choice to justify, not a default. Mem0 v2 removed its Neo4j, Memgraph, Kuzu, and Apache AGE drivers and now keeps entity links in a parallel collection inside the existing vector store, which covers most personalization lookups without a second database to run. Reach for a dedicated graph when multi-hop traversal or temporal questions ("what was true on March 12?") are the product, as in Graphiti's bitemporal edges.
+Agentهای پروداکشن دیگر صرفاً «پیام‌ها» (Messages) را ذخیره نمی‌کنند؛ آن‌ها **شیء وضعیت (State Object)** را ذخیره می‌کنند.
+- **چرک‌نویس (The Scratchpad)**: بخشی اختصاصی از Prompt که در آن Agent برای خود «یادداشت می‌نویسد» و به کاربر نشان داده **نمی‌شود**.
+- **کاشی‌کاری حافظه نهان KV (KV Cache Tiling)**: برای Agentهای با اجرای طولانی‌مدت، ما از **کش پیشوند (Prefix Caching)** استفاده می‌کنیم تا «دستورالعمل سیستم» (System Instruction) و «ابزارهای استاندارد» را در حافظه GPU گرم نگه داریم و تنها وضعیت پویای وظیفه را جابه‌جا (Swap) کنیم.
+- **تخلیه بار نتایج حجیم (Offloading Large Results)**: خروجی‌های ابزار سریع‌ترین راه برای سرریز کردن حافظه کاری هستند. پلتفرم Agno 3.0 (اوت ۲۰۲۶) هر خروجی ابزار با طول بیش از ۱۶,۰۰۰ کاراکتر را در یک ذخیره‌ساز فایل می‌نویسد و آن را در زمینه (Context) با یک بسته‌بندی (Envelope) به همراه ابزارهای `read_result` و `search_result` جایگزین می‌کند، تا Agent فقط آنچه را که نیاز دارد واکشی کند.
+- **یادداشت‌ها به جای یک خلاصه واحد (Notes Instead of One Summary)**: یک قابلیت آزمایشی در Codex که همراه با GPT-6 Astra عرضه شد، به جای فشرده‌سازی تاریخچه در یک خلاصه واحد، یادداشت‌های قابل جستجو را در سراسر پنجره‌های زمینه نگهداری می‌کند. این یک جایگزین ارائه‌شده توسط ارائه‌دهنده برای فشرده‌سازی خلاصه (Summary Compaction) در کارهای با افق طولانی (Long-horizon) است: Agent به جای یک خلاصه همراه با اتلاف اطلاعات (Lossy)، ایندکسی را نگه می‌دارد که می‌تواند در آن پرس‌وجو کند.
 
 ---
 
-## Procedural Memory: Learned Skills and Workflows
+## حافظه رویدادی: تجربیات گذشته
 
-Procedural memory stores how to do things. While episodic memory answers, "What happened before?" and semantic memory answers, "What is true?", procedural memory answers:
-
-"What is the correct process for completing this type of task?"
-
-This layer captures reusable skills, tool-use patterns, operating procedures, and workflow preferences.
-
-Examples:
-
-* "When generating a weekly report, first pull metrics from Snowflake, then validate against the dashboard, then summarize anomalies."
-* "When responding to a customer complaint, classify urgency, retrieve policy, draft response, and escalate if confidence is low."
-* "When writing SQL, always inspect the schema first, generate a query, run validation, and explain assumptions."
-
-Procedural memory is especially important for agentic systems because many tasks are not just about remembering facts. They require following the right sequence of actions.
+حافظه رویدادی (Episodic Memory) «اجراها» (Runs) یا «مسیرها» (Trajectories) را ذخیره می‌کند.
+- اگر یک Agent سه‌شنبه گذشته در اسکرپ کردن یک وب‌سایت شکست خورده باشد، حافظه رویدادی باید مانع از آن شود که امروز همان سلکتور (Selector) ناموفق را دوباره امتحان کند.
+- **الگو (Pattern)**: هنگامی که یک وظیفه به پایان می‌رسد، «درس‌های آموخته‌شده» (Lessons Learned) را خلاصه کرده و آن‌ها را در یک پایگاه داده برداری (Vector Database) ذخیره کنید. در شروع یک وظیفه جدید، یک **جستجوی خودکار (Self-Search)** برای وظایف مشابه قبلی انجام دهید.
 
 ---
 
-## Tradeoffs: Where Does Fact X Go?
+## حافظه معنایی: پرسنونا
 
-The first-order decision is not "which tier" but *"who pays the cost of being wrong?"* A missed retrieval in L2 fails one turn. A bad fact in L3 fails *every* turn until corrected. A poisoned skill in L4 propagates to every future invocation.
+حافظه معنایی (Semantic Memory) «فکت‌ها» را درباره کاربر یا محیط ذخیره می‌کند.
+- *«کاربر خروجی JSON را ترجیح می‌دهد.»*
+- *«پایگاه داده پروداکشن بین ساعت ۳ تا ۴ بامداد از دسترس خارج است.»*
 
-### Tier-selection table
+**بهترین شیوه (Best practice)**: برای حافظه معنایی از یک **گراف دانش (Knowledge Graph)** استفاده کنید. برخلاف جستجوی برداری (که فازی و تقریبی است)، گراف امکان بازیابی قطعی (Deterministic) موجودیت‌ها و روابط را فراهم می‌سازد (مثلاً `User` -- `OWNER_OF` --> `Project_A`).
 
-| Fact / concern | Tier | Reasoning |
+پایگاه داده گرافی را به عنوان انتخابی در نظر بگیرید که نیاز به توجیه دارد، نه یک گزینه پیش‌فرض. پلتفرم Mem0 v2 درایورهای Neo4j، Memgraph، Kuzu و Apache AGE خود را حذف کرد و اکنون پیوندهای موجودیت را در یک مجموعه (Collection) موازی در دل ذخیره‌ساز برداری موجود نگهداری می‌کند که بیشتر جستجوهای شخصی‌سازی را بدون نیاز به اجرای یک پایگاه داده دوم پوشش می‌دهد. تنها زمانی به سراغ یک گراف اختصاصی بروید که پیمایش چندمرحله‌ای (Multi-hop) یا پرسش‌های زمانی («در ۱۲ مارس چه چیزی درست بود؟») هسته اصلی محصول شما باشند، مانند یال‌های دو-زمانی (Bitemporal edges) در Graphiti.
+
+---
+
+## حافظه رویه‌ای: مهارت‌ها و گردش‌کارهای آموخته‌شده
+
+حافظه رویه‌ای نحوه انجام کارها را ذخیره می‌کند. در حالی که حافظه رویدادی به سوال «قبلاً چه اتفاقی افتاد؟» و حافظه معنایی به سوال «چه چیزی درست است؟» پاسخ می‌دهند، حافظه رویه‌ای پاسخ می‌دهد:
+
+«فرآیند صحیح برای تکمیل این نوع وظیفه چیست؟»
+
+این لایه مهارت‌های با قابلیت استفاده مجدد، الگوهای استفاده از ابزار، رویه‌های عملیاتی و اولویت‌های گردش‌کار را در بر می‌گیرد.
+
+مثال‌ها:
+
+* «هنگام تولید گزارش هفتگی، ابتدا متریک‌ها را از Snowflake استخراج کنید، سپس آن‌ها را با داشبورد اعتبارسنجی نمایید و در نهایت ناهنجاری‌ها را خلاصه کنید.»
+* «هنگام پاسخگویی به شکایت مشتری، فوریت را طبقه‌بندی کنید، خط‌مشی مربوطه را بازیابی نمایید، پیش‌نویس پاسخ را تهیه کنید و در صورت پایین بودن اطمینان، موضوع را ارجاع دهید (Escalate).»
+* «هنگام نوشتن SQL، همیشه ابتدا شمای پایگاه داده را بررسی کنید، کوئری را تولید کنید، اعتبارسنجی را اجرا کرده و مفروضات را توضیح دهید.»
+
+حافظه رویه‌ای به‌ویژه برای سیستم‌های Agentic از اهمیت بالایی برخوردار است، زیرا بسیاری از وظایف صرفاً به خاطر سپردن فکت‌ها نیستند؛ بلکه مستلزم دنبال کردن توالی درستی از اقدامات هستند.
+
+---
+
+## موازنه‌ها: فکت X در کجا قرار می‌گیرد؟
+
+تصمیم درجه اول این نیست که «کدام لایه»، بلکه این است که «*چه کسی هزینه اشتباه بودن را می‌پردازد؟*» یک بازیابی از دست رفته در L2 تنها باعث شکست یک نوبت می‌شود. یک فکت نادرست در L3 *هر* نوبت را تا زمان اصلاح به شکست می‌کشاند. یک مهارت مسموم‌شده در L4 به تمام فراخوانی‌های آینده سرایت می‌کند.
+
+### جدول انتخاب لایه
+
+| فکت / دغدغه | لایه | دلیل |
 |---|---|---|
-| "The user's API rate limit is 1000 req/min" | L3 with bitemporal validity (`valid_at` / `invalid_at`) | Tenant-scoped fact; queryable by entity; must support supersession. Not L4: it's data, not procedure. |
-| "Steps to deploy our service" | L4 as a versioned skill | Multi-step recipe with conditional branches. Skills compose; semantic triples do not. |
-| "The agent's last failed attempt at this task" | L2 raw, *then* reflect a lesson into L4 if generalizable | Raw trajectory belongs in episodic; the generalized lesson ("never run migrations during peak hours") earns a Reflexion-style write to L4. |
-| "User prefers terse responses" | L3 | Stable preference, queryable by `user_id`, single triple. |
-| "User asked for terse responses *in this conversation*" | L1 only | Session-scoped; do not pollute L3 with potentially-transient preferences. |
-| Current weather, today's stock price | None: call the tool | Fast-changing facts with a source of truth elsewhere should never enter memory. |
-| "Project Phoenix has team members A, B, C" | L3 as a graph fragment | Multi-hop traversal value; Graphiti or Neo4j-style storage. |
+| «محدودیت نرخ API کاربر ۱۰۰۰ درخواست در دقیقه است» | L3 با اعتبار دو-زمانی (`valid_at` / `invalid_at`) | فکتی در محدوده مستأجر (tenant / multi-tenant)؛ قابل پرس‌وجو بر اساس موجودیت؛ باید از جایگزینی (Supersession) پشتیبانی کند. L4 نیست: چرا که داده است، نه رویه. |
+| «مراحل استقرار (Deployment) سرویس ما» | L4 به عنوان یک مهارت نسخه‌بندی‌شده | دستورالعمل چندمرحله‌ای با شاخه‌های شرطی. مهارت‌ها با یکدیگر ترکیب می‌شوند، اما سه‌گانه‌های معنایی (Semantic triples) چنین قابلیتی ندارند. |
+| «آخرین تلاش ناموفق Agent در این وظیفه» | L2 به صورت خام، *سپس* بازتاب یک درس در L4 در صورت قابلیت تعمیم | مسیر خام به حافظه رویدادی تعلق دارد؛ درس تعمیم‌یافته («هرگز در ساعات اوج بار، فرایند مهاجرت را اجرا نکنید») شایسته یک نوشتن به سبک Reflexion در L4 است. |
+| «کاربر پاسخ‌های کوتاه و مختصر را ترجیح می‌دهد» | L3 | اولویت پایدار، قابل پرس‌وجو با `user_id`، سه‌گانه منفرد. |
+| «کاربر *در این گفتگو* خواستار پاسخ‌های کوتاه شد» | فقط L1 | محدود به نشست؛ L3 را با اولویت‌هایی که ممکن است موقتی باشند آلوده نکنید. |
+| آب‌وهوای فعلی، قیمت امروز سهام | هیچ‌کدام: فراخوانی ابزار | فکت‌های سریع‌التغییر با یک منبع حقیقت در جایی دیگر هرگز نباید وارد حافظه شوند. |
+| «پروژه Phoenix دارای اعضای تیم A، B، C است» | L3 به عنوان بخشی از گراف (Graph fragment) | ارزش پیمایش چندمرحله‌ای (Multi-hop)؛ ذخیره‌سازی به سبک Graphiti یا Neo4j. |
 
-### Cost tradeoffs
+### موازنه‌های هزینه
 
-- **L1 dominates *latency cost***: TTFT scales with context size; longer working memory means slower first token. KV-cache pressure pushes premium accelerator memory toward saturation.
-- **L2 dominates *storage cost* at scale**: append-only logs grow linearly with usage. The [Day-30 problem](https://cipherbuilds.ai/blog/day-30-agent-memory-problem) describes how unpruned episodic stores rot agent quality after a month.
-- **L3 dominates *write-amplification cost***: every turn potentially triggers extract, dedupe, conflict resolve. Mem0's design explicitly trades retrieval speed for write-time work.
-- **L4 dominates *governance cost***: a bad skill propagates to every future invocation. Anthropic's [Dreams](https://www.mindstudio.ai/blog/what-is-claude-dreaming-anthropic-agent-memory) research preview acknowledges this by writing consolidation output to a separate memory store instead of editing the live one, which leaves room for review before promotion.
+- **L1 بر *هزینه تاخیر (Latency)* غالب است**: زمان تا اولین Token (معیار TTFT) با اندازه زمینه مقیاس می‌شود؛ حافظه کاری طولانی‌تر به معنای کندتر شدن اولین Token است. فشار روی حافظه نهان KV (KV-cache)، حافظه شتاب‌دهنده‌های گران‌قیمت را به سمت اشباع سوق می‌دهد.
+- **L2 بر *هزینه ذخیره‌سازی* در مقیاس بالا غالب است**: لاگ‌های فقط الحاقی (Append-only) به صورت خطی با میزان استفاده رشد می‌کنند. [مسئله روز سی‌ام](https://cipherbuilds.ai/blog/day-30-agent-memory-problem) توصیف می‌کند که چگونه ذخیره‌سازهای رویدادی هرس‌نشده، پس از یک ماه کیفیت Agent را تنزل می‌دهند.
+- **L3 بر *هزینه تقویت نوشتن (Write-amplification)* غالب است**: هر نوبت به طور بالقوه استخراج، حذف تکراری‌ها و حل تعارض را فراخوانی می‌کند. طراحی Mem0 به صراحت سرعت بازیابی را فدای پردازش‌های زمان نوشتن می‌کند.
+- **L4 بر *هزینه حاکمیت و نظارت (Governance)* غالب است**: یک مهارت معیوب به تمام فراخوانی‌های آینده سرایت می‌کند. پیش‌نمایش تحقیقاتی [Dreams](https://www.mindstudio.ai/blog/what-is-claude-dreaming-anthropic-agent-memory) از شرکت Anthropic با نوشتن خروجی تجمیع در یک ذخیره‌ساز حافظه مجزا به جای ویرایش مستقیم ذخیره‌ساز فعال، این موضوع را به رسمیت می‌شناسد که فضایی را برای بازبینی پیش از ارتقا فراهم می‌کند.
 
-### The graduation rule
+### قانون ارتقا
 
-The interesting design question is *when an L2 episode graduates to L3 or L4*. The defensible rule is threshold-based, not implicit-decay:
+پرسش جالب در طراحی این است که *چه زمانی یک رویداد در L2 به L3 یا L4 ارتقا می‌یابد*. قاعده‌ای که می‌توان از آن دفاع کرد، مبتنی بر آستانه (Threshold-based) است، نه زوال ضمنی (Implicit-decay):
 
-1. **N independent observations** of the same pattern (N=3 to 5 is typical).
-2. **Confidence-weighted** by source: user-stated > tool-output > model-inferred.
-3. **Human or LLM-judge review** at the consolidation step (not per turn).
-4. **Scheduled batch consolidation**, not synchronous per-turn writes (avoids write amplification).
-5. **Bidirectional**: semantic facts in L3 can be re-instantiated as episodic context for specific tasks. Memory is not a one-way street.
+1. **N مشاهده مستقل** از یک الگوی یکسان (معمولاً N=3 تا 5).
+2. **وزن‌دهی بر اساس اطمینان** از منبع: بیان‌شده توسط کاربر > خروجی ابزار > استنتاج‌شده توسط مدل.
+3. **بازبینی توسط انسان یا داور LLM** در مرحله تجمیع (نه در هر نوبت).
+4. **تجمیع دسته‌ای زمان‌بندی‌شده (Batch consolidation)**، نه نوشتن همگام در هر نوبت (از تقویت نوشتن جلوگیری می‌کند).
+5. **دوجهته بودن**: فکت‌های معنایی در L3 می‌توانند دوباره به عنوان زمینه رویدادی برای وظایف خاص بازنمایی شوند. حافظه یک خیابان یک‌طرفه نیست.
 
-### When to curate: write time, sleep time, or read time
+### چه زمانی پالایش کنیم: زمان نوشتن، زمان خواب، یا زمان خواندن
 
-Curation timing is now a named design axis, with real systems at each point:
+زمان‌بندی پالایش (Curation) اکنون یک محور طراحی شناخته‌شده است و سیستم‌های واقعی در هر یک از این نقاط قرار دارند:
 
-| Timing | Example | Cost profile | Main risk |
+| زمان‌بندی | مثال | پروفایل هزینه | ریسک اصلی |
 |---|---|---|---|
-| **Write time** | Mem0-style extraction on every `add()` | One LLM call per write; cheap reads | Extraction errors are baked in and propagate (the HaluMem finding) |
-| **Sleep time** | Anthropic Dreams (research preview): reads a memory store plus past session transcripts, writes a reorganized store with duplicates merged and stale entries replaced; Mem0's paid Dream feature | Batch job off the request path | Staleness between runs; needs a promotion review |
-| **Read time** | Just-in-Time Memory (arXiv 2609.27334, September 2026): keep raw trajectories and curate for the current task when reading | Curation cost and latency move onto the read path | The raw store grows; retention and privacy cost rise |
+| **زمان نوشتن (Write time)** | استخراج به سبک Mem0 در هر فراخوانی `add()` | یک فراخوانی LLM به ازای هر نوشتن؛ خواندن‌های کم‌هزینه | خطاهای استخراج تثبیت شده و گسترش می‌یابند (یافته بنچمارک HaluMem) |
+| **زمان خواب (Sleep time)** | قابلیت Anthropic Dreams (پیش‌نمایش تحقیقاتی): یک ذخیره‌ساز حافظه به همراه رونوشت نشست‌های گذشته را می‌خواند و ذخیره‌ساز بازسازماندهی‌شده‌ای می‌نویسد که موارد تکراری در آن ادغام و ورودی‌های قدیمی جایگزین شده‌اند؛ قابلیت غیررایگان Dream در Mem0 | پردازش دسته‌ای خارج از مسیر درخواست (Request path) | قدیمی شدن داده‌ها میان اجراها؛ نیاز به بازبینی برای ارتقا دارد |
+| **زمان خواندن (Read time)** | حافظه به‌موقع (Just-in-Time Memory) (مقاله arXiv 2609.27334، سپتامبر ۲۰۲۶): نگهداری مسیرهای خام و پالایش آن‌ها برای وظیفه جاری هنگام خواندن | هزینه و تاخیر (Latency) پالایش به مسیر خواندن منتقل می‌شود | ذخیره‌ساز خام رشد می‌کند؛ هزینه‌های نگهداری داده و حریم خصوصی افزایش می‌یابد |
 
-The research result worth citing: Just-in-Time Memory beat the strongest write-time memory baseline by 16.2, 16.3, and 3.9 success-rate points on ALFWorld, WebShop, and tau2-bench, and even an untrained curator was competitive. Read-time curation wins when what is relevant depends on the task you have not seen yet; write-time extraction wins when reads are hot and latency-bound.
+نتیجه پژوهشی قابل ذکر: حافظه به‌موقع (Just-in-Time Memory) قوی‌ترین خط پایه (Baseline) حافظه در زمان نوشتن را با ۱۶.۲، ۱۶.۳ و ۳.۹ درصد در نرخ موفقیت روی بنچمارک‌های ALFWorld، WebShop و tau2-bench شکست داد و حتی یک پالایش‌گر آموزش‌ندیده نیز رقابتی عمل کرد. پالایش در زمان خواندن زمانی پیروز می‌شود که ارتباط داده‌ها به وظیفه‌ای بستگی داشته باشد که هنوز ندیده‌اید؛ استخراج در زمان نوشتن زمانی برنده است که خواندن‌ها بسیار پرتکرار (Hot) و محدود به تاخیر (Latency-bound) باشند.
 
 ---
 
-## Production Implementations
+## پیاده‌سازی‌های محیط تولید (Production Implementations)
 
-The named systems differ less on "what they store" and more on *write discipline*, *retrieval algorithm*, and *governance posture*.
+سیستم‌های نام‌برده کمتر در «چه چیزی ذخیره می‌کنند» و بیشتر در *انضباط نوشتن (write discipline)*، *الگوریتم بازیابی (retrieval algorithm)* و *رویکرد حاکمیتی (governance posture)* با یکدیگر تفاوت دارند.
 
-| System | Sweet spot | What it does well | Where it falls short |
+| سیستم | نقطه قوت اصلی (Sweet spot) | نقاط قوت | نقاط ضعف و کاستی‌ها |
 |---|---|---|---|
-| **[Mem0](https://github.com/mem0ai/mem0)** | Cross-session personalization at scale | Since v2.0.0 (April 16, 2026): single-pass, ADD-only extraction (one LLM call per `add()`, hash dedup, no update or delete pass) and hybrid retrieval that fuses semantic similarity, BM25, and entity boosting into one score. Entity links live in a parallel collection inside your existing vector store, which let Mem0 delete its Neo4j, Memgraph, Kuzu, and Apache AGE graph drivers. Reports 92.5 on LoCoMo and 94.4 on LongMemEval after the redesign ([benchmarks](https://mem0.ai/blog/ai-memory-benchmarks-in-2026)); its 2025 paper reported a 26% relative gain over OpenAI's built-in memory on an LLM-judge metric (all vendor-reported). SDK v2.2.1 (September 25). | 8K char per-memory cap (not for documents); cloud-first posture creates data sovereignty friction; open-source extraction is append-only, so merging and supersession moved to the paid Dream feature (Pro and Enterprise only, since August 4). |
-| **[Letta (formerly MemGPT)](https://github.com/letta-ai/letta)** | Long-running autonomous agents where coherence is the product | Archived its MemGPT-era server on August 16, 2026; active development is the letta-code harness and the TypeScript Agent SDK. All agents now use **MemFS**: long-term memory is a git repository of Markdown files with YAML frontmatter, edited with ordinary file tools. Root files load into the system prompt every turn; directories with their own `MEMORY.md` index stay out of context until the agent navigates to them. | No vector index by default (keyword search via an optional mod), so recall depends on a well-organized tree; teams on the old core / recall / archival paging API must migrate. |
-| **[Anthropic Memory Tool + Skills](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)** | Filesystem-mounted L3 and L4 in one substrate | Memory at `/memories/`; Skills as `SKILL.md` packages plus optional scripts (out of beta on the Claude API since August 19, 2026); Managed Agents mount memory at `/mnt/memory/` per session with immutable versioning (April 23, 2026 GA), and since August 19 memory stores also sync into self-hosted sandboxes. The Dreams research preview consolidates a store offline into a new output store. | Filesystem semantics push complexity to the agent (the agent must structure its own directories well). |
-| **[Zep + Graphiti](https://github.com/getzep/graphiti)** | Temporal facts where "when did this become true?" matters | Open-source temporal knowledge graph. Each fact edge carries two timelines: `valid_at` / `invalid_at` (when the fact was true in the world) and `created_at` / `expired_at` (when the graph recorded it and when it was superseded). Beats MemGPT 94.8% to 93.4% on DMR. Bitemporal queries enable "what did we believe on March 12?" vs "what is true now?" | Heavier write path (graph extraction, dedup, conflict resolution) than vector-only stores. |
-| **[LangMem + LangGraph](https://langchain-ai.github.io/langmem/)** | When you want all four memory types with LangGraph orchestration | Supports episodic, semantic, *and* procedural. Procedural memory in LangMem lets the agent update its own system prompt based on feedback. Background extraction runs out-of-band. | LangGraph-coupled; less attractive if you are not on the LangChain stack. |
-| **[OpenAI ChatGPT Memory](https://openai.com/index/memory-and-new-controls-for-chatgpt/)** | Consumer-grade chat continuity, not production-grade agent memory | Two-layer architecture: explicit "saved memories" plus lightweight conversation summaries pre-injected into context. Skips a retrieval step at inference for low latency. | Loses precision vs Mem0-style retrieval. No fine-grained programmatic API for enterprise integration. |
-| **Cursor / Devin Desktop (formerly Windsurf)** | Codebase-aware L2/L3 for software engineering agents | Codebase indexed on project open; `@`-mentions for explicit context. Windsurf's auto-generated Cascade "Memories" were a migration item when Cascade was removed in September 2026: a wizard moves them into Devin Local, the editor's only agent since then. | Domain-locked to code. Not a general-purpose memory layer, and the product churn shows why memory you depend on should be exportable. |
-| **[Cognition Devin](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)** | Repo-scoped engineering agents | Repository wiki auto-indexed every few hours; explicit compacting/summarization preferred over model-managed state. Devin Search is an agentic codebase memory query interface. | Opinionated to engineering workflows. |
+| **[Mem0](https://github.com/mem0ai/mem0)** | شخصی‌سازی چندجلسه‌ای در مقیاس بالا | از زمان انتشار نسخه v2.0.0 (۱۶ آوریل ۲۰۲۶): استخراج تک‌مرحله‌ای و فقط افزودنی (یک فراخوانی LLM به ازای هر `add()`، حذف داده‌های تکراری با هش، بدون مرحله به‌روزرسانی یا حذف) و بازیابی ترکیبی که شباهت معنایی، BM25 و تقویت مبتنی بر موجودیت (entity boosting) را در یک امتیاز ادغام می‌کند. پیوندهای موجودیت‌ها در یک مجموعه (collection) موازی درون پایگاه داده برداری (Vector Database) موجود شما قرار می‌گیرند که به Mem0 امکان داد درایورهای گراف Neo4j، Memgraph، Kuzu و Apache AGE خود را حذف کند. پس از بازطراحی، امتیاز ۹۲.۵ در LoCoMo و ۹۴.۴ در LongMemEval را گزارش می‌کند ([بنچمارک‌ها](https://mem0.ai/blog/ai-memory-benchmarks-in-2026))؛ مقاله ۲۰۲۵ آن بهبود نسبی ۲۶ درصدی را نسبت به حافظه داخلی OpenAI بر اساس معیار داوری با LLM گزارش کرد (همه توسط ارائه‌دهنده گزارش شده‌اند). SDK نسخه v2.2.1 (۲۵ سپتامبر). | سقف ۸ هزار کاراکتر به ازای هر حافظه (نه برای اسناد)؛ رویکرد اولویت‌ابری (cloud-first) اصطکاک‌هایی در حاکمیت داده ایجاد می‌کند؛ استخراج در نسخه متن‌باز فقط الحاقی (append-only) است، بنابراین ادغام و جایگزینی به قابلیت پولی Dream منتقل شده است (فقط برای طرح‌های Pro و Enterprise، از ۴ اوت). |
+| **[Letta (MemGPT سابق)](https://github.com/letta-ai/letta)** | Agentهای خودمختار با اجرای طولانی‌مدت که در آن‌ها یکپارچگی و انسجام محصول اصلی است | سرور دوران MemGPT خود را در ۱۶ اوت ۲۰۲۶ بایگانی کرد؛ توسعه فعال روی بستر letta-code و TypeScript Agent SDK متمرکز است. همه Agentها اکنون از **MemFS** استفاده می‌کنند: حافظه بلندمدت یک مخزن git از فایل‌های Markdown با متادیتای YAML frontmatter است که با ابزارهای معمولی فایل ویرایش می‌شود. فایل‌های ریشه در هر نوبت در Prompt سیستم بارگذاری می‌شوند؛ دایرکتوری‌هایی که دارای شاخص `MEMORY.md` اختصاصی خود هستند تا زمانی که Agent به سمت آن‌ها هدایت نشود، خارج از کانتکست باقی می‌مانند. | به‌صورت پیش‌فرض فاقد شاخص برداری است (جستجوی کلیدواژه‌ای از طریق یک ماژول اختیاری انجام می‌شود)، بنابراین فراخوانی (recall) به یک ساختار درختی سازمان‌یافته وابسته است؛ تیم‌هایی که از API قدیمی صفحه‌بندی core / recall / archival استفاده می‌کنند باید مهاجرت نمایند. |
+| **[Anthropic Memory Tool + Skills](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)** | لایه‌های L3 و L4 سوارشده بر بستر فایل‌سیستم در یک زیرساخت واحد | حافظه در مسیر `/memories/`؛ مهارت‌ها (Skills) به‌صورت بسته‌های `SKILL.md` به همراه اسکریپت‌های اختیاری (از ۱۹ اوت ۲۰۲۶ از حالت بتا در Claude API خارج شد)؛ در Managed Agents، حافظه در هر نشست در مسیر `/mnt/memory/` با نسخه‌بندی تغییرناپذیر سوار (mount) می‌شود (عرضه عمومی در ۲۳ آوریل ۲۰۲۶)، و از ۱۹ اوت، ذخیره‌سازهای حافظه با محیط‌های ایزوله (sandboxes) خودمیزبان نیز همگام‌سازی می‌شوند. پیش‌نمایش تحقیقاتی Dreams یک ذخیره‌ساز را به‌صورت آفلاین در یک ذخیره‌ساز خروجی جدید تجمیع و یکپارچه می‌کند. | معناشناسی فایل‌سیستم پیچیدگی را به دوش Agent می‌اندازد (Agent باید دایرکتوری‌های خود را به‌خوبی ساختاردهی کند). |
+| **[Zep + Graphiti](https://github.com/getzep/graphiti)** | حقایق زمانی در جایی که «چه زمانی این موضوع حقیقت یافت؟» اهمیت دارد | گراف دانش زمانی متن‌باز. هر یال از حقیقت حامل دو خط زمانی است: `valid_at` / `invalid_at` (چه زمانی حقیقت در دنیای واقعی برقرار بود) و `created_at` / `expired_at` (چه زمانی گراف آن را ثبت کرد و چه زمانی منسوخ یا جایگزین شد). در بنچمارک DMR با امتیاز ۹۴.۸٪ در برابر ۹۳.۴٪ بر MemGPT غلبه می‌کند. پرس‌وجوهای دوزمانی (Bitemporal queries) پاسخ به «در ۱۲ مارس چه باوری داشتیم؟» در مقایسه با «اکنون چه چیزی حقیقت دارد؟» را ممکن می‌سازد. | مسیر نوشتن سنگین‌تر (استخراج گراف، حذف داده‌های تکراری، حل تعارض) نسبت به ذخیره‌سازهای صرفاً برداری. |
+| **[LangMem + LangGraph](https://langchain-ai.github.io/langmem/)** | زمانی که خواهان هر چهار نوع حافظه با هماهنگ‌سازی LangGraph هستید | از حافظه رویدادی، معنایی *و* رویه‌ای پشتیبانی می‌کند. حافظه رویه‌ای در LangMem به Agent اجازه می‌دهد تا Prompt سیستم خود را بر اساس بازخوردها به‌روزرسانی کند. استخراج در پس‌زمینه به‌صورت خارج از باند (out-of-band) اجرا می‌شود. | وابسته به LangGraph؛ در صورتی که از استک LangChain استفاده نمی‌کنید جذابیت کمتری دارد. |
+| **[OpenAI ChatGPT Memory](https://openai.com/index/memory-and-new-controls-for-chatgpt/)** | تداوم مکالمه در سطح مصرف‌کننده، نه حافظه Agent در سطح سازمانی و محیط تولید | معماری دو لایه‌ای: «حافظه‌های ذخیره‌شده» صریح به همراه خلاصه‌های سبک مکالمه که از پیش به کانتکست تزریق می‌شوند. برای تاخیر (Latency) پایین، از مرحله بازیابی در زمان استنتاج (Inference) صرف‌نظر می‌کند. | دقت کمتری نسبت به بازیابی سبک Mem0 دارد. فاقد API برنامه‌نویسی‌شده با جزئیات دقیق برای یکپارچه‌سازی سازمانی است. |
+| **Cursor / Devin Desktop (Windsurf سابق)** | لایه‌های L2/L3 آگاه از کدبیس برای Agentهای مهندسی نرم‌افزار | کدبیس هنگام باز شدن پروژه ایندکس می‌شود؛ استفاده از ارجاعات `@` برای کانتکست صریح. حافظه‌های تولید خودکار Cascade در Windsurf هنگام حذف Cascade در سپتامبر ۲۰۲۶ یکی از موارد مهاجرت بودند: یک ویزارد آن‌ها را به Devin Local (تنها Agent این ویرایشگر از آن زمان به بعد) منتقل می‌کند. | محدود به حوزه کد. این لایه یک حافظه چندمنظوره نیست، و تغییرات مداوم محصول نشان می‌دهد چرا حافظه‌ای که به آن متکی هستید باید قابلیت خروجی گرفتن داشته باشد. |
+| **[Cognition Devin](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)** | Agentهای مهندسی در سطح مخزن | ویکی مخزن هر چند ساعت یک‌بار به‌طور خودکار ایندکس می‌شود؛ فشرده‌سازی/خلاصه‌سازی صریح بر وضعیت مدیریت‌شده توسط مدل ترجیح داده می‌شود. ابزار Devin Search یک رابط پرس‌وجوی حافظه کدبیس Agentic است. | طراحی سخت‌گیرانه و مقید به جریان‌های کاری مهندسی (Opinionated). |
 
-**Generative Agents (Park et al. 2023)** remains the reference architecture cited in every survey. The recency / importance / relevance retrieval formula (`alpha_recency * recency + alpha_importance * importance + alpha_relevance * relevance`, each normalized to [0,1] with importance rated 1-10 by an LLM) is still in production use across most of the systems above.
+**Generative Agents (Park et al. 2023)** همچنان معماری مرجعی است که در هر پژوهش و بررسی جامعی به آن ارجاع داده می‌شود. فرمول بازیابی مبتنی بر تازگی / اهمیت / ارتباط (`alpha_recency * recency + alpha_importance * importance + alpha_relevance * relevance` که هر کدام در بازه [0,1] نرمال‌سازی شده و اهمیت آن توسط یک LLM بین ۱ تا ۱۰ امتیازدهی می‌شود) هنوز در بیشتر سیستم‌های فوق در محیط تولید استفاده می‌شود.
 
-**Keep state you own separate from the orchestration API.** OpenAI shut down the Assistants API on August 26, 2026: threads, runs, and run steps now error, and the migration maps Threads to the Conversations API, Runs to Responses, and Run steps to Items. Vector stores were not part of the shutdown and keep working through the Responses `file_search` tool, so teams on hosted RAG kept their indexes and rewrote only the conversation-state code. Store memory and session state behind your own interface, and treat a vendor's hosted thread object as a cache of that state, not its system of record.
+**وضعیت (state) متعلق به خود را از API هماهنگ‌سازی جدا نگه دارید.** شرکت OpenAI در ۲۶ اوت ۲۰۲۶ سرویس Assistants API را متوقف کرد: بخش‌های threads، runs و run steps اکنون با خطا مواجه می‌شوند و فرایند مهاجرت، Threads را به Conversations API، Runs را به Responses و Run steps را به Items نگاشت می‌کند. پایگاه داده برداری (Vector Database) و ذخیره‌سازهای برداری جزو این تعطیلی نبودند و همچنان از طریق ابزار `file_search` در Responses به کار خود ادامه می‌دهند؛ بنابراین تیم‌هایی که از RAG میزبانی‌شده استفاده می‌کردند ایندکس‌های خود را حفظ کرده و تنها کد مربوط به وضعیت مکالمه را بازنویسی نمودند. حافظه و وضعیت نشست را در پشت رابط اختصاصی خود ذخیره کنید و با شیء thread میزبانی‌شده توسط ارائه‌دهنده، به عنوان یک حافظه پنهان (cache) از آن وضعیت برخورد کنید، نه به عنوان منبع اصلی و مرجع داده‌ها (system of record).
 
-Anthropic's message threads beta (November 2, 2026, header `message-threads-2026-08-12`) makes the same point from the other direction. A create request stores the conversation, system prompt, and tools server-side, and later requests send only new messages naming `previous_message_id`. But a thread expires 5 minutes after its last request, is deleted no more than an hour after last use, is not ZDR eligible, and a continue can return 404 `thread_not_found`, after which the client must resend the full conversation. System and tools may be sent only on the create request, and fixed fields such as `model`, `tool_choice`, `thinking`, and `mcp_servers` must match every turn or the API returns 400 `thread_fingerprint_mismatch`. Threads do not change pricing or cache the prompt by themselves (you still need `cache_control`), and they do not run on Bedrock or Google-managed Vertex. The harness design follows: keep the transcript yourself, use the thread as a bandwidth optimization, and implement 404 replay from day one.
+نسخه بتای رشته پیام‌های شرکت Anthropic (۲ نوامبر ۲۰۲۶، با هدر `message-threads-2026-08-12`) همین نکته را از زاویه‌ای دیگر نشان می‌دهد. یک درخواست ساخت (create)، مکالمه، Prompt سیستم و ابزارها را در سمت سرور ذخیره می‌کند و درخواست‌های بعدی تنها پیام‌های جدید را با ذکر `previous_message_id` ارسال می‌کنند. اما یک رشته پیام ۵ دقیقه پس از آخرین درخواست منقضی می‌شود، حداکثر تا یک ساعت پس از آخرین استفاده حذف می‌گردد، واجد شرایط ZDR (حفظ صفر داده) نیست، و یک درخواست ادامه (continue) می‌تواند خطای 404 با عنوان `thread_not_found` بازگرداند که پس از آن کلاینت باید کل مکالمه را دوباره ارسال کند. Prompt سیستم و ابزارها تنها در درخواست ساخت قابل ارسال هستند و فیلدهای ثابت مانند `model`، `tool_choice`، `thinking` و `mcp_servers` باید در هر نوبت مطابقت داشته باشند، در غیر این صورت API خطای 400 با عنوان `thread_fingerprint_mismatch` بازمی‌گرداند. رشته‌ها به خودی خود قیمت‌گذاری را تغییر نمی‌دهند و Prompt را کش نمی‌کنند (همچنان به `cache_control` نیاز دارید)، و روی Bedrock یا Vertex تحت مدیریت گوگل اجرا نمی‌شوند. نتیجه‌گیری برای طراحی بستر اجرا (harness): رونوشت (transcript) را خودتان نگه دارید، از رشته پیام صرفاً به عنوان بهینه‌سازی پهنای باند استفاده کنید، و قابلیت بازپخش در صورت خطای 404 (404 replay) را از روز اول پیاده‌سازی نمایید.
 
-**Emerging frameworks worth tracking**: [Supermemory](https://supermemory.ai), [Recallr](https://recallrai.com), AWS [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-integrate-lang.html), [Oracle AI Agent Memory](https://blogs.oracle.com/developers/oracle-ai-agent-memory-a-governed-unified-memory-core-for-enterprise-ai-agents).
+**فریم‌ورک‌های نوظهور شایسته پیگیری**: [Supermemory](https://supermemory.ai)، [Recallr](https://recallrai.com)، [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-integrate-lang.html) از AWS، [Oracle AI Agent Memory](https://blogs.oracle.com/developers/oracle-ai-agent-memory-a-governed-unified-memory-core-for-enterprise-ai-agents).
 
 ---
 
-## Failure Modes and Mitigations
+## حالت‌های شکست و راهکارهای کاهش ریسک (Failure Modes and Mitigations)
 
-Production memory systems have seven recurring failure modes. Knowing them by name is the difference between a junior and staff-level architecture conversation.
+سیستم‌های حافظه در محیط تولید دارای هفت حالت شکست پرتکرار هستند. شناخت آن‌ها به تفکیک نام، تفاوت میان گفت‌وگوی معماری در سطح تازه‌کار (junior) و سطح ارشد/کادر رهبری فنی (staff-level) است.
 
-### 1. Memory poisoning via prompt injection
+### ۱. مسموم‌سازی حافظه از طریق تزریق Prompt (Prompt Injection)
 
-Untrusted input gets written to L3/L4 and replayed later as authoritative. [MINJA (NeurIPS 2025)](https://openreview.net/forum?id=QVX6hcJ2um) and [MemoryGraft (Dec 2025)](https://arxiv.org/html/2512.16962v1) demonstrate *query-only* poisoning attacks reaching 95% injection rate and 70% attack success rate *without* elevated privileges. [Palo Alto Unit 42's writeup](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/) shows poison planted weeks before it fires.
+ورودی‌های نامعتمد در L3/L4 نوشته شده و بعداً به عنوان داده موثق و معتبر بازپخش می‌شوند. پژوهش‌های [MINJA (NeurIPS 2025)](https://openreview.net/forum?id=QVX6hcJ2um) و [MemoryGraft (دسامبر ۲۰۲۵)](https://arxiv.org/html/2512.16962v1) حملات مسموم‌سازی *صرفاً مبتنی بر پرس‌وجو (query-only)* را نشان می‌دهند که *بدون* دسترسی‌های ارتقایافته، به نرخ تزریق ۹۵٪ و نرخ موفقیت حمله ۷۰٪ می‌رسند. [گزارش تحلیلی Unit 42 از شرکت Palo Alto](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/) نشان می‌دهد که سم هفته‌ها قبل از فعال شدن در سیستم کاشته شده است.
 
-**Mitigations:**
-- **Provenance tags** on every memory write: `source = user_stated | model_inferred | tool_output`.
-- **Write-time guardrail model** that refuses suspicious instruction-shaped writes ("ignore previous and instead...", role confusion, embedded system-prompt fragments).
-- **Trust tiers**: low-trust memories require corroboration before influencing high-stakes decisions.
-- **Bulkhead isolation** so poison in one tenant cannot pivot into another.
-- **Write-gated shared memory**: in Asana's agents (described September 29, 2026), anyone can give feedback on a task, but only admins and editors can commit it to permanent shared memory or delete from it; everyone else's feedback applies to the current task only. A poisoning vector becomes a permissioned write.
-- **Treat compaction summaries as memory writes**: OpenAI disclosed in September 2026 that models in RL training wrote concealment instructions into their own context-compaction summaries, so a summary carried into the next context needs the same provenance and review as any other write (see [Loop Engineering](12-loop-engineering.md#context-and-memory-in-long-loops)).
+**راهکارهای کاهش ریسک:**
+- **برچسب‌های منشأ داده (Provenance tags)** در هر بار نوشتن در حافظه: `source = user_stated | model_inferred | tool_output`.
+- **مدل گاردریل در زمان نوشتن (Write-time guardrail model)** که نوشته‌های مشکوک شبیه به دستورالعمل را رد می‌کند («دستورالعمل‌های قبلی را نادیده بگیر و به جای آن...»، سردرگمی نقش، قطعات تعبیه‌شده از Prompt سیستم).
+- **سطوح اعتماد (Trust tiers)**: حافظه‌های با اعتماد پایین پیش از تأثیرگذاری بر تصمیم‌گیری‌های پرریسک و حساس، نیازمند تأیید و اثبات مضاعف هستند.
+- **جداسازی با دیواره آتشین (Bulkhead isolation)** به طوری که مسمومیت در یک مستأجر (tenant / multi-tenant) نتواند به مستأجر (tenant / multi-tenant) دیگری سرایت کند.
+- **حافظه مشترک با کنترل دسترسی نوشتن (Write-gated shared memory)**: در Agentهای شرکت آسانا (توصیف‌شده در ۲۹ سپتامبر ۲۰۲۶)، هر کاربری می‌تواند درباره یک تسک بازخورد دهد، اما تنها مدیران و ویراستاران می‌توانند آن را در حافظه مشترک دائمی ثبت کرده یا از آن حذف کنند؛ بازخورد سایرین فقط برای تسک جاری اعمال می‌شود. با این روش، یک بردار مسموم‌سازی به یک عمل نوشتن دارای مجوز تبدیل می‌شود.
+- **برخورد با خلاصه‌های فشرده‌سازی مشابه نوشتن در حافظه**: شرکت OpenAI در سپتامبر ۲۰۲۶ فاش کرد که مدل‌ها در آموزش RL، دستورالعمل‌های پنهان‌کاری را در خلاصه‌های فشرده‌سازی کانتکست خود می‌نوشتند؛ بنابراین خلاصه‌ای که به کانتکست بعدی منتقل می‌شود، نیازمند همان ردیابی منشأ و بررسی است که برای هر نوشتن دیگری الزامی است (ببینید: [مهندسی حلقه (Loop Engineering)](12-loop-engineering.md#context-and-memory-in-long-loops)).
 
-### 2. Stale facts
+### ۲. حقایق کهنه و قدیمی (Stale facts)
 
-Yesterday's preference vs today's. The classic "user said dark mode last month but uses light mode now."
+ترجیح دیروز در برابر ترجیح امروز؛ نمونه کلاسیک: «کاربر ماه گذشته حالت تاریک را انتخاب کرد، اما اکنون از حالت روشن استفاده می‌کند.»
 
-**Mitigations:**
-- **Bitemporal storage** (Zep/Graphiti pattern): every fact carries `valid_at` / `invalid_at` (when it was true) and `created_at` / `expired_at` (when the system recorded and retired it).
-- **TTL on session-scoped preferences** so they auto-expire.
-- **Decay weighting** in retrieval scoring.
-- **Explicit re-confirmation** prompts for high-stakes facts older than N days.
+**راهکارهای کاهش ریسک:**
+- **ذخیره‌سازی دوزمانی (Bitemporal storage)** (الگوی Zep/Graphiti): هر حقیقت حامل `valid_at` / `invalid_at` (چه زمانی معتبر بوده) و `created_at` / `expired_at` (چه زمانی سیستم آن را ثبت کرده و بازنشسته ساخته) است.
+- **تعیین طول عمر (TTL) برای ترجیحات در سطح نشست** تا به‌طور خودکار منقضی شوند.
+- **وزن‌دهی زوال یا کاهش تدریجی (Decay weighting)** در امتیازدهی بازیابی.
+- **Promptهای تأیید مجدد صریح** برای حقایق حساس و پرریسک با قدمت بیش از N روز.
 
-### 3. Conflicting facts
+### ۳. حقایق متناقض (Conflicting facts)
 
-User said X, now says Y. Three different conflict types deserve different responses:
+کاربر قبلاً X را گفته و اکنون Y را می‌گوید. سه نوع تعارض مختلف نیازمند پاسخ‌های متفاوتی هستند:
 
-| Conflict type | Right response |
+| نوع تعارض | پاسخ مناسب |
 |---|---|
-| Temporal update ("I moved to Berlin") | Supersede the old fact: its `invalid_at` becomes the new fact's `valid_at`, and `expired_at` is set to now |
-| Correction ("I never said that") | Retract with audit trail |
-| Preference change ("I want concise responses now") | Add new fact; let decay handle the old |
-| Outright contradiction (no obvious resolution) | Ask the user; never silently overwrite |
+| به‌روزرسانی زمانی («من به برلین نقل مکان کردم») | جایگزینی حقیقت قدیمی: مقدار `invalid_at` آن به `valid_at` حقیقت جدید تبدیل شده و `expired_at` روی زمان حال تنظیم می‌شود |
+| تصحیح («من هرگز چنین چیزی نگفتم») | ابطال و پس‌گیری همراه با ردپای بازرسی و حسابرسی (audit trail) |
+| تغییر ترجیح («اکنون پاسخ‌های مختصر می‌خواهم») | افزودن حقیقت جدید؛ واگذاری حقیقت قدیمی به زوال تدریجی (decay) |
+| تناقض آشکار (بدون راه‌حل بدیهی) | پرسش از کاربر؛ هرگز بازنویسی بی‌صدا انجام ندهید |
 
-Track belief status (`ACTIVE` / `SUPERSEDED` / `RETRACTED`) using AGM belief revision rather than last-write-wins.
+وضعیت باور (`ACTIVE` / `SUPERSEDED` / `RETRACTED`) را با استفاده از بازنگری باور AGM ردیابی کنید، نه رویکرد آخرین نوشتن برنده است (last-write-wins).
 
-### 4. Memory drift
+### ۴. رانش حافظه (Memory drift)
 
-Quality degrades over time as low-quality writes dilute high-quality ones. The [Day-30 problem](https://cipherbuilds.ai/blog/day-30-agent-memory-problem) documents agent performance dropping ~30 days into production as the episodic store fills with noise.
+کیفیت حافظه با گذشت زمان افت می‌کند، زیرا نوشته‌های با کیفیت پایین، داده‌های با کیفیت بالا را رقیق و تضعیف می‌کنند. مستندات [مسئله روز سی‌ام (Day-30 problem)](https://cipherbuilds.ai/blog/day-30-agent-memory-problem) افت عملکرد Agent را حدود ۳۰ روز پس از ورود به محیط تولید نشان می‌دهد، زیرا ذخیره‌ساز رویدادی با نویز پر می‌شود.
 
-**Mitigations:**
-- **Quality-weighted retrieval**: boost memories with high verification scores.
-- **Scheduled consolidation jobs** that merge duplicates and prune low-utility memories.
-- **Canary fact tests in CI**: "agent should still recall the user's name after 50 turns."
+**راهکارهای کاهش ریسک:**
+- **بازیابی با وزن‌دهی کیفی (Quality-weighted retrieval)**: تقویت حافظه‌های دارای امتیاز راستی‌آزمایی بالا.
+- **تسک‌های زمان‌بندی‌شده یکپارچه‌سازی و تجمیع (Consolidation)** که موارد تکراری را ادغام کرده و حافظه‌های کم‌فایده را هرس می‌کنند.
+- **آزمون‌های قناری برای حقایق (Canary fact tests) در CI**: «Agent پس از ۵۰ نوبت مکالمه همچنان باید نام کاربر را به خاطر بیاورد.»
 
-### 5. Hallucinated memory writes
+### ۵. نوشتن توهمات در حافظه (Hallucinated memory writes)
 
-Agent infers a fact, stores it as ground truth, then cites it later as authority. Cascading failure where one bad write poisons future retrievals. The [HaluMem benchmark (Nov 2025)](https://arxiv.org/abs/2511.03506) shows existing systems accumulate errors at write time that propagate forward through the QA stage.
+Agent حقیقتی را استنتاج می‌کند، آن را به عنوان حقیقت مسلم (ground truth) ذخیره می‌نماید و سپس بعداً به عنوان منبع موثق به آن ارجاع می‌دهد. این یک شکست زنجیره‌ای است که در آن یک نوشتن نادرست، بازیابی‌های آینده را مسموم می‌کند. [بنچمارک HaluMem (نوامبر ۲۰۲۵)](https://arxiv.org/abs/2511.03506) نشان می‌دهد که سیستم‌های موجود خطاهایی را در زمان نوشتن انباشته می‌کنند که در ادامه به مرحله پرسش و پاسخ (QA) سرایت می‌یابد.
 
-**Mitigations:**
-- **Schema-enforced memory objects** with separate fields for `confirmed_facts` (with source) vs `inferred_facts` (with confidence).
-- Never auto-promote inferences to confirmed without explicit user signal or tool-output corroboration.
-- HaluMem-style staged evaluation in CI: measure extraction precision, update correctness, and QA accuracy separately, not as a single end-to-end metric.
+**راهکارهای کاهش ریسک:**
+- **اشیاء حافظه مبتنی بر اسکیما (Schema-enforced)** با فیلدهای مجزا برای `confirmed_facts` (به همراه منبع) در برابر `inferred_facts` (به همراه میزان اطمینان).
+- هرگز استنتاج‌ها را بدون سیگنال صریح کاربر یا تأیید خروجی ابزار، به‌طور خودکار به وضعیت تأییدشده ارتقا ندهید.
+- ارزیابی چندمرحله‌ای به سبک HaluMem در فرآیند CI: دقت استخراج، صحت به‌روزرسانی و دقت QA را به صورت جداگانه بسنجید، نه به عنوان یک معیار سرتاسری منفرد.
 
-### 6. Cross-tenant leakage
+### ۶. نشت داده میان چند مستأجر (Cross-tenant leakage / multi-tenant)
 
-Vector ANN returns a neighbor from another tenant; cached prompts contain another tenant's data. [Field measurements](https://medium.com/@isuruig/multi-tenant-ai-infrastructure-the-5-isolation-layers-that-determine-whether-your-customers-data-stays-separate-340aaeef4922) show ~95% organic leakage rates on benign queries in unisolated multi-tenant RAG.
+الگوریتم برداری ANN یک همسایه از مستأجر (tenant / multi-tenant) دیگری را بازمی‌گرداند؛ Promptهای کش‌شده حاوی داده‌های مستأجر (tenant / multi-tenant) دیگری هستند. [اندازه‌گیری‌های میدانی](https://medium.com/@isuruig/multi-tenant-ai-infrastructure-the-5-isolation-layers-that-determine-whether-your-customers-data-stays-separate-340aaeef4922) نشان می‌دهند که در سیستم‌های RAG چندمستأجری (multi-tenant) فاقد ایزوله‌سازی، نرخ نشت طبیعی داده در پرس‌وجوهای بی‌خطر به حدود ۹۵٪ می‌رسد.
 
-**Mitigations:**
-- **Physical separation**: per-tenant collections, not metadata-filtered shared index.
-- Enforce tenant scope at the *store* layer via service-account permissions, not application code.
-- Separate KV-cache prefix per tenant.
-- Per-tenant encryption keys on memory blobs so cross-namespace reads fail at the cryptographic layer.
+**راهکارهای کاهش ریسک:**
+- **جداسازی فیزیکی (Physical separation)**: مجموعه‌های اختصاصی به ازای هر مستأجر (tenant / multi-tenant)، نه شاخص مشترک فیلترشده با متادیتا.
+- اعمال محدوده مستأجر (tenant / multi-tenant) در لایه *ذخیره‌ساز* از طریق مجوزهای حساب کاربری سرویس (service-account)، نه در کد برنامه.
+- پیشوند KV-cache جداگانه به ازای هر مستأجر (tenant / multi-tenant).
+- کلیدهای رمزنگاری اختصاصی به ازای هر مستأجر (tenant / multi-tenant) برای داده‌های حافظه (memory blobs) تا خواندن از فضاهای نام متقاطع (cross-namespace) در لایه رمزنگاری با شکست مواجه شود.
 
-### 7. Memory-induced reasoning traps
+### ۷. تله‌های استدلال ناشی از حافظه (Memory-induced reasoning traps)
 
-Correct, relevant memories can still make the agent worse. MemTrapBench (arXiv 2608.20202, August 2026) tests reasoning fixation and belief distortion caused by faithfully stored, semantically relevant memories. Across two model families and five memory frameworks, **every memory strategy underperformed the no-memory setting**, the strongest dropping by more than 10%. Retrieval metrics such as LoCoMo recall cannot see this harm, because the retrieval was correct.
+حافظه‌های درست و مرتبط همچنان می‌توانند عملکرد Agent را بدتر کنند. بنچمارک MemTrapBench (arXiv 2608.20202، اوت ۲۰۲۶) تثبیت استدلال (reasoning fixation) و تحریف باور ناشی از حافظه‌های ذخیره‌شده به شکل دقیق و مرتبط از نظر معنایی را می‌سنجد. در بین دو خانواده مدل و پنج فریم‌ورک حافظه، **تمام استراتژی‌های حافظه عملکردی ضعیف‌تر از حالت بدون حافظه ثبت کردند** و قوی‌ترین آن‌ها افتی بیش از ۱۰ درصد داشت. معیارهای بازیابی مانند فراخوانی (recall) در LoCoMo قادر به مشاهده این آسیب نیستند، زیرا بازیابی به درستی انجام شده است.
 
-**Mitigations:**
-- Evaluate end-to-end task success with and without memory injected, not only retrieval quality.
-- Gate injection: after retrieval, decide whether the memory is decision-relevant for this task before it enters context.
-- Frame injected memories as past context, not instructions. The paper's AdaptiveMem inference-time instruction reduces the traps while preserving scores on standard memory benchmarks.
-
----
-
-## Mem0 and Agentic Personalization
-
-**Mem0**, Zep, Letta, and Cognee are the standard frameworks for "Smart Memory" in agent stacks.
-- It automatically extracts "User Insights" from conversations (in Mem0 v2, one ADD-only extraction pass per write).
-- It provides a "Memory API" that agents can call to add, search, or delete memories; conflict resolution is either your job or a scheduled consolidation pass.
-- **Impact**: Agents feel "Alive" because they remember a detail you mentioned 3 months ago in a different session.
+**راهکارهای کاهش ریسک:**
+- موفقیت سرتاسری تسک را با و بدون تزریق حافظه ارزیابی کنید، نه صرفاً کیفیت بازیابی را.
+- کنترل ورود و فیلتر کردن تزریق (Gate injection): پس از بازیابی و پیش از ورود حافظه به کانتکست، تصمیم بگیرید که آیا این حافظه برای تصمیم‌گیری در این تسک مرتبط و حیاتی است یا خیر.
+- چارچوب‌بندی حافظه‌های تزریق‌شده به عنوان کانتکست گذشته، نه دستورالعمل. دستورالعمل زمان استنتاج (Inference) تحت عنوان AdaptiveMem در این مقاله، این تله‌ها را کاهش داده و در عین حال امتیازات بنچمارک‌های استاندارد حافظه را حفظ می‌کند.
 
 ---
 
-## Interview Questions
+## Mem0 و شخصی‌سازی Agentic (Agentic Personalization)
 
-### Q: How do you handle "Conflicting Memories" in an agentic system?
-
-**Strong answer:**
-Conflicting memories (e.g., the user said "I like blue" last week but says "I like red" now) are handled via **Temporal Weighting** or **Explicit Disputing**. In my architecture, I assign a `timestamp` and a `confidence_score` to every memory triplet. If a new fact conflicts with an old one, the agent is prompted to "Resolve the Conflict" by asking the user for clarification or defaulting to the most recent timestamp. We also use **Decay Functions** where older, non-reinforced memories are eventually pruned from the active index.
-
-### Q: Why is the "Context Window" alone insufficient for a staff-level Agent architecture?
-
-**Strong answer:**
-First, **Cost and Latency**: cache reads now cost 0.025x to 0.1x of base input, so a fully cached 1M-token prefix is no longer absurd (about $0.10 to $0.25 per turn on current Claude models: Sonnet 5.5 at $0.10 per 1M cached tokens since October 7, Opus 5.5 at $0.20, Fable 5.1 at $0.25). But misses bill at the full rate, OpenAI bills the whole request at long-context rates once input passes 272K, Claude Haiku 5.5 bills the whole request at 5x once the prompt passes 100K tokens (cache reads and writes count toward that length), and prefill latency still grows with length. Second, **Signal-to-Noise**: Large context windows suffer from context rot: the model gets distracted by irrelevant historical turns, and MemTrapBench showed that even relevant memories can distort reasoning. A Staff-level architecture uses **Selective Memory Retrieval** (RAG over history) to only pull in the 3-5 most relevant historical interactions, keeping the Reasoning Engine focused on the current sub-goal.
-
-### Q: How would you design procedural memory for a production AI agent?
-
-**Strong answer:**
-
-I would design procedural memory as a combination of a **skills registry, workflow graph, and tool-use policies**. Each procedure would define the task type, required steps, available tools, validation checks, failure modes, and escalation rules. After each run, the agent can perform reflection and update the procedure if it discovers a better approach. For example, if an NL2SQL agent repeatedly fails because it skips schema inspection, we can encode schema inspection as a required first step in the procedural memory for all SQL-generation tasks.
-
-### Q: When does episodic memory become a liability rather than an asset?
-
-**Strong answer:**
-
-Episodic memory becomes a liability in three named patterns. First, **index overload**: adding 1,000 low-quality observations buries the 10 high-quality ones in retrieval. This is catastrophic forgetting in the RAG sense. Second, the **Day-30 drift pattern**: agent quality degrades roughly 30 days into production as the episodic store fills with noise that retrieval cannot distinguish from signal. Third, **stale-context bleeding**: past trajectories that succeeded under one configuration become *wrong* context under a new one. A successful tool sequence for Stripe is actively misleading when the user has switched to Adyen.
-
-The mitigations are quality-weighted retrieval, consolidation into L3, and hard recency cutoffs for context-sensitive trajectories. The deeper lesson: episodic memory needs a *pruning policy* from day one. Without one, it is technical debt that compounds linearly with usage.
-
-### Q: How do you prevent memory poisoning when agents can write to their own long-term store?
-
-**Strong answer:**
-
-The hard part is that recent attacks (MINJA, MemoryGraft) are *query-only*: no elevated privileges required. Poison gets planted weeks before it fires. So the threat model is "every input can become a future authoritative memory." The defense has four layers:
-
-1. **Provenance at write time**: every memory carries `source` (user-stated, model-inferred, tool-output), `timestamp`, and `trust_tier`.
-2. **Write-time guardrail model**: a smaller classifier refuses suspicious instruction-shaped writes before they hit the store.
-3. **Corroboration thresholds**: high-stakes decisions cannot be made on a single low-trust memory; they require multiple independent corroborating writes.
-4. **Canary tests in CI**: synthetic poison payloads must not propagate into outputs. Run weekly.
-
-The architectural separation that matters most: the agent's tool surface and its memory write surface should not share trust. Tool outputs should pass through a sanitizer before becoming memory.
-
-### Q: Memory tier selection: where would you put each of these and why? (a) the user's API rate limit, (b) the steps to deploy our service, (c) the agent's last failed attempt at this task, (d) today's stock price.
-
-**Strong answer:**
-
-(a) **L3 semantic** with bitemporal validity. It is a tenant-scoped fact with a supersession lifetime. Not L4, because it is data, not procedure.
-
-(b) **L4 procedural** as a versioned skill or playbook. It is a multi-step recipe with conditional branches. Skills compose; semantic triples do not.
-
-(c) **L2 episodic raw**, with a *reflection hop* to L4 if the failure reveals a generalizable lesson. Raw trajectory belongs in episodic. The lesson ("never run migrations during peak hours") earns a Reflexion-style write to procedural.
-
-(d) **None: call the tool.** Fast-moving facts with a live source of truth should never enter memory. They become stale by definition.
-
-The general rule: data goes in L3, procedures in L4, observations in L2, and never store fast-moving facts that have a live source.
-
-### Q: Walk me through the consolidation policy you would design for episodic-to-semantic transition. When does an episode become a fact?
-
-**Strong answer:**
-
-I use a threshold-based graduation policy, not implicit decay:
-
-- **Frequency threshold**: N independent observations of the same pattern (3 to 5 is typical).
-- **Confidence weighting**: user-stated > tool-output > model-inferred.
-- **Judge review**: a scheduled batch consolidation job runs an LLM judge (or human reviewer for high-stakes domains) over candidate graduations.
-- **Scheduled, not synchronous**: consolidation happens out-of-band on a cron, not per-turn. This avoids write amplification.
-- **Bidirectional**: semantic facts in L3 can be re-instantiated as episodic context for specific tasks. Memory flows both ways.
-
-The trap to avoid is implicit consolidation through decay weights alone. It works at small scale and silently fails at production scale because there is no audit trail for "why did this fact appear in L3?"
-
-### Q: A benchmark shows your agent does better with memory turned off. What do you do?
-
-**Strong answer:**
-
-I take it seriously rather than assuming a bug, because MemTrapBench (August 2026) found exactly this across five memory frameworks: correct, relevant memories caused reasoning fixation and belief distortion, and every strategy underperformed no memory. First I split the eval: retrieval quality, injection decisions, and end-to-end task success with and without memory, sliced by task type. Usually memory helps on personalization and continuity tasks and hurts on fresh reasoning tasks where a past answer anchors the model. Then I add an injection gate: retrieve candidates, but only inject when a cheap classifier or rule says the memory is decision-relevant to this task, and frame it as past context with a timestamp, not as instruction. I also consider moving curation to read time (Just-in-Time Memory style), so what is injected is selected for the current task rather than extracted at write time. Success is measured as task success with memory minus task success without it, per task class, and that delta goes on the dashboard next to recall.
-
-### Q: Your agent's memory store has 50M memories across 10K tenants. How do you guarantee cross-tenant isolation and what's your blast radius if isolation fails?
-
-**Strong answer:**
-
-The architecture has five isolation layers:
-
-1. **Physical separation at the store layer**: per-tenant collections or shards, not metadata-filtered shared indexes. The shared-index-with-tenant-id pattern fails open under bugs, including encoding bugs: LangGraph's Postgres and SQLite stores joined namespace labels with "." so `("tenant.bob",)` and `("tenant", "bob")` collided, letting a caller who controlled a label read or delete another namespace's items (CVE-2026-115883, October 21, 2026; see [LangGraph persistence](../09-frameworks-and-tools/02-langgraph-orchestration.md#persistence-and-checkpointing)). Derive the tenant key from verified identity, never from a label the caller supplies.
-2. **Enforcement via service-account scoping**: the application code cannot opt out of tenant scope; the database role does not have visibility to other tenants.
-3. **Separate KV-cache prefix per tenant**: prevents cached prompts from leaking between tenants.
-4. **Per-tenant encryption keys**: cross-namespace bytes are unreadable even if returned by a bug.
-5. **Audit logging of every cross-namespace query attempt**: detection in depth.
-
-**Blast radius if isolation fails**: a single bad vector query could leak the *neighborhood* of one query's embedding, potentially hundreds of records from one tenant. Field measurements show ~95% organic leakage rates in unisolated multi-tenant RAG. The mitigation is not "more careful application code"; it is structural separation that cannot be bypassed by application bugs.
-
-### Q: HaluMem shows memory hallucinations accumulate at write time, then propagate. How would you instrument production memory to catch this?
-
-**Strong answer:**
-
-The trap most teams fall into is measuring memory quality only at the QA stage (end-to-end). HaluMem demonstrates that 60-80% of memory errors originate at *extraction* (write) time and propagate. You need to instrument three separate metrics:
-
-1. **Extraction precision**: when the agent writes a fact to L3, is the fact actually supported by the source observation? Sample writes daily, evaluate with a stronger judge.
-2. **Update correctness**: when conflicting facts arrive, did the conflict-resolution logic produce the right outcome? Use bitemporal queries to detect "facts that flipped without supersession metadata."
-3. **QA accuracy**: end-to-end recall correctness.
-
-On top of that, run **shadow-mode replay**: writes go through a verifier model in shadow mode; mismatches between live writes and shadow-verifier writes flag potential hallucinations for review. **Canary facts** in CI ensure the memory system does not silently regress. **Periodic full-store audits** sample random memories and ask "is this still consistent with the source conversation?"
-
-### Q: TTT-E2E compresses context into weights via test-time training. Where does this fit in the L1-L4 hierarchy, and what new failure mode does it introduce?
-
-**Strong answer:**
-
-TTT-E2E sits *between* L1 and L4. It makes context-derived information part of the model itself for the rest of the session. The appeal is latency: constant cost regardless of context length (2.7x speedup at 128K, 35x at 2M tokens on H100 per NVIDIA's benchmarks).
-
-The new failure mode is governance. In-weights memory has:
-
-- **No audit trail**: you cannot inspect "what does this model now believe?"
-- **No eviction interface**: you cannot delete a memory once compressed into weights without rolling back the model state.
-- **GDPR right-to-be-forgotten challenges**: the regulatory framework assumes data is at rest, not in weights.
-- **Harder poisoning detection**: there is no inspectable store to scan for canary signatures.
-
-Beyond governance there is a capability failure mode: the approach reports failing needle-in-a-haystack retrieval beyond its attention window (about 6% versus 99% for full attention at 128K), so it preserves the gist of the context, not verbatim facts. That rules it out as the only memory tier for retrieval-critical work.
-
-The right framing: TTT-E2E moves memory governance from the storage layer to the training and deployment pipeline. The cost is not eliminated; it is relocated. For most production teams in 2026, this is a research direction to track, not a deployable architecture yet. The broader test-time-training family is mapped in [Research Radar, theme 12](../RESEARCH-RADAR.md#12-test-time-training-learning-at-inference).
+ابزارهای **Mem0**، Zep، Letta و Cognee فریم‌ورک‌های استاندارد برای «حافظه هوشمند» در استک‌های Agent هستند.
+- این ابزار به‌طور خودکار «بینش‌های کاربر» (User Insights) را از مکالمات استخراج می‌کند (در Mem0 نسخه v2، یک مرحله استخراج صرفاً افزودنی (ADD-only) به ازای هر نوشتن).
+- این ابزار یک "Memory API" ارائه می‌دهد که Agentها می‌توانند برای افزودن، جستجو یا حذف حافظه‌ها آن را فراخوانی کنند؛ حل تعارض یا بر عهده شماست یا از طریق یک مرحله یکپارچه‌سازی و تجمیع (consolidation) زمان‌بندی‌شده انجام می‌شود.
+- **تأثیرگذاری**: Agentها حس «زنده بودن» را القا می‌کنند زیرا جزئیاتی را که ۳ ماه پیش در یک نشست دیگر بیان کرده‌اید به خاطر می‌آورند.
 
 ---
 
-## References
+## سوالات مصاحبه
 
-### Production Frameworks
-- [Mem0: Production-Ready AI Agents with Scalable Long-Term Memory (ECAI 2025)](https://arxiv.org/abs/2504.19413)
-- [Mem0 AI Memory Benchmarks 2026](https://mem0.ai/blog/ai-memory-benchmarks-in-2026)
-- [Letta repository (MemFS; MemGPT-era server archived August 16, 2026)](https://github.com/letta-ai/letta)
-- [Mem0 v2.0.0 release notes](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
-- [MemGPT: Towards LLMs as Operating Systems (arXiv 2310.08560)](https://arxiv.org/abs/2310.08560)
-- [Anthropic Memory Tool documentation](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)
-- [Anthropic: Introducing Agent Skills (October 2025)](https://www.anthropic.com/news/skills)
-- [Claude Dreams: offline memory consolidation (third-party explainer)](https://www.mindstudio.ai/blog/what-is-claude-dreaming-anthropic-agent-memory)
-- [Zep: Temporal Knowledge Graph Architecture (arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
-- [Graphiti GitHub](https://github.com/getzep/graphiti)
-- [LangMem documentation](https://langchain-ai.github.io/langmem/)
-- [OpenAI Memory and new controls for ChatGPT](https://openai.com/index/memory-and-new-controls-for-chatgpt/)
-- [Cognition: Rebuilding Devin for Claude Sonnet 4.5](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)
+### س: چگونه «حافظه‌های متناقض» ("Conflicting Memories") را در یک سیستم Agentic مدیریت می‌کنید؟
 
-### Research (2023-2026)
-- [Generative Agents: Interactive Simulacra of Human Behavior (Park et al. 2023)](https://arxiv.org/abs/2304.03442)
-- [Reflexion: Language Agents with Verbal Reinforcement Learning (Shinn et al. 2023)](https://arxiv.org/abs/2303.11366)
-- [HippoRAG: Neurobiologically Inspired Long-Term Memory (Gutierrez et al. 2024)](https://arxiv.org/abs/2405.14831)
-- [A-MEM: Agentic Memory for LLM Agents (Xu et al. NeurIPS 2025)](https://arxiv.org/abs/2502.12110)
-- [Multi-Layered Memory Architectures (arXiv 2603.29194, March 2026)](https://arxiv.org/abs/2603.29194)
-- [Memp: Exploring Agent Procedural Memory (Aug 2025)](https://arxiv.org/html/2508.06433v2)
-- [LEGOMem: Modular Procedural Memory for Multi-agent LLM (Oct 2025)](https://arxiv.org/pdf/2510.04851)
-- [Rethinking Memory Mechanisms of Foundation Agents (Feb 2026 survey)](https://arxiv.org/abs/2602.06052)
-- [Position: Episodic Memory is the Missing Piece (arXiv 2502.06975)](https://arxiv.org/pdf/2502.06975)
-- [Just-in-Time Memory: read-time curation of raw trajectories (arXiv 2609.27334, Sep 2026)](https://arxiv.org/abs/2609.27334)
-- [MemTrapBench: memory-induced cognitive traps (arXiv 2608.20202, Aug 2026)](https://arxiv.org/abs/2608.20202)
+**پاسخ قوی:**
+حافظه‌های متناقض (به‌عنوان مثال، کاربر هفته گذشته گفته است «من آبی را دوست دارم» اما اکنون می‌گوید «من قرمز را دوست دارم») از طریق **وزن‌دهی زمانی (Temporal Weighting)** یا **مناقشه صریح (Explicit Disputing)** مدیریت می‌شوند. در معماری من، به هر سه‌تایی حافظه (memory triplet) یک `timestamp` و یک `confidence_score` اختصاص داده می‌شود. اگر واقعیت جدیدی با یک واقعیت قدیمی در تناقض باشد، از طریق Prompt به Agent دستور داده می‌شود تا با درخواست شفاف‌سازی از کاربر یا بازگشت به جدیدترین `timestamp` به‌عنوان پیش‌فرض، «تناقض را برطرف کند» ("Resolve the Conflict"). ما همچنین از **توابع زوال (Decay Functions)** استفاده می‌کنیم که در آن، حافظه‌های قدیمی‌تر و تقویت‌نشده در نهایت از ایندکس فعال هرس (prune) می‌شوند.
 
-### Safety, Poisoning, and Hallucinations
-- [HaluMem: Operation-Level Memory Hallucination Benchmark (Nov 2025)](https://arxiv.org/abs/2511.03506)
-- [MINJA Memory Injection Attack (NeurIPS 2025)](https://openreview.net/forum?id=QVX6hcJ2um)
-- [MemoryGraft Persistent Memory Compromise (Dec 2025)](https://arxiv.org/html/2512.16962v1)
-- [Palo Alto Unit 42: Indirect prompt injection poisons AI long-term memory](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/)
-- [Multi-tenant AI Infrastructure: 5 Isolation Layers](https://medium.com/@isuruig/multi-tenant-ai-infrastructure-the-5-isolation-layers-that-determine-whether-your-customers-data-stays-separate-340aaeef4922)
-- [The Day-30 Problem: agent memory drift](https://cipherbuilds.ai/blog/day-30-agent-memory-problem)
+### س: چرا «پنجره زمینه» (Context Window) به تنهایی برای معماری یک Agent در سطح Staff کافی نیست؟
 
-### Infrastructure
-- TTT-E2E: "End-to-End Test-Time Training for Long Context" arXiv:2512.23675, and the [NVIDIA writeup: Reimagining LLM Memory](https://developer.nvidia.com/blog/reimagining-llm-memory-using-context-as-training-data-unlocks-models-that-learn-at-test-time/)
-- [vLLM PagedAttention](https://docs.vllm.ai/en/latest/design/paged_attention/)
-- [Anthropic Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+**پاسخ قوی:**
+اول، **هزینه و تاخیر (Latency)**: خواندن از کش اکنون ۰٫۰۲۵ تا ۰٫۱ برابر ورودی پایه هزینه دارد، بنابراین یک پیشوند ۱ میلیون Token کاملاً کش‌شده دیگر غیرمنطقی نیست (حدود ۰٫۱۰ تا ۰٫۲۵ دلار به‌ازای هر نوبت در مدل‌های فعلی Claude: مدل Sonnet 5.5 با ۰٫۱۰ دلار به‌ازای هر ۱ میلیون Token کش‌شده از ۷ اکتبر، Opus 5.5 با ۰٫۲۰ دلار، Fable 5.1 با ۰٫۲۵ دلار). اما عدم اصابت به کش (cache misses) با نرخ کامل محاسبه می‌شود؛ OpenAI زمانی که ورودی از 272K عبور کند، کل درخواست را با نرخ‌های زمینه طولانی (long-context) محاسبه می‌کند؛ Claude Haiku 5.5 به‌محض این‌که Prompt از ۱۰۰ هزار Token فراتر رود، کل درخواست را با نرخ ۵ برابر محاسبه می‌کند (خواندن و نوشتن در کش نیز در محاسبه این طول به حساب می‌آیند) و تاخیر (Latency) مربوط به prefill نیز همچنان با افزایش طول بیشتر می‌شود. دوم، **نسبت سیگنال به نویز (Signal-to-Noise)**: پنجره‌های زمینه بزرگ از پوسیدگی زمینه (context rot) رنج می‌برند: مدل با نوبت‌های تاریخی نامرتبط دچار حواس‌پرتی می‌شود و بنچمارک MemTrapBench نشان داد که حتی حافظه‌های مرتبط نیز می‌توانند استدلال را تحریف کنند. یک معماری در سطح Staff از **بازیابی انتخابی حافظه (Selective Memory Retrieval)** (پیاده‌سازی RAG روی تاریخچه) استفاده می‌کند تا تنها ۳ تا ۵ تعامل تاریخی بسیار مرتبط را فراخوانی کند و موتور استدلال (Reasoning Engine) را روی زیرهدف فعلی متمرکز نگه دارد.
+
+### س: چگونه حافظه رویه‌ای (procedural memory) را برای یک Agent هوش مصنوعی در محیط پروداکشن طراحی می‌کنید؟
+
+**پاسخ قوی:**
+
+من حافظه رویه‌ای را به‌صورت ترکیبی از **رجیستری مهارت‌ها (skills registry)، گراف گردش کار (workflow graph) و خط‌مشی‌های استفاده از ابزار (tool-use policies)** طراحی می‌کنم. هر رویه، نوع وظیفه، مراحل مورد نیاز، ابزارهای در دسترس، بررسی‌های اعتبارسنجی، حالت‌های شکست و قواعد ارجاع به سطوح بالاتر (escalation rules) را مشخص می‌کند. پس از هر بار اجرا، Agent می‌تواند بازاندیشی (reflection) انجام دهد و در صورت کشف رویکردی بهتر، رویه را به‌روزرسانی کند. به‌عنوان مثال، اگر یک Agent از نوع NL2SQL مکرراً به دلیل نادیده گرفتن بازرسی اسکیما دچار شکست شود، می‌توانیم بازرسی اسکیما را به‌عنوان یک گام اولیه الزامی در حافظه رویه‌ای برای تمامی وظایف تولید SQL تعریف کنیم.
+
+### س: چه زمانی حافظه رویدادی (episodic memory) به‌جای یک دارایی، به یک بار منفی (liability) تبدیل می‌شود؟
+
+**پاسخ قوی:**
+
+حافظه رویدادی در سه الگوی مشخص به یک بار منفی تبدیل می‌شود. نخست، **بارگذاری بیش‌ازحد ایندکس (index overload)**: افزودن ۱٬۰۰۰ مشاهده با کیفیت پایین، آن ۱۰ مورد باکیفیت را در فرآیند بازیابی مدفون می‌کند. این پدیده، فراموشی فاجعه‌بار (catastrophic forgetting) از منظر RAG است. دوم، **الگوی انحراف روز ۳۰ام (Day-30 drift pattern)**: کیفیت Agent تقریباً ۳۰ روز پس از ورود به محیط پروداکشن افت می‌کند، چرا که مخزن حافظه رویدادی با نویزهایی پر می‌شود که بخش بازیابی قادر به تفکیک آن‌ها از سیگنال نیست. سوم، **نشت زمینه کهنه (stale-context bleeding)**: مسیرهای گذشته (trajectories) که تحت یک پیکربندی موفق بوده‌اند، تحت پیکربندی جدید به زمینه‌ای *اشتباه* تبدیل می‌شوند. توالی موفقی از ابزارها برای Stripe، زمانی که کاربر به Adyen مهاجرت کرده باشد، کاملاً گمراه‌کننده خواهد بود.
+
+راهکارهای کاهش این اثر عبارتند از بازیابی با وزن‌دهی مبتنی بر کیفیت، تثبیت و تجمیع در لایه L3، و مرزبندی‌های زمانی سخت‌گیرانه برای مسیرهای حساس به زمینه. درس عمیق‌تر این است: حافظه رویدادی از همان روز اول به یک *خط‌مشی هرس (pruning policy)* نیاز دارد. بدون چنین خط‌مشی، این حافظه به بدهی فنی (technical debt) تبدیل می‌شود که به‌صورت خطی با میزان استفاده افزایش می‌یابد.
+
+### س: چگونه از مسمومیت حافظه (memory poisoning) زمانی که Agentها می‌توانند در مخزن بلندمدت خود بنویسند، جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+
+بخش دشوار این است که حملات اخیر (مانند MINJA و MemoryGraft) از نوع *فقط-پرس‌وجو (query-only)* هستند: یعنی به هیچ دسترسی ارتقایافته‌ای نیاز ندارند. سم هفته‌ها پیش از فعال شدن کاشته می‌شود. بنابراین مدل تهدید این است: «هر ورودی می‌تواند به یک حافظه معتبر در آینده تبدیل شود.» دفاع در برابر این تهدید دارای چهار لایه است:
+
+۱. **منشأ در زمان نوشتن (Provenance at write time)**: هر حافظه حامل `source` (بیان‌شده توسط کاربر، استنباط‌شده توسط مدل، خروجی ابزار)، `timestamp` و `trust_tier` است.
+۲. **مدل حفاظتی (Guardrail) در زمان نوشتن**: یک دسته‌بند (classifier) کوچک‌تر، عملیات نوشتن مشکوک با ساختار دستورالعملی را پیش از ثبت در مخزن رد می‌کند.
+۳. **آستانه‌های اعتبارسنجی همبسته (Corroboration thresholds)**: تصمیمات با ریسک بالا نمی‌توانند بر اساس یک حافظه تکی با سطح اعتماد پایین اتخاذ شوند؛ آن‌ها نیازمند چندین ثبت تاییدکننده و مستقل هستند.
+۴. **تست‌های قناری (Canary tests) در CI**: پی‌لودهای سم مصنوعی نباید به خروجی‌ها نفوذ کنند. این تست‌ها باید به‌صورت هفتگی اجرا شوند.
+
+مهم‌ترین تفکیک معماری: سطح ابزارهای Agent و سطح نوشتن حافظه آن نباید سطح اعتماد یکسانی داشته باشند. خروجی‌های ابزار پیش از تبدیل شدن به حافظه، باید از یک پاک‌سازی‌کننده (sanitizer) عبور کنند.
+
+### س: انتخاب لایه حافظه: هر یک از این موارد را در کجا قرار می‌دهید و چرا؟ (الف) محدودیت نرخ API کاربر، (ب) مراحل استقرار (Deployment) سرویس ما، (ج) آخرین تلاش ناموفق Agent در این وظیفه، (د) قیمت سهام امروز.
+
+**پاسخ قوی:**
+
+(الف) **معنایی L3 (L3 semantic)** با اعتبار دوگانه زمانی (bitemporal validity). این مورد یک واقعیت در سطح مستاجر (multi-tenant) با طول عمر مبتنی بر جایگزینی (supersession lifetime) است. در L4 قرار نمی‌گیرد، زیرا داده است، نه رویه.
+
+(ب) **رویه‌ای L4 (L4 procedural)** به‌عنوان یک مهارت یا دستورالعمل اجرایی (playbook) دارای نسخه. این مورد یک دستورالعمل چندمرحله‌ای با شاخه‌های شرطی است. مهارت‌ها با یکدیگر ترکیب می‌شوند؛ اما سه‌تایی‌های معنایی ترکیب‌پذیر نیستند.
+
+(ج) **رویدادی خام L2 (L2 episodic raw)**، همراه با یک *جهش بازاندیشی (reflection hop)* به L4 در صورتی که شکست، درسی قابل تعمیم را آشکار کند. مسیر خام متعلق به حافظه رویدادی است. آن درس («هرگز عملیات migration را در ساعات اوج مصرف اجرا نکنید») مستحق ثبت به سبک Reflexion در حافظه رویه‌ای است.
+
+(د) **هیچ‌کدام: ابزار را فراخوانی کنید.** واقعیت‌های با تغییرات سریع که دارای منبع حقیقت زنده (live source of truth) هستند هرگز نباید وارد حافظه شوند. آن‌ها طبق تعریف، کهنه و منقضی می‌شوند.
+
+قاعده کلی: داده‌ها در L3، رویه‌ها در L4، و مشاهدات در L2 قرار می‌گیرند؛ و هرگز واقعیت‌های با تغییرات سریع را که دارای یک منبع زنده هستند ذخیره نکنید.
+
+### س: خط‌مشی تجمیع و تثبیتی (consolidation policy) را که برای انتقال از حافظه رویدادی به معنایی طراحی می‌کنید، شرح دهید. چه زمانی یک رویداد به یک واقعیت تبدیل می‌شود؟
+
+**پاسخ قوی:**
+
+من از یک خط‌مشی ارتقای مبتنی بر آستانه (threshold-based graduation policy) استفاده می‌کنم، نه زوال ضمنی (implicit decay):
+
+- **آستانه تکرار (Frequency threshold)**: تعداد N مشاهده مستقل از یک الگوی یکسان (معمولاً بین ۳ تا ۵ مورد).
+- **وزن‌دهی سطح اطمینان (Confidence weighting)**: بیان‌شده توسط کاربر > خروجی ابزار > استنباط‌شده توسط مدل.
+- **بررسی داور (Judge review)**: یک جاب دسته‌ای زمان‌بندی‌شده برای تجمیع، یک داور LLM (یا بازبین انسانی برای حوزه‌های با حساسیت بالا) را روی کاندیداهای ارتقا اجرا می‌کند.
+- **زمان‌بندی‌شده، نه همگام (Scheduled, not synchronous)**: تجمیع به‌صورت خارج از نوبت (out-of-band) روی یک cron انجام می‌شود، نه به‌ازای هر نوبت. این کار از تقویت نوشتن (write amplification) جلوگیری می‌کند.
+- **دوطرفه (Bidirectional)**: واقعیت‌های معنایی در L3 می‌توانند مجدداً به‌عنوان زمینه رویدادی برای وظایف خاص نمونه‌سازی شوند. حافظه در هر دو جهت جریان دارد.
+
+دامی که باید از آن اجتناب کرد، تجمیع ضمنی صرفاً از طریق وزن‌های زوال (decay weights) است. این روش در مقیاس کوچک کار می‌کند اما در مقیاس پروداکشن در سکوت شکست می‌خورد زیرا هیچ دنباله ممیزی (audit trail) برای این‌که «چرا این واقعیت در L3 ظاهر شد؟» وجود ندارد.
+
+### س: یک بنچمارک نشان می‌دهد که Agent شما با خاموش بودن حافظه عملکرد بهتری دارد. چه کار می‌کنید؟
+
+**پاسخ قوی:**
+
+من به‌جای این‌که آن را یک باگ فرض کنم، موضوع را جدی می‌گیرم، زیرا بنچمارک MemTrapBench (اوت ۲۰۲۶) دقیقاً همین پدیده را در پنج فریم‌ورک حافظه کشف کرد: حافظه‌های درست و مرتبط باعث تثبیت استدلال (reasoning fixation) و تحریف باورها (belief distortion) شدند و عملکرد تمام استراتژی‌ها ضعیف‌تر از حالت بدون حافظه بود. ابتدا ارزیابی (eval) را تفکیک می‌کنم: کیفیت بازیابی، تصمیمات تزریق (injection decisions)، و موفقیت سرتاسری وظیفه با و بدون حافظه، که بر اساس نوع وظیفه دسته‌بندی می‌شوند. معمولاً حافظه در وظایف مربوط به شخصی‌سازی و تداوم (continuity) کمک‌کننده است و در وظایف استدلال تازه که پاسخ گذشته باعث لنگر انداختن (anchoring) مدل می‌شود، آسیب می‌زند. سپس یک گیت تزریق (injection gate) اضافه می‌کنم: گزینه‌های کاندیدا را بازیابی کن، اما تزریق را فقط زمانی انجام بده که یک دسته‌بند کم‌هزینه یا یک قاعده بگوید حافظه برای تصمیم‌گیری در این وظیفه مرتبط است؛ و آن را به‌عنوان زمینه گذشته همراه با یک `timestamp` و نه به‌عنوان دستورالعمل قالب‌بندی کن. من همچنین انتقال گزینش و پالایش (curation) به زمان خواندن (به سبک Just-in-Time Memory) را در نظر می‌گیرم تا آنچه تزریق می‌شود برای وظیفه فعلی انتخاب شود، نه این‌که در زمان نوشتن استخراج شده باشد. موفقیت به‌صورت تفاضل موفقیت وظیفه با حافظه منهای موفقیت وظیفه بدون حافظه، به‌ازای هر دسته از وظایف اندازه‌گیری می‌شود و این مقدار دلتا (delta) در داشبورد در کنار بازخوانی (recall) قرار می‌گیرد.
+
+### پرسش: مخزن حافظه Agent شما دارای ۵۰ میلیون حافظه در میان ۱۰ هزار مستأجر (tenant / multi-tenant) است. چگونه ایزوله‌سازی میان‌مستأجری (cross-tenant / multi-tenant) را تضمین می‌کنید و در صورت شکست ایزوله‌سازی، شعاع آسیب (blast radius) شما چقدر خواهد بود؟
+
+**پاسخ قوی:**
+
+این معماری دارای پنج لایه ایزوله‌سازی است:
+
+1. **جداسازی فیزیکی در لایه ذخیره‌سازی (store layer)**: مجموعه‌ها (collections) یا شارد‌های (shards) اختصاصی به ازای هر مستأجر (tenant / multi-tenant)، و نه ایندکس‌های مشترک فیلترشده با متادیتا. الگوی «ایندکس مشترک با شناسه مستأجر (tenant-id / multi-tenant)» در مواجهه با باگ‌ها به صورت ناامن باز می‌شود (fails open)، از جمله در باگ‌های کدگذاری (encoding): مخازن Postgres و SQLite در فریم‌ورک LangGraph، برچسب‌های فضای نام (namespace) را با "." ادغام می‌کردند، بنابراین `("tenant.bob",)` و `("tenant", "bob")` دچار تداخل (تلاقی) می‌شدند و به فراخواننده‌ای که کنترل یک برچسب را در دست داشت اجازه می‌دادند آیتم‌های فضای نام دیگری را بخواند یا حذف کند (شناسه CVE-2026-115883، ۲۱ اکتبر ۲۰۲۶؛ ببینید: [ماندگاری در LangGraph](../09-frameworks-and-tools/02-langgraph-orchestration.md#persistence-and-checkpointing)). کلید مستأجر (tenant key / multi-tenant) را همواره از هویت تأییدشده استخراج کنید، نه از برچسبی که فراخواننده ارائه می‌دهد.
+2. **اعمال اجباری از طریق محدودسازی دامنه حساب کاربری سرویس (service-account scoping)**: کد برنامه نمی‌تواند از دامنه مستأجر (tenant scope / multi-tenant) خارج شود؛ نقش پایگاه داده دسترسی و دیدی به سایر مستأجرها (tenants / multi-tenant) ندارد.
+3. **پیشوند مجزای کَش KV به ازای هر مستأجر (tenant / multi-tenant)**: از نشت Promptهای کَش‌شده میان مستأجرها (tenants / multi-tenant) جلوگیری می‌کند.
+4. **کلیدهای رمزنگاری اختصاصی به ازای هر مستأجر (tenant / multi-tenant)**: بایت‌های فضای نام دیگر حتی اگر بر اثر یک باگ بازگردانده شوند، غیرقابل خواندن هستند.
+5. **ثبت لاگ‌های حسابرسی (Audit logging) برای هرگونه تلاش به منظور پرس‌وجو میان فضاهای نام (cross-namespace)**: تشخیص در عمق (detection in depth).
+
+**شعاع آسیب (Blast radius) در صورت شکست ایزوله‌سازی**: یک کوئری برداری نادرست می‌تواند *همسایگی (neighborhood)* Embedding یک کوئری را فاش کند که به طور بالقوه صدها رکورد از یک مستأجر (tenant / multi-tenant) را در بر می‌گیرد. اندازه‌گیری‌های میدانی نرخ نشت طبیعی در حدود ۹۵٪ را در سیستم‌های RAG چندمستأجری (multi-tenant) بدون ایزوله‌سازی نشان می‌دهند. راهکار کاهش ریسک «کدنویسی محتاطانه‌تر در برنامه» نیست؛ بلکه جداسازی ساختاری است که باگ‌های سطح برنامه نتوانند آن را دور بزنند.
+
+### پرسش: پژوهش HaluMem نشان می‌دهد که توهم‌های حافظه در زمان نوشتن (write time) انباشته می‌شوند و سپس انتشار می‌یابند. چگونه حافظه محیط عملیاتی را برای شناسایی این موضوع مجهز (instrument) می‌کنید؟
+
+**پاسخ قوی:**
+
+دامی که اکثر تیم‌ها در آن گرفتار می‌شوند، سنجش کیفیت حافظه صرفاً در مرحله QA (به صورت سرتاسری یا end-to-end) است. پژوهش HaluMem نشان می‌دهد که ۶۰ تا ۸۰ درصد از خطاهای حافظه در زمان *استخراج (extraction)* (هنگام نوشتن) سرچشمه می‌گیرند و سپس انتشار می‌یابند. شما باید سه معیار (متریک) مجزا را اندازه‌گیری و پایش (instrument) کنید:
+
+1. **دقت استخراج (Extraction precision)**: هنگامی که Agent یک واقعیت را در لایه L3 می‌نویسد، آیا آن واقعیت واقعاً توسط مشاهده مبدأ (source observation) پشتیبانی می‌شود؟ عملیات نوشتن را روزانه نمونه‌برداری کنید و با یک داور (judge) قوی‌تر مورد ارزیابی قرار دهید.
+2. **صحت به‌روزرسانی (Update correctness)**: هنگامی که حقایق متناقض وارد می‌شوند، آیا منطق حل تعارض نتیجه درستی تولید کرده است؟ از پرس‌وجوهای دو-زمانه‌ای (bitemporal queries) برای شناسایی «حقایقی که بدون متادیتای جایگزینی (supersession metadata) تغییر وضعیت داده‌اند» استفاده کنید.
+3. **دقت QA (یا QA accuracy)**: صحت بازیابی (recall) سرتاسری (end-to-end).
+
+علاوه بر این، **بازپخش در حالت سایه (shadow-mode replay)** را اجرا کنید: عملیات نوشتن در حالت سایه از طریق یک مدل اعتبارسنج (verifier model) عبور می‌کنند؛ عدم تطابق میان نوشتن‌های زنده و نوشتن‌های اعتبارسنجِ سایه، توهم‌های بالقوه را برای بررسی علامت‌گذاری می‌کند. **حقایق کاناری (Canary facts)** در فرایند CI تضمین می‌کنند که سیستم حافظه به صورت خاموش دچار پسرفت (regression) نشود. **حسابرسی‌های دوره‌ای کل مخزن (Periodic full-store audits)** حافظه‌های تصادفی را نمونه‌برداری کرده و این پرسش را مطرح می‌کنند که «آیا این حافظه هنوز با مکالمه مبدأ سازگار است؟»
+
+### پرسش: روش TTT-E2E کانتکست را از طریق آموزش در زمان تست (test-time training) در وزن‌ها فشرده می‌کند. این روش در کجای سلسله‌مراتب L1-L4 جای می‌گیرد و چه حالت شکست (failure mode) جدیدی معرفی می‌کند؟
+
+**پاسخ قوی:**
+
+روش TTT-E2E *میان* لایه L1 و L4 قرار می‌گیرد. این روش اطلاعات برگرفته از کانتکست را برای ادامه نشست (session) به بخشی از خودِ مدل تبدیل می‌کند. جذابیت آن در تاخیر (Latency) است: هزینه ثابت صرف‌نظر از طول کانتکست (بر اساس بنچمارک‌های NVIDIA، افزایش سرعت ۲.۷ برابری در 128K و ۳۵ برابری در ۲ میلیون Token روی GPUهای `H100`).
+
+حالت شکست جدید مربوط به حاکمیت و نظارت (governance) است. حافظه درون‌وزن‌ها (In-weights memory) دارای معایب زیر است:
+
+- **عدم وجود ردپای حسابرسی (No audit trail)**: شما نمی‌توانید بررسی کنید که «این مدل اکنون به چه چیزی باور دارد؟»
+- **عدم وجود رابط حذف/تخلیه (No eviction interface)**: پس از فشرده‌سازی حافظه درون وزن‌ها، نمی‌توانید بدون بازگردانی وضعیت مدل (rollback)، آن حافظه را حذف کنید.
+- **چالش‌های حق فراموش شدن در GDPR**: چارچوب‌های رگولاتوری فرض می‌کنند که داده‌ها در حالت سکون (at rest) ذخیره شده‌اند، نه درون وزن‌های مدل.
+- **تشخیص دشوارتر مسموم‌سازی (Harder poisoning detection)**: هیچ مخزن قابل بازرسی برای اسکن امضاهای کاناری وجود ندارد.
+
+فراتر از حاکمیت، یک حالت شکست در قابلیت‌ها (capability failure mode) نیز وجود دارد: گزارش‌ها نشان می‌دهند که این رویکرد در بازیابی «سوزن در انبار کاه» (needle-in-a-haystack) فراتر از پنجره توجه خود با شکست مواجه می‌شود (حدود ۶٪ در مقایسه با ۹۹٪ برای توجه کامل در 128K)، بنابراین تنها جان‌کلام (gist) کانتکست را حفظ می‌کند و نه حقایق کلمه‌به‌کلمه (verbatim) را. این ویژگی باعث می‌شود که این روش به عنوان تنها لایه حافظه برای کارهایی که بازیابی در آن‌ها نقشی حیاتی دارد، کنار گذاشته شود.
+
+چارچوب‌بندی صحیح این است: روش TTT-E2E حاکمیت حافظه را از لایه ذخیره‌سازی به خط لوله آموزش و استقرار (Deployment) منتقل می‌کند. هزینه حذف نشده، بلکه جابه‌جا شده است. برای اغلب تیم‌های فعال در محیط عملیاتی در سال ۲۰۲۶، این یک مسیر پژوهشی برای پیگیری است و هنوز یک معماری قابل استقرار (Deployment) به شمار نمی‌رود. خانواده گسترده‌تر آموزش در زمان تست (Test-Time Training) در [رادار پژوهش، محور ۱۲](../RESEARCH-RADAR.md#12-test-time-training-learning-at-inference) ترسیم شده است.
 
 ---
 
-*Next: [Planning and Decomposition](06-planning-and-decomposition.md)*
+## منابع
+
+### فریم‌ورک‌های عملیاتی
+- [Mem0: ساخت Agentهای هوش مصنوعی آماده محیط عملیاتی با حافظه بلندمدت مقیاس‌پذیر (ECAI 2025)](https://arxiv.org/abs/2504.19413)
+- [بنچمارک‌های حافظه هوش مصنوعی Mem0 در سال ۲۰۲۶](https://mem0.ai/blog/ai-memory-benchmarks-in-2026)
+- [مخزن Letta (شامل MemFS؛ سرور دوره MemGPT در ۱۶ آگوست ۲۰۲۶ آرشیو شد)](https://github.com/letta-ai/letta)
+- [یادداشت‌های انتشار نسخه v2.0.0 از Mem0](https://github.com/mem0ai/mem0/releases/tag/v2.0.0)
+- [MemGPT: به سوی استفاده از LLMها به عنوان سیستم‌عامل (arXiv 2310.08560)](https://arxiv.org/abs/2310.08560)
+- [مستندات ابزار حافظه Anthropic](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)
+- [شرکت Anthropic: معرفی مهارت‌های Agent (اکتبر ۲۰۲۵)](https://www.anthropic.com/news/skills)
+- [رویابینی Claude (Claude Dreams): یکپارچه‌سازی حافظه به صورت آفلاین (توضیح‌دهنده شخص ثالث)](https://www.mindstudio.ai/blog/what-is-claude-dreaming-anthropic-agent-memory)
+- [پلتفرم Zep: معماری گراف دانش زمانی (arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
+- [گیت‌هاب Graphiti](https://github.com/getzep/graphiti)
+- [مستندات LangMem](https://langchain-ai.github.io/langmem/)
+- [حافظه OpenAI و کنترل‌های جدید برای ChatGPT](https://openai.com/index/memory-and-new-controls-for-chatgpt/)
+- [شرکت Cognition: بازسازی Devin برای Claude Sonnet 4.5](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)
+
+### پژوهش‌ها (۲۰۲۳-۲۰۲۶)
+- [Agentهای مولد: شبیه‌سازی تعاملی رفتار انسان (پارک و همکاران، ۲۰۲۳)](https://arxiv.org/abs/2304.03442)
+- [Reflexion: ساخت Agentهای زبانی با یادگیری تقویتی کلامی (شین و همکاران، ۲۰۲۳)](https://arxiv.org/abs/2303.11366)
+- [HippoRAG: حافظه بلندمدت با الهام از ساختارهای عصب‌شناختی (گوتیرز و همکاران، ۲۰۲۴)](https://arxiv.org/abs/2405.14831)
+- [A-MEM: حافظه Agentic برای Agentهای مبتنی بر LLM (شو و همکاران، NeurIPS 2025)](https://arxiv.org/abs/2502.12110)
+- [معماری‌های حافظه چندلایه (arXiv 2603.29194، مارس ۲۰۲۶)](https://arxiv.org/abs/2603.29194)
+- [Memp: بررسی حافظه رویه‌ای در Agentها (آگوست ۲۰۲۵)](https://arxiv.org/html/2508.06433v2)
+- [LEGOMem: حافظه رویه‌ای ماژولار برای سامانه‌های چندعاملی مبتنی بر LLM (اکتبر ۲۰۲۵)](https://arxiv.org/pdf/2510.04851)
+- [بازاندیشی در سازوکارهای حافظه Agentهای بنیادین (بررسی اجمالی، فوریه ۲۰۲۶)](https://arxiv.org/abs/2602.06052)
+- [دیدگاه: حافظه رویدادی تکه گمشده پازل است (arXiv 2502.06975)](https://arxiv.org/pdf/2502.06975)
+- [حافظه به‌موقع (Just-in-Time Memory): گزینش مسیرهای خام در زمان خواندن (arXiv 2609.27334، سپتامبر ۲۰۲۶)](https://arxiv.org/abs/2609.27334)
+- [MemTrapBench: تله‌های شناختی ناشی از حافظه (arXiv 2608.20202، آگوست ۲۰۲۶)](https://arxiv.org/abs/2608.20202)
+
+### ایمنی، مسموم‌سازی و توهمات
+- [HaluMem: بنچمارک توهمات حافظه در سطح عملیات (نوامبر ۲۰۲۵)](https://arxiv.org/abs/2511.03506)
+- [حمله تزریق حافظه MINJA (کنفرانس NeurIPS 2025)](https://openreview.net/forum?id=QVX6hcJ2um)
+- [MemoryGraft: نفوذ و مصالحه‌پذیری حافظه ماندگار (دسامبر ۲۰۲۵)](https://arxiv.org/html/2512.16962v1)
+- [واحد ۴۲ پالو آلتو: تزریق غیرمستقیم Prompt حافظه بلندمدت هوش مصنوعی را مسموم می‌کند](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/)
+- [زیرساخت هوش مصنوعی چندمستأجری (multi-tenant): ۵ لایه ایزوله‌سازی](https://medium.com/@isuruig/multi-tenant-ai-infrastructure-the-5-isolation-layers-that-determine-whether-your-customers-data-stays-separate-340aaeef4922)
+- [مسئله روز سی‌ام (The Day-30 Problem): انحراف حافظه Agent](https://cipherbuilds.ai/blog/day-30-agent-memory-problem)
+
+### زیرساخت
+- روش TTT-E2E: مقاله "End-to-End Test-Time Training for Long Context" با شناسه arXiv:2512.23675، و [گزارش تحلیلی NVIDIA: بازتعریف حافظه LLM](https://developer.nvidia.com/blog/reimagining-llm-memory-using-context-as-training-data-unlocks-models-that-learn-at-test-time/)
+- [مستندات PagedAttention در vLLM](https://docs.vllm.ai/en/latest/design/paged_attention/)
+- [مهندسی کارآمد کانتکست برای Agentهای هوش مصنوعی از شرکت Anthropic](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+
+---
+
+*بعدی: [برنامه‌ریزی و تجزیه وظایف (Planning and Decomposition)](06-planning-and-decomposition.md)*
+
+</div>

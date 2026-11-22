@@ -1,188 +1,192 @@
-# Multi-Agent Orchestration
+<div dir="rtl">
 
-Complex systems are rarely one agent. They are teams of specialized agents. Orchestration has matured from "Blind Managers" to **Hierarchical Supervisors**, **Dynamic Swarms**, and **Cross-Vendor Agent Networks** enabled by interoperability protocols like A2A. Gartner projected in August 2025 that 40% of enterprise applications will feature task-specific AI agents by the end of 2026, up from less than 5% in 2025.
+# ارکستراسیون چند-Agent (Multi-Agent Orchestration)
 
-## Table of Contents
+سیستم‌های پیچیده به‌ندرت تنها از یک Agent تشکیل می‌شوند؛ بلکه تیم‌هایی از Agentهای تخصصی هستند. ارکستراسیون از «مدیران کور» (Blind Managers) فراتر رفته و به **ناظران سلسله‌مراتبی (Hierarchical Supervisors)**، **Swarmهای پویا (Dynamic Swarms)** و **شبکه‌های Agent بین‌فروشنده‌ای (Cross-Vendor Agent Networks)** که به واسطه پروتکل‌های تعامل‌پذیری مانند A2A امکان‌پذیر شده‌اند، تکامل یافته است. گارتنر (Gartner) در اوت ۲۰۲۵ پیش‌بینی کرد که تا پایان سال ۲۰۲۶، ۴۰٪ از برنامه‌های کاربردی سازمانی دارای Agentهای هوش مصنوعی ویژه وظایف خاص خواهند بود، در حالی که این رقم در سال ۲۰۲۵ کمتر از ۵٪ بود.
 
-- [Why Multi-Agent?](#why-multi-agent)
-- [The Supervisor Pattern](#the-supervisor-pattern-hierarchical)
-- [Swarms (The OpenAI Pattern)](#swarms-the-openai-pattern)
-- [The Pipeline Pattern](#the-pipeline-pattern-workflows-as-code)
-- [Graph-Based Orchestration (2026 Dominant Pattern)](#graph-based-orchestration-2026-dominant-pattern)
-- [Cross-Vendor Agent Orchestration via A2A](#cross-vendor-agent-orchestration-via-a2a)
-- [The 2026 Framework Landscape for Multi-Agent](#the-2026-framework-landscape-for-multi-agent)
-- [State Management in Agent Teams](#state-management)
-- [Peer-to-Peer (P2P) Debate](#peer-to-peer-p2p-debate)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Why Multi-Agent?
-
-A single agent with 50 tools experiences **Cognitive Load**.
-1. **Specialization**: A "Code Agent" can use a model optimized for Python, while a "Search Agent" uses a model optimized for RAG.
-2. **Parallelism**: Multiple agents can work on independent sub-tasks simultaneously.
-3. **Decoupled Evaluation**: You can evaluate the "Writer Agent" separately from the "Researcher Agent."
+- [چرا چند-Agent؟](#why-multi-agent)
+- [الگوی ناظر (سلسله‌مراتبی)](#the-supervisor-pattern-hierarchical)
+- [Swarmها (الگوی OpenAI)](#swarms-the-openai-pattern)
+- [الگوی خط لوله (جریان‌های کاری در قالب کد)](#the-pipeline-pattern-workflows-as-code)
+- [ارکستراسیون مبتنی بر گراف (الگوی غالب ۲۰۲۶)](#graph-based-orchestration-2026-dominant-pattern)
+- [ارکستراسیون Agent بین‌فروشنده‌ای از طریق A2A](#cross-vendor-agent-orchestration-via-a2a)
+- [چشم‌انداز فریم‌ورک‌های چند-Agent در سال ۲۰۲۶](#the-2026-framework-landscape-for-multi-agent)
+- [مدیریت وضعیت در تیم‌های Agent](#state-management)
+- [مناظره همتا‌به‌همتا (P2P Debate)](#peer-to-peer-p2p-debate)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Supervisor Pattern (Hierarchical)
+## چرا چند-Agent؟
 
-The most common enterprise pattern as of 2026.
-
-- **The Supervisor**: A high-reasoning model (Claude Opus 5.5 or Fable 5.1, GPT-6 Astra or GPT-6.1 Sol) that decomposes the user prompt and delegates to workers.
-- **Workers**: Fast, cost-efficient models (Claude Sonnet 5.5 or Haiku 5.5, GPT-6 Luna or GPT-6.1 Terra, Gemini 3.8 Flash) that perform the work.
-- **Reviewer**: A separate agent that validates the consolidated output against the supervisor's original plan.
-
-**Architecture**: LangGraph remains the dominant framework for implementing these state-aware hierarchical loops. The Claude Agent SDK, Google ADK, and Microsoft Agent Framework all support this pattern natively as of 2026.
-
-**Re-check the tier split before you pay for it.** The price gap that justified cheap workers under an expensive supervisor has narrowed: Claude Sonnet 5.5, GPT-6 Sol, and GPT-6.1 Sol all list at $2/$10 per 1M tokens, Opus 5.5 dropped to $4/$20, and Anthropic's own (vendor-reported) agentic evals put Sonnet 5.5 within a few points of Opus 5.5. If the worker tier is nearly as capable and only 2x cheaper, the coordination overhead of a supervisor tree can cost more than it saves. October reopened the gap at the bottom: Claude Haiku 5.5 lists at $0.10/$0.50 for prompts up to 100K tokens (5x on the whole request above that) and GPT-6.1 Terra at $1/$5, so narrow, short-context worker tasks are cheap again while long-context workers can cross a price cliff. Re-run the routing eval on each model generation.
-
-**The supervisor is now also a product.** Coding products and managed runtimes ship the coordinator for you: Cursor's Projects beta (September 10, 2026) has a coordinator agent plan the work and delegate to as many parallel subagents as needed, and Cursor reports (vendor figure, internal use) that new Projects users merge 30% more PRs; OpenAI's Agents API caps fan-out with `max_concurrent_subagents` (default 6); Claude Managed Agents adds an `advisor` entry to the multiagent roster that the primary thread can consult mid-turn. A platform-level concurrency cap is the budget control the supervisor pattern always needed, so set it deliberately rather than inheriting the default.
+یک تک-Agent با ۵۰ ابزار دچار **بار شناختی (Cognitive Load)** می‌شود.
+1. **تخصصی‌سازی (Specialization)**: یک «Code Agent» می‌تواند از مدلی بهینه‌شده برای Python استفاده کند، در حالی که یک «Search Agent» از مدلی بهینه‌شده برای RAG بهره می‌برد.
+2. **موازی‌سازی (Parallelism)**: چندین Agent می‌توانند به‌طور هم‌زمان بر روی زیروظایف مستقل کار کنند.
+3. **ارزیابی تفکیک‌شده (Decoupled Evaluation)**: شما می‌توانید «Writer Agent» (Agent نویسنده) را به‌طور مستقل از «Researcher Agent» (Agent محقق) ارزیابی کنید.
 
 ---
 
-## Swarms (The OpenAI Pattern)
+## الگوی ناظر (سلسله‌مراتبی)
 
-Popularized by OpenAI's experimental Swarm library in late 2024 and carried into the OpenAI Agents SDK, **Swarms** focus on "Handoffs."
+رایج‌ترین الگوی سازمانی تا سال ۲۰۲۶.
 
-- One agent "Hands off" the conversation to another.
-- **Key concept**: `Handoff(TargetAgent)`.
-- **Benefit**: No central "Manager" bottleneck. The conversation flows naturally between specialized entities.
+- **ناظر (The Supervisor)**: یک مدل با استدلال سطح بالا (Claude Opus 5.5 یا Fable 5.1، GPT-6 Astra یا GPT-6.1 Sol) که Prompt کاربر را تجزیه کرده و وظایف را به Workerها محول می‌کند.
+- **کارگران (Workers)**: مدل‌های سریع و مقرون‌به‌صرفه (Claude Sonnet 5.5 یا Haiku 5.5، GPT-6 Luna یا GPT-6.1 Terra، Gemini 3.8 Flash) که کار را انجام می‌دهند.
+- **بازبین (Reviewer)**: یک Agent مجزا که خروجی تجمیع‌شده را با طرح اولیه ناظر اعتبارسنجی می‌کند.
+
+**معماری**: فریم‌ورک LangGraph همچنان فریم‌ورک غالب برای پیاده‌سازی این حلقه‌های سلسله‌مراتبی آگاه از وضعیت (state-aware) است. Claude Agent SDK، Google ADK و Microsoft Agent Framework همگی تا سال ۲۰۲۶ به‌صورت بومی از این الگو پشتیبانی می‌کنند.
+
+**پیش از پرداخت هزینه، تفکیک سطوح (Tier Split) را دوباره بررسی کنید.** شکاف قیمتی که استفاده از Workerهای ارزان‌قیمت زیر نظر یک ناظر گران‌قیمت را توجیه می‌کرد، کاهش یافته است: Claude Sonnet 5.5، GPT-6 Sol و GPT-6.1 Sol همگی با قیمت \$2/\$10 به ازای هر ۱ میلیون Token قیمت‌گذاری شده‌اند، Opus 5.5 به \$4/\$20 کاهش یافته است، و ارزیابی‌های Agentic خود آنتروپیک (گزارش‌شده توسط ارائه‌دهنده) Sonnet 5.5 را در فاصله چند امتیازی از Opus 5.5 قرار داده‌اند. اگر سطح Worker تقریباً به همان اندازه توانمند بوده و تنها ۲ برابر ارزان‌تر باشد، سربار هماهنگی یک درخت ناظر می‌تواند بیشتر از آنچه صرفه‌جویی می‌کند، هزینه بتراشد. ماه اکتبر شکاف قیمت را در سطح پایه مجدداً باز کرد: Claude Haiku 5.5 با قیمت \$0.10/\$0.50 برای Promptهای تا 100K Token (و ۵ برابر برای کل درخواست بالاتر از آن) و GPT-6.1 Terra با قیمت \$1/\$5 عرضه می‌شوند؛ بنابراین وظایف محدود با زمینه کوتاه (short-context) برای Workerها دوباره ارزان شده‌اند، در حالی که Workerهای با زمینه طولانی (long-context) ممکن است از یک پرتگاه قیمتی عبور کنند. ارزیابی مسیریابی (routing eval) را با هر نسل جدید مدل‌ها دوباره اجرا کنید.
+
+**ناظر اکنون خود به یک محصول تبدیل شده است.** محصولات کدنویسی و محیط‌های اجرای مدیریت‌شده (managed runtimes)، هماهنگ‌کننده (coordinator) را به‌طور پیش‌فرض برای شما فراهم می‌کنند: نسخه بتای Projects در Cursor (۱۰ سپتامبر ۲۰۲۶) دارای یک Agent هماهنگ‌کننده است که کارها را برنامه‌ریزی کرده و به هر تعداد subagent موازی که نیاز باشد تفویض می‌کند، و Cursor گزارش می‌دهد (آمار ارائه‌دهنده، استفاده داخلی) که کاربران جدید Projects ۳۰٪ درخواست‌های ادغام (PR) بیشتری را Merge می‌کنند؛ در Agents API از OpenAI سقف گستردگی (fan-out) با `max_concurrent_subagents` (پیش‌فرض ۶) محدود می‌شود؛ Claude Managed Agents یک ورودی `advisor` را به فهرست چند-Agent (multiagent roster) اضافه می‌کند که رشته اصلی می‌تواند در میانه نوبت با آن مشورت کند. محدودیت هم‌زمانی در سطح پلتفرم، همان کنترل بودجه‌ای است که الگوی ناظر همواره به آن نیاز داشته است؛ بنابراین آن را آگاهانه تنظیم کنید، نه اینکه صرفاً مقدار پیش‌فرض را به ارث ببرید.
 
 ---
 
-## The Pipeline Pattern (Workflows as Code)
+## Swarmها (الگوی OpenAI)
 
-A pipeline fixes the stages in code and lets agents fill them: stage 1 gathers, stage 2 drafts, stage 3 verifies, with structured results passed between stages and explicit checkpoints. The model decides *how* to do each stage; the code decides *which* stages run and in what order.
+الگوی **Swarmها** که توسط کتابخانه آزمایشی Swarm متعلق به OpenAI در اواخر سال ۲۰۲۴ محبوب شد و به OpenAI Agents SDK راه یافت، بر «واگذاری‌ها» (Handoffs) تمرکز دارد.
 
-The distinction that matters is **who owns the control flow**:
+- یک Agent مکالمه را به Agent دیگر «واگذار می‌کند» (Hands off).
+- **مفهوم کلیدی**: `Handoff(TargetAgent)`.
+- **مزیت**: عدم وجود گلوگاه «مدیر» (Manager) مرکزی. مکالمه به‌طور طبیعی میان موجودیت‌های تخصصی جریان می‌یابد.
 
-| Approach | Control flow owned by | Strength | Weakness | Shipping example (2026) |
+---
+
+## الگوی خط لوله (جریان‌های کاری در قالب کد)
+
+یک خط لوله (Pipeline) مراحل را در کد تثبیت می‌کند و به Agentها اجازه می‌دهد تا آنها را تکمیل کنند: مرحله ۱ جمع‌آوری می‌کند، مرحله ۲ پیش‌نویس تهیه می‌کند، مرحله ۳ اعتبارسنجی انجام می‌دهد، همراه با نتایج ساختاریافته‌ای که بین مراحل منتقل می‌شوند و ایست‌های بازرسی (checkpoints) مشخص. مدل تصمیم می‌گیرد که هر مرحله *چگونه* انجام شود؛ کد تعیین می‌کند که *کدام* مراحل و با چه ترتیبی اجرا شوند.
+
+تمایز مهم این است که **چه کسی مالک جریان کنترل است**:
+
+| رویکرد | مالک جریان کنترل | نقطه قوت | نقطه ضعف | نمونه عرضه‌شده (۲۰۲۶) |
 |----------|----------------------|----------|----------|-------------------------|
-| **Workflow as code** | Your program | Deterministic, auditable, testable stages; human checkpoints at fixed points | Rigid when the task shape varies | GitHub Copilot dynamic workflows (public preview October 1): sequential or parallel stages, structured results between stages, subagents verifying each other, pauses for human review |
-| **Model-driven delegation** | A coordinator model | Adapts to tasks whose shape is unknown up front | Harder to bound cost and to audit | GitHub's `/fleet`, Cursor Projects |
-| **Cascade with a quality gate** | Code, with a model-scored gate | Cheap model drafts; escalate only when the gate fails | Gate calibration becomes the critical component | GitHub Copilot Fusion's Cascade workflow (GA October 28, grown out of the September 30 HydraFusion research preview) |
+| **جریان کاری در قالب کد (Workflow as code)** | برنامه شما | مراحل قطعی، قابل‌حسابرسی و آزمون‌پذیر؛ ایست‌های بازرسی انسانی در نقاط مشخص | انعطاف‌ناپذیر هنگام تغییر ساختار وظیفه | جریان‌های کاری پویای GitHub Copilot (پیش‌نمایش عمومی در ۱ اکتبر): مراحل متوالی یا موازی، نتایج ساختاریافته بین مراحل، اعتبارسنجی متقابل subagentها، توقف برای بازبینی انسانی |
+| **تفویض مبتنی بر مدل (Model-driven delegation)** | یک مدل هماهنگ‌کننده | انطباق با وظایفی که ساختار آن‌ها از ابتدا مشخص نیست | دشواری در محدودسازی هزینه و حسابرسی | قابلیت `/fleet` در GitHub، Cursor Projects |
+| **آبشار با دروازه کیفیت (Cascade with a quality gate)** | کد، با دروازه‌ای با امتیازدهی مدل | مدل ارزان پیش‌نویس می‌زند؛ ارتقا تنها در صورت رد شدن از دروازه انجام می‌شود | کالیبراسیون دروازه به مؤلفه حیاتی تبدیل می‌شود | جریان کاری Cascade در GitHub Copilot Fusion (عرضه عمومی در ۲۸ اکتبر، برگرفته از پیش‌نمایش تحقیقاتی HydraFusion در ۳۰ سپتامبر) |
 
-Use workflows-as-code when the stages are known and the audit trail matters; use model-driven delegation when they are not; and put a cascade in front of either when most inputs are easy.
+زمانی که مراحل مشخص هستند و دنباله حسابرسی (audit trail) اهمیت دارد، از جریان‌های کاری در قالب کد (workflows-as-code) استفاده کنید؛ زمانی که مراحل مشخص نیستند، از تفویض مبتنی بر مدل (model-driven delegation) بهره ببرید؛ و هرگاه اکثر ورودی‌ها ساده باشند، یک آبشار (Cascade) را در ابتدای هر یک از این دو رویکرد قرار دهید.
 
 ---
 
-## Graph-Based Orchestration (2026 Dominant Pattern)
+## ارکستراسیون مبتنی بر گراف (الگوی غالب ۲۰۲۶)
 
-The architectural momentum in 2026 has shifted decisively toward **graph-based orchestration**, where agent workflows are modeled as directed graphs with typed state.
+شتاب معماری در سال ۲۰۲۶ به‌طور قاطع به سمت **ارکستراسیون مبتنی بر گراف (graph-based orchestration)** متمایل شده است، جایی که جریان‌های کاری Agent به شکل گراف‌های جهت‌دار با وضعیت تایپ‌شده (typed state) مدل‌سازی می‌شوند.
 
-### Why Graphs Won
+### چرا گراف‌ها پیروز شدند
 
-- **Explicit control flow**: Nodes are agents or functions; edges define transitions, including conditional branches and loops
-- **Visualizable**: Teams can inspect and debug the workflow as a diagram
-- **State-aware**: Typed state objects pass through the graph, enabling checkpointing and resumption
+- **جریان کنترل صریح (Explicit control flow)**: گره‌ها (Nodes) همان Agentها یا توابع هستند؛ یال‌ها (Edges) انتقال‌ها را مشخص می‌کنند، از جمله شاخه‌های شرطی و حلقه‌ها
+- **قابلیت بصری‌سازی (Visualizable)**: تیم‌ها می‌توانند جریان کاری را به‌صورت یک نمودار بررسی کرده و اشکال‌زدایی نمایند
+- **آگاه از وضعیت (State-aware)**: اشیاء وضعیت تایپ‌شده در گراف جریان می‌یابند و امکان ذخیره ایست بازرسی (checkpointing) و ازسرگیری (resumption) را فراهم می‌کنند
 
-### Framework Support
+### پشتیبانی فریم‌ورک‌ها
 
-| Framework | Graph Model | Key Differentiator |
+| فریم‌ورک | مدل گراف | تمایز کلیدی |
 |-----------|-------------|-------------------|
-| **LangGraph** (~44.3k stars) | Imperative DAG with typed state | Most mature, broadest community |
-| **Google ADK** (~22.1k stars) | Graph workflows (2.x) with built-in A2A | Native Google Cloud integration; ADK TypeScript 2.0 deprecates Sequential, Parallel, and Loop agents in favor of graphs |
-| **Microsoft Agent Framework** | Workflow graphs (sequential, concurrent, handoff) | Unified .NET + Python, enterprise governance |
-| **Claude Agent SDK** | Supervisor-based hierarchical trees | Built-in tools (bash, editor), production-ready |
+| **LangGraph** (~44.3k stars) | DAG امری با وضعیت تایپ‌شده | بالغ‌ترین فریم‌ورک، گسترده‌ترین جامعه کاربری |
+| **Google ADK** (~22.1k stars) | جریان‌های کاری گراف (2.x) با A2A داخلی | یکپارچگی بومی با Google Cloud؛ نسخه ADK TypeScript 2.0، Agentهای Sequential، Parallel و Loop را به نفع گراف‌ها منسوخ کرده است |
+| **Microsoft Agent Framework** | گراف‌های جریان کاری (متوالی، هم‌روند، واگذاری) | پشتیبانی یکپارچه از .NET + Python، حاکمیت سازمانی (enterprise governance) |
+| **Claude Agent SDK** | درخت‌های سلسله‌مراتبی مبتنی بر ناظر | ابزارهای داخلی (`bash`، `editor`)، آماده برای محیط عملیاتی (production-ready) |
 
-### The Paperclip Pattern (Hierarchical Agents at Scale)
+### الگوی Paperclip (Agentهای سلسله‌مراتبی در مقیاس بالا)
 
-A notable 2026 development is **Paperclip** (44,900 GitHub stars within three weeks of its March 2026 launch). It uses a hierarchical model where a CEO agent receives a top-level goal, decomposes it, and delegates to manager agents who spawn and coordinate worker agents. This pattern demonstrates how deeply hierarchical multi-agent trees can handle complex real-world tasks.
-
----
-
-## Cross-Vendor Agent Orchestration via A2A
-
-The **Agent-to-Agent (A2A) protocol** (see [Tool Use and MCP](03-tool-use-and-mcp.md#agent-to-agent-protocol-a2a)) enables a new multi-agent pattern: **cross-vendor orchestration**. Before A2A, multi-agent systems required all agents to share the same framework and runtime. Now:
-
-1. **Agent Discovery**: An orchestrator finds specialist agents via their **Agent Cards** (JSON metadata describing capabilities, served at `/.well-known/agent-card.json`)
-2. **Task Delegation**: The orchestrator sends a message (`SendMessage`, over JSON-RPC, gRPC, or REST `POST /message:send`), and the remote agent decides whether to answer directly or open a task
-3. **Async Progress**: The remote agent streams status updates back; the orchestrator can delegate to other agents in parallel
-4. **Result Collection**: Final artifacts are returned and integrated into the orchestrator's state
-
-**Production example**: A procurement system where the orchestrator (LangGraph) delegates compliance checking to a specialized agent (Google ADK), inventory lookup to an MCP-connected tool, and contract generation to a CrewAI crew, all communicating via A2A and MCP respectively.
-
-**When several clients steer one remote task**, lost updates become the failure mode. The unreleased A2A v1.1 work adds a monotonically increasing `Task.generation` so clients can detect missed events and do compare-and-set (`if_generation_match`, rejected with HTTP 412 on a stale generation). Until it ships, serialize steering through one owner. A2A v1.0.1 (May 28, 2026) is the current spec release; A2A joined the Agentic AI Foundation in August 2026.
+یکی از تحولات قابل‌توجه سال ۲۰۲۶، **Paperclip** است (۴۴,۹۰۰ ستاره گیت‌هاب ظرف سه هفته پس از عرضه آن در مارس ۲۰۲۶). این سیستم از یک مدل سلسله‌مراتبی استفاده می‌کند که در آن یک CEO Agent یک هدف سطح بالا را دریافت کرده، آن را تجزیه می‌کند و به Agentهای مدیر تفویض می‌نماید؛ این مدیران نیز Agentهای کارگر (Worker Agents) را ایجاد و هماهنگ می‌کنند. این الگو نشان می‌دهد که چگونه درخت‌های چند-Agent عمیقاً سلسله‌مراتبی می‌توانند وظایف پیچیده دنیای واقعی را مدیریت کنند.
 
 ---
 
-## The 2026 Framework Landscape for Multi-Agent
+## ارکستراسیون میان‌تامین‌کننده‌ای Agentها از طریق A2A
 
-Every major AI lab now ships an agent framework. The multi-agent orchestration landscape as of early November 2026 (versions as of November 6, star counts as of November 2):
+**پروتکل Agent-to-Agent (A2A)** (ببینید: [استفاده از ابزار و MCP](03-tool-use-and-mcp.md#agent-to-agent-protocol-a2a)) یک الگوی چند-Agent جدید را امکان‌پذیر می‌سازد: **ارکستراسیون میان‌تامین‌کننده‌ای (cross-vendor orchestration)**. پیش از A2A، سیستم‌های چند-Agent نیازمند آن بودند که تمامی Agentها از یک فریم‌ورک و محیط زمان اجرا (runtime) مشترک استفاده کنند. اکنون:
 
-| Framework | Provider | Multi-Agent Model | Status |
+1. **کشف Agent (Agent Discovery)**: یک ارکستراتور، Agentهای متخصص را از طریق **Agent Cardهای** آن‌ها (متادیتای JSON توصیف‌کننده قابلیت‌ها که در مسیر `/.well-known/agent-card.json` ارائه می‌شود) پیدا می‌کند.
+2. **واگذاری وظیفه (Task Delegation)**: ارکستراتور پیامی ارسال می‌کند (`SendMessage` از طریق JSON-RPC، gRPC یا REST `POST /message:send`) و Agent دوردست (remote) تصمیم می‌گیرد که مستقیماً پاسخ دهد یا یک وظیفه (task) جدید باز کند.
+3. **پیشرفت ناهمگام (Async Progress)**: Agent دوردست به‌روزرسانی‌های وضعیت را به‌صورت استریم (stream) بازمی‌گرداند؛ ارکستراتور می‌تواند وظایف را به‌طور همزمان به سایر Agentها واگذار نماید.
+4. **جمع‌آوری نتایج (Result Collection)**: مصنوعات و خروجی‌های نهایی بازگردانده شده و در وضعیت ارکستراتور ادغام می‌شوند.
+
+**نمونه محیط عملیاتی**: یک سیستم تدارکات که در آن ارکستراتور (LangGraph) بررسی انطباق (compliance checking) را به یک Agent تخصصی (Google ADK)، جستجوی موجودی انبار را به یک ابزار متصل به MCP و تولید قرارداد را به یک گروه کاری از CrewAI محول می‌کند؛ در حالی که همگی به ترتیب از طریق A2A و MCP با یکدیگر ارتباط برقرار می‌کنند.
+
+**هنگامی که چندین کلاینت یک وظیفه دوردست را هدایت می‌کنند**، به‌روزرسانی‌های از دست رفته (lost updates) به حالت شکست اصلی تبدیل می‌شوند. نسخه منتشرنشده A2A v1.1 یک فیلد `Task.generation` با افزایش یکنواخت اضافه می‌کند تا کلاینت‌ها بتوانند رویدادهای از دست رفته را شناسایی کرده و عملیات مقایسه و جایگزینی (compare-and-set) را انجام دهند (`if_generation_match` که در صورت منسوخ بودن generation با خطای HTTP 412 رد می‌شود). تا پیش از انتشار آن، فرآیند هدایت را از طریق یک مالک واحد سریال‌سازی کنید. نسخه A2A v1.0.1 (۲۸ مه ۲۰۲۶) نسخه رسمی فعلی مشخصات است؛ A2A در اوت ۲۰۲۶ به بنیاد Agentic AI Foundation پیوست.
+
+---
+
+## چشم‌انداز فریم‌ورک‌های چند-Agent در سال ۲۰۲۶
+
+امروزه تمام آزمایشگاه‌های بزرگ هوش مصنوعی فریم‌ورک Agent اختصاصی خود را عرضه می‌کنند. چشم‌انداز ارکستراسیون چند-Agent تا اوایل نوامبر ۲۰۲۶ (نسخه‌ها تا ۶ نوامبر، تعداد ستاره‌ها تا ۲ نوامبر):
+
+| فریم‌ورک | ارائه‌دهنده | مدل چند-Agent | وضعیت |
 |-----------|----------|-------------------|--------|
-| **LangGraph** | LangChain | Graph-based, most flexible | Production; LangGraph 1.2.20 (~44.3k stars) |
-| **Claude Agent SDK** | Anthropic | Supervisor trees with built-in tools | GA (Python + TypeScript) |
-| **Google ADK** | Google | Graph workflows with A2A native support | Python 2.13.0, TypeScript 2.4.0, Go 2.7.1, Java 1.14.0 (Go 2.7.0 changed telemetry and call-limit defaults; see [Navigating Framework Churn](../09-frameworks-and-tools/12-navigating-framework-churn.md)) |
-| **Microsoft Agent Framework** | Microsoft | Workflows + group chat patterns, A2A and MCP interop | GA April 2, 2026; Python 1.24.0, .NET 1.27.0; AutoGen is in maintenance mode |
-| **OpenAI Agents SDK** | OpenAI | Handoff-based swarms with guardrails | Python 0.24.0, TypeScript 0.21.0 (~30.4k stars); still pre-1.0 |
-| **CrewAI** | CrewAI Inc. | Role-based crews with Flows | 1.15.35 (~60.4k stars; vendor claims 60%+ of Fortune 500) |
-| **Smolagents** | HuggingFace | Lightweight, open-source | 1.26.0 (May 29, 2026); no release since |
+| **LangGraph** | LangChain | مبتنی بر گراف، بیشترین انعطاف‌پذیری | عملیاتی (Production)؛ نسخه LangGraph 1.2.20 (حدود ۴۴.۳ هزار ستاره) |
+| **Claude Agent SDK** | Anthropic | درخت‌های ناظر (Supervisor trees) با ابزارهای داخلی | عرضه عمومی یا GA (نسخه‌های Python و TypeScript) |
+| **Google ADK** | Google | جریان‌های کاری گرافی با پشتیبانی بومی A2A | نسخه‌های Python 2.13.0، TypeScript 2.4.0، Go 2.7.1، Java 1.14.0 (نسخه Go 2.7.0 پیش‌فرض‌های تله‌متری و محدودیت فراخوانی را تغییر داد؛ ببینید: [پیمایش تغییرات مداوم فریم‌ورک‌ها](../09-frameworks-and-tools/12-navigating-framework-churn.md)) |
+| **Microsoft Agent Framework** | Microsoft | الگوهای جریان کاری + چت گروهی، تعامل‌پذیری با A2A و MCP | عرضه عمومی (GA) در ۲ آوریل ۲۰۲۶؛ نسخه‌های Python 1.24.0 و .NET 1.27.0؛ AutoGen در حالت نگهداری (maintenance mode) قرار دارد |
+| **OpenAI Agents SDK** | OpenAI | ازدحام‌های (swarms) مبتنی بر تحویل کار (Handoff) همراه با Guardrailها | نسخه‌های Python 0.24.0 و TypeScript 0.21.0 (حدود ۳۰.۴ هزار ستاره)؛ همچنان در وضعیت پیش از نسخه 1.0 |
+| **CrewAI** | CrewAI Inc. | گروه‌های (crews) نقش‌محور به همراه Flowها | نسخه 1.15.35 (حدود ۶۰.۴ هزار ستاره؛ ادعای سازنده مبنی بر استفاده توسط بیش از ۶۰٪ شرکت‌های Fortune 500) |
+| **Smolagents** | HuggingFace | سبک‌وزن، متن‌باز | نسخه 1.26.0 (۲۹ مه ۲۰۲۶)؛ بدون انتشار نسخه جدید از آن زمان |
 
-**Key trend**: No single framework excels at all four multi-agent patterns (supervisor, swarm, pipeline, debate). Teams increasingly combine frameworks, e.g., LangGraph for complex orchestration with CrewAI for business-user-facing automations. The other trend is the managed runtime: OpenAI's Agents API (public beta), Claude Managed Agents (beta), and Amazon Bedrock Managed Agents (public preview) host the harness itself, which moves the build-versus-rent decision up a layer (see [Durable Execution](11-durable-execution.md)). None of the three is GA as of early November 2026, so check beta terms (API stability, data retention, residency) before you rent; AWS's own AgentCore managed harness is the GA exception (since June 17, 2026).
-
----
-
-## State Management
-
-The biggest challenge in multi-agent systems is the **Shared Blackboard**.
-
-1. **Local State**: Context only visible to a specific agent.
-2. **Global State**: Shared memory (e.g., the final draft) visible to all.
-3. **Write Conflicts**: When two agents try to modify the same Global State.
-   - **Best practice**: Use **Transactional Handoffs**. An agent can only write to the global state when it "Owns" the lock. Where locks are too coarse, use optimistic concurrency: version the state and reject writes against a stale version, the same compare-and-set idea A2A v1.1 applies to remote tasks.
+**روند کلیدی**: هیچ فریم‌ورک واحدی در هر چهار الگوی چند-Agent (ناظر، ازدحام، خط لوله، مناظره) سرآمد نیست. تیم‌ها به‌طور فزاینده‌ای فریم‌ورک‌ها را با هم ترکیب می‌کنند؛ برای مثال، LangGraph برای ارکستراسیون پیچیده در کنار CrewAI برای اتوماسیون‌های متصل به کاربران کسب‌وکار. روند دیگر، محیط‌های زمان اجرای مدیریت‌شده (managed runtime) است: API مربوط به Agents از OpenAI (بتا عمومی)، Claude Managed Agents (بتا) و Amazon Bedrock Managed Agents (پیش‌نمایش عمومی) خود ساختار اجرایی (harness) را میزبانی می‌کنند که این موضوع تصمیم ساخت در برابر اجاره (build-versus-rent) را یک لایه بالاتر می‌برد (ببینید: [اجرای پایا (Durable Execution)](11-durable-execution.md)). تا اوایل نوامبر ۲۰۲۶ هیچ‌کدام از این سه سرویس به مرحله عرضه عمومی (GA) نرسیده‌اند، بنابراین پیش از اجاره، شرایط نسخه بتا (پایداری API، نگهداری داده‌ها و اقامتگاه داده یا residency) را بررسی کنید؛ ساختار مدیریت‌شده AgentCore متعلق به خود AWS تنها استثنایی است که به GA رسیده است (از ۱۷ ژوئن ۲۰۲۶).
 
 ---
 
-## Peer-to-Peer (P2P) Debate
+## مدیریت وضعیت (State Management)
 
-For high-accuracy tasks (e.g., Legal or Medical), we use **Agentic Debate**.
-- **Agent A**: Proposes an answer.
-- **Agent B**: Tries to find flaws in Agent A's answer.
-- **Agent A**: Refines the answer based on B's critique.
-- **Result**: Convergence on a higher-quality result than any single agent could produce.
+بزرگ‌ترین چالش در سیستم‌های چند-Agent، **تخته سیاه مشترک (Shared Blackboard)** است.
 
-**Use a different model family for the critic.** Same-family critics share blind spots. GitHub's HydraFusion "critique" mode (research preview, September 30, 2026) baked this in: a critic from a different model family reviewed the draft and the drafter revised once. It went GA on October 28 inside **Copilot Fusion**, whose Critique workflow has one model draft, a read-only critic review, and the original model revise (alongside Single and Cascade workflows at Standard, High, or Max effort). Capping the exchange at one revision is the other half of the lesson; open-ended debate is loopmaxxing with two agents.
-
----
-
-## Interview Questions
-
-### Q: What are the main failure modes of a "Supervisor" multi-agent architecture?
-
-**Strong answer:**
-The primary failure mode is **Decomposition Failure**. If the Supervisor agent breaks a task into sub-tasks that are logically inconsistent or have hidden dependencies, the workers will produce correct answers to the *wrong questions*. The standard fix is **Iterative Planning**: the Supervisor must get "Confirmation of sub-task feasibility" from the workers before they begin execution. Another failure is **Context Dilution**, where the global state becomes so bloated with worker logs that the Supervisor loses the "Big Picture."
-
-### Q: How do you choose between a "Sequence of Chains" and a "Multi-Agent Graph"?
-
-**Strong answer:**
-I use a **Sequence of Chains** when the task is linear and deterministic (e.g., Extract -> Translate -> Summarize). I use a **Multi-Agent Graph** (like LangGraph) when the task is **Non-Linear** or requires **Conditional Loops**. For example, if the "Translate" step might fail and need to go back to "Extract" for more context, a static chain breaks, but a graph can self-correct by routing back to an earlier node.
-
-### Q: When would you use A2A for multi-agent orchestration versus keeping all agents in a single framework?
-
-**Strong answer:**
-I keep agents in a single framework when the team owns all agents, they share the same runtime, and low latency between agent calls is critical. I introduce A2A when crossing **organizational or vendor boundaries**, for example when my orchestrator needs to delegate to a compliance agent maintained by a different team, or when integrating a third-party specialized agent (e.g., a legal review service). A2A adds HTTP overhead but provides **vendor neutrality**, **independent scaling**, and **capability discovery** via Agent Cards. The rule of thumb: same team, same framework; different team or vendor, use A2A.
-
-### Q: When do you define a multi-agent workflow in code, and when do you let a coordinator model delegate?
-
-**Strong answer:**
-It depends on whether I know the shape of the work before it starts. If the stages are known (gather, draft, verify, approve), I write them as code: stages run in a fixed order, pass structured results, and stop at human checkpoints, which makes cost bounded and every run auditable. GitHub's dynamic workflows are this pattern as a product. If the task's shape is only discoverable by doing it (a large refactor, open-ended research), I let a coordinator model delegate, as in Cursor Projects or GitHub's `/fleet`, and I bound it from outside: a concurrency cap on subagents, a total budget for the fan-out, and a verifier that is not the coordinator. In practice I mix them: a code-defined outer pipeline whose "do the work" stage is a model-driven coordinator, so adaptivity lives where it pays and determinism everywhere else.
+1. **وضعیت محلی (Local State)**: زمینه‌ای (Context) که تنها برای یک Agent خاص قابل مشاهده است.
+2. **وضعیت سراسری (Global State)**: حافظه مشترک (به‌عنوان مثال، پیش‌نویس نهایی) که برای همه قابل مشاهده است.
+3. **تداخل‌های نوشتن (Write Conflicts)**: زمانی که دو Agent تلاش می‌کنند یک وضعیت سراسری یکسان را تغییر دهند.
+   - **بهترین راهکار**: از **انتقال‌های تراکنشی (Transactional Handoffs)** استفاده کنید. یک Agent تنها زمانی می‌تواند در وضعیت سراسری بنویسد که قفل (Lock) را در «مالکیت» خود داشته باشد. در مواردی که قفل‌ها بیش از حد درشت‌دانه (coarse) هستند، از همزمانی خوش‌بینانه (optimistic concurrency) استفاده کنید: وضعیت را نسخه‌بندی کرده و عملیات نوشتن روی نسخه‌های منسوخ را رد نمایید؛ همان ایده مقایسه و جایگزینی (compare-and-set) که A2A v1.1 برای وظایف دوردست به کار می‌گیرد.
 
 ---
 
-## References
-- Significant Gravitas. "AutoGPT" (open-source project, 2023)
-- Li et al. "CAMEL: Communicative Agents for 'Mind' Exploration of Large Language Model Society" (2023). https://arxiv.org/abs/2303.17760
-- OpenAI. "Swarm" (experimental library, 2024), succeeded by the OpenAI Agents SDK (2025)
-- A2A Project. "Agent2Agent Protocol Specification v1.0.1" (2026). https://github.com/a2aproject/A2A
-- Gartner. "Gartner Predicts 40% of Enterprise Apps Will Feature Task-Specific AI Agents by 2026, Up from Less Than 5% in 2025" (press release, August 26, 2025). https://www.gartner.com/en/newsroom/press-releases/2025-08-26-gartner-predicts-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026-up-from-less-than-5-percent-in-2025
-- Andrew Ng. "Agentic Design Patterns" (The Batch, 2024)
-- GitHub Changelog. "Dynamic workflows in Copilot CLI and the Copilot app" (October 1, 2026). https://github.blog/changelog/2026-10-01-dynamic-workflows-in-copilot-cli-and-the-copilot-app
+## مناظره همتا‌به‌همتا (P2P Debate)
+
+برای وظایف نیازمند دقت بالا (مانند حوزه‌های حقوقی یا پزشکی)، از **مناظره Agentic (Agentic Debate)** استفاده می‌کنیم.
+- **Agent A**: پاسخی را پیشنهاد می‌دهد.
+- **Agent B**: تلاش می‌کند ایرادات و نقایص پاسخ Agent A را بیابد.
+- **Agent A**: پاسخ را بر اساس نقد Agent B بازبینی و اصلاح می‌کند.
+- **نتیجه**: همگرایی به سمت نتیجه‌ای با کیفیتی بالاتر از آنچه هر Agent واحد می‌توانست تولید کند.
+
+**برای منتقد از خانواده مدل متفاوتی استفاده کنید.** منتقدان هم‌خانواده نقاط کور یکسانی دارند. حالت «نقد» (critique) در HydraFusion گیت‌هاب (پیش‌نمایش پژوهشی، ۳۰ سپتامبر ۲۰۲۶) این رویکرد را پیاده‌سازی کرد: منتقدی از یک خانواده مدل متفاوت پیش‌نویس را بازبینی می‌کرد و تهیه‌کننده پیش‌نویس، یک بار آن را اصلاح می‌نمود. این قابلیت در ۲۸ اکتبر درون **Copilot Fusion** به عرضه عمومی (GA) رسید؛ جریان کاری Critique در آن دارای پیش‌نویس توسط یک مدل، بازبینی توسط منتقد فقط-خواندنی (read-only)، و اصلاح توسط مدل اولیه است (در کنار جریان‌های کاری Single و Cascade در سطوح تلاش Standard، High یا Max). محدود کردن تبادل نظر به تنها یک بار بازبینی، نیمه دیگر این درس تجربی است؛ مناظره بی‌پایان به معنای افتادن در دام حلقه‌های بیهوده و افراطی (loopmaxxing) با دو Agent است.
 
 ---
 
-*Next: [Agent Memory and State](05-agent-memory-and-state.md)*
+## سوالات مصاحبه
+
+### پرسش: حالت‌های شکست اصلی یک معماری چند-Agent از نوع «ناظر» (Supervisor) کدامند؟
+
+**پاسخ قوی:**
+حالت شکست اولیه، **شکست در تجزیه وظیفه (Decomposition Failure)** است. اگر Agent ناظر یک وظیفه را به زیر-وظایفی تجزیه کند که از نظر منطقی ناسازگار هستند یا وابستگی‌های پنهان دارند، کارگران (workers) پاسخ‌های درستی به *پرسش‌های اشتباه* تولید خواهند کرد. راهکار استاندارد، **برنامه‌ریزی تکرارشونده (Iterative Planning)** است: ناظر باید پیش از آغاز اجرا، «تایید امکان‌پذیری زیر-وظایف» را از کارگران دریافت کند. حالت شکست دیگر، **رقیق‌شدن زمینه (Context Dilution)** است؛ جایی که وضعیت سراسری چنان از لاگ‌های کارگران پر می‌شود که ناظر «تصویر کلی و جامع (Big Picture)» را از دست می‌دهد.
+
+### پرسش: چگونه بین یک «توالی از زنجیره‌ها» (Sequence of Chains) و یک «گراف چند-Agent» (Multi-Agent Graph) انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+زمانی که وظیفه خطی و قطعی (deterministic) باشد (مانند استخراج -> ترجمه -> خلاصه‌سازی)، از یک **توالی از زنجیره‌ها (Sequence of Chains)** استفاده می‌کنم. اما زمانی که وظیفه **غیرخطی (Non-Linear)** باشد یا به **حلقه‌های شرطی (Conditional Loops)** نیاز داشته باشد، از یک **گراف چند-Agent (Multi-Agent Graph)** (مانند LangGraph) استفاده می‌کنم. به عنوان مثال، اگر گام «ترجمه» شکست بخورد و نیاز باشد برای دریافت زمینه بیشتر به گام «استخراج» بازگردد، یک زنجیره ایستا دچار شکست می‌شود، در حالی که یک گراف می‌تواند با مسیریابی مجدد به یک گره قبلی، خود را اصلاح کند.
+
+### پرسش: چه زمانی از A2A برای ارکستراسیون چند-Agent استفاده می‌کنید در مقایسه با نگه داشتن تمام Agentها در یک فریم‌ورک واحد؟
+
+**پاسخ قوی:**
+هنگامی که تیم مالک تمامی Agentها باشد، همگی در یک محیط زمان اجرای مشترک اجرا شوند و تاخیر (Latency) پایین میان فراخوانی‌های Agentها حیاتی باشد، Agentها را در یک فریم‌ورک واحد نگه می‌دارم. اما زمانی که نیاز به عبور از **مرزهای سازمانی یا تامین‌کننده (vendor)** باشد، A2A را به کار می‌گیرم؛ برای نمونه، هنگامی که ارکستراتور من نیاز دارد کاری را به یک Agent انطباق که توسط تیمی دیگر پشتیبانی می‌شود واگذار کند، یا زمان ادغام یک Agent تخصصی شخص ثالث (مانند سرویس بررسی اسناد حقوقی). پروتکل A2A سربار HTTP را اضافه می‌کند، اما **بی‌طرفی نسبت به تامین‌کننده (vendor neutrality)**، **مقیاس‌پذیری مستقل** و **کشف قابلیت‌ها (capability discovery)** را از طریق Agent Cardها فراهم می‌آورد. قاعده تجربی کلی: تیم یکسان، فریم‌ورک یکسان؛ تیم یا تامین‌کننده متفاوت، استفاده از A2A.
+
+### پرسش: چه زمانی یک جریان کاری چند-Agent را در قالب کد تعریف می‌کنید و چه زمانی اجازه می‌دهید یک مدل هماهنگ‌کننده (coordinator model) وظایف را واگذار کند؟
+
+**پاسخ قوی:**
+این موضوع به این بستگی دارد که آیا ساختار و قالب کار را پیش از شروع آن می‌دانم یا خیر. اگر مراحل مشخص باشند (جمع‌آوری، پیش‌نویس، اعتبارسنجی، تایید)، آن‌ها را به صورت کد می‌نویسم: مراحل با ترتیبی مشخص اجرا می‌شوند، نتایج ساختاریافته را منتقل می‌کنند و در نقاط بازرسی انسانی متوقف می‌شوند؛ این امر هزینه را محدود و هر اجرا را قابل ممیزی می‌سازد. جریان‌های کاری پویای گیت‌هاب (GitHub's dynamic workflows) پیاده‌سازی این الگو در قالب یک محصول هستند. اگر ساختار کار تنها در طول انجام آن قابل کشف باشد (یک ریفکتورینگ بزرگ، پژوهش با پایان باز)، اجازه می‌دهم یک مدل هماهنگ‌کننده وظایف را محول کند؛ مشابه پروژه‌های Cursor یا قابلیت `/fleet` گیت‌هاب، و آن را از خارج محدود می‌کنم: تعیین سقف همزمانی برای subagentها، بودجه کلی برای برون‌پاشی و گسترش وظایف (fan-out)، و یک اعتبارسنج مستقل از مدل هماهنگ‌کننده. در عمل این دو را ترکیب می‌کنم: یک خط لوله بیرونی تعریف‌شده با کد که مرحله «انجام کار» آن یک هماهنگ‌کننده مبتنی بر مدل است؛ به این ترتیب، انطباق‌پذیری در جایی قرار می‌گیرد که سودمند است و قطعیت در سایر بخش‌ها حاکم خواهد بود.
+
+---
+
+## مراجع
+- شرکت Significant Gravitas. پروژه "AutoGPT" (پروژه متن‌باز، ۲۰۲۳)
+- لی و همکاران (Li et al.). مقاله "CAMEL: Communicative Agents for 'Mind' Exploration of Large Language Model Society" (۲۰۲۳). https://arxiv.org/abs/2303.17760
+- شرکت OpenAI. کتابخانه "Swarm" (کتابخانه آزمایشی، ۲۰۲۴)، که بعدها با OpenAI Agents SDK جایگزین شد (۲۰۲۵)
+- پروژه A2A. سند "Agent2Agent Protocol Specification v1.0.1" (۲۰۲۶). https://github.com/a2aproject/A2A
+- موسسه گارتنر (Gartner). بیانیه مطبوعاتی "Gartner Predicts 40% of Enterprise Apps Will Feature Task-Specific AI Agents by 2026, Up from Less Than 5% in 2025" (۲۶ اوت ۲۰۲۵). https://www.gartner.com/en/newsroom/press-releases/2025-08-26-gartner-predicts-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026-up-from-less-than-5-percent-in-2025
+- اندرو ان‌جی (Andrew Ng). مقاله "Agentic Design Patterns" (خبرنامه The Batch، ۲۰۲۴)
+- لاگ تغییرات گیت‌هاب (GitHub Changelog). یادداشت "Dynamic workflows in Copilot CLI and the Copilot app" (۱ اکتبر ۲۰۲۶). https://github.blog/changelog/2026-10-01-dynamic-workflows-in-copilot-cli-and-the-copilot-app
+
+---
+
+*بعدی: [حافظه و وضعیت Agent](05-agent-memory-and-state.md)*
+
+</div>

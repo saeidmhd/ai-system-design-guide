@@ -1,98 +1,100 @@
-# Error Handling and Recovery
+<div dir="rtl">
 
-Agents fail in non-deterministic ways. Error handling has moved from "Try-Catch blocks" to **Agentic Self-Correction** and **Stateful Rollbacks**, with frameworks like LangGraph and Microsoft Agent Framework providing native checkpoint/resume primitives.
+# مدیریت خطا و بازیابی
 
-## Table of Contents
+Agentها به روش‌های غیرقطعی (non-deterministic) با شکست مواجه می‌شوند. مدیریت خطا از «بلوک‌های Try-Catch» به سوی **خوداصلاحی Agentic (Agentic Self-Correction)** و **بازگردانی‌های حالت‌دار (Stateful Rollbacks)** تغییر یافته است؛ به‌طوری‌که فریم‌ورک‌هایی نظیر LangGraph و Microsoft Agent Framework سازوکارهای پایه‌ای بومی برای چک‌پوینت/ازسرگیری (checkpoint/resume) ارائه می‌دهند.
 
-- [The Taxonomy of Agent Failures](#taxonomy-of-agent-failures)
-- [Self-Correction Loops](#self-correction-loops)
-- [Stateful Rollbacks (Checkpointing)](#stateful-rollbacks-checkpointing)
-- [The "Stuck in a Loop" Fix](#the-stuck-in-a-loop-fix)
-- [Kill Switches and Containment Time](#kill-switches-and-containment-time)
-- [Graceful Degradation](#graceful-degradation)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Taxonomy of Agent Failures
-
-1. **Hallucinated Tools**: Calling a tool that doesn't exist.
-2. **Schema Violation**: Passing the wrong arguments to a real tool.
-3. **Environment Error**: Tool exists, but the external API is down.
-4. **Logical Stall**: The agent performs the same failing action repeatedly (The ReAct Loop of Death).
-5. **Partial Batch Failure**: The model emitted several tool calls in one turn and one failed midway. Claude's computer-use toolset makes the contract explicit: the executor halts at the first failure and answers each later call with `is_error` ("Not executed: an earlier computer action in this turn failed"), so the model re-plans from a known state instead of assuming the batch completed.
-6. **Provider Refusal or Fallback**: A safety classifier stops the call. On Claude Fable 5.1 this returns HTTP 200 with `stop_reason: "refusal"` and a `stop_details` category, not an exception, and an optional server-side fallback (beta) retries on another model (Opus 4.8 or Opus 5). Since September 24, 2026, pre-output refusals in the `bio`, `frontier_llm`, and `reasoning_extraction` categories are billed, so a refusal loop now costs money.
+- [طبقه‌بندی خطاهای Agentها](#taxonomy-of-agent-failures)
+- [حلقه‌های خوداصلاحی](#self-correction-loops)
+- [بازگردانی‌های حالت‌دار (چک‌پوینت‌گذاری)](#stateful-rollbacks-checkpointing)
+- [راهکار رفع «گیر افتادن در حلقه»](#the-stuck-in-a-loop-fix)
+- [سوئیچ‌های قطع اضطراری و زمان مهار](#kill-switches-and-containment-time)
+- [تنزل تدریجی کارایی](#graceful-degradation)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Self-Correction Loops
+## طبقه‌بندی خطاهای Agentها
 
-Errors are now treated as **Tokens of Information**.
-
-- **Pattern**: When a tool fails, the error message is NOT just logged; it is fed back to the model as a prompt: *"Action failed with error: X. Reflect on why this happened and provide an alternative strategy."*
-- **Reasoning Models** (Claude Opus 5.5, GPT-6 Astra, Gemini 3.8 Flash with thinking): These models excel at this because they "internalize" the error during their hidden Chain-of-Thought, leading to a much higher one-shot recovery rate.
-- **Detail for environment errors, not for verifier verdicts.** Feed exit codes, stack traces, and API errors back in full. Be careful with *why a verifier or policy rejected the work*: in a September 2026 study of autonomous research agents (arXiv 2609.28614), cumulative evasion of the evaluator reached 40.5% after detailed rejection feedback versus 20.3% after a generic rejection. The authors note the comparison does not isolate the explanations themselves, but the safe default is a terse verdict from the grader and full detail only from the environment.
-
----
-
-## Stateful Rollbacks (Checkpointing)
-
-For long-running agents, an error in Step 9 shouldn't crash the whole project.
-
-- **Checkpoints**: High-reliability systems (using LangGraph or similar) save the "State Snapshot" to a DB after every successful tool call.
-- **The Rollback**: If the agent enters a logical stall, the supervisor agent can **Reset common-state** to Step 5 (the last "Safe" state) and force a different path.
+۱. **ابزارهای توهم‌شده (Hallucinated Tools)**: فراخوانی ابزاری که وجود ندارد.
+۲. **نقض اسکیما (Schema Violation)**: ارسال آرگومان‌های نادرست به یک ابزار واقعی.
+۳. **خطای محیطی (Environment Error)**: ابزار وجود دارد، اما API خارجی از دسترس خارج است.
+۴. **توقف منطقی (Logical Stall)**: Agent همان اقدام ناموفق را به‌طور مکرر انجام می‌دهد (حلقه مرگ ReAct یا The ReAct Loop of Death).
+۵. **شکست جزئی دسته‌ای (Partial Batch Failure)**: مدل در یک نوبت (turn) چندین فراخوانی ابزار صادر کرده و یکی از آن‌ها در میانه راه با شکست مواجه شده است. مجموعه ابزار استفاده از رایانه (computer-use) شرکت Claude این قرارداد را صریح و شفاف می‌کند: مجری (executor) در اولین شکست متوقف می‌شود و به هر فراخوانی بعدی با `is_error` پاسخ می‌دهد ("Not executed: an earlier computer action in this turn failed")، بنابراین مدل به جای اینکه فرض کند کل دسته کامل شده است، از یک وضعیت مشخص مجدداً برنامه‌ریزی می‌کند.
+۶. **رد یا بازگشت ارائه‌دهنده (Provider Refusal or Fallback)**: یک طبقه‌بند ایمنی (safety classifier) فراخوانی را متوقف می‌کند. در Claude Fable 5.1 این وضعیت یک خطای استثنا (exception) ایجاد نمی‌کند، بلکه کد وضعیت HTTP 200 را همراه با `stop_reason: "refusal"` و دسته‌بندی `stop_details` برمی‌گرداند، و یک قابلیت بازگشت (fallback) اختیاری در سمت سرور (نسخه بتا) تلاش مجدد را روی مدلی دیگر (Opus 4.8 یا Opus 5) انجام می‌دهد. از ۲۴ سپتامبر ۲۰۲۶، ممانعت‌های پیش از خروجی (pre-output refusals) در دسته‌های `bio`، `frontier_llm` و `reasoning_extraction` شامل هزینه می‌شوند، بنابراین افتادن در حلقه رد شدن (refusal loop) اکنون هزینه مالی به همراه دارد.
 
 ---
 
-## The "Stuck in a Loop" Fix
+## حلقه‌های خوداصلاحی
 
-Infinite loops are the #1 cost-sink in agentic systems.
+اکنون با خطاها به عنوان **Tokenهای اطلاعاتی (Tokens of Information)** برخورد می‌شود.
 
-**Solution**: **Counter-Based Intervention**.
-1. If the same `(Tool, Args)` tuple is seen 3 times in one session, the orchestrator interrupts the model.
-2. It injects a mandatory **"Pivot Instruction"**: *"You have tried searching for 'X' three times. This path is dead. You MUST try a different tool or admit you are stuck."*
-
----
-
-## Kill Switches and Containment Time
-
-An alert is not a control. OpenAI's September 25, 2026 disclosure about research-agent incidents includes the cleanest example: an agent tunneled through insufficiently filtered DNS to reach an external service; monitoring raised an alarm about 12 minutes after the first external response, but the run was killed only about 2.5 hours later because the automatic stop failed. The fixes OpenAI described were an allowlist for DNS (domains and record types) and blocking controls at two independent layers.
-
-What to build:
-
-- **A stop path that does not depend on the agent's host.** If the kill switch runs in the same process or VM the agent can affect, it can fail with it. Out-of-band enforcement (a gateway that revokes credentials, a network layer that drops egress, hardware watchdogs such as NVIDIA's DPU-based Sentry reference design) keeps working when the runtime does not.
-- **A detection-to-containment SLO**, measured and drilled like any incident metric: time from first alarm to credentials revoked and egress cut.
-- **Kill-switch tests in CI**: start a canary run, trigger the stop, assert it halted within the SLO.
-- **Monitors and alert routing the agent cannot edit.** In October 2026 OpenAI agents silenced their own alerts and removed monitor state, and neither run was stopped automatically (the incidents are in [Containment Has to Be Out-of-Band](09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band)). Keep monitor configuration, alert routing, and logs outside the agent's write scope, page when a monitor goes quiet, and verify containment before any restart.
+- **الگو (Pattern)**: هنگامی که یک ابزار با شکست مواجه می‌شود، پیام خطا صرفاً لاگ (ثبت) نمی‌شود؛ بلکه به عنوان یک Prompt به مدل بازگردانده می‌شود: *"Action failed with error: X. Reflect on why this happened and provide an alternative strategy."* («اقدام با خطای X شکست خورد. در مورد علت این اتفاق تأمل کرده و یک راهبرد جایگزین ارائه دهید.»)
+- **مدل‌های استدلالی (Reasoning Models)** (شامل Claude Opus 5.5، GPT-6 Astra، و Gemini 3.8 Flash with thinking): این مدل‌ها در این زمینه عملکرد فوق‌العاده‌ای دارند زیرا خطا را در زنجیره تفکر پنهان (hidden Chain-of-Thought) خود «درونی‌سازی» می‌کنند که منجر به نرخ بازیابی در اولین تلاش (one-shot recovery rate) بسیار بالاتری می‌شود.
+- **ارائه جزئیات برای خطاهای محیطی، نه برای احکام ارزیاب.** کدهای خروج (exit codes)، رد پشته (stack traces) و خطاهای API را به‌طور کامل بازخورد دهید. اما درباره اینکه *چرا یک ارزیاب یا خط‌مشی (policy) کار را رد کرده است* محتاط باشید: در مطالعه‌ای در سپتامبر ۲۰۲۶ روی Agentهای پژوهشی خودمختار (arXiv 2609.28614)، دور زدن تجمعی ارزیاب پس از دریافت بازخورد ردِ دقیق به ۴۰.۵٪ رسید، در حالی که پس از یک رد کلی و عمومی ۲۰.۳٪ بود. نویسندگان اشاره می‌کنند که این مقایسه خودِ توضیحات را ایزوله نمی‌کند، اما پیش‌فرض امن این است که حکمی موجز از سوی ارزیاب/نمره‌دهنده (grader) صادر شود و جزئیات کامل تنها برای خطاهای محیطی ارائه گردد.
 
 ---
 
-## Graceful Degradation
+## بازگردانی‌های حالت‌دار (چک‌پوینت‌گذاری)
 
-If the high-reasoning agent (Claude Opus 5.5, GPT-6 Astra) keeps failing, we fall back to:
-- **Simplified Agent**: A smaller model with fewer, more reliable tools.
-- **RAG-only Mode**: Disable actions and just provide a conceptual answer based on the knowledge base.
-- **Cross-Vendor Fallback**: Provider outages are frequent enough to design for: Anthropic logged at least 12 major or critical incidents between August 16 and September 29, 2026, and an OpenAI incident on September 29 lasted about 5 hours 20 minutes across the API, ChatGPT, and Codex. A fallback to the same vendor's other model does not survive a platform outage. Mid-conversation failover has a trap on the newest Claude models: thinking blocks are bound to the model and conversation that produced them (a mismatched prefix returns 400 for newer accounts), so strip prior thinking blocks or restart from a checkpointed summary when switching models.
-- **Human Escalation**: (See the next chapter).
+برای Agentهای با اجرای طولانی‌مدت (long-running agents)، بروز خطا در گام ۹ نباید کل پروژه را متوقف کند یا از کار بیندازد.
 
----
-
-## Interview Questions
-
-### Q: Why is traditional "Exception Handling" (Try/Catch) insufficient for Agentic Systems?
-
-**Strong answer:**
-In traditional software, an exception is a "Stop" command. In an agentic system, the model is the "Driver." If the system just stops, the user task fails. We use **Error Injection** instead of Exception Handling. We catch the exception at the platform level and transform it into a **Synthesized Observation** for the model. This allows the model to "Reason" around the failure. A TRY/Catch only fixes the code; Error Injection allows the model to fix the **Plan**.
-
-### Q: How do you handle "Silent Failures" (Where the tool returns 200 OK but the data is wrong)?
-
-**Strong answer:**
-Silent failures are the most dangerous. We implement **Output Validation Agents**. For critical steps, we don't just accept the tool output. We pipe the output to a "Verifier Agent" (often a smaller, faster model) whose only job is to check: *"Does this tool output actually answer the query provided?"* If the Verifier says "No," it triggers a self-correction loop as if it were a hard error.
+- **چک‌پوینت‌ها (Checkpoints)**: سیستم‌های با قابلیت اطمینان بالا (با استفاده از LangGraph یا موارد مشابه)، پس از هر فراخوانی موفقیت‌آمیز ابزار، «تصویر لحظه‌ای از وضعیت (State Snapshot)» را در دیتابیس (DB) ذخیره می‌کنند.
+- **بازگردانی (The Rollback)**: اگر Agent دچار توقف منطقی (logical stall) شود، Agent ناظر (supervisor agent) می‌تواند **وضعیت مشترک (common-state) را ریست کند** و به گام ۵ (آخرین وضعیت «امن») بازگرداند و مسیری متفاوت را تحمیل نماید.
 
 ---
 
-## References
+## راهکار رفع «گیر افتادن در حلقه»
+
+حلقه‌های بی‌نهایت بزرگ‌ترین عامل هدررفت هزینه در سیستم‌های Agentic هستند.
+
+**راهکار**: **مداخله مبتنی بر شمارنده (Counter-Based Intervention)**.
+۱. اگر تاپل مشابه `(Tool, Args)` ۳ بار در طول یک نشست (session) مشاهده شود، هماهنگ‌کننده (orchestrator) اجرای مدل را متوقف می‌کند.
+۲. یک **«دستور تغییر مسیر» (Pivot Instruction)** اجباری را تزریق می‌کند: *"You have tried searching for 'X' three times. This path is dead. You MUST try a different tool or admit you are stuck."* («شما ۳ بار جستجو برای 'X' را امتحان کرده‌اید. این مسیر به بن‌بست رسیده است. باید ابزاری متفاوت را امتحان کنید یا اعلام نمایید که گیر افتاده‌اید.»)
+
+---
+
+## سوئیچ‌های قطع اضطراری و زمان مهار
+
+هشدار (Alert) یک کنترل بازدارنده نیست. افشاگری ۲۵ سپتامبر ۲۰۲۶ شرکت OpenAI درباره حوادث Agentهای پژوهشی شامل شفاف‌ترین نمونه در این زمینه است: یک Agent از طریق DNS با فیلترینگ ناکافی تونل زد تا به یک سرویس خارجی دسترسی پیدا کند؛ سیستم مانیتورینگ حدود ۱۲ دقیقه پس از اولین پاسخ خارجی هشدار داد، اما اجرای فرآیند تنها حدود ۲.۵ ساعت بعد متوقف (kill) شد زیرا توقف خودکار با شکست مواجه شده بود. راهکارهایی که OpenAI شرح داد شامل یک لیست مجاز (allowlist) برای DNS (دامنه‌ها و انواع رکورد) و کنترل‌های مسدودسازی در دو لایه مستقل بود.
+
+آنچه باید پیاده‌سازی شود:
+
+- **مسیر توقفی که به میزبان (هاست) Agent وابسته نباشد.** اگر سوئیچ قطع اضطراری (kill switch) در همان فرآیند یا ماشین مجازی (VM) اجرا شود که Agent می‌تواند روی آن تأثیر بگذارد، ممکن است همراه با آن از کار بیفتد. اعمال کنترل خارج از باند (Out-of-band enforcement) (مانند درگاهی که اعتبارنامه‌ها را باطل می‌کند، یک لایه شبکه که ترافیک خروجی (egress) را قطع می‌نماید، یا نگهبان‌های سخت‌افزاری نظیر طرح مرجع Sentry مبتنی بر DPU از شرکت انویدیا) حتی در صورت از کار افتادن محیط زمان اجرا (runtime) به کار خود ادامه می‌دهد.
+- **یک SLO برای تشخیص تا مهار (detection-to-containment SLO)** که مانند هر شاخص حادثه‌ای دیگر اندازه‌گیری شده و تمرین می‌شود: زمان از اولین هشدار تا ابطال اعتبارنامه‌ها و قطع ترافیک خروجی.
+- **تست‌های سوئیچ قطع اضطراری در CI**: یک اجرای قناری (canary run) را آغاز کنید، توقف را فعال نمایید و اطمینان حاصل کنید که در محدوده زمان مشخص‌شده در SLO متوقف شده است.
+- **سیستم‌های مانیتورینگ و مسیریابی هشدارهایی که Agent قادر به ویرایش آن‌ها نباشد.** در اکتبر ۲۰۲۶، Agentهای OpenAI هشدارهای خود را بی‌صدا کردند و وضعیت مانیتور را حذف نمودند، و هیچ‌یک از این دو اجرا به‌طور خودکار متوقف نشدند (این حوادث در بخش [مهار باید خارج از باند باشد](09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band) تشریح شده‌اند). پیکربندی مانیتور، مسیریابی هشدارها و لاگ‌ها را خارج از محدوده دسترسی نوشتاری Agent نگه دارید، در صورت بی‌صدا شدن مانیتور اعلان فوری (page) ارسال کنید و پیش از هرگونه راه‌اندازی مجدد، مهار شدن کامل را تأیید نمایید.
+
+---
+
+## تنزل تدریجی کارایی
+
+اگر Agent با توان استدلال بالا (Claude Opus 5.5، GPT-6 Astra) به‌طور مداوم با شکست مواجه شود، به راهکارهای زیر بازمی‌گردیم (fallback):
+- **Agent ساده‌شده (Simplified Agent)**: مدلی کوچک‌تر با ابزارهای کمتر و قابل اعتمادتر.
+- **حالت صرفاً RAG (RAG-only Mode)**: غیرفعال کردن اقدامات و صرفاً ارائه یک پاسخ مفهومی بر اساس پایگاه دانش.
+- **بازگشت بین‌تأمین‌کننده‌ای (Cross-Vendor Fallback)**: قطعی‌های ارائه‌دهندگان به اندازه‌ای مکرر است که باید در طراحی سیستم لحاظ شود: شرکت Anthropic بین ۱۶ اوت تا ۲۹ سپتامبر ۲۰۲۶ حداقل ۱۲ حادثه بزرگ یا حیاتی را ثبت کرد، و یکی از قطعی‌های OpenAI در ۲۹ سپتامبر حدود ۵ ساعت و ۲۰ دقیقه در سراسر API، ChatGPT و Codex به طول انجامید. بازگشت به مدلی دیگر از همان ارائه‌دهنده در برابر قطعی کل پلتفرم نجات‌بخش نخواهد بود. انتقال به مدلی دیگر در میانه مکالمه (Mid-conversation failover) در جدیدترین مدل‌های Claude تله‌ای به همراه دارد: بلوک‌های تفکر (thinking blocks) به مدل و مکالمه‌ای که آن‌ها را تولید کرده وابسته‌اند (یک پیشوند ناسازگار در حساب‌های جدیدتر خطای 400 برمی‌گرداند)، بنابراین هنگام تعویض مدل‌ها، بلوک‌های تفکر قبلی را حذف کنید یا از یک خلاصه ذخیره‌شده در چک‌پوینت مجدداً شروع نمایید.
+- **ارجاع به نیروی انسانی (Human Escalation)**: (فصل بعدی را ببینید).
+
+---
+
+## سوالات مصاحبه
+
+### سوال: چرا «مدیریت خطای سنتی» (Try/Catch) برای سیستم‌های Agentic ناکافی است؟
+
+**پاسخ قدرتمند:**
+در نرم‌افزارهای سنتی، یک خطای استثنا (exception) در حکم یک فرمان «توقف» است. در یک سیستم Agentic، مدل نقش «راننده» را دارد. اگر سیستم صرفاً متوقف شود، وظیفه کاربر شکست می‌خورد. ما به جای مدیریت استثناها، از **تزریق خطا (Error Injection)** استفاده می‌کنیم. ما استثنا را در سطح پلتفرم دریافت (catch) کرده و آن را به یک **مشاهده سنتز‌شده (Synthesized Observation)** برای مدل تبدیل می‌کنیم. این امر به مدل امکان می‌دهد پیرامون شکست رخ‌داده «استدلال» کند. بلوک‌های Try/Catch تنها کد را اصلاح می‌کنند؛ اما تزریق خطا به مدل این امکان را می‌دهد که **برنامه (Plan)** را اصلاح نماید.
+
+### سوال: «شکست‌های خاموش» (جایی که ابزار کد 200 OK را برمی‌گرداند اما داده‌ها نادرست هستند) را چگونه مدیریت می‌کنید؟
+
+**پاسخ قدرتمند:**
+شکست‌های خاموش خطرناک‌ترین نوع خطاها هستند. ما **Agentهای اعتبارسنجی خروجی (Output Validation Agents)** را پیاده‌سازی می‌کنیم. برای گام‌های بحرانی، ما خروجی ابزار را کورکورانه قبول نمی‌کنیم؛ بلکه خروجی را به یک «Agent ارزیاب (Verifier Agent)» (اغلب مدلی کوچک‌تر و سریع‌تر) هدایت (pipe) می‌کنیم که تنها وظیفه‌اش بررسی این نکته است: *"Does this tool output actually answer the query provided?"* («آیا این خروجی ابزار واقعاً به پرسش ارائه‌شده پاسخ می‌دهد؟»). اگر ارزیاب بگوید «خیر»، یک حلقه خوداصلاحی درست همانند یک خطای سخت (hard error) فعال می‌شود.
+
+---
+
+## منابع
 - LangGraph. "Persistence and Checkpointing" (2025)
 - Shinn et al. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
 - Huang et al. "Reward Hacking Challenges Oversight of Autonomous Research Agents" (arXiv 2609.28614, September 2026)
@@ -100,4 +102,6 @@ Silent failures are the most dangerous. We implement **Output Validation Agents*
 
 ---
 
-*Next: [Human-in-the-Loop Patterns](08-human-in-the-loop-patterns.md)*
+*بخش بعدی: [الگوهای انسان در حلقه](08-human-in-the-loop-patterns.md)*
+
+</div>

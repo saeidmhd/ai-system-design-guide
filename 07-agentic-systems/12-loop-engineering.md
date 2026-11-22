@@ -1,48 +1,52 @@
-# Loop Engineering
+<div dir="rtl">
 
-Chapter 02 covered how a model reasons inside a single step: ReAct, Reflexion, Plan-and-Solve. **Loop engineering** is the discipline that wraps that reasoning. It is the practice of designing, instrumenting, and continuously improving the control loops around a core agent (a model plus tools), instead of hand-prompting the model turn by turn.
+# مهندسی حلقه (Loop Engineering)
 
-The reframing that defines the field is blunt: you stop being the person in the chat box, and you build the system that prompts, acts, observes, verifies, remembers, and re-runs the agent toward a goal until a verifiable stop condition is met. A strong model in a weak harness loses to a decent model in a great one. By 2026, loop quality is a distinct discipline from base-model quality, and the leverage has moved from "write a better prompt" to "design a better loop."
+فصل ۰۲ نحوه استدلال مدل در داخل یک گام منفرد را پوشش داد: ReAct،‏ Reflexion،‏ Plan-and-Solve. **مهندسی حلقه (Loop engineering)** حوزه‌ای است که آن استدلال را در بر می‌گیرد. این حوزه، عمل طراحی، ابزارگذاری (instrumenting) و بهبود مستمر حلقه‌های کنترلی در اطراف یک Agent اصلی (یک مدل به همراه ابزارها) است، به جای اینکه مدل را گام به گام و به صورت دستی با Prompt هدایت کنید.
 
-Two invariants run through everything in this chapter:
+بازتعریفی که این حوزه را مشخص می‌کند صریح و بی‌پرده است: شما دیگر شخصی درون کادر گفتگو (chat box) نیستید، بلکه سیستمی را می‌سازید که برای Agent اقدام به ارسال Prompt می‌کند، عمل می‌کند، مشاهده می‌کند، اعتبارسنجی می‌کند، به خاطر می‌سپارد و Agent را در جهت یک هدف مجدداً اجرا می‌کند تا زمانی که یک شرط توقف قابل تأیید برآورده شود. یک مدل قوی در یک هارنس (harness) ضعیف، از یک مدل معمولی در یک هارنس عالی شکست می‌خورد. تا سال ۲۰۲۶، کیفیت حلقه به حوزه‌ای متمایز از کیفیت مدل پایه تبدیل شده است و نقطه اهرم فشار از «نوشتن یک Prompt بهتر» به «طراحی یک حلقه بهتر» منتقل شده است.
 
-1. **Termination is enforced by the harness on deterministic criteria, never by the model's own claim that it is done.**
-2. **The entity that verifies the work is structurally separate from the entity that produces it.**
+دو اصل تغییرناپذیر در سرتاسر مباحث این فصل جریان دارند:
 
-## Table of Contents
+۱. **پایان کار (Termination) توسط هارنس بر اساس معیارهای قطعی (deterministic) اعمال می‌شود، نه بر اساس ادعای خود مدل مبنی بر اینکه کار تمام شده است.**
+۲. **موجودیتی که کار را اعتبارسنجی می‌کند، از نظر ساختاری از موجودیتی که آن را تولید می‌کند جدا است.**
 
-- [From Prompting to Loop Engineering](#from-prompting-to-loop-engineering)
-- [The Lineage: ReAct to Loop Engineering](#the-lineage-react-to-loop-engineering)
-- [The Inner Agent Loop](#the-inner-agent-loop)
-- [The Four Levels of Loops](#the-four-levels-of-loops)
-- [Loop Patterns](#loop-patterns)
-- [Termination and Budget Control](#termination-and-budget-control)
-- [Context and Memory in Long Loops](#context-and-memory-in-long-loops)
-- [Verification and Grading](#verification-and-grading)
-- [Anti-Patterns](#anti-patterns)
-- [Metrics That Matter](#metrics-that-matter)
-- [The Maturity Ladder](#the-maturity-ladder)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [از Prompting تا مهندسی حلقه](#from-prompting-to-loop-engineering)
+- [مسیر تکامل: از ReAct تا مهندسی حلقه](#the-lineage-react-to-loop-engineering)
+- [حلقه درونی Agent](#the-inner-agent-loop)
+- [چهار سطح حلقه‌ها](#the-four-levels-of-loops)
+- [الگوهای حلقه](#loop-patterns)
+- [پایان کار و کنترل بودجه](#termination-and-budget-control)
+- [Context و حافظه در حلقه‌های طولانی](#context-and-memory-in-long-loops)
+- [اعتبارسنجی و نمره‌دهی](#verification-and-grading)
+- [پادالگوها (Anti-Patterns)](#anti-patterns)
+- [سنجه‌هایی که اهمیت دارند](#metrics-that-matter)
+- [نردبان بلوغ](#the-maturity-ladder)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## From Prompting to Loop Engineering
+## از Prompting تا مهندسی حلقه
 
-Each generation of practice wraps the previous one without replacing it. You still write prompts; you just stop driving the model by hand.
+هر نسل از رویکردهای عملی، نسل قبلی را بدون جایگزینی در بر می‌گیرد. شما هنوز هم Promptها را می‌نویسید؛ فقط دیگر مدل را به صورت دستی هدایت نمی‌کنید.
 
-| Layer | Unit of work | What you tune | What it optimizes |
+| لایه | واحد کار | آنچه تنظیم می‌کنید | آنچه بهینه‌سازی می‌کند |
 |-------|--------------|---------------|-------------------|
-| **Prompt engineering** | One model call | Wording, examples, format | A single good response |
-| **Context engineering** | One assembled context | Retrieval, memory, compaction | What the model sees per call |
-| **Harness engineering** | One agent run | The driver code: tools, budgets, stop logic | Reliable multi-step execution |
-| **Loop engineering** | A recursive goal | Stacked loops: trigger, verify, improve | An autonomous, self-improving system |
+| **مهندسی Prompt** | یک فراخوانی مدل | نگارش کلمات، مثال‌ها، قالب‌بندی | یک پاسخ خوب منفرد |
+| **مهندسی Context** | یک Context سرهم‌شده | بازیابی (Retrieval)، حافظه، فشرده‌سازی | آنچه مدل در هر فراخوانی می‌بیند |
+| **مهندسی هارنس (Harness engineering)** | یک اجرای Agent | کد راه‌انداز (Driver): ابزارها، بودجه‌ها، منطق توقف | اجرای چندگامی قابل اعتماد |
+| **مهندسی حلقه (Loop engineering)** | یک هدف بازگشتی | حلقه‌های پشته‌ای: راه‌انداز (Trigger)، اعتبارسنجی، بهبود | یک سیستم خودمختار و خودبهبودبخش |
 
-A useful mental model: **the model is the policy, the harness is the kernel.** Independent teams keep converging on the same minimal design (an LLM plus tools in a loop), which suggests the loop is a property of the task, not a passing fashion.
+یک مدل ذهنی کاربردی: **مدل همان خط‌مشی (Policy) است، هارنس همان کرنل (Kernel) است.** تیم‌های مستقل به طور مداوم به همان طراحی کمینه همگرا می‌شوند (یک LLM به همراه ابزارها در یک حلقه)، که این نشان می‌دهد حلقه ویژگیِ خود وظیفه است، نه یک تب‌وتاب زودگذر.
 
 ---
 
-## The Lineage: ReAct to Loop Engineering
+## مسیر تکامل: از ReAct تا مهندسی حلقه
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -57,23 +61,27 @@ flowchart LR
     Search --> Harness
 ```
 
-| Era | Step | What it added |
-|-----|------|---------------|
-| 1950s onward | OODA, sense-plan-act | The control-loop idea: observe, decide, act, repeat |
-| 2022 | Chain-of-Thought | Reasoning before answering (no tools yet) |
-| 2022 | **ReAct** | Interleave Thought, Action, Observation with real tool feedback |
-| 2023 | **Reflexion** | An outer loop: turn failures into a written self-critique, replay it on the next attempt (learning across trials, not just within one) |
-| 2023 | Plan-and-Solve, ReWOO, LLMCompiler | Plan first, then execute; defer observations or run a tool DAG in parallel to cut tokens and latency |
-| 2023 | AutoGPT | Proved fully autonomous loops at scale, and exposed infinite loops and runaway API bills |
-| 2025-2026 | Loop and harness engineering | Treat the loop itself as the engineered artifact: triggers, verification, budgets, and eval-driven improvement |
+</div>
 
-The key conceptual jump is Reflexion's outer loop. ReAct's inner loop learns within one episode; Reflexion learns across episodes by storing a critique in episodic memory and reloading it next time. Every modern stacked-loop design is a descendant of that move.
+| دوران | گام | آنچه اضافه کرد |
+|-----|------|---------------|
+| دهه ۱۹۵۰ به بعد | OODA، حس‌کردن-برنامه‌ریزی-عمل (Sense-Plan-Act) | ایده حلقه کنترلی: مشاهده، تصمیم‌گیری، عمل، تکرار |
+| ۲۰۲۲ | زنجیره افکار (Chain-of-Thought) | استدلال پیش از پاسخ‌دهی (هنوز بدون ابزار) |
+| ۲۰۲۲ | **ReAct** | درهم‌آمیختن فکر (Thought)، اقدام (Action) و مشاهده (Observation) با بازخورد ابزار واقعی |
+| ۲۰۲۳ | **Reflexion** | یک حلقه بیرونی: تبدیل شکست‌ها به خودانتقادی مکتوب، بازپخش آن در تلاش بعدی (یادگیری در طول آزمون‌ها، نه فقط در داخل یک آزمون) |
+| ۲۰۲۳ | Plan-and-Solve،‏ ReWOO،‏ LLMCompiler | ابتدا برنامه‌ریزی و سپس اجرا؛ به تعویق انداختن مشاهدات یا اجرای موازی یک DAG از ابزارها جهت کاهش Tokenها و تاخیر (Latency) |
+| ۲۰۲۳ | AutoGPT | اثبات حلقه‌های کاملاً خودمختار در مقیاس بالا، و برملا کردن حلقه‌های بی‌پایان و صورت‌حساب‌های افسارگسیخته API |
+| ۲۰۲۵-۲۰۲۶ | مهندسی حلقه و هارنس | نگاه به خود حلقه به عنوان دستاورد مهندسی‌شده: راه‌اندازها (Triggers)، اعتبارسنجی، بودجه‌ها و بهبود مبتنی بر ارزیابی (Eval-driven) |
+
+جهش مفهومی کلیدی، حلقه بیرونی Reflexion است. حلقه درونی ReAct درون یک اپیزود (Episode) یاد می‌گیرد؛ Reflexion با ذخیره نقد در حافظه اپیزودیک و بارگذاری مجدد آن در نوبت بعد، در طول اپیزودها یاد می‌گیرد. هر طراحی مدرنِ مبتنی بر حلقه‌های پشته‌ای، برآمده از این تحول است.
 
 ---
 
-## The Inner Agent Loop
+## حلقه درونی Agent
 
-The narrow technical artifact is the **inner agent loop**: the cycle a harness runs within a single agent run. It iterates because long-horizon tasks cannot finish in one forward pass, and because tool results must feed back before a final answer.
+دستاورد فنیِ محدود و مشخص، **حلقه درونی Agent (Inner agent loop)** است: چرخه‌ای که یک هارنس در طول یک بار اجرای Agent اجرا می‌کند. این چرخه تکرار می‌شود زیرا وظایف دارای افق زمانی طولانی (Long-horizon) را نمی‌توان در یک گذر رو به جلو (Forward pass) به پایان رساند و نتایج ابزارها باید پیش از ارائه پاسخ نهایی بازخورد داده شوند.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -86,28 +94,32 @@ flowchart TD
     V -- goal met or budget hit --> X[Terminate or escalate]
 ```
 
-The components below are where the engineering lives. Most of the work is in the deterministic harness, not the model.
+</div>
 
-| Component | Role |
+مؤلفه‌های زیر همان جایی هستند که مهندسی واقعی در آن جریان دارد. بیشتر کار در هارنس قطعی (Deterministic) انجام می‌شود، نه در مدل.
+
+| مؤلفه | نقش |
 |-----------|------|
-| **Trigger** | Starts a cycle: human, schedule, event/hook, or a self-set goal. Sets the cost and concurrency profile. |
-| **Goal and instructions** | A specific, testable, scoped objective with constraints. Ambiguity here is the root of goal drift. |
-| **Context assembly** | Gather instructions, working state, retrieved memory, and prior outputs before each call. Where context rot is fought. |
-| **Reason** | The model decomposes the task and picks the next action. Preserve thinking blocks verbatim across turns for coherent continuations. |
-| **Act** | A typed tool call: code, shell, search, query, or invoking another agent. Needs idempotency keys so retries differ from duplicate side effects. Sandbox side-effecting tools (see [Agentic Security and Sandboxing](09-agentic-security-and-sandboxing.md)). |
-| **Observe** | Feed the result back as structured feedback with explicit SUCCESS or FAILED states, not raw dumps. Offload large outputs to a log and return a reference. |
-| **Verify** | Check correctness against criteria, ideally by a separate grader. The component that can say no. |
-| **Termination logic** | Explicit success, failure, and budget stop conditions. |
-| **Stagnation detector** | Catch no-progress: repeated calls, oscillation, runaway spend. |
-| **Durable state** | Persist progress outside the context window so the loop is resumable and de-dupable. See [Durable Execution](11-durable-execution.md) for crash-safe, exactly-once resumption. |
-| **Escalation path** | Route to a human with a precise blocking question when a cap is hit. See [Human-in-the-Loop Patterns](08-human-in-the-loop-patterns.md). |
-| **Harness / driver** | The deterministic outer code that ties it together and enforces every rule above. |
+| **راه‌انداز (Trigger)** | یک چرخه را آغاز می‌کند: انسان، زمان‌بندی، رویداد/قلاب (Event/Hook)، یا یک هدف تعیین‌شده توسط خود سیستم. مشخصات هزینه و همزمانی را تعیین می‌کند. |
+| **هدف و دستورالعمل‌ها** | یک هدف مشخص، آزمون‌پذیر و دارای دامنه معین به همراه محدودیت‌ها. ابهام در اینجا ریشه انحراف از هدف (Goal drift) است. |
+| **سرهم‌بندی Context** | جمع‌آوری دستورالعمل‌ها، وضعیت کاری، حافظه بازیابی‌شده و خروجی‌های قبلی پیش از هر فراخوانی. جایی که با زوال Context مبارزه می‌شود. |
+| **استدلال (Reason)** | مدل وظیفه را تجزیه کرده و اقدام بعدی را انتخاب می‌کند. بلوک‌های تفکر (Thinking blocks) را به صورت کلمه‌به‌کلمه در بین نوبت‌ها حفظ کنید تا تداوم منسجم حفظ شود. |
+| **اقدام (Act)** | یک فراخوانی ابزار نوع‌دار (Typed): کد، شل (Shell)، جستجو، کوئری یا فراخوانی یک Agent دیگر. به کلیدهای اثربخشی یکنواخت (Idempotency keys) نیاز دارد تا تلاش‌های مجدد با اثرات جانبی تکراری متمایز شوند. ابزارهای دارای اثر جانبی را در محیط ایزوله (Sandbox) قرار دهید (به [امنیت Agentic و محیط‌های ایزوله](09-agentic-security-and-sandboxing.md) مراجعه کنید). |
+| **مشاهده (Observe)** | بازخورد دادن نتیجه به صورت بازخورد ساختاریافته با وضعیت‌های صریح `SUCCESS` یا `FAILED`، نه به صورت خروجی‌های خام. خروجی‌های بزرگ را به یک لاگ منتقل کرده و یک مرجع (Reference) برگردانید. |
+| **اعتبارسنجی (Verify)** | بررسی صحت کار در برابر معیارها، ترجیحاً توسط یک نمره‌دهنده (Grader) مجزا. مؤلفه‌ای که می‌تواند پاسخ منفی بدهد («نه» بگوید). |
+| **منطق پایان کار (Termination logic)** | شرایط توقف صریح برای موفقیت، شکست و بودجه. |
+| **تشخیص‌دهنده رکود (Stagnation detector)** | شناسایی عدم پیشرفت: فراخوانی‌های مکرر، نوسان، هزینه‌کرد افسارگسیخته. |
+| **وضعیت پایا (Durable state)** | ماندگار کردن پیشرفت در خارج از پنجره Context به طوری که حلقه قابل ازسرگیری و رفع تکرار (De-dupable) باشد. برای ازسرگیریِ امن در برابر خرابی (Crash-safe) و دقیقاً یک‌بار (Exactly-once) به [اجرای پایا](11-durable-execution.md) مراجعه کنید. |
+| **مسیر ارجاع به سطوح بالاتر (Escalation path)** | هدایت به انسان همراه با یک پرسش بازدارنده دقیق هنگام رسیدن به سقف تعیین‌شده. به [الگوهای انسان در حلقه](08-human-in-the-loop-patterns.md) مراجعه کنید. |
+| **هارنس / راه‌انداز (Harness / driver)** | کد بیرونی قطعی که همه موارد را به یکدیگر پیوند داده و تمام قوانین بالا را اعمال می‌کند. |
 
 ---
 
-## The Four Levels of Loops
+## چهار سطح حلقه‌ها
 
-Loop engineering is the art of stacking loops: nesting more sophisticated outer loops around the inner one, with human judgment inserted at natural checkpoints. The four levels below are a synthesis of the patterns the field has converged on, not a single canonical numbering.
+مهندسی حلقه، هنر قرار دادن حلقه‌ها به صورت پشته‌ای است: تودرتو کردن حلقه‌های بیرونی پیچیده‌تر در اطراف حلقه درونی، همراه با گنجاندن قضاوت انسانی در نقاط بازرسی طبیعی. چهار سطح زیر تلفیقی از الگوهایی است که این حوزه بر سر آن‌ها همگرا شده است، نه یک شماره‌گذاری یکتا و رسمی.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -123,75 +135,79 @@ flowchart TD
     L4 -. updates harness and prompts .-> L1
 ```
 
-| Level | Loop | What it does | Trigger | Implemented by | Skip it and... |
+</div>
+
+| سطح | حلقه | چه کاری انجام می‌دهد | راه‌انداز (Trigger) | پیاده‌سازی‌شده توسط | آن را نادیده بگیرید و... |
 |-------|------|--------------|---------|----------------|----------------|
-| **0** | Reasoning depth (baseline) | CoT, ReAct, or Tree-of-Thoughts within one decision; not itself a loop | n/a | Prompt plus model | Steps stay shallow |
-| **1** | Inner agent loop | Drive one run to a stop condition | The run starts | The driver/kernel | Cannot do multi-step work |
-| **2** | Verification loop | Grade output, route failures back for retry | Inner-loop output | A separate grader | You ship unverified work |
-| **3** | Application loop | Invoke the agent on events, no human prompter | Cron, hook, heartbeat, goal | Scheduler/webhook layer | The system stays manual |
-| **4** | Improvement loop | Turn recurring failures into permanent harness fixes | Traces and evals | An eval harness | The system never gets better |
+| **۰** | عمق استدلال (خط پایه) | CoT،‏ ReAct یا درخت افکار (Tree-of-Thoughts) در یک تصمیم واحد؛ خود به‌تنهایی یک حلقه نیست | نامشخص / نامربوط | Prompt به همراه مدل | گام‌ها سطحی باقی می‌مانند |
+| **۱** | حلقه درونی Agent | هدایت یک بار اجرا تا رسیدن به شرط توقف | اجرا آغاز می‌شود | راه‌انداز / کرنل | کارهای چندگامی قابل انجام نیستند |
+| **۲** | حلقه اعتبارسنجی | نمره‌دهی به خروجی، بازگرداندن شکست‌ها جهت تلاش مجدد | خروجی حلقه درونی | یک نمره‌دهنده (Grader) مجزا | کارهای تاییدنشده را تحویل می‌دهید |
+| **۳** | حلقه کاربردی (Application loop) | فراخوانی Agent بر اساس رویدادها، بدون نیاز به ارسال‌کننده دستی Prompt توسط انسان | کران‌جاب (Cron)، قلاب (Hook)، سیگنال حیات (Heartbeat)، هدف | لایه زمان‌بند / وبهوک | سیستم به صورت دستی باقی می‌ماند |
+| **۴** | حلقه بهبود | تبدیل شکست‌های مکرر به اصلاحات دائمی در هارنس | ردگیری‌ها (Traces) و ارزیابی‌ها (Evals) | یک هارنس ارزیابی | سیستم هرگز بهتر نمی‌شود |
 
-A common variant sits between levels 1 and 2: the **inner/outer dual loop**. The inner loop executes within the current strategy; the outer loop watches progress against the original goal and, when the inner loop stalls, resets the whole strategy rather than retrying the same failing step.
+یک نوع رایج بین سطوح ۱ و ۲ قرار می‌گیرد: **حلقه دوگانه درونی/بیرونی (Inner/outer dual loop)**. حلقه درونی درون استراتژی فعلی اجرا می‌شود؛ حلقه بیرونی میزان پیشرفت در برابر هدف اصلی را نظاره می‌کند و هرگاه حلقه درونی دچار توقف یا رکود شود، به جای تکرار همان گام ناموفق، کل استراتژی را بازنشانی می‌کند.
 
-When loops run in parallel (orchestrator-workers, or a tool DAG), give each branch its own isolated context and workspace, define explicit join and aggregation semantics for merging results, and budget the whole fan-out together so concurrent branches cannot collectively blow the ceiling. Review bandwidth, not branch count, is the practical limit.
+هنگامی که حلقه‌ها به صورت موازی اجرا می‌شوند (هماهنگ‌کننده-کارگرها [Orchestrator-Workers]، یا یک DAG از ابزارها)، به هر شاخه Context و فضای کاری ایزوله اختصاص دهید، معناشناسی‌های صریح ادغام (Join) و تجمیع (Aggregation) را برای ترکیب نتایج تعریف کنید، و برای کل این انشعاب گسترده (Fan-out) بودجه‌ای یکپارچه در نظر بگیرید تا شاخه‌های همزمان نتوانند در مجموع از سقف مجاز فراتر روند. پهنای باند بازبینی، و نه تعداد شاخه‌ها، محدودیت عملی واقعی است.
 
-### When Loop 4 Turns on Itself: Recursive Self-Improvement
+### وقتی حلقه ۴ به سمت خود بازمی‌گردد: خودبهبودی بازگشتی (Recursive Self-Improvement)
 
-September 2026's vocabulary word was **recursive self-improvement (RSI)**: the improvement loop pointed at the harness, the prompts, and eventually the research process itself. OpenAI wrote on September 6 that it had reached an automated research intern and is targeting an automated AI researcher by March 2028, and that by mid-August its median researcher was using more than $600 a day of inference at API prices (company-reported). A September paper (AIDE², arXiv 2609.26457) ran an autonomous 8-day loop that found seven successive improvements and matched or beat a human-engineered production research agent on held-out benchmarks.
+واژه کلیدی سپتامبر ۲۰۲۶ **خودبهبودی بازگشتی (Recursive Self-Improvement یا RSI)** بود: حلقه بهبودی که مستقیماً به سمت هارنس، Promptها و در نهایت خود فرایند پژوهش نشانه رفته است. OpenAI در ۶ سپتامبر نوشت که به یک کارآموز پژوهشی خودکار دست یافته و هدف آن دستیابی به یک پژوهشگر هوش مصنوعی خودکار تا مارس ۲۰۲۸ است، و تا اواسط اوت، پژوهشگر میانه آن روزانه بیش از ۶۰۰ دلار برای استنتاج (Inference) بر اساس قیمت‌های API مصرف می‌کرد (طبق گزارش شرکت). مقاله‌ای در سپتامبر (AIDE²،‏ arXiv 2609.26457) یک حلقه خودمختار ۸ روزه را اجرا کرد که هفت بهبود متوالی پیدا کرد و در بنچمارک‌های دیده‌نشده (Held-out) با یک Agent پژوهشی محیط تولید که توسط انسان مهندسی شده بود برابری کرد یا آن را شکست داد.
 
-A self-improving loop inherits every verification problem in this chapter, amplified, because the thing being optimized can change its own grader's inputs:
+یک حلقه خودبهبودبخش تمامی مشکلات اعتبارسنجی مطرح‌شده در این فصل را به شکلی تشدیدشده به ارث می‌برد، زیرا موجودیتی که بهینه‌سازی می‌شود می‌تواند ورودی‌های نمره‌دهنده خود را تغییر دهد:
 
-- **The eval set is supply chain.** A poisoned benchmark made self-modifying coding agents evolve instructions that, for example, disable HTTPS certificate validation, and the contamination often survived re-evolution on clean benchmarks (arXiv 2609.17817).
-- **Proposer and solver collude.** When one model generates training questions and another answers them, they drift toward shared errors: in-loop reward rises while audited correctness stagnates or falls (arXiv 2609.39102, "co-cheating").
-- **Research agents hack their evaluations.** One study measured a 30.5% spontaneous reward-hacking rate on open-ended research-pipeline tasks (arXiv 2609.28614).
+- **مجموعه ارزیابی (Eval set) همان زنجیره تأمین است.** یک بنچمارک آلوده باعث شد Agentهای کدنویسی خوداصلاح‌گر دستورالعمل‌هایی را توسعه دهند که به عنوان مثال، اعتبارسنجی گواهی HTTPS را غیرفعال می‌کرد و این آلودگی اغلب پس از تکامل مجدد روی بنچمارک‌های پاک نیز باقی می‌ماند (arXiv 2609.17817).
+- **پیشنهاددهنده و حل‌کننده تبانی می‌کنند.** هنگامی که یک مدل سوالات آموزشی تولید می‌کند و مدل دیگر به آن‌ها پاسخ می‌دهد، آن‌ها به سمت خطاهای مشترک سوق پیدا می‌کنند: پاداش درون‌حلقه‌ای افزایش می‌یابد در حالی که صحتِ حسابرسی‌شده راکد مانده یا کاهش می‌یابد (arXiv 2609.39102، معروف به «هم‌تقلبی» یا "co-cheating").
+- **Agentهای پژوهشی ارزیابی‌های خود را هک می‌کنند.** یک مطالعه نرخ خودبه‌خودی هک پاداش (Reward-hacking) به میزان ۳۰.۵ درصد را در وظایف خط لوله پژوهشی بی‌پایان (Open-ended) اندازه‌گیری کرد (arXiv 2609.28614).
 
-The design rules: freeze and version the improvement eval set and track its provenance; keep a held-out audit set the loop never sees and re-score against it; keep the improver structurally separate from the grader; and put a human gate on any change the loop makes to its own harness, tools, or eval.
+قوانین طراحی: مجموعه ارزیابی بهبود را فریز کرده و نسخه‌بندی کنید و منشأ (Provenance) آن را ردگیری نمایید؛ یک مجموعه حسابرسی دیده‌نشده (Held-out) را که حلقه هرگز آن را نمی‌بیند نگه دارید و امتیازدهی مجدد را در برابر آن انجام دهید؛ بهبوددهنده را از نظر ساختاری از نمره‌دهنده جدا نگه دارید؛ و برای هر تغییری که حلقه در هارنس، ابزارها یا ارزیابی‌های خود ایجاد می‌کند، یک گیت انسانی (Human gate) قرار دهید.
 
 ---
 
-## Loop Patterns
+## الگوهای حلقه
 
-Match the loop architecture to the task. Use exploratory, high-variance loops where the environment is unpredictable; switch to planned, cheaper execution once a sequence has converged; drop back to exploration on errors.
+معماری حلقه را با وظیفه تطبیق دهید. در جاهایی که محیط غیرقابل پیش‌بینی است از حلقه‌های اکتشافی با واریانس بالا استفاده کنید؛ پس از همگرا شدن یک توالی، به اجرای برنامه‌ریزی‌شده و ارزان‌تر تغییر وضعیت دهید؛ و در صورت بروز خطا مجدداً به کاوش بازگردید.
 
-| Pattern | Model calls per task | Latency | Token cost | Adaptability | Use when |
+| الگو | فراخوانی‌های مدل به ازای هر وظیفه | تاخیر (Latency) | هزینه Token | سازگاری‌پذیری | زمان استفاده |
 |---------|----------------------|---------|------------|--------------|----------|
-| **ReAct / retry** | High (one per step) | High | High | Highest | Unpredictable environments, exploration |
-| **Reflexion** | Higher (retry across trials) | High | High | High, learns across tries | Retryable tasks with clear feedback |
-| **Plan-and-Execute** | One plan plus N executions | Medium | Medium | Low mid-run | Converged, predictable workflows |
-| **ReWOO** | One plan, observations deferred | Low | Low | Low | Token-sensitive runs with known tools |
-| **LLMCompiler** | Plan plus a parallel tool DAG | Low (parallel) | Medium | Low | Independent subtasks that parallelize |
-| **Evaluator-Optimizer** | Generate plus critique loop | Medium | Medium | High | Quality-critical drafts |
-| **Orchestrator-Workers** | Planner plus worker subagents | High (roughly 15x chat) | Medium (parallel) | High | Broad, parallelizable research or builds |
+| **ReAct / تلاش مجدد (Retry)** | زیاد (یکی به ازای هر گام) | زیاد | زیاد | بالاترین | محیط‌های غیرقابل پیش‌بینی، کاوش |
+| **Reflexion** | بیشتر (تلاش مجدد در طول آزمون‌ها) | زیاد | زیاد | زیاد، یادگیری در طول تلاش‌ها | وظایف قابل تلاش مجدد همراه با بازخورد شفاف |
+| **Plan-and-Execute** | یک برنامه‌ریزی به همراه N اجرا | متوسط | متوسط | کم در میانه اجرا | جریان‌های کاری همگرا و قابل پیش‌بینی |
+| **ReWOO** | یک برنامه‌ریزی، مشاهدات به تعویق افتاده | کم | کم | کم | اجراهای حساس به Token همراه با ابزارهای شناخته‌شده |
+| **LLMCompiler** | برنامه‌ریزی به همراه یک DAG موازی از ابزارها | کم (موازی) | متوسط | کم | زیروظایف مستقل که قابل موازی‌سازی هستند |
+| **Evaluator-Optimizer** | حلقه تولید به همراه نقد | متوسط | متوسط | زیاد | پیش‌نویس‌های حساس به کیفیت |
+| **Orchestrator-Workers** | برنامه‌ریز به همراه زیر-Agentهای کارگر | زیاد (تقریباً ۱۵ برابر گفتگو) | متوسط (موازی) | زیاد | پژوهش‌ها یا ساخت‌های گسترده و قابل موازی‌سازی |
 
-A few patterns earn their place in almost every production loop:
+چندین الگو جایگاه خود را تقریباً در هر حلقه محیط تولید تثبیت کرده‌اند:
 
-- **Generator-verifier (maker-checker) separation.** One subagent drafts; a different, often stronger subagent reviews adversarially and is told to reject anything not verifiably done. Independent grading catches errors the generator will not admit to.
-- **Inject-error-and-retry.** Surface exit codes, type errors, and failing tests back into context so the model self-corrects nearly for free.
-- **The fresh-context technique.** Re-run the same goal prompt with a clean context each iteration, complete one unit of work per cycle, track progress in an external state file, and exit on a predefined verifiable condition. A stop hook intercepts the exit attempt and verifies completion before allowing it.
-- **Model routing for cost.** Send each step to the cheapest adequate tier (small for classification, mid for drafting, frontier for review) and pin models so the loop does not silently escalate. Combine with prompt caching on stable prefixes.
-- **Compose, do not frameworkize.** Prefer the simplest pattern that works. Introduce the loop, and any multi-agent layer, only when iterative, adaptive tool use is genuinely required.
+- **تفکیک تولیدکننده-اعتبارسنج (Generator-Verifier یا Maker-Checker).** یک زیر-Agent پیش‌نویس را آماده می‌کند؛ یک زیر-Agent دیگر و اغلب قوی‌تر، بازبینی را به صورت تقابلی (Adversarial) انجام می‌دهد و به آن دستور داده می‌شود هر چیزی را که به طور قابل تأیید انجام نشده رد کند. نمره‌دهی مستقل خطاهایی را کشف می‌کند که تولیدکننده به آن‌ها اعتراف نخواهد کرد.
+- **تزریق خطا و تلاش مجدد (Inject-error-and-retry).** کدهای خروج (Exit codes)، خطاهای نوع (Type errors) و آزمون‌های ناموفق را مجدداً به Context منتقل کنید تا مدل تقریباً بدون هزینه اضافی خود را تصحیح کند.
+- **تکنیک Context تازه (Fresh-context technique).** همان Prompt هدف را در هر تکرار با یک Context تمیز دوباره اجرا کنید، یک واحد کار را در هر چرخه تکمیل نمایید، پیشرفت را در یک فایل وضعیت خارجی پیگیری کنید و بر اساس یک شرط قابل تأییدِ از پیش تعریف‌شده خارج شوید. یک قلاب توقف (Stop hook)، تلاش برای خروج را رهگیری کرده و پیش از مجاز شمردن آن، تکمیل کار را اعتبارسنجی می‌کند.
+- **مسیریابی مدل برای بهینه‌سازی هزینه (Model routing for cost).** هر گام را به ارزان‌ترین سطح مناسب ارسال کنید (کوچک برای دسته‌بندی، متوسط برای پیش‌نویس، و مدل‌های پیشرو [Frontier] برای بازبینی) و مدل‌ها را تثبیت (Pin) کنید تا حلقه به صورت بی‌صدا به سطوح بالاتر ارتقا نیابد. این رویکرد را با Prompt caching روی پیشوندهای پایدار ترکیب کنید.
+- **ترکیب کنید، فریم‌ورک‌سازی نکنید (Compose, do not frameworkize).** ساده‌ترین الگویی را که کار می‌کند ترجیح دهید. حلقه و هرگونه لایه چند-Agentی را تنها زمانی معرفی کنید که استفاده تکرارشونده و تطبیق‌پذیر از ابزارها واقعاً مورد نیاز باشد.
 
 ---
 
-## Termination and Budget Control
+## خاتمه و کنترل بودجه
 
-A natural stop signal (the model returns text with no tool calls) is **necessary but not sufficient**. The harness must separately verify goal completion. Every production loop should carry at least one criterion from each of three categories.
+یک سیگنال توقف طبیعی (مدل متنی را بدون هیچ فراخوانی ابزاری بازمی‌گرداند) **لازم است اما کافی نیست**. بستر مهارکننده (Harness) باید تکمیل هدف را به طور جداگانه راستی‌آزمایی کند. هر حلقه پروداکشن باید حداقل یک معیار از هر یک از این سه دسته را به همراه داشته باشد.
 
-| Stop condition | Typical default | Enforced by |
-|----------------|-----------------|-------------|
-| Goal predicate passes (SUCCESS) | Task-specific test | Harness |
-| Unrecoverable error or retry limit (FAILURE) | 3 to 5 retries | Harness |
-| Max iterations | 10 for QA, 15-25 general, 20-50 coding | Harness |
-| Wall-clock timeout | 60 to 300 seconds | Harness |
-| Token or dollar ceiling | Per task | Gateway, outside agent code |
-| Per-tool quota | Per tool | Harness |
-| No-progress or oscillation | 3 identical calls, or plan similarity above 95% | Harness |
-| Rate-of-spend | Sustained above about 4k tokens per minute | Gateway |
+| شرط توقف | پیش‌فرض معمول | اعمال‌شده توسط |
+|---|---|---|
+| عبور از گزاره هدف (SUCCESS) | آزمون مختص تسک | مهارکننده (Harness) |
+| خطای غیرقابل جبران یا حد تلاش مجدد (FAILURE) | ۳ تا ۵ بار تلاش مجدد | مهارکننده (Harness) |
+| حداکثر تکرارها | ۱۰ برای QA، ۱۵ تا ۲۵ برای عمومی، ۲۰ تا ۵۰ برای کدنویسی | مهارکننده (Harness) |
+| تایم‌اوت زمان واقعی (Wall-clock) | ۶۰ تا ۳۰۰ ثانیه | مهارکننده (Harness) |
+| سقف دلاری یا Token | به ازای هر تسک | گیت‌وی (Gateway)، خارج از کد Agent |
+| سهمیه به ازای هر ابزار | به ازای هر ابزار | مهارکننده (Harness) |
+| عدم پیشرفت یا نوسان | ۳ فراخوانی یکسان، یا شباهت برنامه بالای ۹۵٪ | مهارکننده (Harness) |
+| نرخ مصرف (Rate-of-spend) | پایدار ماندن بالای حدود ۴ هزار Token در دقیقه | گیت‌وی (Gateway) |
 
-Two rules separate a safe loop from an expensive one:
+دو قاعده یک حلقه ایمن را از یک حلقه پرهزینه متمایز می‌کند:
 
-- **Enforce budgets outside the agent.** If the spend check lives in agent code, a buggy or jailbroken agent can skip its own check. Put it at a gateway or proxy so the agent cannot bypass it. Managed runtimes now offer the same thing as a platform setting: Claude Managed Agents sessions take a hard spend cap at list prices and pause with stop reason `budget_reached`, and OpenAI's Agents API bounds fan-out with `max_concurrent_subagents`.
-- **Watch rate-of-spend, not just cumulative spend.** Monthly caps are too coarse; a loop can burn hundreds of dollars in twenty minutes. A healthy agent rarely sustains high token throughput because it waits on I/O, so a sustained spike is a reliable runaway signal.
+- **اعمال بودجه در خارج از Agent.** اگر بررسی میزان هزینه در کد Agent قرار داشته باشد، یک Agent دارای باگ یا جیل‌بریک‌شده (jailbroken) می‌تواند بررسی خود را نادیده بگیرد. آن را در یک گیت‌وی (Gateway) یا پروکسی قرار دهید تا Agent نتواند آن را دور بزند. محیط‌های اجرای مدیریت‌شده (Managed runtimes) اکنون همین قابلیت را به عنوان یک تنظیم پلتفرمی ارائه می‌دهند: نشست‌های Claude Managed Agents یک سقف هزینه قطعی بر اساس قیمت‌های رسمی دریافت می‌کنند و با دلیل توقف `budget_reached` متوقف می‌شوند، و Agents API شرکت OpenAI انشعاب (fan-out) را با `max_concurrent_subagents` محدود می‌کند.
+- **نرخ مصرف را زیر نظر بگیرید، نه صرفاً هزینه تجمعی را.** سقف‌های ماهانه بسیار کلی و نادقیق هستند؛ یک حلقه می‌تواند در بیست دقیقه صدها دلار بسوزاند. یک Agent سالم به ندرت توان عملیاتی (Throughput) بالای Token را به صورت مداوم حفظ می‌کند زیرا منتظر ورودی/خروجی (I/O) می‌ماند، بنابراین یک جهش مداوم یک سیگنال مطمئن از خارج شدن فرآیند از کنترل (Runaway) است.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -206,150 +222,152 @@ flowchart TD
     B -- no --> H
 ```
 
-The reported failure cases are not hypothetical: an agent that called a broken tool 400 times in five minutes, an 847-step run that never produced an answer, and retry loops that accrued tens of thousands of dollars over days (figures from practitioner write-ups). Almost all of them lacked an external budget guard and a stagnation breaker.
+</div>
 
-Model-level mitigation is emerging alongside these harness-level guards: in July 2026 one lab reported that a targeted fine-tune against repetitive reasoning spirals cut a small open-weights reasoning model's doom-loop rate from 22.9 percent to 1 percent on its benchmarks. Those are reasoning-token loops rather than tool-call loops, and the result is complementary evidence that the failure mode is real and trainable-against, not a replacement for harness enforcement; the stop conditions above still apply to a model that loops one time in a hundred.
+موارد شکست گزارش‌شده فرضی نیستند: یک Agent که یک ابزار خراب را ۴۰۰ بار در پنج دقیقه فراخوانی کرد، یک اجرای ۸۴۷ مرحله‌ای که هرگز پاسخی تولید نکرد، و حلقه‌های تلاش مجددی که در طول چند روز ده‌ها هزار دلار هزینه روی دست گذاشتند (ارقام برگرفته از گزارش‌های متخصصان تجربی). تقریباً همه آن‌ها فاقد محافظ بودجه خارجی و یک متوقف‌کننده رکود (stagnation breaker) بودند.
 
----
-
-## Context and Memory in Long Loops
-
-Long loops fail quietly through **context rot**: output quality degrades as the window fills with stale instructions, old tool output, and failed attempts. It sets in before the hard context limit, which makes it insidious. Long-context research finds that frontier models degrade with input length even when the answer is present. More raw context is not free reliability; curation beats stuffing.
-
-| Strategy | What it does |
-|----------|--------------|
-| **Externalize state to disk** | Keep progress, plans, and findings in files, issues, or a database so the loop survives the model forgetting everything between runs |
-| **Fresh context per iteration** | Reset the window each cycle, or delegate subtasks to subagents with isolated context, so failed attempts do not rot the main loop |
-| **Compact before degradation** | Replace verbose history with summaries, but keep originals addressable for audit and recovery, and treat each summary as untrusted output (see below) |
-| **Searchable notes instead of one summary** | Keep notes the agent can query across context windows rather than one lossy summary; an experimental Codex feature that shipped with GPT-6 Astra works this way |
-| **Offload tool output** | Persist large outputs to a log and return a one-line reference (a single search can be thousands of tokens) |
-| **Progressive disclosure** | Retrieve context and skills only when relevant, rather than front-loading everything |
-| **Prefix-stable ordering** | Append new messages rather than rewriting earlier ones, so cached prefixes keep hitting |
-
-Subagent isolation is the most robust structural defense against context rot in long builds, because each subagent works in a clean window and returns only a compact result. For the underlying memory tiers (working, episodic, semantic, procedural), see [Agent Memory and State](05-agent-memory-and-state.md).
-
-**The compaction summary is a trust boundary.** OpenAI's misalignment reports (September 2026) describe models in RL training writing concealment instructions into their own context-compaction summaries, such as inventing missing financial data and telling the next context to disclose it only if asked: the behavior was flagged in 2.15% of GPT-5.6 Sol compaction summaries and 0.27% of GPT-6 Astra's. In a separate run an unreleased model wrote jailbreak-style instructions into 27 summaries, and in one case its successor followed them. One bad context can propagate into every later one. Validate summaries against the raw transcript (or diff them), keep raw transcripts for audit, and never let a summary carry instructions that the original system prompt did not. Monitor the compaction step itself, too: unmonitored compaction events were one reason METR found about 10% of OpenAI's internal Codex traffic unmonitored (see [Containment Has to Be Out-of-Band](09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band)). A monitor that watches only user-visible turns misses exactly the step where a loop rewrites its own memory.
+کاهش ریسک در سطح مدل در کنار این محافظ‌های سطح بستر مهارکننده (Harness) در حال ظهور است: در ژوئیه ۲۰۲۶ یک آزمایشگاه گزارش داد که یک Fine-tuning هدفمند در برابر مارپیچ‌های استدلال تکراری، نرخ حلقه مرگ (doom-loop) یک مدل استدلال کوچک با وزن‌های باز (open-weights) را در بنچمارک‌های خود از ۲۲.۹ درصد به ۱ درصد کاهش داده است. این‌ها به جای حلقه‌های فراخوانی ابزار، حلقه‌های Tokenهای استدلال هستند و این نتیجه شواهدی مکمل است مبنی بر اینکه این حالت شکست واقعی و قابل آموزش علیه آن است، نه جایگزینی برای اعمال نظارت مهارکننده (Harness)؛ شرایط توقف فوق همچنان برای مدلی که از هر صد بار یک بار وارد حلقه می‌شود، اعمال می‌گردد.
 
 ---
 
-## Verification and Grading
+## کانتکست و حافظه در حلقه‌های طولانی
 
-The loop is only as trustworthy as the thing that grades it. Models grade themselves optimistically and reward-hack when the same model both produces and evaluates. Research on intrinsic self-correction is sobering: without an external signal, naive self-reflection can degrade reasoning rather than improve it.
+حلقه‌های طولانی بی‌سر و صدا از طریق **پوسیدگی کانتکست (context rot)** شکست می‌خورند: با پر شدن پنجره با دستورالعمل‌های بیات، خروجی‌های قدیمی ابزار و تلاش‌های ناموفق، کیفیت خروجی افت می‌کند. این پدیده پیش از رسیدن به حد سخت کانتکست رخ می‌دهد، که آن را موذیانه می‌سازد. تحقیقات در زمینه کانتکست طولانی نشان می‌دهد که مدل‌های پیشرو (frontier models) با افزایش طول ورودی افت کیفیت پیدا می‌کنند، حتی زمانی که پاسخ در ورودی وجود دارد. کانتکست خام بیشتر به معنای قابلیت اطمینان رایگان نیست؛ گزینش و پالایش بر انباشت داده برتری دارد (curation beats stuffing).
 
-| Method | Speed | Cost | Character | Best for |
-|--------|-------|------|-----------|----------|
-| **Code-based** (tests, types, linters, exit codes) | Milliseconds to seconds | Near zero | Objective, brittle | Functional correctness |
-| **Model-based** (LLM-as-judge) | Seconds | Medium | Flexible, must be calibrated to human experts | Semantic quality, style |
-| **Human** | Slow | High | Gold standard | High stakes, judge calibration |
+| استراتژی | کارکرد آن |
+|---|---|
+| **انتقال وضعیت به دیسک (Externalize state to disk)** | نگهداری پیشرفت، برنامه‌ها و یافته‌ها در فایل‌ها، issueها یا یک پایگاه داده تا حلقه در صورت فراموشی همه چیز توسط مدل بین اجراها دوام بیاورد |
+| **کانتکست تازه به ازای هر تکرار** | بازنشانی (Reset) پنجره در هر چرخه، یا محول کردن زیرتسک‌ها به Agentهای فرعی (subagents) با کانتکست ایزوله، به طوری که تلاش‌های ناموفق باعث پوسیدگی حلقه اصلی نشوند |
+| **فشرده‌سازی پیش از افت کیفیت (Compact before degradation)** | جایگزینی تاریخچه پرحجم با خلاصه‌ها، اما نگه داشتن نسخه‌های اصلی به صورت قابل آدرس‌دهی برای بازرسی (audit) و بازیابی، و در نظر گرفتن هر خلاصه به عنوان خروجی غیرقابل اعتماد (زیر را ببینید) |
+| **یادداشت‌های قابل جستجو به جای یک خلاصه** | نگهداری یادداشت‌هایی که Agent بتواند در میان پنجره‌های کانتکست در آن‌ها جستجو کند به جای یک خلاصه همراه با اتلاف اطلاعات (lossy)؛ یک قابلیت آزمایشی Codex که همراه با GPT-6 Astra عرضه شد به این شکل کار می‌کند |
+| **تخلیه خروجی ابزار (Offload tool output)** | ذخیره خروجی‌های حجیم در یک لاگ و بازگرداندن یک ارجاع تک‌خطی (یک جستجوی ساده می‌تواند شامل هزاران Token باشد) |
+| **افشای تدریجی (Progressive disclosure)** | بازیابی کانتکست و مهارت‌ها تنها در صورت مرتبط بودن، به جای بارگذاری اولیه همه چیز در ابتدا |
+| **ترتیب پایدار پیشوند (Prefix-stable ordering)** | ضمیمه کردن پیام‌های جدید به جای بازنویسی پیام‌های قبلی، به طوری که پیشوندهای کش‌شده (cached prefixes) همچنان مورد اصابت کش (cache hit) قرار گیرند |
 
-Working principles:
+ایزوله‌سازی Agentهای فرعی (subagents) قوی‌ترین دفاع ساختاری در برابر پوسیدگی کانتکست در ساخت‌های طولانی است، زیرا هر Agent فرعی در یک پنجره تمیز کار می‌کند و تنها یک نتیجه فشرده را بازمی‌گرداند. برای لایه‌های زیربنایی حافظه (کاری، اپیزودیک، معنایی، رویه‌ای)، به [حافظه و وضعیت Agent](05-agent-memory-and-state.md) مراجعه کنید.
 
-- **Prefer deterministic verification** and inject the failing error text back into the loop, so the model self-corrects cheaply.
-- **Grade outcomes, not rigid tool-call sequences,** so valid alternative approaches are not penalized.
-- **Build an objective goal-completion predicate** and check it explicitly, rather than equating completion with the absence of tool calls.
-- **Calibrate LLM judges** against a small set of expert-labeled cases before trusting their scores.
-- **Give the producer a verdict, not a tutorial.** Detailed rejection reasons can teach evasion: in a September 2026 study of autonomous research agents (arXiv 2609.28614), cumulative evaluator evasion reached 40.5% after detailed feedback versus 20.3% after a generic rejection (the comparison does not isolate the explanations). Environment errors (exit codes, failing tests) should flow back in full; a grader's reasoning about *why* it rejected should not. Never let the agent control both the result and the evidence for it.
-- **Monitor the trajectory, not the step.** Agents under task pressure evade runtime monitors by encoding commands, splitting one operation across several calls, or waiting until context scrolls out of the monitor's window, and evasion rose with reasoning effort (EvasionBench, arXiv 2609.30217). A verifier or monitor needs whole-run state.
-
-For trajectory benchmarks and LLM-as-judge step scoring, see [Evaluating Agentic Systems](10-evaluating-agentic-systems.md).
+**خلاصه فشرده‌سازی، یک مرز اعتماد (trust boundary) است.** گزارش‌های عدم انطباق (misalignment) شرکت OpenAI (سپتامبر ۲۰۲۶) مدل‌هایی را در آموزش یادگیری تقویتی (RL) توصیف می‌کنند که دستورالعمل‌های پنهان‌کاری را در خلاصه‌های فشرده‌سازی کانتکست خود می‌نوشتند؛ مانند جعل داده‌های مالی مفقود و گفتن به کانتکست بعدی که تنها در صورت پرسش، آن را افشا کند: این رفتار در ۲.۱۵٪ از خلاصه‌های فشرده‌سازی GPT-5.6 Sol و ۰.۲۷٪ از خلاصه‌های GPT-6 Astra پرچم‌گذاری شد. در یک اجرای مجزا، یک مدل منتشرنشده دستورالعمل‌هایی به سبک جیل‌بریک (jailbreak) در ۲۷ خلاصه نوشت و در یک مورد مدل جانشین آن از آن‌ها پیروی کرد. یک کانتکست نامناسب می‌تواند به تمام کانتکست‌های بعدی سرایت کند. خلاصه‌ها را در برابر رونوشت خام (raw transcript) اعتبارسنجی کنید (یا تفاوت آن‌ها را diff بگیرید)، رونوشت‌های خام را برای بازرسی نگه دارید، و هرگز اجازه ندهید یک خلاصه حامل دستورالعمل‌هایی باشد که در System Prompt اصلی وجود نداشته است. خود مرحله فشرده‌سازی را نیز مانیتور کنید: رویدادهای فشرده‌سازی مانیتورنشده یکی از دلایلی بود که METR متوجه شد حدود ۱۰٪ از ترافیک داخلی Codex شرکت OpenAI مانیتور نمی‌شود (به [مهار باید خارج از باند باشد](09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band) مراجعه کنید). مانیتوری که فقط نوبت‌های قابل مشاهده برای کاربر را زیر نظر دارد، دقیقاً همان مرحله‌ای را از دست می‌دهد که در آن یک حلقه حافظه خود را بازنویسی می‌کند.
 
 ---
 
-## Anti-Patterns
+## اعتبارسنجی و نمره‌دهی
 
-| Failure mode | Root cause | Fix |
-|--------------|------------|-----|
-| **Loopmaxxing** | Assuming more iterations solve anything; no verifiable exit | Define a success predicate; cap iterations; reject unquantifiable goals |
-| **Context rot** | Window fills with stale tokens | Compact early, isolate subagents, offload outputs |
-| **Runaway loop** | No hard stop, no circuit breaker | Rate-of-spend breaker plus an external budget guard |
-| **Hallucinated success** | Trusting the model's self-report | Deterministic verifier plus a goal predicate |
-| **Objective misspecification** | Ambiguous or proxy goal (deleting a failing test to pass) | Termination criteria that capture intent, plus a human gate |
-| **State amnesia** | No durable checkpoint | Externalize processed items to disk or an issue board |
-| **Comprehension debt** | Changes outpace human review | Cap loops-in-flight to review bandwidth, not tool capacity |
-| **Self-policed budget** | Spend check lives in agent code | Enforce at the gateway, outside the agent |
-| **Tool sprawl** | 50 overlapping tools degrade selection | Curate to roughly 10 focused tools; semantic tool retrieval past 30 |
-| **Level/task mismatch** | A stateless loop on a long-horizon task | Match the loop level to the task's horizon |
-| **Explained rejections** | The grader tells the producer exactly why it failed | Terse verdicts to the producer; full rationale only in the audit log |
-| **Trusted summaries** | Compaction output carried forward unchecked | Validate against the raw transcript; summaries cannot add instructions |
+یک حلقه تنها به اندازه مؤلفه‌ای که به آن نمره می‌دهد قابل اعتماد است. وقتی یک مدل هم پاسخ را تولید کند و هم ارزیابی نماید، مدل‌ها به شکلی خوش‌بینانه به خود نمره می‌دهند و دست به تقلب در پاداش (reward-hacking) می‌زنند. پژوهش‌ها درباره خوداصلاحی ذاتی (intrinsic self-correction) تأمل‌برانگیز است: بدون یک سیگنال خارجی، خوداندیشی (self-reflection) ساده‌لوحانه می‌تواند استدلال را به جای بهبود، تضعیف کند.
 
-**Loopmaxxing** deserves special attention because it is the seductive one. It is the multi-step descendant of "just add more tokens." It fails on subjective goals (improve the UX, write a viral post) that have no concrete exit, so the loop never converges and spend runs away. Even on verifiable tasks, agents settle into local minima and make timid, fractional tweaks instead of bold moves. More loop is not more capability.
+| روش | سرعت | هزینه | ماهیت | بهترین کاربرد |
+|---|---|---|---|---|
+| **مبتنی بر کد** (تست‌ها، تایپ‌ها، لینترها، کدهای خروج) | میلی‌ثانیه تا ثانیه | نزدیک به صفر | عینی، شکننده | صحت عملکردی |
+| **مبتنی بر مدل** (LLM-as-judge) | ثانیه‌ها | متوسط | منعطف، باید با کارشناسان انسانی کالیبره شود | کیفیت معنایی، سبک |
+| **انسان** | کند | بالا | استاندارد طلایی | شرایط حساس و پرریسک، کالیبراسیون قاضی |
 
----
+اصول کاری:
 
-## Metrics That Matter
+- **اعتبارسنجی قطعی (deterministic) را ترجیح دهید** و متن خطای شکست را مجدداً به حلقه تزریق کنید تا مدل با هزینه اندک خود را اصلاح کند.
+- **به نتایج نمره دهید نه به توالی‌های سفت‌وسخت فراخوانی ابزار،** تا رویکردهای جایگزین معتبر جریمه نشوند.
+- **یک گزاره عینی برای تکمیل هدف بسازید** و آن را به طور صریح بررسی کنید، به جای اینکه تکمیل کار را معادل با عدم فراخوانی ابزار در نظر بگیرید.
+- **قاضی‌های LLM را کالیبره کنید** با استفاده از مجموعه کوچکی از موارد برچسب‌گذاری‌شده توسط کارشناسان پیش از آنکه به امتیازات آن‌ها اعتماد کنید.
+- **به تولیدکننده حکم بدهید، نه آموزش.** دلایل ردِ مفصل می‌تواند راه‌های فرار و دور زدن را بیاموزد: در یک مطالعه در سپتامبر ۲۰۲۶ روی Agentهای پژوهشی خودمختار (arXiv 2609.28614)، فرار تجمعی از ارزیاب پس از بازخورد دقیق به ۴۰.۵٪ رسید در حالی که پس از یک رد کلی ۲۰.۳٪ بود (این مقایسه توضیحات را ایزوله نمی‌کند). خطاهای محیطی (کدهای خروج، تست‌های ناموفق) باید به طور کامل بازگردانده شوند؛ اما استدلال نمره‌دهنده در مورد *چرایی* رد نباید بازگردانده شود. هرگز اجازه ندهید Agent هم نتیجه و هم شواهد مربوط به آن را کنترل کند.
+- **مسیر حرکت (Trajectory) را مانیتور کنید، نه صرفاً هر مرحله را.** Agentها تحت فشار تسک، با رمزگذاری دستورات، تقسیم یک عملیات بین چند فراخوانی، یا منتظر ماندن تا زمانی که کانتکست از پنجره مانیتور خارج شود، مانیتورهای زمان اجرا (runtime) را دور می‌زنند؛ و میزان دور زدن با تلاش استدلال (reasoning effort) افزایش می‌یافت (EvasionBench, arXiv 2609.30217). یک اعتبارسنج یا مانیتور به وضعیت کل اجرا (whole-run state) نیاز دارد.
 
-The unit of measurement shifts from cost-per-token to **cost-per-task**. A loop that burns 15x the tokens but avoids a human escalation can be cheaper overall than a cheap chatbot that needs intervention.
-
-- **Task success rate** on a curated eval set, reported as both `pass@k` (at least one of k succeeds, when one success matters) and `pass^k` (all k succeed, for customer-facing reliability). These diverge fast: at a 70 percent per-attempt success rate the gap is already large by k=3, and it widens from there.
-- **Cost-per-task** and token economics, benchmarked against a baseline, plus prompt-cache hit rate. For coding loops the input side dominates: Anthropic's Claude Code telemetry (September 24, 2026, vendor-reported) puts the input-to-output token ratio at 324:1, up from 189:1 in March, with context per request up 2.6x. At that ratio the cached-input price and the hit rate set the bill, not the output price, and cache-read multipliers now differ by model (0.1x on most Claude models including Haiku 5.5, 0.05x on Opus 5.5 and on Sonnet 5.5 since an October 7 cut to $0.10 per 1M, 0.025x on Fable 5.1). Harness trimming is the lever: Cursor reported (vendor figures) 7% lower user token costs from cutting about 66% of its system prompt, loading built-in tools dynamically, and placing explicit cache breakpoints that cut cold cache misses by 20%.
-- **Rate-of-spend** (tokens and dollars per minute) as a real-time runaway signal.
-- **Iterations to completion** and wall-clock latency. Runs beyond about 30 turns usually signal scope creep.
-- **No-progress signals**: repetition streaks, plan similarity between cycles, oscillation frequency.
-- **Failure-bucket distribution** (timeout, unverified write, undetected command failure, premature termination, model-limited) to fix the why, not just the what. Expect a share to be model-limited and unfixable by harness tuning.
-- **Context-health**: window growth per iteration, compaction frequency, accuracy-versus-length curves.
-- **Reviewability**: lines changed per review-hour and the fraction of merged changes actually reviewed. Review bandwidth, not tool capability, is the real ceiling on loops-in-flight.
-
-When you tune the harness, change one knob at a time, average 3 to 6 runs to beat run-to-run noise, and validate wins on a holdout and a regression set so improvements do not silently backslide.
+برای بنچمارک‌های مسیر حرکت (Trajectory) و نمره‌دهی مرحله‌ای LLM-as-judge، به [ارزیابی سیستم‌های Agentic](10-evaluating-agentic-systems.md) مراجعه کنید.
 
 ---
 
-## The Maturity Ladder
+## ضدالگوها (Anti-Patterns)
 
-Take a loop from supervised to mostly autonomous in stages. Each phase earns the next.
+| حالت شکست | علت ریشه‌ای | راه‌حل |
+|---|---|---|
+| **حلقه‌افزایی افراطی (Loopmaxxing)** | این فرض که تکرارهای بیشتر هر مشکلی را حل می‌کند؛ نبود خروج قابل راستی‌آزمایی | تعریف یک گزاره موفقیت؛ محدود کردن تعداد تکرارها؛ رد اهداف غیرقابل سنجش |
+| **پوسیدگی کانتکست (Context rot)** | پنجره با Tokenهای بیات پر می‌شود | فشرده‌سازی زودهنگام، ایزوله‌سازی Agentهای فرعی، تخلیه خروجی‌ها |
+| **حلقه خارج از کنترل (Runaway loop)** | نبود توقف قطعی (hard stop)، نبود قطع‌کننده مدار (circuit breaker) | قطع‌کننده نرخ مصرف به همراه یک محافظ بودجه خارجی |
+| **موفقیت توهم‌شده (Hallucinated success)** | اعتماد به گزارش ارائه‌شده توسط خود مدل | اعتبارسنج قطعی به همراه یک گزاره هدف |
+| **تعیین نادرست هدف (Objective misspecification)** | هدف مبهم یا نیابتی (مانند حذف یک تست ناموفق برای قبولی) | معیارهای خاتمه که بیانگر قصد واقعی باشند، به همراه یک درگاه نظارت انسانی (human gate) |
+| **فراموشی وضعیت (State amnesia)** | نبود چک‌پوینت پایدار | انتقال موارد پردازش‌شده به دیسک یا یک تابلوی issueها |
+| **بدهی درک و فهم (Comprehension debt)** | سرعت تغییرات از بازبینی انسانی پیشی می‌گیرد | محدود کردن حلقه‌های در حال اجرا بر اساس پهنای باند بازبینی، نه ظرفیت ابزار |
+| **بودجه تحت نظارت خود (Self-policed budget)** | بررسی هزینه در کد Agent قرار دارد | اعمال در گیت‌وی (Gateway)، خارج از Agent |
+| **گسترش بی‌رویه ابزارها (Tool sprawl)** | ۵۰ ابزار دارای همپوشانی کیفیت انتخاب را تنزل می‌دهند | گزینش به حدود ۱۰ ابزار متمرکز؛ بازیابی معنایی ابزار فراتر از ۳۰ مورد |
+| **عدم تطابق سطح و تسک (Level/task mismatch)** | یک حلقه بدون وضعیت (stateless) روی یک تسک با افق طولانی | تطبیق سطح حلقه با افق تسک |
+| **ردهای همراه با توضیح (Explained rejections)** | نمره‌دهنده دقیقاً به تولیدکننده می‌گوید چرا شکست خورده است | احکام مختصر به تولیدکننده؛ منطق کامل تنها در لاگ بازرسی |
+| **خلاصه‌های مورد اعتماد (Trusted summaries)** | خروجی فشرده‌سازی بدون بررسی به مراحل بعدی منتقل می‌شود | اعتبارسنجی در برابر رونوشت خام؛ خلاصه‌ها نباید بتوانند دستورالعمل اضافه کنند |
 
-| Phase | Autonomy | What you add | Gate to promote |
+**حلقه‌افزایی افراطی (Loopmaxxing)** شایسته توجه ویژه‌ای است زیرا موردی فریبنده است. این رویکرد، نسخه چندمرحله‌ایِ ایده "فقط Tokenهای بیشتری اضافه کن" است. این رویکرد در اهداف ذهنی و کیفی (بهبود تجربه کاربری UX، نوشتن یک پست پربازدید ویروسی) که هیچ نقطه خروج ملموسی ندارند با شکست مواجه می‌شود، به طوری که حلقه هرگز همگرا نمی‌شود و هزینه‌ها از کنترل خارج می‌گردد. حتی در تسک‌های قابل راستی‌آزمایی، Agentها در کمینه‌های محلی (local minima) گرفتار می‌شوند و به جای اقدامات جسورانه، تغییرات جزئی و محتاطانه ایجاد می‌کنند. حلقه بیشتر به معنای قابلیت بیشتر نیست.
+
+---
+
+## معیارهایی که اهمیت دارند
+
+واحد اندازه‌گیری از هزینه به ازای هر Token به **هزینه به ازای هر تسک (cost-per-task)** تغییر می‌یابد. حلقه‌ای که ۱۵ برابر Token بیشتری می‌سوزاند اما از ارجاع کار به انسان جلوگیری می‌کند، در مجموع می‌تواند ارزان‌تر از یک چت‌بات ارزان‌قیمت باشد که نیاز به مداخله دارد.
+
+- **نرخ موفقیت تسک** روی یک مجموعه ارزیابی (eval set) گزینش‌شده، که هم به صورت `pass@k` (حداقل یکی از k تلاش موفق شود، در شرایطی که یک موفقیت اهمیت دارد) و هم به صورت `pass^k` (تمام k تلاش موفق شوند، برای قابلیت اطمینان در سطح مشتری) گزارش می‌شود. این دو به سرعت واگرا می‌شوند: در نرخ موفقیت ۷۰ درصد به ازای هر تلاش، این شکاف در ۳=k از قبل بزرگ است و از آنجا به بعد گسترده‌تر می‌شود.
+- **هزینه به ازای هر تسک (Cost-per-task)** و اقتصاد Token (token economics)، که در برابر یک خط پایه (baseline) بنچمارک می‌شود، به همراه نرخ اصابت کش Prompt (prompt-cache hit rate). برای حلقه‌های کدنویسی، بخش ورودی غالب است: تله‌متری Claude Code شرکت Anthropic (۲۴ سپتامبر ۲۰۲۶، گزارش‌شده توسط ارائه‌دهنده) نسبت Token ورودی به خروجی را ۳۲۴:۱ نشان می‌دهد که نسبت به ۱۸۹:۱ در ماه مارس افزایش یافته و کانتکست در هر درخواست ۲.۶ برابر شده است. در چنین نسبتی، قیمت ورودی کش‌شده و نرخ اصابت، صورت‌حساب را تعیین می‌کنند نه قیمت خروجی، و ضرایب خواندن از کش اکنون بر اساس مدل متفاوت است (۰.۱x در اکثر مدل‌های Claude از جمله Haiku 5.5، ۰.۰۵x در Opus 5.5 و در Sonnet 5.5 پس از کاهش ۷ اکتبر به ۰.۱۰ دلار به ازای هر ۱ میلیون Token، و ۰.۰۲۵x در Fable 5.1). هرس کردن مهارکننده (Harness trimming) اهرم اصلی است: Cursor (طبق آمار ارائه‌دهنده) گزارش داد که با حذف حدود ۶۶٪ از System Prompt خود، بارگذاری پویا ابزارهای داخلی، و قرار دادن نقاط شکست صریح کش (explicit cache breakpoints) که عدم اصابت کش سرد (cold cache misses) را ۲۰٪ کاهش داد، هزینه‌های Token کاربر را ۷٪ کاهش داده است.
+- **نرخ مصرف (Rate-of-spend)** (Tokenها و دلار در هر دقیقه) به عنوان یک سیگنال بلادرنگ از خارج شدن فرآیند از کنترل (runaway).
+- **تعداد تکرارها تا تکمیل** و تاخیر (Latency) زمان واقعی (wall-clock). اجراهای فراتر از حدود ۳۰ نوبت معمولاً نشانه گسترش بی‌رویه محدوده پروژه (scope creep) هستند.
+- **سیگنال‌های عدم پیشرفت**: توالی‌های تکرار، شباهت برنامه بین چرخه‌ها، بسامد نوسان.
+- **توزیع دسته‌بندی شکست‌ها (Failure-bucket distribution)** (تایم‌اوت، نوشتن تأییدنشده، شکست شناسایی‌نشده دستور، خاتمه زودهنگام، محدودیت‌های مدل) برای رفع چرایی، و نه فقط چیستی. انتظار داشته باشید که بخشی از آن‌ها به دلیل محدودیت مدل بوده و با تنظیم بستر مهارکننده (Harness) قابل رفع نباشند.
+- **سلامت کانتکست (Context-health)**: رشد پنجره در هر تکرار، بسامد فشرده‌سازی، منحنی‌های دقت در برابر طول.
+- **قابلیت بازبینی (Reviewability)**: خطوط تغییریافته به ازای هر ساعت بازبینی و کسری از تغییرات ادغام‌شده که واقعاً بازبینی شده‌اند. پهنای باند بازبینی، و نه قابلیت‌های ابزار، سقف واقعی برای حلقه‌های در حال اجرا است.
+
+هنگامی که بستر مهارکننده (Harness) را تنظیم می‌کنید، در هر نوبت تنها یک پارامتر را تغییر دهید، میانگین ۳ تا ۶ اجرا را برای غلبه بر نویز ناشی از تفاوت بین اجراها محاسبه کنید، و دستاوردها را روی یک مجموعه داده آزمون نگه‌داشته‌شده (holdout) و یک مجموعه رگرسیون اعتبارسنجی کنید تا پیشرفت‌ها بی‌سر و صدا دچار پسرفت نشوند.
+
+---
+
+## نردبان بلوغ
+
+یک حلقه را مرحله‌به‌مرحله از حالت تحت نظارت به عمدتاً خودمختار ارتقا دهید. هر فاز، شایستگی و مجوز ورود به فاز بعدی را احراز می‌کند.
+
+| فاز | خودمختاری | آنچه اضافه می‌کنید | گیت ارتقا |
 |-------|----------|--------------|-----------------|
-| **1. Observe** | None | Human approval on every modification | Edge cases mapped |
-| **2. Deterministic exits** | Low | Compilers, linters, unit tests as the thing that says no | Exits reliable |
-| **3. Circuit breakers** | Medium | Stagnation detection, rate-of-spend limits, alerts | Runaways reliably caught |
-| **4. Distill and demote** | High | Convert predictable LLM steps into compiled scripts | Stable steps scripted, cost and variance down |
+| **۱. مشاهده (Observe)** | هیچ | تایید انسانی در هر تغییر | حالت‌های خاص و حاشیه‌ای (Edge cases) نگاشت شده‌اند |
+| **۲. خروج‌های قطعی (Deterministic exits)** | کم | کامپایلرها، لینترها (Linters)، آزمون‌های واحد به عنوان عاملی که «نه» می‌گوید | خروج‌ها قابل اتکا هستند |
+| **۳. مدارشکن‌ها (Circuit breakers)** | متوسط | تشخیص رکود (Stagnation detection)، محدودیت‌های نرخ هزینه، هشدارها | حلقه‌های سرکش (Runaways) به صورت قابل اتکا مهار می‌شوند |
+| **۴. تقطیر و تنزل (Distill and demote)** | بالا | تبدیل مراحل قابل پیش‌بینی LLM به اسکریپت‌های کامپایل‌شده | مراحل پایدار اسکریپت‌نویسی شده، هزینه و واریانس کاهش می‌یابند |
 
-The same loop design produces opposite outcomes depending on the engineer's engagement. Used to accelerate work you already understand, loops compound your leverage. Used to avoid thinking, they compound comprehension debt until no one can review what shipped. The discipline is in the loop you build and the judgment you keep in it.
-
----
-
-## Interview Questions
-
-### Q: Define the agent loop, and explain when a loop is actively harmful.
-
-**Strong answer:**
-The inner agent loop is the reason-act-observe cycle a harness runs within one run: assemble context, let the model pick an action, execute a tool, feed the result back, check a stop condition, repeat. It exists because long-horizon tasks cannot finish in one forward pass and tool results must inform later steps. A loop is harmful when the task is fixed and predictable: it adds latency (every iteration is another round trip), cost, and non-determinism for no benefit. My decision rule: a single LLM call for one-shot transforms, a deterministic pipeline for a known fixed sequence, and a loop only when the path genuinely depends on intermediate results.
-
-### Q: Why must the verifier be separate from the producer, and where should budget enforcement live?
-
-**Strong answer:**
-When the same model produces and grades, it grades itself optimistically and reward-hacks toward whatever the check measures; research shows intrinsic self-correction can even degrade reasoning. So I split them: deterministic graders (tests, types, linters) first, then a separate, often stronger model as an adversarial reviewer instructed to reject anything not verifiably done, with humans on high-stakes cases. Budget enforcement must live outside the agent, at a gateway or proxy. If the spend and stop checks are in agent code, a buggy or jailbroken agent can skip its own guard. The gateway also gives me layered ceilings, per-tool to per-session to per-key, plus a rate-of-spend circuit breaker that catches runaways monthly caps miss.
-
-### Q: An agent called a broken tool 400 times in five minutes. Diagnose and design the fix.
-
-**Strong answer:**
-This is a runaway loop with no stagnation detection. The agent kept getting an ambiguous failure and retried forever. I would hash the tuple of tool name plus arguments and abort on a repetition streak (three identical calls is decisive), detect oscillation between two states, and compare successive plans by similarity, halting above about 95 percent. I would add a rate-of-spend breaker, since sustained high throughput is itself the signal, and enforce all of it at the gateway so the agent cannot bypass it. I would also fix the proximate cause: ambiguous tool feedback ("more results may be available") invites endless retries, so tools should return explicit SUCCESS or FAILED terminal states. On a cap hit, escalate to a human with a precise blocking question rather than silently continuing.
-
-### Q: What is loopmaxxing, and how do you convert a non-converging loop into a useful one?
-
-**Strong answer:**
-Loopmaxxing is the belief that more iterations automatically solve harder problems, the multi-step version of token-maxxing. It fails on goals with no concrete exit condition, like "improve the UX," so the loop never converges and spend runs away. The fix is to manufacture a verifiable success function. For a vague goal I decompose it into checkable predicates: instead of "improve test coverage," the stop condition becomes "coverage for the billing module is at least 90 percent and the suite exits zero." If a goal genuinely cannot be made checkable, it does not belong in an autonomous loop; it belongs in a human-in-the-loop workflow with the agent drafting and a person judging.
-
-### Q: Should the verifier tell the agent why it rejected the work?
-
-**Strong answer:**
-Mostly no, and the distinction is between the environment and the grader. Environment feedback (compiler errors, failing test output, API error bodies) should go back in full, because that is how the loop self-corrects cheaply. The grader's reasoning about why it rejected a result is different: it is a map of the check, and a capable agent optimizes against whatever map it is given. A September 2026 study of autonomous research agents saw cumulative evaluator evasion reach 40.5% after detailed rejection feedback versus 20.3% after a generic rejection; the authors caution that the comparison does not isolate the explanations, but it matches what I would expect from any optimizer. So I return a terse verdict plus the deterministic signals the agent legitimately needs, log the full rationale where humans can audit it, keep the grader's code and tests outside the agent's reach, and make sure the agent never controls both the artifact and the evidence that it works.
-
-### Q: Explain context rot and your full mitigation stack for a multi-hour loop.
-
-**Strong answer:**
-Context rot is silent quality degradation as the transcript grows with stale instructions, old tool output, and failed attempts. It sets in before the hard context limit, and long-context studies show models degrade with input length even when the answer is present, so a bigger window is not a fix. My stack: externalize state to disk so the loop is resumable and does not re-derive context each cycle; isolate subtasks in subagents with fresh windows, which is the strongest structural defense; compact verbose history into summaries before degradation is visible while keeping originals addressable; offload large tool outputs to a log and return a reference; and order messages so stable prefixes keep hitting the prompt cache. Because summaries can carry injected or self-authored instructions forward, I validate each compaction summary against the raw transcript before the next context inherits it. The guiding rule is that context curation beats context stuffing.
+طراحی یک حلقه یکسان بسته به میزان تعامل و درگیری مهندس، نتایج کاملاً متضادی به بار می‌آورد. حلقه‌ها اگر برای تسریع کارهایی که از قبل درک می‌کنید به کار گرفته شوند، اهرم و توان اثرگذاری شما را مضاعف می‌کنند. اما اگر برای پرهیز از فکر کردن استفاده شوند، بدهی درک و فهم (comprehension debt) را تا جایی انباشته می‌کنند که هیچ‌کس نمی‌تواند محصول نهایی تحویل داده شده را بازبینی کند. انضباط واقعی در حلقه‌ای است که می‌سازید و قضاوتی که درون آن حفظ می‌کنید.
 
 ---
 
-## References
+## سوالات مصاحبه
 
-- Yao et al. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
-- Shinn et al. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
-- Xu et al. "ReWOO: Decoupling Reasoning from Observations" (2023). https://arxiv.org/abs/2305.18323
-- Kim et al. "An LLM Compiler for Parallel Function Calling" (2024). https://arxiv.org/pdf/2312.04511
-- Huang et al. "Large Language Models Cannot Self-Correct Reasoning Yet" (2024). https://arxiv.org/abs/2310.01798
-- Chroma Research. "Context Rot: How Increasing Input Tokens Impacts LLM Performance" (2025). https://www.trychroma.com/research/context-rot
+### سوال: حلقه Agent را تعریف کنید و توضیح دهید چه زمانی یک حلقه عملاً و به شکلی فعال مضر است.
+
+**پاسخ قوی:**
+حلقه درونی Agent (Inner agent loop) همان چرخه «استدلال-اقدام-مشاهده» (reason-act-observe) است که یک هارنس (harness) در طول یک اجرا هدایت می‌کند: تجمیع کانتکست (context)، واگذاری انتخاب اقدام به مدل، اجرای یک ابزار، بازخورد دادن نتیجه، بررسی شرط توقف، و تکرار. این حلقه از آن جهت وجود دارد که وظایف با افق زمانی طولانی (long-horizon tasks) نمی‌توانند در یک پاس رو به جلو (forward pass) پایان یابند و نتایج ابزارها باید مراحل بعدی را هدایت کنند. یک حلقه زمانی فعالانه مضر است که وظیفه ثابت و قابل پیش‌بینی باشد: چرا که بدون هیچ مزیتی، باعث افزایش تاخیر (Latency) (هر تکرار یک رفت و برگشت دیگر است)، هزینه و عدم قطعیت (non-determinism) می‌شود. قاعده تصمیم‌گیری من بدین شرح است: یک فراخوانی تک‌مرحله‌ای LLM برای تبدیل‌های یک‌باره (one-shot transforms)، یک پایپ‌لاین قطعی برای یک توالی ثابت و شناخته‌شده، و استفاده از حلقه تنها زمانی که مسیر پیش‌رو واقعاً به نتایج میانی وابسته باشد.
+
+### سوال: چرا تاییدکننده (verifier) باید از تولیدکننده (producer) جدا باشد، و اعمال بودجه در کجا باید مستقر شود؟
+
+**پاسخ قوی:**
+وقتی یک مدل یکسان هم تولیدکننده و هم نمره‌دهنده باشد، با خوش‌بینی به کار خود نمره می‌دهد و به سمت هک پاداش (reward-hacking) در راستای هر آنچه که معیار ارزیابی می‌سنجد پیش می‌رود؛ پژوهش‌ها نشان می‌دهند که خوداصلاحی درونی (intrinsic self-correction) حتی می‌تواند قدرت استدلال را تضعیف کند. از این رو من آن‌ها را از هم جدا می‌کنم: ابتدا ارزیاب‌های قطعی (آزمون‌ها، تایپ‌ها، لینترها)، سپس یک مدل مجزا و اغلب قوی‌تر به عنوان یک بازبین تقابلی (adversarial reviewer) که مأموریت دارد هر آنچه را که به‌طور اثبات‌پذیر تکمیل نشده است رد کند، و استفاده از بازبین‌های انسانی در سناریوهای حساس و پرریسک. اعمال بودجه باید خارج از Agent و در سطح یک گیت‌وی (gateway) یا پروکسی مستقر شود. اگر بررسی‌های مربوط به هزینه و توقف در کد خودِ Agent باشد، یک Agent معیوب یا جیل‌بریک‌شده (jailbroken) می‌تواند گاردها و حفاظ‌های خود را دور بزند. علاوه بر این، گیت‌وی سقف‌های لایه‌بندی‌شده‌ای را در اختیار من می‌گذارد؛ از سطح هر ابزار گرفته تا هر نشست (session) و هر کلید، به همراه یک مدارشکن نرخ هزینه که موارد سرکشی را که سقف‌های ماهانه متوجه آن‌ها نمی‌شوند، مهار می‌کند.
+
+### سوال: یک Agent یک ابزار معیوب را در عرض پنج دقیقه ۴۰۰ بار فراخوانی کرده است. این مشکل را عیب‌یابی کرده و راه‌حل آن را طراحی کنید.
+
+**پاسخ قوی:**
+این یک حلقه سرکش (runaway loop) فاقد سازوکار تشخیص رکود (stagnation detection) است. Agent مرتباً با یک شکست مبهم مواجه شده و تا بی‌نهایت تلاش مجدد کرده است. من تاپل (tuple) نام ابزار به‌علاوه آرگومان‌ها را هش می‌کنم و در صورت مشاهده یک توالی تکراری (سه فراخوانی یکسان تعیین‌کننده است) عملیات را متوقف می‌سازم؛ نوسان بین دو حالت را شناسایی می‌کنم؛ و برنامه‌های متوالی را از نظر شباهت مقایسه کرده و در صورت شباهت بالای حدود ۹۵ درصد کار را متوقف می‌کنم. یک مدارشکن نرخ هزینه نیز اضافه خواهم کرد، چرا که توان عملیاتی (Throughput) بالای مداوم، خود به تنهایی سیگنال هشدار است؛ و تمام این موارد را در سطح گیت‌وی اعمال می‌کنم تا Agent نتواند آن‌ها را دور بزند. همچنین علت اصلی و مستقیم را برطرف می‌کنم: بازخورد مبهم ابزار (مانند «ممکن است نتایج بیشتری در دسترس باشد») موجب تلاش‌های مجدد بی‌پایان می‌شود، بنابراین ابزارها باید وضعیت‌های پایانی صریح SUCCESS یا FAILED را برگردانند. در صورت برخورد با سقف تعیین‌شده، به جای ادامه دادن خاموش، فرآیند را همراه با یک پرسش دقیق و مسدودکننده به انسان ارجاع می‌دهم.
+
+### سوال: مفهوم Loopmaxxing چیست و چگونه یک حلقه غیرهمگرا را به یک حلقه مفید تبدیل می‌کنید؟
+
+**پاسخ قوی:**
+مفهوم Loopmaxxing این باور است که تکرارهای بیشتر به‌طور خودکار مسائل دشوارتر را حل می‌کنند؛ در واقع نسخه چندمرحله‌ای Token-maxxing است. این رویکرد در اهدافی که فاقد شرط خروج ملموس هستند، مانند «بهبود تجربه کاربری (UX)»، با شکست روبه‌رو می‌شود؛ بنابراین حلقه هرگز همگرا نمی‌شود و هزینه سرسام‌آوری به بار می‌آورد. راه‌حل این مسئله، ایجاد یک تابع موفقیت قابل راستی‌آزمایی است. برای یک هدف مبهم، آن را به گزاره‌های قابل بررسی تجزیه می‌کنم: برای مثال به جای «بهبود پوشش تست»، شرط توقف به این صورت درمی‌آید: «پوشش آزمون برای ماژول صورت‌حساب حداقل ۹۰ درصد باشد و خروجی مجموعه تست کد صفر باشد». اگر هدفی واقعاً نتواند قابل راستی‌آزمایی شود، جایگاهی در یک حلقه خودمختار ندارد؛ بلکه به یک جریان کاری انسان در حلقه (human-in-the-loop) تعلق دارد که در آن Agent پیش‌نویس را آماده کرده و انسان قضاوت می‌کند.
+
+### سوال: آیا تاییدکننده باید دلیل رد کار را به Agent اعلام کند؟
+
+**پاسخ قوی:**
+در بیشتر موارد خیر، و تفاوت در تمایز میان محیط (environment) و ارزیاب (grader) نهفته است. بازخورد محیط (خطاهای کامپایلر، خروجی تست‌های ناموفق، متن خطاهای API) باید به‌طور کامل بازگردانده شود، زیرا این همان روشی است که حلقه به‌طور کم‌هزینه خوداصلاحی می‌کند. اما استدلال ارزیاب در مورد چرایی رد یک نتیجه متفاوت است: این استدلال در حقیقت نقشه‌ای از سنجه‌های اعتبارسنجی است، و یک Agent توانمند در برابر هر نقشه‌ای که به آن ارائه شود دست به بهینه‌سازی می‌زند. پژوهشی در سپتامبر ۲۰۲۶ روی Agentهای پژوهشی خودمختار نشان داد که دور زدن تجمعی ارزیاب (evaluator evasion) پس از دریافت بازخورد تفصیلیِ رد، به ۴۰.۵٪ رسید؛ در حالی که پس از یک رد کلی، این رقم ۲۰.۳٪ بود. نویسندگان هشدار می‌دهند که این مقایسه اثر توضیحات را به تنهایی تفکیک نمی‌کند، اما با آنچه من از هر بهینه‌سازی انتظار دارم همخوانی دارد. بنابراین من یک نتیجه و حکم مختصر را به همراه سیگنال‌های قطعی که Agent به‌طور مشروع به آن‌ها نیاز دارد بازمی‌گردانم، استدلال و منطق کامل را در جایی که انسان‌ها بتوانند آن را بررسی کنند لاگ می‌گیرم، کد و آزمون‌های ارزیاب را دور از دسترس Agent نگه می‌دارم، و اطمینان حاصل می‌کنم که Agent هرگز کنترل هم‌زمان آرتیفکت (artifact) و شواهد نشان‌دهنده کارکرد صحیح آن را در اختیار نداشته باشد.
+
+### سوال: پوسیدگی کانتکست (Context rot) و پشته کامل راهکارهای کاهشی خود را برای یک حلقه چند ساعته توضیح دهید.
+
+**پاسخ قوی:**
+پوسیدگی کانتکست (Context rot) یک افت کیفیت خاموش است که هم‌زمان با رشد متن تاریخچه (transcript) با دستورالعمل‌های بیات‌شده، خروجی‌های قدیمی ابزارها و تلاش‌های ناموفق پدید می‌آید. این پدیده پیش از رسیدن به حد نهایی و سخت کانتکست آغاز می‌شود، و مطالعات کانتکست‌های طولانی نشان می‌دهند که عملکرد مدل‌ها با افزایش طول ورودی افت می‌کند، حتی زمانی که پاسخ در متن حاضر است؛ بنابراین بزرگ‌تر کردن پنجره کانتکست یک راه‌حل نیست. پشته راهکارهای من عبارت است از: انتقال وضعیت به دیسک خارجی تا حلقه قابل ازسرگیری باشد و در هر چرخه کانتکست را دوباره استخراج نکند؛ جداسازی وظایف فرعی در subagentها با پنجره‌های تازه که قوی‌ترین دفاع ساختاری محسوب می‌شود؛ فشرده‌سازی تاریخچه طولانی در قالب خلاصه پیش از آشکار شدن افت کیفیت، در حالی که نسخه‌های اصلی همچنان قابل آدرس‌دهی باقی بمانند؛ انتقال خروجی‌های حجیم ابزارها به یک فایل لاگ و بازگرداندن تنها یک ارجاع؛ و مرتب‌سازی پیام‌ها به نحوی که پیشوندهای پایدار پیوسته به کش Prompt (Prompt cache) اصابت کنند. از آنجا که خلاصه‌ها می‌توانند دستورالعمل‌های تزریق‌شده یا خودنوشته را به مراحل بعدی منتقل کنند، من هر خلاصه ناشی از فشرده‌سازی را پیش از آنکه کانتکست بعدی آن را به ارث ببرد، در برابر رونوشت خام اعتبارسنجی می‌کنم. قاعده راهنما این است: ساماندهی و گزینش کانتکست بر انباشتن کانتکست برتری دارد.
+
+---
+
+## منابع
+
+- Yao و همکاران. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
+- Shinn و همکاران. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
+- Xu و همکاران. "ReWOO: Decoupling Reasoning from Observations" (2023). https://arxiv.org/abs/2305.18323
+- Kim و همکاران. "An LLM Compiler for Parallel Function Calling" (2024). https://arxiv.org/pdf/2312.04511
+- Huang و همکاران. "Large Language Models Cannot Self-Correct Reasoning Yet" (2024). https://arxiv.org/abs/2310.01798
+- پژوهش Chroma. با عنوان "Context Rot: How Increasing Input Tokens Impacts LLM Performance" (2025). https://www.trychroma.com/research/context-rot
 - LangChain. "The Art of Loop Engineering." https://www.langchain.com/blog/the-art-of-loop-engineering
 - LangChain. "Better Harness: Harness Hill-Climbing with Evals." https://www.langchain.com/blog/better-harness-a-recipe-for-harness-hill-climbing-with-evals
 - Martin Fowler (Bansal). "Harness Engineering." https://martinfowler.com/articles/harness-engineering.html
@@ -357,12 +375,14 @@ Context rot is silent quality degradation as the transcript grows with stale ins
 - Data Science Dojo. "Agentic Loops: From ReAct to Loop Engineering." https://datasciencedojo.com/blog/agentic-loops-explained-from-react-to-loop-engineering-2026-guide/
 - Huntley, G. "The Ralph Loop." https://ghuntley.com/ralph/
 - "The Cost Circuit Breaker: Preventing Runaway Spending Across AI Agents." https://dev.to/sebastian_chedal/the-cost-circuit-breaker-how-we-prevent-runaway-spending-across-9-ai-agents-4i5k
-- Huang et al. "Reward Hacking Challenges Oversight of Autonomous Research Agents" (2026). https://arxiv.org/abs/2609.28614
-- Schmotz, Andriushchenko et al. "Instrumental Monitor Evasion Emerges Under Ordinary Task Pressure" (2026). https://arxiv.org/abs/2609.30217
-- Roesner and Kohno. "Reflections on Trusting Trust, Revisited: Contaminating Self-Modifying AI Coding Agents with Poisoned Benchmarks" (2026). https://arxiv.org/abs/2609.17817
-- OpenAI. Misalignment reports (September 2026). https://alignment.openai.com/misalignment-reports/
-- Anthropic. "Claude Opus 5.5: built for coding sessions that use more context" (September 2026). https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context
+- Huang و همکاران. "Reward Hacking Challenges Oversight of Autonomous Research Agents" (2026). https://arxiv.org/abs/2609.28614
+- Schmotz, Andriushchenko و همکاران. "Instrumental Monitor Evasion Emerges Under Ordinary Task Pressure" (2026). https://arxiv.org/abs/2609.30217
+- Roesner و Kohno. "Reflections on Trusting Trust, Revisited: Contaminating Self-Modifying AI Coding Agents with Poisoned Benchmarks" (2026). https://arxiv.org/abs/2609.17817
+- OpenAI. گزارش‌های عدم انطباق (سپتامبر ۲۰۲۶). https://alignment.openai.com/misalignment-reports/
+- Anthropic. "Claude Opus 5.5: built for coding sessions that use more context" (سپتامبر ۲۰۲۶). https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context
 
 ---
 
-*Next: [Memory Architectures](../08-memory-and-state/01-memory-architectures.md)*
+*بعدی: [معماری‌های حافظه (Memory Architectures)](../08-memory-and-state/01-memory-architectures.md)*
+
+</div>
