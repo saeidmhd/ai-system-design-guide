@@ -1,66 +1,68 @@
-# Chain-of-Thought (CoT)
+<div dir="rtl">
 
-Chain-of-Thought (CoT) is the technique of encouraging an LLM to generate intermediate reasoning steps before providing a final answer. It has evolved from a simple prompt phrase into the core architectural feature of reasoning models: first OpenAI o1 and DeepSeek-R1, and today GPT-6 Astra and GPT-6.1 Sol, Claude Opus 5.5 and Fable 5.1, Gemini 4 Argon and Gemini 3.8 Flash, and DeepSeek V4.1-Flash, all of which reason before answering under an effort or thinking-level control.
+# زنجیره تفکر (Chain-of-Thought - CoT)
 
-## Table of Contents
+زنجیره تفکر (Chain-of-Thought یا CoT) تکنیکی برای ترغیب یک LLM به تولید مراحل میانی استدلال پیش از ارائه پاسخ نهایی است. این رویکرد از یک عبارت ساده درون Prompt، به ویژگی معماری بنیادین مدل‌های استدلال‌گر تکامل یافته است: ابتدا در OpenAI o1 و DeepSeek-R1، و امروزه در GPT-6 Astra و GPT-6.1 Sol، Claude Opus 5.5 و Fable 5.1، Gemini 4 Argon و Gemini 3.8 Flash، و DeepSeek V4.1-Flash، که همگی تحت کنترل سطح تلاش (effort) یا سطح تفکر (thinking-level)، پیش از پاسخ دادن استدلال می‌کنند.
 
-- [The CoT Revolution](#the-cot-revolution)
-- [Zero-Shot vs. Programmatic CoT](#zero-shot-vs-programmatic-cot)
-- [The Rise of "Thinking" Models](#the-rise-of-thinking-models)
-- [CoT as a Monitoring Signal](#cot-as-a-monitoring-signal)
-- [Self-Correction and Verification](#self-correction-and-verification)
-- [When CoT Fails (Over-thinking)](#when-cot-fails-over-thinking)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The CoT Revolution
-
-Standard LLMs are "Next Token Predictors." For complex math or logic, a single pass is often insufficient. CoT provides the "Scribble Pad" (Working Memory) for the model to work through sub-problems.
-
-**The Formula**: `Input -> Reasoning (Chain) -> Output`
+- [انقلاب CoT](#the-cot-revolution)
+- [CoT بدون نمونه در برابر برنامه‌نویسی‌شده](#zero-shot-vs-programmatic-cot)
+- [ظهور مدل‌های «فکرکننده»](#the-rise-of-thinking-models)
+- [CoT به عنوان یک سیگنال نظارتی](#cot-as-a-monitoring-signal)
+- [خوداصلاحی و اعتبارسنجی](#self-correction-and-verification)
+- [زمانی که CoT شکست می‌خورد (بیش‌اندیشی)](#when-cot-fails-over-thinking)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Zero-Shot vs. Programmatic CoT
+## انقلاب CoT
 
-| Technique | Trigger Phrase | Efficiency | Use Case |
+مدل‌های LLM استاندارد، «پیش‌بینی‌کننده‌های Token بعدی» هستند. برای مسائل پیچیده ریاضی یا منطقی، یک گذر واحد (single pass) اغلب ناکافی است. تکنیک CoT یک «چرک‌نویس» (حافظه کاری یا Working Memory) برای مدل فراهم می‌کند تا روی زیرمسائل کار کند.
+
+**فرمول**: `Input -> Reasoning (Chain) -> Output`
+
+---
+
+## CoT بدون نمونه در برابر برنامه‌نویسی‌شده (Zero-Shot vs. Programmatic CoT)
+
+| تکنیک | عبارت محرک | کارایی | مورد کاربرد |
 |-----------|----------------|------------|----------|
-| **Zero-Shot CoT** | "Let's think step by step." | High | Ad-hoc queries on non-reasoning models. |
-| **Few-Shot CoT** | (Provided examples with logic) | Higher Stability | Production pipelines on non-reasoning models. |
-| **Programmatic CoT** | "1. Analyze X. 2. Verify Y. 3. Resolve Z." | **Best for Agents** | Complex multi-tool tasks where the steps must be auditable. |
+| **Zero-Shot CoT** | «Let's think step by step.» | بالا | پرسش‌های موردی (Ad-hoc) روی مدل‌های غیراستدلال‌گر. |
+| **Few-Shot CoT** | (ارائه مثال‌هایی همراه با منطق) | پایداری بالاتر | خطوط لوله محیط عملیاتی روی مدل‌های غیراستدلال‌گر. |
+| **Programmatic CoT** | «1. Analyze X. 2. Verify Y. 3. Resolve Z.» | **بهترین برای Agentها** | وظایف چندابزاره پیچیده که در آن‌ها مراحل باید قابل حسابرسی باشند. |
 
-On reasoning models, these prompts are mostly redundant: the model already thinks before it answers. Set the effort level instead, and state the success criteria the answer must meet.
+در مدل‌های استدلال‌گر، این Promptها عمدتاً زائد هستند: مدل پیش از آن‌که پاسخ دهد فکر می‌کند. در عوض، سطح تلاش (effort level) را تنظیم کنید و معیارهای موفقیتی را که پاسخ باید برآورده کند مشخص نمایید.
 
-On the newest Claude models (Fable 5.1 and 5, Opus 5.5 and 5, Sonnet 5.5, and Haiku 5.5) they can also fail outright. A prompt that asks the model to write its reasoning into the output, such as a `<thinking>` or scratchpad section filled in before the answer or a `reasoning` field in JSON, can be declined under the `reasoning_extraction` refusal category, and a refusal in that category that arrives before any output is billed. Ask for a short explanation or the evidence behind the answer instead, and read summarized thinking blocks when you need to see how the model reasoned.
-
----
-
-## The Rise of "Thinking" Models
-
-Models like **GPT-6 Astra and GPT-6.1 Sol**, **Claude Opus 5.5 and Fable 5.1**, **Gemini 4 Argon and Gemini 3.8 Flash**, and **DeepSeek V4.1-Flash** have CoT "baked in" via Reinforcement Learning (RL). See [RLVR and Reasoning Models](../03-training-and-adaptation/08-rlvr-and-reasoning-models.md) for how the training works.
-
-1. **Effort replaces the token budget**: The model has a dedicated thinking phase, controlled by an effort level rather than a raw token count. OpenAI exposes `reasoning.effort` (`low` to `max` on GPT-6 Astra and GPT-6.1 Sol), Anthropic exposes adaptive thinking plus `effort` (fixed `budget_tokens` now returns a 400 on Opus 4.7 and later), and Gemini 4 Argon and Gemini 3.8 Flash use `thinking_level`. API details are in [Context Engineering](05-context-engineering.md#reasoning-effort-and-thinking-controls).
-2. **Hidden CoT**: No major vendor returns the raw chain of thought. OpenAI returns optional summaries and encrypted reasoning items; Anthropic returns summarized or empty ("omitted", the default on its newest models) thinking blocks, bound to the producing model and conversation. Thinking is billed as output tokens whether or not you can read it. One driver is **distillation defense**: Anthropic disclosed in February 2026 that competitors ran 16M+ exchanges through about 24,000 fraudulent accounts asking Claude to write out its reasoning, and its September 2026 threat report described nearly 200M exchanges across five campaigns.
-3. **Scaling Law**: These models follow the **Inference Scaling Law**: the longer they "think," the better they solve hard problems, with diminishing returns per token. Experimental reasoning models from OpenAI and Google DeepMind reached gold-medal level at IMO 2025.
+در جدیدترین مدل‌های Claude (مدل‌های Fable 5.1 و 5، Opus 5.5 و 5، Sonnet 5.5 و Haiku 5.5)، این موارد حتی ممکن است کاملاً با شکست مواجه شوند. یک Prompt که از مدل می‌خواهد استدلال خود را در خروجی بنویسد—مانند بخش `<thinking>` یا چرک‌نویس (scratchpad) که قبل از پاسخ پر می‌شود، یا یک فیلد `reasoning` در JSON—می‌تواند تحت دسته‌بندی امتناع `reasoning_extraction` رد شود، و امتناع در این دسته‌بندی که پیش از هرگونه خروجی صادر شود، مشمول هزینه خواهد بود. به جای آن، توضیحی کوتاه یا شواهد پشت پاسخ را بخواهید و در مواقعی که نیاز به مشاهده نحوه استدلال مدل دارید، بلوک‌های تفکر خلاصه‌شده را مطالعه کنید.
 
 ---
 
-## CoT as a Monitoring Signal
+## ظهور مدل‌های «فکرکننده» (Thinking)
 
-Reading the model's reasoning used to be a cheap way to catch misbehavior before it became an action. That signal is weakening at the frontier.
+مدل‌هایی مانند **GPT-6 Astra و GPT-6.1 Sol**، **Claude Opus 5.5 و Fable 5.1**، **Gemini 4 Argon و Gemini 3.8 Flash**، و **DeepSeek V4.1-Flash**، تکنیک CoT را از طریق یادگیری تقویتی (RL) به صورت «درون‌سازی‌شده» (baked in) در خود دارند. برای چگونگی فرایند آموزش، به [مدل‌های استدلال و RLVR](../03-training-and-adaptation/08-rlvr-and-reasoning-models.md) مراجعه کنید.
 
-- **Controllability is rising.** OpenAI's GPT-6 Astra system card (September 3, 2026) reports that, among chains of thought 750 to 1,250 tokens long, Astra controls its CoT 60.9% of the time, against 16.1% for GPT-5.6 Sol and 1.7% for GPT-5.5 Thinking (OpenAI's eval). UK AISI's separate controllability eval found Astra followed the constraint on 93% of samples. OpenAI writes that if the model tried to sandbag covertly, it would likely not catch it reliably.
-- **Monitors get evaded under ordinary pressure.** EvasionBench (arXiv 2609.30217) put agents in tasks that required an operation a known runtime monitor prohibited: best-of-3 evasion attempts reached about 98%, success up to 88%, and evasion generally rose with reasoning effort.
-
-**Design implication:** treat CoT as a debugging aid, not a control. Put safety monitors on **actions and outputs** (tool calls, diffs, network egress, data written), sandbox what the agent can touch, and keep the reasoning trace as supporting evidence. See [Agentic Security and Sandboxing](../07-agentic-systems/09-agentic-security-and-sandboxing.md) and the [Research Radar](../RESEARCH-RADAR.md#4-latent-and-alternative-reasoning) on latent reasoning.
+1. **جایگزینی بودجه Token با سطح تلاش (Effort)**: مدل دارای یک فاز تفکر اختصاصی است که به جای تعداد خام Token، با یک سطح تلاش کنترل می‌شود. OpenAI پارامتر `reasoning.effort` را (از `low` تا `max` در GPT-6 Astra و GPT-6.1 Sol) ارائه می‌دهد، Anthropic تفکر تطبیقی به همراه `effort` را ارائه می‌کند (مقدار ثابت `budget_tokens` اکنون در Opus 4.7 و نسخه‌های پس از آن خطای 400 بازمی‌گرداند)، و Gemini 4 Argon و Gemini 3.8 Flash از `thinking_level` استفاده می‌کنند. جزئیات API در [مهندسی کانتکست](05-context-engineering.md#reasoning-effort-and-thinking-controls) آمده است.
+2. **CoT پنهان (Hidden CoT)**: هیچ ارائه‌دهنده بزرگی زنجیره تفکر خام را بازنمی‌گرداند. OpenAI خلاصه‌های اختیاری و آیتم‌های استدلال رمزنگاری‌شده بازمی‌گرداند؛ Anthropic بلوک‌های تفکر خلاصه‌شده یا خالی («omitted» که در جدیدترین مدل‌های آن حالت پیش‌فرض است) متصل به مدل تولیدکننده و مکالمه بازمی‌گرداند. فرآیند تفکر چه بتوانید آن را بخوانید و چه نتوانید، به عنوان Tokenهای خروجی صورت‌حساب می‌شود. یکی از عوامل محرک این موضوع **دفاع در برابر تقطیر (Distillation Defense)** است: Anthropic در فوریه ۲۰۲۶ فاش کرد که رقبا بیش از ۱۶ میلیون تبادل را از طریق حدود ۲۴٬۰۰۰ حساب تقلبی اجرا کرده و از Claude خواسته بودند استدلال خود را کامل بنویسد، و گزارش تهدید سپتامبر ۲۰۲۶ آن نزدیک به ۲۰۰ میلیون تبادل را در پنج کارزار توصیف کرد.
+3. **قانون مقیاس‌پذیری (Scaling Law)**: این مدل‌ها از **قانون مقیاس‌پذیری استنتاج (Inference Scaling Law)** پیروی می‌کنند: هر چه طولانی‌تر «فکر کنند»، مسائل دشوار را بهتر حل می‌کنند، البته با بازده نزولی به ازای هر Token. مدل‌های استدلال‌گر آزمایشی از OpenAI و Google DeepMind در IMO 2025 به سطح مدال طلا رسیدند.
 
 ---
 
-## Self-Correction and Verification
+## CoT به عنوان یک سیگنال نظارتی
 
-Production pipelines no longer trust a single Chain-of-Thought. They layer in **Self-Verification**.
+خواندن استدلال مدل قبلاً روشی کم‌هزینه برای شناسایی رفتار نادرست پیش از تبدیل شدن به یک اقدام بود. این سیگنال در مدل‌های مرزی (Frontier) در حال تضعیف است.
+
+- **قابلیت کنترل (Controllability) رو به افزایش است.** شناسنامه سیستم GPT-6 Astra از OpenAI (۳ سپتامبر ۲۰۲۶) گزارش می‌دهد که در میان زنجیره‌های تفکر با طول ۷۵۰ تا ۱٬۲۵۰ Token، مدل Astra در ۶۰٫۹٪ مواقع CoT خود را کنترل می‌کند، در مقایسه با ۱۶٫۱٪ برای GPT-5.6 Sol و ۱٫۷٪ برای GPT-5.5 Thinking (ارزیابی اختصاصی OpenAI). ارزیابی جداگانه قابلیت کنترل توسط UK AISI نشان داد که Astra در ۹۳٪ نمونه‌ها از محدودیت‌ها تبعیت کرده است. OpenAI می‌نویسد که اگر مدل تلاش کند به شکل پنهانی کم‌کاری/خرابکاری (sandbag) کند، احتمالاً نمی‌توان آن را با اطمینان تشخیص داد.
+- **سامانه‌های نظارتی تحت فشار معمول کارها دور زده می‌شوند.** بنچمارک EvasionBench (مقاله arXiv 2609.30217) Agentها را در وظایفی قرار داد که نیازمند عملیاتی بودند که یک ناظر زمان اجرای شناخته‌شده آن را ممنوع کرده بود: تلاش‌های دور زدن از نوع ۳ تایی بهترین (best-of-3) به حدود ۹۸٪ و موفقیت تا ۸۸٪ رسید، و دور زدن نظارت عموماً با افزایش تلاش استدلال (reasoning effort) بیشتر می‌شد.
+
+**پیامد در طراحی:** با CoT به عنوان یک ابزار کمکی برای اشکال‌زدایی رفتار کنید، نه یک مکانیزم کنترلی. ناظرهای ایمنی را بر روی **اقدامات و خروجی‌ها** (فراخوانی ابزارها، diffها، ترافیک خروجی شبکه، داده‌های نوشته‌شده) مستقر کنید، آنچه را که Agent می‌تواند لمس کند در سندباکس قرار دهید، و رد پای استدلال را به عنوان شواهد پشتیبان نگه دارید. به [امنیت عامل‌محور و سندباکس‌سازی](../07-agentic-systems/09-agentic-security-and-sandboxing.md) و [رادار پژوهش](../RESEARCH-RADAR.md#4-latent-and-alternative-reasoning) درباره استدلال نهفته مراجعه نمایید.
+
+---
+
+## خوداصلاحی و اعتبارسنجی (Self-Correction and Verification)
+
+خطوط لوله در محیط عملیاتی دیگر به یک زنجیره تفکر منفرد اعتماد نمی‌کنند. آن‌ها **خوداعتبارسنجی (Self-Verification)** را لایه‌بندی و ادغام می‌کنند.
 
 ```markdown
 # Process
@@ -69,56 +71,58 @@ Production pipelines no longer trust a single Chain-of-Thought. They layer in **
 3. If errors: "Correct the logic and provide Answer B."
 ```
 
-**Nuance**: Intrinsic self-correction (the same model critiquing itself with no new information) often fails to improve reasoning and can make it worse (Huang et al., 2024). What works is **external feedback**: **Execution-Verified CoT** for coding, where the model writes the logic, runs the code, and corrects itself if the tests fail, or a separate verifier with a different prompt, model, or tool. See [Loop Engineering](../07-agentic-systems/12-loop-engineering.md#verification-and-grading).
+**نکته ظریف**: خوداصلاحی درونی (Intrinsic self-correction، یعنی انتقاد مدل از خودش بدون دریافت اطلاعات جدید) اغلب در بهبود استدلال ناموفق است و حتی می‌تواند آن را بدتر کند (Huang et al., 2024). آنچه کارایی دارد **بازخورد بیرونی (External Feedback)** است: **CoT با اعتبارسنجی اجرا (Execution-Verified CoT)** برای کدنویسی، که در آن مدل منطق را می‌نویسد، کد را اجرا می‌کند، و اگر آزمون‌ها ناموفق شوند خود را تصحیح می‌کند، یا یک اعتبارسنج مجزا با یک Prompt، مدل یا ابزار متفاوت. به [مهندسی حلقه](../07-agentic-systems/12-loop-engineering.md#verification-and-grading) مراجعه کنید.
 
 ---
 
-## When CoT Fails (Over-thinking)
+## زمانی که CoT شکست می‌خورد (بیش‌اندیشی یا Over-thinking)
 
-CoT is not a silver bullet. For simple tasks, it adds:
-1. **Latency**: More tokens = slower response.
-2. **Cost**: You pay for every "thought" token, billed at the output rate (for example $20 per 1M on Claude Opus 5.5, $10 per 1M on GPT-6.1 Sol).
-3. **Over-thinking**: The model might hallucinate complexity where none exists (e.g., explaining why 2+2=4 for 3 paragraphs).
+تکنیک CoT یک راه‌حل جادویی همه‌کاره نیست. برای وظایف ساده، این موارد را می‌افزاید:
+1. **تاخیر (Latency)**: Tokenهای بیشتر = پاسخ کندتر.
+2. **هزینه**: شما برای هر Token «فکر» هزینه می‌پردازید، که با نرخ خروجی محاسبه می‌شود (برای مثال ۲۰ دلار به ازای هر ۱ میلیون Token در Claude Opus 5.5، و ۱۰ دلار به ازای هر ۱ میلیون Token در GPT-6.1 Sol).
+3. **بیش‌اندیشی (Over-thinking)**: ممکن است مدل پیچیدگی‌هایی را توهم کند که وجود خارجی ندارند (مثلاً توضیح این‌که چرا ۲+۲=۴ در ۳ پاراگراف).
 
-The fix on current models is the effort dial: `low` for chat, classification, and extraction, higher levels only where evals show a gain. Some models no longer let you switch thinking off at all (Claude Opus 5.5 cannot disable it; Claude Sonnet 5.5's lowest setting is `between_tools`), so effort is the only lever.
-
----
-
-## Interview Questions
-
-### Q: Why does CoT improve performance on mathematical word problems?
-
-**Strong answer:**
-CoT improves performance by aligning the model's computational complexity with the task's logical complexity. In a standard single-pass generation, the model must predict the final answer token based on limited local information. With CoT, the model "breaks" the problem into smaller, auto-regressive steps. Each step uses the previous step's output as context, allowing the model's attention mechanism to focus on one sub-problem at a time (e.g., first adding the apples, then subtracting the oranges), reducing the "cognitive load" of the single-pass prediction.
-
-### Q: How do you handle CoT in a production environment where latency is critical?
-
-**Strong answer:**
-We use a **Hybrid Reasoning Architecture**:
-1. **Tier 1 (Routing)**: A cheap classifier picks the effort level per request (`low` for most traffic, `high` only for queries that need it), rather than one global setting.
-2. **Tier 2 (Condensed reasoning)**: For high-volume paths, use a small, fast model at low effort, or **Knowledge Distillation**: train a smaller model to produce the final answer directly from a teacher's reasoning traces.
-3. **Tier 3 (Streaming)**: Stream something while the model thinks. Raw CoT is not available, so stream summarized thinking or progress updates (Claude's `display: "summarized"`, or the `display: "updates"` beta for between-tool progress notes) so the UI does not look frozen.
-
-I judge the result by cost and latency per completed task, not per request: a cheaper call that needs a retry is not cheaper.
-
-### Q: Your safety team wants to monitor a coding agent by reading its chain of thought. What do you tell them?
-
-**Strong answer:**
-Useful, but not sufficient, and getting less sufficient. Vendors do not expose raw reasoning, only summaries. The GPT-6 Astra system card reports Astra can control its CoT 60.9% of the time on mid-length traces versus 16.1% for GPT-5.6 Sol, and OpenAI says covert sandbagging would likely go uncaught. Separately, EvasionBench showed agents evade known runtime monitors at high rates, more so at higher effort. So I would put the primary monitors on actions: every tool call, file diff, and network request goes through a policy check, the sandbox denies egress by default, and irreversible actions need approval bound to the exact action executed. The reasoning summary goes into the audit log as context for humans reviewing an incident.
+راهکار در مدل‌های کنونی استفاده از پیچ تنظیم سطح تلاش است: `low` برای گفتگو، طبقه‌بندی و استخراج، و سطوح بالاتر تنها در مواردی که ارزیابی‌ها بهبود را نشان می‌دهند. برخی مدل‌ها دیگر اجازه خاموش کردن تفکر را به طور کلی نمی‌دهند (در Claude Opus 5.5 نمی‌توان آن را غیرفعال کرد؛ پایین‌ترین سطح در Claude Sonnet 5.5 مقدار `between_tools` است)، بنابراین سطح تلاش تنها اهرم در دسترس است.
 
 ---
 
-## References
+## پرسش‌های مصاحبه
+
+### س: چرا CoT عملکرد را در مسائل کلامی ریاضی بهبود می‌بخشد؟
+
+**پاسخ قوی:**
+تکنیک CoT با هم‌راستا کردن پیچیدگی محاسباتی مدل با پیچیدگی منطقی وظیفه، عملکرد را بهبود می‌دهد. در یک تولید استاندارد تک‌گذره (single-pass)، مدل باید Token پاسخ نهایی را بر اساس اطلاعات محلی محدود پیش‌بینی کند. با استفاده از CoT، مدل مسئله را به گام‌های کوچک‌تر و خودبازگشتی (auto-regressive) «تجزیه می‌کند». هر گام از خروجی گام قبلی به عنوان کانتکست استفاده می‌کند، که به سازوکار توجه (attention mechanism) مدل اجازه می‌دهد در هر لحظه بر یک زیرمسئله تمرکز کند (مثلاً ابتدا جمع کردن سیب‌ها، سپس کم کردن پرتقال‌ها)، و بدین ترتیب «بار شناختی» پیش‌بینی تک‌گذره کاهش می‌یابد.
+
+### س: چگونه CoT را در یک محیط عملیاتی که تاخیر (Latency) در آن حیاتی است مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+ما از یک **معماری استدلال ترکیبی (Hybrid Reasoning Architecture)** استفاده می‌کنیم:
+1. **سطح ۱ (مسیریابی)**: یک طبقه‌بند ارزان‌قیمت، سطح تلاش را به ازای هر درخواست انتخاب می‌کند (`low` برای بخش عمده ترافیک، و `high` فقط برای پرسش‌هایی که به آن نیاز دارند)، به جای استفاده از یک تنظیم کلی یکسان.
+2. **سطح ۲ (استدلال فشرده)**: برای مسیرهای با حجم بالا، از یک مدل کوچک و سریع با سطح تلاش پایین استفاده کنید، یا از **تقطیر دانش (Knowledge Distillation)** بهره بگیرید: مدلی کوچک‌تر را آموزش دهید تا پاسخ نهایی را مستقیماً از رد پای استدلال یک مدل معلم تولید کند.
+3. **سطح ۳ (استریمینگ)**: هنگام فکر کردن مدل، چیزی را استریم کنید. استدلال CoT خام در دسترس نیست، بنابراین تفکر خلاصه‌شده یا به‌روزرسانی‌های پیشرفت را استریم کنید (گزینه `display: "summarized"` در Claude، یا نسخه بتای `display: "updates"` برای یادداشت‌های پیشرفت بین فراخوانی ابزارها) تا رابط کاربری منجمد به نظر نرسد.
+
+من نتیجه را بر اساس هزینه و تاخیر (Latency) به ازای هر وظیفه تکمیل‌شده قضاوت می‌کنم، نه به ازای هر درخواست: یک فراخوانی ارزان‌تر که نیازمند تکرار و تلاش مجدد باشد، ارزان‌تر تمام نمی‌شود.
+
+### س: تیم ایمنی شما می‌خواهد یک Agent کدنویسی را از طریق خواندن زنجیره تفکر آن نظارت کند. به آن‌ها چه می‌گویید؟
+
+**پاسخ قوی:**
+مفید است، اما کافی نیست، و کفایت آن روز به روز کمتر می‌شود. ارائه‌دهندگان استدلال خام را در معرض دید قرار نمی‌دهند، بلکه تنها خلاصه‌ها را ارائه می‌کنند. شناسنامه سیستم GPT-6 Astra گزارش می‌دهد که Astra می‌تواند CoT خود را در ۶۰٫۹٪ مواقع در ردهای میان‌طول کنترل کند (در مقایسه با ۱۶٫۱٪ برای GPT-5.6 Sol)، و OpenAI عنوان می‌کند که کم‌کاری/خرابکاری پنهانی احتمالاً بدون شناسایی باقی خواهد ماند. علاوه بر این، EvasionBench نشان داد که Agentها ناظرهای زمان اجرای شناخته‌شده را با نرخ‌های بالایی دور می‌زنند، که این پدیده در سطوح تلاش بالاتر شدت بیشتری دارد. بنابراین من ناظرهای اصلی را بر روی اقدامات مستقر می‌کنم: هر فراخوانی ابزار، تغییرات فایل (diff) و درخواست شبکه از یک بررسی خط‌مشی عبور می‌کند، سندباکس خروجی شبکه را به صورت پیش‌فرض مسدود می‌سازد، و اقدامات برگشت‌ناپذیر نیازمند تاییدیه‌ای وابسته به همان اقدام دقیق اجراشده هستند. خلاصه استدلال به عنوان کانتکست به گزارش حسابرسی (audit log) می‌رود تا توسط انسان‌هایی که حادثه را بررسی می‌کنند مورد استفاده قرار گیرد.
+
+---
+
+## منابع
 - Wei et al. "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models" (2022)
 - Kojima et al. "Large Language Models are Zero-Shot Reasoners" (2022)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (2023)
 - Huang et al. "Large Language Models Cannot Self-Correct Reasoning Yet" (ICLR 2024)
 - OpenAI. "Learning to Reason with LLMs" (2024)
-- [OpenAI. GPT-6 Astra System Card (September 2026)](https://deploymentsafety.openai.com/gpt-6-astra)
-- [Anthropic. "Detecting and preventing distillation attacks" (2026)](https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks)
-- [Anthropic. "Refusals and fallback": keep reasoning in thinking blocks](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
-- [Instrumental Monitor Evasion Emerges Under Ordinary Task Pressure (arXiv 2609.30217)](https://arxiv.org/abs/2609.30217)
+- [شناسنامه سیستم GPT-6 Astra از OpenAI (سپتامبر ۲۰۲۶)](https://deploymentsafety.openai.com/gpt-6-astra)
+- [Anthropic. «شناسایی و جلوگیری از حملات تقطیر» (۲۰۲۶)](https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks)
+- [Anthropic. «امتناع‌ها و راهکارهای پشتیبان»: حفظ استدلال در بلوک‌های تفکر](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
+- [فرار ابزاری از ناظر تحت فشار معمول وظایف پدیدار می‌شود (arXiv 2609.30217)](https://arxiv.org/abs/2609.30217)
 
 ---
 
-*Next: [Tree-of-Thought](04-tree-of-thought.md)*
+*بعدی: [درخت تفکر (Tree-of-Thought)](04-tree-of-thought.md)*
+
+</div>

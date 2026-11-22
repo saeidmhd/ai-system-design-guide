@@ -1,39 +1,41 @@
-# Structured Generation
+<div dir="rtl">
 
-Structured Generation is the process of forcing an LLM to produce output in a machine-readable format (JSON, YAML, CSV) with 100% syntactic reliability. The discipline has moved from "prompt-based requests" to "engine-level constraints," and in 2026 the last prompt-era trick (forcing a tool call to get JSON) stopped working on the newest Claude models.
+# تولید ساختاریافته (Structured Generation)
 
-## Table of Contents
+تولید ساختاریافته (Structured Generation) فرآیند وادار کردن یک LLM به تولید خروجی در یک قالب ماشین‌خوان (JSON، YAML، CSV) با قابلیت اطمینان نحوی ۱۰۰٪ است. این حوزه از «درخواست‌های مبتنی بر Prompt» به سمت «محدودیت‌های سطح موتور (engine-level constraints)» حرکت کرده است و در سال ۲۰۲۶ آخرین ترفند دوران Prompt (اجبار به فراخوانی ابزار جهت دریافت JSON) روی جدیدترین مدل‌های Claude متوقف شد.
 
-- [The JSON Mode Revolution](#the-json-mode-revolution)
-- [Function Calling & Tool Use](#function-calling--tool-use)
-- [Constrained Decoding (CFG & Regex)](#constrained-decoding-cfg--regex)
-- [Multi-Stage Extraction Pattern](#multi-stage-extraction-pattern)
-- [Validation & Formatting Errors](#validation--formatting-errors)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The JSON Mode Revolution
-
-Historically, getting JSON was a struggle of "only return JSON, no other text."
-**Standard approach**: use the provider's native JSON-schema output.
-
-| Provider | Native structured output |
-|----------|--------------------------|
-| **OpenAI** | `response_format` with `json_schema` (Chat Completions) or `text.format` (Responses API); `strict: true` on function tools |
-| **Anthropic** | `output_config.format` with a JSON schema (the older `output_format` parameter is deprecated); `strict: true` on tool definitions |
-| **Google** | A response schema with a JSON response MIME type |
-
-- **Benefit**: 100% syntactical validity. The model literally cannot output a string that is not a valid JSON.
-- **Behind the scenes**: The serving engine masks the vocabulary at each step, ensuring only valid JSON characters (e.g., `{`, `"`, `:`, `[`) can be picked next.
-- **Two exceptions to check**: output cut off by `max_tokens`, and a safety refusal (Claude returns `stop_reason: "refusal"`). Check the stop reason before parsing.
+- [انقلاب حالت JSON](#the-json-mode-revolution)
+- [فراخوانی توابع و استفاده از ابزار](#function-calling--tool-use)
+- [رمزگشایی مقید (CFG و Regex)](#constrained-decoding-cfg--regex)
+- [الگوی استخراج چندمرحله‌ای](#multi-stage-extraction-pattern)
+- [خطاهای اعتبارسنجی و قالب‌بندی](#validation--formatting-errors)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Function Calling & Tool Use
+## انقلاب حالت JSON
 
-Function calling is structured generation where the LLM "picks" a function and populates its arguments.
+از لحاظ تاریخی، دریافت JSON همواره نبردی با عنوان «فقط JSON برگردان، بدون هیچ متن دیگری» بود.
+**رویکرد استاندارد**: استفاده از خروجی بومیِ JSON-schema ارائه‌دهنده.
+
+| ارائه‌دهنده | خروجی ساختاریافته بومی |
+|-------------|------------------------|
+| **OpenAI** | پارامتر `response_format` همراه با `json_schema` (در Chat Completions) یا `text.format` (در Responses API)؛ مقدار `strict: true` روی ابزارهای تابع (function tools) |
+| **Anthropic** | پارامتر `output_config.format` با یک JSON schema (پارامتر قدیمی‌تر `output_format` منسوخ شده است)؛ مقدار `strict: true` روی تعاریف ابزار |
+| **Google** | یک اسکیما برای پاسخ (response schema) همراه با یک MIME type پاسخِ JSON |
+
+- **مزیت**: اعتبار نحوی ۱۰۰٪. مدل به معنای واقعی کلمه نمی‌تواند رشته‌ای تولید کند که یک JSON معتبر نباشد.
+- **پشت صحنه**: موتور سرویس‌دهی در هر گام دایره واژگان (vocabulary) را ماسک می‌کند و اطمینان می‌دهد که تنها کاراکترهای معتبر JSON (مانند `{`، `"`، `:`، `[`) می‌توانند در مرحله بعد انتخاب شوند.
+- **دو استثنا که باید بررسی شوند**: قطع شدن خروجی توسط `max_tokens` و امتناع ایمنی (safety refusal) (که Claude مقدار `stop_reason: "refusal"` را بازمی‌گرداند). قبل از پارس کردن، علت توقف را بررسی کنید.
+
+---
+
+## فراخوانی توابع و استفاده از ابزار
+
+فراخوانی توابع (Function calling) نوعی تولید ساختاریافته است که در آن LLM یک تابع را «انتخاب» کرده و آرگومان‌های آن را مقداردهی می‌کند.
 
 ```json
 // Example Tool Call
@@ -43,23 +45,23 @@ Function calling is structured generation where the LLM "picks" a function and p
 }
 ```
 
-**Nuance**: **Parallel Function Calling** is now standard. A model can decide to call 5 different tools simultaneously (e.g., check account balance, check credit score, check loan rates) and aggregate the results.
+**نکته ظریف**: **فراخوانی موازی توابع (Parallel Function Calling)** اکنون به یک استاندارد تبدیل شده است. یک مدل می‌تواند تصمیم بگیرد ۵ ابزار مختلف را به طور هم‌زمان فراخوانی کند (مثلاً بررسی موجودی حساب، بررسی امتیاز اعتباری، بررسی نرخ وام) و نتایج را تجمیع نماید.
 
-**The forced-tool trick is retired on the newest Claude models.** For two years the standard way to get JSON from Claude was to define a tool with the target schema and force it with `tool_choice`. Claude Fable 5.1 (September 1, 2026), Opus 5.5 (September 22), and Sonnet 5.5 (September 28) return a 400 for `tool_choice` types `any` and `tool`; `auto` and `none` still work. Haiku 5.5 (October 7) still accepts a forced tool choice, but the response then starts with the tool call and has no thinking block, so structured outputs are the better path there too. Assistant prefill (starting the reply with `{`) already returns a 400 on Claude 4.6 and later models. The replacements:
+**ترفند ابزار اجباری در جدیدترین مدل‌های Claude بازنشسته شده است.** به مدت دو سال، روش استاندارد برای دریافت JSON از Claude این بود که ابزاری با اسکیمای هدف تعریف کرده و با استفاده از `tool_choice` آن را اجباری کنید. مدل‌های Claude Fable 5.1 (۱ سپتامبر ۲۰۲۶)، Opus 5.5 (۲۲ سپتامبر) و Sonnet 5.5 (۲۸ سپتامبر) برای انواع `tool_choice` با مقادیر `any` و `tool` خطای 400 بازمی‌گردانند؛ مقادیر `auto` و `none` همچنان کار می‌کنند. مدل Haiku 5.5 (۷ اکتبر) هنوز انتخاب اجباری ابزار را می‌پذیرد، اما پاسخ در این حالت با فراخوانی ابزار آغاز می‌شود و هیچ بلوک تفکری (thinking block) ندارد، بنابراین خروجی‌های ساختاریافته در آنجا نیز مسیر بهتری هستند. پیش‌پر کردن دستیار (Assistant prefill - شروع پاسخ با `{`) از قبل در Claude 4.6 و مدل‌های جدیدتر خطای 400 برمی‌گرداند. جایگزین‌ها عبارتند از:
 
-| Old pattern | Replacement |
-|-------------|-------------|
-| Force a tool call just to get JSON back | `output_config.format` with a JSON schema |
-| Force a specific tool in an agent step | `tool_choice: auto`, a prompt instruction naming the tool, and `strict: true` for schema-valid arguments |
-| Prefill `{` to start the JSON | Structured outputs |
+| الگوی قدیمی | جایگزین |
+|-------------|---------|
+| اجبار به فراخوانی ابزار صرفاً برای بازگرداندن JSON | پارامتر `output_config.format` همراه با یک JSON schema |
+| اجبار به یک ابزار خاص در یک گام Agent | مقدار `tool_choice: auto`، یک دستورالعمل در Prompt که نام ابزار را ذکر کند، و `strict: true` برای آرگومان‌های معتبر بر اساس اسکیما |
+| پیش‌پر کردن `{` برای شروع JSON | خروجی‌های ساختاریافته (Structured outputs) |
 
-Frameworks are rerouting underneath you: langchain-anthropic 1.7.3 (September 22, 2026) sends `with_structured_output` through the JSON-schema path for Fable and Opus 5.5, and 1.7.5 added Sonnet 5.5. If you hard-coded `tool_choice` in your own wrapper, it breaks on upgrade. On the OpenAI side, GPT-6 Astra requires the Responses API for tool calling.
+فریم‌ورک‌ها در لایه‌های زیرین مسیرها را تغییر می‌دهند: نسخه 1.7.3 کتابخانه langchain-anthropic (۲۲ سپتامبر ۲۰۲۶) متد `with_structured_output` را برای Fable و Opus 5.5 از طریق مسیر JSON-schema ارسال می‌کند و نسخه 1.7.5 پشتیبانی از Sonnet 5.5 را اضافه کرد. اگر `tool_choice` را در رَپر (wrapper) اختصاصی خود به صورت هاردکد نوشته‌اید، با ارتقا دچار شکست خواهد شد. در سمت OpenAI نیز GPT-6 Astra برای فراخوانی ابزار نیازمند Responses API است.
 
 ---
 
-## Constrained Decoding (CFG & Regex)
+## رمزگشایی مقید (CFG و Regex)
 
-For self-hosted models, we use **Context-Free Grammars (CFG)** or **Regex**. vLLM and SGLang ship grammar backends (XGrammar, llguidance) behind their structured-output options, llama.cpp uses GBNF grammars, and Outlines works directly with Hugging Face models.
+برای مدل‌های خودمیزبان (self-hosted)، ما از **گرامرهای مستقل از متن (Context-Free Grammars یا CFG)** یا **Regex** استفاده می‌کنیم. سامانه‌های vLLM و SGLang بک‌اند‌های گرامر (XGrammar، llguidance) را در پشت گزینه‌های خروجی ساختاریافته خود ارائه می‌دهند، llama.cpp از گرامرهای GBNF استفاده می‌کند و Outlines مستقیماً با مدل‌های Hugging Face کار می‌کند.
 
 ```python
 # Outlines pattern (1.x API)
@@ -76,63 +78,65 @@ phone = model("Extract the phone number: call me at 415-555-0199", Regex(r"\d{3}
 # Result: The model can ONLY output telephone numbers.
 ```
 
-Grammar compilation is not free: a large schema or grammar can add noticeable first-request latency, so cache compiled grammars and keep schemas flat where you can.
+کامپایل گرامر رایگان نیست: یک اسکیما یا گرامر بزرگ می‌تواند تاخیر (Latency) قابل‌توجهی به اولین درخواست اضافه کند؛ بنابراین گرامرهای کامپایل‌شده را کش (cache) کنید و در صورت امکان اسکیماها را مسطح (flat) نگه دارید.
 
 ---
 
-## Multi-Stage Extraction Pattern
+## الگوی استخراج چندمرحله‌ای
 
-For complex data extraction (e.g., 50 fields from a medical record), don't do it in one pass.
-- **Stage 1 (Text-to-Text)**: Extract a "messy" but complete set of facts in natural language.
-- **Stage 2 (Text-to-JSON)**: Use a smaller, cheaper model to convert those natural language facts into a strict JSON schema.
-- **Benefit**: Reduces "hallucination under pressure": large models struggle when forced to reason AND follow strict syntax simultaneously. On reasoning models this matters less, because the thinking phase is unconstrained and only the final answer is schema-bound.
-- **Drop the `reasoning` field on the newest Claude models.** A common trick was to put a `reasoning` string first in the schema so the model "thinks" before filling the answer fields. On Claude Fable 5.1, Opus 5.5, Sonnet 5.5, and Haiku 5.5, a `reasoning`, `thinking`, or `trace` field in JSON output or a tool input is a listed trigger for `reasoning_extraction` refusals. Let native thinking do that work, and if you need a rationale for audit, use a short `explanation` or `evidence` field.
+برای استخراج داده‌های پیچیده (مانند ۵۰ فیلد از یک پرونده پزشکی)، این کار را در یک مرحله انجام ندهید.
+- **مرحله ۱ (متن به متن)**: یک مجموعه «نامرتب» اما کامل از واقعیت‌ها را به زبان طبیعی استخراج کنید.
+- **مرحله ۲ (متن به JSON)**: از یک مدل کوچک‌تر و ارزان‌تر برای تبدیل آن واقعیت‌های زبان طبیعی به یک JSON schema دقیق استفاده کنید.
+- **مزیت**: کاهش «توهم تحت فشار (hallucination under pressure)»: مدل‌های بزرگ زمانی که وادار می‌شوند به طور هم‌زمان استدلال کنند و از نحو دقیق پیروی نمایند، دچار مشکل می‌شوند. در مدل‌های استدلالی این موضوع اهمیت کمتری دارد، زیرا فاز تفکر نامقید است و تنها پاسخ نهایی به اسکیما مقید می‌شود.
+- **فیلد `reasoning` را در جدیدترین مدل‌های Claude حذف کنید.** یک ترفند رایج این بود که ابتدا یک رشته `reasoning` در اسکیما قرار داده شود تا مدل قبل از پر کردن فیلدهای پاسخ «فکر کند». در مدل‌های Claude Fable 5.1، Opus 5.5، Sonnet 5.5 و Haiku 5.5، وجود فیلد `reasoning`، `thinking` یا `trace` در خروجی JSON یا ورودی ابزار، یکی از عوامل محرک فهرست‌شده برای امتناع‌های `reasoning_extraction` است. اجازه دهید تفکر بومی (native thinking) این کار را انجام دهد و اگر برای بازرسی (audit) به یک منطق یا دلیل نیاز دارید، از یک فیلد کوتاه `explanation` یا `evidence` استفاده کنید.
 
 ---
 
-## Validation & Formatting Errors
+## خطاهای اعتبارسنجی و قالب‌بندی
 
-Even with "JSON mode," the **Logic** inside the JSON might be wrong (e.g., a field is missing or a date is in the wrong format).
+حتی با وجود «حالت JSON»، ممکن است **منطق (Logic)** درون JSON نادرست باشد (مثلاً یک فیلد وجود نداشته باشد یا یک تاریخ در قالب نادرستی باشد).
 
-**Recovery pattern**:
-1. Check the stop reason (`max_tokens`, `refusal`) before parsing.
-2. Validate output against **Pydantic/Zod**.
-3. If it fails, send the **Traceback** back to the model:
+**الگوی بازیابی (Recovery pattern)**:
+۱. قبل از پارس کردن، علت توقف (`max_tokens`، `refusal`) را بررسی کنید.
+۲. خروجی را با **Pydantic/Zod** اعتبارسنجی کنید.
+۳. در صورت شکست، **Traceback** را مجدداً به مدل ارسال کنید:
    "Error: Field 'age' must be an integer, got 'twenty'. Fix and re-generate."
-4. Most models fix the error on the first retry.
+۴. اکثر مدل‌ها در اولین تلاش مجدد (retry) خطا را برطرف می‌کنند.
 
-Parse tool arguments with a JSON parser, never by string matching: newer Claude models may escape Unicode or forward slashes differently in tool inputs.
-
----
-
-## Interview Questions
-
-### Q: Why is "JSON Mode" more reliable than prompt-based JSON requests?
-
-**Strong answer:**
-Prompt-based requests rely on the model's *willingness* to follow instructions; "JSON Mode" (or Constrained Decoding) relies on the serving engine's *inability* to do anything else. By applying a "Logit Bias" or a "Grammar Mask" at the inference level, the engine restricts the choice of the next token to only those that would be valid according to the schema. This eliminates the "preamble" (e.g., "Sure, here is your JSON...") and ensures that you never get a malformed string from sampling randomness. What it does not guarantee is correct *content*, a complete response if `max_tokens` cuts it off, or any response at all if the model refuses, so validation and stop-reason checks stay in the pipeline.
-
-### Q: What is the risk of asking an LLM for too many structured fields at once?
-
-**Strong answer:**
-There is a trade-off between **Schema Complexity** and **Information Integrity**. As the schema grows (e.g., 20+ hierarchical fields), the model's attention is consumed by maintaining the JSON structure (brackets, keys, quotes) rather than verifying the accuracy of the data. This often leads to "Omission Hallucinations" where the model skips fields or fills them with placeholder data. The mitigation is to split the extraction into smaller parallel sub-schemas, or to extract in natural language first and structure in a second pass, and to make "unknown" an explicit allowed value so the model is not pushed to invent one.
-
-### Q: Your extraction pipeline forced a tool call to get JSON from Claude, and after moving to Opus 5.5 every request returns a 400. What do you change?
-
-**Strong answer:**
-Opus 5.5, Sonnet 5.5, and Fable 5.1 reject `tool_choice` `any` and `tool`, so the forced-tool trick is gone. If the tool existed only to carry a schema, I replace it with native structured outputs (`output_config.format` with the same JSON schema), which is the cleaner contract anyway. If the step genuinely needs the model to call a specific tool, I switch to `tool_choice: auto`, name the tool in the instruction, and set `strict: true` so the arguments are schema-valid when it does call; I then measure how often it skips the call and add a retry for that case. I would also grep the codebase and framework versions for other hard-coded assumptions from the same era (sampling parameters, assistant prefill, `budget_tokens`, a `reasoning` field in the schema), because they break or get refused on the same models.
+آرگومان‌های ابزار را با یک پارسر JSON تجزیه کنید، هرگز از تطبیق رشته‌ای استفاده نکنید: مدل‌های جدیدتر Claude ممکن است یونیکد یا اسلش‌های رو به جلو (forward slashes) را در ورودی‌های ابزار به شکل متفاوتی escape کنند.
 
 ---
 
-## References
-- OpenAI. "Structured Outputs Documentation" (August 2024 update)
-- [Anthropic. Strict tool use and structured outputs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use)
-- [Claude API release notes (forced tool use removed)](https://platform.claude.com/docs/en/release-notes/overview)
-- [Anthropic. "Refusals and fallback": keep reasoning in thinking blocks](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
-- Outlines Project. "Output types: Regex, CFG, JSON" (Outlines 1.x documentation)
-- Willard and Louf. "Efficient Guided Generation for Large Language Models" (2023)
-- Dong et al. "XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models" (2024)
+## سوالات مصاحبه
+
+### سوال: چرا «حالت JSON» قابل‌اطمینان‌تر از درخواست‌های JSON مبتنی بر Prompt است؟
+
+**پاسخ قوی:**
+درخواست‌های مبتنی بر Prompt بر *تمایل* مدل به پیروی از دستورالعمل‌ها تکیه دارند؛ در حالی که «حالت JSON» (یا رمزگشایی مقید) بر *عدم توانایی* موتور سرویس‌دهی برای انجام هر کار دیگری متکی است. موتور با اعمال یک «Logit Bias» یا یک «Grammar Mask» در سطح استنتاج (Inference)، انتخاب Token بعدی را صرفاً به Tokenهایی محدود می‌کند که طبق اسکیما معتبر باشند. این امر «مقدمه‌چینی» (مانند "...Sure, here is your JSON") را حذف کرده و تضمین می‌کند که به دلیل تصادفی بودن نمونه‌برداری (sampling randomness) هرگز یک رشته ناقص و بدقالب دریافت نکنید. آنچه این روش تضمین نمی‌کند *محتوای* صحیح، پاسخ کامل در صورت قطع شدن توسط `max_tokens`، یا دریافت هرگونه پاسخ در صورت امتناع مدل است؛ بنابراین اعتبارسنجی و بررسی دلایل توقف همچنان در خط لوله (pipeline) باقی می‌مانند.
+
+### سوال: خطر درخواست هم‌زمان تعداد زیادی فیلد ساختاریافته از یک LLM چیست؟
+
+**پاسخ قوی:**
+یک مصالحه (trade-off) بین **پیچیدگی اسکیما (Schema Complexity)** و **یکپارچگی اطلاعات (Information Integrity)** وجود دارد. با رشد اسکیما (برای مثال، بیش از ۲۰ فیلد سلسله‌مراتبی)، توجه مدل به جای بررسی صحت داده‌ها، صرف حفظ ساختار JSON (کروشه‌ها، کلیدها، نقل‌قول‌ها) می‌شود. این مسئله اغلب به «توهم‌های ناشی از حذف (Omission Hallucinations)» منجر می‌شود که در آن مدل فیلدها را نادیده می‌گیرد یا آنها را با داده‌های موقت (placeholder) پر می‌کند. راهکار تعدیل این است که فرآیند استخراج به زیر-اسکیماهای موازی کوچک‌تر تقسیم شود، یا ابتدا استخراج در قالب زبان طبیعی صورت گرفته و در گذر دوم ساختاریافته شود، و همچنین مقدار «نامشخص» ("unknown") به عنوان یک مقدار مجاز صریح تعریف شود تا مدل وادار به ساختن داده‌های ساختگی نشود.
+
+### سوال: خط لوله استخراج شما برای دریافت JSON از Claude یک فراخوانی ابزار را اجباری می‌کرد و پس از مهاجرت به Opus 5.5 هر درخواست خطای 400 بازمی‌گرداند. چه چیزی را تغییر می‌دهید؟
+
+**پاسخ قوی:**
+مدل‌های Opus 5.5، Sonnet 5.5 و Fable 5.1 مقادیر `tool_choice` شامل `any` و `tool` را رد می‌کنند، بنابراین ترفند ابزار اجباری دیگر کارایی ندارد. اگر ابزار صرفاً برای حمل یک اسکیما وجود داشت، آن را با خروجی‌های ساختاریافته بومی (`output_config.format` با همان JSON schema) جایگزین می‌کنم که در هر صورت قرارداد تمیزتری است. اگر آن گام واقعاً به فراخوانی یک ابزار خاص توسط مدل نیاز دارد، وضعیت را به `tool_choice: auto` تغییر می‌دهم، نام ابزار را در دستورالعمل ذکر می‌کنم و مقدار `strict: true` را تنظیم می‌کنم تا آرگومان‌ها هنگام فراخوانی بر اساس اسکیما معتبر باشند؛ سپس اندازه‌گیری می‌کنم که چند وقت یک‌بار فراخوانی را نادیده می‌گیرد و برای آن حالت یک تلاش مجدد (retry) اضافه می‌کنم. همچنین پایگاه کد و نسخه‌های فریم‌ورک را برای سایر فرضیات هاردکدشده از همان دوره (پارامترهای نمونه‌برداری، پیش‌پر کردن دستیار، `budget_tokens`، فیلد `reasoning` در اسکیما) جستجو (grep) می‌کنم، زیرا در همین مدل‌ها دچار شکست شده یا رد می‌شوند.
 
 ---
 
-*Next: [Prompt Optimization (DSPy)](07-prompt-optimization-dspy.md)*
+## منابع
+- OpenAI. «مستندات خروجی‌های ساختاریافته» (به‌روزرسانی اوت ۲۰۲۴)
+- [Anthropic. استفاده دقیق از ابزار و خروجی‌های ساختاریافته](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use)
+- [یادداشت‌های انتشار Claude API (حذف استفاده اجباری از ابزار)](https://platform.claude.com/docs/en/release-notes/overview)
+- [Anthropic. «امتناع‌ها و راهکارهای جایگزین»: نگه‌داشتن استدلال در بلوک‌های تفکر](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
+- پروژه Outlines. «انواع خروجی: Regex، CFG، JSON» (مستندات Outlines 1.x)
+- ویلارد و لوف. "Efficient Guided Generation for Large Language Models" (۲۰۲۳)
+- دونگ و همکاران. "XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models" (۲۰۲۴)
+
+---
+
+*بعدی: [بهینه‌سازی Prompt (DSPy)](07-prompt-optimization-dspy.md)*
+
+</div>

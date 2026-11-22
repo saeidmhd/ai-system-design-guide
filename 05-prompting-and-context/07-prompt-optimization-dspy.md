@@ -1,32 +1,34 @@
-# Prompt Optimization (DSPy)
+<div dir="rtl">
 
-Prompting has moved from the "Hand-tuning" era to the "Programmatic" era. **DSPy (Declarative Self-improving Language Programs)** is the de-facto standard for building LLM pipelines where prompts are optimized automatically by algorithms. The current release is DSPy 3.4.0 (September 25, 2026), and the 3.x line has shifted the emphasis from optimizing prompt text (MIPROv2) to optimizing with reflection and program structure (GEPA, and Flex in 3.3). The framework deep dive is in [DSPy](../09-frameworks-and-tools/05-dspy.md); this chapter covers the prompting ideas.
+# بهینه‌سازی Prompt (DSPy)
 
-## Table of Contents
+Prompting از عصر «تنظیم دستی» (Hand-tuning) به عصر «برنامه‌نویسی» (Programmatic) گذر کرده است. **DSPy (برنامه‌های زبانی خودبهبود‌دهنده اظهاری - Declarative Self-improving Language Programs)** استاندارد عملی (de-facto) برای ساخت خطوط لوله LLM است که در آن‌ها Promptها به‌صورت خودکار توسط الگوریتم‌ها بهینه‌سازی می‌شوند. نسخه فعلی DSPy 3.4.0 (۲۵ سپتامبر ۲۰۲۶) است و سری 3.x تاکید را از بهینه‌سازی متن Prompt (مانند MIPROv2) به بهینه‌سازی با بازتاب (Reflection) و ساختار برنامه (مانند GEPA و Flex در نسخه 3.3) تغییر داده است. بررسی عمیق فریم‌ورک در [DSPy](../09-frameworks-and-tools/05-dspy.md) آمده است؛ این فصل ایده‌ها و مفاهیم Prompting را پوشش می‌دهد.
 
-- [The DSPy Philosophy: Programming vs. Prompting](#the-dspy-philosophy-programming-vs-prompting)
-- [Signatures & Modules](#signatures--modules)
-- [Teleprompters (Optimizers)](#teleprompters-optimizers)
-- [The "Prompt as Weight" Analogy](#the-prompt-as-weight-analogy)
-- [Metric-Driven Optimization](#metric-driven-optimization)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The DSPy Philosophy: Programming vs. Prompting
-
-In traditional prompting, changing a model (e.g., from GPT-6.1 Sol to Claude Sonnet 5.5 or an open-weight model like Qwen3.8-27B) requires re-writing all your prompts.
-**DSPy separates Logic from Formatting.**
-
-- **Logic**: Defined by **Modules** (e.g., ChainOfThought, ReAct).
-- **Optimization**: The system automatically finds the best prompt and examples for a *specific* model to fulfill that logic.
+- [فلسفه DSPy: برنامه‌نویسی در برابر Prompting](#the-dspy-philosophy-programming-vs-prompting)
+- [امضاها و ماژول‌ها](#signatures--modules)
+- [تله‌پروامپترها (بهینه‌سازها)](#teleprompters-optimizers)
+- [قیاس «Prompt به‌عنوان وزن»](#the-prompt-as-weight-analogy)
+- [بهینه‌سازی مبتنی بر متریک](#metric-driven-optimization)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Signatures & Modules
+## فلسفه DSPy: برنامه‌نویسی در برابر Prompting
 
-Instead of writing a prompt, you define a **Signature**: what the input is and what the output should be.
+در Prompting سنتی، تغییر دادن یک مدل (مثلاً از GPT-6.1 Sol به Claude Sonnet 5.5 یا یک مدل با وزن باز مانند Qwen3.8-27B) نیازمند بازنویسی تمام Promptهای شماست.
+**DSPy منطق را از قالب‌بندی جدا می‌کند.**
+
+- **منطق (Logic)**: توسط **ماژول‌ها (Modules)** تعریف می‌شود (مانند ChainOfThought، ReAct).
+- **بهینه‌سازی (Optimization)**: سیستم به‌طور خودکار بهترین Prompt و مثال‌ها را برای یک مدل *خاص* پیدا می‌کند تا آن منطق را برآورده سازد.
+
+---
+
+## امضاها و ماژول‌ها
+
+به‌جای نوشتن یک Prompt، شما یک **امضا (Signature)** تعریف می‌کنید: ورودی چیست و خروجی چه باید باشد.
 
 ```python
 # Signature pattern
@@ -40,64 +42,66 @@ class MultiHopQA(dspy.Signature):
 qa_system = dspy.ChainOfThought(MultiHopQA)
 ```
 
-By default, `ChainOfThought` prepends a plain-text `reasoning` output field that the model fills before the answer. On reasoning models that is duplicate work, and on the newest Claude models (Fable 5.1, Opus 5.5, Sonnet 5.5) a `reasoning` field in the output is a listed trigger for `reasoning_extraction` refusals. Compare it against `dspy.Predict` with native thinking at a fixed effort level, and let the metric pick.
+به‌طور پیش‌فرض، `ChainOfThought` یک فیلد خروجی متنی ساده `reasoning` را در ابتدا اضافه می‌کند که مدل قبل از پاسخ آن را پر می‌کند. در مدل‌های استدلالی (Reasoning models)، این کار تکراری و بیهوده است، و در جدیدترین مدل‌های Claude (شامل Fable 5.1، Opus 5.5، Sonnet 5.5)، وجود فیلد `reasoning` در خروجی یکی از محرک‌های ثبت‌شده برای امتناع‌های `reasoning_extraction` است. آن را با `dspy.Predict` به‌همراه تفکر بومی (Native thinking) در یک سطح تلاش (Effort level) ثابت مقایسه کنید و اجازه دهید متریک انتخاب کند.
 
 ---
 
-## Teleprompters (Optimizers)
+## تله‌پروامپترها (بهینه‌سازها)
 
-Teleprompters (the original name; DSPy's docs now call them **optimizers**) are algorithms that iterate on your program to improve accuracy.
-1. **BootstrapFewShot**: Automatically finds high-quality examples for your prompt.
-2. **MIPROv2**: A Bayesian optimizer that tries different instruction phrasings and demos and selects the combination that maximizes your score. Still the workhorse when you have a few hundred labeled examples and a fixed pipeline.
-3. **GEPA** (reflective prompt evolution): an LLM reads execution traces and metric feedback, proposes targeted instruction edits, and keeps a Pareto frontier of candidates. Its paper reports matching or beating RL-based tuning with far fewer rollouts, which matters when each rollout is a long agent run.
-4. **Flex** (DSPy 3.3.0, August 3, 2026): uses GEPA to optimize **program structure** (which modules exist and how they connect), not only the text of each prompt.
-5. **ReAnchor** (DSPy 3.4.0): calibrates decision thresholds, score cuts, and choice weights against the program metric, for programs whose outputs are typed decisions (yes/no, a choice, a score) rather than free text.
+تله‌پروامپترها (Teleprompters، نام اصلی آن؛ مستندات DSPy اکنون آن‌ها را **بهینه‌سازها (Optimizers)** می‌نامند) الگوریتم‌هایی هستند که روی برنامه شما تکرار (Iterate) می‌کنند تا دقت را بهبود بخشند.
+۱. **BootstrapFewShot**: به‌طور خودکار مثال‌های باکیفیت بالا را برای Prompt شما پیدا می‌کند.
+۲. **MIPROv2**: یک بهینه‌ساز بیزی که نگارش‌های مختلف دستورالعمل‌ها و دموها را امتحان می‌کند و ترکیبی را برمی‌گزیند که امتیاز شما را بیشینه می‌سازد. زمانی که چند صد مثال برچسب‌دار و یک پایپ‌لاین ثابت دارید، همچنان ابزار کار اصلی است.
+۳. **GEPA** (تکامل بازتابی Prompt): یک LLM ردپای اجرا (Execution traces) و بازخورد متریک را می‌خواند، ویرایش‌های هدفمندی را برای دستورالعمل‌ها پیشنهاد می‌دهد و یک مرز پارتو (Pareto frontier) از گزینه‌های کاندیدا را حفظ می‌کند. مقاله آن نشان می‌دهد که این روش با تعداد بسیار کمتری rollout (اجرای آزمایشی)، با تنظیمات مبتنی بر یادگیری تقویتی (RL) برابری کرده یا از آن پیشی می‌گیرد؛ موضوعی که وقتی هر rollout یک اجرای طولانی Agent باشد، اهمیت زیادی دارد.
+۴. **Flex** (در DSPy 3.3.0، ۳ اوت ۲۰۲۶): از GEPA برای بهینه‌سازی **ساختار برنامه** (این‌که چه ماژول‌هایی وجود داشته باشند و چگونه به هم متصل شوند) استفاده می‌کند، نه فقط متن هر Prompt.
+۵. **ReAnchor** (در DSPy 3.4.0): آستانه‌های تصمیم‌گیری، حدود امتیاز و وزن‌های گزینه‌ها را بر اساس متریک برنامه کالیبره می‌کند؛ برای برنامه‌هایی که خروجی‌های آن‌ها تصمیمات نوع‌دار (بله/خیر، یک گزینه، یک امتیاز) است نه متن آزاد.
 
-**Why it matters**: You no longer guess if "Be helpful" or "Think carefully" is better. The optimizer proves it with data.
-
----
-
-## The "Prompt as Weight" Analogy
-
-In DSPy, your prompt is like a weight in a neural network. You don't "hardcode" weights; you train them.
-- If you change your model, you just **Re-compile** (re-train) your program. The optimizer will find new few-shot examples that the new model understands better.
-- Treat the **effort level as part of the model**. Defaults differ (Claude Opus 5.5 defaults to `medium`, Opus 5 to `high`) and sampling parameters are disappearing from the newest APIs, so a program compiled at one effort level is not validated at another.
-- Pin the DSPy version as well. 3.4.0 removed the experimental 3.3 typed LM API, and OpenAI-style `messages=` calls now emit deprecation warnings ahead of removal in 3.5.
+**چرا این موضوع اهمیت دارد**: شما دیگر حدس نمی‌زنید که آیا «مفید باش» بهتر است یا «با دقت فکر کن». بهینه‌ساز این موضوع را با داده اثبات می‌کند.
 
 ---
 
-## Metric-Driven Optimization
+## قیاس «Prompt به‌عنوان وزن»
 
-Optimization requires a **Metric** (a function that returns a score).
-- **Exact Match**: `prediction.answer == target.answer`
-- **LLM-as-Judge**: Use a stronger model (Claude Opus 5.5, GPT-6.1 Sol) to grade the output of a smaller one (Claude Haiku 5.5, GPT-6 Luna, Gemini 3.8 Flash). Calibrate the judge against human labels first: an optimizer will exploit any blind spot in the metric.
-- **Judge cost**: an optimizer run scores hundreds to thousands of candidate outputs, so the judge often dominates the bill. For binary checklist criteria, typed-decision models are a cheaper option: one comparison (arXiv 2609.29769) found LLM rubric judges cost 16 to 325x as much as TypeSafe's Jev (early access), with accuracy differing significantly in at most 8 of 27 paired comparisons. They also failed together: on Jev's most confident errors, about 96% of LLM verdicts repeated the same wrong answer, so swapping judges does not replace the human calibration set.
-- **Textual feedback**: GEPA works best when the metric returns *why* an output failed, not just a number.
-
----
-
-## Interview Questions
-
-### Q: How does DSPy solve the "fragility" of prompt engineering?
-
-**Strong answer:**
-DSPy moves the complexity of "formatting" and "grounding" away from the human and into the compiler. When we hand-write prompts, we are effectively "hard-coding" behavior that is specific to one model at one specific time (point-in-time tuning). If that model is updated or swapped, the prompt breaks. DSPy treats the prompt as a learnable parameter. By defining a clear **Signature** and a **Metric**, we allow the system to "search" for the most effective prompt over hundreds to thousands of evaluated rollouts, making the final system much more resilient to model changes. The fragility does not vanish; it moves into the metric, which is now the thing to get right.
-
-### Q: What is a "Teleprompter" in the context of DSPy?
-
-**Strong answer:**
-A Teleprompter (now called an optimizer) is a programmatic optimizer. Its job is to take a DSPy program (which might be a complex chain of modules) and a small set of training examples, and then "compile" them into an optimized version. It does this by generating potential "thinking patterns" and examples, testing them against a metric, and selecting the most effective ones. In short, a Teleprompter is the "Gradient Descent" of the prompt engineering world. The 2026 extension is that the newer optimizers search over the program's structure as well as its prompts: Flex can add a verification step or change module boundaries, not just reword instructions.
+در DSPy، مدل Prompt شما شبیه به یک وزن در یک شبکه عصبی است. شما وزن‌ها را «هاردکد» نمی‌کنید؛ بلکه آن‌ها را آموزش می‌دهید.
+- اگر مدل خود را تغییر دهید، صرفاً برنامه خود را **مجدداً کامپایل** (آموزش مجدد) می‌کنید. بهینه‌ساز مثال‌های Few-shot جدیدی را پیدا می‌کند که مدل جدید بهتر آن‌ها را درک می‌کند.
+- **سطح تلاش (Effort level) را به‌عنوان بخشی از مدل در نظر بگیرید**. مقادیر پیش‌فرض متفاوت هستند (پیش‌فرض Claude Opus 5.5 روی `medium` و پیش‌فرض Opus 5 روی `high` است) و پارامترهای نمونه‌برداری در حال حذف شدن از جدیدترین APIها هستند، بنابراین برنامه‌ای که در یک سطح تلاش کامپایل شده است، در سطح تلاش دیگری معتبر نیست.
+- نسخه DSPy را نیز تثبیت (Pin) کنید. در نسخه 3.4.0 قابلیت تجربی typed LM API در 3.3 حذف شد، و فراخوانی‌های به سبک OpenAI با `messages=` اکنون هشدارهای منسوخ شدن (Deprecation warnings) را پیش از حذف نهایی در 3.5 صادر می‌کنند.
 
 ---
 
-## References
-- Khattab et al. "DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines" (2023/2024)
-- Agrawal et al. "GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning" (2025)
-- [DSPy releases (3.3.0, 3.4.0)](https://github.com/stanfordnlp/dspy/releases)
-- [Rao and Callison-Burch. "JEV vs. LLMs as Rubric Judges: Cheaper, Faster, and Wrong in the Same Places" (arXiv 2609.29769)](https://arxiv.org/abs/2609.29769)
-- Stanford NLP. "DSPy Documentation and Tutorials" (2025)
-- [Anthropic. "Refusals and fallback": keep reasoning in thinking blocks](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
+## بهینه‌سازی مبتنی بر متریک
+
+بهینه‌سازی نیازمند یک **متریک (Metric)** است (تابعی که یک امتیاز برمی‌گرداند).
+- **تطابق دقیق (Exact Match)**: `prediction.answer == target.answer`
+- **داوری با LLM (یا LLM-as-Judge)**: استفاده از یک مدل قوی‌تر (Claude Opus 5.5، GPT-6.1 Sol) برای نمره‌دهی به خروجی یک مدل کوچک‌تر (Claude Haiku 5.5، GPT-6 Luna، Gemini 3.8 Flash). ابتدا داور را بر اساس برچسب‌های انسانی کالیبره کنید: یک بهینه‌ساز از هر نقطه کوری در متریک سوءاستفاده خواهد کرد.
+- **هزینه داور**: یک اجرای بهینه‌ساز به صدها تا هزاران خروجی کاندیدا نمره می‌دهد، بنابراین داور اغلب بخش عمده هزینه را به خود اختصاص می‌دهد. برای معیارهای چک‌لیست دودویی، مدل‌های تصمیم‌گیری نوع‌دار (Typed-decision) گزینه ارزان‌تری هستند: یک مقایسه (arXiv 2609.29769) نشان داد که داوران ماتریس ارزیابی مبتنی بر LLM بین ۱۶ تا ۳۲۵ برابر بیشتر از Jev متعلق به TypeSafe (دسترسی زودهنگام) هزینه دارند، در حالی که دقت آن‌ها حداکثر در ۸ مورد از ۲۷ مقایسه جفت‌شده تفاوت معناداری داشت. آن‌ها همچنین در موارد یکسانی دچار خطا شدند: در خطاهایی که Jev بیشترین اطمینان را به آن‌ها داشت، حدود ۹۶٪ از قضاوت‌های LLM همان پاسخ اشتباه را تکرار کردند؛ بنابراین تعویض داورها جایگزین مجموعه کالیبراسیون انسانی نمی‌شود.
+- **بازخورد متنی (Textual feedback)**: GEPA زمانی بهترین عملکرد را دارد که متریک دلیل (*why*) شکست یک خروجی را بازگرداند، نه فقط یک عدد.
 
 ---
 
-*Next: [Prompt Injection and Defense](08-prompt-injection-defense.md)*
+## سوالات مصاحبه
+
+### پرسش: چگونه DSPy «شکنندگی» مهندسی Prompt را حل می‌کند؟
+
+**پاسخ قوی:**
+DSPy پیچیدگی‌های «قالب‌بندی» (Formatting) و «تثبیت بر واقعیت» (Grounding) را از دوش انسان برمی‌دارد و به کامپایلر واگذار می‌کند. هنگامی که ما Promptها را به‌صورت دستی می‌نویسیم، در عمل رفتاری را «هاردکد» می‌کنیم که مختص یک مدل خاص در یک مقطع زمانی خاص است (تنظیم مقطعی در زمان - Point-in-time tuning). اگر آن مدل به‌روزرسانی شود یا تغییر کند، Prompt کارایی خود را از دست می‌دهد. DSPy با Prompt مانند یک پارامتر قابل‌یادگیری برخورد می‌کند. ما با تعریف یک **امضا (Signature)** واضح و یک **متریک (Metric)**، به سیستم اجازه می‌دهیم تا از میان صدها تا هزاران rollout ارزیابی‌شده، برای یافتن موثرترین Prompt «جستجو» کند و در نتیجه سیستم نهایی در برابر تغییرات مدل بسیار تاب‌آورتر می‌شود. شکنندگی از بین نمی‌رود؛ بلکه به متریک منتقل می‌شود، که اکنون بخش اصلی برای تنظیم دقیق است.
+
+### پرسش: «تله‌پروامپتر» در زمینه DSPy چیست؟
+
+**پاسخ قوی:**
+یک تله‌پروامپتر (Teleprompter، که اکنون بهینه‌ساز نامیده می‌شود) یک بهینه‌ساز برنامه‌نویسی است. وظیفه آن این است که یک برنامه DSPy (که ممکن است زنجیره پیچیده‌ای از ماژول‌ها باشد) و مجموعه کوچکی از مثال‌های آموزشی را دریافت کند و سپس آن‌ها را در قالب یک نسخه بهینه‌سازی‌شده «کامپایل» کند. این کار را با تولید «الگوهای تفکر» و مثال‌های بالقوه، آزمایش آن‌ها در برابر یک متریک، و انتخاب موثرترین موارد انجام می‌دهد. به‌طور خلاصه، یک تله‌پروامپتر حکم «گرادیان نزولی» (Gradient Descent) را در دنیای مهندسی Prompt دارد. گسترش آن در سال ۲۰۲۶ این است که بهینه‌سازهای جدیدتر، علاوه بر Promptها، بر روی ساختار برنامه نیز جستجو می‌کنند: Flex می‌تواند یک مرحله اعتبارسنجی اضافه کند یا مرزهای ماژول را تغییر دهد، نه این‌که صرفاً کلمات دستورالعمل‌ها را تغییر دهد.
+
+---
+
+## منابع
+- خطاب و همکاران. "DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines" (2023/2024)
+- آگراوال و همکاران. "GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning" (2025)
+- [انتشارهای DSPy (نسخه‌های 3.3.0 و 3.4.0)](https://github.com/stanfordnlp/dspy/releases)
+- [رائو و کالیسون-برچ. «JEV در مقایسه با داوران ماتریس ارزیابی LLM: ارزان‌تر، سریع‌تر و دارای خطاهای مشابه در نقاط یکسان» (arXiv 2609.29769)](https://arxiv.org/abs/2609.29769)
+- گروه پردازش زبان طبیعی استنفورد (Stanford NLP). «مستندات و آموزش‌های DSPy» (2025)
+- [آنتروپیک. «امتناع‌ها و راهکار پشتیبان»: نگه‌داشتن استدلال در بلوک‌های تفکر](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
+
+---
+
+*بخش بعدی: [تزریق Prompt و دفاع در برابر آن](08-prompt-injection-defense.md)*
+
+</div>

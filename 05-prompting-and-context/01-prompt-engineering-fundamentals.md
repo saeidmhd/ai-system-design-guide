@@ -1,60 +1,62 @@
-# Prompt Engineering Fundamentals
+<div dir="rtl">
 
-Prompt engineering is the design of inputs to steer LLM behavior. It has evolved from "trial and error" to a disciplined architectural practice, with frameworks like DSPy treating it as a compilation problem rather than a writing exercise.
+# مبانی مهندسی Prompt
 
-## Table of Contents
+مهندسی Prompt به معنای طراحی ورودی‌ها به منظور هدایت رفتار LLM است. این حوزه از «آزمون و خطا» به یک شیوه معماری منضبط ارتقا یافته است، به‌طوری‌که فریم‌ورک‌هایی مانند DSPy با آن به‌جای یک تمرین نگارشی، همانند یک مسئله کامپایل (Compilation) برخورد می‌کنند.
 
-- [The Core Philosophy: Intent + Constraint](#the-core-philosophy-intent--constraint)
-- [The Instruction Hierarchy](#the-instruction-hierarchy)
-- [Role Prompting](#role-prompting)
-- [Instruction Clarity and Delimiters](#instruction-clarity-and-delimiters)
-- [Zero-Shot vs. Few-Shot Efficiency](#zero-shot-vs-few-shot-efficiency)
-- [Determinism Without Temperature](#determinism-without-temperature)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The Core Philosophy: Intent + Constraint
-
-Effective prompting is about maximizing **Intent Disclosure** while minimizing **Output Variance**.
-
-1. **Intent**: Precisely what the model should do.
-2. **Constraint**: Exactly what the model should *avoid* (Safety, Tone, Format).
-
-**Principle**: "Prompting is Programming in Natural Language." Treat your prompts like code (Version control, Unit tests).
+- [فلسفه بنیادین: نیت + محدودیت](#the-core-philosophy-intent--constraint)
+- [سلسله‌مراتب دستورالعمل‌ها](#the-instruction-hierarchy)
+- [تکنیک Role Prompting](#role-prompting)
+- [شفافیت دستورالعمل و جداکننده‌ها](#instruction-clarity-and-delimiters)
+- [کارایی Zero-Shot در برابر Few-Shot](#zero-shot-vs-few-shot-efficiency)
+- [قطعیت بدون Temperature](#determinism-without-temperature)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Instruction Hierarchy
+## فلسفه بنیادین: نیت + محدودیت
 
-Production systems use a tiered message structure, and models are trained to resolve conflicts in favor of the higher tier:
+طراحی مؤثر Prompt به معنای به حداکثر رساندن **آشکارسازی نیت (Intent Disclosure)** در عین به حداقل رساندن **واریانس خروجی (Output Variance)** است.
 
-| Role | Responsibility | Nuance |
+۱. **نیت (Intent)**: مدل دقیقاً چه کاری باید انجام دهد.
+۲. **محدودیت (Constraint)**: مدل دقیقاً از چه مواردی باید *اجتناب* کند (ایمنی، لحن، قالب).
+
+**اصل**: «Prompting همان برنامه‌نویسی به زبان طبیعی است.» با Promptهای خود مانند کد برخورد کنید (کنترل نسخه، تست‌های واحد).
+
+---
+
+## سلسله‌مراتب دستورالعمل‌ها
+
+سیستم‌های عملیاتی (Production) از یک ساختار پیام چندلایه استفاده می‌کنند و مدل‌ها به‌گونه‌ای آموزش دیده‌اند که تداخل‌ها را به نفع لایه بالاتر برطرف سازند:
+
+| نقش (Role) | مسئولیت | نکات ظریف (Nuance) |
 |------|----------------|--------|
-| **System / Developer** | Operator rules, persona, safety, output contract. | Highest priority the application controls. OpenAI's reasoning models call this the `developer` message. The newest Claude models also accept `system` messages mid-conversation, so operators can add instructions without rewriting history. |
-| **User** | The specific, dynamic query. | Trusted for intent, not for authority over operator rules. A document the user pastes is still untrusted data. |
-| **Assistant** | History of previous turns. | Source of recency and self-consistency bias. On the newest Claude models, earlier turns must stay unedited or their thinking blocks are invalidated (see [Context Engineering](05-context-engineering.md#append-only-context-thinking-is-bound-to-the-conversation)). |
-| **Tool / Retrieved content** | Tool results, RAG chunks, web pages. | Lowest trust: data, never instructions. The main channel for indirect prompt injection. |
+| **System / Developer** | قوانین اپراتور، پرسونا، ایمنی، قرارداد خروجی. | بالاترین اولویتی که اپلیکیشن آن را کنترل می‌کند. مدل‌های استدلالی OpenAI این بخش را پیام `developer` می‌نامند. جدیدترین مدل‌های Claude همچنین پیام‌های `system` را در میان مکالمه می‌پذیرند، بنابراین اپراتورها می‌توانند بدون بازنویسی تاریخچه، دستورالعمل‌هایی اضافه کنند. |
+| **User** | پرس‌وجوی (Query) مشخص و پویا. | از نظر نیت قابل اعتماد است، اما بر قوانین اپراتور ارجحیت و اختیاری ندارد. سندی که کاربر جای‌گذاری (Paste) می‌کند، همچنان داده غیرقابل اعتماد محسوب می‌شود. |
+| **Assistant** | تاریخچه دورهای قبلی گفتگو. | منبع سوگیری تازگی (Recency Bias) و خودسازگاری (Self-Consistency Bias). در جدیدترین مدل‌های Claude، دورهای اولیه باید ویرایش‌نشده باقی بمانند، در غیر این صورت بلوک‌های تفکر (Thinking Blocks) آن‌ها بی‌اعتبار می‌شوند (رجوع کنید به [مهندسی کانتکست (Context Engineering)](05-context-engineering.md#append-only-context-thinking-is-bound-to-the-conversation)). |
+| **Tool / Retrieved content** | نتایج ابزارها، chunkهای RAG، صفحات وب. | کمترین میزان اعتماد: داده است، هرگز دستورالعمل نیست. کانال اصلی برای تزریق غیرمستقیم Prompt (Indirect Prompt Injection). |
 
-The hierarchy is a **trained preference, not a security boundary**. OpenAI formalized it as instruction-hierarchy training (Wallace et al., 2024), and every frontier lab now trains for it, but injections still succeed at measurable rates. See [Prompt Injection and Defense](08-prompt-injection-defense.md).
-
----
-
-## Role Prompting
-
-Assigning a persona is no longer just "You are a teacher." It is a **Capabilities Anchor**.
-
-- **Weak**: "You are a coder."
-- **Strong**: "You are a Staff Software Engineer at a Tier-1 tech company specializing in high-concurrency Rust systems. You prioritize memory safety and zero-cost abstractions."
-
-**Why it works**: the strong version encodes **priorities and constraints** (memory safety, zero-cost abstractions), which change what the model optimizes for. The job title itself does much less than people assume: a controlled study of 162 personas across several model families found that adding a persona to the system prompt did not reliably improve accuracy on factual questions (Zheng et al., 2024). Use roles for tone, vocabulary, and priorities; put correctness in explicit constraints and checks.
+این سلسله‌مراتب یک **ترجیح آموزش‌دیده (Trained Preference) است، نه یک مرز امنیتی (Security Boundary)**. شرکت OpenAI آن را تحت عنوان آموزش سلسله‌مراتب دستورالعمل (Instruction-Hierarchy Training) صورت‌بندی کرد (Wallace et al., 2024)، و اکنون تمامی آزمایشگاه‌های پیشرو مدل‌های خود را برای آن آموزش می‌دهند، اما تزریق‌ها همچنان با نرخ‌های قابل توجهی موفق می‌شوند. رجوع کنید به [تزریق Prompt و دفاع در برابر آن](08-prompt-injection-defense.md).
 
 ---
 
-## Instruction Clarity and Delimiters
+## تکنیک Role Prompting
 
-Current frontier models process 1M-token contexts. Delimiters help the model distinguish between instructions and data.
+تعیین یک پرسونا (Persona) دیگر صرفاً گفتن «شما یک معلم هستید» نیست، بلکه یک **لنگر قابلیت‌ها (Capabilities Anchor)** به شمار می‌رود.
+
+- **ضعیف**: «شما یک کدنویس هستید.»
+- **قوی**: «شما یک مهندس نرم‌افزار ارشد (Staff Software Engineer) در یک شرکت فناوری تراز اول (Tier-1) و متخصص در سیستم‌های با همزمانی بالای Rust هستید. شما امنیت حافظه (Memory Safety) و انتزاع‌های بدون هزینه (Zero-Cost Abstractions) را در اولویت قرار می‌دهید.»
+
+**دلیل اثربخشی آن**: نسخه قوی **اولویت‌ها و محدودیت‌ها** (امنیت حافظه، انتزاع‌های بدون هزینه) را کدگذاری می‌کند که باعث تغییر مواردی می‌شود که مدل برای آن‌ها بهینه‌سازی انجام می‌دهد. عنوان شغلی به‌تنهایی اثر بسیار کمتری نسبت به تصور عموم دارد: یک مطالعه کنترل‌شده روی ۱۶۲ پرسونا در چندین خانواده مدل نشان داد که افزودن پرسونا به پیام سیستم، دقت پاسخ‌دهی به پرسش‌های واقع‌گرایانه (Factual) را به‌طور قابل اتکایی بهبود نمی‌بخشد (Zheng et al., 2024). از نقش‌ها برای تنظیم لحن، دایره واژگان و اولویت‌ها استفاده کنید؛ و صحت (Correctness) را به قیدها و بررسی‌های صریح واگذار نمایید.
+
+---
+
+## شفافیت دستورالعمل و جداکننده‌ها
+
+مدل‌های پیشرو کنونی کانتکست‌های 1M-Token را پردازش می‌کنند. جداکننده‌ها (Delimiters) به مدل کمک می‌کنند تا بین دستورالعمل‌ها و داده‌ها تمایز قائل شود.
 
 ```markdown
 # Instructions
@@ -69,70 +71,72 @@ $USER_INPUT_HERE
 { "pii_found": boolean, "types": [] }
 ```
 
-**Delimiters to use**: XML tags (`<context>`, `</context>`), Markdown headers (`#`), or triple quotes (`"""`). For the output schema, prefer native structured outputs over a schema written in prose (see [Structured Generation](06-structured-generation.md)).
+**جداکننده‌های قابل استفاده**: تگ‌های XML (مانند `<context>`، `</context>`)، هدرهای Markdown (مانند `#`)، یا علامت‌های سه‌تایی نقل‌قول (`"""`). برای اسکیمای خروجی، خروجی‌های ساختاریافته بومی (Native Structured Outputs) را بر اسکیمایی که به صورت نثر نوشته شده است ترجیح دهید (رجوع کنید به [تولید ساختاریافته (Structured Generation)](06-structured-generation.md)).
 
 ---
 
-## Zero-Shot vs. Few-Shot Efficiency
+## کارایی Zero-Shot در برابر Few-Shot
 
-| Aspect | Zero-Shot | Few-Shot |
+| جنبه (Aspect) | Zero-Shot | Few-Shot |
 |--------|-----------|----------|
-| **Latency** | Lowest (Short prompt) | Higher (Example tokens) |
-| **Accuracy**| Variable | High (Format stability) |
-| **Use Case**| Simple chat, Summarization | Specific formatting, Subtle logic |
+| **تاخیر (Latency)** | کمترین (Prompt کوتاه) | بالاتر (Tokenهای مثال) |
+| **دقت (Accuracy)**| متغیر | بالا (پایداری فرمت) |
+| **مورد استفاده (Use Case)**| گفتگوی ساده، خلاصه‌سازی | قالب‌بندی خاص، منطق پیچیده و ظریف |
 
-**Strategy**: For reasoning models (Claude Opus 5.5, GPT-6.1 Sol, Gemini 3.8 Flash at higher thinking levels), start **zero-shot with a clear goal, constraints, and success criteria**, and skip "think step by step" or prescriptive reasoning scripts: the model already reasons internally. Anthropic's current guidance is that a general instruction ("think thoroughly") often beats a hand-written step-by-step plan, and that the emphatic language older prompts needed ("CRITICAL: you MUST...") now causes overtriggering and should be dialed back. Add examples when you need a specific output format or a subtle labeling convention. For small models (8B and below), use **few-shot** to ground them.
+**استراتژی**: برای مدل‌های استدلالی (Claude Opus 5.5، GPT-6.1 Sol، Gemini 3.8 Flash در سطوح تفکر بالاتر)، کار را به‌صورت **Zero-Shot با یک هدف مشخص، محدودیت‌ها و معیارهای موفقیت** آغاز کنید و از عباراتی مانند «گام‌به‌گام فکر کن» (Think step by step) یا اسکریپت‌های استدلالی تجویزی صرف‌نظر نمایید: این مدل‌ها پیشاپیش به‌صورت درونی استدلال می‌کنند. راهنمای کنونی شرکت Anthropic این است که یک دستورالعمل کلی (مانند «به‌طور کامل و دقیق فکر کن») اغلب از یک برنامه گام‌به‌گام دست‌نویس عملکرد بهتری دارد، و لحن‌های تأکیدی که در Promptهای قدیمی‌تر مورد نیاز بود (مانند «حیاتی: شما باید حتماً...») اکنون منجر به فعال‌سازی بیش از حد (Overtriggering) می‌شود و باید تعدیل گردد. تنها زمانی نمونه‌ها را اضافه کنید که به یک فرمت خروجی خاص یا قرارداد برچسب‌گذاری ظریفی نیاز داشته باشید. برای مدل‌های کوچک (۸ میلیارد پارامتر و پایین‌تر)، از **Few-Shot** برای تثبیت و زمینه‌سازی (Grounding) آن‌ها استفاده کنید.
 
 ---
 
-## Determinism Without Temperature
+## قطعیت بدون Temperature
 
-The classic advice "set temperature to 0 for consistency" no longer works on the newest APIs. Sampling parameters are being removed in favor of reasoning effort as the control surface:
+توصیه سنتی «تنظیم temperature روی ۰ برای دستیابی به سازگاری و ثبات» دیگر در جدیدترین APIها کارایی ندارد. پارامترهای نمونه‌برداری در حال حذف شدن هستند تا سطح کنترل به‌جای آن‌ها در اختیار میزان تلاش استدلالی (Reasoning Effort) قرار گیرد:
 
-| Vendor | Status of `temperature` / `top_p` |
+| ارائه‌دهنده (Vendor) | وضعیت `temperature` / `top_p` |
 |--------|-----------------------------------|
-| **Anthropic** | From API version `2026-10-21` (October 21, 2026), `temperature`, `top_p`, and `top_k` return a 400 at any value, even the default, on every model, and all eight new SDK and CLI majors released that day send that version by default: Python 2.0.0, TypeScript 1.0.0, C# 13.0.0, Go 2.0.0, Java 3.0.0, PHP 1.0.0, Ruby 2.0.0, and the ant CLI 2.0.0 (all now Apache 2.0 instead of MIT), so a routine dependency bump in any language can start returning 400s. Earlier API versions reject non-default values on Claude 4.7 and later models (including Sonnet 5, Sonnet 5.5, Haiku 5.5 and Fable 5.1). The Python SDK 1.0 (August 20, 2026) had already removed the three parameters from the Messages method signatures, so passing them raises a `TypeError`. |
-| **OpenAI** | GPT-6 Astra (September 3, 2026) does not support custom `temperature`, `top_p`, or `logprobs`. |
-| **Google** | `temperature`, `top_p`, and `top_k` deprecated in the Gemini API on July 21, 2026; Gemini 3.8 Flash uses `thinking_level` instead of `thinking_budget`. |
+| **Anthropic** | از نسخه API به شماره `2026-10-21` (۲۱ اکتبر ۲۰۲۶)، پارامترهای `temperature`، `top_p` و `top_k` روی هر مقداری (حتی مقدار پیش‌فرض) در تمامی مدل‌ها خطای 400 برمی‌گردانند، و تمام هشت نسخه اصلی جدید SDK و CLI که در آن روز منتشر شدند این نسخه را به‌طور پیش‌فرض ارسال می‌کنند: Python 2.0.0، TypeScript 1.0.0، C# 13.0.0، Go 2.0.0، Java 3.0.0، PHP 1.0.0، Ruby 2.0.0 و ant CLI 2.0.0 (که همگی اکنون به‌جای MIT دارای مجوز Apache 2.0 هستند). بنابراین یک ارتقای روتین وابستگی‌ها در هر زبانی می‌تواند منجر به دریافت خطاهای 400 شود. نسخه‌های قبلی API مقادیر غیر پیش‌فرض را در مدل‌های Claude 4.7 و بعد از آن (شامل Sonnet 5، Sonnet 5.5، Haiku 5.5 و Fable 5.1) رد می‌کنند. نسخه Python SDK 1.0 (۲۰ اوت ۲۰۲۶) پیش از این هر سه پارامتر را از امضای متدهای Messages حذف کرده بود، بنابراین ارسال آن‌ها موجب بروز `TypeError` می‌شود. |
+| **OpenAI** | مدل GPT-6 Astra (۳ سپتامبر ۲۰۲۶) از مقادیر سفارشی `temperature`، `top_p` یا `logprobs` پشتیبانی نمی‌کند. |
+| **Google** | پارامترهای `temperature`، `top_p` و `top_k` در ۲۱ ژوئیه ۲۰۲۶ در Gemini API منسوخ (Deprecated) شدند؛ مدل Gemini 3.8 Flash به‌جای `thinking_budget` از `thinking_level` استفاده می‌کند. |
 
-How to get consistency now:
+چگونه اکنون به ثبات و سازگاری (Consistency) دست یابیم:
 
-1. **Pin the model snapshot and the effort level.** Effort changes behavior as much as temperature did, and defaults differ (Claude Opus 5.5 defaults to `medium`, Opus 5 to `high`).
-2. **Constrain the output** with structured outputs or an enum, so variance cannot reach the format.
-3. **Cache by input hash** for identical requests, and log request and response pairs for replay.
-4. **Evaluate distributions, not single samples.** Run each eval case several times and track the pass rate.
-5. **Re-run evals on vendor changelog events**, not only on model-ID changes: OpenAI fixed an image bug in GPT-6 Sol and Luna on September 25, 2026 under the same model ID.
-
----
-
-## Interview Questions
-
-### Q: Why do system prompts carry more weight than user prompts in modern LLMs?
-
-**Strong answer:**
-Because the model is trained to obey an **instruction hierarchy**: during post-training, labs construct conflicts between system, developer, user, and tool messages and reward the model for following the higher-privilege one (OpenAI published this as instruction-hierarchy training in 2024, and its Model Spec calls it the chain of command). So if a user asks for something the system prompt forbids, a well-aligned model sides with the operator. The important caveat is that this is a learned preference, not an architectural guarantee: vendor-reported indirect-injection success rates on current frontier models range from about 1% (Claude Opus 5.5 on Gray Swan's IPI benchmark at 15 attempts per scenario) to 8.5% (GPT-6 Astra on the IPI Arena set). Critical rules therefore also need enforcement outside the model: tool permissions, output validation, and egress controls.
-
-### Q: What is the "Step-by-Step" prompt optimization?
-
-**Strong answer:**
-In 2022, "Think step by step" was a magic phrase to trigger Chain-of-Thought (CoT). For non-reasoning models, the better version is **Programmatic CoT**: explicit milestones such as "1. Identify the core problem. 2. List the constraints. 3. Propose 3 solutions. 4. Select the best one and justify." That makes the output structured and auditable. For reasoning models, I do not script the thinking. I state the goal, the constraints, and what a correct answer must satisfy, and I control depth with the effort setting. If I need auditable steps, I ask for a short explanation or the evidence behind the answer, not a transcript of the thinking. On the newest Claude models that distinction is enforced: a prompt that asks the model to write its reasoning into the output (a `<thinking>` section, a `reasoning` field) can be declined under the `reasoning_extraction` refusal category, and the supported way to inspect reasoning is summarized thinking blocks.
-
-### Q: The API rejects `temperature` now. How do you make outputs reproducible enough to test?
-
-**Strong answer:**
-I stop treating reproducibility as a sampling setting and treat it as a system property. First, pin everything that changes behavior: the dated model ID, the effort level, the system prompt version, and the tool definitions. Second, remove variance where it does not belong: structured outputs for format, enums for labels, and an input-hash cache for repeated requests. Third, test statistically: each eval case runs several times, and the gate is a pass rate with a confidence interval, not a single golden string. Finally, I re-run the suite whenever the vendor changelog says something changed, because providers sometimes fix behavior under a stable model ID.
+۱. **اسنپ‌شات مدل و سطح تلاش (Effort Level) را ثابت (Pin) کنید.** سطح تلاش رفتار مدل را درست به اندازه temperature تغییر می‌دهد و مقادیر پیش‌فرض نیز متفاوت است (پیش‌فرض Claude Opus 5.5 روی `medium` است، در حالی که Opus 5 روی `high` قرار دارد).
+۲. **خروجی را محدود سازید**؛ این کار را با استفاده از خروجی‌های ساختاریافته (Structured Outputs) یا یک enum انجام دهید تا واریانس نتواند بر فرمت تأثیر بگذارد.
+۳. **کش کردن بر اساس هش ورودی (Input Hash)** را برای درخواست‌های یکسان پیاده‌سازی کنید و جفت‌های درخواست و پاسخ را جهت بازپخش (Replay) لاگ نمایید.
+۴. **توزیع‌ها را ارزیابی کنید، نه تک‌نمونه‌ها را.** هر مورد ارزیابی (Eval Case) را چندین بار اجرا کرده و نرخ قبولی (Pass Rate) را رهگیری کنید.
+۵. **ارزیابی‌ها را با رویدادهای گزارش تغییرات (Changelog) ارائه‌دهنده مجدداً اجرا کنید** و تنها به تغییرات شناسه مدل (Model-ID) بسنده نکنید: OpenAI در ۲۵ سپتامبر ۲۰۲۶ یک باگ تصویر را در GPT-6 Sol و Luna با همان شناسه مدل قبلی برطرف کرد.
 
 ---
 
-## References
-- OpenAI. "Prompt Engineering Guide" and "Reasoning Best Practices" (2024-2026)
-- [Anthropic. "Prompting best practices" (2026)](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
-- [Anthropic. "Refusals and fallback": keep reasoning in thinking blocks](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
+## سوالات مصاحبه
+
+### پرسش: چرا System Promptها در LLMهای امروزی وزن و اهمیت بیشتری نسبت به User Promptها دارند؟
+
+**پاسخ قوی:**
+زیرا مدل برای پیروی از یک **سلسله‌مراتب دستورالعمل (Instruction Hierarchy)** آموزش دیده است: در طول مراحل پس‌آموزش (Post-Training)، آزمایشگاه‌ها تداخل‌هایی ساختگی بین پیام‌های سیستم، توسعه‌دهنده، کاربر و ابزار ایجاد کرده و به مدل در ازای پیروی از پیامی که سطح دسترسی بالاتری دارد پاداش می‌دهند (OpenAI این روش را در سال ۲۰۲۴ تحت عنوان آموزش سلسله‌مراتب دستورالعمل منتشر کرد و در سند مشخصات مدل (Model Spec) خود از آن به عنوان سلسله‌مراتب فرماندهی یا Chain of Command یاد می‌کند). بنابراین، اگر کاربری چیزی بخواهد که در System Prompt منع شده است، یک مدلِ به‌خوبی هم‌راستاشده (Well-Aligned) جانب اپراتور را می‌گیرد. نکته مهم و هشداردهنده این است که این ویژگی یک ترجیح یادگرفته‌شده است و نه یک تضمین معماری: نرخ‌های موفقیت تزریق غیرمستقیم که توسط ارائه‌دهندگان برای مدل‌های پیشرو فعلی گزارش شده است، از حدود ۱٪ (Claude Opus 5.5 در بنچمارک IPI از Gray Swan با ۱۵ بار تلاش برای هر سناریو) تا ۸.۵٪ (GPT-6 Astra در مجموعه IPI Arena) متغیر است. از این رو، قوانین حیاتی نیازمند اعمال در خارج از مدل نیز هستند: مجوزهای ابزار، اعتبارسنجی خروجی، و کنترل‌های ترافیک خروجی (Egress Controls).
+
+### پرسش: بهینه‌سازی Prompt از طریق عبارت «گام‌به‌گام» (Step-by-Step) چیست؟
+
+**پاسخ قوی:**
+در سال ۲۰۲۲، عبارت «گام به گام فکر کن» (Think step by step) عبارتی جادویی برای فعال‌سازی زنجیره تفکر یا Chain-of-Thought (CoT) بود. برای مدل‌های غیر استدلالی، نسخه بهتر **CoT برنامه‌ریزی‌شده (Programmatic CoT)** است: مراحل صریح و مشخصی مانند «۱. مسئله اصلی را شناسایی کن. ۲. محدودیت‌ها را فهرست کن. ۳. سه راهکار پیشنهاد بده. ۴. بهترین راهکار را انتخاب کرده و دلیل آن را توجیه کن.» این رویکرد خروجی را ساختاریافته و قابل حسابرسی (Auditable) می‌کند. اما برای مدل‌های استدلالی، من فرآیند تفکر را اسکریپت‌نویسی نمی‌کنم؛ بلکه هدف، محدودیت‌ها و شرایطی را که یک پاسخ صحیح باید برآورده کند بیان می‌نمایم و عمق تفکر را از طریق تنظیمات تلاش (Effort Setting) کنترل می‌کنم. اگر به گام‌های قابل حسابرسی نیاز داشته باشم، خواستار توضیحی کوتاه یا شواهد پشت پاسخ می‌شوم، نه متن پیاده‌شده فرآیند تفکر (Transcript). در جدیدترین مدل‌های Claude این تمایز به‌صورت اجباری اعمال می‌شود: یک Prompt که از مدل بخواهد استدلال خود را درون خروجی بنویسد (یک بخش `<thinking>` یا یک فیلد `reasoning`) ممکن است تحت دسته‌بندی امتناع `reasoning_extraction` رد شود، و روش رسمی و پشتیبانی‌شده برای بررسی استدلال، بلوک‌های تفکر خلاصه شده (Summarized Thinking Blocks) است.
+
+### پرسش: اکنون API پارامتر `temperature` را رد می‌کند. چگونه خروجی‌ها را به اندازه کافی برای آزمایش، بازتولیدپذیر (Reproducible) می‌کنید؟
+
+**پاسخ قوی:**
+من دیگر بازتولیدپذیری را به عنوان یک تنظیم نمونه‌برداری (Sampling Setting) در نظر نمی‌گیرم، بلکه با آن به عنوان یکی از ویژگی‌های سطح کل سیستم (System Property) برخورد می‌کنم. نخست، تمام مواردی را که رفتار را تغییر می‌دهند ثابت (Pin) می‌کنم: شناسه تاریخ‌دار مدل، سطح تلاش (Effort Level)، نسخه System Prompt و تعاریف ابزارها. دوم، واریانس را در جاهایی که نباید وجود داشته باشد حذف می‌کنم: خروجی‌های ساختاریافته برای فرمت، enumها برای برچسب‌ها، و حافظه پنهان بر اساس هش ورودی (Input-Hash Cache) برای درخواست‌های تکراری. سوم، ارزیابی آماری انجام می‌دهم: هر مورد ارزیابی چندین بار اجرا می‌شود و معیار عبور (Gate)، نرخ قبولی همراه با فاصله اطمینان (Confidence Interval) است، نه یک رشته طلایی واحد (Golden String). در نهایت، هر زمان که گزارش تغییرات ارائه‌دهنده حاکی از تغییری باشد، کل مجموعه آزمون را مجدداً اجرا می‌کنم، زیرا ارائه‌دهندگان گاهی رفتار مدل را ذیل یک شناسه مدل ثابت تغییر داده و اصلاح می‌کنند.
+
+---
+
+## منابع
+- OpenAI. «راهنمای مهندسی Prompt» و «بهترین شیوه‌های استدلال» (2024-2026)
+- [Anthropic. «بهترین شیوه‌های Prompting» (2026)](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
+- [Anthropic. «امتناع‌ها و راهکارهای جایگزین»: نگه‌داشتن استدلال در بلوک‌های تفکر](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
 - Wallace et al. "The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions" (2024)
 - Zheng et al. "When 'A Helpful Assistant' Is Not Really Helpful: Personas in System Prompts Do Not Improve Performances of Large Language Models" (EMNLP Findings 2024)
 - Microsoft Research. "The Power of Prompting" (Medprompt, 2023)
-- [Claude API release notes (SDK 1.0, sampling parameters)](https://platform.claude.com/docs/en/release-notes/overview)
+- [یادداشت‌های انتشار Claude API (نسخه SDK 1.0، پارامترهای نمونه‌برداری)](https://platform.claude.com/docs/en/release-notes/overview)
 
 ---
 
-*Next: [Few-Shot and In-Context Learning](02-few-shot-and-icl.md)*
+*بخش بعدی: [Few-Shot و یادگیری درون‌کانتکستی (In-Context Learning)](02-few-shot-and-icl.md)*
+
+</div>

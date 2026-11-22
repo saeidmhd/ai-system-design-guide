@@ -1,37 +1,39 @@
-# Tree-of-Thought (ToT)
+<div dir="rtl">
 
-Tree-of-Thought (ToT) is an advanced prompting architecture where a model explores multiple reasoning paths, evaluates them, and "backtracks" if a path leads to a dead end. It is the blueprint behind modern search-based agents, and RL-trained reasoning models now internalize much of it inside a single long reasoning trace.
+# درخت تفکر (Tree-of-Thought - ToT)
 
-## Table of Contents
+درخت تفکر (Tree-of-Thought یا ToT) یک معماری پیشرفته Prompting است که در آن مدل چندین مسیر استدلال را کاوش می‌کند، آن‌ها را مورد ارزیابی قرار می‌دهد و در صورتی که مسیری به بن‌بست برسد، «عقب‌گرد» (Backtrack) انجام می‌دهد. این روش الگوی اصلی در پس Agentهای مدرن مبتنی بر جستجو است، و مدل‌های استدلالی آموزش‌دیده با RL اکنون بخش عمده‌ای از آن را در قالب یک دنباله استدلال (reasoning trace) طولانی درونی‌سازی کرده‌اند.
 
-- [The Tree vs. The Chain](#the-tree-vs-the-chain)
-- [The ToT Loop: Propose, Evaluate, Search](#the-tot-loop-propose-evaluate-search)
-- [Self-Correction & Backtracking](#self-correction--backtracking)
-- [MCTS and Search-as-Service](#mcts-and-search-as-service)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The Tree vs. The Chain
-
-While **Chain-of-Thought** is linear (one path), **Tree-of-Thought** allows for branching.
-
-| Feature | Chain-of-Thought | Tree-of-Thought |
-|---------|------------------|-----------------|
-| **Topology** | Linear (1 path) | Branching (Multiple paths) |
-| **Logic** | Sequential | Parallel + Evaluative |
-| **Self-Correction**| Low (Commitment bias) | High (Backtracking) |
-| **Use Case** | Math, Simple Logic | Puzzle Solving, Coding Architecture, Strategic Planning |
+- [درخت در برابر زنجیره](#the-tree-vs-the-chain)
+- [حلقه ToT: پیشنهاد، ارزیابی، جستجو](#the-tot-loop-propose-evaluate-search)
+- [خوداصلاحی و عقب‌گرد](#self-correction--backtracking)
+- [الگوریتم MCTS و جستجو به عنوان سرویس](#mcts-and-search-as-service)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The ToT Loop: Propose, Evaluate, Search
+## درخت در برابر زنجیره (The Tree vs. The Chain)
 
-A ToT system consists of three modules:
-1. **Thought Proposer**: Generates 3-5 potential "next steps" for a problem.
-2. **State Evaluator**: Grades each step (e.g., "Good", "Maybe", "Impossible").
-3. **Search Algorithm**: (BFS or DFS) to decide which branch to explore next.
+در حالی که **زنجیره تفکر (Chain-of-Thought)** خطی است (یک مسیر)، **درخت تفکر (Tree-of-Thought)** امکان انشعاب و شاخه‌بندی را فراهم می‌سازد.
+
+| ویژگی (Feature) | زنجیره تفکر (Chain-of-Thought) | درخت تفکر (Tree-of-Thought) |
+|---|---|---|
+| **توپولوژی (Topology)** | خطی (۱ مسیر) | شاخه‌بندی‌شده (چندین مسیر) |
+| **منطق (Logic)** | ترتیبی (Sequential) | موازی + ارزیابی‌کننده (Parallel + Evaluative) |
+| **خوداصلاحی (Self-Correction)** | پایین (سوگیری تعهد / Commitment bias) | بالا (عقب‌گرد / Backtracking) |
+| **مورد استفاده (Use Case)** | ریاضیات، منطق ساده | حل پازل، معماری کدنویسی، برنامه‌ریزی استراتژیک |
+
+---
+
+## حلقه ToT: پیشنهاد، ارزیابی، جستجو (The ToT Loop: Propose, Evaluate, Search)
+
+یک سیستم ToT از سه ماژول تشکیل شده است:
+۱. **پیشنهاد‌دهنده فکر (Thought Proposer)**: ۳ تا ۵ «گام بعدی» بالقوه را برای یک مسئله تولید می‌کند.
+۲. **ارزیاب وضعیت (State Evaluator)**: به هر گام نمره می‌دهد (مثلاً «خوب»، «شاید»، «غیرممکن»).
+۳. **الگوریتم جستجو (Search Algorithm)**: روش‌هایی مانند BFS یا DFS برای تصمیم‌گیری در مورد اینکه کدام شاخه در مرحله بعد کاوش شود.
 
 ```python
 # The ToT logic (simplified breadth-first search with pruning)
@@ -54,51 +56,54 @@ def tree_of_thought(problem, propose, evaluate, depth=3, breadth=3, threshold=0.
 
 ---
 
-## Self-Correction & Backtracking
+## خوداصلاحی و عقب‌گرد (Self-Correction & Backtracking)
 
-ToT is specifically designed to overcome **Hallucination Cascades**.
-In a linear chain, if the model makes a mistake in Step 1, every subsequent step is likely wrong. In ToT, the "Evaluator" (which can be a different model or a rule-based check) catches the error at Step 1 and forces the model to try a different starting point.
+روش ToT به‌طور ویژه برای غلبه بر **آبشار توهم (Hallucination Cascades)** طراحی شده است.
+در یک زنجیره خطی، اگر مدل در گام ۱ مرتکب اشتباه شود، احتمالاً تمام گام‌های بعدی نیز اشتباه خواهند بود. در ToT، بخش «ارزیاب» (که می‌تواند یک مدل متفاوت یا یک بررسی مبتنی بر قانون باشد) خطا را در همان گام ۱ شناسایی کرده و مدل را وادار می‌کند تا نقطه شروع متفاوتی را امتحان کند.
 
-The evaluator is the whole game. An LLM grading its own branches inherits the same blind spots that produced the error; a **deterministic evaluator** (unit tests, a type checker, a constraint solver, a game engine) is what makes backtracking reliable.
-
----
-
-## MCTS and Search-as-Service
-
-ToT has evolved into **Monte Carlo Tree Search (MCTS)** for LLMs (for example, RAP: reasoning as planning with the LLM as a world model).
-- **Search-time Compute Scaling**: Instead of one large prompt, we use many small calls to "search" for the best answer: best-of-N sampling, self-consistency voting, or full tree search guided by a verifier.
-- **Internalized search**: RL-trained reasoning models (GPT-6 Astra, Claude Fable 5.1 and Opus 5.5, Gemini's Deep Think mode with parallel thinking) learn to propose, check, and backtrack inside one reasoning trace, and the effort setting controls how much of that search they do. Explicit ToT scaffolding now earns its cost mainly when you have an external verifier the model cannot run itself, or when you want independent parallel samples you can score and compare.
-
-**The scaffold can matter as much as the model.** ARC Prize tested GPT-6 Astra on ARC-AGI-3 (September 2026): 62.7% on its minimal Standard harness at max effort ($26,098), but 99.9% on a Provider Adapter harness at high effort ($18,817) that preserves the model's reasoning state between requests and uses compaction. Same model and test set: the harness that kept the model's own reasoning state won by 37 points, at a lower effort setting and a lower bill.
+تمام بازی در دست ارزیاب است. یک LLM که به شاخه‌های خود نمره می‌دهد، همان نقاط کوری را به ارث می‌برد که خطا را ایجاد کرده‌اند؛ یک **ارزیاب قطعی (deterministic evaluator)** (مانند تست‌های واحد، یک بررسی‌کننده نوع یا type checker، یک حل‌کننده قید، یا یک موتور بازی) همان چیزی است که عقب‌گرد را قابل اتکا می‌سازد.
 
 ---
 
-## Interview Questions
+## الگوریتم MCTS و جستجو به عنوان سرویس (MCTS and Search-as-Service)
 
-### Q: When is ToT significantly better than simple CoT?
+روش ToT به سمت **جستجوی درختی مونت کارلو (MCTS)** برای LLMها تکامل یافته است (به عنوان مثال RAP: استدلال به عنوان برنامه‌ریزی با استفاده از LLM به عنوان مدل جهان).
+- **مقیاس‌پذیری محاسبات زمان جستجو (Search-time Compute Scaling)**: به جای یک Prompt بزرگ، از فراخوانی‌های متعدد و کوچک برای «جستجو» جهت یافتن بهترین پاسخ استفاده می‌کنیم: نمونه‌گیری بهترین از N (یا best-of-N sampling)، رای‌گیری سازگاری با خود (self-consistency voting)، یا جستجوی درختی کامل که توسط یک تاییدکننده (verifier) هدایت می‌شود.
+- **جستجوی درونی‌سازی‌شده (Internalized search)**: مدل‌های استدلالی آموزش‌دیده با RL (مانند GPT-6 Astra، ‏Claude Fable 5.1 و Opus 5.5، حالت Deep Think در Gemini با تفکر موازی) یاد می‌گیرند که درون یک دنباله استدلال واحد پیشنهاد دهند، بررسی کنند و عقب‌گرد نمایند؛ و تنظیمات تلاش (effort) مشخص می‌کند که چه مقدار از این جستجو را انجام دهند. داربست‌بندی صریح ToT اکنون عمدتاً زمانی توجیه اقتصادی دارد که یک تاییدکننده خارجی داشته باشید که مدل قادر به اجرای مستقیم آن نباشد، یا زمانی که نمونه‌های موازی مستقلی بخواهید که بتوانید به آن‌ها امتیاز داده و مقایسه‌شان کنید.
 
-**Strong answer:**
-ToT is superior when the problem has a "large search space" and requires "global consistency." For example, in a complex software refactor, a single Chain-of-Thought might start well but hit a constraint conflict 10 steps later. With ToT, the model can propose 3 different refactoring patterns, evaluate the impact of each on the codebase, and discard patterns that lead to circular dependencies before it writes any code. It pays off most when each branch can be checked by something objective, such as the test suite or the compiler.
-
-### Q: What is the main drawback of Tree-of-Thought in a consumer-facing app?
-
-**Strong answer:**
-The primary drawback is **Exponential Cost and Latency**. Exploring 3 branches to a depth of 5 means a proposal and an evaluation per branch per level, so 30 or more LLM calls even with aggressive pruning. In a consumer app, this could result in a 30-second delay and a $0.50 cost for a single query. The standard mitigation is a "Hybrid Model": use ToT for high-stakes offline tasks (like generating golden datasets or security audits) and distill those results into a fast, linear model for real-time interaction.
-
-### Q: Do you still need explicit ToT when the model is already a reasoning model?
-
-**Strong answer:**
-Usually not for the search itself: a reasoning model at higher effort already explores and backtracks internally, and one call at `high` effort is simpler and often cheaper than 30 orchestrated calls. I still build explicit search in two cases. First, when an external verifier exists that the model cannot run, such as a proprietary test harness or a solver, because the verifier's signal beats the model's self-assessment. Second, when I need diversity and auditability: independent samples that I can score, compare, and log. The cost check is per solved task, not per call.
+**ساختار داربست (Scaffold) می‌تواند به اندازه خود مدل اهمیت داشته باشد.** موسسه ARC Prize مدل GPT-6 Astra را روی بنچمارک ARC-AGI-3 (سپتامبر ۲۰۲۶) مورد آزمون قرار داد: این مدل در محیط آزمون حداقلیِ `Standard` و با حداکثر تلاش (max effort) به دقت ۶۲.۷٪ رسید (\$26,098)، اما در محیط آزمون `Provider Adapter` با تلاش بالا (`high`) به دقت ۹۹.۹٪ دست یافت (\$18,817) که وضعیت استدلال مدل را بین درخواست‌ها حفظ کرده و از فشرده‌سازی (compaction) بهره می‌برد. همان مدل و همان مجموعه آزمون: محیط آزمونی (harness) که وضعیت استدلال خود مدل را حفظ می‌کرد، با ۳۷ امتیاز اختلاف، با تنظیمات تلاش پایین‌تر و صورت‌حساب کمتر پیروز شد.
 
 ---
 
-## References
+## سوالات مصاحبه (Interview Questions)
+
+### پرسش: چه زمانی ToT به‌طور قابل‌توجهی بهتر از CoT ساده عمل می‌کند؟
+
+**پاسخ قوی:**
+روش ToT زمانی برتر است که مسئله دارای «فضای جستجوی بزرگ» بوده و نیازمند «سازگاری سراسری (global consistency)» باشد. برای نمونه، در یک بازآفرینی پیچیده کد (software refactor)، یک زنجیره تفکر (Chain-of-Thought) منفرد ممکن است خوب شروع شود اما ۱۰ گام بعد با تداخل قیود مواجه گردد. با ToT، مدل می‌تواند ۳ الگوی بازآفرینی مختلف را پیشنهاد دهد، تاثیر هر یک را بر پایگاه کد ارزیابی کند و پیش از نوشتن هرگونه کد، الگوهایی را که به وابستگی‌های دَوَرانی منجر می‌شوند کنار بگذارد. این رویکرد بیشترین بازدهی را زمانی دارد که هر شاخه بتواند توسط معیاری عینی، مانند مجموعه تست‌ها (test suite) یا کامپایلر، مورد بررسی قرار گیرد.
+
+### پرسش: نقطه‌ضعف اصلی درخت تفکر (Tree-of-Thought) در یک برنامه کاربردی سمت کاربر (consumer-facing) چیست؟
+
+**پاسخ قوی:**
+نقطه‌ضعف اصلی، **هزینه تصاعدی و تاخیر (Latency)** است. کاوش ۳ شاخه تا عمق ۵ به معنای یک پیشنهاد و یک ارزیابی به ازای هر شاخه در هر سطح است که حتی با هرس تهاجمی (aggressive pruning)، به ۳۰ فراخوانی یا بیشتر از LLM می‌انجامد. در یک اپلیکیشن مصرف‌کننده، این امر می‌تواند منجر به تاخیر ۳۰ ثانیه‌ای و هزینه \$0.50 برای یک پرس‌وجوی واحد شود. راهکار تعدیل استاندارد یک «مدل ترکیبی (Hybrid Model)» است: استفاده از ToT برای وظایف آفلاین و حیاتی (مانند تولید مجموعه داده‌های طلایی یا ممیزی‌های امنیتی) و تقطیر (distill) آن نتایج در یک مدل سریع و خطی برای تعاملات بلادرنگ.
+
+### پرسش: آیا در شرایطی که خود مدل یک مدل استدلالی است، باز هم به ToT صریح نیاز است؟
+
+**پاسخ قوی:**
+معمولاً برای خود جستجو خیر: یک مدل استدلالی در سطوح بالاتر تلاش (effort)، از پیش به صورت داخلی کاوش و عقب‌گرد می‌کند و یک فراخوانی در سطح تلاش `high` ساده‌تر و اغلب ارزان‌تر از ۳۰ فراخوانی هماهنگ‌شده (orchestrated) است. با این حال، من هنوز در دو سناریو جستجوی صریح را پیاده‌سازی می‌کنم. نخست، زمانی که یک تاییدکننده خارجی وجود دارد که مدل نمی‌تواند خودش آن را اجرا کند (مانند یک محیط آزمون اختصاصی یا یک حل‌کننده)، زیرا سیگنال تاییدکننده بر خودارزیابی مدل غلبه دارد. دوم، زمانی که به تنوع و قابلیت حسابرسی نیاز دارم: نمونه‌های مستقلی که بتوانم به آن‌ها نمره دهم، مقایسه‌شان کنم و آن‌ها را لاگ نمایم. بررسی هزینه به ازای هر تسک حل‌شده انجام می‌شود، نه به ازای هر فراخوانی.
+
+---
+
+## منابع
+
 - Yao et al. "Tree of Thoughts: Deliberate Problem Solving with Large Language Models" (2023)
 - Hao et al. "Reasoning with Language Model is Planning with World Model" (RAP, 2023)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (2023)
-- Silver et al. "Mastering the Game of Go without Human Knowledge" (MCTS inspiration)
-- [ARC Prize. GPT-6 Astra on ARC-AGI-3 (September 2026)](https://arcprize.org/blog/astra)
+- Silver et al. "Mastering the Game of Go without Human Knowledge" (الهام‌بخش MCTS)
+- [ARC Prize: بررسی مدل GPT-6 Astra روی ARC-AGI-3 (سپتامبر ۲۰۲۶)](https://arcprize.org/blog/astra)
 
 ---
 
-*Next: [Context Engineering](05-context-engineering.md)*
+*مبحث بعدی: [مهندسی کانتکست (Context Engineering)](05-context-engineering.md)*
+
+</div>

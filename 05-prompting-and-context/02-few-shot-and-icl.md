@@ -1,26 +1,28 @@
-# Few-Shot and In-Context Learning (ICL)
+<div dir="rtl">
 
-In-Context Learning (ICL) is the ability of an LLM to learn a new task simply by seeing examples in the prompt, without any weight updates. Maximizing ICL efficiency is a key lever for prompt stability.
+# یادگیری چند-نمونه‌ای (Few-Shot) و یادگیری درون‌متنی (ICL)
 
-## Table of Contents
+یادگیری درون‌متنی (In-Context Learning یا ICL) توانایی یک LLM برای یادگیری یک وظیفه جدید صرفاً با مشاهده نمونه‌ها در Prompt، بدون هیچ‌گونه به‌روزرسانی در وزن‌ها است. بیشینه‌سازی کارایی ICL اهرمی کلیدی برای پایداری Prompt محسوب می‌شود.
 
-- [The Anatomy of a Few-Shot Example](#the-anatomy-of-a-few-shot-example)
-- [How many examples?](#how-many-examples)
-- [Many-Shot ICL vs. Fine-Tuning](#many-shot-icl-vs-fine-tuning)
-- [Dynamic Example Selection](#dynamic-example-selection)
-- [The Importance of Labeling Nuance](#the-importance-of-labeling-nuance)
-- [Advanced ICL: Analogy and "Few-Shot CoT"](#advanced-icl-analogy-and-few-shot-cot)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [آناتومی یک نمونه Few-Shot](#the-anatomy-of-a-few-shot-example)
+- [چه تعداد نمونه؟](#how-many-examples)
+- [مقایسه Many-Shot ICL در برابر Fine-Tuning](#many-shot-icl-vs-fine-tuning)
+- [انتخاب پویای نمونه‌ها](#dynamic-example-selection)
+- [اهمیت ظرافت‌های برچسب‌گذاری](#the-importance-of-labeling-nuance)
+- [روش‌های پیشرفته ICL: تمثیل و «Few-Shot CoT»](#advanced-icl-analogy-and-few-shot-cot)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Anatomy of a Few-Shot Example
+## آناتومی یک نمونه Few-Shot
 
-A high-quality example consists of three parts:
-1. **Input**: A realistic sample of potential user data.
-2. **Reasoning (Optional)**: A short explanation of *why* the output is what it is.
-3. **Output**: The "Gold Standard" result.
+یک نمونه باکیفیت از سه بخش تشکیل شده است:
+1. **ورودی (Input)**: یک نمونه واقعی از داده‌های احتمالی کاربر.
+2. **استدلال (اختیاری - Reasoning)**: توضیحی کوتاه درباره این‌که *چرا* خروجی به این شکل است.
+3. **خروجی (Output)**: نتیجه منطبق بر «استاندارد طلایی» (Gold Standard).
 
 ```markdown
 User: "The weather is okay, but the flight was late."
@@ -30,95 +32,97 @@ Sentiment: Mixed
 
 ---
 
-## How many examples?
+## چه تعداد نمونه؟
 
-| Model Size | Sweet Spot | Scaling Behavior |
+| اندازه مدل (Model Size) | نقطه بهینه (Sweet Spot) | رفتار مقیاس‌پذیری (Scaling Behavior) |
 |------------|------------|------------------|
-| **Small (8B)** | 5 - 10 | Gains continue until ~20 examples. |
-| **Medium (70B-class dense, or ~30B-active MoE)**| 3 - 5 | Plateaus early; more examples increase latency. |
-| **Frontier (closed, or 1T-class MoE)**| 0 - 2 | Highly capable; "Instruction Following" usually suffices. Examples mainly pin the output format. |
+| **کوچک (8B)** | ۵ - ۱۰ | بهبودها تا حدود ۲۰ نمونه ادامه می‌یابد. |
+| **متوسط (کلاس 70B فشرده/dense، یا MoE با حدود 30B پارامتر فعال)** | ۳ - ۵ | زود به اشباع می‌رسد؛ نمونه‌های بیشتر باعث افزایش تاخیر (Latency) می‌شود. |
+| **پیشرو/Frontier (مدل‌های بسته، یا MoE در کلاس 1T)** | ۰ - ۲ | بسیار توانمند؛ معمولاً «پیروی از دستورالعمل» (Instruction Following) کفایت می‌کند. نمونه‌ها عمدتاً قالب خروجی را تثبیت می‌کنند. |
 
-**Rule of thumb**: If you need more than 20 examples to get a stable output on a short-context budget, your task is likely too complex for the model. The classic next step was **fine-tuning**; with 1M-token windows and cheap cache reads, **many-shot ICL** is now a real alternative.
+**قاعده سرانگشتی**: اگر برای دریافت خروجی پایدار در یک بودجه کانتکست کوتاه به بیش از ۲۰ نمونه نیاز دارید، وظیفه شما احتمالاً برای آن مدل بیش از حد پیچیده است. گام بعدی کلاسیک، **Fine-tuning** بود؛ اما با وجود پنجره‌های کانتکست ۱ میلیون Tokenای و خواندن ارزان از حافظه کش (cache reads)، اکنون **Many-Shot ICL** یک جایگزین واقعی است.
 
 ---
 
-## Many-Shot ICL vs. Fine-Tuning
+## مقایسه Many-Shot ICL در برابر Fine-Tuning
 
-Many-shot ICL puts hundreds or thousands of examples in the prompt. Google DeepMind's study (Agarwal et al., 2024) found gains continuing well past the few-shot regime on many tasks, and in some cases many-shot prompts overrode pretraining biases that few-shot prompts could not.
+در Many-Shot ICL، صدها یا هزاران نمونه در Prompt قرار می‌گیرد. مطالعه گوگل دیپ‌مایند (Agarwal et al., 2024) نشان داد که در بسیاری از وظایف، روند بهبود فراتر از رژیم Few-Shot ادامه می‌یابد و در برخی موارد، Promptهای Many-Shot توانستند سوگیری‌های پیش‌آموزش (pretraining biases) را خنثی کنند که Promptهای Few-Shot از پس آن برنمی‌آمدند.
 
-The economics changed in 2026 because the example block is a **stable prefix** and cache reads are cheap:
+اقتصاد این رویکرد در سال ۲۰۲۶ تغییر کرد، زیرا بلوک نمونه‌ها یک **پیشوند پایدار (stable prefix)** است و خواندن از حافظه کش ارزان است:
 
-| Setup (per request, list prices) | Input cost of a 50K-token example block |
+| پیکربندی (به ازای هر درخواست، قیمت‌های رسمی) | هزینه ورودی یک بلوک نمونه ۵۰ هزار Tokenای |
 |----------------------------------|------------------------------------------|
-| Claude Sonnet 5.5, uncached ($2/1M) | $0.10 |
-| Claude Opus 5.5, cache read ($0.20/1M) | $0.01 |
-| Claude Sonnet 5.5 or GPT-6.1 Sol, cache read ($0.10/1M) | $0.005 |
+| Claude Sonnet 5.5، بدون کش (\$2/1M) | \$0.10 |
+| Claude Opus 5.5، خواندن از کش (\$0.20/1M) | \$0.01 |
+| Claude Sonnet 5.5 یا GPT-6.1 Sol، خواندن از کش (\$0.10/1M) | \$0.005 |
 
-At those prices, many-shot ICL beats fine-tuning on iteration speed (change an example, not a training run) and portability (it moves to the next model unchanged). Fine-tuning still wins on per-request latency, on tasks where the examples would not fit, and when you need the behavior without shipping the examples. Platform risk matters too: OpenAI is winding down self-serve fine-tuning, and active customers can no longer create new fine-tuning jobs from January 6, 2027. See [Fine-Tuning Strategies](../03-training-and-adaptation/02-fine-tuning-strategies.md).
-
----
-
-## Dynamic Example Selection
-
-In production RAG or Classification, don't use the same static examples for every user.
-**The Dynamic Pattern:**
-1. User provides a query.
-2. Search a "Vector DB of Gold Examples" for the 3 most **semantically similar** cases.
-3. Inject those 3 specific cases into the prompt.
-
-**Result**: Drastically higher accuracy because the model sees "local" patterns relevant to the current user.
-
-**Tradeoff**: dynamic examples change on every request, so they cannot sit in the cached prefix. Put them after the last cache breakpoint, or use a static many-shot block when cache savings outweigh the accuracy gain from per-query selection.
+با این قیمت‌ها، Many-Shot ICL در سرعت تکرار و توسعه (تغییر یک نمونه به‌جای اجرای یک فرایند آموزش) و قابلیت جابه‌جایی (انتقال به مدل بعدی بدون هیچ تغییری) بر Fine-tuning برتری دارد. با این حال، Fine-tuning همچنان از نظر تاخیر (Latency) به ازای هر درخواست، در وظایفی که نمونه‌ها در کانتکست جا نمی‌شوند، و در مواقعی که به رفتار مدل بدون ارسال خود نمونه‌ها نیاز دارید، برنده است. ریسک پلتفرم نیز حائز اهمیت است: OpenAI در حال توقف تدریجی سرویس سلف‌سرویس Fine-tuning است و مشتریان فعال از ۶ ژانویه ۲۰۲۷ دیگر نمی‌توانند تسک‌های جدید Fine-tuning ایجاد کنند. به [استراتژی‌های Fine-Tuning](../03-training-and-adaptation/02-fine-tuning-strategies.md) مراجعه کنید.
 
 ---
 
-## The Importance of Labeling Nuance
+## انتخاب پویای نمونه‌ها
 
-Frontier models are sensitive to **Distribution Bias** in examples.
-- If you provide 5 "Positive" examples and 1 "Negative," the model will bias toward "Positive."
-- **Fix**: Always use **Label Balancing**. Ensure your few-shot examples roughly mirror the expected output distribution or are perfectly balanced (1:1).
+در محیط‌های عملیاتی RAG یا رده‌بندی (Classification)، از نمونه‌های ثابت و یکسان برای همه کاربران استفاده نکنید.
+**الگوی پویا (The Dynamic Pattern):**
+1. کاربر یک پرس‌وجو (Query) ارائه می‌دهد.
+2. جست‌وجو در یک «پایگاه داده برداری (Vector Database) از نمونه‌های طلایی» برای یافتن ۳ موردی که بیشترین **شباهت معنایی** را دارند.
+3. تزریق آن ۳ مورد مشخص به درون Prompt.
 
----
+**نتیجه**: دقت بسیار بالاتر، زیرا مدل الگوهای «محلی» مرتبط با کاربر فعلی را مشاهده می‌کند.
 
-## Advanced ICL: Analogy and "Few-Shot CoT"
-
-**Analogy Prompting**: Instead of saying "Do X," provide an analogy.
-"Translate this code like a translator would move a poem from French to English: preserve the soul (logic) but change the syntax."
-
-**Few-Shot CoT**: Providing 2 examples where the reasoning is explicit. This "primes" the model's attention to focus on logic rather than just mimicking the output string. On reasoning models this matters less, since they reason before answering anyway; use worked examples there to show the *decision criteria* you want applied, not a thinking script. Keep the reasoning in the examples as a short rationale: on the newest Claude models, asking for the model's full reasoning in the output can be refused (see [Chain-of-Thought](03-chain-of-thought.md#zero-shot-vs-programmatic-cot)).
+**موازنه و بده‌بستان (Tradeoff)**: نمونه‌های پویا با هر درخواست تغییر می‌کنند، بنابراین نمی‌توانند در پیشوند کَش‌شده (cached prefix) قرار بگیرند. آن‌ها را بعد از آخرین نقطه شکست کش (cache breakpoint) قرار دهید، یا در صورتی که صرفه‌جویی ناشی از کش بر بهبود دقت حاصل از انتخاب به ازای هر پرس‌وجو برتری دارد، از یک بلوک ایستا Many-Shot استفاده کنید.
 
 ---
 
-## Interview Questions
+## اهمیت ظرافت‌های برچسب‌گذاری
 
-### Q: Why not just provide all 50 examples we have in the prompt?
-
-**Strong answer:**
-There are three primary reasons:
-1. **Context Window Latency**: Every example adds tokens, increasing the "Prefill" time and the cost per request.
-2. **Attention Dilution**: Even with 1M-token windows, models can "lose" specific constraints if buried under too much irrelevant data (the "lost-in-the-middle" effect and context rot).
-3. **Overfitting**: Providing too many narrow examples can cause the model to mimic the *format* of the examples too strictly, losing its general capability to handle edge cases outside that set.
-
-The counterpoint I would raise: if the 50 examples are stable, they become a cached prefix, and at $0.10 to $0.20 per 1M cached tokens the cost argument mostly disappears. Then the question becomes empirical: run the eval with 3 dynamic examples, with all 50, and with many-shot, and keep the cheapest configuration that meets the quality bar.
-
-### Q: What is "Label Bias" in In-Context Learning?
-
-**Strong answer:**
-Label bias occurs when the model predicts a specific label more frequently simply because it appeared more often in the few-shot examples or because it appeared at the end of the list (majority-label and recency bias, Zhao et al., 2021). The standard mitigations are:
-1. Shuffling the order of examples for different requests. Per-request shuffling breaks prefix caching, so for a cached example block, pick a balanced order once per prompt version and verify it with permutation testing instead.
-2. Ensuring an equal number of positive/negative/neutral samples.
-3. Using "Permutation Testing" during prompt development to ensure the model responds to the content, not the order.
-4. Calibrating with a content-free input ("N/A") to measure and subtract the prior.
+مدل‌های پیشرو (Frontier models) نسبت به **سوگیری توزیع (Distribution Bias)** در نمونه‌ها حساس هستند.
+- اگر ۵ نمونه «مثبت» و ۱ نمونه «منفی» ارائه دهید، مدل به سمت «مثبت» متمایل خواهد شد.
+- **راهکار**: همیشه از **متعادل‌سازی برچسب‌ها (Label Balancing)** استفاده کنید. اطمینان حاصل کنید که نمونه‌های Few-Shot شما تقریباً توزیع خروجی مورد انتظار را بازتاب می‌دهند یا کاملاً متعادل هستند (۱:۱).
 
 ---
 
-## References
+## روش‌های پیشرفته ICL: تمثیل و «Few-Shot CoT»
+
+**Prompt‌نویسی مبتنی بر تمثیل (Analogy Prompting)**: به‌جای گفتن «کار X را انجام بده»، یک تمثیل ارائه دهید.
+«این کد را همان‌گونه ترجمه کن که یک مترجم شعری را از فرانسوی به انگلیسی برمی‌گرداند: روح (منطق) را حفظ کن، اما سینتکس را تغییر بده.»
+
+**Few-Shot CoT**: ارائه ۲ نمونه که در آن‌ها استدلال به‌صورت صریح بیان شده است. این کار توجه مدل را «آماده‌سازی» (prime) می‌کند تا به‌جای تقلید صرف از رشته خروجی، بر منطق تمرکز کند. در مدل‌های استدلالی (reasoning models) این موضوع اهمیت کمتری دارد، زیرا آن‌ها در هر صورت قبل از پاسخ دادن استدلال می‌کنند؛ در آن مدل‌ها از نمونه‌های حل‌شده برای نشان دادن *معیارهای تصمیم‌گیری* مورد نظر خود استفاده کنید، نه یک فیلم‌نامه تفکر (thinking script). استدلال موجود در نمونه‌ها را در حد یک منطق کوتاه نگه دارید: در جدیدترین مدل‌های Claude، درخواست استدلال کامل مدل در خروجی ممکن است رد شود (به [زنجیره تفکر (Chain-of-Thought)](03-chain-of-thought.md#zero-shot-vs-programmatic-cot) مراجعه کنید).
+
+---
+
+## سوالات مصاحبه
+
+### سوال: چرا فقط تمام ۵۰ نمونه‌ای که داریم را در Prompt قرار ندهیم؟
+
+**پاسخ قوی:**
+سه دلیل اصلی وجود دارد:
+1. **تاخیر (Latency) پنجره کانتکست**: هر نمونه Tokenهایی اضافه می‌کند و زمان «پیش‌پُر کردن» (Prefill) و هزینه به ازای هر درخواست را افزایش می‌دهد.
+2. **تضعیف توجه (Attention Dilution)**: حتی با وجود پنجره‌های ۱ میلیون Tokenای، اگر محدودیت‌های خاص زیر حجم زیادی از داده‌های نامرتبط دفن شوند، مدل‌ها ممکن است آن‌ها را «فراموش کنند» (اثر «گم‌شدن در میانه» یا lost-in-the-middle و زوال کانتکست/context rot).
+3. **بیش‌برازش (Overfitting)**: ارائه نمونه‌های محدود و اختصاصی بیش از حد، می‌تواند باعث شود مدل بیش از اندازه قالب (*format*) نمونه‌ها را تقلید کند و توانایی عمومی خود را برای مدیریت موارد مرزی (edge cases) خارج از آن مجموعه از دست بدهد.
+
+نکته متقابلی که مطرح می‌کنم: اگر این ۵۰ نمونه پایدار و ثابت باشند، به یک پیشوند کَش‌شده تبدیل می‌شوند، و با قیمت \$0.10 تا \$0.20 به ازای هر ۱ میلیون Token کَش‌شده، استدلال مبتنی بر هزینه عملاً رنگ می‌بازد. در این حالت، مسئله به یک موضوع تجربی تبدیل می‌شود: اجرای ارزیابی (eval) با ۳ نمونه پویا، با تمام ۵۰ نمونه، و با Many-Shot، و انتخاب ارزان‌ترین پیکربندی که حد نصاب کیفی را برآورده می‌کند.
+
+### سوال: منظور از «سوگیری برچسب» (Label Bias) در یادگیری درون‌متنی چیست؟
+
+**پاسخ قوی:**
+سوگیری برچسب زمانی رخ می‌دهد که مدل یک برچسب خاص را با فراوانی بیشتری پیش‌بینی می‌کند، صرفاً به این دلیل که در نمونه‌های Few-Shot بیشتر تکرار شده یا در انتهای فهرست قرار گرفته است (سوگیری برچسب اکثریت و سوگیری تازگی/مجاورت، Zhao et al., 2021). راهکارهای استاندارد برای کاهش این سوگیری عبارتند از:
+1. بُر زدن و تغییر ترتیب نمونه‌ها برای درخواست‌های مختلف. با توجه به این‌که بُر زدن به ازای هر درخواست باعث از کار افتادن کَش پیشوند (prefix caching) می‌شود، برای یک بلوک نمونه کَش‌شده، یک ترتیب متعادل را یک‌بار برای هر نسخه Prompt انتخاب کرده و در عوض آن را با آزمون جایگشت (permutation testing) اعتبارسنجی کنید.
+2. اطمینان از وجود تعداد برابر از نمونه‌های مثبت/منفی/خنثی.
+3. استفاده از «آزمون جایگشت» (Permutation Testing) در طول توسعه Prompt برای اطمینان از این‌که مدل به محتوا پاسخ می‌دهد، نه به ترتیب چیدمان.
+4. کالیبراسیون با یک ورودی فاقد محتوا («N/A») به‌منظور اندازه‌گیری و کسر احتمال پیشین (prior).
+
+---
+
+## منابع
 - Brown et al. "Language Models are Few-Shot Learners" (2020)
 - Zhao et al. "Calibrate Before Use: Improving Few-Shot Performance of Language Models" (2021)
 - Min et al. "Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?" (2022)
 - Agarwal et al. "Many-Shot In-Context Learning" (NeurIPS 2024)
-- [OpenAI deprecations (fine-tuning wind-down)](https://developers.openai.com/api/docs/deprecations)
+- [موارد منسوخ‌شده OpenAI (توقف تدریجی Fine-Tuning)](https://developers.openai.com/api/docs/deprecations)
 
 ---
 
-*Next: [Chain-of-Thought](03-chain-of-thought.md)*
+*بخش بعدی: [زنجیره تفکر (Chain-of-Thought)](03-chain-of-thought.md)*
+
+</div>
