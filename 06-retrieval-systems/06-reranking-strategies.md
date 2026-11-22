@@ -1,37 +1,39 @@
-# Reranking Strategies
+<div dir="rtl">
 
-Reranking is the second stage of retrieval that re-scores a small set of candidates (Top 50-100) using a high-precision model. It is the bridge between "efficient search" and "perfect grounding": first-stage retrieval optimizes for recall, reranking optimizes for precision. The common production choices are the hosted Cohere Rerank 5 (Fast and Pro, GA October 2026) and Voyage rerank-3 / rerank-3-lite, priced identically at $0.02 and $0.05 per 1M tokens, and the open-weight Qwen3-Reranker and bge-reranker-v2-m3. The choice is driven by cost model, latency tail, context length, language coverage, license, and whether you need self-hostable weights.
+# استراتژی‌های بازرتبه‌بندی (Reranking Strategies)
 
-## Table of Contents
+بازرتبه‌بندی (Reranking) مرحله دوم بازیابی است که مجموعه کوچکی از کاندیداها (Top 50-100) را با استفاده از یک مدل با دقت بالا (high-precision) مجدداً امتیازدهی می‌کند. این مرحله پلی میان «جستجوی کارآمد» و «پایه‌ریزی بی‌نقص (perfect grounding)» است: بازیابی مرحله اول برای پوشش (Recall) بهینه‌سازی می‌شود، در حالی که بازرتبه‌بندی برای دقت (Precision) بهینه‌سازی می‌گردد. گزینه‌های متداول در محیط عملیاتی، سرویس‌های میزبانی‌شده Cohere Rerank 5 (نسخه‌های Fast و Pro، عرضه عمومی یا GA در اکتبر ۲۰۲۶) و Voyage rerank-3 / rerank-3-lite با قیمت یکسان ۰.۰۲ دلار و ۰.۰۵ دلار به ازای هر ۱ میلیون Token، و همچنین مدل‌های با وزن باز (open-weight) شامل Qwen3-Reranker و bge-reranker-v2-m3 هستند. این انتخاب بر اساس مدل هزینه، دم تاخیر (Latency tail)، طول کانتکست (Context length)، پوشش زبانی، مجوز (License) و نیاز به وزن‌های قابل میزبانی اختصاصی (self-hostable) انجام می‌شود.
 
-- [Why Reranking](#why-reranking)
-- [Reranking Architectures](#reranking-architectures)
-- [Reranking Models](#reranking-models)
-- [Implementation Patterns](#implementation-patterns)
-- [When to Rerank](#when-to-rerank)
-- [LLM-Based Reranking](#llm-based-reranking)
-- [SLM Distillation](#slm-distillation)
-- [Production Considerations](#production-considerations)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [چرا بازرتبه‌بندی](#why-reranking)
+- [معماری‌های بازرتبه‌بندی](#reranking-architectures)
+- [مدل‌های بازرتبه‌بندی](#reranking-models)
+- [الگوهای پیاده‌سازی](#implementation-patterns)
+- [چه زمانی باید بازرتبه‌بندی کرد](#when-to-rerank)
+- [بازرتبه‌بندی مبتنی بر LLM](#llm-based-reranking)
+- [تقطیر SLM](#slm-distillation)
+- [ملاحظات محیط عملیاتی](#production-considerations)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Why Reranking
+## چرا بازرتبه‌بندی
 
-### The Quality Gap
+### شکاف کیفیتی
 
-| Stage | Model | Speed | Quality |
+| مرحله | مدل | سرعت | کیفیت |
 |-------|-------|-------|---------|
-| Embedding retrieval | Bi-encoder | Fast (ms) | Good |
-| Reranking | Cross-encoder | Slow (10-100ms) | Better |
+| بازیابی امبدینگ | Bi-encoder | سریع (میلی‌ثانیه) | خوب |
+| بازرتبه‌بندی | Cross-encoder | کند (۱۰-۱۰۰ میلی‌ثانیه) | بهتر |
 
-**Why the gap exists:**
-- Bi-encoders embed query and document independently
-- Cross-encoders jointly process query and document
-- Joint processing captures interactions bi-encoders miss
+**دلیل وجود این شکاف:**
+- مدل‌های Bi-encoder کوئری و سند را به صورت مستقل از یکدیگر امبد (Embed) می‌کنند
+- مدل‌های Cross-encoder کوئری و سند را به طور مشترک پردازش می‌کنند
+- پردازش مشترک، تعاملاتی را دریافت و ثبت می‌کند که Bi-encoderها از دست می‌دهند
 
-### Example
+### مثال
 
 ```
 Query: "How to configure CUDA memory"
@@ -51,34 +53,36 @@ Cross-encoder scores (relevance):
 - Doc 3: 0.42
 ```
 
-The cross-encoder sees that "CUDA memory" in the query relates to "GPU memory...CUDA" in Doc 1.
+مدل Cross-encoder متوجه می‌شود که «CUDA memory» در کوئری، با «GPU memory...CUDA» در Doc 1 مرتبط است.
 
 ---
 
-## Reranking Architectures
+## معماری‌های بازرتبه‌بندی
 
-### Bi-Encoder vs Cross-Encoder
+### مقایسه Bi-Encoder در برابر Cross-Encoder
 
-**Bi-Encoder (First Stage):**
+**مدل Bi-Encoder (مرحله اول):**
 ```
 Query --> Encoder --> Query Embedding -+
                                       +-> Similarity
 Document --> Encoder --> Doc Embedding +
 ```
-- O(1) per document (embeddings pre-computed)
-- Cannot see query-document interactions
+- از مرتبه O(1) به ازای هر سند (امبدینگ‌ها از قبل محاسبه شده‌اند)
+- عدم توانایی در مشاهده تعاملات بین کوئری و سند
 
-**Cross-Encoder (Reranking):**
+**مدل Cross-Encoder (بازرتبه‌بندی):**
 ```
 [Query, Document] --> Encoder --> Relevance Score
 ```
-- O(n) per query (process each candidate)
-- Sees full query-document context
-- Uses the **Attention Mechanism** to compare how specific words in the query change the meaning of words in the document (full, early interaction; ColBERT's "late interaction" sits between this and a bi-encoder)
+- از مرتبه O(n) به ازای هر کوئری (پردازش هر کاندیدا)
+- مشاهده کانتکست کامل کوئری و سند
+- استفاده از **مکانیزم توجه (Attention Mechanism)** برای مقایسه نحوه تغییر معنای کلمات سند توسط کلمات خاص در کوئری (تعامل کامل و اولیه یا early interaction؛ «تعامل دیرهنگام یا late interaction» در ColBERT بین این مدل و یک Bi-encoder قرار می‌گیرد)
 
-### Two-Stage Pipeline
+### پایپ‌لاین دو مرحله‌ای
 
-Production retrieval uses a two-stage funnel:
+سیستم‌های بازیابی در محیط عملیاتی از یک قیف دو مرحله‌ای استفاده می‌کنند:
+
+<div dir="ltr">
 
 ```
 +----------------------------------------------------------------+
@@ -100,9 +104,11 @@ Production retrieval uses a two-stage funnel:
 +----------------------------------------------------------------+
 ```
 
-### Multi-Stage Pipeline
+</div>
 
-For very large corpora:
+### پایپ‌لاین چند مرحله‌ای
+
+برای پیکره‌های متنی (Corpora) بسیار بزرگ:
 
 ```
 Stage 1: Sparse (BM25)      -> Top 1000
@@ -110,35 +116,35 @@ Stage 2: Dense (Bi-encoder) -> Top 100
 Stage 3: Cross-encoder      -> Top 10
 ```
 
-Each stage trades speed for accuracy.
+هر مرحله سرعت را در ازای دقت مبادله می‌کند.
 
 ---
 
-## Reranking Models
+## مدل‌های بازرتبه‌بندی
 
-### Cross-Encoder Models
+### مدل‌های Cross-Encoder
 
-| Model | Size / access | Context | License or price | Notes |
+| مدل | اندازه / دسترسی | کانتکست | مجوز یا قیمت | توضیحات |
 |-------|---------------|---------|------------------|-------|
-| ms-marco-MiniLM-L-6 | 22M, open | 512 | Apache 2.0 | English; CPU-friendly baseline |
-| bge-reranker-base | 278M, open | 512 | MIT | English |
-| **bge-reranker-v2-m3** | 568M, open | 512 in the model card examples (8K base) | Apache 2.0 | Multilingual workhorse |
-| **Cohere Rerank 5** (`rerank-v5.0-pro` / `-fast`) | API, text only | 32K | $0.05 (Pro) / $0.02 (Fast) per 1M tokens | GA October 21, 2026. Scores are calibrated to read as the probability a document is useful, and Context Focus returns scored spans inside each document. Rerank 4 (`rerank-v4.0-pro` / `-fast`, 32K) and Rerank 3.5 (4K) are still listed |
-| **Voyage rerank-3 / rerank-3-lite** | API | 32K | $0.05 / $0.02 per 1M tokens | September 30, 2026; same prices and API as rerank-2.5, and score thresholds tuned on 2.5 still work |
-| **Qwen3-Reranker-8B** | 8B, open | 32K | Apache 2.0 | Strong open text reranker (June 2025) |
-| **Qwen3-VL-Reranker-2B / 8B** | Open | 32K | Apache 2.0 | Multimodal (text, images, page screenshots), January 2026 |
-| jina-reranker-v3.5 | 0.6B, open | Long | CC BY-NC 4.0 (non-commercial) | Listwise reranker on Qwen3-0.6B; commercial use goes through Jina's API or a separate license |
-| LightOn-rerank | 0.8B / 2B / 4B, open | Long | Check model card | Pointwise and listwise variants on Qwen3.5 backbones (July 2026) |
+| ms-marco-MiniLM-L-6 | 22M، باز | 512 | Apache 2.0 | انگلیسی؛ بیس‌لاین مناسب برای CPU |
+| bge-reranker-base | 278M، باز | 512 | MIT | انگلیسی |
+| **bge-reranker-v2-m3** | 568M، باز | ۵۱۲ در نمونه‌های کارت مدل (پایه 8K) | Apache 2.0 | ابزار پرکاربرد چندزبانه |
+| **Cohere Rerank 5** (`rerank-v5.0-pro` / `-fast`) | API، فقط متن | 32K | ۰.۰۵ دلار (Pro) / ۰.۰۲ دلار (Fast) به ازای هر ۱ میلیون Token | عرضه عمومی (GA) در ۲۱ اکتبر ۲۰۲۶. امتیازها کالیبره شده‌اند تا به صورت احتمال مفید بودن یک سند خوانده شوند، و Context Focus بخش‌ها (اسپن‌های) امتیازدهی‌شده را در داخل هر سند بازمی‌گرداند. Rerank 4 (`rerank-v4.0-pro` / `-fast`، با کانتکست 32K) و Rerank 3.5 (با کانتکست 4K) همچنان در فهرست قرار دارند |
+| **Voyage rerank-3 / rerank-3-lite** | API | 32K | ۰.۰۵ دلار / ۰.۰۲ دلار به ازای هر ۱ میلیون Token | ۳۰ سپتامبر ۲۰۲۶؛ قیمت‌ها و API یکسان با rerank-2.5، و آستانه‌های امتیاز تنظیم‌شده روی 2.5 همچنان کار می‌کنند |
+| **Qwen3-Reranker-8B** | 8B، باز | 32K | Apache 2.0 | بازرتبه‌بندی‌کننده متنی متن‌باز قدرتمند (ژوئن ۲۰۲۵) |
+| **Qwen3-VL-Reranker-2B / 8B** | باز | 32K | Apache 2.0 | چندوجهی (متن، تصاویر، اسکرین‌شات‌های صفحه)، ژانویه ۲۰۲۶ |
+| jina-reranker-v3.5 | 0.6B، باز | طولانی | CC BY-NC 4.0 (غیرتجاری) | بازرتبه‌بندی‌کننده فهرستی (Listwise) بر پایه Qwen3-0.6B؛ استفاده تجاری از طریق API شرکت Jina یا مجوز جداگانه امکان‌پذیر است |
+| LightOn-rerank | 0.8B / 2B / 4B، باز | طولانی | بررسی کارت مدل | انواع نقطه‌ای (Pointwise) و فهرستی (Listwise) بر روی ستون فقرات Qwen3.5 (ژوئیه ۲۰۲۶) |
 
-Voyage reports rerank-3 beating rerank-2.5 by 0.96% overall and 3.35% on long documents, and Cohere Rerank v4.0 Pro by 2.72% overall and 13.84% on long documents (vendor-reported, 95 datasets plus MAIR). Three weeks later Cohere reported Rerank 5 Pro at 82.2 on BRIGHT, 5.8 points above Voyage rerank-3 and 12.4 above its own Rerank 4 Pro (vendor-reported). Each vendor wins its own table. Read both as signals about where gains now concentrate (long documents, reasoning-heavy and instruction-following relevance) rather than as a neutral ranking.
+شرکت Voyage گزارش می‌دهد که rerank-3 با اختلاف ۰.۹۶٪ در کل و ۳.۳۵٪ در اسناد طولانی از rerank-2.5، و با اختلاف ۲.۷۲٪ در کل و ۱۳.۸۴٪ در اسناد طولانی از Cohere Rerank v4.0 Pro برتری داشته است (گزارش‌شده توسط ارائه‌دهنده، روی ۹۵ مجموعه داده به همراه MAIR). سه هفته بعد، Cohere گزارش داد که Rerank 5 Pro در BRIGHT امتیاز ۸۲.۲ را کسب کرده که ۵.۸ امتیاز بالاتر از Voyage rerank-3 و ۱۲.۴ امتیاز بالاتر از Rerank 4 Pro خود Cohere است (گزارش‌شده توسط ارائه‌دهنده). هر ارائه‌دهنده در جدول خودش برنده است. هر دو گزارش را به جای یک رتبه‌بندی بی‌طرفانه، سیگنال‌هایی درباره محل تمرکز دستاوردها و بهبودهای کنونی (اسناد طولانی، ارتباط مبتنی بر استدلال سنگین و پیروی از دستورالعمل‌ها) در نظر بگیرید.
 
-**Calibrated scores change how you cut the list.** Cohere reports expected calibration error of about 0.06 for Rerank 5 against 0.38 for Rerank 4 Pro and 0.23 for Voyage rerank-3 (vendor-reported), and suggests 0.50 (Pro) and 0.45 (Fast) as the "useful" cutoffs. If that holds on your data, a score threshold can replace a fixed top-k, so easy queries send two chunks and hard ones send ten. Two cautions: thresholds tuned on Rerank 4 do not carry over, because the score scale changed, and calibration on Cohere's test sets is not calibration on yours, so re-fit the cutoff on your golden set. Context Focus pushes the same idea inside the document by returning scored spans; Cohere reports keeping 96% of answer quality with half the context removed. Treat span trimming as a context-budget lever and measure faithfulness after it, since a dropped qualifier can flip an answer.
+**امتیازهای کالیبره‌شده، نحوه برش دادن لیست را تغییر می‌دهند.** Cohere خطای کالیبراسیون مورد انتظار (ECE) را برای Rerank 5 حدود ۰.۰۶ در مقایسه با ۰.۳۸ برای Rerank 4 Pro و ۰.۲۳ برای Voyage rerank-3 گزارش می‌دهد (گزارش‌شده توسط ارائه‌دهنده)، و آستانه‌های ۰.۵۰ (Pro) و ۰.۴۵ (Fast) را به عنوان نقطه برش «مفید بودن» پیشنهاد می‌کند. اگر این امر بر روی داده‌های شما نیز صادق باشد، یک آستانه امتیاز می‌تواند جایگزین top-k ثابت شود؛ به این ترتیب کوئری‌های آسان دو قطعه (Chunk) و کوئری‌های دشوار ده قطعه ارسال می‌کنند. دو نکته احتیاطی: آستانه‌های تنظیم‌شده بر روی Rerank 4 قابل انتقال نیستند، زیرا مقیاس امتیازها تغییر کرده است؛ همچنین کالیبراسیون روی مجموعه‌های آزمایشی Cohere به معنای کالیبراسیون روی داده‌های شما نیست، بنابراین آستانه برش را روی مجموعه طلایی (Golden set) خود مجدداً برازش کنید. قابلیت Context Focus همین ایده را در داخل سند با بازگرداندن بخش‌ها (اسپن‌های) امتیازدهی‌شده پیاده می‌کند؛ Cohere گزارش می‌دهد که با حذف نیمی از کانتکست، ۹۶٪ از کیفیت پاسخ حفظ می‌شود. پیرایش اسپن‌ها (Span trimming) را به عنوان اهرمی برای بودجه‌بندی کانتکست در نظر بگیرید و وفاداری پاسخ (Faithfulness) را پس از آن ارزیابی کنید، چرا که حذف یک قید یا واژه توصیفی می‌تواند پاسخ را کاملاً دگرگون کند.
 
-**If you fine-tune your own, train a reranker, not a yes/no judge.** arXiv 2610.32318 ("System One models Are Not Better Rerankers", October 23, 2026) fine-tuned six Qwen backbones from 0.6B to 27B either as rerankers or as decision models and tested them on ten TREC DL and BEIR collections. From 0.6B to 9B, reranker fine-tuning beat decision fine-tuning on every backbone by 5 to 29 nDCG@10 points, zero-shot collections included, and decision fine-tuning added nothing over asking the untuned model; only at 27B did the two tie. The decision models' calibration advantage (at 4B and up) disappeared when the question used a looser definition of relevance, the same lesson as the Cohere cutoffs: calibration belongs to one question on one data distribution, so re-fit thresholds whenever either changes.
+**اگر مدل خود را Fine-tuning می‌کنید، یک بازرتبه‌بندی‌کننده آموزش دهید، نه یک قاضی بله/خیر.** مقاله arXiv 2610.32318 («مدل‌های سیستم یک بازرتبه‌بندی‌کننده‌های بهتری نیستند»، ۲۳ اکتبر ۲۰۲۶) شش ستون فقرات Qwen از 0.6B تا 27B را یا به عنوان بازرتبه‌بندی‌کننده یا به عنوان مدل‌های تصمیم‌گیری (Decision models) تحت Fine-tuning قرار داد و آن‌ها را روی ده مجموعه TREC DL و BEIR آزمایش کرد. از 0.6B تا 9B، مدل‌های Fine-tuning شده به عنوان بازرتبه‌بندی‌کننده در تمام ستون‌های فقرات، بین ۵ تا ۲۹ امتیاز nDCG@10 از مدل‌های Fine-tuning شده تصمیم‌گیری بهتر عمل کردند (شامل مجموعه‌های zero-shot)، و Fine-tuning تصمیم‌گیری هیچ مزیتی نسبت به پرسش از مدل تنظیم‌نشده اضافه نکرد؛ تنها در مدل 27B این دو نتیجه برابری ثبت کردند. مزیت کالیبراسیون مدل‌های تصمیم‌گیری (در 4B به بالا) هنگامی که سوال از تعریف بازتری از ارتباط استفاده می‌کرد از بین رفت، که همان درس آستانه‌های برش Cohere را یادآوری می‌کند: کالیبراسیون به یک سوال خاص در یک توزیع داده خاص تعلق دارد، بنابراین هر زمان که هر یک تغییر کرد، آستانه‌ها را مجدداً برازش کنید.
 
-**The "Lost in the Middle" Fix**: Rerankers are trained to prioritize relevant information regardless of its position in the chunk, ensuring that "middle" data is scored correctly before being sent to the final LLM.
+**راهکار رفع مشکل «گم‌شدن در میانه» (Lost in the Middle):** بازرتبه‌بندی‌کننده‌ها طوری آموزش دیده‌اند که اطلاعات مرتبط را صرف‌نظر از موقعیت قرارگیری آن‌ها در قطعه (Chunk) اولویت‌بندی کنند، و اطمینان حاصل نمایند که داده‌های موجود در «میانه» متن، پیش از ارسال به LLM نهایی به درستی امتیازدهی می‌شوند.
 
-### Using Cross-Encoders
+### استفاده از Cross-Encoderها
 
 ```python
 from sentence_transformers import CrossEncoder
@@ -163,7 +169,7 @@ def rerank(query: str, documents: list[str], top_k: int = 5) -> list[tuple[str, 
     return scored_docs[:top_k]
 ```
 
-### Cohere Rerank
+### ابزار Cohere Rerank
 
 ```python
 import cohere
@@ -193,24 +199,24 @@ def cohere_rerank(
     ]
 ```
 
-### Model Selection Guide
+### راهنمای انتخاب مدل
 
-| Use Case | Recommended Model | Notes |
+| مورد کاربرد | مدل پیشنهادی | توضیحات |
 |----------|-------------------|-------|
-| English, self-hosted, CPU | bge-reranker-base or MiniLM-L-6 | MiniLM is ~4x faster at lower quality |
-| Multilingual, self-hosted | bge-reranker-v2-m3 or Qwen3-Reranker | Qwen3 for long inputs if you have GPUs |
-| Highest quality, managed | Cohere Rerank 5 Pro or Voyage rerank-3 | Both $0.05 per 1M tokens; benchmark both on your data, because vendor numbers disagree |
-| Cost-sensitive managed | Voyage rerank-3-lite or Cohere Rerank 5 Fast | Both $0.02 per 1M tokens |
-| Long documents or tool outputs (8K+) | Any 32K reranker (Cohere Rerank 5, Voyage rerank-3, Qwen3) | Truncation is no longer the constraint; tokens per pair are the cost |
-| Page screenshots, charts | Qwen3-VL-Reranker | Apache 2.0, multimodal |
+| انگلیسی، میزبانی اختصاصی (self-hosted)، بر بستر CPU | bge-reranker-base یا MiniLM-L-6 | مدل MiniLM با کیفیت پایین‌تر حدود ۴ برابر سریع‌تر است |
+| چندزبانه، میزبانی اختصاصی (self-hosted) | bge-reranker-v2-m3 یا Qwen3-Reranker | مدل Qwen3 برای ورودی‌های طولانی در صورت در دسترس بودن GPUها |
+| بالاترین کیفیت، مدیریت‌شده (Managed) | Cohere Rerank 5 Pro یا Voyage rerank-3 | هر دو ۰.۰۵ دلار به ازای هر ۱ میلیون Token؛ هر دو را روی داده‌های خود بنچمارک کنید، زیرا آمار ارائه‌دهندگان با یکدیگر همخوانی ندارند |
+| حساس به هزینه، مدیریت‌شده (Managed) | Voyage rerank-3-lite یا Cohere Rerank 5 Fast | هر دو ۰.۰۲ دلار به ازای هر ۱ میلیون Token |
+| اسناد طولانی یا خروجی‌های ابزار (8K+) | هر بازرتبه‌بندی‌کننده 32K (شامل Cohere Rerank 5، Voyage rerank-3، Qwen3) | بریده شدن متن (Truncation) دیگر محدودیت نیست؛ هزینه بر اساس Token به ازای هر جفت تعیین می‌شود |
+| اسکرین‌شات صفحات، نمودارها | Qwen3-VL-Reranker | لایسنس Apache 2.0، چندوجهی |
 
-**Cost sketch:** reranking 50 candidates of ~500 tokens is ~25K tokens per query. At $0.05 per 1M tokens (Voyage rerank-3 or Cohere Rerank 5 Pro) that is about $0.00125 per query, or ~$1,250 a day at 1M queries. Per-token pricing means long chunks and deep candidate lists cost linearly more, so candidate depth and chunk length are cost levers, not just latency levers.
+**برآورد هزینه:** بازرتبه‌بندی ۵۰ کاندید با حدود ۵۰۰ Token، تقریباً معادل ۲۵ هزار Token به ازای هر کوئری است. با هزینه ۰.۰۵ دلار به ازای هر ۱ میلیون Token (در Voyage rerank-3 یا Cohere Rerank 5 Pro)، این مقدار تقریباً معادل ۰.۰۰۱۲۵ دلار به ازای هر کوئری، یا حدود ۱,۲۵۰ دلار در روز برای ۱ میلیون کوئری خواهد بود. قیمت‌گذاری بر اساس هر Token به این معنی است که قطعه‌های (Chunkهای) طولانی و فهرست‌های کاندیدای عمیق‌تر، هزینه را به صورت خطی افزایش می‌دهند؛ بنابراین عمق کاندیداها و طول قطعه‌ها، علاوه بر اهرم‌های تاخیر (Latency)، اهرم‌های هزینه نیز به شمار می‌روند.
 
 ---
 
-## Implementation Patterns
+## الگوهای پیاده‌سازی
 
-### Pattern 1: Basic Reranking
+### الگوی ۱: بازرتبه‌بندی پایه
 
 ```python
 class RerankedRetriever:
@@ -248,7 +254,7 @@ class RerankedRetriever:
         return reranked[:self.rerank_k]
 ```
 
-### Pattern 2: Batched Reranking
+### الگوی ۲: بازرتبه‌بندی دسته‌ای (Batched)
 
 ```python
 def batch_rerank(
@@ -285,7 +291,7 @@ def batch_rerank(
     return results
 ```
 
-### Pattern 3: Async Reranking
+### الگوی ۳: بازرتبه‌بندی ناهمگام (Async)
 
 ```python
 import asyncio
@@ -312,44 +318,44 @@ class AsyncReranker:
 
 ---
 
-## When to Rerank
+## چه زمانی از رتبه‌بندی مجدد (Reranking) استفاده کنیم
 
-### Cost-Benefit Analysis
+### تحلیل هزینه-فایده (Cost-Benefit Analysis)
 
-| Factor | Without Reranking | With Reranking |
+| فاکتور | بدون رتبه‌بندی مجدد | با رتبه‌بندی مجدد |
 |--------|-------------------|----------------|
-| Latency | 50-100ms | 150-300ms |
-| Quality (NDCG) | 0.65 | 0.78 |
-| Complexity | Simple | Moderate |
-| Cost | Baseline | +API cost or +compute |
+| تاخیر (Latency) | 50-100ms | 150-300ms |
+| کیفیت (NDCG) | 0.65 | 0.78 |
+| پیچیدگی | ساده | متوسط |
+| هزینه | خط پایه (Baseline) | هزینه API بیشتر یا پردازش بیشتر |
 
-### Decision Framework
+### فریم‌ورک تصمیم‌گیری (Decision Framework)
 
-**Always rerank when:**
-- Quality is critical (customer-facing, high-stakes)
-- Retrieved candidates have similar scores
-- Query is complex or multi-part
-- Budget allows for latency increase
+**همیشه رتبه‌بندی مجدد را انجام دهید زمانی که:**
+- کیفیت اهمیت حیاتی دارد (سیستم‌های سمت کاربر، تصمیم‌گیری‌های حساس و پرریسک)
+- کاندیداهای بازیابی‌شده امتیازهای مشابهی دارند
+- پرس‌وجو (Query) پیچیده یا چندبخشی است
+- بودجه زمانی اجازه افزایش تاخیر (Latency) را می‌دهد
 
-**Skip reranking when:**
-- Latency budget is very tight (<100ms total)
-- Retrieved candidates are clearly ranked
-- Simple queries (single term lookups)
-- Cost constrained at scale
+**از رتبه‌بندی مجدد صرف‌نظر کنید زمانی که:**
+- بودجه تاخیر (Latency) بسیار محدود است (کمتر از 100ms در مجموع)
+- کاندیداهای بازیابی‌شده دارای رتبه‌بندی کاملاً واضح و متمایز هستند
+- پرس‌وجوها ساده هستند (جستجوهای تک‌کلمه‌ای)
+- در مقیاس بالا با محدودیت شدید هزینه مواجه هستید
 
-### Inference Time Tradeoffs
+### موازنه‌های زمان استنتاج (Inference)
 
-| Stage | Retrieval (K) | Rerank (N) | Latency | Quality |
+| مرحله | بازیابی (K) | رتبه‌بندی مجدد (N) | تاخیر (Latency) | کیفیت |
 |-------|---------------|------------|---------|---------|
-| **Naive** | 5 | 0 | 50ms | Low |
-| **Standard** | 50 | 5 | 150ms | High |
-| **Enterprise**| 200 | 20 | 500ms | Max |
+| **ساده (Naive)** | 5 | 0 | 50ms | پایین |
+| **استاندارد (Standard)** | 50 | 5 | 150ms | بالا |
+| **سازمانی (Enterprise)**| 200 | 20 | 500ms | حداکثر |
 
-**Key Rule**: If you have a budget of 200ms, spend 50ms on retrieval and 150ms on reranking. Reranking Top 50 results provides a much higher ROI than retrieving more chunks from the vector DB.
+**قاعده کلیدی**: اگر بودجه‌ای معادل 200ms دارید، 50ms را به بازیابی و 150ms را به رتبه‌بندی مجدد اختصاص دهید. رتبه‌بندی مجدد ۵۰ نتیجه برتر (Top 50)، نرخ بازگشت سرمایه (ROI) بسیار بالاتری نسبت به بازیابی چانک‌های بیشتر از پایگاه داده برداری (Vector Database) فراهم می‌کند.
 
-### Optimal Candidate Count
+### تعداد بهینه کاندیداها (Optimal Candidate Count)
 
-How many candidates to retrieve before reranking:
+چه تعداد کاندیدا باید قبل از رتبه‌بندی مجدد بازیابی شوند:
 
 ```python
 def optimize_candidate_count(test_set, retriever, reranker):
@@ -390,11 +396,11 @@ def optimize_candidate_count(test_set, retriever, reranker):
 
 ---
 
-## LLM-Based Reranking
+## رتبه‌بندی مجدد مبتنی بر LLM (LLM-Based Reranking)
 
-### Using LLMs as Rerankers
+### استفاده از LLMها به عنوان رتبه‌بندی‌کننده (Rerankers)
 
-LLMs can score relevance but are expensive:
+مدل‌های LLM می‌توانند میزان ارتباط را امتیازدهی کنند، اما گران‌قیمت هستند:
 
 ```python
 def llm_rerank(
@@ -418,28 +424,28 @@ Format: DOC_NUM: SCORE
     return sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
 ```
 
-**Pros:**
-- Can handle complex relevance judgments
-- Understands nuance and context
-- No separate model to maintain
+**مزایا:**
+- توانایی مدیریت قضاوت‌های پیچیده در مورد میزان ارتباط
+- درک تفاوت‌های ظریف معنایی (Nuance) و زمینه (Context)
+- عدم نیاز به نگهداری مدلی مجزا
 
-**Cons:**
-- Expensive at scale (10-100x cross-encoder)
-- Slower (1-3s vs 100ms)
-- Non-deterministic
+**معایب:**
+- گران‌قیمت در مقیاس بالا (۱۰ تا ۱۰۰ برابر کراس-انکودر)
+- کندتر (۱ تا ۳ ثانیه در مقایسه با 100ms)
+- غیرقطعی (Non-deterministic)
 
-**What the numbers say:** "The Embedder's Dilemma" (arXiv 2608.12875, August 2026) put 10 LLMs against 26 embedding models on 37 MTEB-style tasks. The best LLM tied the best embedder in aggregate (77.6 vs 77.2) at up to 1,431x the cost; LLMs led on reasoning-heavy retrieval, embedders on classification. Reasoning tokens were 28% to 81% of LLM cost, and lower reasoning budgets usually kept retrieval quality. Two rules follow: use an LLM only on the final handful of candidates for queries that need reasoning, and run it at the lowest effort setting that holds quality on your eval set.
+**اعداد و ارقام چه می‌گویند:** مقاله «معمای امبدینگ‌ساز» ("The Embedder's Dilemma" - arXiv 2608.12875، آگوست ۲۰۲۶) تعداد ۱۰ مدل LLM را در ۳۷ تسک به سبک MTEB با ۲۶ مدل امبدینگ مقایسه کرد. بهترین LLM در مجموع به نتیجه‌ای برابر با بهترین مدل امبدینگ دست یافت (77.6 در برابر 77.2)، اما با هزینه‌ای تا ۱٬۴۳۱ برابر بیشتر؛ مدل‌های LLM در بازیابی‌های مبتنی بر استدلال سنگین پیشتاز بودند و مدل‌های امبدینگ در دسته‌بندی. Tokenهای استدلال بین ۲۸٪ تا ۸۱٪ از هزینه LLM را تشکیل می‌دادند، و بودجه‌های استدلال پایین‌تر معمولاً کیفیت بازیابی را حفظ می‌کردند. از این موضوع دو قاعده به دست می‌آید: از LLM تنها برای تعداد انگشت‌شماری از کاندیداهای نهایی در پرس‌وجوهایی که نیازمند استدلال هستند استفاده کنید، و آن را در پایین‌ترین تنظیمات سطح تلاش (effort setting) که کیفیت را در مجموعه ارزیابی (eval set) شما حفظ می‌کند، اجرا نمایید.
 
-### Listwise vs Pointwise LLM Reranking
+### رتبه‌بندی مجدد مبتنی بر LLM: روش Listwise در برابر Pointwise
 
-**Pointwise:** Score each document independently
+**روش Pointwise:** امتیازدهی مستقل به هر سند
 ```
 For document: [doc text]
 Query: [query]
 Rate relevance 0-10: _
 ```
 
-**Listwise:** Rank all documents together
+**روش Listwise:** رتبه‌بندی تمام اسناد در کنار یکدیگر
 ```
 Query: [query]
 Rank these documents by relevance:
@@ -449,9 +455,9 @@ C: [doc3]
 Output order: _
 ```
 
-**Listwise is often better** because the LLM can compare documents directly. Small current models (GPT-6 Luna, Claude Haiku 5.5) make listwise ranking cheap enough to try at low effort, but check quality on your eval set, and it still adds 1-2s of latency, so reserve it for high-stakes enterprise search (legal, medical). Dedicated listwise rerankers (jina-reranker-v3.5, LightOn-rerank's listwise variants) give you the cross-document comparison at cross-encoder latency.
+**روش Listwise معمولاً بهتر است** زیرا LLM می‌تواند اسناد را مستقیماً با یکدیگر مقایسه کند. مدل‌های کوچک کنونی (GPT-6 Luna، Claude Haiku 5.5) رتبه‌بندی Listwise را به اندازه‌ای ارزان می‌کنند که با تلاش کم قابل امتحان باشد، اما باید کیفیت آن را روی مجموعه ارزیابی (eval set) خود بررسی کنید؛ این روش همچنان ۱ تا ۲ ثانیه تاخیر (Latency) اضافه می‌کند، بنابراین آن را برای جستجوهای سازمانی با ریسک بالا (حقوقی، پزشکی) نگه دارید. مدل‌های اختصاصی رتبه‌بندی مجدد Listwise (مانند jina-reranker-v3.5 و نسخه‌های Listwise از LightOn-rerank) مقایسه بین‌اسنادی را با تاخیر (Latency) در حد کراس-انکودر در اختیارتان قرار می‌دهند.
 
-### Sliding Window for Many Documents
+### پنجره لغزان (Sliding Window) برای اسناد زیاد
 
 ```python
 def sliding_window_rerank(
@@ -479,19 +485,19 @@ def sliding_window_rerank(
 
 ---
 
-## SLM Distillation
+## تقطیر مدل‌های زبانی کوچک (SLM Distillation)
 
-To cut the latency of LLM-based reranking, distill the LLM's judgments into a **small cross-encoder (SLM)**.
+برای کاهش تاخیر (Latency) رتبه‌بندی مجدد مبتنی بر LLM، قضاوت‌های LLM را در یک **کراس-انکودر کوچک (SLM)** تقطیر (Distill) کنید.
 
-- **Process**: Take a frontier model, have it rerank 1 million pairs, and use those labels to "distill" a tiny 0.1B parameter model. Check the provider's terms on training models with its outputs before you do this with a commercial API.
-- **Result**: The student runs at cross-encoder latency (100-200ms for 50 candidates in this chapter's budgets, versus 1-3s for an LLM pass) and keeps much of the teacher's ranking quality on in-domain queries. How much is corpus-specific, and the gap widens out of domain, so compare NDCG@10 against the teacher on your golden set before retiring the LLM path.
-- **Production pattern:** Use cross-encoder normally, LLM for fallback on low-confidence reranking scores.
+- **فرایند**: یک مدل پیشرو (frontier model) را به کار بگیرید تا ۱ میلیون جفت را رتبه‌بندی مجدد کند، و از این برچسب‌ها برای «تقطیر» یک مدل بسیار کوچک 0.1B پارامتری استفاده نمایید. پیش از انجام این کار با یک API تجاری، شرایط و قوانین ارائه‌دهنده را در مورد آموزش مدل‌ها با خروجی‌های آن بررسی کنید.
+- **نتیجه**: مدل دانش‌آموز (Student) با تاخیر (Latency) در سطح کراس-انکودر اجرا می‌شود (۱۰۰ تا ۲۰۰ میلی‌ثانیه برای ۵۰ کاندیدا طبق بودجه‌های این فصل، در مقایسه با ۱ تا ۳ ثانیه برای یک مرحله اجرای LLM) و بخش زیادی از کیفیت رتبه‌بندی آموزگار را در پرس‌وجوهای درون‌دامنه (in-domain) حفظ می‌کند. اینکه چه مقدار از کیفیت حفظ می‌شود وابسته به مجموعه‌داده (Corpus) است و این فاصله در خارج از دامنه بیشتر می‌شود؛ بنابراین قبل از کنار گذاشتن مسیر LLM، معیار NDCG@10 را در برابر مدل آموزگار روی مجموعه طلایی (golden set) خود مقایسه کنید.
+- **الگوی محیط عملیاتی:** در حالت معمول از کراس-انکودر استفاده کنید و از LLM به عنوان راهکار جایگزین (Fallback) برای امتیازهای رتبه‌بندی مجدد با ضریب اطمینان پایین بهره ببرید.
 
 ---
 
-## Production Considerations
+## ملاحظات محیط عملیاتی
 
-### Latency Optimization
+### بهینه‌سازی تاخیر (Latency)
 
 ```python
 class OptimizedReranker:
@@ -511,18 +517,18 @@ class OptimizedReranker:
         return sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
 ```
 
-**Optimization techniques:**
-- FP16 inference: 2x speedup
-- Batching: Amortize overhead
-- ONNX export: 1.5-2x speedup
-- TensorRT: 2-3x speedup (NVIDIA)
-- Model distillation: 4x speedup with quality tradeoff
+**تکنیک‌های بهینه‌سازی:**
+- استنتاج (Inference) با دقت FP16: دو برابر افزایش سرعت
+- دسته‌بندی (Batching): سرشکن کردن بار پردازشی اضافه (Overhead)
+- خروجی گرفتن به صورت ONNX: ۱.۵ تا ۲ برابر افزایش سرعت
+- TensorRT: ۲ تا ۳ برابر افزایش سرعت (NVIDIA)
+- تقطیر مدل (Model distillation): ۴ برابر افزایش سرعت با مصالحه در کیفیت
 
-### After the Reranker: Diversity and Business Rules
+### پس از مدل رتبه‌بندی مجدد: تنوع و قوانین کسب‌وکار
 
-A reranker scores each candidate independently of the others, so three near-identical chunks from one source can take the top three slots. Apply diversity (MMR) and business rules (freshness decay, "prefer official docs") **after** relevance scoring, not before, or the reranker will undo them. Some engines now do this in-database: Weaviate 1.39 made MMR and a Boost API (promote or demote by filter, property, time decay or numeric decay) GA, and Milvus 3.0's Function Chain composes rescoring and reranking stages server-side.
+یک مدل رتبه‌بندی مجدد به هر کاندیدا بدون در نظر گرفتن سایرین امتیاز می‌دهد، بنابراین سه چانک تقریباً یکسان از یک منبع می‌توانند سه رتبه اول را تصاحب کنند. تنوع‌بخشی (MMR) و قوانین کسب‌وکار (کاهش ارزش با گذشت زمان، «اولویت دادن به مستندات رسمی») را **بعد از** امتیازدهی میزان ارتباط اعمال کنید، نه قبل از آن؛ در غیر این صورت مدل رتبه‌بندی مجدد اثر آن‌ها را از بین خواهد برد. برخی موتورها امروزه این کار را در داخل پایگاه داده انجام می‌دهند: Weaviate 1.39 قابلیت MMR و یک Boost API (ترفیع یا تنزل رتبه بر اساس فیلتر، ویژگی، زوال زمانی یا زوال عددی) را به صورت در دسترس عموم (GA) ارائه کرد، و قابلیت Function Chain در Milvus 3.0 مراحل امتیازدهی مجدد و رتبه‌بندی مجدد را در سمت سرور ترکیب می‌کند.
 
-### Caching Reranker Results
+### کش کردن نتایج مدل رتبه‌بندی مجدد
 
 ```python
 class CachedReranker:
@@ -549,7 +555,7 @@ class CachedReranker:
         return f"{query_hash}:{doc_hash}"
 ```
 
-### Fallback Strategy
+### استراتژی جایگزین (Fallback Strategy)
 
 ```python
 def rerank_with_fallback(
@@ -577,76 +583,78 @@ def rerank_with_fallback(
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: Why is a Cross-Encoder fundamentally more accurate than a Bi-Encoder?
+### پرسش: چرا یک کراس-انکودر از اساس دقیق‌تر از یک بای-انکودر است؟
 
-**Strong answer:**
-A Bi-Encoder creates a single, static vector representation for a document *before* any query is known. This loses the specific relationship between different parts of the text. A Cross-Encoder takes both the query and the document as a single input pair and uses the **Attention Mechanism** to compare them. It can see how specific words in the query change the meaning of words in the document at every layer (full cross-attention, not ColBERT-style late interaction), allowing for much more nuanced relevance scoring than a simple mathematical similarity of two fixed vectors.
+**پاسخ قوی:**
+یک بای-انکودر (Bi-Encoder) *قبل از* مشخص شدن هرگونه پرس‌وجو، یک نمایش برداری ایستا و واحد برای یک سند می‌سازد. این کار باعث از دست رفتن روابط خاص میان بخش‌های مختلف متن می‌شود. یک کراس-انکودر (Cross-Encoder) هم پرس‌وجو و هم سند را به عنوان یک جفت ورودی واحد دریافت می‌کند و از **مکانیسم توجه (Attention Mechanism)** برای مقایسه آن‌ها استفاده می‌کند. این مدل در هر لایه می‌تواند ببیند که چگونه کلمات خاص در پرس‌وجو معنای کلمات درون سند را تغییر می‌دهند (توجه متقاطع کامل یا full cross-attention، نه تعامل دیرهنگام به سبک ColBERT)؛ این ویژگی امکان امتیازدهی بسیار دقیق‌تر و ظریف‌تری را نسبت به شباهت ریاضی ساده بین دو بردار ثابت فراهم می‌سازد.
 
-**In practice:** Use bi-encoder for first-stage retrieval (speed), cross-encoder for reranking (quality). This gives the best of both.
+**در عمل:** از بای-انکودر برای بازیابی مرحله اول (سرعت) و از کراس-انکودر برای رتبه‌بندی مجدد (کیفیت) استفاده کنید. این کار بهترین ویژگی‌های هر دو را به همراه دارد.
 
-### Q: How do you decide how many candidates to rerank?
+### پرسش: چگونه تعیین می‌کنید چه تعداد کاندیدا را رتبه‌بندی مجدد کنید؟
 
-**Strong answer:**
-Tradeoff between quality and latency:
+**پاسخ قوی:**
+ایجاد موازنه بین کیفیت و تاخیر (Latency):
 
-**Factors:**
-- Reranker latency per document
-- Total latency budget
-- Quality improvement curve (usually diminishing returns)
-- First-stage retrieval quality
+**فاکتورها:**
+- تاخیر (Latency) مدل رتبه‌بندی مجدد به ازای هر سند
+- کل بودجه تاخیر (Latency)
+- منحنی بهبود کیفیت (معمولاً بازده نزولی)
+- کیفیت بازیابی در مرحله اول
 
-**Process:**
-1. Benchmark reranker latency per document
-2. Calculate max candidates within latency budget
-3. Test quality at different K values
-4. Find elbow point (quality vs latency)
+**فرایند:**
+۱. بنچمارک کردن تاخیر (Latency) مدل رتبه‌بندی مجدد به ازای هر سند
+۲. محاسبه حداکثر کاندیداها در چارچوب بودجه تاخیر (Latency)
+۳. تست کیفیت در مقادیر مختلف K
+۴. یافتن نقطه زانویی (کیفیت در برابر تاخیر (Latency))
 
-**Typical findings:**
-- K=20-50 is often optimal
-- Beyond K=100, quality gains are minimal
-- Adjust based on first-stage retrieval quality
+**یافته‌های معمول:**
+- مقدار K=20-50 اغلب بهینه است
+- فراتر از K=100، افزایش کیفیت بسیار اندک است
+- تنظیم بر اساس کیفیت بازیابی مرحله اول
 
-For a 200ms reranking budget with 4ms per document, I would rerank ~50 candidates.
+برای یک بودجه رتبه‌بندی مجدد 200ms با زمان 4ms به ازای هر سند، من حدود ۵۰ کاندیدا را رتبه‌بندی مجدد خواهم کرد.
 
-### Q: When would you use LLM-based reranking?
+### پرسش: چه زمانی از رتبه‌بندی مجدد مبتنی بر LLM استفاده می‌کنید؟
 
-**Strong answer:**
-LLM reranking makes sense when:
+**پاسخ قوی:**
+رتبه‌بندی مجدد با LLM در موارد زیر منطقی است:
 
-1. **Complex relevance judgments:** Query requires understanding nuance, context, or multi-hop reasoning
-2. **Low volume:** Cannot justify training/hosting a cross-encoder
-3. **Highest quality required:** Legal, medical, safety-critical
-4. **Already using LLM in pipeline:** Marginal cost lower
+۱. **قضاوت‌های پیچیده درباره میزان ارتباط:** پرس‌وجو نیاز به درک نکات ظریف، زمینه یا استدلال چندمرحله‌ای (multi-hop reasoning) دارد
+۲. **حجم کم:** توجیه اقتصادی برای آموزش یا میزبانی یک کراس-انکودر وجود ندارد
+۳. **نیاز به بالاترین کیفیت ممکن:** حوزه‌های حقوقی، پزشکی، سیستم‌های حساس و بحرانی
+۴. **استفاده قبلی از LLM در پایپ‌لاین:** هزینه نهایی کمتر است
 
-**Cautions:**
-- Expensive at scale (10-100x cross-encoder)
-- Slower (1-3s vs 100ms)
-- Non-deterministic
-- May require careful prompt engineering
+**هشدارها:**
+- پرهزینه در مقیاس بالا (۱۰ تا ۱۰۰ برابر کراس-انکودر)
+- کندتر (۱ تا ۳ ثانیه در برابر 100ms)
+- غیرقطعی (Non-deterministic)
+- ممکن است به مهندسی Prompt دقیق نیاز داشته باشد
 
-**Production pattern:** Use cross-encoder normally, LLM for fallback on low-confidence reranking scores.
+**الگوی محیط عملیاتی:** در حالت عادی از کراس-انکودر استفاده کنید و از LLM به عنوان راهکار جایگزین (Fallback) در صورت پایین بودن امتیاز اطمینان رتبه‌بندی مجدد بهره ببرید.
 
-### Q: How do you handle reranking for extremely long queries (e.g., a whole paragraph)?
+### پرسش: چگونه رتبه‌بندی مجدد را برای پرس‌وجوهای بسیار طولانی (مثلاً یک پاراگراف کامل) مدیریت می‌کنید؟
 
-**Strong answer:**
-Classic BERT-size cross-encoders (MiniLM, bge-reranker-base) cap at 512 tokens, so long queries and long chunks get truncated. The old fixes were **Sliding Window Reranking** or **Query Summarization**. Current rerankers changed the constraint: Cohere Rerank 5, Voyage rerank-3 and the Qwen3 rerankers take 32K tokens, so the problem is now cost and latency per pair rather than truncation, since per-token pricing and attention cost both grow with input length. My pattern: a fast first-pass rerank over 50 candidates with truncated chunks, then a second pass over the top 5 to 10 with full-length text on a 32K reranker. This matters most in agentic RAG, where the "documents" are long tool outputs and the query is a paragraph of natural-language relevance criteria, which is exactly where Voyage reports rerank-3's largest gains (long documents and the MAIR instruction-following suite, vendor-reported).
+**پاسخ قوی:**
+کراس-انکودرهای کلاسیک با ابعاد BERT (مانند MiniLM و bge-reranker-base) به 512 Token محدود هستند، بنابراین پرس‌وجوها و چانک‌های طولانی کوتاه (Truncate) می‌شوند. راه‌حل‌های قدیمی **رتبه‌بندی مجدد با پنجره لغزان (Sliding Window Reranking)** یا **خلاصه‌سازی پرس‌وجو (Query Summarization)** بودند. مدل‌های رتبه‌بندی مجدد فعلی این محدودیت را تغییر داده‌اند: Cohere Rerank 5، Voyage rerank-3 و رتبه‌بندی‌کننده‌های Qwen3 تا 32K Token را دریافت می‌کنند؛ بنابراین اکنون مسئله به جای کوتاه‌سازی، هزینه و تاخیر (Latency) به ازای هر جفت است، زیرا هم قیمت‌گذاری به ازای هر Token و هم هزینه محاسباتی توجه با طول ورودی افزایش می‌یابند. الگوی من: یک دور رتبه‌بندی مجدد سریع اولیه روی ۵۰ کاندیدا با چانک‌های خلاصه‌شده/کوتاه‌شده، سپس دور دوم روی ۵ تا ۱۰ نتیجه برتر با متن کامل روی یک مدل رتبه‌بندی مجدد با ظرفیت 32K. این موضوع بیش از همه در RAG مبتنی بر Agent (agentic RAG) اهمیت دارد، جایی که «اسناد» خروجی‌های طولانی ابزارها هستند و پرس‌وجو یک پاراگراف شامل معیارهای سنجش ارتباط به زبان طبیعی است؛ یعنی دقیقاً جایی که Voyage بیشترین بهبودهای rerank-3 را گزارش کرده است (اسناد طولانی و مجموعه‌داده سنجش پیروی از دستورالعمل MAIR، گزارش‌شده توسط ارائه‌دهنده).
 
 ---
 
-## References
+## مراجع
 
 - Nogueira and Cho. "Passage Re-ranking with BERT" (2019)
 - Nogueira et al. "Multi-Stage Document Ranking with BERT" (2019/2025 update)
 - BAAI BGE Reranker: https://huggingface.co/BAAI/bge-reranker-base
 - Cohere Rerank: https://docs.cohere.com/docs/rerank
-- [Voyage AI. "rerank-3" (Sep 2026)](https://blog.voyageai.com/2026/09/30/rerank-3/)
-- [Cohere. "Rerank 5" (Oct 2026)](https://cohere.com/blog/rerank-5)
-- [Dinzinger, Ghosh Dastidar, Granitzer. "System One models Are Not Better Rerankers" (arXiv 2610.32318, Oct 2026)](https://arxiv.org/abs/2610.32318)
-- ["The Embedder's Dilemma" (arXiv 2608.12875, Aug 2026)](https://arxiv.org/abs/2608.12875)
+- [Voyage AI. "rerank-3" (سپتامبر ۲۰۲۶)](https://blog.voyageai.com/2026/09/30/rerank-3/)
+- [Cohere. "Rerank 5" (اکتبر ۲۰۲۶)](https://cohere.com/blog/rerank-5)
+- [Dinzinger, Ghosh Dastidar, Granitzer. "System One models Are Not Better Rerankers" (arXiv 2610.32318، اکتبر ۲۰۲۶)](https://arxiv.org/abs/2610.32318)
+- ["The Embedder's Dilemma" (arXiv 2608.12875، آگوست ۲۰۲۶)](https://arxiv.org/abs/2608.12875)
 - Sun et al. "Is ChatGPT Good at Search? Investigating Large Language Models as Re-Ranking Agents" (2023)
 
 ---
 
-*Previous: [Hybrid Search](05-hybrid-search.md) | Next: [GraphRAG](07-graph-rag.md)*
+*قبلی: [جستجوی ترکیبی](05-hybrid-search.md) | بعدی: [GraphRAG](07-graph-rag.md)*
+
+</div>

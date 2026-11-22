@@ -1,26 +1,28 @@
-# Data Engineering for AI
+<div dir="rtl">
 
-Models are only as good as the data fed to them, and most of the work in any serious AI system is upstream of the model. This chapter covers the **data layer** that feeds both RAG and fine-tuning: ingestion, cleaning, deduplication, PII and governance, quality filtering, and the pipelines that move it all. It sits in the retrieval section because RAG is where most teams first hit it, but it is **cross-cutting**: the same pipeline that prepares documents for a vector store also prepares examples for fine-tuning. Treating data engineering as "step two of RAG" understates it; it is a standalone discipline both consumers depend on.
+# مهندسی داده برای هوش مصنوعی
 
-## Table of Contents
+مدل‌ها تنها به اندازه داده‌هایی که به آن‌ها داده می‌شود خوب عمل می‌کنند، و بخش عمده کار در هر سیستم هوش مصنوعی جدی، در بالادست مدل انجام می‌شود. این فصل **لایه داده (data layer)** را پوشش می‌دهد که هم RAG و هم Fine-tuning را تغذیه می‌کند: ورود داده (ingestion)، پاک‌سازی، حذف داده‌های تکراری (deduplication)، اطلاعات شناسایی فردی (PII) و حاکمیت، فیلتر کیفیت، و خطوط لوله‌ای که همه این‌ها را جابه‌جا می‌کنند. این مبحث در بخش بازیابی (retrieval) قرار گرفته است زیرا RAG جایی است که اکثر تیم‌ها برای نخستین بار با آن مواجه می‌شوند، اما این موضوع **فراگیر و مقطعی (cross-cutting)** است: همان خط لوله‌ای که اسناد را برای یک پایگاه داده برداری (Vector Database) آماده می‌کند، نمونه‌ها را نیز برای Fine-tuning آماده می‌سازد. در نظر گرفتن مهندسی داده به عنوان «مرحله دوم RAG» کم‌اهمیت جلوه دادن آن است؛ این حوزه یک شاخه تخصصی مستقل است که هر دو مصرف‌کننده به آن وابسته هستند.
 
-- [The Shared Pipeline](#the-shared-pipeline)
-- [Ingestion](#ingestion)
-- [Cleaning and Normalization](#cleaning-and-normalization)
-- [Deduplication](#deduplication)
-- [PII, Consent, and Governance](#pii-consent-and-governance)
-- [Quality Filtering and Enrichment](#quality-filtering-and-enrichment)
-- [Pipelines and Orchestration](#pipelines-and-orchestration)
-- [Data for Fine-Tuning](#data-for-fine-tuning)
-- [Failure Modes](#failure-modes)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [خط لوله مشترک](#the-shared-pipeline)
+- [ورود داده](#ingestion)
+- [پاک‌سازی و نرمال‌سازی](#cleaning-and-normalization)
+- [حذف داده‌های تکراری](#deduplication)
+- [اطلاعات شناسایی فردی (PII)، رضایت و حاکمیت](#pii-consent-and-governance)
+- [فیلتر کیفیت و غنی‌سازی](#quality-filtering-and-enrichment)
+- [خطوط لوله و ارکستراسیون](#pipelines-and-orchestration)
+- [داده برای Fine-Tuning](#data-for-fine-tuning)
+- [حالت‌های شکست](#failure-modes)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Shared Pipeline
+## خط لوله مشترک
 
-The central idea: one pipeline, two consumers. RAG needs documents parsed, cleaned, deduped, chunked, enriched, and embedded. Fine-tuning needs examples parsed, cleaned, deduped, quality-filtered, decontaminated against eval sets, balanced, and formatted. The first five stages are **shared**; the two diverge only at the tail.
+ایده محوری: یک خط لوله، دو مصرف‌کننده. RAG نیازمند آن است که اسناد پارس، پاک‌سازی، حذف تکرار، Chunking، غنی‌سازی و تعبیه‌سازی (embedded) شوند. Fine-tuning نیازمند آن است که نمونه‌ها پارس، پاک‌سازی، حذف تکرار، فیلتر کیفی، آلودگی‌زدایی (decontaminated) در برابر مجموعه‌های ارزیابی (eval sets)، متوازن و فرمت‌بندی شوند. پنج مرحله اول **مشترک** هستند؛ این دو مسیر تنها در انتهای کار از یکدیگر جدا می‌شوند.
 
 ```
 SOURCES        web · docs (PDF/office/email) · DBs/APIs · uploads
@@ -38,157 +40,159 @@ SOURCES        web · docs (PDF/office/email) · DBs/APIs · uploads
 CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · versioning (DVC/lakeFS)
 ```
 
-The "most of the work" framing is durable: the widely cited heuristic that practitioners spend ~80% of their time on data preparation is folklore-grade (repeated across many sources rather than measured), but the direction is right, and vendor claims that AI agents now cut prep time 50-70% are unverified and self-interested. Treat both as directional.
+چارچوب‌بندی «بخش عمده کار» پایدار و ماندگار است: این قاعده سرانگشتی پرتکرار که متخصصان حدود ۸۰٪ از زمان خود را صرف آماده‌سازی داده‌ها می‌کنند در حد باورهای عامیانه (folklore-grade) است (صرفاً در منابع متعددی تکرار شده به جای آنکه اندازه‌گیری دقیق شده باشد)، اما جهت‌گیری کلی آن درست است؛ همچنین ادعای ارائه‌دهندگان مبنی بر اینکه Agentهای هوش مصنوعی اکنون زمان آماده‌سازی را ۵۰ تا ۷۰ درصد کاهش می‌دهند، تاییدنشده و هم‌راستا با منافع خودشان است. هر دو ادعا را صرفاً به عنوان نشان‌دهنده جهت و روند کلی در نظر بگیرید.
 
 ---
 
-## Ingestion
+## ورود داده (Ingestion)
 
-The input is a heterogeneous pile (PDFs, scans, office docs, HTML, email, images). You must detect what each file is, route it to the right parser, and emit a normalized structured representation.
+ورودی شامل مجموعه‌ای ناهمگون و نامتجانس است (فایل‌های PDF، اسکن‌ها، اسناد اداری، HTML، ایمیل و تصاویر). شما باید نوع هر فایل را تشخیص دهید، آن را به پارسر مناسب هدایت کنید و یک خروجی ساختاریافته و نرمال‌شده تولید نمایید.
 
-- **File-type detection by content, not extension.** The standard is magic-number sniffing via `libmagic` (the library behind the Unix `file` command), exposed through bindings like `python-magic`. Parsers such as Unstructured auto-detect type this way and fall back to the extension.
-- **Language detection** for routing and filtering, commonly with fastText's language classifier.
-- **Parsing and routing.** Content type determines the processor: text-extractable PDFs take a fast text path, scanned or image PDFs take OCR, complex multi-column or table-heavy documents take a layout model or a multimodal (per-page-screenshot) path, office docs take format-specific handlers, and email is split into headers and body. The leading toolkits are **Unstructured** (64+ file types, emits typed elements like Title/NarrativeText/Table), **Docling** (IBM, MIT-licensed, layout plus table models, multiple export formats, and pluggable VLM backends such as NVIDIA Nemotron Parse 2.0 and MinerU 2.5 Pro as of September 2026, plus Nemotron 3.5 Parse from v2.141.0 on October 20), **MinerU**, and **LlamaParse** (tiered API modes up to a multimodal agentic parse). A teaching point: published parser benchmarks disagree, so **benchmark parser choice on your own documents** rather than trusting a leaderboard.
+- **تشخیص نوع فایل بر اساس محتوا، نه پسوند فایل.** رویکرد استاندارد، بررسی عدد جادویی (magic-number sniffing) از طریق `libmagic` (کتابخانه پشت دستور `file` یونیکس) است که از طریق بایندینگ‌هایی مانند `python-magic` در دسترس قرار می‌گیرد. پارسرهایی مانند Unstructured نوع فایل را به صورت خودکار از این طریق تشخیص داده و در صورت عدم موفقیت، به پسوند فایل رجوع می‌کنند.
+- **تشخیص زبان** برای مسیریابی و فیلتر کردن، که معمولاً با کلاسیفایر زبان fastText انجام می‌شود.
+- **پارس کردن و مسیریابی.** نوع محتوا، پردازشگر مورد نیاز را تعیین می‌کند: فایل‌های PDF با متن قابل استخراج از یک مسیر متنی سریع عبور می‌کنند، فایل‌های PDF اسکن‌شده یا تصویری از OCR استفاده می‌کنند، اسناد پیچیده چندستونه یا پر از جدول از یک مدل چیدمان (layout) یا مسیر چندوجهی (اسکرین‌شات به ازای هر صفحه) بهره می‌برند، اسناد اداری پردازنده‌های اختصاصی همان فرمت را دریافت می‌کنند، و ایمیل به هدرها و بدنه تقسیم می‌شود. برجسته‌ترین جعبه‌ابزارها عبارتند از: **Unstructured** (بیش از ۶۴ نوع فایل، با خروجی المان‌های دارای نوع نظیر Title/NarrativeText/Table)، **Docling** (محصول IBM با مجوز MIT، مدل‌های چیدمان به همراه جدول، فرمت‌های صادراتی متعدد، و بک‌اندهای VLM قابل اتصال نظیر NVIDIA Nemotron Parse 2.0 و MinerU 2.5 Pro از سپتامبر ۲۰۲۶، به همراه Nemotron 3.5 Parse از نسخه v2.141.0 در ۲۰ اکتبر)، **MinerU**، و **LlamaParse** (حالت‌های چندلایه API تا پارس چندوجهی Agentic). یک نکته آموزشی: بنچمارک‌های منتشرشده برای پارسرها هم‌نظر نیستند، بنابراین به جای اعتماد صرف به جدول رتبه‌بندی (leaderboard)، **انتخاب پارسر را بر روی اسناد اختصاصی خود بنچمارک و ارزیابی کنید**.
 
-### Route Pages to the Cheapest Tier That Works
+### هدایت صفحات به ارزان‌ترین لایه کارآمد
 
-At corpus scale, parsing cost is set by **pages per GPU-second**, not by the best leaderboard score. The 2026 pattern is tiered: try the cheap path, escalate only the pages that fail a quality check.
+در مقیاس کل مجموعه داده (corpus)، هزینه پارس کردن با **تعداد صفحات به ازای هر ثانیه-GPU** تعیین می‌شود، نه بر اساس بهترین امتیاز در جدول رتبه‌بندی. الگوی سال ۲۰۲۶ چندلایه (tiered) است: ابتدا مسیر ارزان را امتحان کنید، و تنها صفحاتی را که در بررسی کیفی رد می‌شوند به سطوح بالاتر ارجاع دهید.
 
-| Tier | Example | Cost and throughput | Use for |
+| لایه (Tier) | نمونه | هزینه و توان عملیاتی (Throughput) | موارد کاربرد |
 |---|---|---|---|
-| No model | MinerU 4.0 `flash` tier, native PDF text extraction | CPU only | Born-digital PDFs and office files |
-| Small specialist models | MinerU `basic` (OCR, formula and table models, CPU-capable); NVIDIA Nemotron 3.5 Parse (October 17, 2026; about 0.63B parameters, OpenMDW-1.1, optional multi-pass mode; it replaced Nemotron Parse 2.0) | Cheap, self-hosted | Scans with simple layout |
-| Parsing VLM | Cohere Parse `parse-v5.0` (2.3B, August 27, 2026): $1.50 per 1,000 pages via API, 4.5 pages/s on one GPU (vendor); jina-ocr-v1 (September 14, 2026): 2.57 pages/s on one A100, CC BY-NC 4.0 so non-commercial without a license | Mid | Tables, forms, multi-column |
-| Frontier VLM | GPT-6.1 Sol, Claude Opus 5.5, Gemini 4 Argon | Highest per page | The hard residue |
+| بدون مدل | لایه `flash` در MinerU 4.0، استخراج بومی متن PDF | فقط CPU | فایل‌های آفیس و PDFهای متولد دیجیتال (Born-digital) |
+| مدل‌های تخصصی کوچک | MinerU `basic` (مدل‌های OCR، فرمول و جدول، دارای قابلیت اجرا روی CPU)؛ NVIDIA Nemotron 3.5 Parse (۱۷ اکتبر ۲۰۲۶؛ حدود ۰.۶۳ میلیارد پارامتر، OpenMDW-1.1، حالت اختیاری multi-pass؛ جایگزین Nemotron Parse 2.0 شد) | ارزان، میزبانی‌شده توسط خود (self-hosted) | اسکن‌های دارای چیدمان ساده |
+| مدل VLM برای پارس | Cohere Parse با نسخه `parse-v5.0` (۲.۳ میلیارد پارامتر، ۲۷ آگوست ۲۰۲۶): ۱.۵۰ دلار به ازای هر ۱,۰۰۰ صفحه از طریق API، ۴.۵ صفحه در ثانیه روی یک GPU (طبق ادعای شرکت)؛ jina-ocr-v1 (۱۴ سپتامبر ۲۰۲۶): ۲.۵۷ صفحه در ثانیه روی یک A100، دارای مجوز CC BY-NC 4.0 و در نتیجه غیرتجاری بدون اخذ مجوز | متوسط | جداول، فرم‌ها، متن‌های چندستونه |
+| مدل‌های VLM پیشرو (Frontier) | GPT-6.1 Sol، Claude Opus 5.5، Gemini 4 Argon | بالاترین هزینه به ازای هر صفحه | اسناد پیچیده باقی‌مانده |
 
-The accuracy gap between the tiers is smaller than the price gap: on Cohere's own ParseBench run, Cohere Parse averaged 79.2 against 84.4 for GPT-5.5 and 84.3 for Claude Opus 4.8, neither of them the vendor's newest model even at publication (vendor-run; rerun it against current models before you rely on it). MinerU 4.0 (September 16, 2026) builds the tiering in (`flash`, `basic`, `standard`, `advanced`), parses DOCX, PPTX, XLSX, EPUB and HTML natively without converting to PDF, and returns stable block locators (`doc/tier/page/block`) that make citations verifiable and let agents read documents progressively instead of receiving pre-cut chunks.
-
----
-
-## Cleaning and Normalization
-
-The shared first-pass quality gate:
-- **Boilerplate removal.** Strip navigation, ads, headers, footers, cookie banners. For HTML at scale, the standard is a content-extraction library; the FineWeb project found that extracting from raw web archives with such a tool beat using pre-extracted text, which "retained too much boilerplate," so this is upstream quality, not cosmetics.
-- **Encoding fixes** for mojibake and double-encoded text, plus line-ending normalization.
-- **Unicode normalization** (NFC/NFKC) so visually identical strings compare equal, a prerequisite for dedup and matching to work at all.
-- **Language filtering** below a confidence threshold.
-
-A counterintuitive caveat worth teaching: **more filtering is not strictly better.** FineWeb's ablations found many heuristics had low or marginal impact (it dropped most candidate filters for too little gain), and Nemotron-CC (arXiv:2412.02595) reports that aggressive heuristic filtering can discard roughly 18% of the tokens its own quality classifier rates high-quality. Filters must be ablated against a downstream eval, not assumed.
+شکاف دقت میان این لایه‌ها بسیار کمتر از شکاف قیمتی آن‌هاست: در اجرای ParseBench توسط خود شرکت Cohere، مدل Cohere Parse به میانگین امتیاز ۷۹.۲ دست یافت در مقایسه با ۸۴.۴ برای GPT-5.5 و ۸۴.۳ برای Claude Opus 4.8 که هیچ‌کدام از آن‌ها حتی در زمان انتشار بنچمارک، جدیدترین مدل سازنده خود نبودند (این بنچمارک توسط خود شرکت سازنده اجرا شده؛ پیش از اعتماد به آن، بنچمارک را روی مدل‌های کنونی اجرا کنید). نسخه MinerU 4.0 (۱۶ سپتامبر ۲۰۲۶) قابلیت لایه‌بندی را به صورت درونی ارائه می‌دهد (`flash`، `basic`، `standard`، `advanced`)، فایل‌های DOCX، PPTX، XLSX، EPUB و HTML را به شکل بومی و بدون تبدیل به PDF پارس می‌کند، و موقعیت‌یاب‌های بلوکی پایدار (`doc/tier/page/block`) برمی‌گرداند که استنادها را قابل راستی‌آزمایی کرده و به Agentها امکان می‌دهد اسناد را به صورت گام‌به‌گام بخوانند به جای آنکه تکه‌های از پیش برش‌خورده (pre-cut chunks) را تحویل بگیرند.
 
 ---
 
-## Deduplication
+## پاک‌سازی و نرمال‌سازی
 
-Dedup is the highest-leverage stage, and the clearest case for "shared infrastructure," because it pays off three ways. The foundational result (Lee et al., arXiv:2107.06499) reports that deduplicating training data makes models emit memorized text about 10x less often, reach equal or better accuracy in fewer steps, and, critically, **reduces train-test overlap, so dedup is also decontamination.** It also mitigates privacy risk by reducing memorization of repeated PII.
+دروازه کیفی گام اول (first-pass) مشترک:
+- **حذف محتوای زائد و تکراری (Boilerplate removal).** حذف منوهای ناوبری، تبلیغات، هدرها، فوترها و بنرهای کوکی. برای داده‌های HTML در مقیاس وسیع، راهکار استاندارد استفاده از کتابخانه‌های استخراج محتوا است؛ پروژه FineWeb نشان داد که استخراج داده از آرشیوهای خام وب با چنین ابزاری، بهتر از استفاده از متن‌های از پیش استخراج‌شده عمل می‌کند؛ زیرا متن‌های قبلی «حاوی محتوای زائد بسیار زیادی بودند»، بنابراین این موضوع به کیفیت بالادستی مربوط است و صرفاً جنبه ظاهری ندارد.
+- **اصلاح انکودینگ (Encoding fixes)** برای خطاهای موجی‌باکه (mojibake) و متن‌های دو بار انکودشده، به علاوه نرمال‌سازی پایان خطوط (line-ending).
+- **نرمال‌سازی یونیکد (Unicode normalization)** با فرمت‌های NFC/NFKC تا رشته‌هایی که از نظر ظاهری یکسان هستند از دید برنامه نیز برابر شناخته شوند؛ این امر پیش‌نیازی ضروری برای عملکرد صحیح حذف تکرار (dedup) و تطبیق است.
+- **فیلتر زبانی** برای مواردی که ضریب اطمینان آن‌ها از یک آستانه مشخص پایین‌تر است.
 
-The three tiers, run as a cascade (cheap-and-exact first, expensive-and-semantic last):
-1. **Exact**: hash whole documents or normalized substrings. Fast and precise; catches only verbatim copies.
-2. **Fuzzy / near-duplicate**: **MinHash + LSH** estimates Jaccard similarity over token n-gram shingles and buckets candidates to avoid all-pairs comparison (the web-scale default; some vector DBs now ship it as a native index). SimHash is the classic alternative. The caveat: these are *lexical*, so documents that share a template but differ in meaning can be wrongly removed.
-3. **Semantic / embedding dedup**: **SemDeDup** (arXiv:2303.09540) embeds each item, clusters, and drops near-duplicates within a cluster by cosine similarity; it reports removing ~50% of a large image-text dataset with minimal performance loss, catching paraphrases that MinHash misses.
-
-The production pattern composes them, MinHash first, then SemDeDup. State the three-way payoff explicitly: RAG (duplicate chunks waste the context window and crowd out diverse evidence), training (less memorization, fewer steps), and eval integrity (dedup against benchmarks prevents contamination).
-
----
-
-## PII, Consent, and Governance
-
-**PII detection and redaction.** Microsoft Presidio (MIT) is the open standard: an Analyzer that detects entities via NER plus regex, checksums, and context words, and an Anonymizer that redacts, replaces, masks, hashes, or encrypts, across text, images (with OCR), and structured data, deployable at corpus scale. Because dedup reduces duplication-driven memorization, privacy and dedup are linked.
-
-**Consent, licensing, and provenance** are now a regulatory requirement, not just hygiene. Under the EU AI Act, general-purpose-model providers must keep a copyright policy and publish a "sufficiently detailed summary" of training content using the AI Office's mandatory template, including data sources and respect for copyright opt-outs (this summary duty has applied to new general-purpose models since August 2025, with models already on the market given until August 2027). Article 50 transparency obligations have applied since August 2, 2026; generative systems placed on the market before that date have until December 2, 2026 to add machine-readable marking. The governance implication for the pipeline: every record carries source, license, consent status, and timestamp as metadata from ingestion onward, which is exactly what lineage (below) provides. Governance is not a final gate; it is metadata threaded through every stage. See [AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md).
-
-**Record how data was acquired, not just its license.** US courts are separating the legality of *training* from the legality of *acquisition*. In Bartz v. Anthropic (2025) the court held training on books to be fair use but did not extend that to building a library from pirated copies, and the case settled for $1.5B. In August 2026 music publishers including Sony Music Publishing and Warner Chappell sued Anthropic on the same acquisition theory, alleging torrenting of books containing lyrics and sheet music, while the US government filed a brief (reported September 2, 2026) backing OpenAI's fair-use position on training in The New York Times v. OpenAI. For the pipeline, that means a provenance field for **acquisition channel** (licensed feed, crawl under robots rules, purchased, user-contributed, torrent or shadow library) on every source, so a tainted source can be found and excised. The remediation path is expensive: Suno's v6 (September 2026) was retrained on licensed music, and the company said it would retire its older models.
-
-**Fully open releases make provenance auditable.** Most open-weight models ship weights only. MBZUAI's K2 Horizon family (September 3, 2026, Apache 2.0, 0.9B to 375B-A23B) also releases its training data (TxT360-v2 plus pretraining and midtraining sets), training code and intermediate checkpoints, so you can run contamination checks against the actual pretraining corpus instead of trusting a model card.
+یک هشدار خلاف شهود که یادگیری آن حائز اهمیت است: **فیلتر کردن بیشتر لزوماً بهتر نیست.** تحلیل‌های حذفی (ablations) در پروژه FineWeb نشان داد که بسیاری از قواعد سرانگشتی و ابتکاری (heuristics) تاثیر کم یا ناچیزی دارند (این پروژه بیشتر فیلترهای کاندید را به دلیل بازدهی بسیار اندک کنار گذاشت)، و Nemotron-CC (مقاله arXiv:2412.02595) گزارش می‌دهد که فیلتراسیون تهاجمی بر پایه قواعد ابتکاری می‌تواند تقریباً ۱۸٪ از Tokenهایی را که کلاسیفایر کیفیت خود مدل آن‌ها را باکیفیت ارزیابی می‌کند، دور بریزد. فیلترها باید در برابر ارزیابی‌های پایین‌دستی آزموده و ارزیابی حذفی (ablate) شوند، نه اینکه از پیش مفروض گرفته شوند.
 
 ---
 
-## Quality Filtering and Enrichment
+## حذف داده‌های تکراری (Deduplication)
 
-**Quality filtering** comes in two families. **Heuristic** rules (length, symbol-to-word ratio, repetition, stopword presence) are cheap but cannot catch complex content noise. **Model-based classifiers** score quality or educational value; FineWeb-Edu trained a lightweight classifier on LLM-generated quality annotations and reported large downstream gains, matching a larger corpus with far fewer tokens. The flagged caveat: classifier filtering is not a free lunch (the "data-quality illusion" work argues it can be miscalibrated), so **always ablate filters on a downstream eval, never trust them by reputation.**
+حذف داده‌های تکراری (Dedup) موثرترین مرحله و بارزترین مصداق «زیرساخت مشترک» است، زیرا از سه جهت سودمند واقع می‌شود. یافته بنیادین (Lee و همکاران، arXiv:2107.06499) نشان می‌دهد که حذف تکرار از داده‌های آموزشی باعث می‌شود مدل‌ها حدود ۱۰ برابر کمتر متون حفظ‌شده را بازتولید کنند، با تعداد مراحل کمتر به دقتی برابر یا بهتر برسند و از همه مهم‌تر، **هم‌پوشانی میان داده‌های آموزش و آزمون (train-test overlap) را کاهش می‌دهد، بنابراین حذف تکرار نوعی آلودگی‌زدایی (decontamination) نیز محسوب می‌شود.** این کار همچنین با کاهش حفظ اطلاعات شناسایی فردی (PII) تکراری، ریسک‌های مربوط به حریم خصوصی را تعدیل می‌کند.
 
-**Chunking** (the RAG-side stage) has no universal winner: published benchmarks swing widely between fixed-size, recursive, and semantic strategies, so it is dataset-specific and must be evaluated, not defaulted. See [Chunking Strategies](02-chunking-strategies.md).
+سه لایه اصلی که به صورت آبشاری اجرا می‌شوند (ابتدا لایه ارزان و دقیق، و در پایان لایه گران و معنایی):
+۱. **دقیق (Exact)**: هش کردن کل اسناد یا زیررشته‌های نرمال‌شده. سریع و دقیق؛ و تنها کپی‌های عینی و کلمه‌به‌کلمه را شناسایی می‌کند.
+۲. **فازی / تقریبا تکراری (Fuzzy / near-duplicate)**: روش **MinHash + LSH** شباهت ژاکارد (Jaccard similarity) را روی n-gram شینگل‌های Token تخمین می‌زند و کاندیداها را دسته‌بندی (bucket) می‌کند تا از مقایسه تمام جفت‌ها جلوگیری شود (این رویکرد پیش‌فرض در مقیاس وب است؛ برخی پایگاه‌های داده برداری (Vector Database) اکنون آن را به عنوان یک ایندکس بومی ارائه می‌دهند). روش SimHash جایگزین کلاسیک آن است. هشدار: این روش‌ها *واژگانی (lexical)* هستند، بنابراین اسنادی که قالب مشترکی دارند اما معنای متفاوتی دارند ممکن است به اشتباه حذف شوند.
+۳. **حذف تکرار معنایی / تعبیه‌محور (Semantic / embedding dedup)**: روش **SemDeDup** (مقاله arXiv:2303.09540) هر آیتم را تعبیه (embed) کرده، خوشه‌بندی می‌کند و موارد تقریباً تکراری در هر خوشه را بر اساس شباهت کسینوسی (cosine similarity) حذف می‌نماید؛ این مقاله گزارش داده که حدود ۵۰٪ از یک مجموعه داده بزرگ تصویر-متن با کمترین افت کارایی حذف شد، و نقل‌قول‌ها و بازنویسی‌هایی (paraphrases) که MinHash نادیده می‌گیرد با این روش شناسایی شدند.
 
-**Enrichment and metadata.** Attach standard metadata (title, author, timestamp, source, section) and generated metadata (chunk summaries, contextual prefixes, synthetic questions a chunk answers), which turns single-axis vector similarity into multi-dimensional filtered search. See [Contextual Retrieval](10-contextual-retrieval.md).
-
-**Lineage.** OpenLineage (with Marquez as the reference implementation) is the vendor-neutral standard for tracking run, job, and dataset events; for ML it extends the graph forward through feature tables, models, and predictions. With data versioning (DVC, lakeFS, Delta/Iceberg time-travel), this is the substrate that makes the governance metadata auditable end to end.
-
----
-
-## Pipelines and Orchestration
-
-**Batch vs streaming.** Pretraining-corpus prep and bulk RAG indexing are batch jobs (Spark or Ray over object storage). RAG *freshness* is incremental: as source documents change, re-ingest only the deltas. Change Data Capture captures row-level source changes in real time, which for RAG maps to "detect changed, new, and deleted documents, re-parse and re-embed only those, then upsert or delete in the vector store," avoiding a full re-index and preventing stale or orphaned vectors.
-
-**Orchestrators.** Airflow is the default with the biggest ecosystem; Dagster is asset-based with incremental recompute that suits incremental RAG re-embedding; Prefect is the lighter-weight Pythonic option. Spark and Ray are the distributed compute the orchestrator schedules, not orchestrators themselves.
-
-**The embed stage is moving into the store.** MongoDB Atlas Automated Embedding (GA August 13, 2026) embeds new documents on write and re-embeds changed ones with Voyage models; turbopuffer made native embedding GA on September 29, 2026; Elasticsearch `semantic_text` embeds at ingest. That deletes the embed-and-upsert job from your DAG and makes CDC freshness the database's problem. The tradeoff is that the vendor now owns the model version, so a model change becomes a vendor-scheduled re-embed rather than one you plan. On the lake side, Milvus 3.0 (July 2026) can query Parquet, Iceberg, Lance and Vortex data in place as read-only External Collections and backfill new columns online, so re-embedding a few hundred million rows with a new model becomes a background column fill rather than a parallel index rebuild.
-
-**Vector vs feature store.** The pipeline forks at the end: RAG writes chunk embeddings plus metadata to a **vector store** (the serving layer for retrieval), while fine-tuning writes curated examples to a **feature or training-record store** with point-in-time correctness. Both hang off the same shared trunk.
+الگوی مورد استفاده در محیط پروداکشن، این دو را ترکیب می‌کند: ابتدا MinHash و سپس SemDeDup. مزایای سه‌گانه را به طور صریح بیان کنید: RAG (تکه‌های تکراری پنجره کانتکست را هدر داده و شواهد متنوع را پس می‌زنند)، آموزش (حفظ‌کردن کمتر، مراحل آموزش کمتر)، و صحت ارزیابی (حذف تکرار در برابر بنچمارک‌ها مانع از آلودگی داده‌ها می‌شود).
 
 ---
 
-## Data for Fine-Tuning
+## اطلاعات شناسایی فردی (PII)، رضایت و حاکمیت
 
-The tail that diverges from RAG:
-- **Curation beats volume.** A small set of carefully curated examples often beats a large mediocre one; the quality triad is difficulty, quality, and diversity. (The exact "1,000 beats 10,000" figures are illustrative, not laws.)
-- **Synthetic data** (Self-Instruct-style expansion from a small seed set through a teacher model, then filtered) scales cheaply but risks diversity collapse and model degradation if generated carelessly, so diversity is a first-class objective. See [Synthetic Data Generation](../03-training-and-adaptation/06-synthetic-data-generation.md).
-- **Decontamination is the must-do.** The flagged result (arXiv:2311.04850) reports that *rephrased or translated* test items slip past n-gram decontamination, and a model trained on such data can overfit a benchmark to near-frontier scores. Even synthetic data generated by frontier models was found contaminated. The rule: decontaminate with embedding or LLM-based matching, not just n-gram overlap, and do it before every eval, because contamination silently inflates scores. See [Benchmarks and Leaderboards](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md).
+**شناسایی و مخدوش‌سازی اطلاعات شناسایی فردی (PII).** ابزار Microsoft Presidio (تحت مجوز MIT) استاندارد باز در این زمینه است: یک تحلیل‌گر (Analyzer) که موجودیت‌ها را از طریق بازشناسی موجودیت‌های نامدار (NER) به همراه regex، کدهای کنترلی (checksums) و کلمات زمینه‌ای تشخیص می‌دهد، و یک گمنام‌ساز (Anonymizer) که کار مخدوش‌سازی، جایگزینی، ماسک کردن، هش کردن یا رمزنگاری را در میان متن، تصاویر (با OCR) و داده‌های ساختاریافته انجام داده و در مقیاس کل مجموعه داده قابل استقرار (Deployment) است. از آنجا که حذف داده‌های تکراری باعث کاهش حفظ ناشی از تکرار در مدل می‌شود، حریم خصوصی و حذف تکرار با یکدیگر پیوند خورده‌اند.
 
----
+**رضایت، اخذ مجوز (licensing) و منشأ داده (provenance)** اکنون یک الزام قانونی و رگولاتوری هستند، نه صرفاً یک ممارست بهداشتی و توصیه‌شده. بر اساس قانون هوش مصنوعی اتحادیه اروپا (EU AI Act)، ارائه‌دهندگان مدل‌های چندمنظوره ملزم هستند خط‌مشی کپی‌رایت داشته باشند و یک «خلاصه به اندازه کافی دقیق» از محتوای آموزشی را با استفاده از الگوی اجباری دفتر هوش مصنوعی منتشر کنند که شامل منابع داده و احترام به درخواست‌های انصراف از کپی‌رایت (copyright opt-outs) باشد (این وظیفه خلاصه‌سازی از آگوست ۲۰۲۵ برای مدل‌های چندمنظوره جدید اعمال شده است و مدل‌هایی که پیش‌تر در بازار بوده‌اند تا آگوست ۲۰۲۷ فرصت دارند). تعهدات شفافیت ماده ۵۰ از ۲ آگوست ۲۰۲۶ لازم‌الاجرا شده است؛ سیستم‌های مولدی که پیش از آن تاریخ در بازار عرضه شده‌اند تا ۲ دسامبر ۲۰۲۶ فرصت دارند علامت‌گذاری خوانا توسط ماشین را اضافه کنند. پیامد حاکمیتی برای خط لوله این است: از زمان ورود داده به بعد، هر رکورد منبع، مجوز، وضعیت رضایت و برچسب زمانی (timestamp) را به عنوان متادیتا حمل می‌کند، که این دقیقاً همان چیزی است که ردگیری اصالت و تبار داده (lineage) در ادامه فراهم می‌آورد. حاکمیت یک دروازه نهایی و مجزا نیست؛ بلکه متادیتایی است که در تمام مراحل تنیده شده است. بخش [حاکمیت هوش مصنوعی و انطباق](../13-reliability-and-safety/04-ai-governance-and-compliance.md) را مشاهده کنید.
 
-## Failure Modes
+**نحوه به دست آوردن داده را ثبت کنید، نه فقط مجوز آن را.** دادگاه‌های ایالات متحده در حال تفکیک قانونی بودن *آموزش* از قانونی بودن *اکتساب (acquisition)* داده‌ها هستند. در پرونده Bartz علیه Anthropic (سال ۲۰۲۵)، دادگاه آموزش بر روی کتاب‌ها را استفاده منصفانه (fair use) دانست اما این موضوع را به ایجاد یک کتابخانه از نسخه‌های غیرقانونی (دزدی‌شده) بسط نداد و این پرونده با توافق ۱.۵ میلیارد دلاری حل و فصل شد. در آگوست ۲۰۲۶، ناشران موسیقی از جمله Sony Music Publishing و Warner Chappell با استناد به همین نظریه اکتساب، علیه Anthropic شکایت کردند و مدعی تورنت کردن کتاب‌های حاوی متن ترانه و نُت‌های موسیقی شدند، در حالی که دولت ایالات متحده لایحه‌ای (گزارش‌شده در ۲ سپتامبر ۲۰۲۶) در حمایت از موضع استفاده منصفانه OpenAI در پرونده نیویورک تایمز علیه OpenAI ارائه داد. برای خط لوله، این امر به معنای در نظر گرفتن یک فیلد منشأ برای **کانال اکتساب (acquisition channel)** (فید دارای مجوز، خزش بر اساس قوانین robots، خریداری‌شده، مشارکت کاربر، تورنت یا کتابخانه‌های غیررسمی/shadow library) برای هر منبع است تا در صورت آلوده بودن یک منبع، بتوان آن را شناسایی و حذف کرد. مسیر اصلاح و جبران خسارت بسیار پرهزینه است: نسخه Suno v6 (سپتامبر ۲۰۲۶) مجدداً بر روی موسیقی‌های دارای مجوز آموزش دید و شرکت اعلام کرد که مدل‌های قدیمی‌تر خود را از رده خارج خواهد کرد.
 
-1. **Trusting file extensions** instead of magic-byte detection (wrong parser, silent garbage).
-2. **Parsing scanned PDFs with a text-only path** (empty or partial extraction; route image PDFs to OCR or multimodal).
-3. **Sending every page to the most expensive parser** (route by tier and escalate only failures; per-page cost dominates at corpus scale).
-4. **Extracting from pre-stripped HTML** (boilerplate pollution; extract from raw with a content-extraction tool).
-5. **Skipping Unicode normalization** (exact dedup and matching silently miss duplicates).
-6. **Dedup at the wrong tier** (MinHash alone misses paraphrases; cascade exact, then fuzzy, then semantic).
-7. **Over-aggressive heuristic filtering** (Nemotron-CC reports it can discard ~18% of high-quality tokens; ablate every filter).
-8. **Trusting a quality classifier on reputation** (the data-quality illusion; validate downstream).
-9. **No PII redaction before training** (memorized and regurgitated PII, worse with duplication).
-10. **No license, consent, provenance, or acquisition-channel metadata** (an un-auditable corpus that cannot meet training-content-summary obligations or isolate a tainted source).
-11. **Eval contamination, the silent killer** (n-gram-only decontamination misses rephrased test items; use embedding or LLM decontamination).
-12. **Stale RAG index** (full re-index instead of CDC; cost blowup, stale answers, orphaned vectors).
-13. **Bad chunking by default** (benchmarks disagree; evaluate per dataset).
-14. **No lineage** (irreproducible datasets and undebuggable regressions; emit lineage from day one).
+**انتشارهای کاملاً باز، امکان حسابرسی منشأ داده‌ها را فراهم می‌کنند.** اغلب مدل‌های دارای وزن باز (open-weight) تنها وزن‌ها را عرضه می‌کنند. اما خانواده K2 Horizon متعلق به MBZUAI (۳ سپتامبر ۲۰۲۶، مجوز Apache 2.0، از ۰.۹ میلیارد تا ۳۷۵B-A23B) داده‌های آموزشی خود (مجموعه TxT360-v2 به علاوه مجموعه‌های پیش‌آموزش و آموزش میانی)، کد آموزش و چک‌پوینت‌های میانی را نیز منتشر می‌کند تا بتوانید به جای اعتماد به برگه معرفی مدل (model card)، بررسی‌های مربوط به آلودگی داده‌ها را مستقیماً بر روی مجموعه داده واقعی پیش‌آموزش اجرا کنید.
 
 ---
 
-## Interview Questions
+## فیلتر کیفیت و غنی‌سازی
 
-### Q: Why is deduplication one of the most important stages in an AI data pipeline?
+**فیلتر کیفیت (Quality filtering)** به دو دسته کلی تقسیم می‌شود. قواعد **هیوریستیک (Heuristic)** (طول، نسبت نماد به کلمه، تکرار، وجود کلمات توقف یا stopwords) کم‌هزینه هستند اما نمی‌توانند نویز پیچیده محتوا را شناسایی کنند. **دسته‌بندهای مبتنی بر مدل (Model-based classifiers)** به کیفیت یا ارزش آموزشی امتیاز می‌دهند؛ FineWeb-Edu یک دسته‌بند سبک‌وزن را روی حاشیه‌نویسی‌های کیفی تولیدشده توسط LLM آموزش داد و بهبودهای چشمگیری را در وظایف پایین‌دستی گزارش کرد، به‌گونه‌ای که با تعداد Tokenهای بسیار کمتر با یک پیکره متنی بزرگ‌تر برابری می‌کرد. نکته هشدار داده‌شده: فیلترسازی با دسته‌بند یک مزیت رایگان و بدون هزینه نیست (پژوهش «توهم کیفیت داده» استدلال می‌کند که این دسته‌بندها ممکن است کالیبره‌نشده باشند)، بنابراین **همیشه فیلترها را در یک ارزیابی پایین‌دستی مورد تحلیل تفکیکی (ablate) قرار دهید، و هرگز بر اساس شهرت به آن‌ها اعتماد نکنید.**
 
-**Strong answer:**
-Because it pays off three different ways from one operation. For training, deduplicating cuts memorization (models regurgitate training text far less) and reaches equal or better accuracy in fewer steps, so it saves compute. For RAG, duplicate chunks waste the context window and crowd out diverse evidence, hurting retrieval quality. And crucially, dedup against your benchmarks is also decontamination: the foundational study found removing duplicates also removed train-test overlap that was inflating eval scores. In practice I run it as a cascade, exact hashing first, then MinHash with LSH for near-duplicates, then semantic embedding dedup for paraphrases that lexical methods miss, because each tier catches what the cheaper one cannot.
+**Chunking** (مرحله سمت RAG) هیچ برنده جهانی ندارد: بنچمارک‌های منتشرشده نوسانات شدیدی بین استراتژی‌های با اندازه ثابت (fixed-size)، بازگشتی (recursive) و معنایی (semantic) نشان می‌دهند، بنابراین وابسته به مجموعه داده است و باید ارزیابی شود، نه اینکه به‌صورت پیش‌فرض در نظر گرفته شود. به [استراتژی‌های Chunking](02-chunking-strategies.md) مراجعه کنید.
 
-### Q: How do you keep eval results honest against data contamination?
+**غنی‌سازی و فراداده (Enrichment and metadata).** فراداده‌های استاندارد (عنوان، نویسنده، برچسب زمانی، منبع، بخش) و فراداده‌های تولیدشده (خلاصه‌های chunk، پیشوندهای زمینه‌ای یا contextual prefixes، پرسش‌های سنتتیک که یک chunk به آن‌ها پاسخ می‌دهد) را پیوست کنید؛ این کار شباهت برداری تک‌محوره را به یک جستجوی فیلترشده چندبعدی تبدیل می‌کند. به [بازیابی زمینه‌ای](10-contextual-retrieval.md) مراجعه کنید.
 
-**Strong answer:**
-The trap is that simple n-gram decontamination is not enough. A well-known result showed that paraphrased or translated versions of test items slip right past n-gram matching, and a model trained on those can overfit a benchmark to near-frontier scores, and even synthetic data generated by strong models came back contaminated. So I decontaminate with semantic methods, embedding similarity search plus an LLM adjudicator, not just string overlap, and I run it against all of my eval sets before every evaluation. More broadly I prefer held-out or freshly released test sets where possible, treat any benchmark as potentially contaminated, and lean on my own gold data for the decisions that matter, since that is the one set I can guarantee the model has not seen.
-
-### Q: You need to parse 5 million pages of mixed born-digital PDFs, scans and office files for RAG. How do you design it for cost?
-
-**Strong answer:**
-I would route by tier and treat pages per GPU-second as the core metric. First, detect type by content and send born-digital PDFs and office files down a no-model path (native text extraction; MinerU's `flash` tier does this), which is often most of an enterprise corpus. Scans go to a small self-hosted OCR and layout model. Only pages that fail a cheap quality check (empty text, broken tables, low OCR confidence, garbled reading order) escalate to a parsing VLM, and only the residue that still fails goes to a frontier VLM.
-
-The arithmetic, assuming roughly 1,500 input and 800 output tokens per page and no reasoning tokens: Cohere Parse at $1.50 per 1,000 pages puts all 5M pages at $7,500. GPT-6 Sol ($2 / $10 per 1M) is about $0.011 per page, or ~$55,000, and Claude Opus 5.5 ($4 / $20) at least double that, since its thinking cannot be turned off, while specialist parsers trailed older frontier models (GPT-5.5, Opus 4.8) by only about 5 points on vendor-run ParseBench. The cheap end of the frontier families breaks the simple ladder: GPT-6 Luna and Claude Haiku 5.5 (both $0.10 / $0.50, Haiku only while a request stays under 100K tokens, which a single page always does) are about $0.0006 per page, ~$2,750 for the corpus, below the parsing API (Haiku's newer tokenizer counts about 30% more tokens for the same content, so expect it to land somewhat higher). GPT-6.1 Terra ($1 / $5) is a middle rung at about $0.0055 per page (~$27,500). All three belong in the benchmark next to the specialists; the open question is whether they hold up on tables and scans.
-
-Dedicated GPUs change it again: at Cohere's reported 4.5 pages/s per GPU, 5M pages is roughly 300 GPU-hours, which is why Cohere says its single-tenant Model Vault deployment undercuts the API by 23% at 50% utilization (vendor-reported). I would check licenses before self-hosting (jina-ocr-v1 is CC BY-NC), keep block-level locators so citations point at a page and block, and benchmark each tier on a few hundred of my own pages before fixing the routing thresholds.
+**نسب داده (Lineage).** استاندارد OpenLineage (با پیاده‌سازی مرجع Marquez) استانداردی مستقل از ارائه‌دهنده برای ردگیری رویدادهای اجرا (run)، وظیفه (job) و مجموعه داده است؛ این استاندارد برای یادگیری ماشین (ML) گراف را از طریق جداول ویژگی (feature tables)، مدل‌ها و پیش‌بینی‌ها به سمت جلو گسترش می‌دهد. همراه با نسخه‌بندی داده‌ها (DVC، lakeFS، و قابلیت time-travel در Delta/Iceberg)، این بستر همان چیزی است که فراداده‌های حاکمیت داده را از ابتدا تا انتها قابل حسابرسی می‌سازد.
 
 ---
 
-## References
+## خطوط لوله و ارکستراسیون
+
+**پردازش دسته‌ای در برابر جریانی (Batch vs streaming).** آماده‌سازی پیکره متنی برای پیش‌آموزش و نمایه‌سازی حجیم در RAG کارهایی از نوع دسته‌ای (batch) هستند (اجرای Spark یا Ray روی ذخیره‌سازهای شیء). *تازگی (freshness)* در RAG افزایشی است: با تغییر اسناد مبدا، تنها بخش‌های تغییریافته (deltas) را مجدداً وارد (re-ingest) کنید. مکانیزم ثبت داده‌های تغییریافته (Change Data Capture) تغییرات سورس را در سطح سطر به‌صورت بلادرنگ ثبت می‌کند که برای RAG به این صورت تعریف می‌شود: «اسناد تغییریافته، جدید و حذف‌شده را شناسایی کنید، فقط همان موارد را دوباره پارس و embed کنید، سپس در پایگاه داده برداری (Vector Database) آن‌ها را ثبت/به‌روزرسانی (upsert) یا حذف نمایید»؛ این کار از نمایه‌سازی مجدد کل داده‌ها جلوگیری کرده و مانع از ایجاد بردارهای کهنه یا رهاشده (orphaned) می‌شود.
+
+**ارکستریتورها (Orchestrators).** ابزار Airflow گزینه پیش‌فرض با بزرگ‌ترین اکوسیستم است؛ Dagster مبتنی بر دارایی (asset-based) با قابلیت محاسبه مجدد افزایشی است که با تعبیه مجدد (re-embedding) افزایشی در RAG تناسب دارد؛ Prefect گزینه‌ای سبک‌تر و متناسب با سبک پایتون (Pythonic) است. Spark و Ray پلتفرم‌های محاسباتی توزیع‌شده‌ای هستند که توسط ارکستریتور زمان‌بندی می‌شوند، نه اینکه خودشان ارکستریتور باشند.
+
+**مرحله تعبیه (Embedding) در حال انتقال به درون پایگاه داده است.** قابلیت Automated Embedding در MongoDB Atlas (عرضه عمومی در ۱۳ اوت ۲۰۲۶) اسناد جدید را هنگام نوشتن embed می‌کند و اسناد تغییریافته را با مدل‌های Voyage مجدداً تعبیه می‌نماید؛ turbopuffer تعبیه بومی (native embedding) را در ۲۹ سپتامبر ۲۰۲۶ به عرضه عمومی (GA) رساند؛ نوع داده `semantic_text` در Elasticsearch در زمان ورود داده (ingest) تعبیه را انجام می‌دهد. این امر وظیفه embed-and-upsert را از DAG شما حذف می‌کند و حفظ تازگی بر اساس CDC را به مسئله‌ای در سطح پایگاه داده تبدیل می‌سازد. موازنه و بده‌بستان (tradeoff) در این است که ارائه‌دهنده اکنون مالک نسخه مدل است، بنابراین تغییر مدل به‌جای برنامه‌ای که خودتان تنظیم می‌کنید، به تعبیه مجددی با زمان‌بندی ارائه‌دهنده تبدیل می‌شود. در سمت دریاچه داده، Milvus 3.0 (ژوئیه ۲۰۲۶) می‌تواند داده‌های Parquet، Iceberg، Lance و Vortex را در همان محل به‌عنوان مجموعه‌های خارجی (External Collections) فقط-خواندنی پرس‌وجو کند و ستون‌های جدید را به‌صورت آنلاین پر کند (backfill)؛ بنابراین تعبیه مجدد چند صد میلیون سطر با یک مدل جدید، به‌جای بازسازی موازی ایندکس، به یک پر کردن ستون در پس‌زمینه تبدیل می‌شود.
+
+**ذخیره‌ساز برداری در مقابل مخزن ویژگی (Vector vs feature store).** خط لوله در انتها دوشاخه می‌شود: RAG تعبیه‌های chunk را به همراه فراداده در یک **پایگاه داده برداری (Vector Database)** (لایه سرویس‌دهی برای بازیابی) می‌نویسد، در حالی که Fine-tuning نمونه‌های دست‌چین‌شده را با رعایت صحت در نقطه زمانی (point-in-time correctness) در یک **مخزن ویژگی یا رکوردهای آموزشی** ذخیره می‌کند. هر دوی این‌ها به یک تنه مشترک متصل هستند.
+
+---
+
+## داده برای Fine-Tuning
+
+انتهای خط لوله که مسیرش از RAG جدا می‌شود:
+- **دست‌چین‌سازی بر حجم غلبه می‌کند (Curation beats volume).** یک مجموعه کوچک از نمونه‌های بادقت دست‌چین‌شده اغلب بر یک مجموعه بزرگ متوسط برتری دارد؛ سه‌گانه کیفیت شامل دشواری، کیفیت و تنوع است. (آمارهای دقیقی نظیر «۱,۰۰۰ نمونه بر ۱۰,۰۰۰ نمونه برتری دارد» صرفاً جنبه توضیحی دارند، نه اینکه قانون ثابت باشند).
+- **داده‌های سنتتیک (Synthetic data)** (گسترش به سبک Self-Instruct از یک مجموعه اولیه کوچک از طریق مدل معلم، و سپس فیلتر کردن) با هزینه پایینی مقیاس‌پذیر می‌شود، اما در صورت تولید بی‌دقت با خطر فروپاشی تنوع (diversity collapse) و افت کیفیت مدل همراه است؛ بنابراین تنوع یک هدف درجه اول محسوب می‌شود. به [تولید داده‌های سنتتیک](../03-training-and-adaptation/06-synthetic-data-generation.md) مراجعه کنید.
+- **آلودگی‌زدایی (Decontamination) یک ضرورت اجتناب‌ناپذیر است.** نتیجه مورد توجه (arXiv:2311.04850) گزارش می‌دهد که موارد آزمون *بازنویسی‌شده یا ترجمه‌شده* از زیر دست آلودگی‌زدایی n-gram عبور می‌کنند، و مدلی که روی چنین داده‌هایی آموزش داده شود می‌تواند روی یک بنچمارک اورفیت کرده و به امتیازاتی نزدیک به مدل‌های پیشرو (frontier) برسد. حتی داده‌های سنتتیک تولیدشده توسط مدل‌های پیشرو نیز آلوده شناخته شدند. قاعده کلی: آلودگی‌زدایی را با تطبیق معنایی تعبیه‌ها یا بر پایه LLM انجام دهید، نه صرفاً از طریق همپوشانی n-gram، و این کار را قبل از هر ارزیابی اجرا کنید، زیرا آلودگی داده‌ها بی‌سروصدا امتیازات را بالا می‌برد. به [بنچمارک‌ها و لیدربوردها](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md) مراجعه کنید.
+
+---
+
+## حالت‌های شکست
+
+۱. **اعتماد به پسوندهای فایل** به‌جای تشخیص با بایت‌های جادویی (magic bytes) (انتخاب پارسر نادرست، خروجی نامفهوم و بی‌کیفیت بدون اخطار).
+۲. **پارس کردن PDFهای اسکن‌شده با مسیر فقط-متنی** (استخراج خالی یا ناقص؛ هدایت PDFهای تصویری به OCR یا مدل‌های چندوجهی).
+۳. **ارسال تمام صفحات به گران‌ترین پارسر** (هدایت بر اساس لایه‌ها و ارجاع دادنِ تنها موارد ناموفق به لایه‌های بالاتر؛ در مقیاس کل پیکره داده، هزینه به ازای هر صفحه فاکتور تعیین‌کننده است).
+۴. **استخراج محتوا از HTMLهایی که از پیش پاک‌سازی شده‌اند** (آلودگی متن با کدهای زائد یا boilerplate؛ استخراج از کد خام با استفاده از ابزار استخراج محتوا).
+۵. **صرف‌نظر کردن از نرمال‌سازی یونیکد (Unicode normalization)** (حذف تکرار دقیق و تطبیق، موارد تکراری را بدون اخطار از دست می‌دهند).
+۶. **حذف تکرار در سطح نامناسب** (الگوریتم MinHash به‌تنهایی جملات بازنویسی‌شده را تشخیص نمی‌دهد؛ فرآیند را به‌صورت آبشاری از دقیق، سپس فازی و در نهایت معنایی اجرا کنید).
+۷. **فیلترسازی هیوریستیک بیش‌ازحد تهاجمی** (Nemotron-CC گزارش می‌دهد که این کار می‌تواند حدود ۱۸٪ از Tokenهای باکیفیت را دور بریزد؛ تمام فیلترها را با تحلیل تفکیکی یا ablate ارزیابی کنید).
+۸. **اعتماد به دسته‌بند کیفیت صرفاً بر اساس شهرت** (توهم کیفیت داده؛ اعتبارسنجی را در وظایف پایین‌دستی انجام دهید).
+۹. **عدم پاک‌سازی اطلاعات شناسایی فردی (PII) پیش از آموزش** (حفظ و بازگویی PII توسط مدل، که با وجود داده‌های تکراری بدتر می‌شود).
+۱۰. **نبود فراداده‌های مجوز، رضایت، اصالت (provenance) یا کانال جمع‌آوری** (ایجاد یک پیکره داده غیرقابل حسابرسی که نمی‌تواند الزامات خلاصه‌سازی محتوای آموزشی را برآورده کند یا منبع مسموم را جداسازی نماید).
+۱۱. **آلودگی ارزیابی، قاتل خاموش** (آلودگی‌زدایی مبتنی بر n-gram به‌تنهایی موارد آزمون بازنویسی‌شده را از دست می‌دهد؛ از آلودگی‌زدایی تعبیه‌ای یا مبتنی بر LLM استفاده کنید).
+۱۲. **ایندکس RAG کهنه و تاریخ‌گذشته** (نمایه‌سازی مجدد کامل به‌جای CDC؛ انفجار هزینه، پاسخ‌های کهنه و ایجاد بردارهای رهاشده یا orphaned).
+۱۳. **استفاده پیش‌فرض از روش نامناسب Chunking** (بنچمارک‌ها نتایج متفاوتی دارند؛ به ازای هر مجموعه داده جداگانه ارزیابی کنید).
+۱۴. **فقدان نسب داده (Lineage)** (مجموعه داده‌های غیرقابل بازتولید و پس‌رفت‌هایی که قابل خطایابی نیستند؛ ثبت نسب داده را از روز اول در سیستم پیاده کنید).
+
+---
+
+## سوالات مصاحبه
+
+### پرسش: چرا حذف تکرار (Deduplication) یکی از مهم‌ترین مراحل در خط لوله داده هوش مصنوعی است؟
+
+**پاسخ قوی:**
+زیرا یک عملیات منفرد از سه جهت سودمند واقع می‌شود. برای آموزش، حذف تکرار موجب کاهش پدیده به‌خاطرسپاری (memorization) می‌شود (مدل‌ها متن‌های آموزشی را بسیار کمتر عینا بازگو می‌کنند) و در مراحل کمتری به دقت برابر یا بهتر می‌رسد، در نتیجه در منابع پردازشی صرفه‌جویی می‌کند. برای RAG، تکه‌ها یا chunkهای تکراری پنجره زمینه (context window) را هدر می‌دهند و شواهد متنوع را کنار می‌زنند که این امر به کیفیت بازیابی لطمه می‌زند. و نکته حیاتی اینکه، حذف تکرار در مقایسه با بنچمارک‌ها نوعی آلودگی‌زدایی (decontamination) نیز محسوب می‌شود: مطالعه پایه‌ای نشان داد که حذف موارد تکراری همچنین همپوشانی آموزش-آزمون را که منجر به بالا رفتن کاذب امتیازات ارزیابی می‌شد، حذف کرده است. در عمل، من این کار را به‌صورت آبشاری پیاده‌سازی می‌کنم: ابتدا هشینگ دقیق (exact hashing)، سپس MinHash به همراه LSH برای داده‌های نزدیک به تکرار (near-duplicates)، و در نهایت حذف تکرار معنایی با تعبیه (semantic embedding dedup) برای موارد بازنویسی‌شده‌ای که روش‌های واژگانی آن‌ها را از دست می‌دهند؛ چرا که هر سطح مواردی را شناسایی می‌کند که سطح ارزان‌تر قادر به شکار آن‌ها نبوده است.
+
+### پرسش: چگونه نتایج ارزیابی را در برابر آلودگی داده‌ها معتبر نگه می‌دارید؟
+
+**پاسخ قوی:**
+دام اصلی این است که آلودگی‌زدایی ساده با n-gram کافی نیست. نتیجه‌ای شناخته‌شده نشان داد که نمونه‌های بازنویسی‌شده یا ترجمه‌شده از موارد آزمون به‌راحتی از فیلتر تطبیق n-gram عبور می‌کنند، و مدلی که روی آن‌ها آموزش دیده باشد می‌تواند روی بنچمارک اورفیت کند و نمراتی نزدیک به مدل‌های پیشرو (frontier) به دست آورد؛ حتی مشخص شد که داده‌های سنتتیک تولیدشده توسط مدل‌های قدرتمند نیز حاوی آلودگی بودند. بنابراین من با روش‌های معنایی آلودگی‌زدایی را انجام می‌دهم: جستجوی شباهت با تعبیه به‌علاوه یک داور مبتنی بر LLM، نه فقط همپوشانی رشته‌ای، و پیش از هر ارزیابی آن را روی تمام مجموعه‌های ارزیابی خود اجرا می‌کنم. در سطحی جامع‌تر، در صورت امکان ترجیح می‌دهم از مجموعه‌های آزمون دیده‌نشده (held-out) یا جدیداً منتشرشده استفاده کنم، هر بنچمارکی را بالقوه آلوده تلقی نمایم، و برای تصمیم‌گیری‌های حساس به داده‌های طلایی (gold data) اختصاصی خودم تکیه کنم؛ زیرا این تنها مجموعه‌ای است که می‌توانم مطمئن باشم مدل آن را ندیده است.
+
+### پرسش: شما باید ۵ میلیون صفحه متشکل از PDFهای اصالتاً دیجیتال (born-digital)، اسکن‌ها و فایل‌های آفیس را برای RAG پارس کنید. چگونه معماری آن را با هدف کاهش هزینه طراحی می‌کنید؟
+
+**پاسخ قوی:**
+من پردازش را بر اساس سطوح مختلف مسیریابی می‌کنم و معیار «صفحات بر ثانیه به ازای هر GPU» (pages per GPU-second) را به‌عنوان شاخص اصلی قرار می‌دهم. نخست، نوع فایل را بر اساس محتوا تشخیص می‌دهم و PDFهای اصالتاً دیجیتال و فایل‌های آفیس را به مسیری بدون نیاز به مدل می‌فرستم (استخراج بومی متن؛ سطح `flash` در MinerU 4.0 این کار را انجام می‌دهد) که اغلب بخش عمده‌ای از یک پیکره داده سازمانی را تشکیل می‌دهد. اسکن‌ها به یک مدل کوچک خودمیزبان (self-hosted) برای OCR و تشخیص ساختار (layout) ارسال می‌شوند. تنها صفحاتی که در بررسی کیفی کم‌هزینه مردود شوند (متن خالی، جداول آسیب‌دیده، اطمینان پایین OCR، ترتیب نامرتب خواندن) به یک VLM پارس‌کننده ارجاع داده می‌شوند، و تنها موارد باقی‌مانده‌ای که باز هم با خطا مواجه شوند به یک VLM پیشرو (frontier) منتقل می‌گردند.
+
+محاسبات عددی، با فرض تقریبی ۱,۵۰۰ Token ورودی و ۸۰۰ Token خروجی به ازای هر صفحه و بدون Tokenهای استدلال: هزینه Cohere Parse با ۱.۵۰ دلار به ازای هر ۱,۰۰۰ صفحه، برای کل ۵ میلیون صفحه برابر با ۷,۵۰۰ دلار خواهد بود. مدل GPT-6 Sol (با هزینه ۲ دلار / ۱۰ دلار به ازای هر ۱ میلیون Token) حدود ۰.۰۱۱ دلار برای هر صفحه یا حدود ۵۵,۰۰۰ دلار می‌شود، و Claude Opus 5.5 (با قیمت ۴ دلار / ۲۰ دلار) حداقل دو برابر این مقدار خواهد بود، زیرا قابلیت تفکر (thinking) آن خاموش‌شدنی نیست؛ این در حالی است که پارسرهای تخصصی در ParseBench اجراشده توسط ارائه‌دهنده، تنها حدود ۵ امتیاز از مدل‌های پیشرو قدیمی‌تر (GPT-5.5 و Opus 4.8) عقب‌تر بودند. مدل‌های ارزان‌قیمت خانواده‌های پیشرو، این سلسله‌مراتب ساده را بر هم می‌زنند: مدل‌های GPT-6 Luna و Claude Haiku 5.5 (هر دو با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار؛ برای Haiku تنها تا زمانی که حجم درخواست زیر 100K تا Token بماند، که یک صفحه تکی همیشه این‌گونه است) حدود ۰.۰۰۰۶ دلار به ازای هر صفحه، یعنی حدود ۲,۷۵۰ دلار برای کل پیکره داده هزینه دارند که حتی از API پارس کردن نیز ارزان‌تر است (Tokenizer جدیدتر Haiku برای همان محتوا حدود ۳۰٪ Tokenهای بیشتری می‌شمارد، بنابراین انتظار می‌رود رقم نهایی تا حدی بالاتر باشد). مدل GPT-6.1 Terra (با قیمت ۱ دلار / ۵ دلار) گزینه‌ای میانی با حدود ۰.۰۰۵۵ دلار به ازای هر صفحه (حدود ۲۷,۵۰۰ دلار) است. هر سه مدل در کنار گزینه‌های تخصصی به بنچمارک تعلق دارند؛ سوال بی‌پاسخ این است که آیا در برابر جداول و اسکن‌ها عملکرد خوبی خواهند داشت یا خیر.
+
+استفاده از GPUهای اختصاصی مجدداً معادلات را تغییر می‌دهد: با نرخ ۴.۵ صفحه در ثانیه به ازای هر GPU که توسط Cohere گزارش شده، پردازش ۵ میلیون صفحه تقریباً معادل ۳۰۰ ساعت-GPU است؛ به همین دلیل است که Cohere ادعا می‌کند استقرار (Deployment) تک‌مستأجره (single-tenant / multi-tenant) مدل Model Vault آن در ضریب بهره‌برداری ۵۰٪، هزینه را ۲۳٪ نسبت به API کاهش می‌دهد (طبق گزارش ارائه‌دهنده). من قبل از میزبانی شخصی مجوزها را بررسی می‌کنم (مدل jina-ocr-v1 دارای مجوز CC BY-NC است)، مکان‌یاب‌های در سطح بلوک را حفظ می‌نمایم تا استنادها مستقیماً به صفحه و بلوک اشاره کنند، و قبل از نهایی کردن آستانه‌های مسیریابی، هر لایه را روی چند صد صفحه از اسناد اختصاصی خود بنچمارک می‌کنم.
+
+---
+
+## منابع
 
 - Lee et al., "Deduplicating Training Data Makes Language Models Better" arXiv:2107.06499
 - Abbas et al., "SemDeDup" arXiv:2303.09540
 - Penedo et al., "The FineWeb Datasets" arXiv:2406.17557
 - Yang et al., "Rethinking Benchmark and Contamination ... with Rephrased Samples" arXiv:2311.04850
-- Microsoft, [Presidio](https://github.com/microsoft/presidio)
-- [Unstructured](https://www.unstructured.io/), [Docling](https://github.com/docling-project/docling), [OpenLineage](https://openlineage.io/)
-- [MinerU 4.0 release notes (Sep 2026)](https://github.com/opendatalab/MinerU/releases/tag/mineru-4.0.0-released)
-- [Cohere. "Parse" (Aug 2026)](https://cohere.com/blog/parse)
-- [MBZUAI K2 Horizon 375B-A23B model card](https://huggingface.co/IFM/K2-Horizon-375B-A23B)
+- مایکروسافت، [Presidio](https://github.com/microsoft/presidio)
+- [Unstructured](https://www.unstructured.io/)، [Docling](https://github.com/docling-project/docling)، [OpenLineage](https://openlineage.io/)
+- [یادداشت‌های انتشار MinerU 4.0 (سپتامبر ۲۰۲۶)](https://github.com/opendatalab/MinerU/releases/tag/mineru-4.0.0-released)
+- [Cohere، «Parse» (اوت ۲۰۲۶)](https://cohere.com/blog/parse)
+- [کارت مدل MBZUAI K2 Horizon 375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B)
 
 ---
 
-*Previous: [Production RAG at Scale](14-production-rag-at-scale.md) | Next: [Agent Fundamentals](../07-agentic-systems/01-agent-fundamentals.md)*
+*قبلی: [RAG در مقیاس تولید](14-production-rag-at-scale.md) | بعدی: [اصول پایه‌ای Agent](../07-agentic-systems/01-agent-fundamentals.md)*
+
+</div>

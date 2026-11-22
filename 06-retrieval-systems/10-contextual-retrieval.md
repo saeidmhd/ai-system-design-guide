@@ -1,28 +1,30 @@
-# Contextual Retrieval
+<div dir="rtl">
 
-Contextual Retrieval is an ingestion-time technique that solves the #1 cause of RAG failure: **chunks that lose meaning when separated from their source document**. Pioneered by Anthropic in late 2024, it is now a production standard for high-precision retrieval. Anthropic's own measurements show a 49% reduction in top-20 retrieval failures from contextual embeddings plus contextual BM25, and 67% when reranking is added.
+# بازیابی بافتاری (Contextual Retrieval)
 
-## Table of Contents
+بازیابی بافتاری (Contextual Retrieval) یک تکنیک زمان بارگذاری داده‌ها (ingestion-time) است که علت شماره یک شکست RAG را برطرف می‌کند: **چانک‌هایی که هنگام جدا شدن از سند منبع خود، معنایشان را از دست می‌دهند**. این روش که در اواخر سال ۲۰۲۴ توسط Anthropic پیشگام شد، اکنون به یک استاندارد در محیط عملیاتی برای بازیابی با دقت بالا تبدیل شده است. سنجش‌های اختصاصی Anthropic نشان‌دهنده کاهش ۴۹ درصدی در شکست‌های بازیابی ۲۰ نتیجه برتر با استفاده از تعبیه‌های بافتاری (Contextual Embeddings) به همراه BM25 بافتاری، و کاهش ۶۷ درصدی در صورت افزودن بازرتبه‌بندی (Reranking) است.
 
-- [The Problem: Context Dilution](#the-problem-context-dilution)
-- [How Contextual Retrieval Works](#how-contextual-retrieval-works)
-- [Contextual Embeddings](#contextual-embeddings)
-- [Contextual BM25](#contextual-bm25)
-- [The Full Pipeline: Hybrid + Reranking](#the-full-pipeline-hybrid--reranking)
-- [Implementation Patterns](#implementation-patterns)
-- [Cost Considerations](#cost-considerations)
-- [Contextual Retrieval vs. Other Approaches](#contextual-retrieval-vs-other-approaches)
-- [Production Architecture](#production-architecture)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [مسئله: رقیق‌سازی بافتار (Context Dilution)](#the-problem-context-dilution)
+- [نحوه کارکرد بازیابی بافتاری](#how-contextual-retrieval-works)
+- [تعبیه‌های بافتاری (Contextual Embeddings)](#contextual-embeddings)
+- [الگوریتم BM25 بافتاری (Contextual BM25)](#contextual-bm25)
+- [پایپ‌لاین کامل: ترکیبی + بازرتبه‌بندی](#the-full-pipeline-hybrid--reranking)
+- [الگوهای پیاده‌سازی](#implementation-patterns)
+- [ملاحظات هزینه](#cost-considerations)
+- [بازیابی بافتاری در مقایسه با سایر رویکردها](#contextual-retrieval-vs-other-approaches)
+- [معماری محیط عملیاتی](#production-architecture)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Problem: Context Dilution
+## مسئله: رقیق‌سازی بافتار (Context Dilution)
 
-When we chunk documents for RAG, individual chunks lose the surrounding context that gives them meaning.
+هنگامی که اسناد را برای RAG قطعه‌بندی (Chunking) می‌کنیم، چانک‌های منفرد، بافتار پیرامونی را که به آن‌ها معنا می‌بخشد از دست می‌دهند.
 
-**Example of Context Dilution:**
+**نمونه‌ای از رقیق‌سازی بافتار (Context Dilution):**
 
 ```
 Original Document: "Acme Corp Q3 2025 Financial Report"
@@ -38,15 +40,17 @@ Chunk 18: "The Enterprise plan includes SSO and audit
            logs for $800/month."
 ```
 
-**The problem with Chunk 17**: A user searching "How much does Acme Standard plan cost?" will likely miss this chunk because it contains no mention of "Acme," "Standard," or "plan." The embedding of "It costs $200/month" is semantically distant from the query.
+**مشکل چانک ۱۷ (Chunk 17)**: کاربری که عبارت "How much does Acme Standard plan cost?" (هزینه طرح استاندارد Acme چقدر است؟) را جستجو می‌کند، احتمالاً این چانک را از دست خواهد داد؛ زیرا در آن هیچ اشاره‌ای به "Acme"، "Standard" یا "plan" نشده است. تعبیه عبارت "It costs $200/month" از نظر معنایی با پرس‌وجو (Query) فاصله دارد.
 
-**Insight**: Anthropic's research showed that traditional chunking causes a **5.7% retrieval failure rate** on the top-20 retrieved chunks. That means roughly 1 in 18 queries fails to retrieve the relevant information, even when it exists in the knowledge base.
+**بینش کلیدی**: تحقیقات Anthropic نشان داد که Chunking سنتی باعث **نرخ شکست بازیابی ۵.۷ درصدی** در ۲۰ چانک برتر بازیابی‌شده می‌شود. این بدان معناست که تقریباً از هر ۱۸ پرس‌وجو، ۱ پرس‌وجو در بازیابی اطلاعات مرتبط ناموفق است، حتی با وجود اینکه آن اطلاعات در پایگاه دانش وجود دارد.
 
 ---
 
-## How Contextual Retrieval Works
+## نحوه کارکرد بازیابی بافتاری (Contextual Retrieval)
 
-The core idea is simple: **before embedding a chunk, prepend a short context string that explains what the chunk is about within the full document**.
+ایده اصلی ساده است: **پیش از تعبیه کردن یک چانک، یک رشته بافتار کوتاه را به ابتدای آن اضافه کنید که توضیح می‌دهد این چانک در کل سند درباره چیست**.
+
+<div dir="ltr">
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -68,7 +72,9 @@ The core idea is simple: **before embedding a chunk, prepend a short context str
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**The contextualization step** sends the full document + individual chunk to an LLM with this prompt:
+</div>
+
+**مرحله بافتاربخشی (Contextualization)** کل سند + چانک منفرد را به همراه این Prompt به یک LLM ارسال می‌کند:
 
 ```
 <document>
@@ -86,7 +92,7 @@ search retrieval of the chunk. Answer only with the succinct
 context and nothing else.
 ```
 
-**Result for Chunk 17**:
+**نتیجه برای چانک ۱۷ (Chunk 17)**:
 
 ```
 Before: "It costs $200/month."
@@ -97,25 +103,27 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
          It costs $200/month."
 ```
 
-Now the embedding of this chunk contains "Acme," "Standard plan," and "Product Pricing": all the terms a user would naturally search for.
+اکنون تعبیه این چانک شامل "Acme" ،"Standard plan" و "Product Pricing" است: تمام اصطلاحاتی که یک کاربر به طور طبیعی جستجو می‌کند.
 
 ---
 
-## Contextual Embeddings
+## تعبیه‌های بافتاری (Contextual Embeddings)
 
-Contextual Embeddings is the first sub-technique: embedding the contextualized chunk instead of the raw chunk.
+تعبیه‌های بافتاری (Contextual Embeddings) نخستین زیرتکنیک است: تعبیه کردن چانک بافتاربخشی‌شده به جای چانک خام.
 
-### How It Improves Retrieval
+### نحوه بهبود بازیابی
 
-| Scenario | Raw Chunk Embedding | Contextual Embedding |
-|----------|--------------------|-----------------------|
-| User asks about "Acme pricing" | Misses "It costs $200" | Matches "Acme...Standard plan...costs $200" |
-| User asks about "SSO features" | Matches "SSO and audit logs" | Matches with added context of "Enterprise plan" |
-| User asks about "Q3 financials" | No match (no mention of Q3) | Matches via prepended "Q3 2025 Financial Report" |
+| سناریو | تعبیه چانک خام | تعبیه بافتاری (Contextual Embedding) |
+|---|---|---|
+| کاربر درباره "Acme pricing" سوال می‌کند | "It costs $200" را پیدا نمی‌کند | با "Acme...Standard plan...costs $200" مطابقت می‌یابد |
+| کاربر درباره "SSO features" سوال می‌کند | با "SSO and audit logs" مطابقت می‌یابد | با بافتار افزوده‌شده‌ی "Enterprise plan" مطابقت می‌یابد |
+| کاربر درباره "Q3 financials" سوال می‌کند | تطابقی ندارد (هیچ اشاره‌ای به Q3 نشده است) | از طریق عبارت پیش‌افزوده "Q3 2025 Financial Report" تطابق می‌یابد |
 
-**Performance**: Contextual Embeddings alone reduce top-20 retrieval failure from **5.7% to 3.7%**, a **35% reduction** in retrieval failures.
+**عملکرد**: تعبیه‌های بافتاری (Contextual Embeddings) به تنهایی نرخ شکست بازیابی ۲۰ نتیجه برتر را از **۵.۷٪ به ۳.۷٪** کاهش می‌دهند که معادل **۳۵٪ کاهش** در خطاهای بازیابی است.
 
-### The Vector Space Shift
+### جابه‌جایی در فضای برداری (Vector Space Shift)
+
+<div dir="ltr">
 
 ```
                     ▲ Dimension 2
@@ -132,37 +140,41 @@ Contextual Embeddings is the first sub-technique: embedding the contextualized c
                     └─────────────────────────────► Dimension 1
 ```
 
----
-
-## Contextual BM25
-
-The second sub-technique applies the same contextualization to create a **BM25 keyword index** over the enriched chunks.
-
-### Why BM25 Still Matters
-
-Dense embeddings excel at semantic similarity but fail on:
-- **Exact terms**: Product IDs, version numbers, acronyms
-- **Rare tokens**: Domain-specific jargon that embedding models under-represent
-- **Proper nouns**: Company names, people, places
-
-**Example**: A user searching "Widget-X pricing" would get zero BM25 matches on the raw chunk "It costs $200/month" because "Widget-X" never appears. With contextual BM25, the prepended context includes "Widget-X" as a keyword, enabling the BM25 match.
-
-### Performance Gains (Cumulative)
-
-| Configuration | Failure Rate | Reduction vs. Baseline |
-|---------------|-------------|----------------------|
-| Traditional embeddings (baseline) | 5.7% | -- |
-| Contextual Embeddings only | 3.7% | 35% |
-| Contextual Embeddings + Contextual BM25 | 2.9% | **49%** |
-| Contextual Embeddings + Contextual BM25 + Reranking | 1.9% | **67%** |
-
-**Takeaway**: The combination of contextual embeddings + contextual BM25 is the highest-leverage single change you can make to a RAG pipeline. Adding a reranker on top gets you to 67% fewer failures.
+</div>
 
 ---
 
-## The Full Pipeline: Hybrid + Reranking
+## الگوریتم BM25 بافتاری (Contextual BM25)
 
-The production-grade Contextual Retrieval pipeline has four stages:
+زیرتکنیک دوم، همان فرآیند بافتاربخشی را برای ایجاد یک **نمایه کلیدواژه‌ای BM25** بر روی چانک‌های غنی‌شده اعمال می‌کند.
+
+### چرا BM25 همچنان اهمیت دارد
+
+تعبیه‌های متراکم (Dense embeddings) در شباهت معنایی عالی عمل می‌کنند اما در موارد زیر ناموفق هستند:
+- **اصطلاحات دقیق**: شناسه‌های محصول، شماره نسخه‌ها، کلمات اختصاری
+- **Tokenهای نادر**: اصطلاحات تخصصی دامنه که مدل‌های تعبیه بازنمایی ضعیفی از آن‌ها دارند
+- **اسامی خاص**: نام شرکت‌ها، افراد، مکان‌ها
+
+**مثال**: کاربری که عبارت "Widget-X pricing" را جستجو می‌کند، بر روی چانک خام "It costs $200/month" صفر تطابق BM25 دریافت می‌کند زیرا "Widget-X" هرگز در آن دیده نمی‌شود. با BM25 بافتاری، بافتار پیش‌افزوده شامل "Widget-X" به عنوان یک کلمه کلیدی است که تطابق BM25 را ممکن می‌سازد.
+
+### بهبودهای عملکرد (تجمعی)
+
+| پیکربندی | نرخ شکست | کاهش نسبت به خط پایه (Baseline) |
+|---|---|---|
+| تعبیه‌های سنتی (خط پایه) | ۵.۷٪ | -- |
+| فقط تعبیه‌های بافتاری (Contextual Embeddings) | ۳.۷٪ | ۳۵٪ |
+| تعبیه‌های بافتاری + BM25 بافتاری | ۲.۹٪ | **۴۹٪** |
+| تعبیه‌های بافتاری + BM25 بافتاری + بازرتبه‌بندی (Reranking) | ۱.۹٪ | **۶۷٪** |
+
+**نکته کلیدی**: ترکیب تعبیه‌های بافتاری + BM25 بافتاری پربازده‌ترین تغییر واحدی است که می‌توانید در یک پایپ‌لاین RAG اعمال کنید. افزودن یک بازرتبه‌بند (Reranker) بر روی آن، شکست‌ها را تا ۶۷٪ کاهش می‌دهد.
+
+---
+
+## پایپ‌لاین کامل: ترکیبی + بازرتبه‌بندی
+
+پایپ‌لاین بازیابی بافتاری در رده عملیاتی دارای چهار مرحله است:
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -195,9 +207,11 @@ The production-grade Contextual Retrieval pipeline has four stages:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Reciprocal Rank Fusion (RRF) for Combining Results
+</div>
 
-The same RRF technique used in standard hybrid search applies here:
+### ترکیب نتایج به روش ادغام رتبه متقابل (RRF)
+
+همان تکنیک RRF که در جستجوی ترکیبی استاندارد استفاده می‌شود، در اینجا نیز کاربرد دارد:
 
 ```
 RRF_Score(doc) = sum( 1 / (k + rank_in_list) )
@@ -208,9 +222,9 @@ k = 60 (standard smoothing constant)
 
 ---
 
-## Implementation Patterns
+## الگوهای پیاده‌سازی
 
-### Pattern 1: Basic Contextual Retrieval (Python)
+### الگوی ۱: بازیابی بافتاری پایه‌ای (Python)
 
 ```python
 import anthropic
@@ -265,9 +279,9 @@ def process_document(document: str, chunks: List[str]) -> List[str]:
     return contextualized
 ```
 
-### Pattern 2: Cost-Optimized with Prompt Caching
+### الگوی ۲: بهینه‌سازی هزینه با Prompt Caching
 
-The biggest cost driver is sending the full document with every chunk. **Prompt Caching** solves this:
+بزرگ‌ترین محرک هزینه، ارسال کل سند همراه با هر چانک است. قابلیت **Prompt Caching** این مسئله را حل می‌کند:
 
 ```python
 def contextualize_with_caching(
@@ -314,17 +328,17 @@ def contextualize_with_caching(
     return results
 ```
 
-**Cost Impact of Prompt Caching**: For a 10,000-token document split into 30 chunks, prompt caching cuts the document-input cost by roughly **85%**: one cache write at 1.25x the input price, then 29 reads at 0.1x, instead of 30 full-price reads.
+**اثر هزینه‌ای Prompt Caching**: برای یک سند ۱۰,۰۰۰ Token که به ۳۰ چانک تقسیم شده است، Prompt Caching هزینه ورودی سند را تقریباً **۸۵٪** کاهش می‌دهد: یک عملیات نوشتن در کش با نرخ ۱.۲۵ برابر قیمت ورودی، و سپس ۲۹ بار خواندن با نرخ ۰.۱ برابر، به جای ۳۰ بار خواندن با قیمت کامل.
 
-Three operational traps erase that saving:
-- **Interleaving and cold fan-out.** The default cache TTL is 5 minutes. Schedule all chunks of one document inside that window; a queue that spreads a document's chunks over hours turns every call into a cache write. Send the first call alone and fan out the rest after it returns: parallel first calls all miss and all pay the write.
-- **Short documents.** The minimum cacheable prefix depends on the model: 512 tokens on Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 and Fable 5.1, but 4,096 on Claude Haiku 4.5. A 3,000-token document silently never caches on Haiku 4.5; check `usage.cache_read_input_tokens` instead of assuming.
-- **Long documents on Haiku 5.5.** Its $0.10/$0.50 price holds only while the whole prompt, cached document included, stays at or under 100K tokens. Above that the entire request bills $0.50/$2.50, so a 150K-token contract reprices every one of its chunk calls at 5x. Split very long documents into sections under the line, or budget the higher tier (still half of Haiku 4.5's list price).
-- **Retired model IDs.** Dated model IDs retire: `claude-sonnet-4-20250514` left the Claude API on June 15, 2026, breaking every pipeline that hard-coded it. Keep the model ID in config, not code, and store it next to every generated context string.
+سه تله عملیاتی می‌توانند این صرفه‌جویی را از بین ببرند:
+- **تداخل و انتشار موازی سرد (Interleaving and cold fan-out):** مدت‌زمان پیش‌فرض ماندگاری کش (TTL) برابر با ۵ دقیقه است. تمام چانک‌های یک سند را در این پنجره زمانی زمان‌بندی کنید؛ صفی که چانک‌های یک سند را طی چند ساعت پخش می‌کند، هر فراخوانی را به یک عملیات نوشتن در کش تبدیل خواهد کرد. فراخوانی اول را به تنهایی ارسال کنید و پس از بازگشت آن، بقیه را به صورت توزیع موازی (fan out) بفرستید: فراخوانی‌های همزمان اولیه همگی کش را از دست می‌دهند (Cache Miss) و همگی هزینه نوشتن را متحمل می‌شوند.
+- **اسناد کوتاه:** حداقل پیشوند قابل کش شدن به مدل بستگی دارد: در Claude Haiku 5.5، Sonnet 5.5، Opus 5.5 و Fable 5.1 برابر با ۵۱۲ Token است، اما در Claude Haiku 4.5 برابر با ۴,۰۹۶ Token است. یک سند ۳,۰۰۰ Token در Haiku 4.5 به صورت نامحسوس هرگز کش نمی‌شود؛ به جای فرض کردن، `usage.cache_read_input_tokens` را بررسی کنید.
+- **اسناد طولانی در Haiku 5.5:** قیمت ۰.۱۰ / ۰.۵۰ دلاری آن تنها تا زمانی برقرار است که کل Prompt، با احتساب سند کش‌شده، کمتر یا مساوی ۱۰۰ هزار Token باشد. بالاتر از این مقدار، کل درخواست با نرخ ۰.۵۰ / ۲.۵۰ دلار محاسبه می‌شود، بنابراین یک قرارداد ۱۵۰ هزار Token هزینه تک‌تک فراخوانی‌های چانک خود را ۵ برابر می‌کند. اسناد بسیار طولانی را به بخش‌هایی زیر این مرز تقسیم کنید، یا سطح قیمتی بالاتر را در بودجه در نظر بگیرید (که همچنان نصف قیمت رسمی Haiku 4.5 است).
+- **شناسه‌های مدل منسوخ‌شده (Retired model IDs):** شناسه‌های تاریخ‌دار مدل منسوخ می‌شوند: مدل `claude-sonnet-4-20250514` در ۱۵ ژوئن ۲۰۲۶ از Claude API کنار گذاشته شد و هر پایپ‌لاینی را که این شناسه را به صورت هاردکد داشت از کار انداخت. شناسه مدل را در پیکربندی (Config) نگه‌داری کنید نه در کد، و آن را در کنار هر رشته بافتار تولیدشده ذخیره نمایید.
 
-### Pattern 3: Contextual Chunk Headers (Lightweight Alternative)
+### الگوی ۳: هدرهای بافتاری چانک (جایگزین سبک‌وزن)
 
-If LLM-based contextualization is too expensive, use **Contextual Chunk Headers (CCH)** as a deterministic alternative:
+اگر بافتاربخشی مبتنی بر LLM بسیار گران است، از **هدرهای بافتاری چانک (Contextual Chunk Headers - CCH)** به عنوان یک جایگزین قطعی (Deterministic) استفاده کنید:
 
 ```python
 def add_chunk_headers(
@@ -362,68 +376,70 @@ contextualized = add_chunk_headers(
 # It costs $200/month.
 ```
 
-**When to use CCH vs. LLM Contextualization:**
+**چه زمانی از CCH در مقایسه با بافتاربخشی با LLM استفاده کنیم:**
 
-| Factor | Chunk Headers (CCH) | LLM Contextualization |
-|--------|--------------------|-----------------------|
-| **Cost** | Free (no LLM calls) | About $0.50 (GPT-6 Luna or Claude Haiku 5.5, before thinking tokens) to $5 (Claude Haiku 4.5) per 1M document tokens with caching |
-| **Quality** | Good for structured docs | Excellent for all docs |
-| **Speed** | Instant | 0.5-2 s per call; throughput comes from concurrency |
-| **Best for** | Markdown, HTML, PDFs with clear headers | Unstructured text, legal, medical |
-
----
-
-## Cost Considerations
-
-### Contextualization Costs
-
-For a knowledge base of 10,000 chunks (400 tokens each) drawn from 500 documents of 8,000 tokens, with the document cached and about 500 uncached prompt tokens and 75 output tokens per call, at list prices on November 2, 2026:
-
-| Option | Price per 1M (in / cache read / out) | Cost per Chunk | Total Cost | Notes |
-|--------|--------------------------------------|----------------|------------|-------|
-| **GPT-6 Luna** | $0.10 / $0.01 / $0.50 | ~$0.0002 | ~$2 | OpenAI caches automatically; 1.25x writes on the 30-minute cache, 2.5x on the 12-hour option |
-| **Claude Haiku 5.5** | $0.10 / $0.01 / $0.50 (prompts up to 100K tokens) | ~$0.0002 | ~$2-3 + thinking | Adaptive thinking on by default (effort `medium`), so set low effort; its tokenizer counts ~30% more tokens than Haiku 4.5 for the same text (the ~$3 end of the range); 512-token minimum cacheable prefix |
-| **Claude Haiku 4.5** | $1 / $0.10 / $5 | ~$0.002 | ~$21 | No thinking by default; 4,096-token minimum cacheable prefix |
-| **Claude Sonnet 5.5** | $2 / $0.10 / $10 | ~$0.003 | ~$36 + thinking | Thinking is on by default; send `thinking: {type: "between_tools"}` or low effort for this job |
-| **Claude Opus 5.5** | $4 / $0.20 / $20 | ~$0.007 | ~$70 + thinking | Thinking cannot be disabled; overkill for this task |
-| **voyage-context-4** (no LLM call) | $0.12 embedding | ~$0.00005 | ~$0.50 | Replaces the embedding step; helps dense retrieval only (see below) |
-
-**Best practice**: Use a small model for contextualization. The context strings are short and factual, so a frontier model adds cost and, on the newest Claude models, reasoning tokens (on by default, and impossible to disable on Opus 5.5) without a measurable quality gain. Combine with prompt caching, and run backfills through a Batch API (50% off list at both Anthropic and OpenAI) when they can wait.
-
-Claude Haiku 5.5 (GA October 7, 2026) is the default pick for this job on Claude: a tenth of Haiku 4.5's price for prompts up to 100K tokens, and the same list price as GPT-6 Luna. It is not a drop-in swap. `temperature`, `top_p`, `top_k`, `budget_tokens` and assistant prefill all return a 400, the tokenizer change shifts every token count you budgeted, and the context strings it writes will differ from Haiku 4.5's, so re-run the retrieval golden set before re-contextualizing a corpus. Haiku 4.5 is still Active on the Claude API with no deprecation notice (Anthropic gives at least 60 days, so not before about January 2027), while Microsoft Foundry lists November 15, 2026 for it. Treat the contextualizer as a swappable dependency and store the model ID next to every context string.
-
-### When to Use Contextual Retrieval
-
-**Use it when:**
-- Your corpus has fragmented documents where chunks lose meaning in isolation
-- You have domain-specific jargon that embedding models struggle with
-- Your retrieval failure rate exceeds 3-5%
-- You can afford the one-time ingestion cost
-
-**Skip it when:**
-- Your chunks are already self-contained (e.g., FAQ pairs, product descriptions)
-- Your corpus is tiny (< 100 chunks); just use long context instead
-- You need real-time ingestion (< 1s per document) and cannot batch
+| فاکتور | هدرهای چانک (CCH) | بافتاربخشی با LLM |
+|---|---|---|
+| **هزینه** | رایگان (بدون فراخوانی LLM) | حدود ۰.۵۰ دلار (GPT-6 Luna یا Claude Haiku 5.5، پیش از Tokenهای تفکر) تا ۵ دلار (Claude Haiku 4.5) به ازای هر ۱ میلیون Token سند همراه با کش |
+| **کیفیت** | خوب برای اسناد ساختاریافته | عالی برای تمام اسناد |
+| **سرعت** | آنی | ۰.۵ تا ۲ ثانیه در هر فراخوانی؛ توان عملیاتی (Throughput) از طریق همزمانی به دست می‌آید |
+| **بهترین کاربرد** | اسناد Markdown، HTML و PDF با هدرهای واضح | متن‌های بدون ساختار، اسناد حقوقی، اسناد پزشکی |
 
 ---
 
-## Contextual Retrieval vs. Other Approaches
+## ملاحظات هزینه
 
-| Approach | How It Works | Retrieval Improvement | Cost | Complexity |
+### هزینه‌های بافتاربخشی
+
+برای یک پایگاه دانش با ۱۰,۰۰۰ چانک (هر کدام ۴۰۰ Token) برگرفته از ۵۰۰ سند با ۸,۰۰۰ Token، در صورتی که سند کش شده باشد و حدود ۵۰۰ Token ورودی Prompt بدون کش و ۷۵ Token خروجی در هر فراخوانی وجود داشته باشد، با قیمت‌های رسمی در ۲ نوامبر ۲۰۲۶:
+
+| گزینه | قیمت به ازای ۱ میلیون (ورودی / خواندن از کش / خروجی) | هزینه هر چانک | هزینه کل | توضیحات |
+|---|---|---|---|---|
+| **GPT-6 Luna** | ۰.۱۰ / ۰.۰۱ / ۰.۵۰ دلار | حدود ۰.۰۰۰۲ دلار | حدود ۲ دلار | شرکت OpenAI به طور خودکار کش می‌کند؛ ۱.۲۵ برابر نوشتن روی کش ۳۰ دقیقه‌ای، ۲.۵ برابر روی گزینه ۱۲ ساعته |
+| **Claude Haiku 5.5** | ۰.۱۰ / ۰.۰۱ / ۰.۵۰ دلار (Promptهای تا ۱۰۰ هزار Token) | حدود ۰.۰۰۰۲ دلار | حدود ۲ تا ۳ دلار + تفکر | تفکر تطبیقی (Adaptive thinking) به طور پیش‌فرض فعال است (تلاش `medium`)، بنابراین تلاش را پایین تنظیم کنید؛ Tokenizer آن حدود ۳۰٪ Tokenهای بیشتری نسبت به Haiku 4.5 برای متن مشابه شمارش می‌کند (نزدیک به ۳ دلار در انتهای بازه)؛ حداقل پیشوند قابل کش شدن ۵۱۲ Token است |
+| **Claude Haiku 4.5** | ۱ / ۰.۱۰ / ۵ دلار | حدود ۰.۰۰۲ دلار | حدود ۲۱ دلار | تفکر به طور پیش‌فرض ندارد؛ حداقل پیشوند قابل کش شدن ۴,۰۹۶ Token است |
+| **Claude Sonnet 5.5** | ۲ / ۰.۱۰ / ۱۰ دلار | حدود ۰.۰۰۳ دلار | حدود ۳۶ دلار + تفکر | تفکر به طور پیش‌فرض فعال است؛ برای این کار `thinking: {type: "between_tools"}` یا تلاش کم ارسال کنید |
+| **Claude Opus 5.5** | ۴ / ۰.۲۰ / ۲۰ دلار | حدود ۰.۰۰۷ دلار | حدود ۷۰ دلار + تفکر | تفکر غیرفعال نمی‌شود؛ برای این کار زیاده‌روی است |
+| **voyage-context-4** (بدون فراخوانی LLM) | ۰.۱۲ دلار تعبیه | حدود ۰.۰۰۰۰۵ دلار | حدود ۰.۵۰ دلار | جایگزین مرحله تعبیه می‌شود؛ فقط به بازیابی متراکم کمک می‌کند (به زیر مراجعه کنید) |
+
+**بهترین شیوه (Best practice)**: از یک مدل کوچک برای بافتاربخشی استفاده کنید. رشته‌های بافتار کوتاه و مبتنی بر واقعیت هستند، بنابراین یک مدل پیشرو هزینه اضافه ایجاد می‌کند و در جدیدترین مدل‌های Claude، Tokenهای استدلال (که به طور پیش‌فرض فعال هستند و در Opus 5.5 غیرقابل غیرفعال‌سازی می‌باشند) را بدون افزایش قابل اندازه‌گیری کیفیت تحمیل می‌کند. آن را با Prompt Caching ترکیب کنید و در صورتی که امکان انتظار وجود دارد، بارگذاری‌های گذشته‌نگر (Backfills) را از طریق یک Batch API (با ۵۰٪ تخفیف نسبت به لیست قیمت هم در Anthropic و هم در OpenAI) اجرا کنید.
+
+مدل Claude Haiku 5.5 (عرضه عمومی در ۷ اکتبر ۲۰۲۶) گزینه پیش‌فرض برای این کار در Claude است: یک‌دهم قیمت Haiku 4.5 برای Promptهای تا ۱۰۰ هزار Token، و با همان قیمت رسمی GPT-6 Luna. این یک جایگزینی بی‌دردسر و مستقیم نیست؛ پارامترهای `temperature`، `top_p`، `top_k`، `budget_tokens` و پیش‌پر کردن پاسخ دستیار (assistant prefill) همگی خطای 400 برمی‌گردانند، تغییر Tokenizer تمامی شمارش‌های Token را که بودجه‌بندی کرده بودید جابه‌جا می‌کند، و رشته‌های بافتاری که می‌نویسد با Haiku 4.5 متفاوت خواهد بود، بنابراین پیش از بافتاربخشی مجدد یک مجموعه اسناد، مجموعه طلایی بازیابی (retrieval golden set) را دوباره اجرا کنید. Haiku 4.5 همچنان روی Claude API وضعیت فعال (Active) دارد و هیچ اطلاعیه منسوخ‌شدنی ندارد (Anthropic حداقل مهلت ۶۰ روزه می‌دهد، بنابراین قبل از حدود ژانویه ۲۰۲۷ نخواهد بود)، در حالی که Microsoft Foundry تاریخ ۱۵ نوامبر ۲۰۲۶ را برای آن ثبت کرده است. با بافتاربخش به عنوان یک وابستگی قابل تعویض برخورد کنید و شناسه مدل را در کنار هر رشته بافتار ذخیره نمایید.
+
+### چه زمانی از بازیابی بافتاری استفاده کنیم
+
+**در این موارد استفاده کنید:**
+- مجموعه اسناد شما دارای اسناد تکه‌تکه‌ای است که در آن‌ها چانک‌ها در حالت مجزا معنایشان را از دست می‌دهند
+- اصطلاحات تخصصی دامنه دارید که مدل‌های تعبیه با آن‌ها مشکل دارند
+- نرخ شکست بازیابی شما از ۳ تا ۵ درصد فراتر می‌رود
+- توانایی پرداخت هزینه یک‌باره مرحله بارگذاری و ورود داده (Ingestion) را دارید
+
+**در این موارد صرف‌نظر کنید:**
+- چانک‌های شما از قبل خودکفا هستند (مانند جفت‌های پرسش و پاسخ، توضیحات محصول)
+- مجموعه اسناد شما بسیار کوچک است (کمتر از ۱۰۰ چانک)؛ به جای آن صرفاً از بافتار طولانی (Long context) استفاده کنید
+- به بارگذاری بلادرنگ (کمتر از ۱ ثانیه برای هر سند) نیاز دارید و نمی‌توانید پردازش دسته‌ای انجام دهید
+
+---
+
+## مقایسه بازیابی زمینه‌ای (Contextual Retrieval) با سایر رویکردها
+
+| رویکرد | نحوه کارکرد | بهبود بازیابی | هزینه | پیچیدگی |
 |----------|-------------|----------------------|------|------------|
-| **Naive Chunking** | Fixed-size splits, embed raw | Baseline | None | Low |
-| **Chunk Headers (CCH)** | Prepend doc/section titles | 10-20% | None | Low |
-| **Contextual Retrieval** | LLM-generated context per chunk | 35-49% | ~$2-45 per 10k chunks (small to mid model) | Medium |
-| **Contextual + Reranking** | Above + cross-encoder rerank | 67% | Above, plus a per-query rerank fee | Medium-High |
-| **Contextual chunk embeddings** | Embedder sees the whole document, emits one vector per chunk | Dense side only; not measured on Anthropic's benchmark | ~$0.50 per 10k chunks | Low |
-| **HyDE** | Hypothetical doc generation at query time | 20-40% | Per-query LLM cost | Medium |
-| **Parent-Child Chunking** | Embed children, retrieve parents | 15-30% | None | Medium |
+| **Chunking ساده (Naive Chunking)** | تقسیم با اندازه ثابت، تولید Embedding خام | خط پایه (Baseline) | ندارد | پایین |
+| **سرآیندهای Chunk یا CCH (Chunk Headers)** | افزودن عناوین سند/بخش به ابتدا | ۱۰-۲۰٪ | ندارد | پایین |
+| **بازیابی زمینه‌ای (Contextual Retrieval)** | تولید زمینه (Context) توسط LLM برای هر Chunk | ۳۵-۴۹٪ | حدود ۲ تا ۴۵ دلار به ازای هر ۱۰ هزار Chunk (مدل کوچک تا متوسط) | متوسط |
+| **بازیابی زمینه‌ای + بازرتبه‌بندی (Reranking)** | موارد بالا + بازرتبه‌بندی با Cross-Encoder | ۶۷٪ | موارد بالا، به‌علاوه هزینه بازرتبه‌بندی به ازای هر Query | متوسط تا بالا |
+| **Embeddingهای زمینه‌ای Chunk (Contextual chunk embeddings)** | مدل Embedder کل سند را می‌بیند و به ازای هر Chunk یک بردار تولید می‌کند | فقط در بخش متراکم (Dense)؛ در بنچمارک Anthropic اندازه‌گیری نشده است | حدود ۰.۵۰ دلار به ازای هر ۱۰ هزار Chunk | پایین |
+| **HyDE** | تولید سند فرضی در زمان Query | ۲۰-۴۰٪ | هزینه LLM به ازای هر Query | متوسط |
+| **Chunking والد-فرزند (Parent-Child Chunking)** | تولید Embedding برای فرزندان، بازیابی والدها | ۱۵-۳۰٪ | ندارد | متوسط |
 
-**Key Distinction**: Contextual Retrieval is an **ingestion-time** technique (pay once), while HyDE is a **query-time** technique (pay per query). For high-volume systems, Contextual Retrieval amortizes much better.
+**تفاوت کلیدی**: بازیابی زمینه‌ای (Contextual Retrieval) یک تکنیک **زمان بارگذاری (Ingestion-time)** است (یک‌بار پرداخت)، در حالی که HyDE یک تکنیک **زمان پرس‌وجو (Query-time)** است (پرداخت به ازای هر Query). برای سیستم‌های با حجم بالا، هزینه بازیابی زمینه‌ای بسیار بهتر سرشکن (Amortize) می‌شود.
 
-### Contextual Retrieval vs. Late Chunking
+### مقایسه بازیابی زمینه‌ای (Contextual Retrieval) با Late Chunking
 
-**Late Chunking** (Jina, 2024) is a related but distinct approach:
+**تکنیک Late Chunking** (توسط Jina در سال ۲۰۲۴) یک رویکرد مرتبط اما متمایز است:
+
+<div dir="ltr">
 
 ```
 Contextual Retrieval:
@@ -434,30 +450,34 @@ Late Chunking:
   ──► THEN chunk the token embeddings (preserving context)
 ```
 
-Late Chunking requires a long-context embedding model (e.g., Jina v3) and avoids LLM calls entirely. It preserves context through the embedding model's attention mechanism rather than explicit text prepending. The tradeoff is that Late Chunking does not help BM25 search, only dense retrieval.
+</div>
 
-### Contextualized Chunk Embedding Models
+روش Late Chunking به یک مدل Embedding با زمینه طولانی (مانند Jina v3) نیاز دارد و فراخوانی‌های LLM را کاملاً حذف می‌کند. این روش زمینه را از طریق مکانیسم توجه (Attention mechanism) مدل Embedding حفظ می‌کند، نه از طریق الحاق صریح متن به ابتدای Chunk. نکته موازنه‌ای (Tradeoff) این است که Late Chunking به جستجوی BM25 کمکی نمی‌کند و تنها بازیابی متراکم (Dense Retrieval) را بهبود می‌بخشد.
 
-The same idea now ships as a hosted embedding API, which cuts the ingestion cost in the table above by one to two orders of magnitude against a Claude contextualizer:
+### مدل‌های Embedding زمینه‌ای Chunk (Contextualized Chunk Embedding Models)
 
-- **voyage-context-4** (Voyage AI, GA June 29, 2026): one vector per chunk that encodes the full document's context, built-in auto-chunking (`enable_auto_chunking=True`), native overlapping chunks, and transparent handling of documents longer than its 32K-token window. $0.12 per 1M tokens, down from $0.18 for voyage-context-3. Voyage reports gains of 2.08% at chunk level and 1.4% at document level over context-3 across 39 datasets (vendor-reported). Also served through MongoDB Atlas.
-- **pplx-embed-v2-context** (Perplexity, Hugging Face, 9B and 0.6B, MIT, technical report October 28, 2026): encodes a document's chunks together, and the two sizes share a 1024-dimension space, so you can index with 9B and query with 0.6B. It replaced the September 25 preview (2,048 dimensions, Matryoshka to 1,024, native int8), whose card says its vectors should not be mixed with later releases, so re-embed anything you built on the preview.
+همین ایده اکنون به عنوان یک API میزبانی‌شده Embedding عرضه می‌شود که هزینه بارگذاری در جدول بالا را در مقایسه با استفاده از زمینه‌ساز Claude، یک تا دو مرتبه بزرگی کاهش می‌دهد:
 
-| | LLM contextualization | Contextual chunk embeddings |
+- **voyage-context-4** (از شرکت Voyage AI، عرضه رسمی در ۲۹ ژوئن ۲۰۲۶): یک بردار به ازای هر Chunk که زمینه کل سند را کدگذاری می‌کند، قابلیت Chunking خودکار توکار (`enable_auto_chunking=True`)، Chunkهای هم‌پوشان محلی، و مدیریت شفاف اسناد طولانی‌تر از پنجره 32K-Token آن. ۰.۱۲ دلار به ازای هر ۱ میلیون Token که نسبت به ۰.۱۸ دلار در voyage-context-3 کاهش یافته است. شرکت Voyage بهبود ۲.۰۸ درصدی در سطح Chunk و ۱.۴ درصدی در سطح سند را در مقایسه با context-3 در ۳۹ دیتاست گزارش کرده است (گزارش‌شده توسط ارائه‌دهنده). این مدل از طریق MongoDB Atlas نیز ارائه می‌شود.
+- **pplx-embed-v2-context** (از شرکت Perplexity، موجود در Hugging Face، نسخه‌های 9B و 0.6B با مجوز MIT، گزارش فنی ۲۸ اکتبر ۲۰۲۶): Chunkهای یک سند را با هم کدگذاری می‌کند و هر دو اندازه از یک فضای ۱۰۲۴-بُعدی مشترک استفاده می‌کنند، بنابراین می‌توانید با نسخه 9B ایندکس‌گذاری کرده و با نسخه 0.6B پرس‌وجو نمایید. این نسخه جایگزین پیش‌نمایش ۲۵ سپتامبر شد (۲۰۴۸ بُعد، ماتریوشکا به ۱۰۲۴، int8 محلی) که در کارت مدل آن ذکر شده بردارهای آن نباید با نسخه‌های بعدی ترکیب شوند، بنابراین هر چیزی را که روی نسخه پیش‌نمایش ساخته‌اید، مجدداً Embed کنید.
+
+| | زمینه‌سازی با LLM | Embeddingهای زمینه‌ای Chunk |
 |---|---|---|
-| **Ingestion cost (10k chunks)** | ~$2-45 plus embedding | ~$0.50, replaces embedding |
-| **Helps BM25** | Yes (context text is indexed) | No |
-| **Debuggable** | Yes, you can read the context string | No, context lives inside the vector |
-| **Lock-in** | Context strings survive an embedder swap | Index tied to one vendor model; re-embed to switch |
-| **Document edits** | Re-contextualize changed chunks | Re-embed the whole document |
+| **هزینه بارگذاری (۱۰ هزار Chunk)** | حدود ۲ تا ۴۵ دلار به‌علاوه Embedding | حدود ۰.۵۰ دلار، جایگزین Embedding می‌شود |
+| **کمک به BM25** | بله (متن زمینه ایندکس می‌شود) | خیر |
+| **قابلیت اشکال‌زدایی (Debuggable)** | بله، می‌توانید رشته زمینه را بخوانید | خیر، زمینه درون بردار قرار دارد |
+| **وابستگی به ارائه‌دهنده (Lock-in)** | رشته‌های زمینه حتی پس از تعویض مدل Embedder باقی می‌مانند | ایندکس به مدل یک ارائه‌دهنده وابسته است؛ برای تغییر باید مجدداً Embed کنید |
+| **ویرایش اسناد** | زمینه‌سازی مجدد تنها برای Chunkهای تغییریافته | ایجاد مجدد Embedding برای کل سند |
 
-**A sensible 2026 default**: contextual chunk embeddings for the dense side, deterministic chunk headers for the BM25 side, and LLM contextualization only for the document classes where both still miss (measure on your golden set before paying for it).
+**یک پیش‌فرض معقول برای سال ۲۰۲۶**: استفاده از Embeddingهای زمینه‌ای Chunk برای بخش متراکم (Dense)، سرآیندهای قطعی Chunk برای بخش BM25، و زمینه‌سازی با LLM فقط برای دسته‌هایی از اسناد که هر دوی این روش‌ها در آن‌ها ناموفق هستند (پیش از پرداخت هزینه، آن را روی مجموعه طلایی [Golden set] خود ارزیابی کنید).
 
 ---
 
-## Production Architecture
+## معماری تولید (Production Architecture)
 
-### Reference Architecture: Contextual RAG at Scale
+### معماری مرجع: Contextual RAG در مقیاس بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -502,54 +522,58 @@ The same idea now ships as a hosted embedding API, which cuts the ingestion cost
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Scaling Considerations
+</div>
 
-| Concern | Solution |
+### ملاحظات مقیاس‌پذیری (Scaling Considerations)
+
+| دغدغه | راهکار |
 |---------|----------|
-| **Ingestion throughput** | Parallelize LLM calls (50-100 concurrent) with async workers |
-| **Document updates** | Re-contextualize only changed chunks; store raw + context separately |
-| **Cost at scale** | Small model + prompt caching, a document's chunks scheduled together; Batch API for backfills; or a contextual embedding model |
-| **Quality monitoring** | Sample 1% of chunks and human-evaluate context quality |
-| **Index consistency** | Update vector DB + BM25 index atomically per document |
-| **Model churn** | Store the contextualizer model ID and prompt version with each context string. Existing strings stay valid when that model retires; sample the successor's output before mixing styles in one index |
+| **توان عملیاتی (Throughput) بارگذاری** | موازی‌سازی فراخوانی‌های LLM (۵۰ تا ۱۰۰ فراخوانی هم‌روند) با Workerهای ناهمگام (Async) |
+| **به‌روزرسانی اسناد** | زمینه‌سازی مجدد تنها برای Chunkهای تغییریافته؛ ذخیره جداگانه متن خام + زمینه |
+| **هزینه در مقیاس بالا** | مدل کوچک + کش کردن Prompt (Prompt caching)، زمان‌بندی هم‌زمان Chunkهای یک سند؛ استفاده از Batch API برای بارگذاری‌های انبوه قبلی (Backfills)؛ یا مدل Embedding زمینه‌ای |
+| **پایش کیفیت** | نمونه‌برداری از ۱٪ از Chunkها و ارزیابی انسانی کیفیت زمینه |
+| **سازگاری ایندکس** | به‌روزرسانی اتمیک پایگاه داده برداری (Vector Database) + ایندکس BM25 به ازای هر سند |
+| **تغییر و بازنشستگی مدل (Model churn)** | ذخیره شناسه (ID) مدل زمینه‌ساز و نسخه Prompt همراه با هر رشته زمینه. رشته‌های موجود با بازنشستگی آن مدل همچنان معتبر می‌مانند؛ پیش از ترکیب سبک‌ها در یک ایندکس، خروجی مدل جایگزین را نمونه‌برداری و بررسی کنید |
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: Explain Anthropic's Contextual Retrieval. When would you use it and when would you skip it?
+### سوال: بازیابی زمینه‌ای (Contextual Retrieval) شرکت Anthropic را توضیح دهید. چه زمانی از آن استفاده می‌کنید و چه زمانی از آن صرف‌نظر می‌کنید؟
 
-**Strong answer:**
-Contextual Retrieval solves the "context dilution" problem in RAG. When documents are chunked, individual chunks lose the surrounding context that gives them meaning: a chunk saying "It costs $200" is useless without knowing *what* costs $200. The technique uses an LLM at ingestion time to generate a short context string (50-100 tokens) per chunk, explaining what that chunk is about within the document. This context is prepended to the chunk before embedding and BM25 indexing.
+**پاسخ قوی:**
+بازیابی زمینه‌ای (Contextual Retrieval) مشکل «رقیق‌شدن زمینه» (Context Dilution) را در RAG حل می‌کند. زمانی که اسناد به بخش‌های کوچک (Chunk) تقسیم می‌شوند، هر Chunk زمینه پیرامونی خود را که به آن معنا می‌بخشد از دست می‌دهد: یک Chunk که می‌گوید «قیمت آن ۲۰۰ دلار است»، بدون دانستن اینکه *چه چیزی* ۲۰۰ دلار قیمت دارد، کاملاً بی‌فایده است. این تکنیک در زمان بارگذاری (Ingestion time) از یک LLM برای تولید یک رشته زمینه کوتاه (۵۰ تا ۱۰۰ Token) به ازای هر Chunk استفاده می‌کند که توضیح می‌دهد این Chunk در ساختار کل سند درباره چه موضوعی است. این زمینه پیش از مرحله Embedding و ایندکس‌گذاری BM25، به ابتدای Chunk الحاق می‌شود.
 
-The key results: Contextual Embeddings alone reduce retrieval failures by 35%. Adding Contextual BM25 achieves 49% reduction. Adding a reranker reaches 67% reduction.
+نتایج کلیدی: استفاده از Embeddingهای زمینه‌ای به تنهایی خطاهای بازیابی را ۳۵٪ کاهش می‌دهد. افزودن BM25 زمینه‌ای به کاهش ۴۹ درصدی منجر می‌شود و اضافه کردن یک بازرتبه‌بند (Reranker) این کاهش خطا را به ۶۷٪ می‌رساند.
 
-I would use it when chunks regularly lose meaning in isolation: legal contracts, financial reports, technical manuals. I would skip it when chunks are already self-contained (FAQs, product cards) or when the corpus is small enough for long-context RAG.
+من زمانی از آن استفاده می‌کنم که Chunkها به صورت مجزا معنای خود را از دست بدهند: مانند قراردادهای حقوقی، گزارش‌های مالی و راهنماهای فنی. اما در مواردی که Chunkها از پیش خودبسنده هستند (مانند سوالات متداول [FAQs]، کارت‌های مشخصات محصول) یا زمانی که پیکره متنی (Corpus) به اندازه کافی کوچک است که بتوان از RAG با زمینه طولانی (Long-context RAG) استفاده کرد، از آن صرف‌نظر می‌کنم.
 
-### Q: A knowledge base of 50,000 documents needs Contextual Retrieval. How do you manage the ingestion cost?
+### سوال: یک پایگاه دانش با ۵۰,۰۰۰ سند به بازیابی زمینه‌ای (Contextual Retrieval) نیاز دارد. هزینه بارگذاری (Ingestion) را چگونه مدیریت می‌کنید؟
 
-**Strong answer:**
-Four strategies:
-1. **Model selection**: Use a small, fast model (Claude Haiku 5.5 or GPT-6 Luna class, both $0.10 / $0.50) for contextualization. The output is short factual text, not creative writing. A frontier model adds cost without quality gain, and the newest Claude Opus and Sonnet models add reasoning tokens you cannot fully turn off; even on Haiku 5.5, set a low effort. Keep documents under Haiku 5.5's 100K-token price line or split them.
-2. **Prompt caching**: Cache the full document text across all chunk contextualization calls, and schedule each document's chunks together so they land inside the cache TTL. For a 10,000-token document with 30 chunks, this cuts document-input cost by roughly 85%.
-3. **Tiered approach**: Not every document needs LLM contextualization. For well-structured documents (Markdown, HTML with headers), use deterministic Contextual Chunk Headers (prepending doc title + section hierarchy) which is free. Reserve LLM contextualization for unstructured or ambiguous documents.
-4. **Push context into the embedder**: Contextualized chunk embedding models such as voyage-context-4 ($0.12 per 1M tokens) produce document-aware chunk vectors with no per-chunk LLM call. At 50,000 documents of about 8,000 tokens (400M tokens), that is roughly $50 against about $200 to $300 with Haiku 5.5 or Luna and caching (about $2,000 on Haiku 4.5). The gap is smaller than it was, so the deciding factor is quality on your golden set more than price. The catch is that it only helps the dense side, so I would pair it with chunk headers for BM25 and keep LLM contextualization for the documents that still fail on the golden set.
+**پاسخ قوی:**
+چهار استراتژی:
+۱. **انتخاب مدل**: برای زمینه‌سازی از یک مدل کوچک و سریع (در رده Claude Haiku 5.5 یا GPT-6 Luna، هر دو با قیمت ۰.۱۰ / ۰.۵۰ دلار) استفاده کنید. خروجی صرفاً یک متن کوتاه و واقعی (Factual) است، نه یک نوشته خلاقانه. یک مدل پیشرو (Frontier model) بدون افزایش کیفیت، تنها هزینه را بالا می‌برد و جدیدترین مدل‌های Claude Opus و Sonnet شامل Tokenهای استدلال هستند که نمی‌توانید آن‌ها را کاملاً غیرفعال کنید؛ حتی در Haiku 5.5 نیز سطح تلاش (Effort) را روی پایین تنظیم کنید. اسناد را زیر خط قیمتی 100K-Token در Haiku 5.5 نگه دارید یا آن‌ها را تقسیم نمایید.
+۲. **کش کردن Prompt (Prompt caching)**: متن کامل سند را در تمام فراخوانی‌های زمینه‌سازی Chunk کش کنید و Chunkهای هر سند را هم‌زمان زمان‌بندی نمایید تا درون پنجره زمانی انقضای کش (Cache TTL) قرار گیرند. برای سندی با ۱۰,۰۰۰ Token و ۳۰ عدد Chunk، این کار هزینه ورودی سند را تقریباً ۸۵٪ کاهش می‌دهد.
+۳. **رویکرد لایه‌ای (Tiered approach)**: همه اسناد به زمینه‌سازی توسط LLM نیاز ندارند. برای اسناد دارای ساختار مناسب (مانند Markdown و HTML با سرآیندها)، از سرآیندهای زمینه‌ای قطعی Chunk (افزودن عنوان سند + سلسله‌مراتب بخش‌ها به ابتدا) استفاده کنید که کاملاً رایگان است. زمینه‌سازی با LLM را برای اسناد بدون ساختار یا مبهم رزرو کنید.
+۴. **انتقال زمینه به مدل Embedder**: مدل‌های Embedding زمینه‌ای Chunk مانند voyage-context-4 (با قیمت ۰.۱۲ دلار به ازای هر ۱ میلیون Token) بردارهای Chunk آگاه از سند را بدون نیاز به فراخوانی LLM به ازای هر Chunk تولید می‌کنند. برای ۵۰,۰۰۰ سند با حدود ۸,۰۰۰ Token (مجموعاً ۴۰۰ میلیون Token)، هزینه تقریباً ۵۰ دلار خواهد بود، در حالی که با استفاده از Haiku 5.5 یا Luna به همراه کش کردن حدود ۲۰۰ تا ۳۰۰ دلار (و حدود ۲,۰۰۰ دلار با Haiku 4.5) هزینه دارد. این اختلاف هزینه نسبت به گذشته کمتر شده است، بنابراین عامل تعیین‌کننده بیش از آنکه قیمت باشد، کیفیت روی مجموعه طلایی (Golden set) شماست. نکته قابل توجه این است که این روش تنها به بخش متراکم (Dense) کمک می‌کند، بنابراین من آن را با سرآیندهای Chunk برای BM25 ترکیب می‌کنم و زمینه‌سازی با LLM را برای اسنادی نگه می‌دارم که همچنان در مجموعه طلایی با شکست مواجه می‌شوند.
 
-### Q: How does Contextual Retrieval compare to HyDE for improving retrieval quality?
+### سوال: بازیابی زمینه‌ای (Contextual Retrieval) در مقایسه با HyDE برای بهبود کیفیت بازیابی چگونه عمل می‌کند؟
 
-**Strong answer:**
-They solve different sides of the same problem. Contextual Retrieval enriches **documents** at ingestion time (pay once), while HyDE enriches **queries** at search time (pay per query). For a system handling 10,000 queries/day against a 50,000-chunk corpus, Contextual Retrieval is dramatically cheaper because the ingestion cost is amortized. HyDE also has a hallucination risk: the hypothetical document might pull in wrong data. In practice, the strongest systems use both: Contextual Retrieval for ingestion enrichment and HyDE (or multi-query expansion) for complex queries that need query-side help.
-
----
-
-## References
-- Anthropic. "Contextual Retrieval" (September 2024)
-- Jina AI. "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models" (2024)
-- Voyage AI. "voyage-context-3: Contextualized Chunk Embeddings" (2025)
-- Voyage AI. "voyage-context-4" (June 2026)
-- Perplexity. "pplx-embed-v2-context-9b" model card (Hugging Face, October 2026) and technical report (arXiv 2610.38854, October 28, 2026)
-- NirDiamant. "RAG Techniques: Contextual Chunk Headers" (GitHub, 2024)
+**پاسخ قوی:**
+آن‌ها دو جنبه مختلف از یک مسئله مشترک را حل می‌کنند. بازیابی زمینه‌ای (Contextual Retrieval) **اسناد** را در زمان بارگذاری غنی‌سازی می‌کند (یک‌بار پرداخت)، در حالی که HyDE **پرس‌وجوها (Queryها)** را در زمان جستجو غنی می‌سازد (پرداخت به ازای هر Query). برای سیستمی که روزانه ۱۰,۰۰۰ پرس‌وجو را بر روی پیکره‌ای با ۵۰,۰۰۰ Chunk پردازش می‌کند، بازیابی زمینه‌ای به طور چشمگیری ارزان‌تر است زیرا هزینه بارگذاری سرشکن می‌شود. HyDE همچنین با خطر توهم (Hallucination) همراه است: سند فرضی ممکن است داده‌های نادرستی را وارد نماید. در عمل، قوی‌ترین سیستم‌ها از هر دو روش استفاده می‌کنند: بازیابی زمینه‌ای برای غنی‌سازی در زمان بارگذاری، و HyDE (یا بسط چندگانه پرس‌وجو [Multi-query expansion]) برای پرس‌وجوهای پیچیده‌ای که به راهنمایی در سمت پرس‌وجو نیاز دارند.
 
 ---
 
-*Previous: [Advanced Retrieval Patterns](09-advanced-retrieval-patterns.md) | Next: [Late Interaction & ColBERT](11-late-interaction-colbert.md)*
+## منابع
+- Anthropic. "Contextual Retrieval" (سپتامبر ۲۰۲۴)
+- Jina AI. "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models" (۲۰۲۴)
+- Voyage AI. "voyage-context-3: Contextualized Chunk Embeddings" (۲۰۲۵)
+- Voyage AI. "voyage-context-4" (ژوئن ۲۰۲۶)
+- Perplexity. "pplx-embed-v2-context-9b" model card (Hugging Face، اکتبر ۲۰۲۶) و گزارش فنی (arXiv 2610.38854، ۲۸ اکتبر ۲۰۲۶)
+- NirDiamant. "RAG Techniques: Contextual Chunk Headers" (GitHub، ۲۰۲۴)
+
+---
+
+*قبلی: [الگوهای بازیابی پیشرفته](09-advanced-retrieval-patterns.md) | بعدی: [تعامل دیرهنگام و ColBERT](11-late-interaction-colbert.md)*
+
+</div>

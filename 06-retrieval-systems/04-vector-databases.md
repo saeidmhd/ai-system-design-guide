@@ -1,79 +1,83 @@
-# Vector Databases
+<div dir="rtl">
 
-Vector databases are purpose-built systems for storing, indexing, and searching high-dimensional embeddings. The market has split into **Managed Serverless** and **Specialized High-Performance** engines. We no longer ask "Does it support vector search?" (Postgres, Redis, and Mongo all do). We ask **"Does it scale to 100M+ vectors with sub-100ms P99 and full metadata filtering?"**
+# پایگاه‌های داده برداری (Vector Databases)
 
-## Table of Contents
+پایگاه‌های داده برداری (Vector Databases)، سیستم‌هایی با طراحی ویژه برای ذخیره‌سازی، ایندکس‌گذاری و جستجوی Embeddingهای ابعاد بالا هستند. بازار به دو بخش موتورهای **بدون سرور مدیریت‌شده (Managed Serverless)** و **اختصاصی با کارایی بالا (Specialized High-Performance)** تقسیم شده است. ما دیگر نمی‌پرسیم «آیا از جستجوی برداری پشتیبانی می‌کند؟» (Postgres، Redis و Mongo همگی پشتیبانی می‌کنند). بلکه می‌پرسیم **«آیا امکان مقیاس‌پذیری به بیش از ۱۰۰ میلیون بردار با تاخیر (Latency) صدک ۹۹ (P99) زیر ۱۰۰ میلی‌ثانیه و فیلتر کردن کامل متادیتا را دارد؟»**
 
-- [What Is a Vector Database](#what-is-a-vector-database)
-- [Vector Search Fundamentals](#vector-search-fundamentals)
-- [Indexing Algorithms](#indexing-algorithms)
-- [Competitive Landscape](#competitive-landscape)
-- [Detailed Database Comparison](#detailed-database-comparison)
-- [Metadata Filtering](#metadata-filtering)
-- [Query Patterns](#query-patterns)
-- [Production Operations](#production-operations)
-- [Managed vs Self-Hosted (TCO Analysis)](#managed-vs-self-hosted-tco-analysis)
-- [Selection Framework](#selection-framework)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [پایگاه داده برداری چیست](#what-is-a-vector-database)
+- [اصول پایه‌ای جستجوی برداری](#vector-search-fundamentals)
+- [الگوریتم‌های ایندکس‌گذاری](#indexing-algorithms)
+- [چشم‌انداز رقابتی](#competitive-landscape)
+- [مقایسه دقیق پایگاه‌های داده](#detailed-database-comparison)
+- [فیلتر کردن متادیتا](#metadata-filtering)
+- [الگوهای کوئری](#query-patterns)
+- [عملیات در پروداکشن](#production-operations)
+- [مدیریت‌شده در برابر خودمیزبان (تحلیل TCO)](#managed-vs-self-hosted-tco-analysis)
+- [چارچوب انتخاب](#selection-framework)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## What Is a Vector Database
+## پایگاه داده برداری چیست
 
-A vector database stores embeddings (dense vectors) and enables fast similarity search over them.
+یک پایگاه داده برداری (Vector Database)، Embeddingها (بردارهای متراکم یا Dense) را ذخیره کرده و جستجوی سریع شباهت را روی آن‌ها امکان‌پذیر می‌سازد.
 
 ```
 Traditional DB:      SELECT * FROM docs WHERE category = 'tech'
 Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_embedding) LIMIT 10
 ```
 
-### Core Capabilities
+### قابلیت‌های کلیدی
 
-| Capability | Purpose |
+| قابلیت | هدف |
 |------------|---------|
-| Vector storage | Persist high-dimensional embeddings |
-| Similarity search | Find nearest neighbors quickly |
-| Metadata filtering | Combine vector search with attribute filters |
-| CRUD operations | Update embeddings as data changes |
-| Scaling | Handle millions to billions of vectors |
+| ذخیره‌سازی برداری | پایدارسازی Embeddingهای با ابعاد بالا |
+| جستجوی شباهت | یافتن سریع نزدیک‌ترین همسایه‌ها |
+| فیلتر کردن متادیتا | ترکیب جستجوی برداری با فیلترهای ویژگی (Attribute) |
+| عملیات CRUD | به‌روزرسانی Embeddingها همگام با تغییر داده‌ها |
+| مقیاس‌پذیری | مدیریت میلیون‌ها تا میلیاردها بردار |
 
-### Why Not General Databases?
+### چرا از پایگاه‌های داده عمومی استفاده نکنیم؟
 
-Traditional databases can store vectors but lack optimized search:
+پایگاه‌های داده سنتی می‌توانند بردارها را ذخیره کنند، اما فاقد جستجوی بهینه‌سازی‌شده هستند:
 
-| Approach | Search Complexity | Practical at Scale |
+| رویکرد | پیچیدگی جستجو | کاربرد عملی در مقیاس بالا |
 |----------|-------------------|-------------------|
-| Brute force (e.g., pgvector with no HNSW or IVFFlat index) | O(n * d) | OK to ~1M vectors |
-| ANN index (dedicated vector DB) | O(log n) or O(1) | Yes, billions |
+| جستجوی جامع (Brute force) (مانند `pgvector` بدون ایندکس HNSW یا IVFFlat) | O(n * d) | مناسب تا حدود ۱ میلیون بردار |
+| ایندکس ANN (پایگاه داده برداری اختصاصی) | O(log n) یا O(1) | بله، در مقیاس میلیاردها |
 
 ---
 
-## Vector Search Fundamentals
+## اصول پایه‌ای جستجوی برداری
 
-### Exact vs Approximate Search
+### جستجوی دقیق در برابر تقریبی
 
-**Exact (brute force):**
-- Compare query to every stored vector
-- O(n * d) per query
-- Perfect accuracy
+**دقیق (Brute force):**
+- مقایسه کوئری با تک‌تک بردارهای ذخیره‌شده
+- O(n * d) به ازای هر کوئری
+- دقت بی‌نقص
 
-**Approximate Nearest Neighbor (ANN):**
-- Use index structure to prune search space
-- Sub-linear complexity
-- Slightly lower recall (typically 95-99%)
+**تقریب نزدیک‌ترین همسایه (Approximate Nearest Neighbor - ANN):**
+- استفاده از ساختار ایندکس برای هرس کردن فضای جستجو
+- پیچیدگی زیرخطی (Sub-linear)
+- بازیابی (Recall) اندکی کمتر (معمولاً ۹۵ تا ۹۹ درصد)
 
-### Distance Metrics
+### معیارهای فاصله
 
-| Metric | Formula | Range | Best For |
+| معیار | فرمول | بازه | مناسب‌ترین برای |
 |--------|---------|-------|----------|
-| Cosine | 1 - (a . b) / (norm(a) * norm(b)) | [0, 2] | Text embeddings |
-| Euclidean (L2) | sqrt(sum((a - b)^2)) | [0, inf) | Image embeddings |
-| Dot product | a . b | (-inf, inf) | Already normalized |
+| کسینوسی (Cosine) | 1 - (a . b) / (norm(a) * norm(b)) | [0, 2] | Embeddingهای متنی |
+| اقلیدسی (L2) | sqrt(sum((a - b)^2)) | [0, inf) | Embeddingهای تصویری |
+| ضرب نقطه‌ای (Dot product) | a . b | (-inf, inf) | بردارهایی که از قبل نرمال‌سازی شده‌اند |
 
-**For text embeddings:** Use cosine similarity (or dot product if pre-normalized).
+**برای Embeddingهای متنی:** از شباهت کسینوسی (یا ضرب نقطه‌ای در صورت نرمال‌سازی قبلی) استفاده کنید.
 
-### Recall vs Latency Tradeoff
+### مصالحه بین بازیابی (Recall) و تاخیر (Latency)
+
+<div dir="ltr">
 
 ```
                     ^ Recall
@@ -88,21 +92,23 @@ Traditional databases can store vectors but lack optimized search:
                        1ms      10ms
 ```
 
-ANN indices trade some accuracy for speed. Tune for your requirements.
+</div>
+
+ایندکس‌های ANN بخشی از دقت را با سرعت معاوضه می‌کنند. آن را بر اساس نیازمندی‌های خود تنظیم کنید.
 
 ---
 
-## Indexing Algorithms
+## الگوریتم‌های ایندکس‌گذاری
 
-### HNSW (Hierarchical Navigable Small World)
+### الگوریتم HNSW (Hierarchical Navigable Small World)
 
-The most popular algorithm for production **in-memory** vector search.
+محبوب‌ترین الگوریتم برای جستجوی برداری **درون حافظه (In-Memory)** در محیط پروداکشن.
 
-**How it works:**
-1. Build a graph where nodes are vectors
-2. Connect to nearby neighbors
-3. Multiple layers of abstraction (hierarchical)
-4. Search: navigate from top layer down, greedy nearest neighbor
+**نحوه کارکرد:**
+1. ساخت گرافی که در آن گره‌ها همان بردارها هستند
+2. اتصال به همسایه‌های نزدیک
+3. لایه‌های متعدد تجرید (سلسله‌مراتبی)
+4. جستجو: پیمایش حریصانه از لایه بالا به پایین به سمت نزدیک‌ترین همسایه
 
 ```
 Layer 2:   *--------*--------*
@@ -112,164 +118,164 @@ Layer 1:   *--*--*--*--*--*--*
 Layer 0:   ********************  (all vectors)
 ```
 
-**Pros:**
-- Excellent recall/latency tradeoff
-- No training required
-- Supports updates natively
+**مزایا:**
+- موازنه عالی میان بازیابی (Recall) و تاخیر (Latency)
+- بدون نیاز به آموزش (Training)
+- پشتیبانی بومی از به‌روزرسانی‌ها
 
-**Cons:**
-- Memory-intensive: the full-precision vectors and the graph links both live in RAM
-- The graph itself is a small share at high dimensions. OpenSearch's sizing rule is 1.1 x (4 x dims + 8 x M) bytes per vector, about 12-19% above the raw float32 vectors at 1,536 dims for M of 16 to 64; low-dimensional vectors pay proportionally more
-- 10M vectors at 1,536 dims need ~70-75 GB of RAM per copy (61 GB of that is the float32 vectors), before replicas
+**معایب:**
+- مصرف بالای حافظه: هم بردارهای با دقت کامل (Full-precision) و هم پیوندهای گراف در RAM نگهداری می‌شوند
+- خود گراف در ابعاد بالا سهم اندکی از فضا را می‌گیرد. قانون تخمین اندازه در OpenSearch برابر با `1.1 x (4 x dims + 8 x M)` بایت به ازای هر بردار است که حدود ۱۲ تا ۱۹ درصد بالاتر از بردارهای خام `float32` در ابعاد ۱,۵۳۶ با مقادیر `M` بین ۱۶ تا ۶۴ است؛ بردارهای با ابعاد کمتر سهم به‌مراتب بیشتری را به خود اختصاص می‌دهند
+- ۱۰ میلیون بردار در ابعاد ۱,۵۳۶ پیش از محاسبه نسخه‌های کپی (Replicas)، به حدود ۷۰ تا ۷۵ گیگابایت RAM به ازای هر نسخه نیاز دارند (۶۱ گیگابایت از آن مربوط به بردارهای `float32` است)
 
-**Key parameters:**
-- `M`: Max connections per node (16-64)
-- `ef_construction`: Build-time exploration (100-500)
-- `ef_search`: Query-time exploration (50-200)
+**پارامترهای کلیدی:**
+- `M`: حداکثر اتصالات به ازای هر گره (۱۶-۶۴)
+- `ef_construction`: میزان کاوش در زمان ساخت ایندکس (۱۰۰-۵۰۰)
+- `ef_search`: میزان کاوش در زمان کوئری (۵۰-۲۰۰)
 
-### DiskANN (SSD-based)
+### الگوریتم DiskANN (مبتنی بر SSD)
 
-Built for **billion-scale** indexes that do not fit in RAM. The original paper served a billion SIFT points from one workstation with 64 GB of RAM and an SSD, at over 5,000 queries per second, under 3 ms mean latency and 95%+ 1-recall@1.
+برای ایندکس‌های **در مقیاس میلیاردها** که در RAM جا نمی‌شوند ساخته شده است. مقاله اصلی، ۱ میلیارد نقطه SIFT را روی یک ورک‌استیشن با ۶۴ گیگابایت RAM و یک درایو SSD با بیش از ۵,۰۰۰ کوئری در ثانیه، میانگین تاخیر (Latency) زیر ۳ میلی‌ثانیه و بازیابی (Recall) بیش از ۹۵ درصد (`1-recall@1`) سرویس‌دهی کرد.
 
-**How it works:**
-- Keeps the full-precision vectors and the graph on SSD (NVMe), with only compressed (PQ) codes in RAM to steer the search
-- Uses the Vamana algorithm for efficient disk-based graph traversal
+**نحوه کارکرد:**
+- بردارهای با دقت کامل و گراف را روی SSD (NVMe) نگه می‌دارد و فقط کدهای فشرده‌شده (PQ) را در RAM ذخیره می‌کند تا جستجو را هدایت کنند
+- از الگوریتم Vamana برای پیمایش کارآمد گراف روی دیسک استفاده می‌کند
 
-**Pros:**
-- 10x cheaper than HNSW for billion-scale datasets with <5ms latency penalty
-- 90-95% reduction in RAM requirements vs HNSW
+**مزایا:**
+- ۱۰ برابر ارزان‌تر از HNSW برای مجموعه‌داده‌های در مقیاس میلیاردی با جریمه تاخیر (Latency) کمتر از ۵ میلی‌ثانیه
+- ۹۰ تا ۹۵ درصد کاهش نیاز به حافظه RAM در مقایسه با HNSW
 
-**Cons:**
-- Slightly higher latency than pure in-memory HNSW
-- Tail latency depends on NVMe IOPS, so size SSDs for query concurrency, not just capacity
+**معایب:**
+- تاخیر (Latency) اندکی بیشتر نسبت به HNSW کاملاً درون حافظه (In-Memory)
+- تاخیر دنباله (Tail Latency) به IOPS درایو NVMe وابسته است؛ بنابراین اندازه و مشخصات SSDها را بر اساس همزمانی کوئری‌ها تعیین کنید، نه صرفاً ظرفیت ذخیره‌سازی
 
-**Example:** A 100-million-vector index with 1,536 dimensions needs roughly 700 GB of RAM per copy for HNSW (614 GB of float32 vectors plus graph and overhead). Using DiskANN, the RAM requirement drops by 90-95% while maintaining sub-10ms query times.
+**مثال:** یک ایندکس ۱۰۰ میلیون برداری با ۱,۵۳۶ بعد برای HNSW به حدود ۷۰۰ گیگابایت RAM به ازای هر نسخه نیاز دارد (۶۱۴ گیگابایت بردارهای float32 به همراه گراف و سربار). با استفاده از DiskANN، میزان RAM مورد نیاز ۹۰ تا ۹۵ درصد کاهش می‌یابد و در عین حال زمان کوئری زیر ۱۰ میلی‌ثانیه حفظ می‌شود.
 
-### IVF (Inverted File Index)
+### الگوریتم IVF (ایندکس فایل معکوس - Inverted File Index)
 
-Partition vectors into clusters, search only relevant clusters.
+افرازبندی بردارها در خوشه‌ها و جستجو فقط در خوشه‌های مرتبط.
 
-**How it works:**
-1. Use k-means to create centroids
-2. Assign each vector to nearest centroid
-3. At query time: find nearest centroids, search those clusters
+**نحوه کارکرد:**
+1. استفاده از k-means برای ایجاد مرکز خوشه‌ها (Centroids)
+2. انتساب هر بردار به نزدیک‌ترین مرکز خوشه
+3. در زمان کوئری: یافتن نزدیک‌ترین مراکز خوشه‌ها و جستجو در همان خوشه‌ها
 
-**Pros:**
-- Lower memory than HNSW
-- Can use quantization (IVF-PQ)
+**مزایا:**
+- مصرف حافظه کمتر نسبت به HNSW
+- امکان استفاده از کوانتیزاسیون (IVF-PQ)
 
-**Cons:**
-- Requires training
-- Updates need re-clustering or hybrid approach
+**معایب:**
+- نیاز به آموزش (Training) دارد
+- برای به‌روزرسانی‌ها نیاز به خوشه‌بندی مجدد یا رویکرد ترکیبی (Hybrid) دارد
 
-**Key parameters:**
-- `nlist`: Number of clusters (sqrt(n) rule of thumb)
-- `nprobe`: Clusters to search at query time
+**پارامترهای کلیدی:**
+- `nlist`: تعداد خوشه‌ها (قاعده تجربی `sqrt(n)`)
+- `nprobe`: خوشه‌هایی که باید در زمان کوئری جستجو شوند
 
-### Product Quantization (PQ)
+### کوانتیزاسیون ضربی (Product Quantization - PQ)
 
-Compress vectors to reduce memory and speed up comparison.
+فشرده‌سازی بردارها به منظور کاهش حافظه و سرعت بخشیدن به مقایسه.
 
-**How it works:**
-1. Split vector into subvectors
-2. Quantize each subvector to a codebook
-3. Store codes instead of full vectors
+**نحوه کارکرد:**
+1. تقسیم بردار به زیربردارها (Subvectors)
+2. کوانتیزه کردن هر زیربردار با استفاده از یک کدبوک (Codebook)
+3. ذخیره کدها به جای بردارهای کامل
 
-**Memory reduction:** 4-32x typical
+**کاهش حافظه:** معمولاً ۴ تا ۳۲ برابر
 
-**Tradeoff:** Lower accuracy due to quantization loss
+**مصالحه:** دقت پایین‌تر به دلیل اتلاف کوانتیزاسیون
 
-### Low-Bit and Rotation-Based Quantization
+### کوانتیزاسیون کم‌بیت و مبتنی بر چرخش
 
-Between May and October 2026 several engines shipped or extended 1 to 8-bit vector storage, mostly as opt-in or preview options rather than defaults. The newest trick is **rotate first, then quantize**. Embedding dimensions have very uneven variance, so per-dimension scalar quantization wastes bits on quiet dimensions and clips loud ones. Multiplying by a random or Hadamard rotation spreads the energy evenly across dimensions, after which a uniform 4-bit or 1-bit grid loses far less information.
+بین ماه مه و اکتبر ۲۰۲۶، چندین موتور قابلیت ذخیره‌سازی بردارهای ۱ تا ۸ بیتی را ارائه داده یا گسترش دادند که عمدتاً به عنوان گزینه‌های اختیاری (Opt-in) یا پیش‌نمایش (Preview) بودند تا حالت پیش‌فرض. جدیدترین ترفند، **ابتدا چرخش، سپس کوانتیزاسیون** است. ابعاد Embedding دارای واریانس بسیار ناهمگونی هستند، بنابراین کوانتیزاسیون اسکالر به ازای هر بعد، بیت‌ها را روی ابعاد آرام هدر می‌دهد و ابعاد با تغییرات شدید را برش می‌دهد (Clip می‌کند). ضرب در یک ماتریس چرخش تصادفی یا هادامارد (Hadamard)، انرژی را به‌طور یکنواخت در میان ابعاد پخش می‌کند؛ پس از آن یک شبکه یکنواخت ۴ بیتی یا ۱ بیتی اطلاعات بسیار کمتری را از دست می‌دهد.
 
-| Engine | Feature | Status | Footprint |
+| موتور | ویژگی | وضعیت | ردپای حافظه (Footprint) |
 |---|---|---|---|
-| Qdrant | TurboQuant with Hadamard rotation (1.18, May 2026); Turbo4 storage type keeps only the 4-bit form (1.19, August 2026); `turbo8` and `turbo16` vector datatypes (1.20, October 2026) | Opt-in | From 36 bits per coordinate in 1.18 (float32 original plus 4-bit copy) to 4 bits with Turbo4, a ninefold cut |
-| Weaviate | 4-bit Rotational Quantization (1.39, August 2026), adding to the 8-bit and 1-bit RQ it already had; 1.40 (October 2026) adds "RQ4 centered quantization" | Preview in 1.39, HNSW only; the 1.40 notes give no status label, so confirm before relying on it | 1,536-dim vector from 6,144 bytes to 784 bytes (7.84x) |
-| Elasticsearch | DiskBBQ (`bbq_disk`, GA since 9.2) gained a symmetric 1-bit OSQ scorer and merge-time calibration (9.5, August 2026) | GA; default index type for float vectors from 9.4 where the license includes it (Enterprise) | ~1 bit per dimension plus correction terms |
-| turbopuffer | Plain `i8` vector type (June 2026), no rotation | Shipped | 75% less storage and query cost than f32 for quantization-aware models (vendor) |
+| Qdrant | قابلیت TurboQuant با چرخش هادامارد (نسخه ۱.۱۸، مه ۲۰۲۶)؛ نوع ذخیره‌سازی Turbo4 که فقط فرم ۴ بیتی را نگه می‌دارد (نسخه ۱.۱۹، اوت ۲۰۲۶)؛ انواع داده برداری `turbo8` و `turbo16` (نسخه ۱.۲۰، اکتبر ۲۰۲۶) | اختیاری (Opt-in) | از ۳۶ بیت به ازای هر مختصات در نسخه ۱.۱۸ (نسخه اصلی float32 به همراه کپی ۴ بیتی) به ۴ بیت با Turbo4 که کاهش ۹ برابری است |
+| Weaviate | کوانتیزاسیون چرخشی ۴ بیتی (نسخه ۱.۳۹، اوت ۲۰۲۶)، علاوه بر RQهای ۸ بیتی و ۱ بیتی که از قبل داشت؛ نسخه ۱.۴۰ (اکتبر ۲۰۲۶) قابلیت «کوانتیزاسیون متمرکز RQ4» را اضافه کرد | پیش‌نمایش در نسخه ۱.۳۹، فقط HNSW؛ یادداشت‌های انتشار نسخه ۱.۴۰ برچسب وضعیتی ارائه نداده‌اند، بنابراین پیش از اتکا به آن بررسی و تایید کنید | بردار ۱,۵۳۶ بعدی از ۶,۱۴۴ بایت به ۷۸۴ بایت (کاهش ۷.۸۴ برابری) |
+| Elasticsearch | قابلیت DiskBBQ (`bbq_disk` که از نسخه ۹.۲ به عرضه عمومی یا GA رسیده بود) یک امتیازدهنده متقارن ۱ بیتی OSQ و کالیبراسیون در زمان ادغام دریافت کرد (نسخه ۹.۵، اوت ۲۰۲۶) | عرضه عمومی (GA)؛ نوع ایندکس پیش‌فرض برای بردارهای اعشاری (float) از نسخه ۹.۴ در لایسنس‌هایی که شامل آن می‌شوند (Enterprise) | حدود ۱ بیت به ازای هر بعد به همراه عبارات تصحیح |
+| turbopuffer | نوع بردار ساده `i8` (ژوئن ۲۰۲۶)، بدون چرخش | ارائه‌شده (Shipped) | ۷۵ درصد هزینه ذخیره‌سازی و کوئری کمتر نسبت به f32 برای مدل‌های آگاه از کوانتیزاسیون (گزارش‌شده توسط سازنده) |
 
-Qdrant's own numbers show the tradeoff: 4-bit TurboQuant recall 0.9193 vs 0.9285 for 8-bit scalar quantization vs 0.9419 uncompressed on one dataset, at twice the compression of scalar quantization (vendor-reported). The design decision is whether to **keep the float originals for rescoring**. Keeping them on disk or object storage and rescoring the top few hundred candidates recovers most of the lost recall; dropping them (Turbo4) is the cheapest option and caps your maximum recall.
+آمارهای خود Qdrant این مصالحه را نشان می‌دهد: در یک مجموعه‌داده، بازیابی (Recall) مدل ۴ بیتی TurboQuant برابر با ۰.۹۱۹۳ در مقایسه با ۰.۹۲۸۵ برای کوانتیزاسیون اسکالر ۸ بیتی و ۰.۹۴۱۹ در حالت غیرفشرده است، آن هم با فشردگی دو برابری نسبت به کوانتیزاسیون اسکالر (طبق گزارش سازنده). تصمیم طراحی در این است که آیا **نسخه‌های اصلی اعشاری (Float) را برای امتیازدهی مجدد (Rescoring) نگه داریم یا خیر**. نگهداری آن‌ها روی دیسک یا ذخیره‌ساز ابری شیء (Object Storage) و امتیازدهی مجدد به چند صد کاندیدای برتر، بخش عمده‌ای از بازیابی (Recall) از دست رفته را برمی‌گرداند؛ اما حذف آن‌ها (Turbo4) ارزان‌ترین گزینه است و سقف حداکثر بازیابی (Recall) شما را محدود می‌سازد.
 
-The RAM math changes accordingly: 100M vectors at 1,536 dims is ~614 GB as float32 but ~77 GB at 4 bits. At a billion vectors, that is the difference between a fleet of high-memory nodes and a few machines plus SSD.
+محاسبات RAM بر همین اساس تغییر می‌کند: ۱۰۰ میلیون بردار با ابعاد ۱,۵۳۶ در حالت float32 حدود ۶۱۴ گیگابایت فضا می‌برد، اما در حالت ۴ بیتی حدود ۷۷ گیگابایت نیاز دارد. در مقیاس یک میلیارد بردار، این تفاوت بین یک ناوگان از گره‌های با حافظه بسیار بالا در برابر چند دستگاه به همراه SSD است.
 
-### Flat Index (Brute Force)
+### ایندکس مسطح یا Flat (جستجوی جامع / Brute Force)
 
-No approximation, exact search.
+بدون تقریب، جستجوی دقیق.
 
-**Use when:**
-- Less than 100K vectors
-- Accuracy is critical
-- Latency budget is generous
+**موارد کاربرد:**
+- کمتر از ۱۰۰ هزار بردار
+- دقت اهمیت حیاتی دارد
+- بودجه تاخیر (Latency) سخاوتمندانه است
 
-### Algorithm Comparison
+### مقایسه الگوریتم‌ها
 
-| Algorithm | Memory | Build Time | Query Speed | Recall | Updates |
+| الگوریتم | حافظه | زمان ساخت | سرعت کوئری | بازیابی (Recall) | به‌روزرسانی‌ها |
 |-----------|--------|------------|-------------|--------|---------|
-| HNSW | High | Medium | Very fast | 95-99% | Good |
-| DiskANN | Low (SSD) | Medium | Fast | 95-99% | Fair |
-| IVF | Medium | Fast | Fast | 90-98% | Fair |
-| IVF-PQ | Low | Fast | Fast | 85-95% | Fair |
-| Flat | Low | None | Slow | 100% | Instant |
+| HNSW | زیاد | متوسط | بسیار سریع | ۹۵-۹۹٪ | خوب |
+| DiskANN | کم (SSD) | متوسط | سریع | ۹۵-۹۹٪ | متوسط |
+| IVF | متوسط | سریع | سریع | ۹۰-۹۸٪ | متوسط |
+| IVF-PQ | کم | سریع | سریع | ۸۵-۹۵٪ | متوسط |
+| Flat | کم | ندارد | کُند | ۱۰۰٪ | آنی |
 
 ---
 
-## Competitive Landscape
+## چشم‌انداز رقابتی
 
-### Vector-Native (Dedicated)
+### اختصاصی برداری (Vector-Native)
 
-| Database | Type | Best For | Pricing Model |
+| پایگاه داده | نوع | مناسب‌ترین برای | مدل قیمت‌گذاری |
 |----------|------|----------|---------------|
-| **Pinecone** | Managed cloud (serverless standard); BYOC GA September 23, 2026 (data plane in your AWS, GCP or Azure account) | Easy start, scale, managed SLAs; BM25 full-text search GA September 9, 2026 | Storage plus read and write units |
-| **Qdrant** | Open source / Cloud (Rust, high-perf) | Self-hosted control, strong filtered search; vendor benchmarks cite ~12ms p99 at 10M vectors; 1.20 (October 2026) adds BM25 scoring on the full-text index, a `code` tokenizer, and per-element nested payload indexes | Per GB (cloud) or free |
-| **Weaviate** | Open source / Cloud | Native hybrid (BM25 + dense + metadata) in a single query, MMR diversity and Boost API (GA in 1.39), multimodal; 1.40 (October 2026) makes namespaces GA as a licensed feature, stops creating an implicit legacy vector index (auto-schema creates a `default` named vector), and defaults the vectorizer to none, so schemas that relied on the old defaults change on upgrade | Per dimension-hour |
-| **Milvus** | Open source / Cloud (Zilliz) | Distributed scale; 3.0 (July 2026) adds External Collections over Parquet, Iceberg, Lance and Vortex in object storage, plus online column backfill | Free (self-host) or Zilliz Cloud |
-| **turbopuffer** | Managed, object-storage-first | Many cold namespaces (per-tenant indexes) at low cost; native embedding GA September 29, 2026 | Usage-based |
-| **Chroma** | Open source (Apache 2.0) | Prototyping, local dev, embedded use, self-hosted or embedded only: Chroma's October 23, 2026 notice says Chroma Cloud stops accepting writes on December 7, 2026 and stops serving reads on December 22, 2026 | Free (self-host) |
+| **Pinecone** | ابری مدیریت‌شده (استاندارد serverless)؛ دسترسی عمومی (GA) قابلیت BYOC در ۲۳ سپتامبر ۲۰۲۶ (صفحه داده [data plane] در حساب AWS، GCP یا Azure شما) | شروع آسان، مقیاس‌پذیری، SLAهای مدیریت‌شده؛ دسترسی عمومی (GA) جستجوی تمام‌متن BM25 در ۹ سپتامبر ۲۰۲۶ | فضای ذخیره‌سازی به‌علاوه واحدهای خواندن و نوشتن |
+| **Qdrant** | متن‌باز / ابری (Rust، عملکرد بالا) | کنترل بر میزبانی شخصی (Self-hosted)، جستجوی فیلترشده قوی؛ بنچمارک‌های ارائه‌دهنده حاکی از تاخیر (Latency) صدک p99 حدود ۱۲ میلی‌ثانیه‌ای در ۱۰ میلیون بردار است؛ نسخه 1.20 (اکتبر ۲۰۲۶) امتیازدهی BM25 روی ایندکس تمام‌متن، یک Tokenizer از نوع `code` و ایندکس‌های payload تودرتو به ازای هر عنصر را اضافه کرده است | بر حسب هر گیگابایت (ابری) یا رایگان |
+| **Weaviate** | متن‌باز / ابری | جستجوی ترکیبی بومی (BM25 + متراکم [dense] + فراداده [metadata]) در یک کوئری واحد، تنوع‌بخشی MMR و Boost API (دسترسی عمومی [GA] در نسخه 1.39)، چندوجهی (multimodal)؛ نسخه 1.40 (اکتبر ۲۰۲۶) فضاهای نام (namespaces) را به عنوان قابلیتی نیازمند لایسنس به دسترسی عمومی (GA) رساند، ایجاد ایندکس برداری سنتی و ضمنی را متوقف کرد (auto-schema یک بردار نام‌گذاری‌شده `default` می‌سازد) و بردارساز پیش‌فرض را به none تغییر داد، بنابراین طرح‌واره‌هایی که به مقادیر پیش‌فرض قدیمی متکی بودند، با ارتقا دچار تغییر می‌شوند | بر حسب بُعد-ساعت (dimension-hour) |
+| **Milvus** | متن‌باز / ابری (Zilliz) | مقیاس توزیع‌شده؛ نسخه 3.0 (ژوئیه ۲۰۲۶) کالکشن‌های خارجی (External Collections) را روی داده‌های Parquet، Iceberg، Lance و Vortex در ذخیره‌ساز شیء به‌همراه تکمیل ستونی آنلاین (online column backfill) اضافه کرده است | رایگان (میزبانی شخصی [self-host]) یا Zilliz Cloud |
+| **turbopuffer** | مدیریت‌شده، مبتنی بر ذخیره‌ساز شیء (object-storage-first) | تعداد زیادی فضای نام سرد (ایندکس‌های به ازای هر مستاجر [multi-tenant]) با هزینه پایین؛ دسترسی عمومی (GA) ایجاد Embedding بومی در ۲۹ سپتامبر ۲۰۲۶ | بر اساس مصرف (Usage-based) |
+| **Chroma** | متن‌باز (Apache 2.0) | نمونه‌سازی اولیه، توسعه محلی، استفاده تعبیه‌شده (embedded)، فقط به صورت میزبانی شخصی یا تعبیه‌شده: طبق اطلاعیه ۲۳ اکتبر ۲۰۲۶ کروما (Chroma)، سرویس ابری Chroma Cloud از ۷ دسامبر ۲۰۲۶ پذیرش عملیات نوشتن و از ۲۲ دسامبر ۲۰۲۶ پاسخ‌دهی به خواندن را متوقف می‌کند | رایگان (میزبانی شخصی) |
 
-### General-Purpose (Plugin/Extension)
+### چندمنظوره (پلاگین/افزونه)
 
-| Database | Type | Best For | Pricing Model |
+| پایگاه داده | نوع | مناسب‌ترین برای | مدل قیمت‌گذاری |
 |----------|------|----------|---------------|
-| **pgvector (0.8.7)** | PostgreSQL extension | Small scale, existing PG (HNSW + IVFFlat). Patch to 0.8.7 (October 1, 2026): it fixes CVE-2026-103484, an IVFFlat build overflow that any role allowed to create an index can trigger | Compute only |
-| **Elasticsearch (9.5)** | Search engine | Hybrid via the `rrf` and `linear` retrievers, DiskBBQ quantized vectors, `semantic_text` fields that embed automatically at ingest | License-based |
-| **MongoDB Atlas Vector Search** | Document DB | Existing Mongo shops; Automated Embedding GA August 13, 2026 (Atlas embeds and re-embeds documents with Voyage models on write) | Atlas cluster pricing |
+| **pgvector (0.8.7)** | افزونه PostgreSQL | مقیاس کوچک، پایگاه‌های داده PG موجود (HNSW + IVFFlat). پچ ارائه‌شده برای 0.8.7 (۱ اکتبر ۲۰۲۶): آسیب‌پذیری CVE-2026-103484 را برطرف می‌کند؛ یک سرریز در ساخت IVFFlat که هر نقشی با دسترسی ایجاد ایندکس می‌توانست آن را فعال کند | فقط هزینه محاسباتی (Compute) |
+| **Elasticsearch (9.5)** | موتور جستجو | جستجوی ترکیبی از طریق بازیاب‌های `rrf` و `linear`، بردارهای کوانتیزه‌شده DiskBBQ، فیلدهای `semantic_text` که به‌طور خودکار هنگام ورود داده‌ها (ingest) تعبیه‌سازی (Embedding) می‌شوند | مبتنی بر لایسنس |
+| **MongoDB Atlas Vector Search** | پایگاه داده اسنادی (Document DB) | مجموعه‌هایی که از قبل از Mongo استفاده می‌کنند؛ دسترسی عمومی (GA) به ایجاد خودکار Embedding در ۱۳ اوت ۲۰۲۶ (Atlas اسناد را هنگام نوشتن با مدل‌های Voyage تعبیه و مجدداً تعبیه می‌کند) | قیمت‌گذاری خوشه‌ای اطلس (Atlas cluster pricing) |
 
-### Where the Market Moved in 2026
+### تحولات بازار در سال ۲۰۲۶
 
-Three shifts change how you evaluate an engine:
+سه تحول، نحوه ارزیابی یک موتور را دگرگون می‌کنند:
 
-1. **Embedding moved into the database.** MongoDB Atlas Automated Embedding (GA), turbopuffer native embedding (GA; turbopuffer cites Readwise cutting median embedding latency 8x by embedding in parallel with query execution), Elasticsearch `semantic_text`, and Milvus 3.0's Hugging Face Inference Providers integration all remove the separate embed-and-sync pipeline. The cost is coupling: the vendor now picks the model version, so ask how a model change triggers re-embedding before you adopt it.
-2. **The index moved toward the lakehouse.** Milvus 3.0 External Collections query Parquet, Iceberg, Lance and Vortex data in place (zero-copy, read-only), and turbopuffer's September 30 "RIP, vector database" post describes a v3 storage design where the ANN index becomes a secondary index rather than the primary data layout (announced; it passes CI but is not in production yet, and the scale figures in the post are the vendor's). The argument shifts from "which vector DB" to "index in place over object storage, or copy into a serving store."
-3. **Low-bit quantization spread across vendors** (see [above](#low-bit-and-rotation-based-quantization)), changing the RAM budget for HNSW sizing.
-4. **The migration path moved inside Postgres.** Pinecone's pg_pinecone (October 27, 2026, Apache 2.0) is a Postgres extension for tables that already have pgvector columns: each table picks a reversible engine (native, which runs in Postgres with no network calls or Pinecone account; pgvector, which uses your existing HNSW or IVFFlat index; or remote, which syncs to a Pinecone serverless index in the background) and runs BM25, vector or hybrid search from SQL. "Start on pgvector, migrate later" becomes a per-table switch with Postgres as the system of record. The price is a superuser extension (PostgreSQL 17 or 18, `shared_preload_libraries` for remote mode), which many managed Postgres plans will not allow, and the published performance figures are Pinecone's own, from one instance type and a 1M-vector dataset.
+1. **انتقال Embedding به درون پایگاه داده.** قابلیت Automated Embedding در MongoDB Atlas (دسترسی عمومی [GA])، قابلیت Embedding بومی در turbopuffer (دسترسی عمومی [GA]؛ به گفته turbopuffer، سرویس Readwise با ایجاد Embedding به صورت موازی با اجرای کوئری، میانه تاخیر (Latency) ایجاد Embedding را تا ۸ برابر کاهش داده است)، قابلیت `semantic_text` در Elasticsearch، و ادغام Milvus 3.0 با ارائه‌دهندگان استنتاج (Inference) در Hugging Face همگی خط لوله (pipeline) مجزای ایجاد Embedding و همگام‌سازی را حذف می‌کنند. هزینه این رویکرد، وابستگی و جفت‌شدگی (coupling) است: اکنون ارائه‌دهنده، نسخه مدل را انتخاب می‌کند؛ بنابراین پیش از پیاده‌سازی بررسی کنید که تغییر مدل چگونه باز-تعبیه‌سازی (re-embedding) را فعال می‌کند.
+2. **حرکت ایندکس به سمت لیک‌هاوس (Lakehouse).** قابلیت External Collections در Milvus 3.0 داده‌های Parquet، Iceberg، Lance و Vortex را در جای خود (درجا / in place، به صورت صفر-کپی [zero-copy] و فقط-خواندنی [read-only]) کوئری می‌زند؛ همچنین پست ۳۰ سپتامبر turbopuffer با عنوان «RIP, vector database» طراحی ذخیره‌سازی v3 را توصیف می‌کند که در آن ایندکس ANN به جای ساختار داده اصلی، به یک ایندکس ثانویه تبدیل می‌شود (این قابلیت معرفی شده و آزمون‌های CI را پشت سر گذاشته، اما هنوز در مرحله عملیاتی [production] نیست و آمارهای مقیاس مطرح‌شده در پست، ادعای خودِ ارائه‌دهنده است). در نتیجه، موضوع بحث از «کدام پایگاه داده برداری (Vector Database) انتخاب شود» به «ایندکس‌گذاری درجا روی ذخیره‌ساز شیء، یا کپی کردن داده‌ها درون یک مخزن سرویس‌دهی» تغییر یافته است.
+3. **گسترش کوانتیزاسیون کم‌بیت (Low-bit quantization) در میان ارائه‌دهندگان مختلف** (به [بالا](#low-bit-and-rotation-based-quantization) مراجعه کنید) که بودجه حافظه RAM مورد نیاز برای تعیین اندازه HNSW را تغییر داده است.
+4. **انتقال مسیر مهاجرت به درون Postgres.** ابزار pg_pinecone از Pinecone (معرفی‌شده در ۲۷ اکتبر ۲۰۲۶، تحت مجوز Apache 2.0) یک افزونه Postgres برای جدول‌هایی است که در حال حاضر دارای ستون‌های pgvector هستند: هر جدول می‌تواند یک موتور برگشت‌پذیر انتخاب کند (حالت بومی [native] که درون Postgres و بدون نیاز به فراخوانی شبکه یا حساب Pinecone اجرا می‌شود؛ حالت pgvector که از ایندکس موجود HNSW یا IVFFlat شما استفاده می‌کند؛ یا حالت ریموت [remote] که در پس‌زمینه با یک ایندکس بدون سرور [serverless] در Pinecone همگام می‌شود) و جستجوی BM25، برداری یا ترکیبی را مستقیماً از طریق SQL اجرا نماید. بدین ترتیب استراتژی «شروع با pgvector و مهاجرت در آینده» به یک سوییچ به ازای هر جدول تبدیل می‌شود که در آن Postgres همچنان به عنوان سیستم مرجع (system of record) باقی می‌ماند. بهای این انعطاف‌پذیری، نیاز به یک افزونه با دسترسی ابرکاربر (superuser) است (PostgreSQL 17 یا 18، و تنظیم `shared_preload_libraries` برای حالت ریموت) که بسیاری از پلن‌های مدیریت‌شده Postgres اجازه آن را نمی‌دهند؛ علاوه بر این، ارقام عملکردی منتشرشده ادعای خودِ Pinecone هستند و بر اساس یک نوع نمونه (instance) خاص و یک مجموعه داده ۱ میلیون برداری به دست آمده‌اند.
 
-The same month taught the opposite lesson: a managed store can disappear on short notice. Chroma's October 23, 2026 wind-down notice gave Chroma Cloud users about six weeks until writes stop (December 7) and two more weeks until reads stop (December 22); open-source ChromaDB continues under Apache 2.0, and the notice says Replit will keep contributing to it (Dealroom reports Replit is acquiring Chroma; reported, not vendor-confirmed). Put an export path and the re-embed and re-index cost into the selection criteria, not just features.
+همان ماه درسی برعکس را یادآوری کرد: یک مخزن داده مدیریت‌شده می‌تواند در مدت کوتاهی تعطیل شود. اطلاعیه انحلال کروما در ۲۳ اکتبر ۲۰۲۶ به کاربران Chroma Cloud حدود شش هفته تا توقف عملیات نوشتن (۷ دسامبر) و دو هفته دیگر تا توقف عملیات خواندن (۲۲ دسامبر) مهلت داد؛ نسخه متن‌باز ChromaDB تحت مجوز Apache 2.0 به فعالیت خود ادامه می‌دهد و طبق اطلاعیه، Replit به مشارکت در آن ادامه خواهد داد (Dealroom گزارش داده که Replit در حال تصاحب Chroma است؛ این موضوع گزارش شده اما توسط ارائه‌دهنده تایید رسمی نشده است). بنابراین، مسیر خروجی گرفتن (export) و هزینه باز-تعبیه‌سازی و ایندکس‌گذاری مجدد را در معیارهای ارزیابی و انتخاب خود بگنجانید، نه فقط ویژگی‌ها و قابلیت‌ها را.
 
 ---
 
-## Detailed Database Comparison
+## مقایسه تفصیلی پایگاه‌های داده
 
-### Feature Matrix
+### ماتریس ویژگی‌ها
 
-| Feature | Pinecone | Qdrant | Weaviate | Milvus | pgvector |
+| ویژگی | Pinecone | Qdrant | Weaviate | Milvus | pgvector |
 |---------|----------|--------|----------|--------|----------|
-| **Language** | Proprietary | Rust | Go | Go/C++ | C |
-| Hosted option | Yes | Yes | Yes | Yes (Zilliz) | Via cloud PG |
-| Self-hosted | BYOC only (data plane in your cloud) | Yes | Yes | Yes | Yes |
-| **Serverless** | Yes (Best) | Yes | Yes | Yes (Zilliz) | No |
-| **Cloud-Native** | Any | Any | Any | K8s for distributed; Docker standalone | Any |
-| Metadata filtering | Good | Excellent | Good | Good | Via SQL |
-| **Hybrid search** | Sparse-dense, or BM25 FTS with client-side fusion | Native | Native | Native | Multi-stage (limited) |
-| Max vectors | Billions | Billions | Billions | Billions | ~10M |
-| HNSW index | Yes | Yes | Yes | Yes | Yes |
+| **زبان** | اختصاصی (Proprietary) | Rust | Go | Go/C++ | C |
+| گزینه میزبانی‌شده | بله | بله | بله | بله (Zilliz) | از طریق PG ابری |
+| میزبانی شخصی (Self-hosted) | فقط BYOC (صفحه داده در ابر شما) | بله | بله | بله | بله |
+| **بدون سرور (Serverless)** | بله (بهترین) | بله | بله | بله (Zilliz) | خیر |
+| **ابری-بومی (Cloud-Native)** | هر محیطی | هر محیطی | هر محیطی | K8s برای توزیع‌شده؛ Docker مستقل | هر محیطی |
+| فیلتر کردن فراداده (Metadata) | خوب | عالی | خوب | خوب | از طریق SQL |
+| **جستجوی ترکیبی (Hybrid search)** | متراکم-پراکنده، یا BM25 FTS با ادغام در سمت کلاینت | بومی (Native) | بومی (Native) | بومی (Native) | چندمرحله‌ای (محدود) |
+| حداکثر تعداد بردارها | میلیاردها | میلیاردها | میلیاردها | میلیاردها | حدود ۱۰ میلیون |
+| ایندکس HNSW | بله | بله | بله | بله | بله |
 
 ---
 
-## Metadata Filtering
+## فیلتر کردن بر اساس فراداده (Metadata Filtering)
 
-Critical for multi-tenant and filtering use cases.
+امری حیاتی برای موارد استفاده چندمستاجری (multi-tenant) و فیلتر کردن داده‌ها.
 
 ```python
 # Pinecone
@@ -293,17 +299,17 @@ results = client.query_points(
 ).points
 ```
 
-**Performance impact:** Filtering happens during search, not after. Pre-filtered indices are faster but less flexible.
+**تاثیر بر عملکرد:** فیلتر کردن در طول جستجو انجام می‌شود، نه پس از آن. ایندکس‌های از پیش فیلترشده سریع‌تر هستند اما انعطاف‌پذیری کمتری دارند.
 
-**Why metadata filtering is often the bottleneck:** In naive vector search, we find the "Top K" nearest neighbors and THEN filter by metadata. If the filter is very restrictive, we might find 0 results after filtering. Specialized databases now use **Pre-Filtering with HNSW**, traversing the graph but only considering nodes that satisfy the boolean metadata constraint. This requires specialized bitmasks or hardware acceleration (SIMD) to keep latencies low.
+**چرا فیلتر کردن فراداده اغلب به یک گلوگاه تبدیل می‌شود:** در جستجوی برداری ساده‌لوحانه (naive)، ابتدا «Top K» نزدیک‌ترین همسایه را پیدا می‌کنیم و سپس آن‌ها را بر اساس فراداده فیلتر می‌نماییم. اگر فیلتر بسیار محدودکننده باشد، ممکن است پس از اعمال فیلتر به ۰ نتیجه برسیم. اکنون پایگاه‌های داده تخصصی از **پیش‌فیلترسازی به همراه HNSW (Pre-Filtering with HNSW)** استفاده می‌کنند؛ به این صورت که گراف را پیمایش کرده اما فقط گره‌هایی را در نظر می‌گیرند که شرط بولی فراداده را برآورده کنند. این روش برای پایین نگه داشتن تاخیرها (Latencies)، به بیت‌ماسک‌های تخصصی یا شتاب‌دهنده‌های سخت‌افزاری (SIMD) نیاز دارد.
 
-**Disk-Native Metadata:** Modern DBs tier data between RAM and disk per component. Qdrant 1.19 replaced the old `on_disk` and `always_ram` flags with one `memory` setting (pinned, cached or cold) that applies to vectors, HNSW graphs, sparse and payload indexes, so complex filters (e.g., full-text + geo + vector) run without holding every payload index in RAM.
+**فراداده مبتنی بر دیسک (Disk-Native Metadata):** پایگاه‌های داده مدرن، داده‌ها را به ازای هر مؤلفه بین RAM و دیسک لایه‌بندی (tier) می‌کنند. نسخه 1.19 کیودرنت (Qdrant) فلگ‌های قدیمی `on_disk` و `always_ram` را با یک تنظیم واحد به نام `memory` (با حالت‌های pinned، cached یا cold) جایگزین کرد که روی بردارها، گراف‌های HNSW، ایندکس‌های پراکنده و ایندکس‌های payload اعمال می‌شود؛ بدین ترتیب فیلترهای پیچیده (مانند تمام‌متن + مکانی [geo] + برداری) بدون نیاز به نگهداری همه ایندکس‌های payload در حافظه RAM اجرا می‌شوند.
 
 ---
 
-## Query Patterns
+## الگوهای کوئری (Query Patterns)
 
-### Pattern 1: Simple Semantic Search
+### الگوی ۱: جستجوی معنایی ساده
 
 ```python
 def semantic_search(query: str, top_k: int = 5) -> list[Document]:
@@ -312,7 +318,7 @@ def semantic_search(query: str, top_k: int = 5) -> list[Document]:
     return [Document(id=r.id, text=r.payload["text"], score=r.score) for r in results]
 ```
 
-### Pattern 2: Filtered Search
+### الگوی ۲: جستجوی فیلترشده
 
 ```python
 def filtered_search(query: str, filters: dict, top_k: int = 5) -> list[Document]:
@@ -325,7 +331,7 @@ def filtered_search(query: str, filters: dict, top_k: int = 5) -> list[Document]
     return results
 ```
 
-### Pattern 3: Hybrid Search (Dense + Sparse)
+### الگوی ۳: جستجوی ترکیبی (متراکم + پراکنده)
 
 ```python
 def hybrid_search(query: str, alpha: float = 0.5, top_k: int = 5) -> list[Document]:
@@ -345,7 +351,7 @@ def hybrid_search(query: str, alpha: float = 0.5, top_k: int = 5) -> list[Docume
     return combined[:top_k]
 ```
 
-Some databases (Weaviate, Qdrant, Milvus, Elasticsearch) fuse dense and keyword results natively. Pinecone's BM25 full-text search ranks by one scoring type per request, so you run the lexical and vector searches separately and fuse them client-side (e.g., with RRF).
+برخی پایگاه‌های داده (Weaviate، Qdrant، Milvus، Elasticsearch) نتایج متراکم (dense) و کلیدواژه‌ای را به صورت بومی با هم ادغام می‌کنند. جستجوی تمام‌متن BM25 در Pinecone بر اساس یک نوع امتیازدهی در هر درخواست رتبه‌بندی می‌کند، بنابراین باید جستجوهای لغوی (lexical) و برداری را جداگانه اجرا کرده و آن‌ها را در سمت کلاینت (به عنوان مثال با RRF) ادغام نمایید.
 
 ```python
 # Weaviate native hybrid (Python client v4)
@@ -357,9 +363,9 @@ results = docs.query.hybrid(
 )
 ```
 
-### Pattern 4: Multi-Vector Query
+### الگوی ۴: کوئری چندبرداری (Multi-Vector Query)
 
-For parent-child or multi-aspect retrieval:
+برای بازیابی والد-فرزند (parent-child) یا چندجنبه‌ای:
 
 ```python
 def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
@@ -379,9 +385,9 @@ def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
 
 ---
 
-## Production Operations
+## عملیات محیط تولید (Production Operations)
 
-### Capacity Planning
+### برنامه‌ریزی ظرفیت (Capacity Planning)
 
 ```python
 def estimate_resources(
@@ -413,7 +419,7 @@ def estimate_resources(
     }
 ```
 
-### Index Maintenance
+### نگهداری ایندکس (Index Maintenance)
 
 ```python
 class VectorDBMaintenance:
@@ -449,7 +455,9 @@ class VectorDBMaintenance:
         )
 ```
 
-### High Availability
+### دسترسی‌پذیری بالا (High Availability)
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------+
@@ -470,20 +478,22 @@ class VectorDBMaintenance:
                                        +-----------+
 ```
 
-**Key patterns:**
-- Leader-follower for writes
-- Read replicas for query scaling
-- Async replication for HA
+</div>
 
-### Patching
+**الگوهای کلیدی:**
+- الگوی رهبر-پیرو (Leader-follower) برای نوشتن
+- کپی‌های خواندن (Read replicas) برای مقیاس‌پذیری پرس‌وجو
+- همانندسازی ناهمگام (Async replication) برای دسترسی‌پذیری بالا (HA)
 
-Treat the vector store like any other database on the CVE feed. pgvector 0.8.7 (October 1, 2026) fixes CVE-2026-103484, a buffer overflow during IVFFlat index builds that can lead to code execution for any database role allowed to create an index; earlier 2026 patches fixed a parallel HNSW build overflow (0.8.2) and possible index corruption during HNSW vacuuming (0.8.3). On managed Postgres, confirm the provider has shipped 0.8.7, and do not grant `CREATE INDEX` to application roles in multi-tenant schemas.
+### اعمال پچ (Patching)
 
-For Milvus, the floor is **3.0.5** (October 30, 2026). 3.0.5 fixes upserts on CMEK-enabled collections writing the delete part (primary keys and timestamps) to the WAL unencrypted, which quietly breaks an encryption-at-rest claim; 3.0.4 (October 26) upgraded Go and golang.org/x/net for several CVEs and, with authorization on, made client telemetry admin APIs root-only and hid import job details from users without Import permission. 3.0.3 (October 14) rejects malformed sparse vectors in Search and HybridSearch that could cause a heap out-of-bounds write on the query node, and it stops DescribeCollection from showing metadata of collections the caller cannot access (3.0.1 had already fixed unauthenticated access through streaming gRPC calls on the external proxy port). Budget for the 3.0.3 breaking changes in the same upgrade: the legacy `/api/v1/*` routes on the metrics port are gone (point health probes at `/healthz` or `/livez`), and binlog imports now need the cluster-level `ImportBinlog` privilege. Qdrant 1.20 changes a security default in the other direction: `service.enforce_internal_auth` is now on whenever an API key is configured, so verify internal cluster traffic carries credentials before you roll it out.
+با مخزن برداری (vector store) مانند هر پایگاه داده دیگری در فید CVE برخورد کنید. نسخه 0.8.7 از pgvector (۱ اکتبر ۲۰۲۶) آسیب‌پذیری CVE-2026-103484 را برطرف می‌کند؛ یک سرریز بافر (buffer overflow) در طول ساخت ایندکس IVFFlat که می‌تواند منجر به اجرای کد برای هر نقش پایگاه داده‌ای شود که مجاز به ایجاد ایندکس است؛ پچ‌های قبلی در سال ۲۰۲۶ سرریز ساخت موازی HNSW (نسخه 0.8.2) و احتمال خرابی ایندکس در طول عملیات vacuuming در HNSW (نسخه 0.8.3) را رفع کردند. در Postgres مدیریت‌شده، اطمینان حاصل کنید که ارائه‌دهنده نسخه 0.8.7 را عرضه کرده است، و دسترسی `CREATE INDEX` را به نقش‌های برنامه‌ای در اسکیماهای چندمستأجری (multi-tenant schemas) اعطا نکنید.
 
-The trust store is part of the patch surface too. After weak private keys were found on eight eMudhra intermediate CAs in October 2026, Mozilla and Chrome distrusted them and moved to drop the emSign ECC Root CA - G3 root, and Weaviate shipped patch releases on its 1.36 to 1.40 lines between October 22 and 28. Rebuild vector-store and client images on refreshed base images, and expect TLS to fail to any endpoint that chains only to the removed root.
+برای Milvus، حداقل نسخه مورد قبول **3.0.5** (۳۰ اکتبر ۲۰۲۶) است. نسخه 3.0.5 مشکل upsertها در کالکشن‌های با CMEK فعال را برطرف می‌کند که بخش حذف (کلیدهای اصلی و برچسب‌های زمانی) را به‌صورت رمزگذاری‌نشده در WAL می‌نوشت، که عملاً ادعای رمزنگاری داده‌ها در حالت سکون (encryption-at-rest) را نقض می‌کرد؛ نسخه 3.0.4 (۲۶ اکتبر) زبان Go و golang.org/x/net را برای چندین CVE ارتقا داد و با فعال بودن احراز مجوز (authorization)، APIهای ادمین تله‌متری کلاینت را فقط مختص root کرد و جزئیات تسک‌های واردسازی (import jobs) را از کاربرانی که فاقد مجوز Import بودند پنهان ساخت. نسخه 3.0.3 (۱۴ اکتبر) بردارهای خلوت (sparse vectors) بدفرم را در Search و HybridSearch که می‌توانستند باعث نوشتن خارج از محدوده حافظه heap روی نود پرس‌وجو شوند رد می‌کند، و مانع از آن می‌شود که DescribeCollection فراداده‌های کالکشن‌هایی را که فراخواننده به آن‌ها دسترسی ندارد نمایش دهد (نسخه 3.0.1 پیش‌تر دسترسی احرازهویت‌نشده از طریق فراخوانی‌های استریمینگ gRPC روی پورت پراکسی خارجی را برطرف کرده بود). در همان ارتقا، تغییرات شکننده (breaking changes) نسخه 3.0.3 را نیز لحاظ کنید: مسیرهای قدیمی `/api/v1/*` روی پورت متریک‌ها حذف شده‌اند (پروب‌های سلامت را به سمت `/healthz` یا `/livez` هدایت کنید)، و واردسازی‌های binlog اکنون به مجوز سطح کلاستر `ImportBinlog` نیاز دارند. نسخه 1.20 از Qdrant یک پیش‌فرض امنیتی را در جهت معکوس تغییر می‌دهد: گزینه `service.enforce_internal_auth` اکنون هر زمان که یک کلید API پیکربندی شده باشد فعال است، بنابراین پیش از استقرار (Deployment)، بررسی کنید که ترافیک داخلی کلاستر حامل گواهی‌های اعتبارسنجی (credentials) باشد.
 
-### Monitoring
+مخزن اعتماد (trust store) نیز بخشی از سطح پچ به شمار می‌رود. پس از کشف کلیدهای خصوصی ضعیف در هشت مرجع صدور گواهی میانی (intermediate CAs) متعلق به eMudhra در اکتبر ۲۰۲۶، موزیلا و کروم به آن‌ها سلب اعتماد کردند و ریشه emSign ECC Root CA - G3 را حذف نمودند، و Weaviate نسخه‌های پچ را برای شاخه‌های 1.36 تا 1.40 خود بین ۲۲ تا ۲۸ اکتبر منتشر کرد. ایمیج‌های مخزن برداری و کلاینت را بر پایه ایمیج‌های پایه به‌روزشده بازسازی کنید و انتظار داشته باشید که اتصال TLS به هر اندپوینتی که زنجیره آن صرفاً به ریشه حذف‌شده متصل است، با شکست مواجه شود.
+
+### مانیتورینگ (Monitoring)
 
 ```python
 VECTOR_DB_METRICS = [
@@ -516,40 +526,40 @@ def alert_rules():
 
 ---
 
-## Managed vs Self-Hosted (TCO Analysis)
+## مدیریت‌شده در مقابل خودمیزبان (تحلیل TCO)
 
-### Cost Comparison
+### مقایسه هزینه‌ها (Cost Comparison)
 
-| Aspect | Pinecone (Serverless) | Self-Hosted (Qdrant/Milvus) |
-|--------|-----------------------|-----------------------------|
-| **Ops Overhead** | Zero | High (Requires K8s + SRE) |
-| **Scaling** | Instant (Scale to zero) | Manual (Node provisioning) |
-| **Cost (Small)** | $0 - $100/mo | $50/mo (Minimum instance) |
-| **Cost (Scale)** | High per token/vector | Low unit cost |
-
-### Managed Service Pricing (indicative, always verify on provider pages)
-
-| Provider | Model | Example: 10M vectors, 1536 dims |
-|----------|-------|--------------------------------|
-| Pinecone | Serverless (Node.js SDK v9, Go SDK v7 and Terraform provider v5, September to October 2026, can no longer create pod-based indexes; existing pods keep working, and Pinecone Local, the Docker emulator, reached end of life October 7, so CI tests need a separate project or a mock) | ~$70-150/month serverless |
-| Qdrant Cloud | Per GB | ~$50/month (20GB) |
-| Weaviate Cloud | Per dimensions | ~$100/month |
-| Zilliz (Milvus) | Per CU | ~$75/month |
-
-### Managed RAG Pipelines (Build vs. Buy)
-
-A newer option skips the vector database decision entirely: a managed pipeline that parses, chunks, embeds, indexes and retrieves, billed by ingested tokens, storage and queries. Cloudflare AI Search went GA on October 1, 2026; on November 2 Cloudflare postponed billing to December 1, 2026 (prices unchanged) and raised the default sync interval from 6 to 24 hours, so set it explicitly if new documents must be searchable sooner:
-
-| Meter | Price | Included per month (Workers plans) |
+| جنبه | Pinecone (بدون سرور / Serverless) | خودمیزبان (Qdrant/Milvus) |
 |---|---|---|
-| Ingestion | $0.75 per 1M tokens (+$0.50 per 1M for images) | 5M tokens |
-| Storage | $2.00 per GB-month | 10 GB-month |
-| Semantic, vector or hybrid queries | $0.75 per 1K | 1,000 |
-| Full-text queries | $0.10 per 1K | 1,000 |
+| **بار عملیاتی (Ops Overhead)** | صفر | بالا (نیازمند K8s + SRE) |
+| **مقیاس‌پذیری (Scaling)** | آنی (مقیاس‌پذیری به صفر / Scale to zero) | دستی (تأمین نود) |
+| **هزینه (مقیاس کوچک)** | ۰ تا ۱۰۰ دلار در ماه | ۵۰ دلار در ماه (حداقل نمونه / Minimum instance) |
+| **هزینه (در مقیاس بالا)** | بالا به ازای هر Token/بردار | هزینه واحد پایین |
 
-The per-query meter dominates at scale: 10M hybrid queries a month is ~$7,500 in query fees alone, versus a self-hosted index whose marginal cost per query is close to zero once provisioned. Managed pipelines win on time-to-first-answer and for low or spiky volume; at steady high QPS, compare the query meter against node costs plus embedding API spend. Pinecone Nexus and Cohere Compass Cloud take the same "buy the pipeline" approach further; see [Agentic RAG](08-agentic-rag.md#compile-once-knowledge).
+### قیمت‌گذاری سرویس‌های مدیریت‌شده (تقریبی، همیشه در صفحات ارائه‌دهنده بررسی کنید)
 
-### Self-Hosted Costs
+| ارائه‌دهنده | مدل | نمونه: ۱۰ میلیون بردار، ۱۵۳۶ بُعد |
+|---|---|---|
+| Pinecone | بدون سرور (Serverless) (SDKهای Node.js نسخه ۹، Go نسخه ۷ و ارائه‌دهنده Terraform نسخه ۵، سپتامبر تا اکتبر ۲۰۲۶، دیگر قادر به ایجاد ایندکس‌های مبتنی بر pod نیستند؛ podهای موجود همچنان کار می‌کنند، و Pinecone Local، شبیه‌ساز Docker، در ۷ اکتبر به پایان چرخه عمر خود رسید، بنابراین تست‌های CI نیازمند یک پروژه مجزا یا یک mock هستند) | حدود ۷۰ تا ۱۵۰ دلار در ماه بدون سرور (Serverless) |
+| Qdrant Cloud | به ازای هر گیگابایت | حدود ۵۰ دلار در ماه (۲۰ گیگابایت) |
+| Weaviate Cloud | به ازای ابعاد | حدود ۱۰۰ دلار در ماه |
+| Zilliz (Milvus) | به ازای هر CU | حدود ۷۵ دلار در ماه |
+
+### پایپ‌لاین‌های مدیریت‌شده RAG (ساخت در مقابل خرید / Build vs. Buy)
+
+گزینه جدیدتری وجود دارد که تصمیم‌گیری درباره پایگاه داده برداری (Vector Database) را به‌طور کلی نادیده می‌گیرد: یک پایپ‌لاین مدیریت‌شده که کار پارس، قطعه‌بندی (Chunking)، تعبیه‌سازی (Embedding)، ایندکس‌گذاری و بازیابی را انجام می‌دهد و هزینه آن بر اساس Tokenهای ورودی، فضای ذخیره‌سازی و پرس‌وجوها محاسبه می‌شود. سرویس Cloudflare AI Search در ۱ اکتبر ۲۰۲۶ به مرحله عرضه عمومی (GA) رسید؛ در ۲ نوامبر Cloudflare صورت‌حساب‌گیری را تا ۱ دسامبر ۲۰۲۶ به تعویق انداخت (قیمت‌ها بدون تغییر ماند) و بازه پیش‌فرض همگام‌سازی را از ۶ به ۲۴ ساعت افزایش داد، بنابراین اگر اسناد جدید باید زودتر قابل جستجو باشند، آن را به‌طور صریح تنظیم کنید:
+
+| معیار سنجش | قیمت | مقدار شامل‌شده در ماه (طرح‌های Workers) |
+|---|---|---|
+| ورود داده (Ingestion) | ۰.۷۵ دلار به ازای هر ۱ میلیون Token (به‌علاوه ۰.۵۰ دلار به ازای هر ۱ میلیون برای تصاویر) | ۵ میلیون Token |
+| ذخیره‌سازی | ۲.۰۰ دلار به ازای هر گیگابایت-ماه | ۱۰ گیگابایت-ماه |
+| پرس‌وجوهای معنایی، برداری یا ترکیبی (Hybrid) | ۰.۷۵ دلار به ازای هر ۱ هزار | ۱,۰۰۰ |
+| پرس‌وجوهای تمام‌متن (Full-text) | ۰.۱۰ دلار به ازای هر ۱ هزار | ۱,۰۰۰ |
+
+معیار سنجش به ازای هر پرس‌وجو در مقیاس بالا غالب است: ۱۰ میلیون پرس‌وجوی ترکیبی در ماه به تنهایی حدود ۷,۵۰۰ دلار هزینه پرس‌وجو دارد، در مقایسه با یک ایندکس خودمیزبان که پس از تأمین منابع، هزینه نهایی (marginal cost) آن به ازای هر پرس‌وجو نزدیک به صفر است. پایپ‌لاین‌های مدیریت‌شده در زمان رسیدن به اولین پاسخ (time-to-first-answer) و برای حجم‌های کاری کم یا دارای نوسان شدید برنده هستند؛ در QPS بالای پایدار، معیار پرس‌وجو را در برابر هزینه‌های نود به‌علاوه هزینه مصرف APIهای تعبیه‌سازی مقایسه کنید. Pinecone Nexus و Cohere Compass Cloud همین رویکرد «خرید پایپ‌لاین» را فراتر می‌برند؛ بخش [RAG عاملی (Agentic RAG)](08-agentic-rag.md#compile-once-knowledge) را ببینید.
+
+### هزینه‌های خودمیزبان (Self-Hosted Costs)
 
 ```python
 def estimate_self_hosted_cost(
@@ -578,24 +588,26 @@ def estimate_self_hosted_cost(
     }
 ```
 
-### Decision: Managed vs Self-Hosted
+### تصمیم‌گیری: مدیریت‌شده در مقابل خودمیزبان
 
-| Factor | Managed | Self-Hosted |
-|--------|---------|-------------|
-| Ops overhead | Low | High |
-| Cost at small scale | Higher | Lower |
-| Cost at large scale | Variable | Often lower |
-| Control | Less | Full |
-| Compliance | Depends | Full control |
-| Vendor lock-in | Yes | No (if open source) |
+| فاکتور | مدیریت‌شده | خودمیزبان |
+|---|---|---|
+| بار عملیاتی (Ops overhead) | کم | زیاد |
+| هزینه در مقیاس کوچک | بالاتر | پایین‌تر |
+| هزینه در مقیاس بزرگ | متغیر | اغلب پایین‌تر |
+| کنترل | کمتر | کامل |
+| انطباق‌پذیری (Compliance) | بستگی دارد | کنترل کامل |
+| وابستگی به ارائه‌دهنده (Vendor lock-in) | بله | خیر (در صورت متن‌باز بودن) |
 
-**Verdict**: Start with Serverless. Only self-host if you have >500M vectors or strict **On-Prem/GPU-Local** requirements. If the requirement is "data stays in our cloud account" rather than "we run it," BYOC (Pinecone, GA September 2026) now covers that without taking on operations.
+**جمع‌بندی (Verdict)**: با بدون سرور (Serverless) شروع کنید. تنها در صورتی به سمت خودمیزبانی بروید که بیش از ۵۰۰ میلیون بردار یا الزامات سخت‌گیرانه **محلی / درون‌سازمانی (On-Prem/GPU-Local)** دارید. اگر الزام این است که «داده‌ها در حساب ابری خودمان باقی بماند» به جای اینکه «خودمان آن را اجرا کنیم»، رویکرد BYOC (در Pinecone، عرضه عمومی سپتامبر ۲۰۲۶) اکنون بدون تقبل بار عملیاتی، آن را پوشش می‌دهد.
 
 ---
 
-## Selection Framework
+## چارچوب انتخاب (Selection Framework)
 
-### Decision Tree
+### درخت تصمیم‌گیری (Decision Tree)
+
+<div dir="ltr">
 
 ```
 Need < 100K vectors?
@@ -612,155 +624,159 @@ Need < 100K vectors?
                     +-- No -> Qdrant or Weaviate self-hosted
 ```
 
-### Evaluation Criteria
+</div>
 
-| Criterion | Weight | Questions to Ask |
-|-----------|--------|------------------|
-| Scale | High | How many vectors now? In 1 year? |
-| Latency | High | What are p99 requirements? |
-| Ops capacity | High | Can we operate this? |
-| Cost | Medium | Budget constraints? |
-| Features | Medium | Hybrid search? Multimodal? |
-| Lock-in and exit risk | Medium | Open source preferred? Is there a bulk export path, and what does a re-embed and re-index cost if the vendor exits? |
+### معیارهای ارزیابی (Evaluation Criteria)
 
-### Proof of Concept Checklist
+| معیار | وزن | سوالاتی که باید پرسید |
+|---|---|---|
+| مقیاس (Scale) | بالا | چه تعداد بردار در حال حاضر وجود دارد؟ در ۱ سال آینده چطور؟ |
+| تاخیر (Latency) | بالا | الزامات صدک ۹۹ (p99) چیست؟ |
+| ظرفیت عملیاتی (Ops capacity) | بالا | آیا می‌توانیم این سیستم را اداره و نگهداری کنیم؟ |
+| هزینه (Cost) | متوسط | محدودیت‌های بودجه چیست؟ |
+| قابلیت‌ها (Features) | متوسط | جستجوی ترکیبی (Hybrid search)؟ چندحالته (Multimodal)؟ |
+| ریسک وابستگی و خروج (Lock-in and exit risk) | متوسط | آیا متن‌باز بودن ترجیح داده می‌شود؟ آیا یک مسیر خروجی‌گیری یکجا (bulk export) وجود دارد، و در صورت خروج ارائه‌دهنده، هزینه تعبیه‌سازی مجدد (re-embed) و ایندکس‌گذاری مجدد چقدر است؟ |
 
-Before committing to a vector database:
+### چک‌لیست اثبات مفهوم (Proof of Concept Checklist)
 
-- [ ] Load representative data volume
-- [ ] Benchmark query latency at target QPS, with your real filters and top-k depth (vendor numbers rarely include restrictive filters; Qdrant-FineWeb-10B, released September 2026 with exact top-1,000 ground truth over 10.07B vectors, is a public benchmark at production scale)
-- [ ] Test metadata filtering performance
-- [ ] Verify update/delete performance
-- [ ] Test failure recovery
-- [ ] Evaluate monitoring and observability
-- [ ] Calculate total cost of ownership
+پیش از متعهد شدن به یک پایگاه داده برداری (Vector Database):
+
+- [ ] بارگذاری حجم داده نمونه و معرف (representative data volume)
+- [ ] بنچمارک تاخیر (Latency) پرس‌وجو در QPS هدف، همراه با فیلترهای واقعی و عمق top-k مدنظر شما (اعداد اعلامی ارائه‌دهندگان به ندرت شامل فیلترهای محدودکننده هستند؛ Qdrant-FineWeb-10B که در سپتامبر ۲۰۲۶ با حقیقت زمینی (ground truth) دقیق top-1,000 روی ۱۰.۰۷ میلیارد بردار منتشر شد، یک بنچمارک عمومی در مقیاس محیط تولید است)
+- [ ] تست عملکرد فیلتر کردن فراداده (metadata filtering)
+- [ ] اعتبارسنجی عملکرد به‌روزرسانی/حذف
+- [ ] تست بازیابی پس از خرابی (failure recovery)
+- [ ] ارزیابی مانیتورینگ و مشاهده‌پذیری (observability)
+- [ ] محاسبه هزینه کل مالکیت (TCO)
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه (Interview Questions)
 
-### Q: How would you choose between Pinecone and a self-hosted solution?
+### پرسش: چگونه بین Pinecone و یک راه‌حل خودمیزبان انتخاب می‌کنید؟
 
-**Strong answer:**
-Decision depends on several factors:
+**پاسخ قوی:**
+تصمیم‌گیری به چندین عامل بستگی دارد:
 
-**Choose Pinecone when:**
-- Team lacks ops capacity for stateful infrastructure
-- Need to move quickly (days not weeks)
-- Scale is moderate (under 100M vectors)
-- Budget allows managed service premium
-- Compliance allows cloud-vendor dependency
+**Pinecone را انتخاب کنید زمانی که:**
+- تیم فاقد ظرفیت عملیاتی برای زیرساخت‌های با حفظ حالت (stateful infrastructure) است
+- نیاز به پیشرفت سریع دارید (در حد چند روز، نه چند هفته)
+- مقیاس متوسط است (کمتر از ۱۰۰ میلیون بردار)
+- بودجه اجازه پرداخت هزینه اضافی سرویس مدیریت‌شده را می‌دهد
+- الزامات انطباق‌پذیری اجازه وابستگی به ارائه‌دهنده ابری را می‌دهد
 
-**Choose self-hosted (Qdrant, Milvus) when:**
-- Have Kubernetes and ops expertise
-- Cost sensitivity at scale
-- Need full control over the software, not just data location
-- Specific compliance requirements
-- Want to avoid vendor lock-in
+**راه‌حل خودمیزبان (Qdrant, Milvus) را انتخاب کنید زمانی که:**
+- تخصص Kubernetes و عملیات (ops) دارید
+- حساسیت به هزینه در مقیاس بالا وجود دارد
+- نیاز به کنترل کامل بر نرم‌افزار دارید، نه صرفاً محل ذخیره داده‌ها
+- الزامات انطباق‌پذیری ویژه‌ای دارید
+- می‌خواهید از وابستگی به ارائه‌دهنده (vendor lock-in) اجتناب کنید
 
-Three 2026 changes narrow the gap: Pinecone BYOC (GA September 23) runs the data plane in your own cloud account with no inbound access from Pinecone, and Pinecone's BM25 full-text search (GA September 9) removes the "we need a separate keyword engine" argument, though you still fuse lexical and vector results client-side. And Pinecone's pg_pinecone extension (October 27) adds a route for Postgres shops: keep pgvector tables and move individual tables to a remote Pinecone engine only when they outgrow Postgres.
+سه تغییر در سال ۲۰۲۶ این شکاف را کمتر کرده است: قابلیت Pinecone BYOC (عرضه عمومی در ۲۳ سپتامبر) لایه داده (data plane) را در حساب ابری خودتان بدون هیچ دسترسی ورودی از سوی Pinecone اجرا می‌کند، و جستجوی تمام‌متن BM25 در Pinecone (عرضه عمومی در ۹ سپتامبر) استدلالِ «ما به یک موتور کلیدواژه‌ای مجزا نیاز داریم» را از میان برمی‌دارد، هرچند که هنوز باید نتایج متنی (lexical) و برداری را در سمت کلاینت ترکیب کنید. همچنین افزونه pg_pinecone برای Pinecone (۲۷ اکتبر) راهکاری را برای سازمان‌های مبتنی بر Postgres اضافه می‌کند: جداول pgvector را نگه دارید و جدول‌های مجزا را تنها زمانی به یک موتور راه دور Pinecone منتقل کنید که از ظرفیت Postgres فراتر بروند.
 
-For most startups, I would start with Pinecone or Qdrant Cloud for velocity, then evaluate migration if costs become prohibitive at scale. The switching cost is the re-embed and re-index, not the API: query surfaces are similar, but in-database embedding features tie you to the vendor's model choice.
+برای بیشتر استارتاپ‌ها، من کار را برای سرعت توسعه با Pinecone یا Qdrant Cloud شروع می‌کردم و سپس در صورتی که هزینه‌ها در مقیاس بالا سرسام‌آور شد، مهاجرت را ارزیابی می‌کردم. هزینه جابه‌جایی در واقع تعبیه‌سازی مجدد (re-embed) و ایندکس‌گذاری مجدد است، نه API: رابط‌های پرس‌وجو مشابه هستند، اما قابلیت‌های تعبیه‌سازی درون پایگاه داده شما را به انتخاب مدل ارائه‌دهنده وابسته می‌سازد.
 
-### Q: Explain how HNSW works and when you would not use it.
+### پرسش: توضیح دهید HNSW چگونه کار می‌کند و چه زمانی از آن استفاده نمی‌کنید.
 
-**Strong answer:**
-HNSW builds a hierarchical graph of vectors:
+**پاسخ قوی:**
+الگوریتم HNSW یک گراف سلسله‌مراتبی از بردارها می‌سازد:
 
-**How it works:**
-1. Insert vectors as nodes in a multi-layer graph
-2. Higher layers have fewer nodes, larger jumps
-3. Search: start at top layer, greedily navigate to nearest neighbor
-4. Descend layers until bottom (all vectors)
+**نحوه کارکرد:**
+۱. درج بردارها به عنوان گره‌ها در یک گراف چندلایه‌ای
+۲. لایه‌های بالاتر دارای گره‌های کمتر و پرش‌های بزرگ‌تر هستند
+۳. جستجو: از بالاترین لایه شروع کنید، با رویکرد حریصانه (greedily) به سمت نزدیک‌ترین همسایه حرکت کنید
+۴. پایین آمدن از لایه‌ها تا رسیدن به پایین‌ترین لایه (شامل تمام بردارها)
 
-**Why it is good:**
-- O(log n) query complexity
-- No training required
-- Supports real-time updates
-- Excellent recall/latency tradeoff
+**چرا روش خوبی است:**
+- پیچیدگی پرس‌وجوی O(log n)
+- بدون نیاز به آموزش (training)
+- پشتیبانی از به‌روزرسانی‌های بلادرنگ (real-time)
+- تعادل عالی بین بازخوانی (recall) و تاخیر (Latency)
 
-**When not to use:**
-- Very small datasets (<10K): brute force is fine
-- Extremely memory constrained: HNSW keeps every full-precision vector plus its graph links in RAM
-- Need exact search: HNSW is approximate
-- Heavy update workload with tight latency: updates can cause temporary degradation
+**چه زمانی نباید استفاده شود:**
+- مجموعه‌داده‌های بسیار کوچک (کمتر از ۱۰ هزار): جستجوی جامع (brute force) مناسب است
+- محدودیت شدید حافظه: HNSW تک‌تک بردارهای با دقت کامل را به همراه پیوندهای گراف آن‌ها در RAM نگه می‌دارد
+- نیاز به جستجوی دقیق: HNSW تقریبی است
+- حجم کاری سنگین به‌روزرسانی با الزامات تاخیر (Latency) سخت‌گیرانه: به‌روزرسانی‌ها می‌توانند موجب افت موقت کارایی شوند
 
-Alternatives:
-- IVF-PQ for memory constraints
-- DiskANN for billion-scale with cost efficiency
-- Flat index for exact search
-- LSH for very high-dimensional sparse vectors
+گزینه‌های جایگزین:
+- الگوریتم IVF-PQ برای محدودیت‌های حافظه
+- الگوریتم DiskANN برای مقیاس میلیاردی با کارایی هزینه بالا
+- ایندکس Flat برای جستجوی دقیق
+- الگوریتم LSH برای بردارهای خلوت (sparse) با ابعاد بسیار بالا
 
-### Q: When would you use a Disk-based index (like DiskANN) over a RAM-based index (HNSW)?
+### پرسش: چه زمانی از یک ایندکس مبتنی بر دیسک (مانند DiskANN) به جای یک ایندکس مبتنی بر RAM (مانند HNSW) استفاده می‌کنید؟
 
-**Strong answer:**
-I would use a Disk-based index when the memory cost of the index exceeds the budget or the capacity of a single high-memory node. For example, a 100-million-vector index with 1,536 dimensions needs roughly 700 GB of RAM per replica for HNSW (614 GB is the float32 vectors alone). Using DiskANN, I can keep the full vectors and the graph on NVMe SSDs and only compressed codes in RAM, reducing the RAM requirement by 90-95% while maintaining sub-10ms query times. This represents a massive TCO (Total Cost of Ownership) reduction for any workload that can absorb a few extra milliseconds per query, which covers most RAG traffic, since the LLM call dominates end-to-end latency.
+**پاسخ قوی:**
+من زمانی از یک ایندکس مبتنی بر دیسک استفاده می‌کنم که هزینه حافظه ایندکس از بودجه یا ظرفیت یک نود منفرد با حافظه بالا فراتر برود. به عنوان مثال، یک ایندکس ۱۰۰ میلیون برداری با ۱۵۳۶ بُعد به ازای هر کپی (replica) برای HNSW به حدود ۷۰۰ گیگابایت RAM نیاز دارد (۶۱۴ گیگابایت فقط مربوط به بردارهای float32 است). با استفاده از DiskANN، می‌توانم بردارهای کامل و گراف را روی حافظه‌های NVMe SSD نگه دارم و فقط کدهای فشرده‌شده را در RAM قرار دهم، که این امر نیاز به RAM را ۹۰ تا ۹۵ درصد کاهش می‌دهد و در عین حال زمان پاسخ‌دهی پرس‌وجو را در سطح زیر ۱۰ میلی‌ثانیه حفظ می‌کند. این نشان‌دهنده کاهش چشمگیر هزینه کل مالکیت (TCO - Total Cost of Ownership) برای هر بار کاری است که بتواند چند میلی‌ثانیه تاخیر بیشتر به ازای هر پرس‌وجو را تحمل کند، که این موضوع بخش عمده ترافیک RAG را پوشش می‌دهد، چرا که فراخوانی LLM بر تاخیر (Latency) سرتاسری تسلط دارد.
 
-### Q: Why is metadata filtering often the bottleneck in vector databases?
+### پرسش: چرا فیلتر کردن بر اساس فراداده (metadata filtering) اغلب گلوگاه پایگاه‌های داده برداری (Vector Databases) است؟
 
-**Strong answer:**
-In naive vector search, we find the "Top K" nearest neighbors and THEN filter them by metadata (e.g., "only documents from 2024"). If the filter is very restrictive, we might find 0 results after filtering. Specialized databases now use **Pre-Filtering with HNSW**, traversing the graph but only considering nodes that satisfy the boolean metadata constraint. This is computationally expensive because it breaks the "short-circuit" logic of HNSW, requiring specialized bitmasks or hardware acceleration (SIMD) to keep latencies low.
+**پاسخ قوی:**
+در جستجوی برداری ساده (naive)، ما ابتدا «Top K» نزدیک‌ترین همسایه را پیدا می‌کنیم و سپس آن‌ها را بر اساس فراداده فیلتر می‌کنیم (مثلاً «فقط اسناد سال ۲۰۲۴»). اگر فیلتر بسیار محدودکننده باشد، ممکن است بعد از فیلتر کردن به ۰ نتیجه برسیم. پایگاه‌های داده تخصصی اکنون از **پیش‌فیلترسازی با HNSW (Pre-Filtering with HNSW)** استفاده می‌کنند؛ یعنی گراف را پیمایش می‌کنند اما تنها گره‌هایی را در نظر می‌گیرند که شرط بولی فراداده را برآورده سازند. این کار از نظر محاسباتی سنگین است چرا که منطق «مدار کوتاه (short-circuit)» در HNSW را می‌شکند و نیازمند بیت‌ماسک‌های تخصصی یا شتاب‌دهنده سخت‌افزاری (SIMD) برای پایین نگه داشتن تاخیرها (Latencies) است.
 
-### Q: How do you handle multi-tenancy in a vector database?
+### پرسش: چگونه چندمستأجری (multi-tenant / multi-tenancy) را در یک پایگاه داده برداری (Vector Database) مدیریت می‌کنید؟
 
-**Strong answer:**
-Three main approaches:
+**پاسخ قوی:**
+سه رویکرد اصلی وجود دارد:
 
-**1. Metadata filtering (most common):**
+**۱. فیلتر کردن فراداده (بسیار رایج):**
 ```python
 results = db.search(
     vector=query,
     filter={"tenant_id": current_tenant}
 )
 ```
-- Pros: Simple, single index
-- Cons: All tenants share resources, potential for bugs exposing data
+- مزایا: ساده، یک ایندکس منفرد
+- معایب: همه مستأجران (tenants / multi-tenant) منابع را به اشتراک می‌گذارند، احتمال بروز باگ‌هایی که داده‌ها را افشا کنند
 
-**2. Collection per tenant:**
+**۲. یک کالکشن به ازای هر مستأجر (per-tenant / multi-tenant):**
 ```python
 results = db.collection(f"tenant_{tenant_id}").search(vector=query)
 ```
-- Pros: Strong isolation, per-tenant scaling
-- Cons: Many collections, operational overhead
+- مزایا: جداسازی قوی، مقیاس‌پذیری به ازای هر مستأجر (per-tenant / multi-tenant)
+- معایب: تعداد کالکشن‌های زیاد، بار عملیاتی بالا
 
-**3. Namespace per tenant (Pinecone):**
+**۳. یک Namespace به ازای هر مستأجر (per-tenant / multi-tenant) (در Pinecone):**
 ```python
 results = index.query(vector=query, namespace=tenant_id)
 ```
-- Pros: Isolation within single index
-- Cons: Vendor-specific
+- مزایا: جداسازی در چارچوب یک ایندکس منفرد
+- معایب: وابسته به ارائه‌دهنده (Vendor-specific)
 
-**I would choose:**
-- Metadata filtering for most cases (simple, cost-effective)
-- Separate collections for high-security requirements
-- Never post-filter (retrieve all, filter after) due to leakage risk
+**انتخاب من:**
+- فیلتر کردن فراداده برای اغلب موارد (ساده، مقرون‌به‌صرفه)
+- کالکشن‌های مجزا برای الزامات با امنیت بالا
+- هرگز پس‌فیلترسازی (بازیابی همه، سپس فیلتر کردن) انجام ندهید به دلیل ریسک نشت داده‌ها
 
-**The hybrid-search catch:** BM25 scores depend on corpus-wide IDF statistics. In a shared collection, one large tenant's vocabulary shifts every other tenant's keyword scores, and term statistics leak across the boundary. Use an engine with per-tenant IDF (Qdrant 1.19 added it for sparse and BM25 search) or give large tenants their own collection.
-
----
-
-## References
-
-- Malkov and Yashunin. "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs" (HNSW, 2018)
-- Subramanya et al. "DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node" (Microsoft Research, NeurIPS 2019)
-- [OpenSearch. "k-NN index: HNSW memory estimation"](https://docs.opensearch.org/2.9/search-plugins/knn/knn-index/)
-- Pinecone Documentation: https://docs.pinecone.io/
-- Pinecone. "The Managed Architecture of Serverless Vector DBs" (2024)
-- Qdrant Documentation: https://qdrant.tech/documentation/
-- Weaviate Documentation: https://weaviate.io/developers/weaviate
-- Milvus Documentation: https://milvus.io/docs
-- pgvector: https://github.com/pgvector/pgvector
-- [Milvus 3.0.0 release notes (July 2026)](https://github.com/milvus-io/milvus/releases/tag/v3.0.0)
-- [Qdrant 1.19 release (Aug 2026)](https://qdrant.tech/blog/qdrant-1.19.x/)
-- [Weaviate 1.39 release (Aug 2026)](https://weaviate.io/blog/weaviate-1-39-release)
-- [Qdrant 1.20.0 release notes (Oct 2026)](https://github.com/qdrant/qdrant/releases/tag/v1.20.0), [Weaviate 1.40.0 release notes (Oct 2026)](https://github.com/weaviate/weaviate/releases/tag/v1.40.0), and [Milvus release notes (3.0.3 to 3.0.5, Oct 2026)](https://milvus.io/docs/release_notes.md)
-- [Chroma Cloud wind-down notice (Oct 2026)](https://www.trychroma.com/cloud-wind-down)
-- [pg_pinecone repository (Oct 2026)](https://github.com/pinecone-io/pg_pinecone) and [Pinecone 2026 release notes](https://docs.pinecone.io/release-notes/2026)
-- [Elasticsearch release notes](https://www.elastic.co/docs/release-notes/elasticsearch)
-- [turbopuffer. "RIP, vector database" (Sep 2026)](https://turbopuffer.com/blog/rip-vector-database)
-- [Qdrant-FineWeb-10B benchmark (Sep 2026)](https://qdrant.tech/blog/qdrant-fineweb-10b-release/)
-- [Cloudflare AI Search pricing](https://developers.cloudflare.com/ai-search/platform/limits-pricing/)
+**نکته ظریف جستجوی ترکیبی (Hybrid-search):** امتیازات BM25 به آمار IDF در سطح کل پیکره متنی (corpus-wide) وابسته است. در یک کالکشن مشترک، دایره واژگان یک مستأجر بزرگ (large tenant / multi-tenant)، امتیازات کلیدواژه‌ای سایر مستأجران (other tenants / multi-tenant) را تغییر می‌دهد و آمار اصطلاحات از مرزهای تعیین‌شده نشت می‌کند. از موتوری استفاده کنید که دارای قابلیت IDF به ازای هر مستأجر (per-tenant / multi-tenant) باشد (Qdrant 1.19 آن را برای جستجوی sparse و BM25 اضافه کرده است) یا به مستأجران بزرگ (large tenants / multi-tenant) کالکشن اختصاصی خودشان را بدهید.
 
 ---
 
-*Previous: [Embedding Models](03-embedding-models.md) | Next: [Hybrid Search](05-hybrid-search.md)*
+## مراجع (References)
+
+- مالکوف و یاشونین. "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs" (HNSW, 2018)
+- سوبرامانیا و همکاران. "DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node" (مایکروسافت ریسرچ، NeurIPS 2019)
+- [OpenSearch. «ایندکس k-NN: تخمین حافظه HNSW»](https://docs.opensearch.org/2.9/search-plugins/knn/knn-index/)
+- مستندات Pinecone: https://docs.pinecone.io/
+- پاین‌کون. «معماری مدیریت‌شده پایگاه‌های داده برداری بدون سرور (Serverless)» (2024)
+- مستندات Qdrant: https://qdrant.tech/documentation/
+- مستندات Weaviate: https://weaviate.io/developers/weaviate
+- مستندات Milvus: https://milvus.io/docs
+- مخزن pgvector: https://github.com/pgvector/pgvector
+- [یادداشت‌های انتشار Milvus 3.0.0 (ژوئیه ۲۰۲۶)](https://github.com/milvus-io/milvus/releases/tag/v3.0.0)
+- [انتشار Qdrant 1.19 (آگوست ۲۰۲۶)](https://qdrant.tech/blog/qdrant-1.19.x/)
+- [انتشار Weaviate 1.39 (آگوست ۲۰۲۶)](https://weaviate.io/blog/weaviate-1-39-release)
+- [یادداشت‌های انتشار Qdrant 1.20.0 (اکتبر ۲۰۲۶)](https://github.com/qdrant/qdrant/releases/tag/v1.20.0)، [یادداشت‌های انتشار Weaviate 1.40.0 (اکتبر ۲۰۲۶)](https://github.com/weaviate/weaviate/releases/tag/v1.40.0)، و [یادداشت‌های انتشار Milvus (نسخه‌های 3.0.3 تا 3.0.5، اکتبر ۲۰۲۶)](https://milvus.io/docs/release_notes.md)
+- [اطلاعیه توقف فعالیت Chroma Cloud (اکتبر ۲۰۲۶)](https://www.trychroma.com/cloud-wind-down)
+- [مخزن pg_pinecone (اکتبر ۲۰۲۶)](https://github.com/pinecone-io/pg_pinecone) و [یادداشت‌های انتشار Pinecone در سال ۲۰۲۶](https://docs.pinecone.io/release-notes/2026)
+- [یادداشت‌های انتشار Elasticsearch](https://www.elastic.co/docs/release-notes/elasticsearch)
+- [turbopuffer. «خداحافظ پایگاه داده برداری» (سپتامبر ۲۰۲۶)](https://turbopuffer.com/blog/rip-vector-database)
+- [بنچمارک Qdrant-FineWeb-10B (سپتامبر ۲۰۲۶)](https://qdrant.tech/blog/qdrant-fineweb-10b-release/)
+- [قیمت‌گذاری Cloudflare AI Search](https://developers.cloudflare.com/ai-search/platform/limits-pricing/)
+
+---
+
+*بخش قبلی: [مدل‌های تعبیه‌سازی (Embedding Models)](03-embedding-models.md) | بخش بعدی: [جستجوی ترکیبی (Hybrid Search)](05-hybrid-search.md)*
+
+</div>

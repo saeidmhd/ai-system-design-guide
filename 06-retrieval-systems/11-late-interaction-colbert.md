@@ -1,26 +1,30 @@
-# Late Interaction & ColBERT
+<div dir="rtl">
 
-Late Interaction is a retrieval paradigm that sits between fast-but-imprecise **bi-encoders** and accurate-but-slow **cross-encoders**. ColBERT (Contextualized Late Interaction over BERT) is the defining model in this space, delivering cross-encoder-level accuracy at bi-encoder-level speed. The late-interaction family has matured into a production-ready alternative for high-precision search, with multimodal extensions (ColPali, ColQwen2.5, ColNomic, and unified retrievers like Wholembed v3) now in the same toolkit.
+# تعامل دیرهنگام (Late Interaction) و ColBERT
 
-## Table of Contents
+تعامل دیرهنگام (Late Interaction) یک پارادایم بازیابی است که میان **bi-encoderها**ی سریع اما نادقیق و **cross-encoderها**ی دقیق اما کُند قرار می‌گیرد. مدل ColBERT (کوتاه‌شده‌ی Contextualized Late Interaction over BERT) مدل شاخص و تعیین‌کننده در این حوزه است که دقت در سطح cross-encoder را با سرعتی در سطح bi-encoder ارائه می‌دهد. خانواده‌ی تعامل دیرهنگام به یک گزینه‌ی جایگزین و آماده‌ی محیط عملیاتی برای جستجوی با دقت بالا تکامل یافته است و اکنون افزونه‌های چندحالته (ColPali، ColQwen2.5، ColNomic و بازیاب‌های یکپارچه مانند Wholembed v3) را نیز در جعبه‌ابزار خود دارد.
 
-- [The Retrieval Architecture Spectrum](#the-retrieval-architecture-spectrum)
-- [ColBERT Architecture](#colbert-architecture)
-- [MaxSim: The Core Scoring Mechanism](#maxsim-the-core-scoring-mechanism)
-- [ColBERTv2 and PLAID Indexing](#colbertv2-and-plaid-indexing)
-- [Multi-Vector in General-Purpose Vector DBs (MUVERA)](#multi-vector-in-general-purpose-vector-dbs-muvera)
-- [Late Interaction vs. Alternatives](#late-interaction-vs-alternatives)
-- [Implementation with RAGatouille](#implementation-with-ragatouille)
-- [Production Deployment Patterns](#production-deployment-patterns)
-- [When to Choose ColBERT](#when-to-choose-colbert)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [طیف معماری‌های بازیابی](#the-retrieval-architecture-spectrum)
+- [معماری ColBERT](#colbert-architecture)
+- [MaxSim: سازوکار اصلی امتیازدهی](#maxsim-the-core-scoring-mechanism)
+- [نمایه‌سازی ColBERTv2 و PLAID](#colbertv2-and-plaid-indexing)
+- [چندبرداری در پایگاه‌های داده برداری (Vector Database) چندمنظوره (MUVERA)](#multi-vector-in-general-purpose-vector-dbs-muvera)
+- [تعامل دیرهنگام در مقایسه با گزینه‌های جایگزین](#late-interaction-vs-alternatives)
+- [پیاده‌سازی با RAGatouille](#implementation-with-ragatouille)
+- [الگوهای استقرار (Deployment) در محیط عملیاتی](#production-deployment-patterns)
+- [چه زمانی ColBERT را انتخاب کنیم](#when-to-choose-colbert)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Retrieval Architecture Spectrum
+## طیف معماری‌های بازیابی
 
-There are three fundamental architectures for neural retrieval. Understanding where late interaction fits is the key to the entire chapter.
+سه معماری بنیادین برای بازیابی عصبی وجود دارد. درک جایگاه تعامل دیرهنگام، کلید فهم کل این فصل است.
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -37,7 +41,11 @@ There are three fundamental architectures for neural retrieval. Understanding wh
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### How Each Architecture Processes a Query-Document Pair
+</div>
+
+### نحوه‌ی پردازش یک جفت پرس‌وجو-سند توسط هر معماری
+
+<div dir="ltr">
 
 ```
 BI-ENCODER (e.g., E5, BGE):
@@ -66,15 +74,19 @@ CROSS-ENCODER (e.g., ms-marco-MiniLM):
                      all query AND document tokens
 ```
 
-**Insight**: The critical difference is *when* the query and document interact. Bi-encoders never interact (independent encoding). Cross-encoders interact fully (joint encoding). Late interaction is the middle ground: encode independently, then interact cheaply at the token level.
+</div>
+
+**نکته کلیدی**: تفاوت حیاتی در این است که پرس‌وجو و سند *چه زمانی* با یکدیگر تعامل برقرار می‌کنند. مدل‌های Bi-encoder هرگز تعامل برقرار نمی‌کنند (کدگذاری مستقل). مدل‌های Cross-encoder به‌طور کامل تعامل دارند (کدگذاری مشترک). تعامل دیرهنگام راه‌حل میانه است: کدگذاری به‌صورت مستقل انجام می‌شود و سپس تعامل کم‌هزینه در سطح Token صورت می‌گیرد.
 
 ---
 
-## ColBERT Architecture
+## معماری ColBERT
 
-ColBERT encodes queries and documents into **matrices of token-level embeddings** (not single vectors) and scores them using fine-grained token interactions.
+مدل ColBERT پرس‌وجوها و اسناد را به **ماتریس‌هایی از امبدینگ‌های در سطح Token** (و نه بردارهای تکی) کدگذاری می‌کند و با استفاده از تعاملات ریزدانه‌ی بین Tokenها به آن‌ها امتیاز می‌دهد.
 
-### Encoding Phase
+### فاز کدگذاری
+
+<div dir="ltr">
 
 ```
 Query: "What is the price of Widget-X?"
@@ -99,25 +111,27 @@ Token Embeddings:
   d7 = Embed("plan")      = [0.29,  0.37, ..., 0.51]
 ```
 
-**Key design choice**: ColBERT uses **128-dimensional** token embeddings (vs. 768-1024 for standard bi-encoders). This smaller dimensionality is critical for storage efficiency since we store N vectors per document instead of 1.
+</div>
 
-### Offline vs. Online Computation
+**انتخاب کلیدی در طراحی**: مدل ColBERT از امبدینگ‌های Token **۱۲۸ بعدی** (در مقایسه با ۷۶۸ تا ۱۰۲۴ بعد در bi-encoderهای استاندارد) استفاده می‌کند. این بعد کوچک‌تر برای کارایی ذخیره‌سازی حیاتی است؛ زیرا به جای ۱ بردار به ازای هر سند، N بردار ذخیره می‌کنیم.
 
-| Component | When | Cost |
-|-----------|------|------|
-| Document encoding | Offline (indexing) | One-time, parallelizable |
-| Query encoding | Online (per query) | Fast (~5-10ms on GPU) |
-| MaxSim scoring | Online (per query) | Token-level ops, optimized by PLAID |
+### محاسبات آفلاین در مقابل آنلاین
 
-**This decomposition is what makes ColBERT fast**: documents are pre-encoded once. At query time, only the query needs encoding, and the scoring is simple arithmetic over pre-computed vectors.
+| مؤلفه | زمان انجام | هزینه |
+|-------|------------|-------|
+| کدگذاری اسناد | آفلاین (نمایه‌سازی) | یک‌باره، قابل موازی‌سازی |
+| کدگذاری پرس‌وجو | آنلاین (به ازای هر پرس‌وجو) | سریع (حدود ۵ تا ۱۰ میلی‌ثانیه روی GPU) |
+| امتیازدهی MaxSim | آنلاین (به ازای هر پرس‌وجو) | عملیات در سطح Token، بهینه‌سازی‌شده توسط PLAID |
+
+**این تفکیک همان چیزی است که ColBERT را سریع می‌کند**: اسناد یک‌بار از قبل کدگذاری می‌شوند. در زمان پرس‌وجو، تنها پرس‌وجو نیاز به کدگذاری دارد و امتیازدهی صرفاً یک محاسبه‌ی ریاضی ساده روی بردارهای از پیش محاسبه‌شده است.
 
 ---
 
-## MaxSim: The Core Scoring Mechanism
+## MaxSim: سازوکار اصلی امتیازدهی
 
-MaxSim (Maximum Similarity) is the operator that makes late interaction work. It is conceptually simple but surprisingly powerful.
+عملگر MaxSim (حداکثر شباهت / Maximum Similarity) همان سازوکاری است که تعامل دیرهنگام را ممکن می‌سازد. این عملگر از نظر مفهومی ساده اما به طرز شگفت‌آوری قدرتمند است.
 
-### How MaxSim Works
+### نحوه کارکرد MaxSim
 
 ```
 For each query token qi:
@@ -127,7 +141,7 @@ For each query token qi:
 Score(Q, D) = SUM over all qi of MAX over all dj of (qi . dj)
 ```
 
-### Worked Example
+### یک مثال گام‌به‌گام
 
 ```
             d1        d2       d3       d4       d5
@@ -145,28 +159,28 @@ Score(Q, D) = SUM over all qi of MAX over all dj of (qi . dj)
   Total Score = sum of all max values across all query tokens
 ```
 
-### Why MaxSim Outperforms Single-Vector Similarity
+### چرا MaxSim بهتر از شباهت تک‌برداری عمل می‌کند
 
-| Property | Single-Vector (Dot Product) | MaxSim (Late Interaction) |
-|----------|----------------------------|--------------------------|
-| **Granularity** | Document-level | Token-level |
-| **Partial matching** | All-or-nothing | Tokens match independently |
-| **Term importance** | Compressed into 1 vector | Each token contributes separately |
-| **Rare terms** | Diluted by averaging | Preserved as individual vectors |
+| ویژگی | تک‌برداری (ضرب داخلی) | MaxSim (تعامل دیرهنگام) |
+|-------|-----------------------|------------------------|
+| **سطح دانه‌بندی (Granularity)** | در سطح سند | در سطح Token |
+| **تطابق جزئی (Partial matching)** | همه‌یاهیچ | Tokenها به‌طور مستقل مطابقت داده می‌شوند |
+| **اهمیت اصطلاحات (Term importance)** | فشرده‌شده در ۱ بردار | هر Token به‌طور جداگانه اثرگذار است |
+| **اصطلاحات نادر (Rare terms)** | به دلیل میانگین‌گیری تضعیف می‌شوند | به عنوان بردارهای مجزا حفظ می‌شوند |
 
-**The intuition**: In a bi-encoder, the meaning of "Widget-X" gets averaged with "costs," "$200," and every other token into a single vector. If "Widget-X" is rare, its signal gets diluted. In ColBERT, "Widget-X" keeps its own dedicated vector, so the MaxSim operator can find a strong match for it independently.
+**شهود اصلی**: در یک bi-encoder، معنای «Widget-X» به همراه «costs»، «\$200» و سایر Tokenها در یک بردار واحد میانگین‌گیری می‌شود. اگر «Widget-X» نادر باشد، سیگنال آن تضعیف و کم‌اثر می‌شود. اما در ColBERT، عبارت «Widget-X» بردار اختصاصی خود را حفظ می‌کند، بنابراین عملگر MaxSim می‌تواند یک تطابق قوی را به‌طور مستقل برای آن پیدا کند.
 
 ---
 
-## ColBERTv2 and PLAID Indexing
+## نمایه‌سازی ColBERTv2 و PLAID
 
-The original ColBERT (2020) had a critical limitation: **storage**. Storing 128-dim vectors for every token in every document is expensive. A corpus of 10M documents with 200 tokens each is 2B token vectors: about 1 TB at float32, still 512 GB at float16.
+نسخه اولیه‌ی ColBERT (سال ۲۰۲۰) با یک محدودیت اساسی روبرو بود: **فضای ذخیره‌سازی**. ذخیره کردن بردارهای ۱۲۸ بعدی به ازای هر Token در هر سند بسیار پرهزینه است. یک پیکره‌ی متنی شامل ۱۰ میلیون سند که هر کدام ۲۰۰ Token دارند، برابر با ۲ میلیارد بردار Token است: حدود ۱ ترابایت در فرمت float32، و همچنان ۵۱۲ گیگابایت در فرمت float16.
 
-### ColBERTv2 Improvements (2021)
+### بهبودهای ColBERTv2 (سال ۲۰۲۱)
 
-ColBERTv2 introduced two key innovations:
+مدل ColBERTv2 دو نوآوری کلیدی را معرفی کرد:
 
-**1. Residual Compression**:
+**۱. فشرده‌سازی باقیمانده (Residual Compression)**:
 
 ```
 Original ColBERT:
@@ -180,22 +194,24 @@ ColBERTv2 Residual Compression:
   Each token vector: ~16-32 bytes (16-32x compression)
 ```
 
-**2. Denoised Supervision**:
-- Trains on hard negatives mined from a cross-encoder teacher
-- Cross-encoder labels "clean up" noisy training data
-- Result: better quality embeddings despite compression
+**۲. نظارت نویززدایی‌شده (Denoised Supervision)**:
+- آموزش بر روی نمونه‌های منفی دشوار (hard negatives) که از یک مدل معلم cross-encoder استخراج شده‌اند
+- برچسب‌های cross-encoder داده‌های آموزشی نویزدار را «پاکسازی» می‌کنند
+- نتیجه: کیفیت بهتر امبدینگ‌ها با وجود فشرده‌سازی
 
-**ColBERTv2 Storage Comparison**:
+**مقایسه فضای ذخیره‌سازی ColBERTv2**:
 
-| System | Per-Token Storage | 10M Docs (200 tokens each) |
-|--------|------------------|---------------------------|
-| ColBERT v1 | 512 bytes | ~1 TB |
-| ColBERTv2 (compressed) | 32 bytes | ~64 GB |
-| Bi-encoder (1 vector/doc) | 3 KB | ~30 GB |
+| سیستم | فضای ذخیره‌سازی به ازای هر Token | ۱۰ میلیون سند (هر کدام ۲۰۰ Token) |
+|-------|----------------------------------|----------------------------------|
+| ColBERT v1 | ۵۱۲ بایت | حدود ۱ ترابایت |
+| ColBERTv2 (فشرده‌شده) | ۳۲ بایت | حدود ۶۴ گیگابایت |
+| Bi-encoder (۱ بردار به ازای هر سند) | ۳ کیلوبایت | حدود ۳۰ گیگابایت |
 
-### PLAID: The Indexing Engine
+### PLAID: موتور نمایه‌سازی
 
-PLAID (Performance-optimized Late Interaction Driver) is the indexing and retrieval engine that makes ColBERT practical at scale.
+موتور PLAID (کوتاه‌شده‌ی Performance-optimized Late Interaction Driver) موتور نمایه‌سازی و بازیابی است که ColBERT را در مقیاس بزرگ کاربردی و عملی می‌سازد.
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -228,18 +244,22 @@ PLAID (Performance-optimized Late Interaction Driver) is the indexing and retrie
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**The key insight**: PLAID avoids decompressing all vectors for all documents. Each stage cheaply filters the candidate set so that expensive full scoring only happens on a tiny fraction of the corpus.
+</div>
 
-**PLAID Performance**:
-- Retrieves from 10M+ documents in **50-100ms** on a single GPU
-- Computes full MaxSim only for the final candidates, over decompressed (lossy) residual vectors. The candidate stages are approximate, so recall depends on how aggressively you prune (`ncells`, centroid score threshold); measure it against exhaustive MaxSim on a sample
-- Uses centroid pruning to skip 99%+ of the corpus before full scoring
+**نکته کلیدی**: موتور PLAID از خروج از حالت فشرده (decompress) برای همه‌ی بردارهای تمام اسناد جلوگیری می‌کند. هر مرحله، مجموعه‌ی کاندیداها را با هزینه‌ای اندک فیلتر می‌کند تا امتیازدهی کامل و پرهزینه فقط روی بخش بسیار کوچکی از کل پیکره انجام شود.
+
+**کارایی PLAID**:
+- بازیابی از میان بیش از ۱۰ میلیون سند در زمان **۵۰ تا ۱۰۰ میلی‌ثانیه** روی یک GPU منفرد
+- محاسبه‌ی کامل MaxSim تنها برای کاندیداهای نهایی، بر روی بردارهای باقیمانده‌ی از فشرده‌سازی خارج‌شده (دارای اتلاف / lossy). مراحل انتخاب کاندید تقریبی هستند، بنابراین بازخوانی (recall) به این بستگی دارد که چقدر هرس کردن (pruning) را تهاجمی تنظیم کنید (`ncells` و آستانه امتیاز سنتروید)؛ آن را در مقایسه با MaxSim جامع بر روی یک نمونه اندازه بگیرید
+- استفاده از هرس سنتروید (centroid pruning) برای صرف‌نظر کردن از بیش از ۹۹ درصد پیکره پیش از انجام امتیازدهی کامل
 
 ---
 
-## Multi-Vector in General-Purpose Vector DBs (MUVERA)
+## چندبرداری در پایگاه‌های داده برداری (Vector Database) چندمنظوره (MUVERA)
 
-PLAID is a purpose-built engine, and most teams do not want a second search system just for late interaction. **MUVERA** (Multi-Vector Retrieval via Fixed Dimensional Encodings, Google Research, NeurIPS 2024) closes that gap: it turns a document's set of token vectors into one long fixed-length vector whose inner product approximates the MaxSim (Chamfer) score, so an ordinary single-vector ANN index can generate candidates.
+موتور PLAID یک موتور اختصاصی با هدف مشخص است و بیشتر تیم‌ها تمایلی به راه‌اندازی یک سیستم جستجوی مجزا صرفاً برای تعامل دیرهنگام ندارند. روش **MUVERA** (کوتاه‌شده‌ی Multi-Vector Retrieval via Fixed Dimensional Encodings، ارائه‌شده توسط Google Research در NeurIPS 2024) این شکاف را پر می‌کند: این روش مجموعه‌ی بردارهای Token یک سند را به یک بردار بلند با طول ثابت تبدیل می‌کند که ضرب داخلی آن، امتیاز MaxSim (مشابه فاصله‌ی چمفر / Chamfer) را تقریب می‌زند؛ بنابراین یک نمایه (index) معمولی تک‌برداری ANN می‌تواند کاندیداها را تولید کند.
+
+<div dir="ltr">
 
 ```
 INDEX:  doc token vectors ──► FDE transform ──► 1 fixed-length vector ──► HNSW / DiskANN
@@ -249,40 +269,44 @@ QUERY:  query token vectors ──► FDE ──► ANN top-k candidates
                                               └──► full MaxSim on stored multi-vectors ──► results
 ```
 
-The shape is the same as PLAID (cheap approximate candidates, full MaxSim on a few hundred), but the candidate stage runs on infrastructure you already operate. FDEs are long (thousands of dimensions), so they are usually quantized.
+</div>
 
-**Engine support, October 2026:**
+ساختار کارکرد همانند PLAID است (کاندیداهای تقریبی کم‌هزینه، امتیازدهی کامل MaxSim روی چند صد مورد برتر)، اما مرحله‌ی تولید کاندیدا بر روی همان زیرساختی اجرا می‌شود که از قبل مدیریت می‌کنید. بردارهای FDE طویل هستند (هزاران بعد)، بنابراین معمولاً کوانتایز (quantize) می‌شوند.
 
-| Engine | Multi-vector support | Status |
-|--------|----------------------|--------|
-| **Milvus 3.0** | On-disk EmbList + DiskANN index for embedding lists, with MUVERA and LEMUR acceleration | GA July 29, 2026 (3.0.2 on Sep 20) |
-| **Weaviate** | Native multi-vector embeddings (1.29+), with optional MUVERA encoding on HNSW since 1.31 (2025); MUVERA for the disk-backed HFresh index is new in 1.40 | Multi-vector and MUVERA on HNSW shipping; the HFresh MUVERA path shipped in 1.40.0 (October 7, 2026) with no GA or preview label in the notes, so check its status |
-| **Qdrant** | Native multivector fields scored with MaxSim | Shipping; Qdrant's open PubMed-Multi-Vector dataset (8.37B BGE-M3 token vectors) benchmarks dense vs sparse vs ColBERT |
-| **Vespa** | Native ColBERT tensor ranking | Shipping |
+**پشتیبانی موتورها، اکتبر ۲۰۲۶:**
 
-Model side: Answer.AI published ONNX exports of NeuML's ColBERT-MUVERA micro and small models on September 18, 2026.
+| موتور | پشتیبانی از چندبرداری (Multi-vector) | وضعیت |
+|-------|--------------------------------------|-------|
+| **Milvus 3.0** | ساختار EmbList روی دیسک + نمایه DiskANN برای فهرست‌های امبدینگ، همراه با شتاب‌دهی MUVERA و LEMUR | نسخه‌ی پایدار (GA) در ۲۹ ژوئیه ۲۰۲۶ (نسخه 3.0.2 در ۲۰ سپتامبر) |
+| **Weaviate** | امبدینگ‌های چندبرداری نیتیو (نسخه 1.29 به بعد)، با کدگذاری اختیاری MUVERA روی HNSW از نسخه 1.31 (سال ۲۰۲۵)؛ پشتیبانی MUVERA برای نمایه مبتنی بر دیسک HFresh در نسخه 1.40 جدید است | قابلیت چندبرداری و MUVERA روی HNSW عرضه شده است؛ مسیر HFresh MUVERA در نسخه 1.40.0 (۷ اکتبر ۲۰۲۶) بدون برچسب GA یا پیش‌نمایش در توضیحات منتشر شده است، بنابراین وضعیت آن را بررسی کنید |
+| **Qdrant** | فیلدهای چندبرداری نیتیو با امتیازدهی MaxSim | عرضه شده؛ مجموعه‌داده متن‌باز PubMed-Multi-Vector متعلق به Qdrant (شامل ۸.۳۷ میلیارد بردار Token مدل BGE-M3) عملکرد متراکم (dense) در برابر تنک (sparse) در برابر ColBERT را محک می‌زند |
+| **Vespa** | رتبه‌بندی تنسور نیتیو ColBERT | عرضه شده |
 
-### Compressing the Vectors Themselves
+در بخش مدل‌ها: Answer.AI خروجی‌های فرمت ONNX از مدل‌های micro و small مربوط به ColBERT-MUVERA از NeuML را در ۱۸ سپتامبر ۲۰۲۶ منتشر کرد.
 
-The other lever is storing fewer vectors per document. For page-image retrievers (ColPali-style), the GLIE paper (arXiv 2609.11808, September 2026) finds that visual-document token vectors sit near a manifold of intrinsic dimension five to six on the unit sphere. Two practical results: renormalizing k-means centroids back onto the sphere is a free correction worth up to +0.093 nDCG@5 over raw centroids, and keeping 4 learned vectors per page plus a 415K-parameter decoder that regenerates the full set for top candidates retains nearly 80% of uncompressed nDCG@5 on ViDoRe v1, against 70% for the best prior post-hoc method. It is a single research result, not an engine feature, but it points the same way: compact representation for candidates, full multi-vector scoring only at the top.
+### فشرده‌سازی خود بردارها
+
+اهرم دیگر، ذخیره‌سازی بردارهای کمتر به ازای هر سند است. برای بازیاب‌های تصویر صفحه (به سبک ColPali)، مقاله‌ی GLIE (شماره‌ی arXiv 2609.11808، سپتامبر ۲۰۲۶) نشان می‌دهد که بردارهای Token در اسناد بصری در نزدیکی یک مانیفلد با بعد ذاتی پنج تا شش روی کره‌ی واحد قرار می‌گیرند. دو نتیجه‌ی عملی حاصل از این یافته عبارتند از: نرمال‌سازی مجدد سنترویدهای k-means بر روی کره، یک تصحیح بدون هزینه است که تا 0.093+ در معیار nDCG@5 نسبت به سنترویدهای خام بهبود ایجاد می‌کند؛ و نگه‌داشتن ۴ بردار آموزش‌دیده به ازای هر صفحه به‌همراه یک دیکودر با ۴۱۵ هزار پارامتر که مجموعه‌ی کامل را برای کاندیداهای برتر بازتولید می‌کند، نزدیک به ۸۰ درصد از nDCG@5 غیرفشرده را در بنچمارک ViDoRe v1 حفظ می‌کند (در مقایسه با ۷۰ درصد برای بهترین روش پیشین post-hoc). این صرفاً یک نتیجه‌ی پژوهشی منفرد است و نه ویژگی یک موتور، اما جهت مشابهی را نشان می‌دهد: نمایش فشرده برای کاندیداها، و امتیازدهی کامل چندبرداری تنها برای رتبه‌های برتر.
 
 ---
 
-## Late Interaction vs. Alternatives
+## تعامل دیرهنگام (Late Interaction) در مقایسه با روش‌های جایگزین
 
-### Comprehensive Comparison
+### مقایسه جامع
 
-| Dimension | BM25 | Bi-Encoder | ColBERT (Late) | Cross-Encoder |
+| بُعد مقایسه | BM25 | Bi-Encoder | ColBERT (Late) | Cross-Encoder |
 |-----------|------|-----------|----------------|---------------|
-| **Encoding** | Term frequency | 1 vector/doc | N vectors/doc | Joint (no pre-compute) |
-| **Query latency** | ~5ms | ~10ms | ~30-50ms | ~500ms+ per pair |
-| **Scalability** | Billions | Billions | 100M+ | ~10K (reranking only) |
-| **Storage (1M docs)** | ~2 GB | ~3 GB | ~6-12 GB | 0 (no index) |
-| **Accuracy (NDCG@10)** | 0.30-0.35 | 0.35-0.40 | 0.39-0.44 | 0.42-0.46 |
-| **Domain transfer** | Strong (lexical) | Weak (needs fine-tuning) | Strong (token-level) | Strongest |
-| **Setup complexity** | Low | Medium | High | Low (no index) |
+| **کدگذاری (Encoding)** | فراوانی اصطلاحات (Term frequency) | ۱ بردار به ازای هر سند | N بردار به ازای هر سند | مشترک (بدون پیش‌محاسبه) |
+| **تاخیر (Latency) پرس‌وجو** | حدود ۵ میلی‌ثانیه (~5ms) | حدود ۱۰ میلی‌ثانیه (~10ms) | حدود ۳۰ تا ۵۰ میلی‌ثانیه (~30-50ms) | بیش از ۵۰۰ میلی‌ثانیه (~500ms+) به ازای هر جفت |
+| **مقیاس‌پذیری (Scalability)** | میلیاردها | میلیاردها | بیش از ۱۰۰ میلیون (+100M) | حدود ۱۰ هزار (~10K - صرفاً برای بازرتبه‌بندی) |
+| **فضای ذخیره‌سازی (۱ میلیون سند)** | حدود ۲ گیگابایت (~2 GB) | حدود ۳ گیگابایت (~3 GB) | حدود ۶ تا ۱۲ گیگابایت (~6-12 GB) | ۰ (بدون ایندکس) |
+| **دقت (NDCG@10)** | ۰.۳۰-۰.۳۵ | ۰.۳۵-۰.۴۰ | ۰.۳۹-۰.۴۴ | ۰.۴۲-۰.۴۶ |
+| **انتقال به دامنه دیگر (Domain transfer)** | قوی (واژگانی) | ضعیف (نیازمند Fine-tuning) | قوی (در سطح Token) | قوی‌ترین |
+| **پیچیدگی راه‌اندازی** | کم | متوسط | بالا | کم (بدون ایندکس) |
 
-### When ColBERT Wins
+### چه زمانی ColBERT برتر است
+
+<div dir="ltr">
 
 ```
                   ▲ Accuracy
@@ -299,15 +323,17 @@ The other lever is storing fewer vectors per document. For page-image retrievers
                       10   100  1K   10K  100K
 ```
 
-**ColBERT occupies the sweet spot**: it typically adds a few NDCG points over a bi-encoder of similar size, with the largest gains on out-of-domain, term-heavy corpora (up to +13.8% mAP on specialized datasets), while being 10-50x faster than cross-encoders.
+</div>
+
+**مدل ColBERT در نقطه تعادل ایده‌آل (Sweet spot) قرار دارد**: این مدل معمولاً چند امتیاز NDCG بالاتر از یک bi-encoder با اندازه مشابه به دست می‌آورد، و بیشترین میزان بهبود آن روی مجموعه‌های خارج از دامنه (Out-of-domain) و پر از اصطلاحات تخصصی حاصل می‌شود (تا بیش از ۱۳.۸٪ افزایش mAP در مجموعه داده‌های تخصصی)، در حالی که ۱۰ تا ۵۰ برابر سریع‌تر از cross-encoderها است.
 
 ---
 
-## Implementation with RAGatouille
+## پیاده‌سازی با RAGatouille
 
-RAGatouille (by Answer.AI) is the standard Python library for using ColBERT in RAG pipelines. It wraps the Stanford ColBERT codebase with a simple, high-level API.
+کتابخانه RAGatouille (توسعه‌داده‌شده توسط Answer.AI) کتابخانه استاندارد پایتون برای استفاده از ColBERT در خطوط لوله (Pipelines) مربوط به RAG است. این کتابخانه کدهای ColBERT استنفورد را در قالب یک API ساده و سطح بالا ارائه می‌دهد.
 
-### Basic Usage
+### کاربرد پایه
 
 ```python
 from ragatouille import RAGPretrainedModel
@@ -340,7 +366,7 @@ for result in results:
     print(f"Text:  {result['content']}\n")
 ```
 
-### Integration with LangChain
+### یکپارچه‌سازی با LangChain
 
 ```python
 from ragatouille import RAGPretrainedModel
@@ -370,36 +396,46 @@ chain = (
 response = chain.invoke("What features does the Enterprise plan include?")
 ```
 
-### Other ColBERT Libraries and Integrations
+### سایر کتابخانه‌ها و یکپارچه‌سازی‌های ColBERT
 
-| Library | Use Case | Notes |
+| کتابخانه | مورد استفاده (Use Case) | نکات |
 |---------|----------|-------|
-| **RAGatouille** | Python-first, simple API | Best for prototyping and small-medium scale |
-| **colbert-ai** (Stanford) | Research, full control | Lower-level, more configuration options |
-| **Vespa** | Production-scale deployment | Managed infrastructure with native ColBERT support |
-| **PyLate** | Flexible training/fine-tuning | Built on Sentence Transformers, good for custom models |
-| **Jina ColBERT v2** | Multilingual (89 languages) | Flexible output dimensions, production-ready |
-| **Milvus 3.0 / Weaviate / Qdrant** | Multi-vector inside a general vector DB | MUVERA or native MaxSim; see the engine table above |
+| **RAGatouille** | اولویت پایتون، API ساده | بهترین گزینه برای نمونه‌سازی اولیه و مقیاس‌های کوچک تا متوسط |
+| **colbert-ai** (استنفورد) | پژوهشی، کنترل کامل | سطح پایین‌تر، با گزینه‌های پیکربندی بیشتر |
+| **Vespa** | استقرار (Deployment) در مقیاس عملیاتی | زیرساخت مدیریت‌شده با پشتیبانی بومی از ColBERT |
+| **PyLate** | آموزش/Fine-tuning انعطاف‌پذیر | ساخته‌شده بر پایه Sentence Transformers، مناسب برای مدل‌های سفارشی |
+| **Jina ColBERT v2** | چندزبانه (۸۹ زبان) | ابعاد خروجی انعطاف‌پذیر، آماده برای محیط عملیاتی (Production-ready) |
+| **Milvus 3.0 / Weaviate / Qdrant** | چندبرداری درون یک پایگاه داده برداری (Vector Database) عمومی | MUVERA یا MaxSim بومی؛ به جدول موتورها در بالا مراجعه کنید |
 
 ---
 
-## Production Deployment Patterns
+## الگوهای استقرار (Deployment) در محیط عملیاتی
 
-### Pattern 1: ColBERT as Primary Retriever
+### الگوی ۱: ColBERT به عنوان بازیاب اولیه (Primary Retriever)
+
+<div dir="ltr">
 
 ```
 Query ──► ColBERT (PLAID) ──► Top 20 ──► LLM
 ```
 
-Best for: medium-scale corpora (1M-50M docs) where accuracy is paramount and you can afford the storage overhead.
+</div>
 
-### Pattern 2: ColBERT as Reranker (Most Common)
+مناسب‌ترین حالت برای: مجموعه‌های با مقیاس متوسط (۱ تا ۵۰ میلیون سند) که در آن‌ها دقت بالاترین اهمیت را دارد و امکان تقبل سربار فضای ذخیره‌سازی وجود دارد.
+
+### الگوی ۲: ColBERT به عنوان بازرتبه‌بندی‌کننده (Reranker - متداول‌ترین حالت)
+
+<div dir="ltr">
 
 ```
 Query ──► BM25 or Bi-Encoder ──► Top 1000 ──► ColBERT Rerank ──► Top 20 ──► LLM
 ```
 
-Best for: large-scale systems where first-stage retrieval must be cheap, but you need high-quality reranking without the cost of a cross-encoder.
+</div>
+
+مناسب‌ترین حالت برای: سیستم‌های مقیاس بزرگ که در آن‌ها بازیابی مرحله اول باید کم‌هزینه باشد، اما به بازرتبه‌بندی با کیفیت بالا بدون هزینه‌های یک cross-encoder نیاز دارید.
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -422,7 +458,11 @@ Best for: large-scale systems where first-stage retrieval must be cheap, but you
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Pattern 3: Hybrid (ColBERT + BM25 + Dense)
+</div>
+
+### الگوی ۳: هیبرید (ColBERT + BM25 + Dense)
+
+<div dir="ltr">
 
 ```
 Query ──┬──► BM25 (Top 50) ────────┐
@@ -430,24 +470,28 @@ Query ──┬──► BM25 (Top 50) ────────┐
         └──► ColBERT (Top 50) ─────┘
 ```
 
-Best for: maximum accuracy at medium scale. Expensive but covers all retrieval modalities.
+</div>
 
-### Storage and Infrastructure Considerations
+مناسب‌ترین حالت برای: حداکثر دقت در مقیاس متوسط. پرهزینه است اما تمامی شیوه‌های بازیابی (Retrieval modalities) را پوشش می‌دهد.
 
-| Corpus Size | Bi-Encoder Storage | ColBERT Storage | GPU Requirement |
+### ملاحظات فضای ذخیره‌سازی و زیرساخت
+
+| اندازه مجموعه اسناد (Corpus Size) | فضای ذخیره‌سازی Bi-Encoder | فضای ذخیره‌سازی ColBERT | نیازمندی GPU |
 |------------|-------------------|-----------------|-----------------|
-| 100K docs | ~300 MB | ~600 MB - 1.2 GB | CPU-only OK |
-| 1M docs | ~3 GB | ~6-12 GB | 1 GPU recommended |
-| 10M docs | ~30 GB | ~60-120 GB | 1-2 GPUs required |
-| 100M docs | ~300 GB | ~600 GB - 1.2 TB | Multi-GPU / distributed |
+| ۱۰۰ هزار سند (100K) | حدود ۳۰۰ مگابایت (~300 MB) | حدود ۶۰۰ مگابایت تا ۱.۲ گیگابایت (~600 MB - 1.2 GB) | فقط CPU بلامانع است |
+| ۱ میلیون سند (1M) | حدود ۳ گیگابایت (~3 GB) | حدود ۶ تا ۱۲ گیگابایت (~6-12 GB) | ۱ عدد GPU توصیه می‌شود |
+| ۱۰ میلیون سند (10M) | حدود ۳۰ گیگابایت (~30 GB) | حدود ۶۰ تا ۱۲۰ گیگابایت (~60-120 GB) | ۱ تا ۲ عدد GPU مورد نیاز است |
+| ۱۰۰ میلیون سند (100M) | حدود ۳۰۰ گیگابایت (~300 GB) | حدود ۶۰۰ گیگابایت تا ۱.۲ ترابایت (~600 GB - 1.2 TB) | چند GPU / توزیع‌شده |
 
-**Reality check**: ColBERT's storage is 2-4x that of bi-encoders. For most RAG use cases (under 10M docs), this is manageable. For web-scale search (billions of pages), bi-encoders or learned sparse methods remain more practical for the first retrieval stage. MUVERA-style candidate generation on a disk-resident index (Milvus 3.0 DiskANN today, Weaviate HFresh once 1.40 is GA) moves the RAM ceiling up, because only the single-vector FDE index needs to be hot.
+**ارزیابی واقع‌بینانه (Reality check)**: فضای ذخیره‌سازی ColBERT حدود ۲ تا ۴ برابر bi-encoderها است. برای اکثر موارد کاربرد RAG (زیر ۱۰ میلیون سند)، این مقدار قابل مدیریت است. برای جستجو در مقیاس وب (میلیاردها صفحه)، bi-encoderها یا روش‌های تنک یادگیری‌شده (Learned sparse methods) همچنان برای مرحله اول بازیابی کاربردی‌تر هستند. تولید نامزدها به سبک MUVERA روی یک ایندکس مقیم بر دیسک (Disk-resident index) (امروزه DiskANN در Milvus 3.0، و HFresh در Weaviate پس از انتشار عمومی نسخه 1.40) سقف حافظه RAM را به میزان چشمگیری افزایش می‌دهد، زیرا تنها ایندکس تک‌برداری FDE باید به صورت فعال در حافظه (Hot) قرار داشته باشد.
 
 ---
 
-## When to Choose ColBERT
+## چه زمانی ColBERT را انتخاب کنیم
 
-### Decision Framework
+### چارچوب تصمیم‌گیری (Decision Framework)
+
+<div dir="ltr">
 
 ```
 Is your corpus < 100M documents?
@@ -467,72 +511,76 @@ Is your corpus < 100M documents?
             └── Yes ──► Use ColBERT (PLAID) as primary retriever
 ```
 
-### ColBERT vs. Dense Retrieval vs. Hybrid Search
+</div>
 
-| Scenario | Best Choice | Why |
+### مقایسه ColBERT با بازیابی متراکم (Dense Retrieval) و جستجوی هیبرید
+
+| سناریو | بهترین انتخاب | دلیل |
 |----------|-------------|-----|
-| General-purpose RAG (< 1M docs) | Hybrid (Dense + BM25) | Simplest, good enough accuracy |
-| Domain-specific search (legal, medical) | ColBERT | Token-level matching preserves jargon |
-| Multilingual corpus | Jina ColBERT v2 | Native 89-language support |
-| Cost-sensitive, high-volume | Bi-Encoder + BM25 | Lowest storage and compute |
-| Maximum accuracy, medium scale | ColBERT + Reranker | Best quality without cross-encoder latency |
-| Web-scale (1B+ docs) | Bi-Encoder first stage + ColBERT rerank | ColBERT index too large for primary |
+| RAG با کاربرد عمومی (کمتر از ۱ میلیون سند) | هیبرید (Dense + BM25) | ساده‌ترین روش، دقت به‌اندازه کافی خوب |
+| جستجوی اختصاصی دامنه (حقوقی، پزشکی) | ColBERT | تطبیق در سطح Token اصطلاحات تخصصی را حفظ می‌کند |
+| مجموعه اسناد چندزبانه | Jina ColBERT v2 | پشتیبانی بومی از ۸۹ زبان |
+| حساس به هزینه، حجم بالا | Bi-Encoder + BM25 | کمترین میزان ذخیره‌سازی و محاسبات |
+| حداکثر دقت، مقیاس متوسط | ColBERT + بازرتبه‌بندی‌کننده (Reranker) | بهترین کیفیت بدون تاخیر (Latency) مدل‌های cross-encoder |
+| مقیاس وب (بیش از ۱ میلیارد سند) | مرحله اول Bi-Encoder + بازرتبه‌بندی با ColBERT | ایندکس ColBERT برای بازیابی اولیه بیش از حد بزرگ است |
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: Explain the difference between bi-encoders, cross-encoders, and late interaction models. When would you choose each?
+### پرسش: تفاوت بین مدل‌های bi-encoder، cross-encoder و مدل‌های تعامل دیرهنگام (Late Interaction) را توضیح دهید. چه زمانی هر یک از آن‌ها را انتخاب می‌کنید؟
 
-**Strong answer:**
-The three architectures differ in *when* the query and document interact:
+**پاسخ قوی:**
+تفاوت این سه معماری در این است که پرس‌وجو (Query) و سند *چه زمانی* با یکدیگر تعامل برقرار می‌کنند:
 
-**Bi-encoders** encode query and document independently into single vectors. Interaction happens only via a dot product at the end. This is fast (pre-compute all document vectors, search in milliseconds) but loses fine-grained matching: the entire document meaning is compressed into one point in vector space.
+**مدل‌های Bi-encoder** پرس‌وجو و سند را به صورت مستقل به بردارهای تکی کدگذاری می‌کنند. تعامل تنها از طریق یک ضرب داخلی (Dot product) در پایان رخ می‌دهد. این روش سریع است (تمام بردارهای اسناد از قبل محاسبه می‌شوند و جستجو ظرف چند میلی‌ثانیه انجام می‌گیرد)، اما تطبیق ریزدانه (Fine-grained) را از دست می‌دهد: کل مفهوم سند در یک نقطه منفرد در فضای برداری فشرده می‌شود.
 
-**Cross-encoders** process the concatenated query + document through a single transformer. Full self-attention means every query token attends to every document token. This gives the highest accuracy but cannot pre-compute anything. Every query-document pair requires a full forward pass, making it infeasible for first-stage retrieval. Cross-encoders are used as rerankers on the top 10-100 candidates.
+**مدل‌های Cross-encoder** ترکیب متصل‌شده پرس‌وجو + سند را از طریق یک ترنسفورمر منفرد پردازش می‌کنند. خودتوجهی کامل (Full self-attention) به این معناست که هر Token پرس‌وجو به تک‌تک Tokenهای سند توجه (Attend) می‌کند. این رویکرد بالاترین دقت را ارائه می‌دهد اما هیچ چیزی را نمی‌توان از قبل محاسبه کرد. هر جفت پرس‌وجو-سند نیازمند یک مرحله انتشار رو به جلوی کامل (Forward pass) است که این امر استفاده از آن را برای بازیابی مرحله اول غیرعملی می‌سازد. مدل‌های Cross-encoder به عنوان بازرتبه‌بندی‌کننده (Reranker) بر روی ۱۰ تا ۱۰۰ نامزد برتر مورد استفاده قرار می‌گیرند.
 
-**Late interaction (ColBERT)** encodes query and document independently (like bi-encoders), but into *per-token* vector matrices instead of single vectors. Scoring uses MaxSim: for each query token, find its best-matching document token. This preserves token-level granularity while still allowing document pre-computation. The result is near-cross-encoder accuracy at near-bi-encoder speed.
+**تعامل دیرهنگام یا Late interaction (مانند ColBERT)** پرس‌وجو و سند را به صورت مستقل (مشابه bi-encoderها) کدگذاری می‌کند، اما به جای بردارهای تکی، آن‌ها را به ماتریس‌های برداری *به ازای هر Token* تبدیل می‌نماید. امتیازدهی از مکانیزم MaxSim بهره می‌برد: برای هر Token پرس‌وجو، بهترین Token تطبیق‌یافته در سند پیدا می‌شود. این سازوکار دانه‌بندی در سطح Token را حفظ کرده و در عین حال پیش‌محاسبه اسناد را امکان‌پذیر می‌سازد. نتیجه حاصل، دقتی نزدیک به cross-encoder با سرعتی در حد bi-encoder است.
 
-I would choose bi-encoders for large-scale first-stage retrieval where simplicity matters, cross-encoders for high-stakes reranking of small candidate sets, and ColBERT when I need the accuracy of a cross-encoder but cannot afford its latency, particularly for domain-specific search where term-level matching matters (legal, medical, technical docs).
+من bi-encoderها را برای بازیابی مرحله اول در مقیاس بزرگ که سادگی در اولویت است انتخاب می‌کنم؛ cross-encoderها را برای بازرتبه‌بندی بسیار حساس روی مجموعه‌های کوچک از نامزدها به کار می‌برم؛ و ColBERT را زمانی برمی‌گزینم که به دقت یک cross-encoder نیاز داشته باشم اما نتوانم تاخیر (Latency) آن را تقبل کنم، به‌ویژه برای جستجوهای متناسب با دامنه‌های تخصصی که در آن‌ها تطبیق در سطح اصطلاحات حیاتی است (اسناد حقوقی، پزشکی و فنی).
 
-### Q: ColBERT stores one vector per token. How does it scale, and what are the storage tradeoffs?
+### پرسش: مدل ColBERT به ازای هر Token یک بردار ذخیره می‌کند. این مدل چگونه مقیاس‌پذیر می‌شود و موازنه‌های مربوط به فضای ذخیره‌سازی در آن چیست؟
 
-**Strong answer:**
-The naive storage cost of ColBERT is significant. A 200-token document requires 200 vectors of 128 dimensions each (25,600 floats), versus 1 vector of 768-1024 dimensions for a bi-encoder. That is roughly 25-33x the storage per document before compression.
+**پاسخ قوی:**
+هزینه خام (Naive) ذخیره‌سازی در ColBERT قابل توجه است. یک سند شامل ۲۰۰ عدد Token به ۲۰۰ بردار با ابعاد ۱۲۸ نیاز دارد (۲۵,۶۰۰ عدد اعشاری یا Float)، در حالی که برای یک bi-encoder تنها ۱ بردار با ابعاد ۷۶۸ تا ۱۰۲۴ نیاز است. این رقم قبل از اعمال فشرده‌سازی، تقریباً ۲۵ تا ۳۳ برابر فضای ذخیره‌سازی بیشتر به ازای هر سند است.
 
-ColBERTv2 addresses this with **residual compression**: token vectors are clustered into centroids, and only the centroid ID plus a quantized residual is stored. This achieves 16-32x compression per token vector, bringing practical storage to about 2-4x that of a float32 bi-encoder.
+مدل ColBERTv2 این چالش را با **فشرده‌سازی باقی‌مانده (Residual compression)** برطرف می‌سازد: بردارهای Token در مرکزهای خوشه (Centroids) خوشه‌بندی می‌شوند و تنها شناسه (ID) مرکز به همراه یک باقیمانده کوانتیزه‌شده ذخیره می‌گردد. این راهکار به فشرده‌سازی ۱۶ تا ۳۲ برابری به ازای هر بردار Token دست می‌یابد و فضای ذخیره‌سازی عملیاتی را به حدود ۲ تا ۴ برابر یک bi-encoder با فرمت float32 می‌رساند.
 
-The PLAID indexing engine further improves efficiency at query time by using a multi-stage pipeline. It generates candidates from the centroids nearest each query token, scores them on centroid IDs alone (pruning low-scoring centroids first) to eliminate 99% of the corpus, and decompresses residuals only for the final candidates. The final full MaxSim, over decompressed residual vectors, is computed on fewer than 100 documents, keeping latency at 50-100ms even on 10M+ document corpora. Because the candidate stages are approximate, I would measure recall against exhaustive MaxSim on a sample before tuning pruning aggressively.
+موتور ایندکس‌گذاری PLAID با استفاده از یک خط لوله چندمرحله‌ای، کارایی را در زمان اجرای پرس‌وجو ارتقای بیشتری می‌بخشد. این موتور نامزدها را بر اساس نزدیک‌ترین مرکزها (Centroids) به هر Token پرس‌وجو تولید می‌کند، آن‌ها را تنها بر اساس شناسه مرکزها امتیازدهی می‌نماید (ابتدا مرکزهای با امتیاز پایین هرس می‌شوند) تا ۹۹٪ از کل مجموعه اسناد حذف شود، و مقادیر باقیمانده را فقط برای نامزدهای نهایی از حالت فشرده خارج می‌سازد. محاسبه نهایی و کامل MaxSim، بر روی بردارهای باقیمانده بازشده از فشرده‌سازی، برای کمتر از ۱۰۰ سند انجام می‌شود که این کار تاخیر (Latency) را حتی در مجموعه‌های شامل بیش از ۱۰ میلیون سند در محدوده ۵۰ تا ۱۰۰ میلی‌ثانیه حفظ می‌کند. با توجه به اینکه مراحل غربال‌گری نامزدها تقریبی هستند، من پیش از تنظیم تهاجمی هرس‌کردن (Pruning)، نرخ بازیابی (Recall) را روی یک نمونه آماری در مقایسه با MaxSim جامع اندازه‌گیری می‌کنم.
 
-For scale beyond 100M documents, I would use ColBERT as a reranker rather than a primary retriever: let a bi-encoder or BM25 do the first-stage retrieval to narrow the candidate set to 1,000 documents, then apply ColBERT's MaxSim for high-quality reranking. If the team already runs Milvus, Qdrant or Weaviate, the middle path is MUVERA: index one fixed-dimensional encoding per document for ANN candidate generation and keep the compressed token vectors on disk for full MaxSim on the top few hundred.
+برای مقیاس‌های فراتر از ۱۰۰ میلیون سند، من از ColBERT به عنوان بازرتبه‌بندی‌کننده (Reranker) و نه بازیاب اولیه استفاده خواهم کرد: اجازه دهید یک bi-encoder یا BM25 بازیابی مرحله اول را انجام دهد تا مجموعه نامزدها به ۱,۰۰۰ سند کاهش یابد، سپس از MaxSim مدل ColBERT برای بازرتبه‌بندی با کیفیت بالا بهره بگیرید. چنانچه تیم در حال حاضر از Milvus، Qdrant یا Weaviate استفاده می‌کند، راهکار میانی MUVERA است: یک کدگذاری با ابعاد ثابت (Fixed-dimensional encoding) به ازای هر سند برای تولید نامزد با روش ANN ایندکس می‌شود و بردارهای فشرده‌شده Token روی دیسک نگهداری می‌شوند تا MaxSim کامل روی چند صد سند برتر به اجرا درآید.
 
-### Q: You are designing a legal document search system with 5M documents. The team is debating between dense bi-encoder search with a cross-encoder reranker vs. ColBERT. What do you recommend?
+### پرسش: شما در حال طراحی یک سیستم جستجوی اسناد حقوقی با ۵ میلیون سند هستید. اعضای تیم بر سر انتخاب بین جستجوی متراکم bi-encoder همراه با بازرتبه‌بندی‌کننده cross-encoder در برابر ColBERT به بحث پرداخته‌اند. پیشنهاد شما چیست؟
 
-**Strong answer:**
-I would recommend ColBERT for this use case for three reasons:
+**پاسخ قوی:**
+من برای این سناریو به سه دلیل ColBERT را توصیه می‌کنم:
 
-First, **legal text is term-sensitive**. Contract clauses reference specific section numbers, defined terms (e.g., "Force Majeure"), and exact phrases. ColBERT's token-level MaxSim matching preserves these rare-but-critical terms that get diluted in a single-vector bi-encoder embedding.
+نخست اینکه **متون حقوقی نسبت به اصطلاحات تخصصی حساس هستند (Term-sensitive)**. بندهای قرارداد به شماره بخش‌های مشخص، اصطلاحات تعریف‌شده (مانند «فورس ماژور» / "Force Majeure") و عبارات دقیق ارجاع می‌دهند. تطبیق MaxSim در سطح Token مدل ColBERT این اصطلاحات نادر اما حیاتی را حفظ می‌کند، در حالی که اثر آن‌ها در یک جاسازی (Embedding) تک‌برداری bi-encoder حل شده و تقلیل می‌یابد.
 
-Second, **5M documents is squarely in ColBERT's sweet spot**. With ColBERTv2 compression, the index would be roughly 30-60 GB, which fits on a single 80 GB GPU. This is small enough for primary retrieval, avoiding the need for a separate first-stage retriever.
+دوم اینکه **۵ میلیون سند دقیقاً در نقطه تعادل ایده‌آل (Sweet spot) مدل ColBERT قرار دارد**. با فشرده‌سازی ColBERTv2، اندازه ایندکس حدود ۳۰ تا ۶۰ گیگابایت خواهد بود که روی یک GPU منفرد ۸۰ گیگابایتی جای می‌گیرد. این حجم به اندازه کافی کوچک است که بتوان از آن برای بازیابی اولیه استفاده کرد و نیاز به یک بازیاب مرحله اول مجزا را برطرف می‌سازد.
 
-Third, **cross-encoder reranking adds latency**. Each query-document pair requires a full transformer forward pass. Reranking 100 candidates with a cross-encoder might take 500ms-2s. ColBERT achieves comparable accuracy while keeping total latency under 100ms because document tokens are pre-computed.
+سوم اینکه **بازرتبه‌بندی با cross-encoder تاخیر (Latency) بالایی تحمیل می‌کند**. هر جفت پرس‌وجو-سند به یک مرحله انتشار رو به جلوی کامل در ترنسفورمر نیاز دارد. بازرتبه‌بندی ۱۰۰ نامزد با یک cross-encoder ممکن است ۵۰۰ میلی‌ثانیه تا ۲ ثانیه طول بکشد. ColBERT به دقتی قابل مقایسه دست می‌یابد در حالی که به دلیل پیش‌محاسبه شدن Tokenهای سند، تاخیر کل را زیر ۱۰۰ میلی‌ثانیه نگه می‌دارد.
 
-The one area I would supplement ColBERT is with a parallel BM25 index for exact-match queries (statute numbers, case citations) where keyword precision matters. I would use RRF to combine ColBERT and BM25 results before passing to the LLM.
-
----
-
-## References
-- Khattab & Zaharia. "ColBERT: Efficient and Effective Passage Search" (SIGIR 2020)
-- Santhanam et al. "ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction" (NAACL 2022)
-- Santhanam et al. "PLAID: An Efficient Engine for Late Interaction Retrieval" (CIKM 2022)
-- Answer.AI. "RAGatouille: State-of-the-art Late Interaction Retrieval" (GitHub, 2024)
-- Jina AI. "Jina-ColBERT-v2: General-Purpose Multilingual Late Interaction Retriever" (2024)
-- Dhulipala et al. "MUVERA: Multi-Vector Retrieval via Fixed Dimensional Encodings" (NeurIPS 2024)
-- Weaviate. "An Overview of Late Interaction Retrieval Models" (2025)
-- Milvus. "v3.0.0 release notes" (GitHub, July 2026)
-- GLIE, arXiv 2609.11808: compressing visual-document multi-vector embeddings (September 2026)
-- ECIR 2026. "Late Interaction Workshop" (2026)
+تنها بخشی که ColBERT را تکمیل خواهم کرد، افزودن یک ایندکس موازی BM25 برای پرس‌وجوهای با تطبیق دقیق (شماره قوانین، ارجاعات دعاوی قضایی) است که دقت کلیدواژه‌ها در آن‌ها اهمیت دارد. من از الگوریتم RRF برای ترکیب نتایج ColBERT و BM25 پیش از انتقال به LLM استفاده خواهم کرد.
 
 ---
 
-*Previous: [Contextual Retrieval](10-contextual-retrieval.md) | Next: [Multi-Modal RAG](12-multimodal-rag.md)*
+## منابع
+- خطاب و زاهاریا (Khattab & Zaharia). «ColBERT: Efficient and Effective Passage Search» (SIGIR 2020)
+- سانتانام و همکاران (Santhanam et al). «ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction» (NAACL 2022)
+- سانتانام و همکاران (Santhanam et al). «PLAID: An Efficient Engine for Late Interaction Retrieval» (CIKM 2022)
+- Answer.AI. «RAGatouille: State-of-the-art Late Interaction Retrieval» (GitHub, 2024)
+- Jina AI. «Jina-ColBERT-v2: General-Purpose Multilingual Late Interaction Retriever» (2024)
+- دولیپالا و همکاران (Dhulipala et al). «MUVERA: Multi-Vector Retrieval via Fixed Dimensional Encodings» (NeurIPS 2024)
+- Weaviate. «An Overview of Late Interaction Retrieval Models» (2025)
+- Milvus. «v3.0.0 release notes» (GitHub, July 2026)
+- GLIE, arXiv 2609.11808: فشرده‌سازی جاسازی‌های چندبرداری اسناد بصری (سپتامبر ۲۰۲۶)
+- ECIR 2026. «کارگاه تعامل دیرهنگام (Late Interaction Workshop)» (2026)
+
+---
+
+*قبلی: [بازیابی بافتاری (Contextual Retrieval)](10-contextual-retrieval.md) | بعدی: [RAG چندوجهی (Multi-Modal RAG)](12-multimodal-rag.md)*
+
+</div>

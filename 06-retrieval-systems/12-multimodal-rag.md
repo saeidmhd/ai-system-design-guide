@@ -1,45 +1,49 @@
-# Multi-Modal RAG
+<div dir="rtl">
 
-Multi-modal RAG extends retrieval-augmented generation beyond plain text to handle images, tables, charts, audio, and mixed-layout documents. Production systems now routinely ingest PDFs with diagrams, slide decks, scanned invoices, and research papers where the visual layout *is* the meaning. Three architectures dominate: caption-and-index, unified vision-text embeddings (Cohere Embed 5, Voyage-Multimodal-3.5, Gemini Embedding 2), and page-as-image with late interaction (ColPali, ColQwen2.5, ColNomic). Video is the newest modality to get its own cost model, now that models can choose which segments to watch instead of sampling every frame.
+# RAG چندوجهی (Multi-Modal RAG)
 
-## Table of Contents
+سیستم‌های `RAG` چندوجهی، فرآیند بازیابی افزوده تولید (Retrieval-Augmented Generation) را فراتر از متن خام گسترش می‌دهند تا تصاویر، جداول، نمودارها، صوت و اسنادی با چیدمان ترکیبی (mixed-layout) را مدیریت کنند. سیستم‌های محیط عملیاتی (production) امروزه به طور معمول فایل‌های PDF شامل دیاگرام‌ها، اسلایدهای ارائه، فاکتورهای اسکن‌شده و مقالات پژوهشی را پردازش و وارد سیستم (ingest) می‌کنند؛ جاهایی که چیدمان بصری *خودِ* معنا و مفهوم است. سه معماری غالب وجود دارد: زیرنویس و نمایه‌سازی (caption-and-index)، امبدینگ‌های یکپارچه بینایی-متن (Cohere Embed 5، Voyage-Multimodal-3.5، Gemini Embedding 2) و صفحه به عنوان تصویر با تعامل دیرهنگام (ColPali، ColQwen2.5، ColNomic). ویدیو جدیدترین وجه (modality) است که مدل هزینه اختصاصی خود را پیدا کرده است، زیرا اکنون مدل‌ها می‌توانند به جای نمونه‌برداری از تک‌تک فریم‌ها، بخش‌های مورد نظر را برای مشاهده انتخاب کنند.
 
-- [Why Text-Only RAG Fails](#why-text-only-rag-fails)
-- [Architecture Patterns](#architecture-patterns)
-- [Multi-Modal Embedding Strategies](#multi-modal-embedding-strategies)
-- [Vision-Language Models for Document Understanding](#vision-language-models-for-document-understanding)
-- [ColPali and Vision-Based Retrieval](#colpali-and-vision-based-retrieval)
-- [Table Extraction and Structured Data Retrieval](#table-extraction-and-structured-data-retrieval)
-- [Chart and Diagram Understanding](#chart-and-diagram-understanding)
-- [Video: Fixed Sampling vs Agentic Processing](#video-fixed-sampling-vs-agentic-processing)
-- [Production Architecture](#production-architecture)
-- [Implementation Example](#implementation-example)
-- [System Design Interview Angle](#system-design-interview-angle)
-- [References](#references)
+## فهرست مطالب
+
+- [چرا RAG صرفاً متنی شکست می‌خورد](#why-text-only-rag-fails)
+- [الگوهای معماری](#architecture-patterns)
+- [استراتژی‌های امبدینگ چندوجهی](#multi-modal-embedding-strategies)
+- [مدل‌های بینایی-زبان برای درک اسناد](#vision-language-models-for-document-understanding)
+- [ColPali و بازیابی مبتنی بر بینایی](#colpali-and-vision-based-retrieval)
+- [استخراج جدول و بازیابی داده‌های ساختاریافته](#table-extraction-and-structured-data-retrieval)
+- [درک نمودارها و دیاگرام‌ها](#chart-and-diagram-understanding)
+- [ویدیو: نمونه‌برداری ثابت در برابر پردازش مبتنی بر Agent](#video-fixed-sampling-vs-agentic-processing)
+- [معماری محیط عملیاتی](#production-architecture)
+- [نمونه پیاده‌سازی](#implementation-example)
+- [زاویه دید مصاحبه طراحی سیستم](#system-design-interview-angle)
+- [منابع](#references)
 
 ---
 
-## Why Text-Only RAG Fails
+## چرا RAG صرفاً متنی شکست می‌خورد
 
-Traditional RAG pipelines parse documents into text chunks, embed them, and retrieve against a text query. This breaks on real-world documents:
+خطوط لوله سنتی `RAG` اسناد را به قطعات متنی (text chunks) تجزیه کرده، آن‌ها را امبد می‌کنند و در برابر یک پرس‌وجوی متنی به بازیابی می‌پردازند. این فرآیند روی اسناد دنیای واقعی با شکست مواجه می‌شود:
 
-| Document Element | Text-Only RAG Behavior | Actual Information Lost |
+| عنصر سند | رفتار RAG صرفاً متنی | اطلاعات واقعی از دست رفته |
 |-----------------|----------------------|------------------------|
-| **Bar Chart** | Extracts axis labels only | Trends, comparisons, magnitudes |
-| **Architecture Diagram** | Misses entirely | Component relationships, data flow |
-| **Table** | Flattened rows lose structure | Row-column associations, headers |
-| **Infographic** | Captures scattered text fragments | Visual hierarchy, spatial groupings |
-| **Photo with Caption** | Gets caption, loses image | Visual evidence, spatial context |
+| **نمودار میله‌ای (Bar Chart)** | فقط برچسب‌های محور را استخراج می‌کند | روندها، مقایسه‌ها، مقادیر و بزرگی‌ها |
+| **دیاگرام معماری (Architecture Diagram)** | کاملاً نادیده می‌گیرد | روابط بین اجزا، جریان داده |
+| **جدول (Table)** | ردیف‌های مسطح‌شده ساختار را از دست می‌دهند | ارتباط سطر و ستون، سرستون‌ها (headers) |
+| **اینفوگرافیک (Infographic)** | قطعات متنی پراکنده را دریافت می‌کند | سلسله‌مراتب بصری، گروه‌بندی‌های مکانی |
+| **عکس همراه با زیرنویس (Photo with Caption)** | زیرنویس را دریافت می‌کند، تصویر را از دست می‌دهد | شواهد بصری، بافت و زمینه مکانی |
 
-**Reality**: Enterprise documents are 40-60% non-textual content. A financial report's value is in its charts. A medical paper's key finding is in its figures. Ignoring visual content means ignoring most of the knowledge.
+**واقعیت**: بین ۴۰ تا ۶۰ درصد محتوای اسناد سازمانی غیرمتنی است. ارزش یک گزارش مالی در نمودارهای آن نهفته است. یافته کلیدی یک مقاله پزشکی در اشکال آن قرار دارد. نادیده گرفتن محتوای بصری به معنای چشم‌پوشی از بخش عمده دانش است.
 
 ---
 
-## Architecture Patterns
+## الگوهای معماری
 
-There are three dominant patterns for multi-modal RAG, each with distinct trade-offs:
+سه الگوی غالب برای `RAG` چندوجهی وجود دارد که هر کدام مصالحه‌ها و موازنه‌های (trade-offs) متمایزی دارند:
 
-### Pattern 1: Unified Embedding Space
+### الگوی ۱: فضای امبدینگ یکپارچه (Unified Embedding Space)
+
+<div dir="ltr">
 
 ```
                      Shared Vector Space
@@ -52,11 +56,15 @@ There are three dominant patterns for multi-modal RAG, each with distinct trade-
   Query "show revenue trends" --> encode --> nearest neighbors across ALL modalities
 ```
 
-- **How**: Use a model like CLIP or SigLIP for natural images, or a document-grade multimodal embedder (Cohere Embed 5, Gemini Embedding 2, Voyage Multimodal) for pages, slides and screenshots, to project text and images into the same vector space.
-- **Pros**: Single index, single query, simple retrieval logic.
-- **Cons**: Embedding quality varies across modalities; tables need serialization.
+</div>
 
-### Pattern 2: Modality-Specific Retrieval with Fusion
+- **نحوه کار (How)**: استفاده از مدلی مانند CLIP یا SigLIP برای تصاویر طبیعی، یا یک مدل امبدینگ چندوجهی در سطح سند (Cohere Embed 5، Gemini Embedding 2، Voyage Multimodal) برای صفحات، اسلایدها و اسکرین‌شات‌ها، جهت تصویر کردن (project) متن و تصویر در یک فضای برداری مشترک.
+- **مزایا (Pros)**: شاخص (index) واحد، پرس‌وجوی واحد، منطق بازیابی ساده.
+- **معایب (Cons)**: کیفیت امبدینگ در وجوه (modalities) مختلف متغیر است؛ جداول نیاز به سریال‌سازی (serialization) دارند.
+
+### الگوی ۲: بازیابی مختص هر وجه همراه با ادغام (Modality-Specific Retrieval with Fusion)
+
+<div dir="ltr">
 
 ```
   Query --> +----> Text Index    --> Top-K text chunks
@@ -69,11 +77,15 @@ There are three dominant patterns for multi-modal RAG, each with distinct trade-
         Fusion / Reranking Layer --> Combined Top-K --> VLM Generator
 ```
 
-- **How**: Separate embeddings and indices per modality. A reranker or reciprocal rank fusion (RRF) merges results.
-- **Pros**: Best-in-class embeddings per modality; can tune each retriever independently.
-- **Cons**: More infra complexity; fusion logic is non-trivial.
+</div>
 
-### Pattern 3: Vision-First (Page-as-Image)
+- **نحوه کار (How)**: امبدینگ‌ها و ایندکس‌های مجزا به ازای هر وجه. یک بازرتبه‌بند (reranker) یا ادغام رتبه متقابل (RRF) نتایج را ترکیب می‌کند.
+- **مزایا (Pros)**: دستیابی به بهترین امبدینگ در هر وجه؛ امکان تنظیم (tune) مستقل هر بازیاب (retriever).
+- **معایب (Cons)**: پیچیدگی زیرساختی بیشتر؛ منطق فیوژن (ادغام) پیچیده است.
+
+### الگوی ۳: اولویت بینایی (صفحه به عنوان تصویر / Page-as-Image)
+
+<div dir="ltr">
 
 ```
   Document Page --> Screenshot/Render --> Vision Encoder --> Multi-vector Index
@@ -82,51 +94,53 @@ There are three dominant patterns for multi-modal RAG, each with distinct trade-
                                                     --> Retrieve top pages
 ```
 
-- **How**: Treat every document page as an image. Use a vision-language model (e.g., ColPali) to create patch-level embeddings. Score via late interaction (MaxSim).
-- **Pros**: No OCR, no layout parsing, no table extraction pipeline. End-to-end trainable.
-- **Cons**: Higher compute at indexing; loses fine-grained text search.
+</div>
 
-**Recommendation**: Pattern 3 (vision-first) is gaining ground fast for document-heavy use cases. Pattern 2 remains the production workhorse when you need precise text search alongside visual retrieval.
+- **نحوه کار (How)**: در نظر گرفتن هر صفحه سند به عنوان یک تصویر. استفاده از یک مدل بینایی-زبان (مانند ColPali) برای ایجاد امبدینگ‌ها در سطح پَچ (patch-level). امتیازدهی از طریق تعامل دیرهنگام (MaxSim / Late Interaction).
+- **مزایا (Pros)**: بدون نیاز به OCR، تحلیل چیدمان، یا خط لوله استخراج جدول. قابلیت آموزش سرتاسری (end-to-end trainable).
+- **معایب (Cons)**: بار محاسباتی سنگین‌تر هنگام نمایه‌سازی؛ از دست رفتن امکان جستجوی متنی دقیق و دانه‌ریز (fine-grained).
+
+**توصیه**: الگوی ۳ (اولویت بینایی) برای کاربردهای مبتنی بر اسناد پیچیده به سرعت در حال رشد است. اما الگوی ۲ همچنان ستون فقرات اصلی محیط‌های عملیاتی است، به‌ویژه زمانی که در کنار بازیابی بصری به جستجوی متنی دقیق نیاز دارید.
 
 ---
 
-## Multi-Modal Embedding Strategies
+## استراتژی‌های امبدینگ چندوجهی
 
 ### CLIP (Contrastive Language-Image Pretraining)
 
-The original dual-encoder that maps text and images to a shared 512/768-dim space.
+انکودر دوگانه (dual-encoder) اصلی که متن و تصویر را به یک فضای مشترک ۵۱۲ یا ۷۶۸ بُعدی نگاشت می‌کند.
 
-- **Strengths**: Huge ecosystem, well-understood, many fine-tuned variants.
-- **Weaknesses**: Weaker on document-style images (charts, tables) vs. natural photos. Contrastive loss requires large batch sizes.
+- **نقاط قوت (Strengths)**: اکوسیستم بسیار گسترده، شناخته‌شده و تثبیت‌شده، مدل‌های متعدد Fine-tuning شده.
+- **نقاط ضعف (Weaknesses)**: عملکرد ضعیف‌تر روی تصاویر از نوع اسناد (نمودارها، جداول) در مقایسه با عکس‌های طبیعی. تابع زیان مقابله‌ای (contrastive loss) نیازمند اندازه دسته‌های (batch sizes) بزرگ است.
 
 ### SigLIP / SigLIP 2
 
-Replaces CLIP's softmax cross-entropy with a sigmoid loss, allowing each image-text pair to be evaluated independently.
+تابع کراس انتروپی softmax در CLIP را با یک تابع زیان سیگموئید (sigmoid loss) جایگزین می‌کند و اجازه می‌دهد هر جفت تصویر-متن به طور مستقل ارزیابی شود.
 
-- **SigLIP 2 (2025)**: Adds captioning decoders, self-distillation, and masked prediction. Trained on 10B+ images across 109 languages.
-- **Key Win**: Outperforms CLIP at small batch sizes (4-8k) and provides denser, more robust features.
-- **Production Use**: National Library of Norway, e-commerce visual search, AI art curation.
+- **SigLIP 2 (2025)**: دیکودرهای تولید زیرنویس، خود-تقطیر (self-distillation) و پیش‌بینی پوشانده‌شده (masked prediction) را اضافه کرده است. آموزش‌دیده روی بیش از ۱۰ میلیارد تصویر در ۱۰۹ زبان.
+- **موفقیت کلیدی (Key Win)**: عملکرد بهتر نسبت به CLIP در اندازه‌های دسته کوچک (۴ تا ۸ هزار) و ارائه ویژگی‌های متراکم‌تر و مستحکم‌تر.
+- **کاربرد در محیط عملیاتی (Production Use)**: کتابخانه ملی نروژ، جستجوی بصری در تجارت الکترونیک، ساماندهی آثار هنری هوش مصنوعی.
 
-### Comparison for RAG
+### مقایسه برای RAG
 
-| Model | Best For | Embedding Dim | Document Quality | Natural Image Quality |
+| مدل | مناسب‌ترین برای | ابعاد امبدینگ | کیفیت سند | کیفیت تصویر طبیعی |
 |-------|----------|--------------|-----------------|----------------------|
-| CLIP ViT-L/14 | General purpose | 768 | Medium | High |
-| SigLIP 2 So400m | Multi-lingual docs | 1152 | High | High |
-| Nomic Embed Vision | Text-heavy docs | 768 | High | Medium |
-| Voyage Multimodal 3.5 | Mixed documents; text, images and video | 256-2048 (1024 default) | High | High |
-| Cohere embed-v5.0-pro / -fast | Visually rich enterprise docs; text, image, or fused text+image input | 256-2048 (Matryoshka) | High: ViDoRe V3 85.8 / 84.5 (vendor-reported) | Not reported |
-| Gemini Embedding 2 | One space for text, images, video, audio and PDFs | 128-3072 (768/1536/3072 recommended) | High: ViDoRe V3 83.2 (Cohere's vendor-run table) | Not reported |
-| EmbeddingGemma 2 (open weights, Apache 2.0) | Self-hosted single space for text, code, images, video and audio; 740M parameters, 8K context | 128-768 (Matryoshka) | Not reported on ViDoRe | Not reported |
+| CLIP ViT-L/14 | اهداف عمومی | ۷۶۸ | متوسط | بالا |
+| SigLIP 2 So400m | اسناد چندزبانه | ۱۱۵۲ | بالا | بالا |
+| Nomic Embed Vision | اسناد با حجم متنی بالا | ۷۶۸ | بالا | متوسط |
+| Voyage Multimodal 3.5 | اسناد ترکیبی؛ متن، تصویر و ویدیو | ۲۵۶ تا ۲۰۴۸ (پیش‌فرض ۱۰۲۴) | بالا | بالا |
+| Cohere embed-v5.0-pro / -fast | اسناد سازمانی غنی از نظر بصری؛ ورودی متن، تصویر یا ترکیب متن+تصویر | ۲۵۶ تا ۲۰۴۸ (Matryoshka) | بالا: ViDoRe V3 امتیاز ۸۵.۸ / ۸۴.۵ (گزارش‌شده توسط توسعه‌دهنده) | گزارش نشده |
+| Gemini Embedding 2 | یک فضا برای متن، تصویر، ویدیو، صوت و PDF | ۱۲۸ تا ۳۰۷۲ (مقادیر پیشنهادی: ۷۶۸/۱۵۳۶/۳۰۷۲) | بالا: ViDoRe V3 امتیاز ۸۳.۲ (جدول ارائه‌شده توسط Cohere) | گزارش نشده |
+| EmbeddingGemma 2 (open weights, Apache 2.0) | فضای واحد سلف‌هاستد (Self-hosted) برای متن، کد، تصویر، ویدیو و صوت؛ ۷۴۰ میلیون پارامتر، کانتکست 8K | ۱۲۸ تا ۷۶۸ (Matryoshka) | در ViDoRe گزارش نشده | گزارش نشده |
 
-**What changed in 2026**: two hosted multimodal embedders now cover the "unified space" pattern without a separate image model, and in October an open-weight one joined them.
-- **Gemini Embedding 2** (`gemini-embedding-2`, announced March 10, stable since April 2026) is Google's multimodal model: text up to 8,192 tokens, up to 6 images, video up to 120 seconds, native audio, and PDFs up to 6 pages per input, including interleaved inputs. `gemini-embedding-001` is text-only and shuts down May 14, 2028; Google names Gemini Embedding 2 as its replacement.
-- **Cohere Embed 5** (September 30, 2026): `embed-v5.0-pro` at $0.12 and `embed-v5.0-fast` at $0.08 per 1M text tokens, $0.40 per 1M image tokens, 128K context. Pro and Fast share one embedding space, so you can index with Pro and query with Fast without re-indexing.
-- **EmbeddingGemma 2** (October 2026, Apache 2.0): 740M parameters split across a 270M text model, a 170M vision encoder and a 300M audio encoder, mapping text, images, video and audio into one 768-dim space. It is the self-hosted answer when audio or video cannot leave your network, but Google publishes MTEB text and code scores (vendor-reported), not ViDoRe, so run your own page-level eval before choosing it for documents.
+**آنچه در سال ۲۰۲۶ تغییر کرد**: اکنون دو امبدر چندوجهی میزبانی‌شده (hosted) الگوی «فضای یکپارچه» را بدون نیاز به یک مدل تصویر مجزا پوشش می‌دهند، و در اکتبر یک مدل با وزن‌های باز (open-weight) نیز به آن‌ها ملحق شد.
+- **Gemini Embedding 2** (`gemini-embedding-2`، معرفی‌شده در ۱۰ مارس، پایدار از آوریل ۲۰۲۶) مدل چندوجهی گوگل است: متن تا ۸٬۱۹۲ Token، تا ۶ تصویر، ویدیو تا ۱۲۰ ثانیه، صوت بومی (native)، و فایل‌های PDF تا ۶ صفحه به ازای هر ورودی، از جمله ورودی‌های درهم‌آمیخته (interleaved). مدل `gemini-embedding-001` صرفاً متنی است و در ۱۴ مه ۲۰۲۸ بازنشسته می‌شود؛ گوگل Gemini Embedding 2 را به عنوان جایگزین آن معرفی کرده است.
+- **Cohere Embed 5** (۳۰ سپتامبر ۲۰۲۶): نسخه `embed-v5.0-pro` با هزینه ۰.۱۲ دلار و `embed-v5.0-fast` با هزینه ۰.۰۸ دلار به ازای هر ۱ میلیون Token متنی، ۰.۴۰ دلار به ازای هر ۱ میلیون Token تصویری، با کانتکست 128K. نسخه‌های Pro و Fast در یک فضای امبدینگ مشترک سهیم هستند، بنابراین می‌توانید نمایه‌سازی را با Pro انجام دهید و بدون نیاز به نمایه‌سازی مجدد، با Fast پرس‌وجو بگیرید.
+- **EmbeddingGemma 2** (اکتبر ۲۰۲۶، مجوز Apache 2.0): ۷۴۰ میلیون پارامتر توزیع‌شده بین یک مدل متنی ۲۷۰ میلیونی، انکودر بینایی ۱۷۰ میلیونی و انکودر صوتی ۳۰۰ میلیونی، که متن، تصویر، ویدیو و صوت را در یک فضای ۷۶۸ بُعدی نگاشت می‌کند. این مدل پاسخ سلف‌هاستد (self-hosted) برای زمان‌هایی است که صوت یا ویدیو نباید از شبکه داخلی شما خارج شود؛ اما گوگل امتیازات MTEB متن و کد را منتشر کرده است (گزارش‌شده توسط توسعه‌دهنده) و نه ViDoRe، بنابراین پیش از انتخاب آن برای اسناد، ارزیابی (eval) اختصاصی در سطح صفحه را اجرا کنید.
 
-Cohere's own ViDoRe V3 table puts Embed 5 Pro at 85.8, Fast 84.5, voyage-4-large 83.7, Gemini Embedding 2 83.2 and OpenAI text-embedding-3-large 75.5. The spread among the top four is under three points and vendor-run, so it does not settle a choice; your own page-level eval set does.
+جدول رسمی خود Cohere برای ViDoRe V3، مدل Embed 5 Pro را با امتیاز ۸۵.۸، مدل Fast را با ۸۴.۵، مدل voyage-4-large را با ۸۳.۷، مدل Gemini Embedding 2 را با ۸۳.۲ و مدل OpenAI text-embedding-3-large را با ۷۵.۵ قرار می‌دهد. اختلاف بین چهار مدل برتر کمتر از سه نمره بوده و توسط توسعه‌دهنده گزارش شده است، بنابراین تصمیم‌گیری نهایی را به قطعیت نمی‌رساند؛ مجموعه داده ارزیابی (eval set) در سطح صفحه خود شما این کار را مشخص می‌کند.
 
-### Embedding Strategy Decision
+### تصمیم‌گیری در مورد استراتژی امبدینگ
 
 ```
 Is your content mostly natural images (photos, products)?
@@ -154,24 +168,26 @@ Does it include audio or video clips?
 
 ---
 
-## Vision-Language Models for Document Understanding
+## مدل‌های بینایی-زبان برای درک اسناد
 
-VLMs serve two roles in multi-modal RAG: (1) as the **generator** that synthesizes answers from retrieved multi-modal context, and (2) as the **indexing engine** that extracts structured information at ingestion time.
+مدل‌های بینایی-زبان (VLMها) در `RAG` چندوجهی دو نقش ایفا می‌کنند: (۱) به عنوان **تولیدکننده (generator)** که پاسخ‌ها را از کانتکست چندوجهیِ بازیابی‌شده ترکیب و سنتز می‌کند، و (۲) به عنوان **موتور نمایه‌سازی (indexing engine)** که اطلاعات ساختاریافته را در زمان ورود و پردازش داده (ingestion) استخراج می‌نماید.
 
-### VLM Options for Document Understanding
+### گزینه‌های VLM برای درک اسناد
 
-At the frontier, chart reading, table extraction and diagram understanding are close enough that the ranking on *your* documents depends on your page mix. The differences that drive design are price, long-context billing and API behavior:
+در لبه فناوری (frontier)، خواندن نمودار، استخراج جدول و درک دیاگرام به اندازه‌ای به هم نزدیک هستند که رتبه‌بندی آن‌ها روی اسناد *شما* به ترکیب و تنوع صفحاتتان بستگی دارد. تفاوت‌هایی که تعیین‌کننده طراحی سیستم هستند عبارتند از قیمت، صورت‌حساب کانتکست‌های طولانی (long-context billing) و رفتار `API`:
 
 | | Claude Opus 5.5 / Sonnet 5.5 | GPT-6 Astra / GPT-6 Sol | Gemini 3.8 Flash |
 |---|---|---|---|
-| **Price per 1M (in / out)** | $4 / $20; $2 / $10 | $10 / $50; $2 / $10 | $0.75 / $3.75 intro, $1.50 / $7.50 from January 1, 2027 |
-| **Context** | 1M, flat price to 1M | 1.05M; above 272K input the whole request bills at long-context rates | 1,048,576 in / 65,536 out |
-| **Structured output** | Native (`output_config.format`) | Native | Native |
-| **Watch-outs** | Thinking is always on (Opus 5.5) or on by default (Sonnet 5.5); parse the text block, not `content[0]` | OpenAI fixed an image-encoding bug that degraded image understanding in GPT-6 Sol and Luna on September 25, 2026, under the same model IDs: rerun image evals run before the fix | Intro price ends December 31; budget on the 2027 list price |
+| **قیمت به ازای هر ۱ میلیون Token (ورودی / خروجی)** | ۴ دلار / ۲۰ دلار؛ ۲ دلار / ۱۰ دلار | ۱۰ دلار / ۵۰ دلار؛ ۲ دلار / ۱۰ دلار | ۰.۷۵ دلار / ۳.۷۵ دلار قیمت معرفی، ۱.۵۰ دلار / ۷.۵۰ دلار از ۱ ژانویه ۲۰۲۷ |
+| **کانتکست** | ۱ میلیون، قیمت ثابت تا ۱ میلیون | ۱.۰۵ میلیون؛ بالاتر از 272K ورودی، کل درخواست با نرخ کانتکست طولانی محاسبه می‌شود | ۱٬۰۴۸٬۵۷۶ ورودی / ۶۵٬۵۳۶ خروجی |
+| **خروجی ساختاریافته** | بومی نیتیو (`output_config.format`) | بومی نیتیو | بومی نیتیو |
+| **نکات قابل توجه (Watch-outs)** | قابلیت تفکر (Thinking) همیشه فعال است (Opus 5.5) یا به طور پیش‌فرض فعال است (Sonnet 5.5)؛ بلوک متنی را تجزیه کنید، نه `content[0]` | شرکت OpenAI یک باگ انکودینگ تصویر را که باعث افت کیفیت درک تصویر در GPT-6 Sol و Luna شده بود در ۲۵ سپتامبر ۲۰۲۶ ذیل همان شناسه‌های مدل برطرف کرد: ارزیابی‌های تصویری پیش از این اصلاحیه را مجدداً اجرا کنید | قیمت تخفیفی معرفی در ۳۱ دسامبر پایان می‌یابد؛ بودجه‌بندی را بر اساس قیمت مصوب سال ۲۰۲۷ انجام دهید |
 
-Specialist document parsers (Cohere Parse, MinerU, jina-ocr-v1, Nemotron 3.5 Parse) now return Markdown with tables, bounding boxes and reading order at a fraction of frontier-VLM cost per page. For the extraction pass at volume, compare them first; see [OCR and Layout Analysis](../10-document-processing/01-ocr-and-layout.md).
+پارسرهای تخصصی اسناد (Cohere Parse، MinerU، jina-ocr-v1، Nemotron 3.5 Parse) اکنون فایل‌های Markdown را همراه با جداول، کادرهای احاطه‌کننده (bounding boxes) و ترتیب خوانش با کسری از هزینه VLMهای پیشرفته به ازای هر صفحه بازمی‌گردانند. برای مرحله استخراج در حجم بالا، ابتدا آن‌ها را مقایسه کنید؛ به [تحلیل چیدمان و OCR](../10-document-processing/01-ocr-and-layout.md) مراجعه فرمایید.
 
-### VLM-Augmented Ingestion Pipeline
+### خط لوله ورود داده تقویت‌شده با VLM
+
+<div dir="ltr">
 
 ```
   Raw PDF
@@ -194,15 +210,17 @@ Specialist document parsers (Cohere Parse, MinerU, jina-ocr-v1, Nemotron 3.5 Par
     +---> Page images     --> Image embedding index (CLIP/SigLIP)
 ```
 
-This "describe-then-embed" approach converts visual content into searchable text while preserving the original image for the generation step.
+</div>
+
+این رویکرد «توصیف و سپس امبدینگ» (describe-then-embed) محتوای بصری را به متن قابل جستجو تبدیل می‌کند و در عین حال تصویر اصلی را برای مرحله تولید نگه می‌دارد.
 
 ---
 
-## ColPali and Vision-Based Retrieval
+## ColPali و بازیابی مبتنی بر بینایی
 
-ColPali represents a paradigm shift: instead of building complex OCR + layout + table extraction pipelines, treat each document page as a single image and let a vision-language model handle everything.
+مدل ColPali نشان‌دهنده یک تغییر پارادایم است: به جای ساخت خطوط لوله پیچیده شامل استخراج جدول + تحلیل چیدمان + OCR، هر صفحه از سند را به عنوان یک تصویر واحد در نظر بگیرید و اجازه دهید یک مدل بینایی-زبان همه چیز را مدیریت کند.
 
-### How ColPali Works
+### نحوه کار ColPali
 
 ```
   Document Page Image
@@ -231,37 +249,37 @@ ColPali represents a paradigm shift: instead of building complex OCR + layout + 
     Score = Sum over query tokens of Max similarity to any patch
 ```
 
-### ColPali vs. Traditional Pipeline
+### مقایسه ColPali در برابر خط لوله سنتی
 
-| Aspect | Traditional Pipeline | ColPali |
+| جنبه | خط لوله سنتی | ColPali |
 |--------|---------------------|---------|
-| **OCR** | Required (Tesseract, Azure OCR) | Not needed |
-| **Layout Detection** | Required (Detectron2, LayoutLM) | Not needed |
-| **Table Parser** | Required (Camelot, Tabula) | Not needed |
-| **Chart Extractor** | Required (ChartOCR) | Not needed |
-| **Indexing Speed** | Slow (multi-stage) | Fast (single forward pass) |
-| **Retrieval Quality** | High on text, poor on visuals | High across all modalities |
-| **Storage** | Text index (~small) | Multi-vector index (~larger) |
+| **OCR** | الزامی (Tesseract، Azure OCR) | بدون نیاز |
+| **تشخیص چیدمان (Layout Detection)** | الزامی (Detectron2، LayoutLM) | بدون نیاز |
+| **پارسر جدول (Table Parser)** | الزامی (Camelot، Tabula) | بدون نیاز |
+| **استخراج‌کننده نمودار (Chart Extractor)** | الزامی (ChartOCR) | بدون نیاز |
+| **سرعت نمایه‌سازی** | کند (چندمرحله‌ای) | سریع (یک پاس رفت تک‌مرحله‌ای / single forward pass) |
+| **کیفیت بازیابی** | روی متن بالا، روی عناصر بصری ضعیف | بالا در تمامی وجوه (modalities) |
+| **فضای ذخیره‌سازی** | شاخص متنی (تقریباً کوچک) | شاخص چندبرداری (بزرگ‌تر) |
 
-### ColPali Family
+### خانواده ColPali
 
-- **ColPali (v1)**: PaliGemma-3B backbone. The original.
-- **ColQwen2 / ColQwen2.5**: Qwen2-VL and Qwen2.5-VL backbones. Better multilingual support, improved on Asian-language documents.
-- **ColSmol**: Smaller variants for edge deployment, under 1B parameters.
+- **ColPali (v1)**: ستون فقرات بر پایه PaliGemma-3B. نسخه اصلی و اولیه.
+- **ColQwen2 / ColQwen2.5**: ستون فقرات بر پایه Qwen2-VL و Qwen2.5-VL. پشتیبانی چندزبانه بهتر، بهبودیافته روی اسناد زبان‌های آسیایی.
+- **ColSmol**: نسخه‌های کوچک‌تر برای استقرار (Deployment) در لبه (edge)، با کمتر از ۱ میلیارد پارامتر.
 
-### ViDoRe Benchmark Results
+### نتایج بنچمارک ViDoRe
 
-ColPali excels on visually complex benchmarks like InfographicVQA, ArxivQA, and TabFQuAD, which test infographics, figures, and tables respectively. It outperforms traditional text-based pipelines even on text-centric documents.
+مدل ColPali در بنچمارک‌های پیچیده بصری نظیر InfographicVQA، ArxivQA و TabFQuAD که به ترتیب اینفوگرافیک‌ها، اشکال و جداول را می‌سنجند، بسیار درخشان عمل می‌کند. این مدل حتی روی اسناد متن‌محور نیز از خطوط لوله سنتی مبتنی بر متن پیشی می‌گیرد.
 
-ViDoRe has since moved to V3, which is what vendors now quote for single-vector multimodal embedders (see the table above). That matters for the architecture choice: a single-vector page embedding scoring in the mid-80s on ViDoRe V3 (vendor-reported) is far cheaper to serve than 1,024 patch vectors per page, so test a single-vector multimodal embedder plus a reranker before committing to a multi-vector index.
+بنچمارک ViDoRe از آن زمان به نسخه ۳ (V3) منتقل شده است، و این همان نسخه‌ای است که توسعه‌دهندگان اکنون برای امبدرهای چندوجهی تک‌برداری به آن استناد می‌کنند (به جدول بالا مراجعه کنید). این موضوع در انتخاب معماری اهمیت زیادی دارد: سرویس‌دهی به یک امبدینگ تک‌برداری صفحه با نمره‌ای در حدود ۸۰ تا ۸۵ در ViDoRe V3 (گزارش‌شده توسط توسعه‌دهنده)، به مراتب ارزان‌تر از نگهداری ۱٬۰۲۴ بردار پَچ (patch vector) به ازای هر صفحه است؛ بنابراین، پیش از متعهد شدن به یک شاخص چندبرداری، ابتدا یک امبدر چندوجهی تک‌برداری را به همراه یک بازرتبه‌بند (reranker) آزمایش کنید.
 
 ---
 
-## Table Extraction and Structured Data Retrieval
+## استخراج جدول و بازیابی داده‌های ساختاریافته
 
-Tables are the hardest modality for traditional RAG. Flattening a table row-by-row destroys the column-header relationships that give each cell meaning.
+جدول‌ها دشوارترین مدالیته برای RAG سنتی هستند. مسطح‌سازی (Flattening) سطر به سطر یک جدول، روابط سرستون‌ها را که به هر سلول معنا می‌بخشند، از بین می‌برد.
 
-### Strategy 1: VLM-Based Extraction
+### راهبرد ۱: استخراج مبتنی بر VLM
 
 ```python
 # Pseudocode: Extract tables using a VLM
@@ -281,14 +299,14 @@ def extract_tables_from_page(page_image: bytes) -> list[dict]:
     return json.loads(response)
 ```
 
-### Strategy 2: Specialized Table Parsers
+### راهبرد ۲: پارسرهای تخصصی جدول
 
-- **Tabula / Camelot**: Rule-based PDF table extraction. Fast but brittle on complex layouts.
-- **Table Transformer (DETR-based)**: Detects table boundaries and cell structure from images.
-- **Unstructured.io**: Combines heuristics with ML models for layout-aware parsing.
-- **Document-parsing VLMs** (Cohere Parse, MinerU 4.0, Docling with pluggable VLM backends): emit tables inline as HTML or Markdown together with bounding boxes and reading order, which keeps table-to-page citations intact. See [OCR and Layout Analysis](../10-document-processing/01-ocr-and-layout.md).
+- **Tabula / Camelot**: استخراج مبتنی بر قاعده (Rule-based) جدول از PDF. سریع اما در چیدمان‌های پیچیده شکننده است.
+- **Table Transformer (مبتنی بر DETR)**: مرزهای جدول و ساختار سلول‌ها را از تصاویر تشخیص می‌دهد.
+- **Unstructured.io**: برای پارس کردن آگاه از چیدمان (Layout-aware)، روش‌های اکتشافی (Heuristics) را با مدل‌های یادگیری ماشین ترکیب می‌کند.
+- **VLMهای پارس اسناد** (مانند Cohere Parse، MinerU 4.0، Docling با بک‌اند‌های VLM با قابلیت اتصال افزونه): جدول‌ها را به‌صورت درون‌خطی در قالب HTML یا Markdown همراه با کادرهای احاطه‌کننده (Bounding boxes) و ترتیب خواندن تولید می‌کنند که ارجاعات جدول به صفحه را دست‌نخورده نگه می‌دارد. به [OCR و تحلیل چیدمان](../10-document-processing/01-ocr-and-layout.md) مراجعه کنید.
 
-### Strategy 3: Table-Aware Chunking
+### راهبرد ۳: Chunking آگاه از جدول
 
 ```
   Original Table (20 rows x 8 columns)
@@ -306,25 +324,27 @@ def extract_tables_from_page(page_image: bytes) -> list[dict]:
   At generation time: pass the FULL table to the LLM, not a fragment
 ```
 
-**Key Principle**: Tables must be atomic retrieval units. Never split a table across chunk boundaries.
+**اصل کلیدی**: جدول‌ها باید واحدهای بازیابی اتمی (Atomic) باشند. هرگز یک جدول را در مرزهای Chunkها تقسیم نکنید.
 
 ---
 
-## Chart and Diagram Understanding
+## درک نمودار و دیاگرام
 
-### Chart Types and Extraction Approaches
+### انواع نمودار و رویکردهای استخراج
 
-| Chart Type | What to Extract | Best Approach |
+| نوع نمودار | چه چیزی استخراج شود | بهترین رویکرد |
 |-----------|----------------|---------------|
-| **Bar/Line/Pie** | Data values, trends, comparisons | VLM description + data table extraction |
-| **Flow Diagram** | Steps, decisions, connections | VLM structured extraction (nodes + edges) |
-| **Architecture Diagram** | Components, relationships, data flow | VLM description + entity extraction |
-| **Scatter Plot** | Correlations, outliers, clusters | VLM trend description + raw data if available |
-| **Gantt Chart** | Timeline, dependencies, milestones | VLM structured extraction |
+| **میله‌ای/خطی/دایره‌ای (Bar/Line/Pie)** | مقادیر داده، روندها، مقایسه‌ها | توضیحات VLM + استخراج جدول داده‌ها |
+| **فلوچارت (Flow Diagram)** | مراحل، تصمیم‌گیری‌ها، اتصالات | استخراج ساختاریافته VLM (گره‌ها + یال‌ها) |
+| **دیاگرام معماری (Architecture Diagram)** | کامپوننت‌ها، روابط، جریان داده | توضیحات VLM + استخراج موجودیت (Entity) |
+| **نمودار پراکندگی (Scatter Plot)** | همبستگی‌ها، داده‌های پرت (Outliers)، خوشه‌ها | توضیحات روند VLM + داده‌های خام در صورت وجود |
+| **نمودار گانت (Gantt Chart)** | خط زمانی، وابستگی‌ها، مایلستون‌ها (نقاط عطف) | استخراج ساختاریافته VLM |
 
-### Dual-Representation Strategy
+### راهبرد بازنمایی دوگانه (Dual-Representation)
 
-For each chart or diagram, store TWO representations:
+برای هر نمودار یا دیاگرام، دو بازنمایی ذخیره کنید:
+
+<div dir="ltr">
 
 ```
   Chart Image
@@ -338,15 +358,19 @@ For each chart or diagram, store TWO representations:
               Stored with CLIP/SigLIP embedding for image-based queries
 ```
 
-This ensures the chart is retrievable by both text queries ("what was APAC revenue?") and visual queries ("show me the revenue chart").
+</div>
+
+این امر تضمین می‌کند که نمودار هم با پرس‌وجوهای متنی («درآمد APAC چقدر بود؟») و هم با پرس‌وجوهای بصری («نمودار درآمد را به من نشان بده») قابل بازیابی باشد.
 
 ---
 
-## Video: Fixed Sampling vs Agentic Processing
+## ویدیو: نمونه‌برداری ثابت در برابر پردازش مبتنی بر Agent (Agentic)
 
-Video RAG cost models used to be simple arithmetic: duration x frame rate x tokens per frame. Gemini's default static processing samples at 1 FPS and uses roughly 100 tokens per second of video at default (low) media resolution, so an hour is about 360K tokens, or about $0.27 of input on Gemini 3.8 Flash at its intro price ($0.54 at the 2027 list price). A 1M-context model takes up to about 3 hours at low resolution, or 1 hour at high resolution.
+مدل‌های هزینه RAG ویدیو در گذشته محاسبات حسابی ساده‌ای بودند: مدت زمان ضربدر نرخ فریم ضربدر Tokenها به ازای هر فریم. پردازش ایستا و پیش‌فرض Gemini با نرخ 1 FPS نمونه‌برداری می‌کند و در وضوح رسانه‌ای پیش‌فرض (پایین) تقریباً ۱۰۰ Token در هر ثانیه ویدیو مصرف می‌کند؛ بنابراین یک ساعت ویدیو حدود ۳۶۰ هزار Token، یا حدود ۰.۲۷ دلار هزینه ورودی در Gemini 3.8 Flash با قیمت اولیه آن است (۰.۵۴ دلار بر اساس قیمت رسمی سال ۲۰۲۷). یک مدل با زمینه (Context) یک میلیونی تا حدود ۳ ساعت ویدیو را در وضوح پایین یا ۱ ساعت در وضوح بالا پردازش می‌کند.
 
-On September 1, 2026 Google added **agentic video processing** to Gemini 3.7 Flash, 3.6 Flash and 3.5 Flash-Lite, and the docs now list Gemini 3.8 Flash as well: set `"processing": "agentic"` on the video input and the model uses internal video tools to decide which segments to inspect, at what speed, and through which modality (frames, audio or transcript). It is opt-in (static 1 FPS stays the default), works for uploads and YouTube URLs, and bills at standard token prices with no feature fee. Google reports up to 88% fewer tokens, up to 66% lower cost and up to 7% higher accuracy on standard video benchmarks, with the largest gains on long-form video (vendor-reported).
+در ۱ سپتامبر ۲۰۲۶، گوگل **پردازش ویدیوی مبتنی بر Agent (Agentic)** را به Gemini 3.7 Flash، 3.6 Flash و 3.5 Flash-Lite اضافه کرد، و مستندات اکنون Gemini 3.8 Flash را نیز فهرست می‌کنند: با تنظیم `"processing": "agentic"` روی ورودی ویدیو، مدل از ابزارهای ویدیویی داخلی برای تصمیم‌گیری درباره اینکه کدام بخش‌ها، با چه سرعتی و از طریق کدام مدالیته (فریم‌ها، صدا یا رونوشت متنی) بررسی شوند، استفاده می‌کند. این قابلیت اختیاری (Opt-in) است (نرخ ایستای 1 FPS همچنان پیش‌فرض باقی می‌ماند)، برای فایل‌های آپلودی و نشانی‌های اینترنتی یوتیوب کار می‌کند، و با قیمت‌های استاندارد Token بدون هیچ هزینه ویژگی اضافی محاسبه می‌شود. طبق گزارش گوگل، این قابلیت تا ۸۸٪ Tokenهای کمتر، تا ۶۶٪ هزینه پایین‌تر و تا ۷٪ دقت بالاتر در بنچمارک‌های استاندارد ویدیو ارائه می‌دهد که بیشترین دستاوردها روی ویدیوهای طولانی حاصل شده است (گزارش‌شده توسط ارائه‌دهنده).
+
+<div dir="ltr">
 
 ```
 STATIC (default):   video ──► every frame at 1 FPS + audio ──► context ──► answer
@@ -357,16 +381,20 @@ AGENTIC (opt-in):   video + question ──► model picks segments, speed, moda
                     cost scales with how much of the video the question needs
 ```
 
-Design implications:
-- **Budget per question type, not per hour.** "What happens at the end?" touches far less video than "list every safety violation". Meter actual tokens per query class before setting quotas, and expect the up-to-88% saving mostly on long videos.
-- **Retrieval moved inside the model for single-video QA.** Agentic processing replaces your own scene detection, keyframe sampling and transcript chunking when the question targets one video. Searching a library still needs an index: transcripts and scene captions in the text index, short clips (up to 120 seconds per input) embedded with Gemini Embedding 2, then the top videos handed to the model.
-- **Evaluate coverage, not just accuracy.** Because the model chooses what to watch, ask for timestamped citations and spot-check them against the source on a sample of queries; a confident answer built from the wrong segment is the video version of a retrieval miss.
+</div>
+
+پیامدهای طراحی:
+- **بودجه‌بندی بر اساس نوع سوال، نه بر اساس ساعت.** عبارت «در پایان چه اتفاقی می‌افتد؟» با بخش بسیار کمتری از ویدیو سروکار دارد تا «تمام موارد نقض ایمنی را فهرست کن». پیش از تعیین سهمیه‌ها (Quotas)، Tokenهای واقعی را به ازای هر دسته از پرس‌وجوها اندازه‌گیری کنید و انتظار داشته باشید که صرفه‌جویی تا سقف ۸۸ درصدی عمدتاً در ویدیوهای طولانی حاصل شود.
+- **انتقال بازیابی به داخل مدل برای پرسش‌وپاسخ تک‌ویدیو.** پردازش مبتنی بر Agent (Agentic) در زمانی که سوال یک ویدیو را هدف قرار می‌دهد، جایگزین تشخیص صحنه، نمونه‌برداری از فریم‌های کلیدی و Chunking رونوشت متنی خود شما می‌شود. با این حال، جستجو در یک کتابخانه ویدیویی همچنان به یک ایندکس نیاز دارد: رونوشت‌ها و کپشن‌های صحنه در ایندکس متنی قرار می‌گیرند، کلیپ‌های کوتاه (تا ۱۲۰ ثانیه به ازای هر ورودی) با Gemini Embedding 2 امبد می‌شوند، و سپس ویدیوهای برتر به مدل تحویل داده می‌شوند.
+- **پوشش (Coverage) را ارزیابی کنید، نه صرفاً دقت را.** از آنجا که مدل خودش انتخاب می‌کند چه چیزی را تماشا کند، درخواست ارجاعات دارای برچسب زمانی (Timestamped) داشته باشید و آن‌ها را در نمونه‌ای از پرس‌وجوها به‌صورت تصادفی با منبع تطبیق دهید؛ یک پاسخ بااطمینان که بر اساس بخش اشتباهی ساخته شده باشد، نسخه ویدیویی خطای عدم بازیابی (Retrieval miss) است.
 
 ---
 
-## Production Architecture
+## معماری محیط عملیاتی (Production)
 
-### Full Multi-Modal RAG Pipeline
+### پایپ‌لاین کامل RAG چندوجهی (Multi-Modal)
+
+<div dir="ltr">
 
 ```
   INGESTION:
@@ -386,21 +414,23 @@ Design implications:
                              Cross-Modal Reranker --> Context Assembly --> VLM --> Response
 ```
 
-### Scaling Considerations
+</div>
 
-| Concern | Solution |
+### ملاحظات مقیاس‌پذیری
+
+| دغدغه | راهکار |
 |---------|----------|
-| **Index Size** | ColPali stores ~1024 vectors/page. For 1M pages = ~1B vectors. Use quantization (binary, PQ), MUVERA-style single-vector encodings for candidate generation (Milvus 3.0; Weaviate 1.31+, with the disk-backed HFresh path added in 1.40), or fewer vectors per page (see [Late Interaction & ColBERT](11-late-interaction-colbert.md#compressing-the-vectors-themselves)). |
-| **Ingestion Latency** | Frontier VLM extraction is slow (~2-5s/page). Specialist parsers are faster: jina-ocr-v1 runs 2.57 pages/s on one A100 at concurrency 32; Cohere reports 4.5 pages/s per GPU for Parse (both vendor-reported). Use async workers. |
-| **Query Latency** | Multi-index fan-out adds latency. Use parallel retrieval + aggressive top-k pruning. |
-| **Cost** | Ingestion is one-time; amortize over query volume. At October 2026 list prices, assuming ~1.7K input and ~800 output tokens per page: ~$0.004/page on Gemini 3.8 Flash (intro price), ~$0.011/page on Claude Sonnet 5.5 or GPT-6 Sol, before reasoning tokens; Batch APIs halve both. Cohere Parse lists $1.50 per 1,000 pages. |
-| **Storage** | Store page images in object storage (S3). Store embeddings in vector DB. Store text in search index. |
+| **اندازه ایندکس** | مدل ColPali حدود ۱۰۲۴ بردار به ازای هر صفحه ذخیره می‌کند. برای ۱ میلیون صفحه = حدود ۱ میلیارد بردار. از کوانتیزاسیون (باینری، PQ)، کدگذاری‌های تک‌برداری سبک MUVERA برای تولید کاندیدا (Milvus 3.0؛ Weaviate نسخه +1.31 با مسیر مبتنی بر دیسک HFresh اضافه‌شده در 1.40)، یا بردارهای کمتر در هر صفحه استفاده کنید (به [تعامل دیرهنگام (Late Interaction) و ColBERT](11-late-interaction-colbert.md#compressing-the-vectors-themselves) مراجعه کنید). |
+| **تاخیر (Latency) ورود داده (Ingestion)** | استخراج با VLMهای پیشرو (Frontier) کند است (حدود ۲ تا ۵ ثانیه به ازای هر صفحه). پارسرهای تخصصی سریع‌تر هستند: jina-ocr-v1 روی یک پردازنده A100 در همروندی (Concurrency) ۳۲ با نرخ ۲.۵۷ صفحه در ثانیه اجرا می‌شود؛ Cohere رقم ۴.۵ صفحه در ثانیه به ازای هر GPU را برای Parse گزارش می‌دهد (هر دو گزارش‌شده توسط ارائه‌دهنده). از Workerهای ناهمگام (Async) استفاده کنید. |
+| **تاخیر (Latency) پرس‌وجو** | انشعاب به چند ایندکس (Multi-index fan-out) تاخیر (Latency) ایجاد می‌کند. از بازیابی موازی + هرس تهاجمی top-k استفاده کنید. |
+| **هزینه** | ورود داده (Ingestion) یک‌باره است؛ آن را روی حجم پرس‌وجوها سرشکن کنید. بر اساس قیمت‌های رسمی اکتبر ۲۰۲۶ با فرض حدود ۱.۷ هزار Token ورودی و ۸۰۰ Token خروجی به ازای هر صفحه: حدود ۰.۰۰۴ دلار به ازای هر صفحه در Gemini 3.8 Flash (قیمت اولیه)، حدود ۰.۰۱۱ دلار به ازای هر صفحه در Claude Sonnet 5.5 یا GPT-6 Sol، پیش از محاسبه Tokenهای استدلال؛ Batch APIها هر دو را نصف می‌کنند. قیمت Cohere Parse برابر ۱.۵۰ دلار به ازای هر ۱,۰۰۰ صفحه است. |
+| **فضای ذخیره‌سازی** | تصاویر صفحات را در ذخیره‌ساز شیء (Object Storage مانند S3) ذخیره کنید. امبدینگ‌ها را در پایگاه داده برداری (Vector Database) ذخیره کنید. متن را در ایندکس جستجو ذخیره کنید. |
 
 ---
 
-## Implementation Example
+## نمونه پیاده‌سازی
 
-### End-to-End Multi-Modal RAG with ColPali + VLM
+### RAG چندوجهی سرتاسری (End-to-End) با ColPali + VLM
 
 ```python
 # Pseudocode: Production multi-modal RAG pipeline
@@ -541,66 +571,68 @@ def generate_answer(query: str, retrieved_context: list) -> str:
 
 ---
 
-## System Design Interview Angle
+## زاویه دید مصاحبه طراحی سیستم
 
-### Q: Design a RAG system for a financial research platform that needs to answer questions about earnings reports containing text, tables, and charts.
+### سوال: یک سیستم RAG برای یک پلتفرم تحقیقات مالی طراحی کنید که باید به سوالاتی درباره گزارش‌های درآمدی حاوی متن، جدول و نمودار پاسخ دهد.
 
-**Strong answer:**
+**پاسخ قوی:**
 
-The core challenge is that 60%+ of the information in earnings reports lives in tables and charts, not prose. A text-only RAG pipeline would miss revenue breakdowns, trend lines, and comparative data.
+چالش اصلی این است که بیش از ۶۰ درصد اطلاعات در گزارش‌های درآمدی در جدول‌ها و نمودارها قرار دارد، نه در متن ساده. یک پایپ‌لاین RAG صرفاً متنی، تفکیک‌های درآمدی، خطوط روند و داده‌های مقایسه‌ای را از دست خواهد داد.
 
-**Architecture**: I would use a hybrid approach (Pattern 2 + elements of Pattern 3):
+**معماری**: من از یک رویکرد ترکیبی (الگوی ۲ + المان‌هایی از الگوی ۳) استفاده می‌کنم:
 
-1. **Ingestion**: Render each PDF page at 300 DPI. Run a VLM extraction pass to convert tables to markdown and charts to structured descriptions. Simultaneously generate ColPali multi-vector embeddings for each page image.
+۱. **ورود داده (Ingestion)**: رندر کردن هر صفحه PDF با کیفیت 300 DPI. اجرای یک مرحله استخراج VLM برای تبدیل جدول‌ها به Markdown و نمودارها به توضیحات ساختاریافته. تولید هم‌زمان امبدینگ‌های چندبرداری ColPali برای تصویر هر صفحه.
 
-2. **Storage**: Three indices: (a) text chunks with dense embeddings (financial text), (b) table markdown with dense embeddings plus metadata filters for table type, (c) ColPali multi-vector index for page-level visual retrieval.
+۲. **ذخیره‌سازی**: سه ایندکس: (الف) Chunkهای متنی با امبدینگ‌های متراکم (متن مالی)، (ب) Markdown جدول با امبدینگ‌های متراکم به‌همراه فیلترهای فراداده (Metadata) برای نوع جدول، (ج) ایندکس چندبرداری ColPali برای بازیابی بصری در سطح صفحه.
 
-3. **Retrieval**: Query analyzer classifies the query type. "What was Q3 revenue?" triggers text + table search. "Show me the revenue trend" triggers visual (ColPali) search. Results are fused via RRF and reranked by a multimodal reranker (Qwen3-VL-Reranker-2B/8B is the open-weight option: Apache 2.0, 32K context) so page images and table text compete on one scale.
+۳. **بازیابی**: تحلیل‌گر پرس‌وجو نوع سوال را دسته‌بندی می‌کند. عبارت «درآمد فصل سوم (Q3) چقدر بود؟» جستجوی متنی + جدول را فعال می‌کند. عبارت «روند درآمد را به من نشان بده» جستجوی بصری (ColPali) را آغاز می‌نماید. نتایج از طریق RRF ادغام شده و توسط یک Reranker چندوجهی بازرتبه‌بندی (Rerank) می‌شوند (Qwen3-VL-Reranker-2B/8B گزینه وزن‌باز با مجوز Apache 2.0 و پنجره زمینه 32K است) تا تصاویر صفحات و متن جدول‌ها در یک مقیاس با هم رقابت کنند.
 
-4. **Generation**: A VLM (Claude or Gemini) receives the fused context (text chunks, table markdown, and relevant page images). It generates a grounded answer with citations to specific pages and tables.
+۴. **تولید**: یک VLM (مانند Claude یا Gemini) زمینه ادغام‌شده (Chunkهای متنی، Markdown جدول و تصاویر صفحات مرتبط) را دریافت می‌کند. سپس پاسخی مستند همراه با ارجاع به صفحات و جدول‌های خاص تولید می‌نماید.
 
-**Key trade-offs**: ColPali gives excellent recall on visual content but stores ~1024 vectors per page, so for 100k documents (500k pages), that is ~500M vectors. I would use binary quantization to reduce storage by 32x, accepting a small recall hit, or MUVERA-style candidate generation if the vector DB supports it. Before committing to multi-vector at all, I would A/B a single-vector multimodal embedder (Cohere Embed 5 or Gemini Embedding 2) plus the reranker on my eval set: 500k vectors instead of 500M. For the text path, BM25 + dense hybrid search handles financial terminology well.
+**موازنه‌های کلیدی (Trade-offs)**: مدل ColPali پوشش و یادآوری (Recall) فوق‌العاده‌ای روی محتوای بصری فراهم می‌کند اما حدود ۱۰۲۴ بردار به ازای هر صفحه ذخیره می‌نماید؛ بنابراین برای ۱۰۰ هزار سند (۵۰۰ هزار صفحه)، این مقدار حدود ۵۰۰ میلیون بردار خواهد بود. من از کوانتیزاسیون باینری برای کاهش ۳۲ برابری فضای ذخیره‌سازی با پذیرش افت اندک در Recall استفاده می‌کنم، یا اگر پایگاه داده برداری (Vector Database) پشتیبانی کند، از روش تولید کاندیدای سبک MUVERA بهره می‌گیرم. پیش از تصمیم‌گیری نهایی درباره رویکرد چندبرداری، ابتدا یک امبدر چندوجهی تک‌برداری (مانند Cohere Embed 5 یا Gemini Embedding 2) به‌همراه Reranker را روی مجموعه ارزیابی (Eval set) خود آزمون A/B می‌کنم: ۵۰۰ هزار بردار به‌جای ۵۰۰ میلیون بردار. برای مسیر متنی، جستجوی ترکیبی متراکم + BM25 اصطلاحات مالی را به‌خوبی مدیریت می‌کند.
 
-**Ingestion cost** (October 2026 list prices, ~1.7K tokens in and ~800 out per page): about $2,000 for 500k pages on Gemini 3.8 Flash at its intro price, about $5,700 on Claude Sonnet 5.5 or GPT-6 Sol before reasoning tokens, or $750 through Cohere Parse at $1.50 per 1,000 pages. Batch APIs halve the VLM numbers. I would route pages: a specialist parser for text-and-table pages, a frontier VLM only for chart-heavy pages where descriptions matter.
+**هزینه ورود داده (Ingestion)** (قیمت‌های رسمی اکتبر ۲۰۲۶، حدود ۱.۷ هزار Token ورودی و ۸۰۰ Token خروجی به ازای هر صفحه): حدود ۲,۰۰۰ دلار برای ۵۰۰ هزار صفحه روی Gemini 3.8 Flash با قیمت اولیه آن، حدود ۵,۷۰۰ دلار روی Claude Sonnet 5.5 یا GPT-6 Sol پیش از محاسبه Tokenهای استدلال، یا ۷۵۰ دلار از طریق Cohere Parse با نرخ ۱.۵۰ دلار به ازای هر ۱,۰۰۰ صفحه. Batch APIها ارقام VLM را نصف می‌کنند. من صفحات را مسیریابی می‌کنم: استفاده از یک پارسر تخصصی برای صفحات حاوی متن و جدول، و استفاده از یک VLM پیشرو (Frontier) صرفاً برای صفحات پر از نمودار که توضیحات در آن‌ها اهمیت دارد.
 
-### Q: How would you handle a query that requires information from BOTH a chart and a table on different pages?
+### سوال: چگونه پرس‌وجویی را مدیریت می‌کنید که به اطلاعاتی هم از یک نمودار و هم از یک جدول در صفحات مختلف نیاز دارد؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-This is the cross-modal, cross-page retrieval problem. The solution has three parts:
+این مسئله، چالش بازیابی میان‌مدالیته‌ای (Cross-modal) و بین‌صفحه‌ای (Cross-page) است. راهکار شامل سه بخش است:
 
-1. **Retrieval diversity**: Ensure the retriever returns results from multiple modalities. Set minimum quotas: at least 2 text results, 2 table results, and 1 visual result in every retrieval set, regardless of which modality scores highest.
+۱. **تنوع بازیابی (Retrieval diversity)**: اطمینان حاصل کنید که بازیاب، نتایجی از چندین مدالیته مختلف برمی‌گرداند. حداقل سهمیه‌ها را تعیین کنید: حداقل ۲ نتیجه متنی، ۲ نتیجه جدول، و ۱ نتیجه بصری در هر مجموعه بازیابی، صرف‌نظر از اینکه کدام مدالیته بالاترین امتیاز را کسب کرده باشد.
 
-2. **Context assembly**: When assembling the VLM prompt, include all retrieved content with explicit provenance: "[Table from page 14: Q3 Revenue by Region]" and "[Chart from page 22: Revenue Trend 2024-2026]". The VLM can then reason across both.
+۲. **ترکیب زمینه (Context assembly)**: هنگام مونتاژ Prompt مدل VLM، تمام محتوای بازیابی‌شده را همراه با منشأ صریح و مشخص بگنجانید: «[جدول از صفحه ۱۴: درآمد فصل سوم بر اساس منطقه]» و «[نمودار از صفحه ۲۲: روند درآمد ۲۰۲۴-۲۰۲۶]». سپس VLM می‌تواند در سراسر هر دو منبع استدلال کند.
 
-3. **Agentic fallback**: If the initial retrieval does not surface enough cross-modal context, an agentic layer can issue follow-up retrievals: "The table shows revenue numbers but the user asked about trends, so let me also search for charts related to revenue."
+۳. **پشتیبان مبتنی بر Agent (Agentic fallback)**: اگر بازیابی اولیه زمینه میان‌مدالیته‌ای کافی ارائه ندهد، یک لایه Agentic می‌تواند بازیابی‌های بعدی را صادر کند: «جدول ارقام درآمد را نشان می‌دهد اما کاربر درباره روندها پرسیده است، بنابراین اجازه دهید نمودارهای مربوط به درآمد را نیز جستجو کنم».
 
-The key insight is that cross-modal questions are inherently multi-hop. The system needs to retrieve from one modality, recognize the gap, and retrieve from another.
+بینش کلیدی این است که پرسش‌های میان‌مدالیته‌ای ذاتاً چندمرحله‌ای (Multi-hop) هستند. سیستم باید از یک مدالیته بازیابی را انجام دهد، شکاف اطلاعاتی را تشخیص دهد، و از مدالیته دیگری بازیابی کند.
 
-### Q: Users want to ask questions across a 10,000-hour library of training videos. How do you design and cost it?
+### سوال: کاربران می‌خواهند از میان یک کتابخانه ۱۰,۰۰۰ ساعتی از ویدیوهای آموزشی سوال بپرسند. چگونه آن را طراحی می‌کنید و هزینه‌اش را برآورد می‌نمایید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-Separate library search from single-video understanding, because only the second one can use the model's own video tools.
+جستجوی کتابخانه را از درک تک‌ویدیو تفکیک کنید، زیرا تنها مورد دوم می‌تواند از ابزارهای ویدیویی خود مدل استفاده کند.
 
-1. **Index once.** Processing every video per question is out: at roughly 100 tokens per second, the library is about 3.6B tokens per full pass. Instead, transcribe once (about $2,700 for 600,000 minutes at `gpt-transcribe`'s $0.0045 per minute), put transcripts and scene captions into a hybrid BM25 + dense index, and embed short clips (up to 120 seconds per input) with Gemini Embedding 2 for visual queries.
-2. **Retrieve, then watch.** Retrieval returns the top videos with timestamps. Only those go to Gemini 3.8 Flash. A full hour at static 1 FPS is about 360K tokens (~$0.27 of input at the intro price); with `"processing": "agentic"` the model decides which segments to inspect, and Google reports up to 88% fewer tokens on long-form video (vendor-reported).
-3. **Cost by query class.** Agentic token use depends on the question, so I would meter it per query type during a pilot and set quotas from the measured distribution, not from duration.
-4. **Evaluate grounding.** Require timestamped citations and spot-check them, because the failure mode is a fluent answer from the wrong segment.
+۱. **یک‌بار ایندکس کنید.** پردازش تمام ویدیوها به ازای هر سوال منتفی است: با مصرف تقریبی ۱۰۰ Token در ثانیه، کل کتابخانه برای هر پیمایش کامل حدود ۳.۶ میلیارد Token خواهد بود. در عوض، یک‌بار پیاده‌سازی صوتی (Transcribe) انجام دهید (حدود ۲,۷۰۰ دلار برای ۶۰۰,۰۰۰ دقیقه با نرخ ۰.۰۰۴۵ دلار در هر دقیقه در `gpt-transcribe`)، رونوشت‌های متنی و کپشن‌های صحنه را در یک ایندکس ترکیبی BM25 + متراکم قرار دهید، و کلیپ‌های کوتاه (تا ۱۲۰ ثانیه به ازای هر ورودی) را با Gemini Embedding 2 برای پرس‌وجوهای بصری امبد کنید.
+۲. **ابتدا بازیابی کنید، سپس تماشا کنید.** بازیابی، ویدیوهای برتر را همراه با برچسب‌های زمانی بازمی‌گرداند. تنها همین ویدیوها به Gemini 3.8 Flash ارسال می‌شوند. یک ساعت کامل با نرخ ایستای 1 FPS حدود ۳۶۰ هزار Token است (حدود ۰.۲۷ دلار هزینه ورودی با قیمت اولیه)؛ با تنظیم `"processing": "agentic"` مدل خودش تصمیم می‌گیرد کدام بخش‌ها را بررسی کند، و طبق گزارش گوگل تا ۸۸٪ Tokenهای کمتر در ویدیوهای طولانی مصرف می‌شود (گزارش‌شده توسط ارائه‌دهنده).
+۳. **محاسبه هزینه بر اساس دسته پرس‌وجو.** میزان مصرف Token در پردازش Agentic به سوال بستگی دارد، بنابراین من در یک طرح آزمایشی (Pilot) آن را بر اساس نوع پرس‌وجو اندازه‌گیری کرده و سهمیه‌ها را بر اساس توزیع اندازه‌گیری‌شده تعیین می‌کنم، نه بر اساس مدت زمان ویدیو.
+۴. **مستندسازی (Grounding) را ارزیابی کنید.** ارجاعات دارای برچسب زمانی را الزامی کنید و آن‌ها را به‌صورت تصادفی بررسی نمایید، زیرا حالت شکست در اینجا، یک پاسخ روان اما برگرفته از بخش اشتباهی از ویدیو است.
 
 ---
 
-## References
+## مراجع
 
 - Faysse et al. "ColPali: Efficient Document Retrieval with Vision Language Models" (ICLR 2025)
 - Google. "SigLIP 2: Multilingual Vision-Language Encoders" (2025)
 - NVIDIA. "An Easy Introduction to Multimodal Retrieval-Augmented Generation" (2025)
 - HKUDS. "RAG-Anything: All-in-One Multimodal RAG Framework" (2025)
-- Vespa Blog. "PDF Retrieval with Vision Language Models" (2024)
-- Google. "Gemini Embedding 2" (March 2026) and "Introducing agentic video in Gemini" (September 2026)
-- Google. Gemini API video understanding documentation (accessed October 2026)
-- Cohere. "Embed 5" (September 2026)
+- وبلاگ Vespa. "PDF Retrieval with Vision Language Models" (2024)
+- گوگل. "Gemini Embedding 2" (مارس ۲۰۲۶) و "Introducing agentic video in Gemini" (سپتامبر ۲۰۲۶)
+- گوگل. مستندات درک ویدیوی Gemini API (دسترسی در اکتبر ۲۰۲۶)
+- Cohere. "Embed 5" (سپتامبر ۲۰۲۶)
 
 ---
 
-*Previous: [Late Interaction & ColBERT](11-late-interaction-colbert.md) | Next: [RAG Evaluation Patterns](13-rag-evaluation-patterns.md)*
+*قبلی: [تعامل دیرهنگام (Late Interaction) و ColBERT](11-late-interaction-colbert.md) | بعدی: [الگوهای ارزیابی RAG](13-rag-evaluation-patterns.md)*
+
+</div>

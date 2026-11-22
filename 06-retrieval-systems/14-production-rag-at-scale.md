@@ -1,32 +1,36 @@
-# Production RAG at Scale
+<div dir="rtl">
 
-Production RAG is no longer a weekend project. It is a distributed system with retrieval pipelines, caching layers, routing logic, self-correction loops, multi-tenant isolation, and cost controls, all operating under strict latency SLAs. When RAG fails in production, the cause is usually upstream of the model: the right passage was never chunked cleanly, indexed, or retrieved, so the generator never saw it. That is why the enterprise deployments that succeed treat the knowledge source (not the model) as the primary investment.
+# RAG در مقیاس پروداکشن
 
-## Table of Contents
+RAG در پروداکشن دیگر یک پروژه آخر هفته نیست؛ بلکه یک سیستم توزیع‌شده با پایپ‌لاین‌های بازیابی، لایه‌های کَش، منطق مسیریابی، حلقه‌های خوداصلاحی، جداسازی چندمستأجری (multi-tenant) و کنترل‌های هزینه است که همگی تحت توافق‌نامه‌های سطح خدمات (SLA) سخت‌گیرانه تاخیر (Latency) عمل می‌کنند. هنگامی که RAG در پروداکشن شکست می‌خورد، علت معمولاً در بالادست مدل نهفته است: قطعه متنی مناسب هرگز به شکلی تمیز Chunking نشده، نمایه‌سازی نشده یا بازیابی نشده است، بنابراین تولیدکننده هرگز آن را ندیده است. به همین دلیل است که استقرار (Deployment)های سازمانی موفق، منبع دانش (و نه مدل) را به عنوان سرمایه‌گذاری اصلی در نظر می‌گیرند.
 
-- [RAG vs Long Context](#rag-vs-long-context)
-- [Query Routing and Classification](#query-routing-and-classification)
-- [Semantic Caching for RAG](#semantic-caching-for-rag)
-- [Multi-Index Strategies](#multi-index-strategies)
-- [RAG Pipeline Optimization](#rag-pipeline-optimization)
-- [Corrective RAG: Self-Checking Retrieval](#corrective-rag-self-checking-retrieval)
-- [Adaptive Retrieval](#adaptive-retrieval)
-- [Cost Optimization Patterns](#cost-optimization-patterns)
-- [Failure Modes and Debugging](#failure-modes-and-debugging)
-- [Monitoring and Alerting](#monitoring-and-alerting)
-- [Scaling to Millions of Documents](#scaling-to-millions-of-documents)
-- [Multi-Tenant RAG Isolation](#multi-tenant-rag-isolation)
-- [Real-World Architecture Examples](#real-world-architecture-examples)
-- [System Design Interview Angle](#system-design-interview-angle)
-- [References](#references)
+## فهرست مطالب
+
+- [RAG در برابر زمینه طولانی (Long Context)](#rag-vs-long-context)
+- [مسیریابی و طبقه‌بندی پرس‌وجو (Query)](#query-routing-and-classification)
+- [کَشینگ معنایی (Semantic Caching) برای RAG](#semantic-caching-for-rag)
+- [استراتژی‌های چندنمایه‌ای (Multi-Index)](#multi-index-strategies)
+- [بهینه‌سازی پایپ‌لاین RAG](#rag-pipeline-optimization)
+- [RAG اصلاحی (Corrective RAG): بازیابی خودآزمون](#corrective-rag-self-checking-retrieval)
+- [بازیابی تطبیقی (Adaptive Retrieval)](#adaptive-retrieval)
+- [الگوهای بهینه‌سازی هزینه](#cost-optimization-patterns)
+- [حالت‌های شکست و دیباگ کردن](#failure-modes-and-debugging)
+- [مانیتورینگ و هشداردهی (Monitoring and Alerting)](#monitoring-and-alerting)
+- [مقیاس‌پذیری به میلیون‌ها سند](#scaling-to-millions-of-documents)
+- [جداسازی چندمستأجری (multi-tenant) در RAG](#multi-tenant-rag-isolation)
+- [نمونه‌های معماری در دنیای واقعی](#real-world-architecture-examples)
+- [دیدگاه مصاحبه طراحی سیستم](#system-design-interview-angle)
+- [منابع](#references)
 
 ---
 
-## RAG vs Long Context
+## RAG در برابر زمینه طولانی (Long Context)
 
-With most frontier families supporting 1M-token context windows (Claude Opus 5.5 and Sonnet 5.5, GPT-6 Sol and Astra at 1.05M, Gemini 4 Argon and the fast-tier Gemini 3.8 Flash, Muse Spark 1.3, and open models such as Xiaomi MiMo-V2.6 and Llama 4 Maverick), the question is no longer "RAG or long context?" but "When does each win?"
+با پشتیبانی اکثر خانواده‌های مدل پیشرو از پنجره‌های کانتکست ۱ میلیون Token (شامل Claude Opus 5.5 و Sonnet 5.5، مدل‌های GPT-6 Sol و Astra با ۱.۰۵ میلیون Token، مدل Gemini 4 Argon و رده سریع Gemini 3.8 Flash، مدل Muse Spark 1.3 و مدل‌های متن‌باز نظیر Xiaomi MiMo-V2.6 و Llama 4 Maverick)، پرسش دیگر این نیست که «RAG یا زمینه طولانی (Long Context)؟»، بلکه این است که «هر کدام در چه زمانی برنده می‌شوند؟»
 
-### The Decision Matrix
+### ماتریس تصمیم‌گیری
+
+<div dir="ltr">
 
 ```
                     Small Corpus           Large Corpus
@@ -48,49 +52,53 @@ With most frontier families supporting 1M-token context windows (Claude Opus 5.5
                  +---------------------+---------------------+
 ```
 
-### Head-to-Head Comparison
+</div>
 
-| Dimension | RAG | Long Context (1M tokens) |
-|-----------|-----|--------------------------|
-| **Avg Query Cost** | ~$0.001-0.015 (5K context tokens, GPT-6 Luna or Claude Haiku 5.5 to Claude Sonnet 5.5) | ~$0.10-0.25 input with a warm Claude cache (Sonnet 5.5 to Fable 5.1); $2-4 uncached |
-| **Avg Latency (p50)** | ~1s | ~30-45s |
-| **Precision on Specific Facts** | High (targeted retrieval) | Degrades in middle |
-| **Cross-Document Synthesis** | Weak (limited context) | Strong (sees everything) |
-| **Corpus Size Limit** | Unlimited | ~1M tokens |
-| **Data Freshness** | Minutes (incremental index) | Requires full reload; any edit invalidates the cache after it |
-| **Cost per 1M queries** | ~$1K-15K | ~$200K+ with a warm cache; $2M-4M uncached |
+### مقایسه مستقیم
 
-### The "Lost in the Middle" Problem
+| بعد | RAG | زمینه طولانی (Long Context - ۱ میلیون Token) |
+|---|---|---|
+| **میانگین هزینه پرس‌وجو (Query)** | حدود ۰.۰۰۱ تا ۰.۰۱۵ دلار (۵ هزار Token کانتکست، از GPT-6 Luna یا Claude Haiku 5.5 تا Claude Sonnet 5.5) | حدود ۰.۱۰ تا ۰.۲۵ دلار ورودی با کَش گرم کلود (Sonnet 5.5 تا Fable 5.1)؛ ۲ تا ۴ دلار بدون کَش |
+| **میانگین تاخیر (Latency) (p50)** | حدود ۱ ثانیه | حدود ۳۰ تا ۴۵ ثانیه |
+| **دقت روی حقایق خاص** | بالا (بازیابی هدفمند) | در بخش میانی کاهش می‌یابد |
+| **ترکیب و نتیجه‌گیری بین‌سندی (Cross-Document)** | ضعیف (کانتکست محدود) | قوی (همه چیز را می‌بیند) |
+| **محدودیت اندازه پیکره متنی (Corpus)** | نامحدود | حدود ۱ میلیون Token |
+| **تازگی داده‌ها (Freshness)** | در حد چند دقیقه (نمایه‌سازی افزایشی) | نیازمند بارگذاری مجدد کامل؛ هرگونه ویرایش، کَش را پس از آن نامعتبر می‌سازد |
+| **هزینه به ازای هر ۱ میلیون پرس‌وجو (Query)** | حدود ۱ تا ۱۵ هزار دلار | بیش از ۲۰۰ هزار دلار با کَش گرم؛ ۲ تا ۴ میلیون دلار بدون کَش |
 
-LLMs do not attend uniformly across their context window. Information positioned in the middle of a long context sees 30%+ accuracy degradation compared to information at the beginning or end. RAG sidesteps this entirely by placing only the most relevant chunks into a short, focused context.
+### مسئله «گم شدن در میانه» (Lost in the Middle)
 
-### The Cache-Read Break-Even
+LLMها در سراسر پنجره کانتکست خود به صورت یکنواخت توجه (Attend) نمی‌کنند. اطلاعاتی که در میانه یک کانتکست طولانی قرار می‌گیرند، در مقایسه با اطلاعات ابتدا یا انتهای آن، با افت دقت بیش از ۳۰ درصدی مواجه می‌شوند. RAG با قرار دادنِ صرفاً مرتبط‌ترین Chunkها در یک کانتکست کوتاه و متمرکز، این مشکل را به‌طور کامل دور می‌زند.
 
-Cheaper cache reads moved the line for **stable** corpora. On the same model, a corpus kept warm in the provider's prompt cache costs less input per query than RAG when:
+### نقطه سر‌به‌سر خواندن از کَش (Cache-Read Break-Even)
+
+ارزان‌تر شدن خواندن از کَش، مرز این معادله را برای پیکره‌های متنی **پایدار** جابه‌جا کرده است. روی یک مدل یکسان، هزینه‌ی ورودی به ازای هر پرس‌وجو برای یک پیکره متنی که در کَش Prompt ارائه‌دهنده گرم نگه داشته شده است، کمتر از RAG خواهد بود هرگاه:
 
 ```
 corpus_tokens x cache_read_multiplier  <  retrieved_context_tokens
 ```
 
-| Model (list prices, Nov 2, 2026) | Cache read | Corpus that costs the same as a 5K-token RAG context |
-|----------------------------------|------------|------------------------------------------------------|
-| Claude Fable 5.1 | 0.025x ($0.25 per 1M) | ~200K tokens |
-| Claude Opus 5.5 | 0.05x ($0.20 per 1M) | ~100K tokens |
-| Claude Sonnet 5.5 | 0.05x ($0.10 per 1M, since Oct 7) | ~100K tokens |
-| GPT-6.1 Sol | 0.05x ($0.10 per 1M) | ~100K tokens |
-| GPT-6.1 Terra | 0.05x ($0.05 per 1M) | ~100K tokens |
-| Most other Claude and OpenAI models, including Claude Haiku 5.5 | 0.1x | ~50K tokens |
+| مدل (قیمت‌های رسمی، ۲ نوامبر ۲۰۲۶) | خواندن از کَش (Cache Read) | حجم پیکره متنی با هزینه معادل یک کانتکست RAG با ۵ هزار Token |
+|---|---|---|
+| Claude Fable 5.1 | 0.025x (۰.۲۵ دلار به ازای هر ۱ میلیون Token) | حدود ۲۰۰ هزار Token |
+| Claude Opus 5.5 | 0.05x (۰.۲۰ دلار به ازای هر ۱ میلیون Token) | حدود ۱۰۰ هزار Token |
+| Claude Sonnet 5.5 | 0.05x (۰.۱۰ دلار به ازای هر ۱ میلیون Token، از ۷ اکتبر) | حدود ۱۰۰ هزار Token |
+| GPT-6.1 Sol | 0.05x (۰.۱۰ دلار به ازای هر ۱ میلیون Token) | حدود ۱۰۰ هزار Token |
+| GPT-6.1 Terra | 0.05x (۰.۰۵ دلار به ازای هر ۱ میلیون Token) | حدود ۱۰۰ هزار Token |
+| اکثر مدل‌های دیگر Claude و OpenAI، شامل Claude Haiku 5.5 | 0.1x | حدود ۵۰ هزار Token |
 
-What the formula leaves out:
-- **Cache writes and TTLs.** Claude charges 1.25x for 5-minute writes and 2x for 1-hour writes (Opus 5.5: $5 and $8 per 1M); OpenAI charges 1.25x on GPT-5.6 and later for its 30-minute cache and 2.5x for the 12-hour option added October 20, 2026. A corpus queried less often than the TTL pays the write again and again; the 12-hour write pays for itself only if the corpus is reread across the hours the shorter TTL would have expired. Gemini 4 Argon has no explicit caching at all, only implicit. Gemini's explicit caches read at 0.1x on Gemini 3.8 Flash but also bill storage by the hour ($0.50 per 1M tokens per hour through December 31, 2026, $1.00 from January 1, 2027), so a warm 200K-token corpus costs $0.10 to $0.20 an hour before a single read.
-- **Long-context surcharges.** OpenAI bills the whole request at long-context rates once input passes 272K tokens, and xAI doubles all tokens at 200K and above. Anthropic prices flat to 1M on Claude 4.6 and later except Claude Haiku 5.5, which bills the whole request at 5x once the prompt passes 100K tokens, counting cache reads and writes. A cached corpus above 100K on Haiku 5.5 therefore pays the high tier on every query, which can flip the break-even back to retrieval.
-- **Quality and latency.** A cheap cache read does not fix lost-in-the-middle or the prefill time of a very long prompt, and it only helps if the corpus fits.
+آنچه این فرمول در نظر نمی‌گیرد:
+- **نوشتن در کَش و TTLها:** کلود برای نوشتن‌های ۵ دقیقه‌ای ضریب 1.25x و برای نوشتن‌های ۱ ساعته ضریب 2x دریافت می‌کند (در Opus 5.5: ۵ دلار و ۸ دلار به ازای هر ۱ میلیون Token)؛ OpenAI در مدل GPT-5.6 و بالاتر، برای کَش ۳۰ دقیقه‌ای خود ضریب 1.25x و برای گزینه ۱۲ ساعته که در ۲۰ اکتبر ۲۰۲۶ اضافه شد ضریب 2.5x دریافت می‌کند. پیکره متنی‌ای که با فاصله‌های زمانی بیشتر از TTL مورد پرس‌وجو قرار گیرد، بارها و بارها هزینه نوشتن در کَش را متحمل می‌شود؛ نوشتن ۱۲ ساعته تنها در صورتی هزینه خود را جبران می‌کند که پیکره متنی در طول ساعت‌هایی که TTL کوتاه‌تر منقضی می‌شد، مجدداً خوانده شود. مدل Gemini 4 Argon اصلاً کَشینگ صریح (Explicit) ندارد و فقط دارای کَشینگ ضمنی (Implicit) است. کَش‌های صریح Gemini در مدل Gemini 3.8 Flash با ضریب 0.1x خوانده می‌شوند، اما هزینه ذخیره‌سازی را نیز به ازای هر ساعت محاسبه می‌کنند (۰.۵۰ دلار به ازای هر ۱ میلیون Token در ساعت تا ۳۱ دسامبر ۲۰۲۶، و ۱.۰۰ دلار از ۱ ژانویه ۲۰۲۷)، بنابراین یک پیکره متنی گرم با ۲۰۰ هزار Token حتی قبل از یک بار خواندن، ساعتی ۰.۱۰ تا ۰.۲۰ دلار هزینه در بر دارد.
+- **اضافه‌بهای کانتکست طولانی:** به محض اینکه ورودی از ۲۷۲ هزار Token فراتر رود، OpenAI کل درخواست را با نرخ‌های کانتکست طولانی محاسبه می‌کند و xAI در ۲۰۰ هزار Token و بالاتر، هزینه تمام Tokenها را دو برابر می‌کند. در مقابل، Anthropic در Claude 4.6 و نسخه‌های بعدی قیمت یکسانی تا ۱ میلیون Token دارد، به جز Claude Haiku 5.5 که به محض عبور Prompt از ۱۰۰ هزار Token (با احتساب خواندن‌ها و نوشتن‌های کَش)، کل درخواست را با ضریب 5x محاسبه می‌کند. بنابراین یک پیکره متنی کَش‌شده با بیش از ۱۰۰ هزار Token در Haiku 5.5 در هر پرس‌وجو در سطح قیمتی بالاتر محاسبه می‌شود که می‌تواند نقطه سر‌به‌سر را مجدداً به نفع بازیابی تغییر دهد.
+- **کیفیت و تاخیر (Latency):** خواندن ارزان از کَش، مسئله «گم شدن در میانه» یا زمان Prefill یک Prompt بسیار طولانی را برطرف نمی‌کند، و تنها در صورتی مؤثر است که کل پیکره متنی در کانتکست جا شود.
 
-Recompute this per model instead of quoting fixed thresholds. The practical change is at the small end: a 100K-200K-token handbook or policy set that rarely changes is now often cheaper and simpler as a cached prefix than as an index.
+به جای استناد به آستانه‌های ثابت، این مقدار را به ازای هر مدل مجدداً محاسبه کنید. تغییر عملی در مقیاس‌های کوچک رخ داده است: یک کتابچه راهنما یا مجموعه خط‌مشی‌ها با ۱۰۰ تا ۲۰۰ هزار Token که به ندرت تغییر می‌کند، اکنون اغلب به صورت یک پیشوند کَش‌شده (Cached Prefix) ارزان‌تر و ساده‌تر از یک نمایه تمام می‌شود.
 
-### Best Practice: The Hybrid Pattern
+### بهترین شیوه (Best Practice): الگوی ترکیبی (Hybrid)
 
-The winning architecture combines both: use RAG to retrieve the top candidates from a large corpus, then load those candidates into a long context window for cross-document reasoning.
+معماری برنده هر دو را با هم ترکیب می‌کند: استفاده از RAG برای بازیابی برترین کاندیداها از یک پیکره متنی بزرگ، و سپس بارگذاری آن کاندیداها در یک پنجره کانتکست طولانی جهت استدلال و نتیجه‌گیری بین‌سندی (Cross-Document).
+
+<div dir="ltr">
 
 ```
   User Query
@@ -108,28 +116,32 @@ The winning architecture combines both: use RAG to retrieve the top candidates f
                           Cross-Doc Citations
 ```
 
-**Rule of Thumb**: If your corpus fits in context AND you can afford the latency AND you can afford the cost, use long context. Otherwise, use RAG. For most production systems with cost and latency constraints, RAG remains the correct default.
+</div>
 
-### A Third Option: Compile the Knowledge Once
+**قاعده سرانگشتی**: اگر پیکره متنی شما در کانتکست جا می‌شود **و** می‌توانید از پس تاخیر (Latency) آن برآیید **و** توان پرداخت هزینه آن را دارید، از زمینه طولانی (Long Context) استفاده کنید. در غیر این صورت، از RAG بهره ببرید. برای اکثر سیستم‌های پروداکشن با محدودیت‌های هزینه و تاخیر (Latency)، RAG همچنان انتخاب پیش‌فرض و صحیح است.
 
-A newer product category precomputes structured knowledge at ingestion instead of retrieving chunks per query. The clearest example is **Pinecone Nexus** (GA August 6, 2026): a subject-matter expert describes the work as a Manifest (entities, relationships, answer shapes); Nexus compiles source documents once into summaries, structured extracts and entity-relationship graphs, and agents query them in one call through the KnowQL language. The data plane runs in the customer's AWS, Google Cloud or Azure account. Pinecone reports (vendor-run) that on tau-Knowledge, GPT-5.5 with Nexus scored 47.4% versus 46.4% without, at 77% lower cost per task and about 35% fewer model calls.
+### گزینه سوم: یک‌بار کامپایل کردن دانش (Compile Once)
 
-| | Retrieve at query time (RAG) | Compile once |
+دسته جدیدتری از محصولات، به جای بازیابی Chunkها به ازای هر پرس‌وجو، دانش ساختاریافته را در زمان ورود داده (Ingestion) از پیش محاسبه می‌کنند. بارزترین نمونه، **Pinecone Nexus** (انتشار عمومی یا GA در ۶ اوت ۲۰۲۶) است: یک کارشناس خبره حوزه (SME)، کار را در قالب یک Manifest توصیف می‌کند (موجودیت‌ها، روابط و ساختار پاسخ‌ها)؛ سپس Nexus اسناد منبع را یک‌بار در قالب خلاصه‌ها، گزیده‌های ساختاریافته و گراف‌های موجودیت-رابطه کامپایل می‌کند و Agentها در قالب یک فراخوانی از طریق زبان KnowQL از آن‌ها پرس‌وجو می‌کنند. لایه داده (Data Plane) در حساب AWS، گوگل کلاد یا Azure مشتری اجرا می‌شود. طبق گزارش Pinecone (بر اساس تست‌های خود ارائه‌دهنده)، در بنچمارک tau-Knowledge، مدل GPT-5.5 همراه با Nexus به امتیاز ۴۷.۴٪ در برابر ۴۶.۴٪ بدون آن دست یافت، در حالی که هزینه به ازای هر تسک ۷۷٪ کمتر بود و فراخوانی‌های مدل حدود ۳۵٪ کاهش یافت.
+
+| | بازیابی در زمان پرس‌وجو (RAG) | یک‌بار کامپایل کردن |
 |---|---|---|
-| **Where cost lands** | Every query | Ingestion and recompilation |
-| **Where errors land** | Retrieval misses, visible per query | Compilation errors, baked into every answer until recompiled |
-| **Handles unanticipated questions** | Yes | Only within the shapes the Manifest anticipated |
-| **Corpus drift** | Incremental re-index | Recompile affected artifacts |
+| **محل تحمیل هزینه** | در هر پرس‌وجو (Query) | در مرحله ورود داده (Ingestion) و کامپایل مجدد |
+| **محل بروز خطاها** | خطاهای عدم بازیابی (Retrieval Misses)، قابل مشاهده در هر پرس‌وجو | خطاهای کامپایل، که تا زمان کامپایل مجدد در تار و پود همه پاسخ‌ها ریشه می‌دواند |
+| **پشتیبانی از سوالات پیش‌بینی‌نشده** | بله | فقط در چارچوب ساختارهایی که Manifest پیش‌بینی کرده بود |
+| **تغییر تدریجی داده‌ها (Corpus Drift)** | نمایه‌سازی مجدد افزایشی | کامپایل مجدد Artifactهای تحت تأثیر |
 
-Compile-once fits stable, high-volume domains with recurring question shapes (policies, case law, product catalogs). Keep query-time retrieval for long-tail, exploratory questions, and keep it as the fallback even where you compile.
+الگوی یک‌بار کامپایل کردن مناسب دامنه‌های پایدار و پرحجم با ساختار سوالات تکرارشونده است (نظیر خط‌مشی‌ها، آرای قضایی و کاتالوگ محصولات). بازیابی در زمان پرس‌وجو را برای سوالات پراکنده و اکتشافی حفظ کنید، و حتی در جاهایی که عمل کامپایل را انجام می‌دهید، آن را به عنوان سازوکار پشتیبان (Fallback) نگه دارید.
 
 ---
 
-## Query Routing and Classification
+## مسیریابی و طبقه‌بندی پرس‌وجو (Query)
 
-Not every query needs retrieval. A production system classifies incoming queries and routes them to the optimal handling path.
+هر پرس‌وجویی به بازیابی نیاز ندارد. یک سیستم پروداکشن پرس‌وجوهای ورودی را طبقه‌بندی کرده و آن‌ها را به بهینه‌ترین مسیر پردازش هدایت می‌کند.
 
-### The Four-Path Router
+### مسیریاب چهارمسیره (The Four-Path Router)
+
+<div dir="ltr">
 
 ```
                          User Query
@@ -155,17 +167,19 @@ Not every query needs retrieval. A production system classifies incoming queries
                                           contracts"
 ```
 
-### Classification Signals
+</div>
 
-| Signal | Direct LLM | Simple RAG | Complex RAG | Agentic RAG |
-|--------|-----------|------------|-------------|-------------|
-| **Requires private data** | No | Yes | Yes | Yes |
-| **Single-hop answer** | Yes | Yes | No | No |
-| **Needs multiple sources** | No | No | Yes | Yes |
-| **Requires reasoning chain** | No | No | Maybe | Yes |
-| **Time-sensitive data** | No | Maybe | Maybe | Yes |
+### سیگنال‌های طبقه‌بندی
 
-### Implementation: Lightweight Router
+| سیگنال | LLM مستقیم | RAG ساده | RAG پیچیده | RAG مبتنی بر Agent (Agentic RAG) |
+|---|---|---|---|---|
+| **نیازمند داده‌های خصوصی** | خیر | بله | بله | بله |
+| **پاسخ تک‌مرحله‌ای (Single-hop)** | بله | بله | خیر | خیر |
+| **نیازمند چندین منبع** | خیر | خیر | بله | بله |
+| **نیازمند زنجیره استدلال** | خیر | خیر | شاید | بله |
+| **داده‌های حساس به زمان** | خیر | شاید | شاید | بله |
+
+### پیاده‌سازی: مسیریاب سبک (Lightweight Router)
 
 ```python
 class QueryRouter:
@@ -216,9 +230,9 @@ class QueryRouter:
         return result.strip().lower()
 ```
 
-### Domain-Specific Routing
+### مسیریابی مبتنی بر حوزه (Domain-Specific)
 
-For systems with multiple knowledge domains, route queries to the correct index before retrieval.
+برای سیستم‌هایی با چندین حوزه دانشی، پیش از بازیابی، پرس‌وجوها را به نمایه صحیح هدایت کنید.
 
 ```python
 # Rule-based domain routing
@@ -244,11 +258,13 @@ class DomainRouter:
 
 ---
 
-## Semantic Caching for RAG
+## کَشینگ معنایی (Semantic Caching) برای RAG
 
-Semantic caching recognizes when a new query has essentially the same meaning as a prior query and reuses the cached result. Production systems report up to 68% cost reduction and 65x latency improvement with well-tuned semantic caches.
+کَشینگ معنایی تشخیص می‌دهد که یک پرس‌وجوی جدید چه زمانی اساساً معنایی یکسان با یک پرس‌وجوی قبلی دارد و از نتیجه کَش‌شده مجدداً استفاده می‌کند. سیستم‌های پروداکشن با کَش‌های معنایی بهینه‌سازی‌شده، تا ۶۸٪ کاهش هزینه و بهبود ۶۵ برابری در تاخیر (Latency) را گزارش کرده‌اند.
 
-### Three-Layer Caching Architecture
+### معماری کَشینگ سه‌لایه‌ای
+
+<div dir="ltr">
 
 ```
   User Query
@@ -278,7 +294,9 @@ Semantic caching recognizes when a new query has essentially the same meaning as
     Full RAG Pipeline
 ```
 
-### Semantic Cache Implementation
+</div>
+
+### پیاده‌سازی کَش معنایی
 
 ```python
 class SemanticCache:
@@ -332,16 +350,16 @@ class SemanticCache:
         )
 ```
 
-### Cache Invalidation Strategies
+### استراتژی‌های ابطال کَش (Cache Invalidation)
 
-| Strategy | Trigger | Use Case |
-|----------|---------|----------|
-| **TTL-based** | Fixed time expiry | General queries, news |
-| **Event-driven** | Document update webhook | Knowledge bases |
-| **Version-tagged** | Doc version mismatch | Compliance-critical |
-| **Confidence-gated** | Low retrieval score | Volatile domains |
+| استراتژی | محرک (Trigger) | مورد استفاده (Use Case) |
+|---|---|---|
+| **مبتنی بر TTL** | انقضا در زمان ثابت | پرس‌وجوهای عمومی، اخبار |
+| **رویدادمحور (Event-driven)** | وبهوک به‌روزرسانی سند | پایگاه‌های دانش |
+| **برچسب‌گذاری‌شده با نسخه (Version-tagged)** | عدم تطابق نسخه سند | محیط‌های حساس به الزامات انطباق (Compliance-critical) |
+| **دروازه‌بانی‌شده با اطمینان (Confidence-gated)** | امتیاز بازیابی پایین | دامنه‌های متغیر و ناپایدار |
 
-**Critical Rule**: Always cache the source document IDs alongside the response. When any source document is updated, invalidate all cache entries that reference it.
+**قاعده حیاتی**: همواره شناسه (ID) اسناد منبع را در کنار پاسخ کَش کنید. هنگامی که هر سند منبعی به‌روزرسانی می‌شود، تمام ورودی‌های کَش را که به آن ارجاع دارند، باطل سازید.
 
 ```python
 # Webhook-based cache invalidation
@@ -356,11 +374,13 @@ async def on_document_updated(doc_id: str):
 
 ---
 
-## Multi-Index Strategies
+## استراتژی‌های چندنمایه‌ای (Multi-Index)
 
-A single monolithic index does not scale. Production systems partition their vector indexes by domain, tenant, or document type to improve retrieval precision and operational isolation.
+یک نمایه یکپارچه و یکپارچه‌ساز (Monolithic) مقیاس‌پذیر نیست. سیستم‌های پروداکشن نمایه‌های برداری خود را بر اساس حوزه، مستأجر (multi-tenant) یا نوع سند پارتیشن‌بندی می‌کنند تا دقت بازیابی و جداسازی عملیاتی را ارتقا دهند.
 
-### Index Partitioning Patterns
+### الگوهای پارتیشن‌بندی نمایه
+
+<div dir="ltr">
 
 ```
 Pattern 1: Per-Domain Indexes
@@ -396,18 +416,22 @@ Pattern 3: Shared Index with Metadata Filtering (Pool Model)
 +-------------------------------------------+
 ```
 
-### When to Use Each Pattern
+</div>
 
-| Pattern | Isolation | Cost | Operational Complexity | Best For |
-|---------|-----------|------|----------------------|----------|
-| **Per-Domain** | Medium | Medium | Medium | Internal tools with distinct knowledge domains |
-| **Per-Tenant Silo** | Strongest | High | High | Enterprise SaaS, regulated industries |
-| **Shared Pool** | Weakest | Low | Low | SMB SaaS, cost-sensitive products |
-| **Hybrid Bridge** | Configurable | Medium | High | Mixed customer base (enterprise + SMB) |
+### چه زمانی از هر الگو استفاده کنیم
 
-### Hierarchical Index Strategy
+| الگو | سطح جداسازی (Isolation) | هزینه | پیچیدگی عملیاتی | مناسب‌ترین برای |
+|---|---|---|---|---|
+| **به ازای حوزه (Per-Domain)** | متوسط | متوسط | متوسط | ابزارهای داخلی با حوزه‌های دانشی متمایز |
+| **سیلوی مجزا به ازای هر مستأجر (multi-tenant) (Per-Tenant Silo)** | قوی‌ترین | بالا | بالا | سرویس‌های SaaS سازمانی، صنایع دارای مقررات سفت‌وسخت |
+| **استخر مشترک (Shared Pool)** | ضعیف‌ترین | پایین | پایین | سرویس‌های SaaS برای کسب‌وکارهای کوچک و متوسط (SMB)، محصولات حساس به هزینه |
+| **پل ترکیبی (Hybrid Bridge)** | قابل تنظیم | متوسط | بالا | پایگاه مشتریان ترکیبی (سازمانی + کسب‌وکارهای کوچک و متوسط) |
 
-For very large corpora, use a two-tier index: a coarse "summary index" for routing, and fine-grained "chunk indexes" for precision.
+### استراتژی نمایه سلسله‌مراتبی (Hierarchical Index Strategy)
+
+برای پیکره‌های متنی بسیار بزرگ، از یک نمایه دو سطحی استفاده کنید: یک "نمایه خلاصه" درشت‌دانه برای مسیریابی، و "نمایه‌های Chunk" ریزدانه برای دستیابی به دقت بالا.
+
+<div dir="ltr">
 
 ```
   Query: "What is the refund policy for enterprise plans?"
@@ -430,13 +454,17 @@ For very large corpora, use a two-tier index: a coarse "summary index" for routi
    Top 5 chunks -> LLM
 ```
 
+</div>
+
 ---
 
-## RAG Pipeline Optimization
+## بهینه‌سازی پایپ‌لاین RAG
 
-A naive sequential RAG pipeline adds latency at every step. Production pipelines use parallelism, batching, and async processing to meet sub-second SLAs.
+یک پایپ‌لاین ترتیبی و ساده RAG در هر مرحله تاخیر (Latency) اضافه می‌کند. پایپ‌لاین‌های پروداکشن از موازی‌سازی، دسته‌بندی (Batching) و پردازش ناهمگام (Async) استفاده می‌کنند تا به توافق‌نامه‌های سطح خدمات (SLA) زیر یک ثانیه دست یابند.
 
-### Sequential vs Optimized Pipeline
+### پایپ‌لاین ترتیبی در برابر بهینه‌شده
+
+<div dir="ltr">
 
 ```
 SEQUENTIAL (Naive):
@@ -454,7 +482,9 @@ With cache miss: ~1050ms (embedding + keyword in parallel)
 With cache hit:  ~5ms
 ```
 
-### Parallel Retrieval
+</div>
+
+### بازیابی موازی (Parallel Retrieval)
 
 ```python
 async def parallel_retrieve(
@@ -483,9 +513,9 @@ async def parallel_retrieve(
     return merged[:20]  # top 20 after fusion
 ```
 
-### Batched Embedding
+### تعبیه‌سازی دسته‌ای (Batched Embedding)
 
-When processing ingestion or multiple queries simultaneously, batch embedding calls to maximize GPU utilization.
+هنگام پردازش ورود داده (Ingestion) یا چندین پرس‌وجو به صورت هم‌زمان، فراخوانی‌های تعبیه‌سازی (Embedding) را دسته‌بندی (Batch) کنید تا میزان بهره‌وری GPU به حداکثر برسد.
 
 ```python
 class EmbeddingBatcher:
@@ -538,9 +568,9 @@ class EmbeddingBatcher:
                 continue
 ```
 
-### Streaming Generation with Early Retrieval
+### تولید جریانی (Streaming Generation) با بازیابی زودهنگام
 
-Start retrieval before the user finishes typing (on pause detection) and stream generation tokens as they are produced.
+پیش از آنکه کاربر تایپ کردن را به پایان برساند (با تشخیص مکث در تایپ) بازیابی را آغاز کنید و Tokenهای تولیدشده را هم‌زمان با تولید، استریم کنید.
 
 ```
 Timeline:
@@ -563,11 +593,13 @@ vs. without speculation:
 
 ---
 
-## Corrective RAG: Self-Checking Retrieval
+## الگوی Corrective RAG: بازیابی خودآزمون (Self-Checking Retrieval)
 
-Corrective RAG (CRAG) adds a verification layer between retrieval and generation. The system evaluates whether retrieved documents actually answer the query before generating a response.
+الگوی Corrective RAG (CRAG) یک لایه راستی‌آزمایی میان بازیابی و تولید پاسخ اضافه می‌کند. سیستم پیش از تولید پاسخ، ارزیابی می‌کند که آیا اسناد بازیابی‌شده واقعاً به پرس‌وجو پاسخ می‌دهند یا خیر.
 
-### The CRAG Decision Loop
+### حلقه تصمیم‌گیری CRAG
+
+<div dir="ltr">
 
 ```
   User Query
@@ -594,9 +626,11 @@ Corrective RAG (CRAG) adds a verification layer between retrieval and generation
                        query
 ```
 
-The AMBIGUOUS branch needs a web search backend, and gateways now sell one. Cloudflare's Web Search API (beta, October 2, 2026) runs inside AI Gateway and returns structured web snippets from Ceramic.ai, Exa and Linkup at the partners' list prices with no markup, billed and logged through the gateway. Whoever supplies it, treat web results as untrusted input: they can carry prompt injection, so put them in a separate, labeled context block and never let them outrank a tenant's own documents in the prompt.
+</div>
 
-### Implementation
+شاخه AMBIGUOUS نیازمند یک بک‌اند جستجوی وب است، و درگاه‌ها (Gateways) اکنون چنین سرویسی ارائه می‌دهند. سرویس Web Search API شرکت Cloudflare (نسخه بتا، ۲ اکتبر ۲۰۲۶) درون AI Gateway اجرا می‌شود و بریده‌های وب (Web Snippets) ساختاریافته را از Ceramic.ai، Exa و Linkup با قیمت پایه و رسمی این همکاران و بدون هیچ کارمزد اضافه‌ای بازمی‌گرداند که صورت‌حساب و لاگ آن‌ها مستقیماً از طریق درگاه مدیریت می‌شود. صرف‌نظر از ارائه‌دهنده، با نتایج وب به عنوان ورودی غیرقابل اعتماد برخورد کنید: آن‌ها می‌توانند حامل تزریق Prompt (Prompt Injection) باشند، بنابراین آن‌ها را در یک بلوک متنی (Context Block) مجزا و برچسب‌گذاری‌شده قرار دهید و هرگز اجازه ندهید اولویت بالاتری نسبت به اسناد اختصاصی هر مستاجر (multi-tenant) در Prompt پیدا کنند.
+
+### پیاده‌سازی
 
 ```python
 class CorrectiveRAG:
@@ -663,24 +697,26 @@ JSON response:"""
         return RelevanceGrade(**json.loads(result))
 ```
 
-### Self-RAG: Critic Tokens
+### الگوی Self-RAG: استفاده از Tokenهای نقاد (Critic Tokens)
 
-Self-RAG extends this pattern with inline critic tokens. The model evaluates its own output at each step:
+الگوی Self-RAG این ساختار را با Tokenهای نقاد درون‌خطی (Inline Critic Tokens) گسترش می‌دهد. مدل در هر مرحله خروجی خود را ارزیابی می‌کند:
 
-1. **[Retrieve]**: Should I retrieve? (Yes/No)
-2. **[Relevant]**: Is retrieved info relevant? (Yes/No)
-3. **[Supported]**: Is my answer supported by the evidence? (Fully/Partially/No)
-4. **[Useful]**: Is this answer actually useful? (Score 1-5)
+۱. **[Retrieve]**: آیا باید بازیابی انجام دهم؟ (بله/خیر)
+۲. **[Relevant]**: آیا اطلاعات بازیابی‌شده مرتبط هستند؟ (بله/خیر)
+۳. **[Supported]**: آیا پاسخ من با شواهد پشتیبانی می‌شود؟ (کامل/جزئی/خیر)
+۴. **[Useful]**: آیا این پاسخ واقعاً مفید است؟ (امتیاز ۱ تا ۵)
 
-If any critic check fails, the model loops back to an earlier step.
+اگر هر یک از بررسی‌های نقادانه با شکست مواجه شود، مدل در یک حلقه به مرحله قبل بازمی‌گردد.
 
 ---
 
-## Adaptive Retrieval
+## بازیابی تطبیقی (Adaptive Retrieval)
 
-Not every query benefits from retrieval. Adaptive retrieval decides dynamically whether to retrieve, how much to retrieve, and from which sources.
+همه پرس‌وجوها لزوماً از بازیابی سود نمی‌برند. بازیابی تطبیقی به صورت پویا تصمیم می‌گیرد که آیا بازیابی انجام شود، چه مقدار اطلاعات بازیابی شود و از کدام منابع واکشی گردد.
 
-### The Retrieval Decision Tree
+### درخت تصمیم‌گیری بازیابی
+
+<div dir="ltr">
 
 ```
   User Query
@@ -707,7 +743,9 @@ answer  +-+--+---------+
              top-10  loop
 ```
 
-### Query Complexity Estimator
+</div>
+
+### تخمین‌گر پیچیدگی پرس‌وجو (Query Complexity Estimator)
 
 ```python
 class AdaptiveRetriever:
@@ -752,9 +790,9 @@ class AdaptiveRetriever:
         return any(re.search(p, query.lower()) for p in single_hop_patterns)
 ```
 
-### Token-Budget Aware Retrieval
+### بازیابی آگاه از بودجه Token (Token-Budget Aware Retrieval)
 
-Scale the retrieval effort based on available token budget and expected response complexity.
+میزان تلاش بازیابی را بر اساس بودجه Token موجود و پیچیدگی مورد انتظار برای پاسخ تنظیم کنید (مقیاس‌بندی کنید).
 
 ```python
 def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
@@ -773,17 +811,17 @@ def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
         return {"context_tokens": 3500, "generation_tokens": 500, "top_k": 15}
 ```
 
-### Adaptive Effort as a Managed Feature
+### تلاش تطبیقی به عنوان یک قابلیت مدیریت‌شده (Managed Feature)
 
-Managed search services now ship this escalation pattern as configuration. Azure AI Search knowledge bases went GA in REST API 2026-04-01 (extractive retrieval; query planning and answer synthesis remain preview), and the 2026-08-01-preview API adds an `auto` effort (`"retrievalReasoningEffort": {"kind": "auto"}`, which needs a model on the knowledge base and returns 400 on earlier API versions): run a lightweight retrieval pass first and escalate to LLM query planning, up to medium effort, only when grounding is insufficient. The same preview streams retrieve results over server-sent events and lets you bypass reranking per knowledge source. If you build the router yourself, copy the shape: the cheap path must be the default, and the escalation trigger must be a measured grounding signal, not a guess about query complexity.
+سرویس‌های جستجوی مدیریت‌شده اکنون این الگوی ارتقا و تشدید (Escalation) را در قالب پیکربندی ارائه می‌دهند. پایگاه‌های دانش Azure AI Search در نسخه REST API 2026-04-01 به صورت عمومی در دسترس (GA) قرار گرفتند (بازیابی استخراجی؛ برنامه‌ریزی پرس‌وجو و ترکیب پاسخ همچنان در حالت پیش‌نمایش هستند)، و در API پیش‌نمایش 2026-08-01 قابلیت تلاش `auto` (`"retrievalReasoningEffort": {"kind": "auto"}` اضافه شده است که به یک مدل روی پایگاه دانش نیاز دارد و در نسخه‌های قبلی API خطای 400 برمی‌گرداند): ابتدا یک دور بازیابی سبک اجرا می‌شود و ارتقا به برنامه‌ریزی پرس‌وجو توسط LLM (تا سطح تلاش متوسط) تنها زمانی صورت می‌گیرد که اتصال به زمینه (Grounding) ناکافی باشد. همین نسخه پیش‌نمایش، نتایج بازیابی را از طریق Server-Sent Events استریم می‌کند و امکان دور زدن رتبه‌بندی مجدد (Reranking) را به ازای هر منبع دانش فراهم می‌سازد. اگر مسیریاب (Router) را خودتان پیاده‌سازی می‌کنید، از همین ساختار الگوبرداری کنید: مسیر کم‌هزینه باید حالت پیش‌فرض باشد، و محرک ارتقای مسیر باید یک سیگنال سنجیده‌شده از Grounding باشد، نه حدس و گمانی درباره پیچیدگی پرس‌وجو.
 
 ---
 
-## Cost Optimization Patterns
+## الگوهای بهینه‌سازی هزینه
 
-At scale, RAG costs compound across embedding, retrieval, reranking, and generation. Unoptimized systems can spend 10-50x more than necessary.
+در مقیاس بالا، هزینه‌های RAG در مراحل مختلف از جمله Embedding، بازیابی، رتبه‌بندی مجدد (Reranking) و تولید پاسخ با یکدیگر ترکیب و انباشته می‌شوند. سیستم‌های غیربهینه می‌توانند ۱۰ تا ۵۰ برابر بیشتر از حد نیاز هزینه مصرف کنند.
 
-### Cost Breakdown of a Typical RAG Query
+### تفکیک هزینه‌های یک پرس‌وجوی معمول در RAG
 
 ```
 Component         Cost per Query    % of Total    Optimization
@@ -797,7 +835,9 @@ Total (naive)     ~$0.001-0.01
 Total (optimized) ~$0.0002-0.002    (5-10x reduction)
 ```
 
-### Tiered Model Strategy
+### استراتژی مدل‌های لایه‌بندی‌شده (Tiered Model Strategy)
+
+<div dir="ltr">
 
 ```
                 Query Complexity
@@ -815,11 +855,13 @@ Total (optimized) ~$0.0002-0.002    (5-10x reduction)
              +----------+----------+----------+
 ```
 
-Costs are per request at 2.6K input and 300 output tokens, at November 2, 2026 list prices (unchanged since October 1), before reasoning tokens. Note where the spread is: Claude Opus 5.5 ($4 / $20) is only 2x Sonnet 5.5 ($2 / $10), while Sonnet 5.5 or GPT-6 Sol is 20x GPT-6 Luna. Most of the routing value is now at the small/mid boundary, so spend classifier effort there; the mid/large boundary barely pays for its misroutes.
+</div>
 
-### Progressive Detail Pattern
+هزینه‌ها به ازای هر درخواست با ۲.۶ هزار Token ورودی و ۳۰۰ Token خروجی، بر اساس قیمت‌های رسمی ۲ نوامبر ۲۰۲۶ (بدون تغییر از ۱ اکتبر) و پیش از احتساب Tokenهای استدلال (Reasoning Tokens) محاسبه شده‌اند. به تفاوت و گستردگی قیمت‌ها توجه کنید: Claude Opus 5.5 (\$4 / \$20) تنها ۲ برابر Sonnet 5.5 (\$2 / \$10) قیمت دارد، در حالی که Sonnet 5.5 یا GPT-6 Sol بیست (۲۰) برابر GPT-6 Luna هستند. بخش عمده ارزش و صرفه‌جویی حاصل از مسیریابی اکنون در مرز میان مدل‌های کوچک و متوسط (Small/Mid) قرار دارد، بنابراین تلاش و دقت طبقه‌بند (Classifier) را روی این بخش متمرکز کنید؛ چرا که مرز میان مدل‌های متوسط و بزرگ (Mid/Large) به سختی هزینه‌های ناشی از مسیریابی‌های اشتباه خود را جبران می‌کند.
 
-Answer with minimal retrieval first. Only escalate if the user asks follow-up questions or if confidence is low.
+### الگوی جزئیات تدریجی (Progressive Detail Pattern)
+
+در ابتدا با حداقل میزان بازیابی پاسخ دهید. ارتقای سطح بازیابی را فقط در صورتی انجام دهید که کاربر سوالات تکمیلی بپرسد یا سطح اطمینان پایین باشد.
 
 ```python
 class ProgressiveRAG:
@@ -857,7 +899,7 @@ class ProgressiveRAG:
         return await self.agentic_pipeline.run(query)  # Cost: ~$0.05
 ```
 
-### Cost Guardrails
+### گاردریل‌های هزینه (Cost Guardrails)
 
 ```python
 class CostGuard:
@@ -884,28 +926,30 @@ class CostGuard:
         return True
 ```
 
-### Build vs Buy: Managed RAG Unit Prices
+### ساختن در برابر خریدن (Build vs Buy): قیمت‌های واحد در RAG مدیریت‌شده
 
-Managed retrieval now publishes per-query prices, which turns build-versus-buy into arithmetic. Cloudflare AI Search went GA on October 1, 2026: Workers AI, Vectorize, R2 and Browser Run underneath, vector and keyword search in parallel with fusion and optional reranking, optional OCR for scanned PDFs, and image retrieval through Qwen3-VL-Embedding. On November 2, 2026, Cloudflare postponed billing from November 1 to December 1, 2026 (prices and included usage unchanged, no charge for earlier usage) and changed the default sync interval from 6 hours to 24 hours. Set the interval explicitly (anything from 15 minutes to 24 hours) if your freshness SLO is tighter than a day, or new documents can stay unsearchable until the next sync. The meters:
+سرویس‌های مدیریت‌شده بازیابی اکنون قیمت‌گذاری به ازای هر پرس‌وجو را منتشر می‌کنند که این امر تصمیم‌گیری میان ساخت یا خرید (Build vs Buy) را به یک محاسبه ریاضی ساده تبدیل می‌کند. سرویس Cloudflare AI Search در ۱ اکتبر ۲۰۲۶ به عرضه عمومی (GA) رسید: با زیرساخت Workers AI، Vectorize، R2 و Browser Run در پشت صحنه، جستجوی برداری و کلیدواژه‌ای به صورت موازی همراه با ادغام (Fusion) و رتبه‌بندی مجدد (Reranking) اختیاری، OCR اختیاری برای PDFهای اسکن‌شده، و بازیابی تصویر از طریق Qwen3-VL-Embedding. در ۲ نوامبر ۲۰۲۶، شرکت Cloudflare آغاز صدور صورت‌حساب را از ۱ نوامبر به ۱ دسامبر ۲۰۲۶ به تعویق انداخت (قیمت‌ها و حجم مصرف رایگان بدون تغییر ماندند، و هیچ هزینه‌ای برای استفاده‌های پیشین دریافت نمی‌شود) و بازه پیش‌فرض همگام‌سازی را از ۶ ساعت به ۲۴ ساعت تغییر داد. اگر توافق سطح خدمات (SLO) مربوط به تازگی داده‌های شما کمتر از یک روز است، این بازه زمانی را به صورت صریح (هر مقداری از ۱۵ دقیقه تا ۲۴ ساعت) تنظیم کنید؛ در غیر این صورت اسناد جدید ممکن است تا زمان همگام‌سازی بعدی غیرقابل جستجو باقی بمانند. معیارهای سنجش هزینه:
 
-| Item | Price | Free per month (every Workers plan) |
+| آیتم | قیمت | سهمیه رایگان ماهانه (در تمام پلن‌های Workers) |
 |------|-------|-------------------------------------|
-| Ingestion | $0.75 per 1M tokens, plus $0.50 per 1M for image processing | 5M tokens |
-| Storage | $2.00 per GB-month | 10 GB |
-| Semantic queries (vector or hybrid) | $0.75 per 1K | 1,000 |
-| Full-text queries | $0.10 per 1K | 1,000 |
+| ورود و پردازش داده (Ingestion) | \$0.75 به ازای هر ۱ میلیون Token، به علاوه \$0.50 به ازای هر ۱ میلیون برای پردازش تصویر | ۵ میلیون Token |
+| ذخیره‌سازی (Storage) | \$2.00 به ازای هر گیگابایت-ماه | ۱۰ گیگابایت |
+| پرس‌وجوهای معنایی (برداری یا ترکیبی) | \$0.75 به ازای هر ۱ هزار | ۱,۰۰۰ |
+| پرس‌وجوهای تمام‌متن (Full-text) | \$0.10 به ازای هر ۱ هزار | ۱,۰۰۰ |
 
-At 1M hybrid queries a month, retrieval costs $750: far less than the engineering time to run your own stack. At 1,000 QPS (about 2.6B queries a month) it is about $1.9M a month for retrieval alone, which pays for a lot of self-hosted vector DB nodes and an on-call rotation. The crossover sits in the tens of millions of queries per month; compute it with your own infrastructure and staffing costs. Other vendors are packaging the same stack: Cohere Compass Cloud (private beta, September 25, 2026) bundles parsing, dense plus sparse embedding, permission-aware retrieval and reranking behind an MCP server that agents use to narrow the corpus step by step.
+با ۱ میلیون پرس‌وجوی ترکیبی در ماه، هزینه بازیابی \$750 خواهد بود: بسیار کمتر از هزینه زمان مهندسی لازم برای راه‌اندازی و نگهداری استک اختصاصی خودتان. در نرخ ۱,۰۰۰ QPS (حدود ۲.۶ میلیارد پرس‌وجو در ماه) این هزینه فقط برای بازیابی به حدود \$1.9M در ماه می‌رسد، که این مبلغ می‌تواند هزینه نودهای متعدد پایگاه داده برداری (Vector Database) میزبانی‌شده توسط خودتان (Self-hosted) و شیفت‌های آماده‌باش (On-call) را پوشش دهد. نقطه سربه‌سر (Crossover) در محدوده ده‌ها میلیون پرس‌وجو در ماه قرار دارد؛ این نقطه را با در نظر گرفتن هزینه‌های زیرساخت و نیروی انسانی خود محاسبه کنید. سایر ارائه‌دهندگان نیز پکیج‌های مشابهی از این استک را عرضه می‌کنند: سرویس Cohere Compass Cloud (نسخه بتای خصوصی، ۲۵ سپتامبر ۲۰۲۶) امکانات پارس، Embedding متراکم و پراکنده (Dense + Sparse)، بازیابی آگاه از سطوح دسترسی، و رتبه‌بندی مجدد را در قالب یک سرور MCP بسته‌بندی کرده است که Agentها برای محدود کردن گام‌به‌گام پیکره متنی از آن استفاده می‌کنند.
 
-**Lifecycle risk is the other half of "buy".** OpenAI shut down the Assistants API on August 26, 2026. Vector stores survived: the Responses API `file_search` tool takes the same `vector_store_ids` with `max_num_results` and metadata filters, so indexes needed no re-ingestion, but thread and run orchestration code had to be rewritten. Keep retrieval storage and orchestration separable so either can move without the other.
+**ریسک چرخه عمر محصول (Lifecycle Risk)، نیمه دیگر تصمیم "خریدن" است.** شرکت OpenAI در ۲۶ اوت ۲۰۲۶ به کار Assistants API پایان داد. ذخیره‌سازهای برداری (Vector Stores) پابرجا ماندند: ابزار `file_search` در Responses API همان شناسه `vector_store_ids` را به همراه `max_num_results` و فیلترهای فراداده (Metadata) می‌پذیرد، بنابراین ایندکس‌ها نیازی به ورود مجدد اطلاعات (Re-ingestion) نداشتند، اما کدهای ارکستراسیون Thread و Run باید بازنویسی می‌شدند. لایه ذخیره‌سازی بازیابی و ارکستراسیون را تفکیک‌پذیر نگه دارید تا هر یک بتواند بدون نیاز به دیگری تغییر کند یا منتقل شود.
 
 ---
 
-## Failure Modes and Debugging
+## حالت‌های شکست و اشکال‌زدایی (Failure Modes and Debugging)
 
-Production RAG systems have compounding failure probabilities. With 95% reliability at each of three stages, overall reliability drops to 0.95 x 0.95 x 0.95 = 0.86. Understanding failure modes is essential.
+سیستم‌های RAG در محیط عملیاتی (Production) با احتمال شکست فزاینده و ترکیبی مواجه هستند. با قابلیت اطمینان ۹۵٪ در هر یک از سه مرحله، قابلیت اطمینان کلی به 0.95 × 0.95 × 0.95 = 0.86 افت می‌کند. درک حالت‌های شکست امری حیاتی است.
 
-### The RAG Failure Taxonomy
+### طبقه‌بندی حالت‌های شکست در RAG (Taxonomy)
+
+<div dir="ltr">
 
 ```
 +------------------------------------------------------------------+
@@ -940,16 +984,18 @@ Production RAG systems have compounding failure probabilities. With 95% reliabil
 +------------------------------------------------------------------+
 ```
 
-### Many Retrieval Failures Are Chunking Failures
+</div>
 
-The retriever can only return chunks the chunker created. A fact split across two chunks, or a chunk stripped of the section header that gave it meaning, cannot be retrieved however good the embeddings and reranker are. So when the checklist below points at retrieval, inspect the chunks before you swap the embedding model. Common chunking failures:
+### بسیاری از شکست‌های بازیابی ناشی از شکست‌های Chunking هستند
 
-- **Chunk too small**: Loses context. "It costs $200": what costs $200?
-- **Chunk too large**: Dilutes relevance. A 2000-token chunk where only 1 sentence is relevant.
-- **Boundary splits**: A table or list is split across two chunks.
-- **Missing metadata**: Chunks lack headers, document titles, or section context.
+موتور بازیابی تنها می‌تواند Chunkهایی را بازگرداند که توسط Chunk-ساز (Chunker) ایجاد شده‌اند. واقعیتی که میان دو Chunk تقسیم شده باشد، یا Chunkی که عنوان بخش معنابخش به آن حذف شده باشد، فارغ از میزان کیفیت Embeddingها و بازرتبه‌بند (Reranker)، قابل بازیابی نخواهد بود. بنابراین زمانی که چک‌لیست زیر به بازیابی اشاره می‌کند، پیش از تعویض مدل Embedding، ابتدا Chunkها را بررسی کنید. شکست‌های رایج در Chunking:
 
-### Debugging Checklist
+- **Chunk بیش از حد کوچک**: بافتار (Context) از دست می‌رود. "هزینه آن \$200 است": هزینه چه چیزی \$200 است؟
+- **Chunk بیش از حد بزرگ**: ارتباط معنایی رقیق و کم‌اثر می‌شود. یک Chunk با ۲۰۰۰ Token که تنها ۱ جمله آن مرتبط است.
+- **تقسیم نامناسب مرزها (Boundary splits)**: یک جدول یا فهرست میان دو Chunk تقسیم شده است.
+- **فقدان فراداده (Missing metadata)**: Chunkها فاقد عناوین سربرگ، نام سند یا زمینه بخش هستند.
+
+### چک‌لیست اشکال‌زدایی
 
 ```
 When RAG quality drops, investigate in this order:
@@ -975,23 +1021,25 @@ When RAG quality drops, investigate in this order:
    [ ] Verify system prompt is not conflicting with retrieved context
 ```
 
-### Agentic RAG Failure Modes
+### حالت‌های شکست در Agentic RAG
 
-Agentic RAG introduces three additional failure patterns:
+معماری Agentic RAG سه الگوی شکست اضافی به همراه دارد:
 
-1. **Retrieval Thrash**: Agent repeatedly retrieves without converging on an answer. Traces show near-duplicate queries and oscillating search terms. Fix: limit to 3-5 retrieval iterations and track query uniqueness per session.
+۱. **کشمکش در بازیابی (Retrieval Thrash)**: Agent بدون همگرایی روی یک پاسخ، مکرراً عملیات بازیابی را تکرار می‌کند. لاگ‌های ردگیری (Traces)، پرس‌وجوهای تقریباً تکراری و عبارات جستجوی نوسانی را نشان می‌دهند. راه‌حل: محدود کردن بازیابی به ۳ تا ۵ تکرار و پایش یکتا بودن پرس‌وجوها در هر نشست (Session).
 
-2. **Tool Storms**: Agent calls tools excessively in a single turn. Fix: set per-query tool call limits and cost ceilings.
+۲. **طوفان ابزارها (Tool Storms)**: Agent در یک نوبت به شکلی افراطی ابزارها را فراخوانی می‌کند. راه‌حل: تعیین سقف مجاز برای فراخوانی ابزارها به ازای هر پرس‌وجو و مشخص کردن سقف هزینه.
 
-3. **Context Bloat**: Agent accumulates too many retrieved chunks, overflowing the context window. Fix: implement a sliding window that drops the oldest chunks when context exceeds threshold.
+۳. **تورم بافتار (Context Bloat)**: Agent بیش از حد Chunkهای بازیابی‌شده را انباشته می‌کند که باعث سرریز پنجره بافتار (Context Window) می‌شود. راه‌حل: پیاده‌سازی پنجره لغزان (Sliding Window) که با فراتر رفتن حجم زمینه از آستانه مجاز، قدیمی‌ترین Chunkها را حذف کند.
 
 ---
 
-## Monitoring and Alerting
+## پایش و هشداردهی (Monitoring and Alerting)
 
-Production RAG requires dedicated monitoring beyond standard application metrics. Treat systematic evaluation as a day-one requirement rather than the "ship first, eval later" pattern of earlier RAG generations; see [RAG Evaluation Patterns](13-rag-evaluation-patterns.md) for the metrics and judge tiers.
+سیستم‌های RAG در محیط عملیاتی به پایشی اختصاصی فراتر از معیارهای استاندارد برنامه‌ها نیاز دارند. ارزیابی ساختاریافته را به عنوان یک ضرورت از روز اول در نظر بگیرید، نه به عنوان الگوی "ابتدا تحویل بده، بعداً ارزیابی کن" که در نسل‌های پیشین RAG رواج داشت؛ برای مشاهده معیارها و لایه‌های قضاوت‌کننده، به [الگوهای ارزیابی RAG](13-rag-evaluation-patterns.md) مراجعه کنید.
 
-### The RAG Monitoring Stack
+### پشته پایش RAG (The RAG Monitoring Stack)
+
+<div dir="ltr">
 
 ```
 +--------------------------------------------------------------------+
@@ -1018,21 +1066,23 @@ Production RAG requires dedicated monitoring beyond standard application metrics
 +--------------------------------------------------------------------+
 ```
 
-### Key Metrics and Alerts
+</div>
 
-| Metric | Target | Alert Threshold | Action |
+### معیارها و هشدارهای کلیدی
+
+| معیار | هدف (Target) | آستانه هشدار (Alert Threshold) | اقدام (Action) |
 |--------|--------|-----------------|--------|
-| **p95 Latency** | <2s | >5s | Scale retrieval infra |
-| **Cache Hit Rate** | >40% | <20% | Tune similarity threshold |
-| **Retrieval Precision@5** | >0.7 | <0.5 | Re-evaluate chunking |
-| **Faithfulness** | >0.9 | <0.8 | Audit generation prompts |
-| **Hallucination Rate** | <5% | >10% | Tighten grounding prompt |
-| **Empty Retrieval Rate** | <2% | >5% | Check index coverage |
-| **Cost per Query** | <$0.005 | >$0.02 | Review model tiering |
+| **تاخیر (Latency) p95** | <2s | >5s | مقیاس‌دهی زیرساخت بازیابی |
+| **نرخ اصابت کش (Cache Hit Rate)** | >40% | <20% | تنظیم آستانه شباهت |
+| **دقت بازیابی (Retrieval Precision@5)** | >0.7 | <0.5 | ارزیابی مجدد Chunking |
+| **وفاداری به منبع (Faithfulness)** | >0.9 | <0.8 | ممیزی Promptهای تولید پاسخ |
+| **نرخ توهم (Hallucination Rate)** | <5% | >10% | سخت‌گیرانه‌تر کردن Prompt اتصال به زمینه (Grounding) |
+| **نرخ بازیابی تهی (Empty Retrieval Rate)** | <2% | >5% | بررسی پوشش ایندکس |
+| **هزینه به ازای هر پرس‌وجو** | <\$0.005 | >\$0.02 | بازنگری در لایه‌بندی مدل‌ها |
 
-### End-to-End Trace Logging
+### لاگ‌گیری ردگیری سرتاسری (End-to-End Trace Logging)
 
-Every query should produce a trace that links all pipeline stages with a single request ID.
+هر پرس‌وجو باید یک ردگیری (Trace) تولید کند که تمام مراحل پایپ‌لاین را با یک شناسه درخواست (Request ID) واحد به یکدیگر متصل نماید.
 
 ```python
 @dataclass
@@ -1059,9 +1109,9 @@ class RAGTrace:
         return asdict(self)
 ```
 
-### Automated Quality Sampling
+### نمونه‌برداری خودکار کیفیت
 
-Run offline evaluation on a sample of production queries to detect quality drift before users notice.
+ارزیابی آفلاین را روی نمونه‌ای از پرس‌وجوهای محیط عملیاتی (Production) اجرا کنید تا پیش از آنکه کاربران متوجه شوند، افت و تغییر کیفیت (Quality Drift) را شناسایی نمایید.
 
 ```python
 async def nightly_quality_check(sample_size: int = 200):
@@ -1093,11 +1143,11 @@ async def nightly_quality_check(sample_size: int = 200):
 
 ---
 
-## Scaling to Millions of Documents
+## مقیاس‌پذیری تا میلیون‌ها سند
 
-Moving from thousands to millions of documents introduces challenges in indexing throughput, retrieval latency, and index management.
+گذار از هزاران سند به میلیون‌ها سند، چالش‌هایی را در توان عملیاتی (Throughput) نمایه‌سازی، تاخیر (Latency) بازیابی و مدیریت نمایه به همراه دارد.
 
-### Scaling Dimensions
+### ابعاد مقیاس‌پذیری
 
 ```
 Documents:   1K  -->  100K  -->  1M  -->  100M
@@ -1111,7 +1161,9 @@ Strategy:    Single   Single    Sharded   Distributed
                       Replicas             Tiered
 ```
 
-### Ingestion Pipeline at Scale
+### خط لوله ورود داده در مقیاس بزرگ
+
+<div dir="ltr">
 
 ```
   Document Sources
@@ -1142,18 +1194,20 @@ Strategy:    Single   Single    Sharded   Distributed
 +-------------------+
 ```
 
-### Sharding Strategies
+</div>
 
-| Strategy | How It Works | Pros | Cons |
+### استراتژی‌های شاردینگ (Sharding Strategies)
+
+| استراتژی | نحوه کارکرد | مزایا | معایب |
 |----------|-------------|------|------|
-| **Hash-based** | shard = hash(doc_id) % N | Even distribution | Cross-shard queries needed |
-| **Range-based** | shard by date range | Time-based queries fast | Uneven shard sizes |
-| **Domain-based** | shard by document type | No cross-shard queries | Unbalanced domains |
-| **Tenant-based** | shard by tenant_id | Perfect isolation | Many small shards |
+| **مبتنی بر هش (Hash-based)** | `shard = hash(doc_id) % N` | توزیع یکنواخت | نیاز به پرس‌وجوهای بین‌شاردی (Cross-shard) |
+| **مبتنی بر بازه (Range-based)** | شاردبندی بر اساس بازه زمانی | سرعت بالای پرس‌وجوهای مبتنی بر زمان | اندازه‌های نامتقارن شاردها |
+| **مبتنی بر دامنه (Domain-based)** | شاردبندی بر اساس نوع سند | بدون نیاز به پرس‌وجوی بین‌شاردی | دامنه‌های نامتعادل |
+| **مبتنی بر مستأجر (Tenant-based in multi-tenant)** | شاردبندی بر اساس `tenant_id` | جداسازی بی‌نقص | تعداد زیادی شارد کوچک |
 
-### Index Maintenance
+### نگهداری نمایه (Index Maintenance)
 
-At millions of documents, index maintenance becomes a critical operational concern.
+در مقیاس میلیون‌ها سند، نگهداری نمایه به یک دغدغه عملیاتی حیاتی تبدیل می‌شود.
 
 ```python
 class IndexMaintenanceScheduler:
@@ -1185,23 +1239,25 @@ class IndexMaintenanceScheduler:
                 alert(f"Shard {shard.id} unhealthy: {health.reason}")
 ```
 
-### Re-Embedding Without Downtime
+### بازتولید Embedding بدون توقف سرویس (Re-Embedding Without Downtime)
 
-"New embedding model means a full re-index" is no longer the only answer:
+این باور که «مدل Embedding جدید به معنای نمایه‌سازی مجدد کامل است» دیگر تنها پاسخ موجود نیست:
 
-- **Shared embedding spaces.** The Voyage 4 family (voyage-4-large $0.12, voyage-4 $0.06, voyage-4-lite $0.02 per 1M tokens, plus open-weight voyage-4-nano) shares one space, as do Cohere's `embed-v5.0-pro` and `-fast` (September 30, 2026). Index once with the large model and query with the small one; you can change the query-side model without touching the index. Qdrant's Constella research preview (September 29, 2026) pushes the idea further: a fixed Stella (400M) document index with swappable query encoders, where the 34.5M-parameter Constella Nano keeps about 91% of Stella's BEIR nDCG@10 at 12x lower CPU latency (vendor-reported).
-- **Online backfill.** When the document side must change, add a second vector field, backfill it in the background, shadow-query both on the golden set, then cut over. Milvus 3.0 (July 2026) supports adding, backfilling and dropping columns online, which makes this a hot path over hundreds of millions of rows.
-- **Embedding inside the database.** MongoDB Atlas Automated Embedding (GA August 13, 2026) and turbopuffer native embedding (GA September 29, 2026) remove the sync pipeline, but they tie the index to a vendor-chosen model version. Ask how model upgrades and re-embedding are scheduled and billed before adopting.
+- **فضاهای Embedding مشترک (Shared embedding spaces).** خانواده Voyage 4 (مدل‌های voyage-4-large با قیمت \$0.12، مدل voyage-4 با قیمت \$0.06 و مدل voyage-4-lite با قیمت \$0.02 به ازای هر ۱ میلیون Token، به‌علاوه مدل وزن‌باز voyage-4-nano) همگی از یک فضا به صورت مشترک استفاده می‌کنند؛ همان‌طور که مدل‌های `embed-v5.0-pro` و `-fast` از شرکت Cohere (در ۳۰ سپتامبر ۲۰۲۶) این‌گونه هستند. یک بار با مدل بزرگ نمایه‌سازی کنید و پرس‌وجوها را با مدل کوچک انجام دهید؛ می‌توانید مدل سمت پرس‌وجو را بدون دستکاری نمایه تغییر دهید. پیش‌نمایش تحقیقاتی Constella از شرکت Qdrant (در ۲۹ سپتامبر ۲۰۲۶) این ایده را فراتر می‌برد: یک نمایه سند ثابت Stella (با ۴۰۰ میلیون پارامتر) با رمزگذارهای پرس‌وجو (Query Encoders) قابل تعویض، که در آن مدل ۳۴٫۵ میلیون پارامتری Constella Nano حدود ۹۱٪ از معیار BEIR nDCG@10 مدل Stella را با ۱۲ برابر تاخیر (Latency) کمتر در CPU (طبق گزارش ارائه‌دهنده) حفظ می‌کند.
+- **پر کردن مجدد آنلاین (Online backfill).** هنگامی که بخش اسناد باید تغییر کند، یک فیلد برداری دوم اضافه کنید، آن را در پس‌زمینه پر کنید (Backfill)، هر دو را به صورت آزمایشی در سایه (Shadow-query) روی مجموعه طلایی ارزیابی نمایید و سپس عملیات سوئیچ و انتقال نهایی (Cut over) را انجام دهید. نرم‌افزار Milvus 3.0 (ژوئیه ۲۰۲۶) از افزودن، پر کردن و حذف آنلاین ستون‌ها پشتیبانی می‌کند که این قابلیت، آن را به مسیری پرسرعت و بهینه (Hot path) روی صدها میلیون سطر تبدیل کرده است.
+- **تولید Embedding درون پایگاه داده (Embedding inside the database).** قابلیت Automated Embedding در MongoDB Atlas (عرضه عمومی در ۱۳ اوت ۲۰۲۶) و Embedding بومی turbopuffer (عرضه عمومی در ۲۹ سپتامبر ۲۰۲۶) خط لوله همگام‌سازی را حذف می‌کنند، اما نمایه را به نسخه مدلی که توسط ارائه‌دهنده انتخاب شده گره می‌زنند. پیش از به‌کارگیری، بررسی کنید که ارتقای مدل‌ها و بازتولید Embedding چگونه زمان‌بندی شده و هزینه آن چگونه محاسبه می‌شود.
 
-### Memory Tiers and Quantization
+### سطوح حافظه و کوانتیزاسیون (Memory Tiers and Quantization)
 
-At 1,536 float32 dimensions a vector is 6 KB, so a billion chunks is about 6 TB before the graph. Rotation-based low-bit quantization is the main lever, and it is **opt-in or preview, not a default**: Qdrant added Hadamard-rotated TurboQuant in 1.18, a 4-bit-only Turbo4 storage type in 1.19 (9x smaller than float32 plus a 4-bit copy, at the cost of peak recall, because the originals are gone), and `turbo8` and `turbo16` datatypes in 1.20; Weaviate 1.39 previews 4-bit Rotational Quantization (6,144 bytes to 784 for a 1,536-dim vector), and 1.40 adds a centered RQ4 variant. Qdrant 1.19 also replaced `on_disk` / `always_ram` with one `memory` setting (pinned, cached or cold) across vectors, HNSW, sparse and payload indexes.
+در ابعاد ۱۵۳۶ با دقت float32، حجم هر بردار ۶ کیلوبایت است، بنابراین یک میلیارد Chunk پیش از ساخت گراف حدود ۶ ترابایت فضا نیاز دارد. کوانتیزاسیون کم‌بیت مبتنی بر چرخش (Rotation-based low-bit quantization) اهرم اصلی است، و قابلیتی است که **باید صریحاً فعال شود یا در حالت پیش‌نمایش قرار دارد، نه پیش‌فرض**: Qdrant قابلیت TurboQuant با چرخش هادامارد (Hadamard-rotated) را در نسخه ۱.۱۸، یک نوع ذخیره‌سازی اختصاصی ۴ بیتی به نام Turbo4 را در نسخه ۱.۱۹ (۹ برابر کوچک‌تر از float32 به همراه یک کپی ۴ بیتی، به قیمت کاهش اوج Recall، چرا که داده‌های اصلی حذف می‌شوند)، و انواع داده `turbo8` و `turbo16` را در ۱.۲۰ اضافه کرد؛ نسخه ۱.۳۹ از Weaviate پیش‌نمایشی از کوانتیزاسیون چرخشی ۴ بیتی (Rotational Quantization، کاهش حجم از ۶,۱۴۴ بایت به ۷۸۴ بایت برای یک بردار ۱۵۳۶ بعدی) را ارائه داد و نسخه ۱.۴۰ گونه متمرکز RQ4 را به آن افزود. همچنین Qdrant 1.19 تنظیمات `on_disk` / `always_ram` را با یک تنظیم واحد تحت عنوان `memory` (شامل حالت‌های پین‌شده/pinned، کَش‌شده/cached یا سرد/cold) در سراسر بردارهای HNSW، نمایه‌های اسپارس (Sparse) و Payload جایگزین کرد.
 
-The production pattern: quantized vectors pinned in RAM for candidate search, full-precision originals cold on disk for rescoring the top candidates, and ANN recall measured against exact kNN after every quantization change (see [RAG Evaluation Patterns](13-rag-evaluation-patterns.md#separate-the-embedder-from-the-index)).
+الگوی محیط عملیاتی: بردارهای کوانتیزه‌شده برای جستجوی کاندیداها در RAM پین می‌شوند، نسخه‌های اصلی با دقت کامل (Full-precision) برای بازامتیازدهی (Rescoring) کاندیداهای برتر به صورت سرد روی دیسک باقی می‌مانند، و میزان Recall الگوریتم ANN پس از هر تغییر کوانتیزاسیون در برابر kNN دقیق سنجیده می‌شود (ببینید: [الگوهای ارزیابی RAG](13-rag-evaluation-patterns.md#separate-the-embedder-from-the-index)).
 
-### Read Replicas for Retrieval
+### رپلیکاهای خواندن برای بازیابی (Read Replicas for Retrieval)
 
-Separate read and write paths so that ingestion never degrades query latency.
+مسیرهای خواندن و نوشتن را تفکیک کنید تا ورود داده هرگز باعث افت تاخیر (Latency) پرس‌وجو نشود.
+
+<div dir="ltr">
 
 ```
   Ingestion Pipeline              Query Pipeline
@@ -1219,13 +1275,17 @@ Separate read and write paths so that ingestion never degrades query latency.
                                   +-----------+
 ```
 
+</div>
+
 ---
 
-## Multi-Tenant RAG Isolation
+## جداسازی چندمستأجری در RAG (Multi-Tenant RAG Isolation)
 
-Multi-tenant RAG is the most common production pattern for SaaS products. Getting isolation wrong means data leaks between tenants, which is a critical security failure.
+سیستم RAG چندمستأجری (Multi-Tenant RAG) متداول‌ترین الگوی محیط عملیاتی برای محصولات SaaS است. پیاده‌سازی نادرست جداسازی به معنای نشت داده‌ها میان مستأجران (tenants in multi-tenant) است که یک رخنه امنیتی حیاتی به شمار می‌رود.
 
-### Three Isolation Models
+### سه مدل جداسازی (Three Isolation Models)
+
+<div dir="ltr">
 
 ```
 SILO MODEL (Strongest Isolation)
@@ -1263,7 +1323,9 @@ BRIDGE MODEL (Hybrid)
 Cost: $$      Best for: Mixed customer base
 ```
 
-### Security: Defense in Depth
+</div>
+
+### امنیت: دفاع در عمق (Defense in Depth)
 
 ```python
 class TenantIsolatedRetriever:
@@ -1303,22 +1365,24 @@ class TenantIsolatedRetriever:
         return chunks
 ```
 
-### Leaks the Tenant Filter Does Not Stop
+### رخنه‌هایی که فیلتر مستأجر (Tenant Filter in multi-tenant) مانع آن‌ها نمی‌شود
 
-A mandatory `tenant_id` filter stops cross-tenant *results*. It does not stop cross-tenant *signals*:
+یک فیلتر اجباری `tenant_id` مانع از نمایش *نتایج* بین‌مستأجری می‌شود؛ اما جلوی *سیگنال‌های* بین‌مستأجری (cross-tenant signals in multi-tenant) را نمی‌گیرد:
 
-| Channel | How it leaks | Mitigation |
-|---------|--------------|------------|
-| **Shared BM25 statistics** | In a pooled index, IDF is computed over every tenant's documents, so one tenant's vocabulary shifts another's ranking and scores reflect corpus-wide term frequencies | Per-tenant IDF (Qdrant 1.19 added it for sparse/BM25 search), or a siloed lexical index |
-| **Inference prefix cache** | On self-hosted engines a shared prefix cache is a timing oracle for whether another tenant sent the same prefix | Per-tenant cache salt on every code path. vLLM GHSA-935w-9g4m-p28p (fixed in 0.30.0) was one path that dropped the salt; run vLLM 0.32.0 or later, the current security floor (it also fixes CVE-2026-115912 and CVE-2026-115915) |
-| **Semantic response cache** | An answer built from Tenant A's documents is served to Tenant B's similar query | Key the cache by tenant and ACL set, never globally |
-| **Engine vulnerabilities** | Bugs reachable by any role allowed to build indexes | pgvector 0.8.7 (October 1, 2026) fixes CVE-2026-103484, an IVFFlat build overflow that can lead to code execution (0.8.6 and below). Do not grant index creation to app roles, and confirm your managed Postgres has shipped the patch |
+| کانال | نحوه نشت | راهکار کاهش مخاطره (Mitigation) |
+|-------|---------|---------------------------------|
+| **آمار مشترک BM25 (Shared BM25 statistics)** | در یک نمایه اشتراکی (Pooled index)، مقدار IDF روی اسناد تمامی مستأجران (tenants in multi-tenant) محاسبه می‌شود؛ بنابراین دایره واژگان یک مستأجر رتبه‌بندی مستأجر دیگر را تغییر می‌دهد و نمرات، منعکس‌کننده بسامد اصطلاحات در کل پیکره متنی خواهند بود. | محاسبه IDF به ازای هر مستأجر (Per-tenant IDF in multi-tenant - نسخه Qdrant 1.19 این قابلیت را برای جستجوی اسپارس/BM25 اضافه کرد)، یا استفاده از یک نمایه واژگانی تفکیک‌شده (Siloed lexical index). |
+| **کَش پیشوند استنتاج (Inference prefix cache)** | در موتورهای خودمیزبان، یک کَش پیشوند مشترک می‌تواند به عنوان یک ابزار سنجش زمان (Timing oracle) آشکار سازد که آیا مستأجر (tenant in multi-tenant) دیگری همان پیشوند را ارسال کرده است یا خیر. | استفاده از Cache salt به ازای هر مستأجر (Per-tenant cache salt in multi-tenant) در تمامی مسیرهای کد. آسیب‌پذیری vLLM GHSA-935w-9g4m-p28p (برطرف‌شده در نسخه 0.30.0) یکی از مسیرهایی بود که این Salt را حذف می‌کرد؛ از vLLM نسخه 0.32.0 یا بالاتر استفاده کنید که حداقل سطح امنیتی فعلی است (همچنین آسیب‌پذیری‌های CVE-2026-115912 و CVE-2026-115915 را برطرف می‌کند). |
+| **کَش پاسخ معنایی (Semantic response cache)** | پاسخی که از اسناد مستأجر A ساخته شده است، برای پرس‌وجوی مشابه مستأجر B (در معماری چندمستأجری / multi-tenant) ارائه می‌شود. | کلیدگذاری کَش بر اساس مستأجر (tenant in multi-tenant) و مجموعه ACL، و هرگز به صورت سراسری (Global). |
+| **آسیب‌پذیری‌های موتور (Engine vulnerabilities)** | باگ‌هایی که توسط هر نقشی با مجوز ساخت نمایه قابل دسترسی هستند. | نسخه pgvector 0.8.7 (۱ اکتبر ۲۰۲۶) آسیب‌پذیری CVE-2026-103484 را برطرف می‌کند که یک خطای سرریز ساخت IVFFlat بوده و می‌تواند منجر به اجرای کد شود (در نسخه 0.8.6 و پایین‌تر). مجوز ساخت نمایه را به نقش‌های کاربری برنامه ندهید و مطمئن شوید که سرویس مدیریت‌شده Postgres شما این وصله را اعمال کرده است. |
 
-Silo can also mean the customer's own cloud account now: Pinecone BYOC (GA September 23, 2026, on AWS, Google Cloud and Azure) runs the data plane, including vectors, documents, metadata and request payloads, in the customer's cloud, while the vendor control plane manages it through outbound calls only.
+ایزوله‌سازی (Silo) امروزه می‌تواند به معنای حساب کاربری ابری خود مشتری نیز باشد: سرویس Pinecone BYOC (عرضه عمومی در ۲۳ سپتامبر ۲۰۲۶ روی AWS، Google Cloud و Azure) لایه داده (Data plane) شامل بردارها، اسناد، متادیتا و Payloadهای درخواست را در ابر خود مشتری اجرا می‌کند، در حالی که لایه کنترل ارائه‌دهنده فقط از طریق فراخوانی‌های خروجی (Outbound calls) آن را مدیریت می‌نماید.
 
-### Tenant-Aware Ingestion
+### ورود داده آگاه به مستأجر (Tenant-Aware Ingestion in multi-tenant)
 
-Tenant context must be injected at every stage of the pipeline, from ingestion through to generation.
+زمینه و هویت مستأجر (Tenant context in multi-tenant) باید در تمامی مراحل خط لوله، از ورود داده تا مرحله تولید (Generation)، تزریق شود.
+
+<div dir="ltr">
 
 ```
 Document Upload (Tenant A)
@@ -1344,9 +1408,11 @@ Document Upload (Tenant A)
   +---------------------+             for affected documents
 ```
 
-### Noisy Neighbor Prevention
+</div>
 
-In the pool model, one tenant's heavy usage can degrade performance for all tenants.
+### جلوگیری از همسایه ناهنجار (Noisy Neighbor Prevention in multi-tenant)
+
+در مدل اشتراکی (Pool model)، مصرف سنگین یک مستأجر می‌تواند کارایی را برای تمامی مستأجران (tenants in multi-tenant) دچار افت کند.
 
 ```python
 class TenantRateLimiter:
@@ -1383,9 +1449,11 @@ class TenantRateLimiter:
 
 ---
 
-## Real-World Architecture Examples
+## نمونه‌های معماری در دنیای واقعی
 
-### Example 1: Customer Support RAG
+### مثال ۱: سیستم RAG برای پشتیبانی مشتریان
+
+<div dir="ltr">
 
 ```
 +------------------------------------------------------------------+
@@ -1433,7 +1501,11 @@ Cache hit rate: ~45%
 Auto-resolution rate: ~60%
 ```
 
-### Example 2: Enterprise Knowledge Platform
+</div>
+
+### مثال ۲: پلتفرم دانش سازمانی
+
+<div dir="ltr">
 
 ```
 +------------------------------------------------------------------+
@@ -1483,7 +1555,11 @@ Isolation: Bridge model (5 enterprise silos + shared pool)
 Ingestion: Async via Kafka, ~50K docs/day
 ```
 
-### Example 3: Legal Document Analysis
+</div>
+
+### مثال ۳: تحلیل اسناد حقوقی
+
+<div dir="ltr">
 
 ```
   User: "Summarize indemnification clauses across all vendor contracts"
@@ -1524,72 +1600,76 @@ Ingestion: Async via Kafka, ~50K docs/day
   per-contract citations
 ```
 
----
-
-## System Design Interview Angle
-
-### Q: Design a RAG system that serves 10,000 queries per second across 500 tenants with a p99 latency of 2 seconds.
-
-**Strong Answer:**
-
-I would design this in four layers.
-
-**Layer 1: Routing and Caching.** A query router classifies each incoming query (direct LLM, simple RAG, complex RAG). A three-tier cache (exact match, semantic cache, document cache) handles roughly 40-50% of traffic. This means only 5,000-6,000 QPS actually hit the retrieval pipeline.
-
-**Layer 2: Retrieval.** I would use the bridge isolation model: the top 20 enterprise tenants get dedicated indexes (silo), and the remaining 480 share a pooled index with mandatory tenant_id filtering. Retrieval runs hybrid search (vector + BM25) in parallel, with Reciprocal Rank Fusion to merge results. The vector database cluster is sharded by tenant tier and replicated for read throughput.
-
-**Layer 3: Generation.** A tiered model strategy routes simple queries to a small model and complex queries to a larger model. This keeps average cost low while maintaining quality for hard queries. Per-tenant rate limiting prevents noisy neighbors.
-
-**Layer 4: Observability.** Every query produces a trace with latency breakdowns, retrieval scores, and cost. Nightly quality checks sample 500 queries and evaluate faithfulness and relevancy. Alerts fire if p95 latency exceeds 3 seconds or faithfulness drops below 0.85.
-
-**Cost estimate**: 10K QPS is 864M queries a day, so the per-request math dominates everything. With 50% cache hits, 432M generations a day remain. At 2.6K input and 300 output tokens per request and October 2026 list prices, a 70/30 split between GPT-6 Luna (~$0.0004 per request) and a $2 / $10 mid-tier model such as Claude Sonnet 5.5 or GPT-6 Sol (~$0.008) costs about $120K plus $1.06M, roughly **$1.2M a day** before prompt caching of the shared system prompt. That number drives the real design decisions: cache the static prompt prefix (0.1x reads or less), push the cache-hit rate up, negotiate committed-use pricing, and self-host the small tier, since about 300M small-model requests a day is far past the point where a dedicated GPU fleet beats a per-token API.
-
-### Q: How do you handle the case where a RAG system retrieves irrelevant documents but the LLM generates a plausible-sounding answer anyway?
-
-**Strong Answer:**
-
-This is the most dangerous RAG failure mode because it produces confident-sounding hallucinations grounded in real (but irrelevant) documents. I would address it at three points:
-
-First, at the retrieval stage, implement a relevance grader, a classifier (or LLM call) that scores each retrieved chunk against the query. If all chunks score below a threshold, the system should either escalate to a web search (Corrective RAG pattern) or respond with "I don't have enough information" rather than generating from weak context.
-
-Second, at the generation stage, use constrained prompting that instructs the model to explicitly state when evidence is insufficient. Include a confidence score in the output and route low-confidence answers to human review.
-
-Third, in monitoring, track the correlation between retrieval scores and user feedback. If users are giving thumbs-down on queries where retrieval scores were high, the reranker or the chunking strategy is likely the root cause. Log the full trace (query, retrieved chunks, generated answer, user feedback) so you can debug specific failure cases.
-
-### Q: Your RAG system's costs have tripled over the last month with no increase in query volume. How do you diagnose and fix this?
-
-**Strong Answer:**
-
-I would investigate in this order:
-
-First, check the **cache hit rate**. If it has dropped, that means more queries are hitting the full pipeline. Common causes: a semantic cache threshold change, cache invalidation running too aggressively after a data update, or a shift in query distribution that does not match the cached queries.
-
-Second, check the **model routing distribution**. If the query classifier is routing more queries to the expensive large model, that alone can triple costs. Look at whether query complexity has shifted or if the classifier's behavior has drifted.
-
-Third, check for **retrieval thrash** in agentic RAG paths. If the Corrective RAG loop is retrying more often (maybe because of stale embeddings or degraded retrieval quality), each query makes multiple retrieval and generation calls. The trace logs will show the average number of iterations per query.
-
-Fourth, check the **embedding pipeline**. If documents are being re-embedded unnecessarily (duplicate ingestion, no deduplication), embedding costs can spike.
-
-The fix depends on the root cause, but common interventions are: tune the semantic cache threshold, implement a cost ceiling per query to force cheaper fallback paths, fix embedding staleness to reduce corrective retrieval loops, and add deduplication to the ingestion pipeline.
+</div>
 
 ---
 
-## References
+## زاویه دید مصاحبه طراحی سیستم (System Design)
 
-- Asai et al. "Self-RAG: Learning to Retrieve, Generate, and Critique" (2024)
-- Yan et al. "Corrective Retrieval Augmented Generation (CRAG)" (2024)
-- Shi et al. "RAGRouter: Learning to Route Queries to Multiple RAL Models" (2025)
-- Redis. "RAG at Scale: How to Build Production AI Systems in 2026"
-- Anthropic. "1M Token Context Window General Availability" (March 2026)
-- RAGAS Framework. "Context Precision, Recall, Faithfulness, and Relevancy Metrics"
-- AWS. "Multi-Tenant RAG with Amazon Bedrock Knowledge Bases" (2025)
-- Microsoft. "Design a Secure Multitenant RAG Inferencing Solution" (2025)
-- Microsoft. "What's new in Azure AI Search" (agentic retrieval, 2026-08-01-preview)
-- Cloudflare. "AI Search is now generally available" and AI Search limits and pricing (October 2026)
-- Pinecone. "Pinecone Nexus is generally available" (August 2026)
-- Qdrant. "Qdrant 1.19" release notes (August 2026)
-- pgvector. CHANGELOG, 0.8.7 (October 2026)
+### پرسش: یک سیستم RAG طراحی کنید که به ۱۰,۰۰۰ پرس‌وجو در ثانیه در میان ۵۰۰ مستأجر (tenants in multi-tenant) با تاخیر (Latency) صدک ۹۹ (p99) برابر با ۲ ثانیه پاسخ دهد.
+
+**پاسخ قوی:**
+
+من این سیستم را در چهار لایه طراحی می‌کنم.
+
+**لایه ۱: مسیریابی و کَش‌گذاری (Routing and Caching).** یک مسیریاب پرس‌وجو (Query router) هر پرس‌وجوی ورودی را طبقه‌بندی می‌کند (ارسال مستقیم به LLM، مدل RAG ساده، مدل RAG پیچیده). یک کَش سه لایه (تطابق دقیق/Exact match، کَش معنایی/Semantic cache، و کَش سند/Document cache) تقریباً ۴۰ تا ۵۰ درصد از ترافیک را پاسخ می‌دهد. این یعنی تنها ۵,۰۰۰ تا ۶,۰۰۰ پرس‌وجو در ثانیه (QPS) به خط لوله بازیابی می‌رسند.
+
+**لایه ۲: بازیابی (Retrieval).** من از مدل جداسازی پل (Bridge isolation model) استفاده می‌کنم: ۲۰ مستأجر سازمانی بزرگ نمایه‌های اختصاصی (Silo) دریافت می‌کنند و ۴۸۰ مستأجر باقی‌مانده یک نمایه مشترک (Pooled) را با فیلتر اجباری `tenant_id` به اشتراک می‌گذارند. بازیابی، جستجوی ترکیبی (Hybrid search: برداری + BM25) را به صورت موازی اجرا می‌کند و از روش Reciprocal Rank Fusion برای ادغام نتایج بهره می‌برد. کلاستر پایگاه داده برداری (Vector Database) بر اساس سطح سازمانی مستأجر (Tenant tier in multi-tenant) شاردبندی شده و برای توان عملیاتی (Throughput) خواندن، رپلیکیت (Replicated) می‌شود.
+
+**لایه ۳: تولید (Generation).** یک استراتژی مدلی چندسطحی (Tiered model strategy) پرس‌وجوهای ساده را به یک مدل کوچک و پرس‌وجوهای پیچیده را به یک مدل بزرگ‌تر هدایت می‌کند. این رویکرد میانگین هزینه‌ها را پایین نگه می‌دارد و در عین حال کیفیت پاسخ به پرس‌وجوهای دشوار را حفظ می‌کند. اعمال محدودیت نرخ به ازای هر مستأجر (Per-tenant rate limiting in multi-tenant) مانع از ایجاد مشکل همسایگان ناهنجار (Noisy Neighbors in multi-tenant) می‌شود.
+
+**لایه ۴: مشاهده‌پذیری (Observability).** هر پرس‌وجو یک ردگیری (Trace) شامل تفکیک تاخیر (Latency)، امتیازات بازیابی و هزینه تولید می‌کند. ارزیابی‌های کیفی شبانه ۵۰۰ پرس‌وجو را به عنوان نمونه بررسی کرده و معیارهای وفاداری (Faithfulness) و ارتباط (Relevancy) را می‌سنجند. در صورتی که تاخیر صدک ۹۵ (p95 latency) از ۳ ثانیه فراتر رود یا وفاداری به زیر ۰٫۸۵ سقوط کند، هشدارها فعال می‌شوند.
+
+**برآورد هزینه**: ۱۰ هزار QPS معادل ۸۶۴ میلیون پرس‌وجو در روز است، بنابراین محاسبات به ازای هر درخواست عامل تعیین‌کننده اصلی است. با ۵۰٪ اصابت به کَش (Cache hits)، روزانه ۴۳۲ میلیون مرحله تولید باقی می‌ماند. به ازای ۲٫۶ هزار Token ورودی و ۳۰۰ Token خروجی در هر درخواست و با قیمت‌های رسمی اکتبر ۲۰۲۶، تقسیم ۷۰/۳۰ میان مدل GPT-6 Luna (حدود \$0.0004 به ازای هر درخواست) و یک مدل میان‌رده با نرخ \$2 / \$10 نظیر Claude Sonnet 5.5 یا GPT-6 Sol (حدود \$0.008)، هزینه‌ای معادل ۱۲۰ هزار دلار به‌علاوه ۱٫۰۶ میلیون دلار، یعنی تقریباً **۱٫۲ میلیون دلار در روز** به همراه دارد، پیش از آن‌که Prompt Caching برای Prompt سیستمی مشترک اعمال شود. این رقم تصمیمات واقعی طراحی را هدایت می‌کند: کَش کردن پیشوند استاتیک Prompt (کاهش هزینه خواندن به میزان ۰٫۱ برابر یا کمتر)، بالا بردن نرخ اصابت به کَش، مذاکره بر سر قیمت‌گذاری استفاده متعهدانه (Committed-use pricing)، و خودمیزبانی لایه مدل‌های کوچک؛ چرا که روزانه حدود ۳۰۰ میلیون درخواست مدل کوچک بسیار فراتر از نقطه‌ای است که در آن داشتن یک ناوگان اختصاصی از GPUها از یک API مبتنی بر Token ارزان‌تر تمام می‌شود.
+
+### پرسش: چگونه شرایطی را مدیریت می‌کنید که سیستم RAG اسناد نامربوط را بازیابی می‌کند اما LLM در هر صورت پاسخی به ظاهر موجه تولید می‌نماید؟
+
+**پاسخ قوی:**
+
+این خطرناک‌ترین حالت شکست در RAG است، زیرا توهماتی (Hallucinations) با لحن مطمئن تولید می‌کند که به اسناد واقعی (اما نامربوط) ارجاع داده شده‌اند. من در سه نقطه با این مشکل مقابله می‌کنم:
+
+نخست، در مرحله بازیابی، یک ارزیاب ارتباط (Relevance grader) پیاده‌سازی کنید؛ یک دسته‌بندی‌کننده (یا فراخوانی LLM) که به هر Chunk بازیابی‌شده در مقایسه با پرس‌وجو امتیاز می‌دهد. اگر امتیاز تمام Chunkها زیر یک آستانه مشخص باشد، سیستم باید یا فرآیند را به جستجوی وب ارجاع دهد (الگوی RAG اصلاحی یا Corrective RAG) یا به جای تولید پاسخ بر اساس متنی ضعیف، با «اطلاعات کافی در اختیار ندارم» پاسخ دهد.
+
+دوم، در مرحله تولید، از Prompting مقید (Constrained Prompting) استفاده کنید که صریحاً به مدل دستور دهد در صورت ناکافی بودن شواهد، این موضوع را بیان کند. یک نمره اطمینان (Confidence score) در خروجی بگنجانید و پاسخ‌های با اطمینان پایین را برای بازبینی انسانی ارسال کنید.
+
+سوم، در بخش مانیتورینگ، همبستگی میان امتیازات بازیابی و بازخورد کاربران را رهگیری کنید. اگر کاربران به پرس‌وجوهایی که امتیاز بازیابی بالایی داشته‌اند بازخورد منفی می‌دهند، به احتمال زیاد Reranker یا استراتژی Chunking علت اصلی مشکل است. گزارش کامل ردگیری (شامل پرس‌وجو، Chunkهای بازیابی‌شده، پاسخ تولیدشده و بازخورد کاربر) را ثبت کنید تا بتوانید موارد خاص شکست را دیباگ نمایید.
+
+### پرسش: هزینه‌های سیستم RAG شما طی ماه گذشته بدون هیچ افزایشی در حجم پرس‌وجوها سه برابر شده است. چگونه این مسئله را ریشه‌یابی و رفع می‌کنید؟
+
+**پاسخ قوی:**
+
+من به این ترتیب بررسی خواهم کرد:
+
+نخست، **نرخ اصابت به کَش (Cache hit rate)** را بررسی کنید. اگر این نرخ کاهش یافته باشد، به این معنی است که پرس‌وجوهای بیشتری به کل خط لوله ارسال می‌شوند. دلایل متداول: تغییر آستانه کَش معنایی، باطل‌سازی بیش از حد تهاجمی کَش (Cache invalidation) پس از به‌روزرسانی داده‌ها، یا تغییر در توزیع پرس‌وجوها به گونه‌ای که با پرس‌وجوهای کَش‌شده مطابقت ندارند.
+
+دوم، **توزیع مسیریابی مدل (Model routing distribution)** را بررسی کنید. اگر دسته‌بندی‌کننده پرس‌وجو تعداد بیشتری از پرس‌وجوها را به مدل گران‌قیمت بزرگ هدایت کند، همین امر به تنهایی می‌تواند هزینه‌ها را سه برابر کند. بررسی کنید که آیا پیچیدگی پرس‌وجوها تغییر کرده است یا رفتار دسته‌بندی‌کننده دچار انحراف (Drift) شده است.
+
+سوم، وضعیت **رفت‌وبرگشت‌های مکرر بازیابی (Retrieval thrash)** را در مسیرهای RAG مبتنی بر Agent بررسی کنید. اگر حلقه Corrective RAG دفعات بیشتری تکرار می‌شود (شاید به دلیل Embeddingهای قدیمی یا افت کیفیت بازیابی)، هر پرس‌وجو چندین فراخوانی بازیابی و تولید انجام می‌دهد. لاگ‌های ردگیری (Trace logs) میانگین تعداد تکرارها به ازای هر پرس‌وجو را نشان خواهند داد.
+
+چهارم، **خط لوله Embedding** را بررسی کنید. اگر اسناد بدون ضرورت مجدداً Embedding می‌شوند (ورود داده تکراری، عدم حذف داده‌های تکراری/Deduplication)، هزینه‌های تولید Embedding ممکن است به شدت جهش یابد.
+
+راهکار رفع مشکل به علت ریشه‌ای آن بستگی دارد، اما اقدامات متداول عبارتند از: تنظیم آستانه کَش معنایی، تعیین سقف هزینه برای هر پرس‌وجو جهت هدایت اجباری به مسیرهای ارزان‌ترِ جایگزین (Fallback)، رفع کهنگی Embeddingها برای کاهش حلقه‌های بازیابی اصلاحی، و افزودن قابلیت حذف داده‌های تکراری به خط لوله ورود داده.
 
 ---
 
-*Previous: [RAG Evaluation Patterns](13-rag-evaluation-patterns.md) | Next: [Data Engineering for AI](15-data-engineering-for-ai.md)*
+## منابع
+
+- آسای و همکاران. "Self-RAG: Learning to Retrieve, Generate, and Critique" (2024)
+- یان و همکاران. "Corrective Retrieval Augmented Generation (CRAG)" (2024)
+- شی و همکاران. "RAGRouter: Learning to Route Queries to Multiple RAL Models" (2025)
+- ردیس (Redis). "RAG at Scale: How to Build Production AI Systems in 2026"
+- آنتروپیک (Anthropic). "1M Token Context Window General Availability" (مارس ۲۰۲۶)
+- فریم‌ورک RAGAS (RAGAS Framework). "Context Precision, Recall, Faithfulness, and Relevancy Metrics"
+- آمازون وب سرویس (AWS). "Multi-Tenant RAG with Amazon Bedrock Knowledge Bases" (2025)
+- مایکروسافت (Microsoft). "Design a Secure Multitenant RAG Inferencing Solution" (2025)
+- مایکروسافت (Microsoft). "What's new in Azure AI Search" (بازیابی مبتنی بر Agent، نسخه 2026-08-01-preview)
+- کلودفلر (Cloudflare). "AI Search is now generally available" و محدودیت‌ها و قیمت‌گذاری AI Search (اکتبر ۲۰۲۶)
+- پاین‌کون (Pinecone). "Pinecone Nexus is generally available" (اوت ۲۰۲۶)
+- کیودرانت (Qdrant). یادداشت‌های انتشار "Qdrant 1.19" (اوت ۲۰۲۶)
+- لاگ تغییرات pgvector (CHANGELOG), 0.8.7 (اکتبر ۲۰۲۶)
+
+---
+
+*قبلی: [الگوهای ارزیابی RAG](13-rag-evaluation-patterns.md) | بعدی: [مهندسی داده برای هوش مصنوعی](15-data-engineering-for-ai.md)*
+
+</div>

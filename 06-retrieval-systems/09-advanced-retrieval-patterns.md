@@ -1,94 +1,98 @@
-# Advanced Retrieval Patterns
+<div dir="rtl">
 
-Beyond the basics, production RAG systems use specialized patterns to handle complex query-document gaps. These patterns are the "secret sauce" of high-precision search and are increasingly bundled into managed RAG offerings.
+# الگوهای پیشرفته بازیابی
 
-## Table of Contents
+فراتر از اصول اولیه، سیستم‌های RAG در محیط عملیاتی (production) از الگوهای تخصصی برای مدیریت شکاف‌های پیچیده میان پرس‌وجو و سند (query-document gaps) استفاده می‌کنند. این الگوها «فرمول محرمانه» (secret sauce) جستجو با دقت بالا هستند و به‌طور فزاینده‌ای در سرویس‌های مدیریت‌شده‌ی RAG ارائه می‌شوند.
 
-- [Query Decomposition (Multi-Query)](#query-decomposition-multi-query)
-- [Hypothetical Document Embeddings (HyDE)](#hypothetical-document-embeddings-hyde)
-- [Contextual Retrieval (The Anthropic Pattern)](#contextual-retrieval-the-anthropic-pattern)
-- [Iterative Document Enrichment](#iterative-document-enrichment)
-- [In-Context Reranking](#in-context-reranking)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Query Decomposition (Multi-Query)
-
-Complex user queries are often "Compound Queries."
-- **User**: "Compare our Q3 vs Q4 revenue and explain the drop."
-- **Decomposition**:
-  1. "Q3 Revenue"
-  2. "Q4 Revenue"
-  3. "Reasons for Q4 revenue variance"
-- **Implementation**: Use an LLM to generate these 3 sub-queries, search the DB for ALL of them, and aggregate the context.
+- [تجزیه پرس‌وجو (Multi-Query)](#query-decomposition-multi-query)
+- [امبدینگ‌های سند فرضی (HyDE)](#hypothetical-document-embeddings-hyde)
+- [بازیابی زمینه‌ای (الگوی Anthropic)](#contextual-retrieval-the-anthropic-pattern)
+- [غنی‌سازی تکرارشونده سند](#iterative-document-enrichment)
+- [رتبه‌بندی مجدد درون‌زمینه (In-Context Reranking)](#in-context-reranking)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Hypothetical Document Embeddings (HyDE)
+## تجزیه پرس‌وجو (Multi-Query)
 
-Queries are short; documents are long. This "Asymmetry" causes retrieval failure.
-- **Pattern**: 
-  1. Take the user query.
-  2. Ask the LLM: "Write a 1-paragraph hypothetical answer to this."
-  3. **Embed the hypothetical answer** instead of the query.
-- **Why?**: The hypothetical answer is in the same "Vector neighborhood" as the real documents, leading to much higher recall.
-
----
-
-## Contextual Retrieval (The Anthropic Pattern)
-
-Published by Anthropic in September 2024, this pattern solves **Context Dilution**.
-
-- **The Problem**: A chunk might say "It costs $200," but without the header, we don't know "It" is a "Widget-X."
-- **The Pattern**: During ingestion, for every 300-token chunk, have an LLM write a 50-100 token context string (e.g., "This chunk is about the pricing for Widget-X in the North American market") and prepend it before both embedding and BM25 indexing.
-- **Benefit**: Anthropic measured a 35% drop in top-20 retrieval failures from contextual embeddings alone, 49% with contextual BM25 added, and 67% with a reranker on top.
-- **2026 alternative**: Contextualized chunk embedding models (voyage-context-4) produce document-aware chunk vectors with no per-chunk LLM call, but only help the dense side. Full treatment in [Contextual Retrieval](10-contextual-retrieval.md).
+پرس‌وجوهای پیچیده کاربر اغلب «پرس‌وجوهای مرکب» (Compound Queries) هستند.
+- **کاربر**: «درآمد سه‌ماهه سوم (Q3) ما را در مقایسه با سه‌ماهه چهارم (Q4) بررسی کن و علت افت آن را توضیح بده.»
+- **تجزیه (Decomposition)**:
+  1. «درآمد Q3»
+  2. «درآمد Q4»
+  3. «دلایل تغییرات درآمد Q4»
+- **پیاده‌سازی**: از یک LLM برای تولید این ۳ زیرپرس‌وجو استفاده کنید، پایگاه داده را برای همه آن‌ها جستجو کرده و زمینه (context) را تجمیع نمایید.
 
 ---
 
-## Iterative Document Enrichment
+## امبدینگ‌های سند فرضی (HyDE)
 
-Instead of just storing the raw document, we store "Enriched" meta-data.
-- **Summary**: Store a 1-paragraph summary of the document.
-- **Q&A Generation**: Generate 5 questions this document answers and embed those *with* the document.
-- **Status**: Many high-end RAG systems embed generated **"Questions"** alongside the chunk text, so a short user question matches a stored question instead of a long answer passage.
-
----
-
-## In-Context Reranking
-
-With 1M-token windows now standard on current models (Claude Opus 5.5 and Sonnet 5.5, the GPT-6 and GPT-6.1 families at 1.05M, Gemini 4 Argon, and even the fast tier with Gemini 3.8 Flash and Claude Haiku 5.5, though Haiku bills 5x once a prompt passes 100K tokens), **Rank-by-Context** is a viable pattern.
-1. Retrieve Top 100 docs.
-2. Put all 100 in the context window.
-3. Ask the model: "Read these 100 docs and identify the 5 most relevant. Then, use those 5 to answer."
-- **Win**: This utilizes the model's **Long Context Reasoning** to perform reranking without needing a separate Cross-Encoder model.
-- **Cost check**: 100 docs of 500 tokens is 50K input tokens per query: about $0.10 on a $2-per-1M model such as Claude Sonnet 5.5 or GPT-6 Sol, versus about $0.0025 for the same tokens on Voyage rerank-3 ($0.05 per 1M), a 40x gap before output tokens. Reserve it for low-volume, reasoning-heavy queries, and keep the prompt under long-context price cliffs (100K on Claude Haiku 5.5, cached tokens included; 272K input on OpenAI; 200K on xAI), or use a flat-priced model such as Claude Sonnet 5.5.
+پرس‌وجوها کوتاه هستند؛ اسناد طولانی‌اند. این «عدم تقارن» (Asymmetry) باعث شکست در بازیابی می‌شود.
+- **الگو**: 
+  1. پرس‌وجوی کاربر را دریافت کنید.
+  2. از LLM بخواهید: «یک پاسخ فرضی ۱ پاراگرافی برای این پرس‌وجو بنویس.»
+  3. به جای پرس‌وجو، **پاسخ فرضی را امبد کنید**.
+- **چرا؟**: پاسخ فرضی در همان «همسایگی برداری» (Vector neighborhood) اسناد واقعی قرار می‌گیرد و منجر به بازخوانی (Recall) بسیار بالاتری می‌شود.
 
 ---
 
-## Interview Questions
+## بازیابی زمینه‌ای (الگوی Anthropic)
 
-### Q: Why is HyDE (Hypothetical Document Embedding) risky for some applications?
+این الگو که در سپتامبر ۲۰۲۴ توسط Anthropic منتشر شد، مشکل **رقیق‌شدن زمینه (Context Dilution)** را حل می‌کند.
 
-**Strong answer:**
-HyDE relies on "Hallucinating" a baseline answer to find real data. If the user's query describes something non-existent or logically impossible, the LLM will still generate a hypothetical answer. This can pull in "Incorrect but Semantically Similar" data from the database, reinforcing the model's initial hallucination. The standard mitigation is a **Hybrid approach**: retrieve once with the real query (Keyword) and once with the HyDE query, then use **RRF** to combine them.
-
-### Q: What is the "Asymmetric Retrieval" problem?
-
-**Strong answer:**
-Asymmetric retrieval refers to the fact that user queries are usually short (3-10 words) while document chunks are long (300-500 words). These inhabit different statistical distributions in the vector space, leading to "Distance Bias." High-performance systems solve this using **Asymmetric Encoders** (separate query and document prefixes or models) or **Query Expansion** (HyDE) to "inflate" the query into a document-like distribution.
-
-The asymmetry is now also a cost lever. Voyage 4 and Cohere Embed 5 ship model families in one shared space, so you can index documents with the large model and encode queries with the small one. Qdrant's Constella research preview goes further: a fixed 400M-parameter Stella document index with a 34.5M query encoder that keeps about 91% of BEIR-15 nDCG@10 at 12x lower CPU latency (vendor-reported). At high QPS, query encoding is on the hot path and document encoding is not, so spend the model budget on the document side.
+- **مسئله**: یک chunk ممکن است بگوید «هزینه آن ۲۰۰ دلار است»، اما بدون هدر (header)، مشخص نیست که منظور از «آن»، یک "Widget-X" است.
+- **الگو**: در طول فرآیند بارگذاری (ingestion)، برای هر chunk با ۳۰۰ Token، از یک LLM بخواهید یک رشته زمینه‌ای (context string) با ۵۰ تا ۱۰۰ Token بنویسد (برای مثال: «این chunk درباره قیمت‌گذاری Widget-X در بازار آمریکای شمالی است») و آن را قبل از امبدینگ و نمایه‌سازی BM25، در ابتدای chunk قرار دهد (prepend).
+- **مزیت**: شرکت Anthropic کاهش ۳۵ درصدی در خطاهای بازیابی ۲۰ نتیجه برتر (top-20 retrieval failures) را صرفاً با امبدینگ‌های زمینه‌ای اندازه‌گیری کرد؛ این بهبود با اضافه شدن BM25 زمینه‌ای به ۴۹ درصد و با افزودن یک بازرتبه‌بند (reranker) در لایه نهایی، به ۶۷ درصد رسید.
+- **جایگزین سال ۲۰۲۶**: مدل‌های امبدینگ زمینه‌مند chunk (مانند voyage-context-4) بردارهای chunk آگاه از سند (document-aware) را بدون نیاز به فراخوانی LLM به ازای هر chunk تولید می‌کنند، اما فقط به بخش متراکم (dense) کمک می‌کنند. بررسی کامل در [بازیابی زمینه‌ای](10-contextual-retrieval.md).
 
 ---
 
-## References
+## غنی‌سازی تکرارشونده سند
+
+به جای اینکه صرفاً سند خام را ذخیره کنیم، فراداده‌های «غنی‌شده» (Enriched metadata) را ذخیره می‌کنیم.
+- **خلاصه (Summary)**: یک خلاصه ۱ پاراگرافی از سند را ذخیره کنید.
+- **تولید پرسش و پاسخ (Q&A Generation)**: ۵ سوالی را که این سند به آن‌ها پاسخ می‌دهد تولید کنید و آن‌ها را *همراه با* سند امبد نمایید.
+- **وضعیت**: بسیاری از سیستم‌های پیشرفته RAG، **«پرسش‌ها»**ی تولیدشده را در کنار متن chunk امبد می‌کنند، به طوری که یک سوال کوتاه کاربر به جای تطابق با یک بند طولانی پاسخ، با یک سوال ذخیره‌شده مطابقت داده می‌شود.
+
+---
+
+## رتبه‌بندی مجدد درون‌زمینه (In-Context Reranking)
+
+با توجه به اینکه پنجره‌های زمینه ۱ میلیون Token اکنون در مدل‌های کنونی به یک استاندارد تبدیل شده است (Claude Opus 5.5 و Sonnet 5.5، خانواده‌های GPT-6 و GPT-6.1 با ظرفیت ۱٫۰۵ میلیون Token، Gemini 4 Argon و حتی در رده سریع با Gemini 3.8 Flash و Claude Haiku 5.5، هرچند هزینه Haiku زمانی که یک Prompt از ۱۰۰ هزار Token فراتر رود ۵ برابر محاسبه می‌شود)، الگوی **رتبه‌بندی بر اساس زمینه (Rank-by-Context)** یک الگوی کاملاً شدنی و کاربردی است.
+1. ۱۰۰ سند برتر (Top 100) را بازیابی کنید.
+2. تمام ۱۰۰ سند را در پنجره زمینه قرار دهید.
+3. از مدل بخواهید: «این ۱۰۰ سند را بخوان و ۵ مورد از مرتبط‌ترین‌ها را مشخص کن. سپس، با استفاده از آن ۵ مورد پاسخ بده.»
+- **دستاورد**: این روش از **استدلال زمینه طولانی (Long Context Reasoning)** مدل برای انجام رتبه‌بندی مجدد بدون نیاز به یک مدل مجزای Cross-Encoder بهره می‌گیرد.
+- **بررسی هزینه**: ۱۰۰ سند ۵۰۰ Token معادل ۵۰ هزار Token ورودی به ازای هر پرس‌وجو است: حدود ۰٫۱۰ دلار در یک مدل با نرخ ۲ دلار به ازای هر ۱ میلیون Token مانند Claude Sonnet 5.5 یا GPT-6 Sol، در مقایسه با حدود ۰٫۰۰۲۵ دلار برای همان تعداد Token در Voyage rerank-3 (معادل ۰٫۰۵ دلار به ازای هر ۱ میلیون Token)، که اختلافی ۴۰ برابری پیش از محاسبه Tokenهای خروجی است. این روش را برای پرس‌وجوهای کم‌حجم با استدلال سنگین اختصاص دهید، و Prompt را پایین‌تر از جهش‌های قیمتی زمینه طولانی (price cliffs) نگه دارید (۱۰۰ هزار Token در Claude Haiku 5.5، با احتساب Tokenهای کش‌شده؛ ۲۷۲ هزار Token ورودی در OpenAI؛ ۲۰۰ هزار Token در xAI)، یا از مدلی با قیمت‌گذاری ثابت (flat-priced) مانند Claude Sonnet 5.5 استفاده کنید.
+
+---
+
+## پرسش‌های مصاحبه
+
+### پرسش: چرا HyDE (امبدینگ سند فرضی / Hypothetical Document Embedding) برای برخی کاربردها ریسک دارد؟
+
+**پاسخ قوی:**
+روش HyDE بر «توهم زدن» (Hallucinating) یک پاسخ مبنا برای یافتن داده‌های واقعی تکیه دارد. اگر پرس‌وجوی کاربر چیزی غیرموجود یا از نظر منطقی غیرممکن را توصیف کند، LLM همچنان یک پاسخ فرضی تولید خواهد کرد. این اتفاق می‌تواند داده‌های «نادرست اما از نظر معنایی مشابه» را از پایگاه داده واکشی کند و توهم اولیه مدل را تقویت نماید. راهکار استاندارد برای کاهش این ریسک، یک **رویکرد ترکیبی (Hybrid approach)** است: یک بار با پرس‌وجوی واقعی (کلیدواژه‌ای) و یک بار با پرس‌وجوی HyDE بازیابی را انجام دهید، سپس از **RRF** برای ترکیب و ادغام آن‌ها استفاده کنید.
+
+### پرسش: مسئله «بازیابی نامتقارن» (Asymmetric Retrieval) چیست؟
+
+**پاسخ قوی:**
+بازیابی نامتقارن به این واقعیت اشاره دارد که پرس‌وجوهای کاربران معمولاً کوتاه هستند (۳ تا ۱۰ کلمه)، در حالی که chunkهای اسناد طولانی‌اند (۳۰۰ تا ۵۰۰ کلمه). این موارد در توزیع‌های آماری متفاوتی در فضای برداری قرار می‌گیرند که منجر به «سوگیری فاصله» (Distance Bias) می‌شود. سیستم‌های با کارایی بالا این چالش را با استفاده از **انکودرهای نامتقارن (Asymmetric Encoders)** (پیشوندها یا مدل‌های مجزا برای پرس‌وجو و سند) یا **توسعه پرس‌وجو (Query Expansion)** (مانند HyDE) حل می‌کنند تا پرس‌وجو را به توزیعی مشابه سند «بسط دهند» (inflate).
+
+این عدم تقارن اکنون به یک اهرم مدیریت هزینه نیز تبدیل شده است. مدل‌های Voyage 4 و Cohere Embed 5 خانواده‌هایی از مدل‌ها را در یک فضای مشترک ارائه می‌دهند؛ بنابراین می‌توانید اسناد را با مدل بزرگ نمایه‌سازی کرده و پرس‌وجوها را با مدل کوچک انکود (encode) کنید. پیش‌نمایش تحقیقاتی Constella از Qdrant فراتر می‌رود: یک نمایه سند ثابت Stella با ۴۰۰ میلیون پارامتر به همراه یک انکودر پرس‌وجو با ۳۴٫۵ میلیون پارامتر که حدود ۹۱٪ از معیار BEIR-15 nDCG@10 را با ۱۲ برابر تاخیر (Latency) کمتر در CPU حفظ می‌کند (طبق گزارش ارائه‌دهنده). در QPS بالا، انکود کردن پرس‌وجو در مسیر حیاتی زمانی (hot path) قرار دارد و انکود کردن سند این‌گونه نیست؛ بنابراین بودجه مدل را در سمت سند صرف کنید.
+
+---
+
+## منابع
 - Gao et al. "Precise Zero-Shot Dense Retrieval without Relevance Labels" (HyDE, 2023/2024)
-- [Anthropic. "Introducing Contextual Retrieval" (Sep 2024)](https://www.anthropic.com/news/contextual-retrieval)
+- [آنتروپیک: «معرفی بازیابی زمینه‌ای» (سپتامبر ۲۰۲۴)](https://www.anthropic.com/news/contextual-retrieval)
 - LlamaIndex. "Query Transformation Cookbook" (2025)
 
 ---
 
-*Previous: [Agentic RAG](08-agentic-rag.md) | Next: [Contextual Retrieval](10-contextual-retrieval.md)*
+*قبلی: [Agentic RAG](08-agentic-rag.md) | بعدی: [بازیابی زمینه‌ای](10-contextual-retrieval.md)*
+
+</div>

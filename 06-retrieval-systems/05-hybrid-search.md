@@ -1,42 +1,44 @@
-# Hybrid Search
+<div dir="rtl">
 
-Hybrid search combines dense (semantic) and sparse (keyword) retrieval to get the benefits of both. It is the baseline for production RAG: Elasticsearch's `rrf` and `linear` retrievers, OpenSearch hybrid search, Weaviate, Qdrant, Milvus, and Azure AI Search all ship native hybrid pipelines out of the box. Pinecone added BM25 full-text search (GA September 9, 2026), but each request ranks by one scoring type, so you fuse lexical and vector results client-side.
+# جستجوی ترکیبی (Hybrid Search)
 
-## Table of Contents
+جستجوی ترکیبی (Hybrid Search) بازیابی متراکم (dense / معنایی) و تنک (sparse / کلیدواژه‌ای) را با یکدیگر ترکیب می‌کند تا از مزایای هر دو بهره‌مند شود. این رویکرد، خط مبنا (baseline) برای RAG در محیط عملیاتی است: بازیاب‌های `rrf` و `linear` در Elasticsearch، جستجوی ترکیبی در OpenSearch، و Weaviate، Qdrant، Milvus و Azure AI Search همگی خطوط لوله ترکیبی نیتیو را به‌صورت پیش‌فرض ارائه می‌دهند. پایگاه داده Pinecone نیز جستجوی تمام‌متن BM25 را اضافه کرد (عرضه عمومی در ۹ سپتامبر ۲۰۲۶)، اما هر درخواست بر اساس یک نوع امتیازدهی رتبه‌بندی می‌شود؛ بنابراین باید نتایج واژگانی و برداری را در سمت کلاینت ادغام (fuse) کنید.
 
-- [Why Hybrid Search](#why-hybrid-search)
-- [Dense vs Sparse Retrieval](#dense-vs-sparse-retrieval)
-- [Hybrid Search Architectures](#hybrid-search-architectures)
-- [Fusion Methods](#fusion-methods)
-- [Learned Sparse Embeddings (SPLADE)](#learned-sparse-embeddings-splade)
-- [Implementation Patterns](#implementation-patterns)
-- [Tuning and Optimization](#tuning-and-optimization)
-- [Production Considerations](#production-considerations)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [چرا جستجوی ترکیبی](#why-hybrid-search)
+- [بازیابی متراکم در برابر بازیابی تنک](#dense-vs-sparse-retrieval)
+- [معماری‌های جستجوی ترکیبی](#hybrid-search-architectures)
+- [روش‌های ادغام](#fusion-methods)
+- [امبدینگ‌های تنک یادگرفته‌شده (SPLADE)](#learned-sparse-embeddings-splade)
+- [الگوهای پیاده‌سازی](#implementation-patterns)
+- [تنظیم و بهینه‌سازی](#tuning-and-optimization)
+- [ملاحظات محیط عملیاتی](#production-considerations)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Why Hybrid Search
+## چرا جستجوی ترکیبی
 
-Neither dense nor sparse retrieval is universally better. Each excels at different query types.
+هیچ‌یک از روش‌های بازیابی متراکم یا تنک برتری مطلق ندارند. هر کدام در انواع خاصی از پرس‌وجوها عالی عمل می‌کنند.
 
-### Query Type Analysis
+### تحلیل نوع پرس‌وجو
 
-| Query Type | Example | Better Retrieval |
+| نوع پرس‌وجو | مثال | بازیابی بهتر |
 |------------|---------|------------------|
-| Conceptual | "How do transformers learn?" | Dense |
-| Keyword-specific | "GPT-4 API rate limits" | Sparse |
-| Named entities | "John Smith's research on BERT" | Sparse |
-| Acronyms/codes | "What does HTTP 429 mean?" | Sparse |
-| Paraphrased | "How to make AI faster" vs "LLM optimization" | Dense |
-| Mixed | "What is the cost of GPT-4o API?" | Hybrid |
+| مفهومی | "How do transformers learn?" | متراکم (Dense) |
+| وابسته به کلیدواژه | "GPT-4 API rate limits" | تنک (Sparse) |
+| موجودیت‌های نام‌دار | "John Smith's research on BERT" | تنک (Sparse) |
+| کوته‌نوشت‌ها/کدها | "What does HTTP 429 mean?" | تنک (Sparse) |
+| بازنویسی‌شده | "How to make AI faster" در برابر "LLM optimization" | متراکم (Dense) |
+| ترکیبی | "What is the cost of GPT-4o API?" | ترکیبی (Hybrid) |
 
-**Nuance**: Dense-only retrieval fails on technical documentation where specific version numbers and function names carry 90% of the information value.
+**نکته ظریف**: بازیابی صرفاً متراکم در مستندات فنی، جایی که شماره نسخه‌های خاص و نام توابع ۹۰٪ از ارزش اطلاعاتی را تشکیل می‌دهند، شکست می‌خورد.
 
-### The Gap Problem
+### مسئله شکاف اطلاعاتی
 
-Dense retrieval can miss exact matches:
+بازیابی متراکم ممکن است تطابق‌های دقیق را از دست بدهد:
 
 ```
 Query: "Configure NVIDIA_VISIBLE_DEVICES"
@@ -48,15 +50,15 @@ Dense search may miss this because:
 - Training data may not have this specific term
 ```
 
-Sparse search (BM25) finds this immediately because of exact token match.
+جستجوی تنک (BM25) به دلیل تطابق دقیق Token، این مورد را بلافاصله پیدا می‌کند.
 
 ---
 
-## Dense vs Sparse Retrieval
+## بازیابی متراکم در برابر بازیابی تنک
 
-### Dense (Semantic) Retrieval
+### بازیابی متراکم (معنایی)
 
-Uses neural embeddings to match meaning.
+از امبدینگ‌های عصبی برای تطبیق معنایی استفاده می‌کند.
 
 ```python
 def dense_search(query: str, top_k: int = 10) -> list[Result]:
@@ -65,19 +67,19 @@ def dense_search(query: str, top_k: int = 10) -> list[Result]:
     return results
 ```
 
-**Strengths:**
-- Understands paraphrases and synonyms
-- Captures conceptual similarity
-- Works across languages (with multilingual models)
+**نقاط قوت:**
+- درک بازنویسی‌ها و کلمات مترادف
+- ثبت شباهت مفهومی
+- عملکرد در میان زبان‌های مختلف (با مدل‌های چندزبانه)
 
-**Weaknesses:**
-- May miss exact keyword matches
-- Struggles with entities, codes, acronyms
-- Requires embedding model
+**نقاط ضعف:**
+- احتمال از دست دادن تطابق دقیق کلیدواژه‌ها
+- دشواری در مواجهه با موجودیت‌ها، کدها و کوته‌نوشت‌ها
+- نیاز به مدل امبدینگ
 
-### Sparse (Keyword) Retrieval
+### بازیابی تنک (کلیدواژه‌ای)
 
-Uses term frequency and statistics (BM25, TF-IDF).
+از بسامد عبارات و محاسبات آماری (BM25 و TF-IDF) استفاده می‌کند.
 
 ```python
 def sparse_search(query: str, top_k: int = 10) -> list[Result]:
@@ -86,33 +88,35 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
     return results
 ```
 
-**Strengths:**
-- Excellent for exact matches
-- Handles rare terms, codes, entities
-- Fast and interpretable
-- No training required
+**نقاط قوت:**
+- عملکرد عالی برای تطابق‌های دقیق
+- مدیریت اصطلاحات نادر، کدها و موجودیت‌ها
+- سریع و قابل تفسیر
+- عدم نیاز به آموزش
 
-**Weaknesses:**
-- Misses semantic similarity
-- No synonym understanding
-- Sensitive to vocabulary mismatch
+**نقاط ضعف:**
+- از دست دادن شباهت معنایی
+- عدم درک کلمات مترادف
+- حساسیت به عدم تطابق واژگان
 
-### Head-to-Head Comparison
+### مقایسه رو در رو
 
-| Aspect | Dense | Sparse | Hybrid |
+| جنبه | متراکم | تنک | ترکیبی |
 |--------|-------|--------|--------|
-| Semantic matching | Best | Poor | Best |
-| Exact matching | Poor | Best | Best |
-| Rare terms | Poor | Best | Very Good |
-| Zero-shot domains | Very Good | Best | Best |
-| Latency | Medium | Fast | Medium |
-| Implementation | Medium | Simple | Complex |
+| تطبیق معنایی | بهترین | ضعیف | بهترین |
+| تطبیق دقیق | ضعیف | بهترین | بهترین |
+| اصطلاحات نادر | ضعیف | بهترین | بسیار خوب |
+| دامنه‌های صفر-نمونه | بسیار خوب | بهترین | بهترین |
+| تاخیر (Latency) | متوسط | سریع | متوسط |
+| پیاده‌سازی | متوسط | ساده | پیچیده |
 
 ---
 
-## Hybrid Search Architectures
+## معماری‌های جستجوی ترکیبی
 
-### Architecture 1: Parallel Retrieval with Fusion
+### معماری ۱: بازیابی موازی همراه با ادغام
+
+<div dir="ltr">
 
 ```
                     +------------------+
@@ -139,12 +143,14 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
                     +-------------------+
 ```
 
-**Pros:** Clear separation, can use best-in-class for each (e.g., Pinecone + Algolia), tune independently
-**Cons:** Two separate systems to maintain, higher latency (must wait for the slower engine)
+</div>
 
-### Architecture 2: Native Hybrid (Single System)
+**مزایا:** تفکیک شفاف، امکان استفاده از بهترین ابزار در هر رده (مانند Pinecone + Algolia)، و تنظیم مستقل هر بخش
+**معایب:** نگهداری از دو سیستم مجزا، تاخیر (Latency) بالاتر (باید منتظر موتور کندتر ماند)
 
-Some vector databases support hybrid natively:
+### معماری ۲: ترکیبی نیتیو (سیستم واحد)
+
+برخی از پایگاه‌های داده برداری (Vector Database) به‌صورت نیتیو از جستجوی ترکیبی پشتیبانی می‌کنند:
 
 ```python
 # Weaviate (Python client v4)
@@ -172,10 +178,10 @@ results = client.query_points(
 ).points
 ```
 
-**Pros:** Single system, simpler ops, lower latency
-**Cons:** Limited fusion customization, less flexibility in scaling keyword vs. vector infra
+**مزایا:** سیستم واحد، عملیات نگهداری ساده‌تر، تاخیر (Latency) کمتر
+**معایب:** سفارشی‌سازی محدود در ادغام، انعطاف‌پذیری کمتر در مقیاس‌پذیری زیرساخت کلیدواژه‌ای در برابر برداری
 
-### Architecture 3: Staged Retrieval
+### معماری ۳: بازیابی چندمرحله‌ای
 
 ```
 Query --> Sparse (fast, broad) --> Top 1000
@@ -187,16 +193,16 @@ Query --> Sparse (fast, broad) --> Top 1000
            Cross-encoder --> Top 10
 ```
 
-**Pros:** Efficient, each stage refines
-**Cons:** More complex, risk of early-stage errors
+**مزایا:** کارآمد، هر مرحله نتایج را پالایش می‌کند
+**معایب:** پیچیدگی بیشتر، خطر بروز خطا در مراحل اولیه
 
 ---
 
-## Fusion Methods
+## روش‌های ادغام
 
-### Reciprocal Rank Fusion (RRF)
+### ادغام رتبه متقابل (RRF)
 
-RRF is the gold standard for combining results from two different search engines. It does not look at the *score* (which is incomparable across engines). It looks at the **rank**.
+روش RRF استاندارد طلایی برای ترکیب نتایج حاصل از دو موتور جستجوی متفاوت است. این روش به *امتیاز* (که در میان موتورهای مختلف غیرقابل مقایسه است) نگاه نمی‌کند، بلکه **رتبه** را در نظر می‌گیرد.
 
 ```python
 def reciprocal_rank_fusion(
@@ -213,17 +219,17 @@ def reciprocal_rank_fusion(
     return sorted_docs
 ```
 
-**Properties:**
-- Position-based, ignores raw scores
-- Robust to score scale differences: prevents a single engine from "dominating" just because it has high numerical scores
-- k parameter controls rank sensitivity (higher k = less sensitive to position)
-- Simple to implement, no tuning beyond k
+**ویژگی‌ها:**
+- مبتنی بر موقعیت، امتیازهای خام را نادیده می‌گیرد
+- مقاوم در برابر تفاوت مقیاس امتیازها: از «غالب شدن» یک موتور صرفاً به دلیل داشتن امتیازهای عددی بالا جلوگیری می‌کند
+- پارامتر k حساسیت رتبه را کنترل می‌کند (k بزرگ‌تر = حساسیت کمتر به موقعیت)
+- پیاده‌سازی ساده، بدون نیاز به تنظیم پارامتری فراتر از k
 
-**Typical k values:** 60 (original paper), 10-100 in practice
+**مقادیر متداول k:** ۶۰ (در مقاله اصلی)، ۱۰ تا ۱۰۰ در عمل
 
-### Weighted Score Fusion
+### ادغام امتیاز وزنی
 
-Combine normalized scores:
+ترکیب امتیازهای نرمال‌شده:
 
 ```python
 def weighted_fusion(
@@ -258,14 +264,14 @@ def normalize_scores(results: list[Result]) -> list[Result]:
     ]
 ```
 
-**Properties:**
-- Uses actual scores (more information than rank)
-- Requires score normalization
-- Alpha controls dense vs sparse balance
+**ویژگی‌ها:**
+- استفاده از امتیازهای واقعی (اطلاعات بیشتر نسبت به رتبه)
+- نیاز به نرمال‌سازی امتیازها دارد
+- پارامتر Alpha تعادل بین متراکم و تنک را کنترل می‌کند
 
-### Relative Score Fusion
+### ادغام امتیاز نسبی
 
-Account for score distribution:
+لحاظ کردن توزیع امتیازها:
 
 ```python
 def relative_score_fusion(
@@ -293,29 +299,29 @@ def z_score_normalize(results: list[Result]) -> list[Result]:
     return [Result(id=r.id, score=(r.score - mean) / std) for r in results]
 ```
 
-### Fusion Method Comparison
+### مقایسه روش‌های ادغام
 
-| Method | Uses Scores | Query Adaptive | Complexity |
+| روش | استفاده از امتیازها | انطباق‌پذیر با پرس‌وجو | پیچیدگی |
 |--------|-------------|----------------|------------|
-| RRF | No (ranks only) | No | Low |
-| Weighted RRF | No (ranks, per-arm weights) | No | Low |
-| Weighted | Yes | No | Low |
-| Relative Score | Yes | Partially | Medium |
-| Learned | Yes | Yes | High |
+| RRF | خیر (صرفاً رتبه‌ها) | خیر | کم |
+| Weighted RRF | خیر (رتبه‌ها، وزن به ازای هر شاخه) | خیر | کم |
+| Weighted | بله | خیر | کم |
+| Relative Score | بله | تا حدی | متوسط |
+| Learned | بله | بله | بالا |
 
-**Where the engines stand:** Elasticsearch fuses with the `rrf` retriever or the score-based `linear` retriever. Weaviate defaults to relative-score fusion. Qdrant offers RRF and distribution-based score fusion in the Query API. Milvus 3.0.1 added weighted RRF, which keeps RRF's scale-independence while letting you favor one arm.
+**موقعیت موتورهای مختلف:** موتور Elasticsearch با بازیاب `rrf` یا بازیاب مبتنی بر امتیاز `linear` ادغام را انجام می‌دهد. پایگاه داده Weaviate به‌صورت پیش‌فرض از ادغام امتیاز نسبی استفاده می‌کند. پایگاه داده Qdrant روش‌های RRF و ادغام امتیاز مبتنی بر توزیع را در Query API ارائه می‌دهد. پایگاه داده Milvus 3.0.1 روش RRF وزنی را اضافه کرد که استقلال مقیاس در RRF را حفظ می‌کند و در عین حال به شما امکان می‌دهد یکی از شاخه‌ها را ترجیح دهید.
 
 ---
 
-## Learned Sparse Embeddings (SPLADE)
+## امبدینگ‌های تنک یادگرفته‌شده (SPLADE)
 
-Production stacks have moved beyond BM25 (simple word frequency) to **Learned Sparse Embeddings** for the sparse arm of hybrid search.
+مجموعه‌های نرم‌افزاری عملیاتی برای شاخه تنک جستجوی ترکیبی، فراتر از BM25 (بسامد ساده کلمات) رفته و به سمت **امبدینگ‌های تنک یادگرفته‌شده (Learned Sparse Embeddings)** حرکت کرده‌اند.
 
-**Technique**: Models like **SPLADE v3** predict "importance weights" for every word in the dictionary.
+**تکنیک**: مدل‌هایی مانند **SPLADE v3** «وزن‌های اهمیت» را برای هر کلمه در فرهنگ لغت پیش‌بینی می‌کنند.
 
-**Why?**: SPLADE can "expand" queries. If you search for "CPU," it might automatically add a small weight to the term "processor," even if "processor" is not in your query. It combines the exact-match power of sparse search with the conceptual power of dense search in a single storage format.
+**چرا؟**: مدل SPLADE می‌تواند پرس‌وجوها را «گسترش» دهد. اگر عبارت "CPU" را جستجو کنید، ممکن است به‌طور خودکار وزن کمی به واژه "processor" اختصاص دهد، حتی اگر "processor" در پرس‌وجوی شما نباشد. این رویکرد قدرت تطابق دقیق جستجوی تنک را با توانایی مفهومی جستجوی متراکم در یک فرمت ذخیره‌سازی واحد ادغام می‌کند.
 
-### SPLADE Implementation
+### پیاده‌سازی SPLADE
 
 ```python
 from sentence_transformers import SparseEncoder  # sentence-transformers >= 5.0
@@ -333,17 +339,17 @@ class SpladeEncoder:
         return dict(self.model.decode(emb)[0])
 ```
 
-naver/splade-v3 is gated and licensed CC BY-NC-SA 4.0 (non-commercial), as is the older SPLADE++ checkpoint, so check the license or pick a commercially licensed learned-sparse model before you ship it.
+مدل naver/splade-v3 دارای دسترسی کنترل‌شده (gated) است و تحت مجوز CC BY-NC-SA 4.0 (غیرتجاری) عرضه شده است، همانند چک‌پوینت قدیمی‌تر SPLADE++؛ بنابراین پیش از استقرار (Deployment) در محیط عملیاتی، مجوز آن را بررسی کنید یا مدلی تنک و یادگرفته‌شده با مجوز تجاری را برگزینید.
 
-**When to use SPLADE over BM25 + Dense Hybrid:** SPLADE produces a sparse vector that can be stored in modern vector databases (like Milvus or Qdrant) alongside the dense vector, enabling hybrid search in a single pass without a separate Elasticsearch or BM25 index. Stick to BM25 if your dataset has extremely rare, non-linguistic tokens (like unique serial numbers) that a neural model might not have seen during training.
+**چه زمانی از SPLADE به جای ترکیب BM25 و متراکم (BM25 + Dense Hybrid) استفاده کنیم:** مدل SPLADE یک بردار تنک تولید می‌کند که می‌تواند در پایگاه‌های داده برداری (Vector Database) مدرن (مانند Milvus یا Qdrant) در کنار بردار متراکم ذخیره شود، و جستجوی ترکیبی را در یک گام واحد بدون نیاز به یک نمایه مجزای Elasticsearch یا BM25 ممکن سازد. اگر مجموعه داده شما حاوی Tokenهای بسیار نادر و غیرزبانی است (مانند شماره سریال‌های یکتا) که ممکن است یک مدل عصبی در طول آموزش ندیده باشد، همچنان از BM25 استفاده کنید.
 
-**Sparse indexes caught up.** Learned sparse vectors have far more non-zero terms per document than BM25, which used to make them slow on inverted indexes built for keyword search. Milvus 3.0 rebuilt its sparse index around SINDI, Block-Max WAND and Block-Max MaxScore; Milvus reports the compressed BM25 index at roughly a third of its 2.6 size and SINDI at up to about 10x the QPS of MaxScore on learned sparse vectors (vendor benchmarks).
+**نمایه‌های تنک خود را ارتقا داده‌اند.** بردارهای تنک یادگرفته‌شده نسبت به BM25 اصطلاحات غیرصفر بسیار بیشتری به ازای هر سند دارند، که پیش‌تر باعث کندی آن‌ها روی نمایه‌های معکوسِ طراحی‌شده برای جستجوی کلیدواژه‌ای می‌شد. پایگاه داده Milvus 3.0 نمایه تنک خود را حول محور SINDI، الگوریتم Block-Max WAND و Block-Max MaxScore بازطراحی کرد؛ طبق گزارش Milvus، حجم نمایه فشرده BM25 به حدود یک‌سوم نسخه 2.6 رسیده و کارایی SINDI روی بردارهای تنک یادگرفته‌شده تا حدود ۱۰ برابر QPS بالاتر از MaxScore است (بنچمارک‌های ارائه‌دهنده).
 
 ---
 
-## Implementation Patterns
+## الگوهای پیاده‌سازی
 
-### Pattern 1: Elasticsearch + Vector DB
+### الگوی ۱: ترکیب Elasticsearch و پایگاه داده برداری (Vector Database)
 
 ```python
 import asyncio
@@ -386,7 +392,7 @@ class HybridSearcher:
         ]
 ```
 
-### Pattern 2: Native Hybrid with Weaviate
+### الگوی ۲: جستجوی ترکیبی نیتیو با Weaviate
 
 ```python
 import weaviate
@@ -411,11 +417,11 @@ def hybrid_search_weaviate(
 
 ---
 
-## Tuning and Optimization
+## تنظیم و بهینه‌سازی
 
-### Alpha Tuning
+### تنظیم Alpha
 
-The alpha parameter balances dense vs sparse:
+پارامتر alpha تعادل بین متراکم و تنک را برقرار می‌کند:
 
 ```python
 def find_optimal_alpha(
@@ -440,14 +446,14 @@ def find_optimal_alpha(
     return best_alpha
 ```
 
-**Best practice / typical findings:**
-- Technical documentation and code: alpha 0.3-0.4 (keyword heavy)
-- General text: alpha 0.5 (balanced)
-- Chat and creative exploration: alpha 0.7-0.9 (semantic heavy)
+**بهترین تجارب / یافته‌های متداول:**
+- مستندات فنی و کد: مقدار alpha بین ۰.۳ تا ۰.۴ (تمرکز بالا بر کلیدواژه)
+- متون عمومی: مقدار alpha برابر با ۰.۵ (متعادل)
+- گفتگو و کاوش‌های خلاقانه: مقدار alpha بین ۰.۷ تا ۰.۹ (تمرکز بالا بر معنا)
 
-### Query-Adaptive Alpha
+### تنظیم Alpha منطبق با پرس‌وجو
 
-Predict optimal alpha per query:
+پیش‌بینی مقدار بهینه alpha به ازای هر پرس‌وجو:
 
 ```python
 def predict_alpha(query: str) -> float:
@@ -469,15 +475,15 @@ def predict_alpha(query: str) -> float:
     return 0.5  # Default balanced
 ```
 
-### Diversity and Business Rules
+### تنوع و قواعد کسب‌وکار
 
-Fusion optimizes relevance per document, so near-duplicate chunks from the same source can fill the top-k. Two controls that used to live in application code are now generally available engine features in Weaviate 1.39 (August 2026):
-- **MMR (maximal marginal relevance)** for hybrid and vector search, with a balance parameter between 0.0 and 1.0 that trades relevance against diversity (Python client 4.23.0+ for hybrid).
-- **Boost API**: query-time rescoring that promotes or demotes results by filter match, property value, time decay or numeric decay, without filtering anything out. Use it for freshness and "prefer official docs" rules instead of hard filters that can empty the result set.
+ادغام نتایج، ارتباط موضوعی را به ازای هر سند بهینه‌سازی می‌کند، بنابراین تکه‌های متنی (chunks) تقریباً تکراری از یک منبع مشترک می‌توانند نتایج top-k را پر کنند. دو مکانیزم کنترلی که پیش‌تر در کد برنامه پیاده‌سازی می‌شدند، اکنون در Weaviate 1.39 (آگوست ۲۰۲۶) به ویژگی‌های عمومی موتور تبدیل شده‌اند:
+- **معیار MMR (ارتباط حاشیه‌ای حداکثر / maximal marginal relevance)** برای جستجوی ترکیبی و برداری، با یک پارامتر تعادل بین 0.0 و 1.0 که میان ارتباط موضوعی و تنوع تعادل ایجاد می‌کند (کلاینت پایتون نسخه 4.23.0 به بالا برای جستجوی ترکیبی).
+- **قابلیت Boost API**: امتیازدهی مجدد در زمان پرس‌وجو که نتایج را بر اساس تطابق فیلتر، مقدار ویژگی، زوال زمانی یا زوال عددی ارتقا یا تنزل می‌دهد، بدون آنکه موردی را کاملاً حذف کند. از این قابلیت برای تازگی محتوا و قواعدی مانند «ترجیح مستندات رسمی» استفاده کنید تا نیازی به فیلترهای قطعی که می‌توانند مجموعه نتایج را خالی کنند نباشد.
 
-### Retrieval Depth
+### عمق بازیابی
 
-How many results to fetch before fusion:
+تعداد نتایجی که باید پیش از ادغام واکشی شوند:
 
 ```python
 # Rule of thumb: fetch 3-5x more from each source
@@ -493,9 +499,9 @@ def hybrid_search(query: str, final_k: int = 10):
 
 ---
 
-## Production Considerations
+## ملاحظات محیط عملیاتی
 
-### Latency Budget
+### بودجه تاخیر (Latency)
 
 ```
 Typical hybrid search latency breakdown:
@@ -507,17 +513,17 @@ Fusion:                    1-5ms
 Total:                   60-100ms
 ```
 
-**Optimizations:**
-- Run dense and sparse in parallel
-- Pre-compute embeddings for common queries
-- Use approximate search for both
-- Cache fusion results for repeated queries
+**بهینه‌سازی‌ها:**
+- اجرای موازی جستجوی متراکم و تنک
+- پیش‌محاسبه امبدینگ‌ها برای پرس‌وجوهای متداول
+- استفاده از جستجوی تقریبی برای هر دو روش
+- کش کردن نتایج ادغام برای پرس‌وجوهای تکراری
 
-### Multi-Tenant Keyword Scoring
+### امتیازدهی کلیدواژه‌ای چندمستأجری (multi-tenant)
 
-BM25 depends on corpus statistics (IDF). In a shared multi-tenant collection, one large tenant's vocabulary shifts every other tenant's keyword scores, so the same query and documents rank differently depending on who else is in the index, and term statistics leak across tenants. Qdrant 1.19 added per-tenant IDF for sparse and BM25 search; elsewhere, give large tenants their own index or accept the drift and evaluate per tenant.
+الگوریتم BM25 به آمارهای پیکره متنی (IDF) وابسته است. در یک کالکشن چندمستأجری (multi-tenant) اشتراکی، دایره واژگان یک مستأجر (tenant / multi-tenant) بزرگ می‌تواند امتیازهای کلیدواژه‌ای سایر مستأجرها (tenant / multi-tenant) را تغییر دهد؛ بنابراین یک پرس‌وجو و اسناد یکسان بسته به اینکه چه داده‌های دیگری در نمایه حضور دارند رتبه‌بندی متفاوتی خواهند داشت و آمار اصطلاحات میان مستأجرها (tenant / multi-tenant) نشت می‌کند. نسخه Qdrant 1.19 قابلیت IDF به ازای هر مستأجر (tenant / multi-tenant) را برای جستجوی تنک و BM25 اضافه کرده است؛ در سایر سیستم‌ها، به مستأجرهای (tenant / multi-tenant) بزرگ نمایه اختصاصی خودشان را بدهید یا این انحراف آماری را بپذیرید و ارزیابی را به تفکیک هر مستأجر (tenant / multi-tenant) انجام دهید.
 
-### Caching Strategy
+### استراتژی کشینگ
 
 ```python
 class HybridSearchCache:
@@ -540,7 +546,7 @@ class HybridSearchCache:
         ).hexdigest()
 ```
 
-### Fallback Strategy
+### استراتژی پشتیبان (Fallback)
 
 ```python
 def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
@@ -556,73 +562,75 @@ def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
 
 ---
 
-## Interview Questions
+## سوالات مصاحبه
 
-### Q: When would you use hybrid search over pure dense search?
+### سوال: چه زمانی از جستجوی ترکیبی به جای جستجوی صرفاً متراکم استفاده می‌کنید؟
 
-**Strong answer:**
-I would use hybrid search when:
+**پاسخ قوی:**
+من در موارد زیر از جستجوی ترکیبی استفاده می‌کنم:
 
-1. **Queries contain specific terms:** Product codes, API names, error codes. Dense search may miss exact matches.
+۱. **پرس‌وجوها حاوی اصطلاحات خاص باشند:** کدهای محصول، نام‌های API، کدهای خطا. جستجوی متراکم ممکن است تطابق‌های دقیق را از دست بدهد.
 
-2. **Domain has specialized vocabulary:** Technical documentation, legal, medical. Sparse captures specific terms.
+۲. **دامنه دارای واژگان تخصصی باشد:** مستندات فنی، حقوقی، پزشکی. جستجوی تنک اصطلاحات خاص را به خوبی دریافت می‌کند.
 
-3. **Zero-shot retrieval:** New domain without fine-tuned embeddings. Sparse provides robust baseline.
+۳. **بازیابی صفر-نمونه (Zero-shot):** دامنه جدید بدون امبدینگ‌هایی که تحت Fine-tuning قرار گرفته باشند. جستجوی تنک یک خط مبنای قدرتمند فراهم می‌کند.
 
-4. **Quality is critical:** Hybrid rarely performs worse than either alone, at cost of complexity.
+۴. **کیفیت حیاتی باشد:** جستجوی ترکیبی به ندرت عملکردی ضعیف‌تر از هر یک از روش‌ها به تنهایی دارد، البته به قیمت پیچیدگی بیشتر.
 
-**I would stick with pure dense when:**
-- Queries are purely conceptual/semantic
-- Latency budget is very tight
-- Simpler architecture is priority
-- Embedding model is well-tuned for domain
+**در موارد زیر از جستجوی صرفاً متراکم استفاده می‌کنم:**
+- پرس‌وجوها کاملاً مفهومی/معنایی باشند
+- بودجه تاخیر (Latency) بسیار محدود باشد
+- اولویت با معماری ساده‌تر باشد
+- مدل امبدینگ برای دامنه مورد نظر به خوبی تنظیم شده باشد
 
-The decision is empirical. I would A/B test hybrid vs dense on my actual query distribution.
+این تصمیم تجربی است. من جستجوی ترکیبی را در برابر متراکم با آزمون A/B روی توزیع واقعی پرس‌وجوهایم می‌سنجم.
 
-### Q: Why is Reciprocal Rank Fusion (RRF) safer than "Simple Score Addition"?
+### سوال: چرا روش ادغام رتبه متقابل (RRF) نسبت به «جمع ساده امتیازها» ایمن‌تر است؟
 
-**Strong answer:**
-Simple score addition is dangerous because vector and keyword scores use completely different scales. Cosine similarity is bounded to -1 to 1, and many text embedders squeeze it into a narrow positive band; BM25 is unbounded and shifts with corpus statistics and query length. An extremely high BM25 score for a lucky keyword match could "drown out" 10 highly relevant semantic matches. RRF ignores the absolute scores and only cares about the relative order (rank). That makes it insensitive to outliers and to score drift between retrieval engines.
+**پاسخ قوی:**
+جمع ساده امتیازها خطرناک است زیرا امتیازهای برداری و کلیدواژه‌ای از مقیاس‌های کاملاً متفاوتی استفاده می‌کنند. شباهت کسینوسی به بازه ۱- تا ۱ محدود است و بسیاری از مدل‌های امبدینگ متنی آن را به یک محدوده مثبت باریک فشرده می‌کنند؛ در مقابل، امتیاز BM25 نامحدود است و با آمار پیکره متنی و طول پرس‌وجو نوسان می‌کند. یک امتیاز بسیار بالای BM25 برای یک تطابق کلیدواژه‌ای تصادفی می‌تواند ۱۰ تطابق معنایی بسیار مرتبط را «محو» کند. روش RRF امتیازهای مطلق را نادیده می‌گیرد و صرفاً به ترتیب نسبی (رتبه) اهمیت می‌دهد. این موضوع آن را در برابر داده‌های پرت و انحراف امتیاز میان موتورهای بازیابی مختلف مصون می‌سازد.
 
-### Q: When would you choose SPLADE over the standard BM25 + Dense Hybrid approach?
+### سوال: چه زمانی SPLADE را به رویکرد استاندارد ترکیب BM25 و متراکم (BM25 + Dense Hybrid) ترجیح می‌دهید؟
 
-**Strong answer:**
-I would choose SPLADE when I want to simplify my infrastructure. SPLADE produces a sparse vector that can be stored in many modern vector databases (like Milvus or Qdrant) alongside the dense vector. This allows the database to perform "Hybrid search" in a single pass without needing a separate Elasticsearch or BM25 index. However, I would stick to BM25 if my dataset has extremely rare, non-linguistic tokens (like unique serial numbers) that a neural model might not have seen during training.
+**پاسخ قوی:**
+زمانی SPLADE را انتخاب می‌کنم که بخواهم زیرساختم را ساده‌تر کنم. مدل SPLADE یک بردار تنک تولید می‌کند که می‌تواند در بسیاری از پایگاه‌های داده برداری (Vector Database) مدرن (مانند Milvus یا Qdrant) در کنار بردار متراکم ذخیره شود. این قابلیت به پایگاه داده امکان می‌دهد «جستجوی ترکیبی» را در یک گام واحد بدون نیاز به یک نمایه مجزای Elasticsearch یا BM25 انجام دهد. با این حال، اگر مجموعه داده من حاوی Tokenهای بسیار نادر و غیرزبانی باشد (مانند شماره سریال‌های منحصربه‌فرد) که ممکن است یک مدل عصبی در طول آموزش ندیده باشد، همچنان از BM25 استفاده خواهم کرد.
 
-### Q: How do you balance dense vs sparse in hybrid search?
+### سوال: چگونه تعادل بین بازیابی متراکم و تنک را در جستجوی ترکیبی برقرار می‌کنید؟
 
-**Strong answer:**
-The alpha parameter controls the balance (typically alpha for dense weight):
+**پاسخ قوی:**
+پارامتر alpha این تعادل را کنترل می‌کند (معمولاً alpha وزن بخش متراکم است):
 
-**Tuning approach:**
-1. Start with alpha=0.5 (equal weight)
-2. Create evaluation set with queries and relevance labels
-3. Grid search alpha in [0.1, 0.3, 0.5, 0.7, 0.9]
-4. Measure NDCG or MRR at each setting
-5. Pick alpha that maximizes evaluation metric
+**رویکرد تنظیم:**
+۱. شروع با alpha=0.5 (وزن برابر)
+۲. ایجاد مجموعه ارزیابی با پرس‌وجوها و برچسب‌های ارتباط موضوعی
+۳. جستجوی شبکه‌ای (Grid search) برای alpha در [0.1, 0.3, 0.5, 0.7, 0.9]
+۴. اندازه‌گیری NDCG یا MRR در هر تنظیم
+۵. انتخاب مقداری از alpha که معیار ارزیابی را بیشینه کند
 
-**Query-adaptive tuning:**
-- Detect query type (keyword-heavy, conceptual, mixed)
-- Adjust alpha per query
-- Can use simple heuristics or learned classifier
+**تنظیم منطبق با پرس‌وجو:**
+- تشخیص نوع پرس‌وجو (مبتنی بر کلیدواژه، مفهومی، ترکیبی)
+- تنظیم alpha به ازای هر پرس‌وجو
+- امکان استفاده از روش‌های ابتکاری ساده یا یک دسته‌بند یادگرفته‌شده
 
-**Rule of thumb:**
-- Technical/code queries: alpha 0.3-0.4
-- General text: alpha 0.5
-- Conversational: alpha 0.7-0.8
-
----
-
-## References
-
-- Cormack et al. "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods" (2009)
-- Formal et al. "SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking" (2021/2025)
-- Weaviate Hybrid Search: https://weaviate.io/developers/weaviate/search/hybrid
-- Qdrant Hybrid Search: https://qdrant.tech/documentation/concepts/hybrid-queries/
-- [Elasticsearch release notes (9.5)](https://www.elastic.co/docs/release-notes/elasticsearch)
-- [Pinecone full-text search GA (Sep 2026)](https://www.pinecone.io/blog/full-text-search-generally-available/)
-- [Milvus 3.0.0 release notes (July 2026)](https://github.com/milvus-io/milvus/releases/tag/v3.0.0)
+**قاعده سرانگشتی:**
+- پرس‌وجوهای فنی/کد: alpha بین ۰.۳ تا ۰.۴
+- متون عمومی: alpha برابر با ۰.۵
+- مکالمه‌ای: alpha بین ۰.۷ تا ۰.۸
 
 ---
 
-*Previous: [Vector Databases](04-vector-databases.md) | Next: [Reranking Strategies](06-reranking-strategies.md)*
+## منابع
+
+- کورماک و همکاران، "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods" (۲۰۰۹)
+- فورمال و همکاران، "SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking" (۲۰۲۱/۲۰۲۵)
+- جستجوی ترکیبی Weaviate: https://weaviate.io/developers/weaviate/search/hybrid
+- جستجوی ترکیبی Qdrant: https://qdrant.tech/documentation/concepts/hybrid-queries/
+- [یادداشت‌های انتشار Elasticsearch (نسخه ۹.۵)](https://www.elastic.co/docs/release-notes/elasticsearch)
+- [عرضه عمومی جستجوی تمام‌متن Pinecone (سپتامبر ۲۰۲۶)](https://www.pinecone.io/blog/full-text-search-generally-available/)
+- [یادداشت‌های انتشار Milvus 3.0.0 (ژوئیه ۲۰۲۶)](https://github.com/milvus-io/milvus/releases/tag/v3.0.0)
+
+---
+
+*قبلی: [پایگاه‌های داده برداری](04-vector-databases.md) | بعدی: [استراتژی‌های رتبه‌بندی مجدد](06-reranking-strategies.md)*
+
+</div>

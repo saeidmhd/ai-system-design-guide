@@ -1,56 +1,60 @@
-# RAG Fundamentals
+<div dir="rtl">
 
-How RAG evolved from naive vector search to agentic and graph-based retrieval. When to choose RAG vs. long context, and the three retrieval gaps that cause production failures.
+# مبانی RAG
 
-Retrieval-Augmented Generation (RAG) is the architectural pattern of providing an LLM with external, verifiable context to ground its responses. It has evolved from "simple vector search" into a multi-stage reasoning pipeline: hybrid retrieval, reranking, contextual chunking, and agentic loops are now table stakes for production. Deeper material lives in [Chunking Strategies](02-chunking-strategies.md), [Vector Databases](04-vector-databases.md), [Reranking](06-reranking-strategies.md), [Contextual Retrieval](10-contextual-retrieval.md), [ColBERT Late Interaction](11-late-interaction-colbert.md), and the [GraphRAG reframe](07-graph-rag.md).
+چگونگی تکامل RAG از جستجوی برداری ساده (naive) به بازیابی‌های مبتنی بر Agent و مبتنی بر گراف. چه زمانی باید بین RAG و کانتکست طولانی (long context) انتخاب کرد، و سه شکاف بازیابی که عامل شکست در محیط عملیاتی (production) هستند.
 
-## Table of Contents
+تولید مبتنی بر بازیابی یا Retrieval-Augmented Generation (RAG) یک الگوی معماری برای ارائه کانتکست خارجی و قابل‌تایید به یک LLM به منظور تثبیت و استناد (grounding) پاسخ‌های آن است. این الگو از یک «جستجوی برداری ساده» به یک خط لوله (pipeline) استدلال چندمرحله‌ای تکامل یافته است: بازیابی ترکیبی (hybrid retrieval)، بازرتبه‌بندی (reranking)، فرآیند Chunking متنی (contextual chunking)، و حلقه‌های Agentic امروزه پیش‌نیازهای ضروری برای محیط عملیاتی به شمار می‌روند. مباحث عمیق‌تر در بخش‌های [استراتژی‌های Chunking](02-chunking-strategies.md)، [پایگاه‌های داده برداری (Vector Databases)](04-vector-databases.md)، [بازرتبه‌بندی (Reranking)](06-reranking-strategies.md)، [بازیابی متنی و زمینه‌ای (Contextual Retrieval)](10-contextual-retrieval.md)، [تعامل دیرهنگام ColBERT](11-late-interaction-colbert.md)، و [بازتعریف GraphRAG](07-graph-rag.md) آمده است.
 
-- [The Core Philosophy: Grounding vs. Training](#the-core-philosophy-grounding-vs-training)
-- [The RAG Taxonomy](#the-rag-taxonomy)
-- [RAG vs. Long Context (The Hybrid Era)](#rag-vs-long-context-the-hybrid-era)
-- [The Retrieval Quality Gap](#the-retrieval-quality-gap)
-- [Poisoned Sources](#poisoned-sources)
-- [Interview Questions](#interview-questions)
-- [Key Takeaways](#key-takeaways)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The Core Philosophy: Grounding vs. Training
-
-| Aspect | Fine-Tuning | RAG |
-|--------|-------------|-----|
-| **Knowledge Type** | Internalized (Weights) | Externalized (Context) |
-| **Update Cycle** | High Cost (Retraining) | Low Cost (Re-embed changed docs) |
-| **Attribution** | None (Black box) | Explicit (Citations) |
-| **Privacy** | Hard to "Unlearn" | Easy to filter/delete |
-
-**Rule of thumb**: Fine-tuning is for **Form** (style, tone, syntax); RAG is for **Fact** (knowledge, data, grounding).
+- [فلسفه اصلی: استناد در برابر آموزش](#the-core-philosophy-grounding-vs-training)
+- [دسته‌بندی (تاکسونومی) RAG](#the-rag-taxonomy)
+- [مقایسه RAG و کانتکست طولانی (عصر ترکیبی)](#rag-vs-long-context-the-hybrid-era)
+- [شکاف کیفیت بازیابی](#the-retrieval-quality-gap)
+- [منابع مسموم](#poisoned-sources)
+- [سوالات مصاحبه](#interview-questions)
+- [نکات کلیدی](#key-takeaways)
+- [مراجع](#references)
 
 ---
 
-## The RAG Taxonomy
+## فلسفه اصلی: استناد در برابر آموزش
 
-Production RAG systems are categorized by their "Agentic Depth":
+| جنبه | Fine-Tuning | RAG |
+|---|---|---|
+| **نوع دانش** | درونی‌شده (وزن‌ها / Weights) | بیرونی‌شده (کانتکست / Context) |
+| **چرخه به‌روزرسانی** | هزینه بالا (آموزش مجدد / Retraining) | هزینه پایین (Embedding مجدد اسناد تغییریافته) |
+| **قابلیت ارجاع و استناد (Attribution)** | ناممکن (جعبه سیاه) | صریح و شفاف (ارجاعات / Citations) |
+| **حریم خصوصی** | دشواری در «فراموش کردن» (Unlearn) | فیلتر کردن/حذف آسان |
 
-### 1. Naive RAG (Retrieve-then-Generate)
-- **Flow**: User Query -> Vector Search -> Top-K -> LLM.
-- **Status**: Deprecated for production due to "Retrieval Gap" and low precision.
+**قاعده سرانگشتی**: فرآیند Fine-tuning برای **فرم** (سبک، لحن، نحو) است؛ در حالی که RAG برای **واقعیت** (دانش، داده، استناد/grounding) به کار می‌رود.
 
-### 2. Advanced RAG (Multi-Stage)
-- **Flow**: Query Transformation -> Hybrid Search -> Reranking -> LLM.
-- **Key Nuance**: Uses **RRF (Reciprocal Rank Fusion)** to combine keyword and semantic results.
+---
 
-### 3. Agentic RAG (Loop-based)
-- **Flow**: Agent analyzes query -> Decides which tools/indices to search -> Evaluates results -> Re-retrieves if info is missing.
-- **Techniques**: Self-RAG, Corrective RAG (CRAG).
+## دسته‌بندی (تاکسونومی) RAG
 
-### 4. GraphRAG (Structured context)
-- **Flow**: Extract entities/relationships -> Build Knowledge Graph -> Traverse graph to find "connected knowledge."
-- **Win**: Solves "Aggregative Questions" (e.g., "Summarize all legal risks across 50 documents").
+سیستم‌های RAG در محیط عملیاتی بر اساس «عمق Agentic» خود دسته‌بندی می‌شوند:
 
-The four variants by agentic depth:
+### ۱. روش Naive RAG (بازیابی و سپس تولید)
+- **جریان کاری (Flow)**: پرسش کاربر -> جستجوی برداری -> Top-K -> ‏LLM.
+- **وضعیت**: برای محیط عملیاتی به دلیل «شکاف بازیابی» (Retrieval Gap) و دقت (precision) پایین منسوخ شده است.
+
+### ۲. روش Advanced RAG (چندمرحله‌ای)
+- **جریان کاری (Flow)**: تبدیل پرسش (Query Transformation) -> جستجوی ترکیبی (Hybrid Search) -> بازرتبه‌بندی (Reranking) -> ‏LLM.
+- **نکته کلیدی**: استفاده از **RRF (Reciprocal Rank Fusion)** برای ترکیب نتایج مبتنی بر کلمات کلیدی و معنایی.
+
+### ۳. روش Agentic RAG (مبتنی بر حلقه)
+- **جریان کاری (Flow)**: ‏Agent پرسش را تحلیل می‌کند -> تصمیم می‌گیرد کدام ابزارها/شاخص‌ها را جستجو کند -> نتایج را ارزیابی می‌کند -> در صورت ناقص بودن اطلاعات، دوباره بازیابی را انجام می‌دهد.
+- **تکنیک‌ها**: تکنیک‌های Self-RAG و Corrective RAG (CRAG).
+
+### ۴. روش GraphRAG (کانتکست ساختاریافته)
+- **جریان کاری (Flow)**: استخراج موجودیت‌ها/روابط -> ساخت گراف دانش (Knowledge Graph) -> پیمایش گراف برای یافتن «دانش مرتبط».
+- **مزیت اصلی**: حل «پرسش‌های تجمیعی» (Aggregative Questions) (به عنوان مثال، «خلاصه‌سازی تمام ریسک‌های حقوقی در بین ۵۰ سند»).
+
+چهار مدل متنوع بر اساس عمق Agentic:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -72,41 +76,45 @@ flowchart TD
     L --> LG[LLM generate]
 ```
 
+</div>
+
 ---
 
-## RAG vs. Long Context (The "Hybrid Era")
+## مقایسه RAG و کانتکست طولانی (عصر «ترکیبی»)
 
-Frontier context windows have settled at about **1M tokens**: Claude Opus 5.5, Sonnet 5.5 and Fable 5.1 at 1M, the GPT-6 family at 1.05M, Gemini 4 Argon at 1M shared with output, and even the fast-tier Gemini 3.8 Flash at 1,048,576 input tokens. The 2M windows of the Gemini 1.5 era did not become the norm. What changed in 2026 is not the window size but the **price of rereading it**.
+پنجره‌های کانتکست مدل‌های پیشرو روی حدود **۱ میلیون Token** تثبیت شده‌اند: Claude Opus 5.5، Sonnet 5.5 و Fable 5.1 روی ۱ میلیون Token، خانواده GPT-6 روی ۱.۰۵ میلیون Token، مدل Gemini 4 Argon روی ۱ میلیون Token مشترک با خروجی، و حتی مدل رده‌سریع Gemini 3.8 Flash روی ۱٬۰۴۸٬۵۷۶ Token ورودی. پنجره‌های ۲ میلیون Token در عصر Gemini 1.5 به یک استاندارد معمول تبدیل نشدند. آنچه در سال ۲۰۲۶ تغییر کرد، اندازه پنجره نبود، بلکه **هزینه خواندن مجدد آن** بود.
 
-- **In-Context RAG (ICR)**: For small, stable corpora, skip the vector DB and put everything in a cached prompt prefix.
-- **Prompt caching** discounts reread tokens, but the discount now varies by model: cache reads are 0.1x input on most models, 0.05x on Claude Opus 5.5, Claude Sonnet 5.5 (cut from 0.1x on October 7, 2026), GPT-6.1 Sol, and GPT-6.1 Terra, and 0.025x on Claude Fable 5.1 ($0.25 per 1M against $10 list). You still pay the cache write: 1.25x for OpenAI's 30-minute cache on GPT-5.6 and later and for Anthropic's 5-minute TTL, 2x for Anthropic's 1-hour TTL, and 2.5x for OpenAI's 12-hour option (added October 20, 2026). A longer TTL only pays off if the corpus is reread often enough to amortize the pricier write.
-- **Long-context cliffs**: OpenAI bills the **entire request** at long-context rates once input passes 272K tokens (2x input and cache, 1.5x output; GPT-6 Sol goes from $2/$10 to $4/$15), xAI doubles every token once a Grok prompt reaches 200K, and Gemini 3.1 Pro Preview steps up from $2/$12 to $4/$18 above 200K. Anthropic Claude 4.6 and later stay flat to 1M with one exception: Claude Haiku 5.5 bills the whole request at $0.50/$2.50 instead of $0.10/$0.50 once the prompt passes 100K tokens, and cache reads and writes count toward that length. A 273K-token prompt on GPT-6 Sol costs roughly twice a 272K one, and a 101K-token prompt on Haiku 5.5 costs about five times a 100K one, so pack context just under the threshold or retrieve instead.
+- **روش In-Context RAG (ICR)**: برای مجموعه‌داده‌های کوچک و پایدار، پایگاه داده برداری (Vector Database) را کنار بگذارید و همه‌چیز را در یک پیشوند کَش‌شده از Prompt (به صورت cached prompt prefix) قرار دهید.
+- **قابلیت Prompt caching** تخفیف‌هایی برای Tokenهای بازخوانی‌شده ارائه می‌دهد، اما این تخفیف اکنون بسته به مدل متفاوت است: خواندن از کَش در بیشتر مدل‌ها 0.1x ورودی، در Claude Opus 5.5، Claude Sonnet 5.5 (که در ۷ اکتبر ۲۰۲۶ از 0.1x کاهش یافت)، GPT-6.1 Sol و GPT-6.1 Terra برابر 0.05x، و در Claude Fable 5.1 برابر 0.025x است (۰.۲۵ دلار به ازای هر ۱ میلیون Token در مقایسه با نرخ پایه ۱۰ دلاری). شما همچنان هزینه نوشتن در کَش (cache write) را پرداخت می‌کنید: ۱.۲۵ برابر برای کَش ۳۰ دقیقه‌ای OpenAI در GPT-5.6 و بالاتر و برای TTL پنج دقیقه‌ای Anthropic، ۲ برابر برای TTL یک ساعته Anthropic، و ۲.۵ برابر برای گزینه ۱۲ ساعته OpenAI (اضافه‌شده در ۲۰ اکتبر ۲۰۲۶). یک TTL طولانی‌تر تنها زمانی توجیه دارد که مجموعه‌داده به اندازه کافی مکرر خوانده شود تا هزینه نوشتن گران‌تر در کَش مستهلک گردد.
+- **پرتگاه‌های کانتکست طولانی (Long-context cliffs)**: به محض اینکه ورودی از ۲۷۲ هزار Token عبور کند، OpenAI **کل درخواست** را با تعرفه کانتکست طولانی محاسبه می‌کند (۲ برابر برای ورودی و کَش، ۱.۵ برابر برای خروجی؛ قیمت GPT-6 Sol از ۲/۱۰ دلار به ۴/۱۵ دلار می‌رسد)، xAI به محض رسیدن Prompt در Grok به ۲۰۰ هزار Token، هزینه هر Token را دو برابر می‌کند، و Gemini 3.1 Pro Preview بالاتر از ۲۰۰ هزار Token، تعرفه را از ۲/۱۲ دلار به ۴/۱۸ دلار افزایش می‌دهد. مدل‌های Claude 4.6 و بالاتر در Anthropic تا ۱ میلیون Token نرخ ثابتی دارند، به جز یک استثنا: Claude Haiku 5.5 به محض اینکه Prompt از ۱۰۰ هزار Token فراتر برود، کل درخواست را به جای ۰.۱۰/۰.۵۰ دلار با تعرفه ۰.۵۰/۲.۵۰ دلار فاکتور می‌کند، و عملیات خواندن و نوشتن کَش نیز جزو این طول شمرده می‌شوند. یک Prompt با ۲۷۳ هزار Token در GPT-6 Sol تقریباً دو برابر یک Prompt با ۲۷۲ هزار Token هزینه دارد، و یک Prompt با ۱۰۱ هزار Token در Haiku 5.5 حدود پنج برابر یک مورد ۱۰۰ هزار Token هزینه برمی‌دارد؛ بنابراین یا کانتکست را دقیقاً زیر آستانه نگه دارید یا به جای آن از بازیابی استفاده کنید.
 
-### The Break-Even Moved
+### تغییر نقطه سربه‌سر
 
-Ignoring cache writes, output tokens and latency, stuffing a cached corpus of **N** tokens costs about the same per query as sending **k** freshly retrieved tokens when:
+بدون در نظر گرفتن نوشتن در کَش، Tokenهای خروجی و تاخیر (Latency)، قرار دادن یک پیکره کَش‌شده با **N** عدد Token به ازای هر کوئری تقریباً زمانی هزینه‌ای معادل ارسال **k** عدد Token تازه بازیابی‌شده دارد که:
 
 ```
 N x cache_read_multiplier = k        =>        N_break_even = k / multiplier
 ```
 
-With a retrieved context of 5K tokens (the same assumption [Production RAG at Scale](14-production-rag-at-scale.md#the-cache-read-break-even) uses):
+با یک کانتکست بازیابی‌شده ۵ هزار Token (همان فرضی که در [RAG در مقیاس عملیاتی](14-production-rag-at-scale.md#the-cache-read-break-even) استفاده شده است):
 
-| Cache-read multiplier | Example models (November 2026 list) | Break-even cached corpus |
+| ضریب خواندن از کَش | نمونه مدل‌ها (فهرست نوامبر ۲۰۲۶) | نقطه سربه‌سر پیکره کَش‌شده |
 |---|---|---|
-| 0.1x | Haiku 5.5, GPT-6 Sol, most others | ~50K tokens |
-| 0.05x | Opus 5.5, Sonnet 5.5, GPT-6.1 Sol, GPT-6.1 Terra | ~100K tokens |
-| 0.025x | Fable 5.1 | ~200K tokens |
+| 0.1x | ‏Haiku 5.5، GPT-6 Sol و بیشتر مدل‌های دیگر | حدود ۵۰ هزار Token |
+| 0.05x | ‏Opus 5.5، Sonnet 5.5، GPT-6.1 Sol و GPT-6.1 Terra | حدود ۱۰۰ هزار Token |
+| 0.025x | ‏Fable 5.1 | حدود ۲۰۰ هزار Token |
 
-Double the retrieved context (10K tokens of chunks) and every break-even doubles with it.
+کانتکست بازیابی‌شده را دو برابر کنید (۱۰ هزار Token از chunkها) و تمام نقاط سربه‌سر نیز همراه با آن دو برابر می‌شوند.
 
-Below the break-even, in-context is cheaper per query and removes retrieval misses as a failure mode. Above it, retrieval wins on cost, and the gap widens with corpus size. Three things push the practical break-even lower than the formula: cache writes every time the prefix changes or expires (a corpus queried less often than the cache TTL pays the write again and again), prefill latency on hundreds of thousands of tokens even when cached, and long-context recall that still degrades on needle-style questions. Recompute this per model rather than quoting a fixed token threshold; a model swap changes it even at the same list price.
+پایین‌تر از نقطه سربه‌سر، روش in-context به ازای هر کوئری ارزان‌تر است و خطای عدم بازیابی اطلاعات را به عنوان یک حالت خرابی حذف می‌کند. بالاتر از آن، بازیابی از نظر هزینه برنده می‌شود و این اختلاف با افزایش اندازه پیکره بیشتر خواهد شد. سه عامل نقطه سربه‌سر عملی را نسبت به فرمول پایین‌تر می‌آورند: نوشتن در کَش در هر بار تغییر یا انقضای پیشوند (پیکره‌ای که با فرکانسی کمتر از TTL کَش کوئری می‌شود، بارها و بارها هزینه نوشتن را متحمل می‌شود)، تاخیر (Latency) مرحله prefill روی صدها هزار Token حتی در صورت کَش بودن، و افت بازخوانی (recall) در کانتکست طولانی که همچنان در سوالات از نوع سوزن در انبار کاه (needle-style) رخ می‌دهد. این مقدار را به جای استناد به یک آستانه ثابت از Token، به ازای هر مدل مجدداً محاسبه کنید؛ تعویض مدل حتی با همان قیمت پایه نیز این معادله را تغییر می‌دهد.
 
-**Architectural Decision**:
-- Corpus below the break-even for your model, stable, and visible to every user: **In-Context RAG** with caching.
-- Corpus above the break-even, changing hourly, or permissioned per user: **Standard RAG**. Per-user access control alone forces retrieval, because a shared cached prefix cannot contain documents some users may not see.
+**تصمیم معماری**:
+- پیکره زیر نقطه سربه‌سر برای مدل شما، پایدار، و قابل مشاهده برای تمام کاربران: **روش In-Context RAG** به همراه caching.
+- پیکره بالاتر از نقطه سربه‌سر، دارای تغییرات ساعتی، یا دارای سطوح دسترسی به ازای هر کاربر: **روش Standard RAG**. کنترل دسترسی به ازای هر کاربر به تنهایی استفاده از بازیابی را اجتناب‌ناپذیر می‌کند، زیرا یک پیشوند مشترک کَش‌شده نمی‌تواند شامل اسنادی باشد که برخی کاربران اجازه مشاهده آن‌ها را ندارند.
 
-Decision tree for picking between standard RAG and in-context RAG:
+درخت تصمیم‌گیری برای انتخاب بین RAG استاندارد و RAG درون کانتکست (in-context RAG):
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -121,65 +129,69 @@ flowchart TD
     F -->|No| H[Advanced or Agentic RAG]
 ```
 
----
-
-## The Retrieval Quality Gap
-
-The "Retrieval Gap" is the #1 cause of RAG failure.
-- **Gap 1: Semantic Mismatch**: Query says "fast cars," DB has "Porsche 911." Solved by better embeddings plus **Cross-Encoder Reranking**.
-- **Gap 2: Missing Context**: Relevant info is in the DB, but the Retriever missed it. Solved by **Hybrid Search**.
-- **Gap 3: Lost-in-the-Middle**: Info is in the prompt, but the LLM misses it. Solved by **Context Compression** and putting the strongest evidence first.
+</div>
 
 ---
 
-## Poisoned Sources
+## شکاف کیفیت بازیابی
 
-The three gaps assume the corpus is trustworthy. For web-grounded RAG it is not. In September 2026 researcher Ariel Simon (Vigilance Security) reported a campaign that flooded the web with fake support pages, posts and PDFs so that ChatGPT, Gemini and Google AI Overviews would return phishing phone numbers and login portals for airlines and banks, including Delta, Lufthansa, Chase and Bank of America. Nothing was jailbroken: the retriever did its job and ranked the attacker's pages.
-
-Defenses that belong in the retrieval layer, not the prompt:
-- **Source reputation as a ranking feature**: weight official domains and known publishers above fresh, low-authority pages for the same entity.
-- **Verified-contact allowlists** for high-risk answer types (support numbers, payment portals, login URLs): answer only from a curated registry, or refuse and link to the official site.
-- **Provenance in the answer**: cite the domain next to any contact detail so users can spot a mismatch.
-
-See [LLM Security](../12-security-and-access/01-llm-security.md) for indirect prompt injection through retrieved content.
+«شکاف بازیابی» (Retrieval Gap) عامل رتبه یک شکست RAG است.
+- **شکاف ۱: عدم تطابق معنایی (Semantic Mismatch)**: پرسش می‌گوید «خودروهای سریع»، در حالی که پایگاه داده حاوی «پورشه ۹۱۱» است. این مشکل با Embeddingهای بهتر به همراه **بازرتبه‌بندی Cross-Encoder (Cross-Encoder Reranking)** حل می‌شود.
+- **شکاف ۲: کانتکست مفقود (Missing Context)**: اطلاعات مرتبط در پایگاه داده وجود دارد، اما بازیاب (Retriever) آن را پیدا نکرده است. این مشکل با **جستجوی ترکیبی (Hybrid Search)** حل می‌شود.
+- **شکاف ۳: گم شدن در میانه (Lost-in-the-Middle)**: اطلاعات در Prompt وجود دارد، اما LLM متوجه آن نمی‌شود. این مشکل با **فشرده‌سازی کانتکست (Context Compression)** و قرار دادن قوی‌ترین شواهد در ابتدای متن حل می‌شود.
 
 ---
 
-## Interview Questions
+## منابع مسموم
 
-### Q: Why would you still use RAG if frontier models ship 1M-token contexts?
+این سه شکاف فرض می‌کنند که پیکره داده‌ها قابل اعتماد است. اما برای RAG متکی بر وب، چنین فرضی صدق نمی‌کند. در سپتامبر ۲۰۲۶، پژوهشگری به نام آریل سایمون (Ariel Simon از شرکت Vigilance Security) کمپینی را گزارش کرد که وب را با صفحات پشتیبانی، پست‌ها و فایل‌های PDF جعلی پر کرده بود تا ChatGPT، Gemini و Google AI Overviews شماره تلفن‌های فیشینگ و پرتال‌های ورود جعلی برای خطوط هوایی و بانک‌ها (از جمله Delta، Lufthansa، Chase و Bank of America) برگردانند. هیچ چیزی جیلبریک نشده بود: بازیاب (retriever) دقیقاً وظیفه خود را انجام داده و صفحات مهاجم را رتبه‌بندی کرده بود.
 
-**Strong answer:**
-Four reasons:
-1. **Cost and Latency**: Even with prompt caching, rereading a large corpus on every query costs `N x cache-read rate`, and prefill on hundreds of thousands of tokens still adds TTFT (Time to First Token). The break-even corpus is roughly retrieved tokens divided by the cache-read multiplier: about 50K tokens at the common 0.1x, about 200K on Claude Fable 5.1 at 0.025x, for a 5K-token retrieved context. Above that, retrieving chunks is cheaper. On OpenAI, crossing 272K input also bills the whole request at 2x input and 1.5x output.
-2. **Freshness**: RAG can access real-time APIs (stock prices, news) and changed documents without rewriting and re-caching a giant prefix.
-3. **Scale**: Enterprise datasets (SharePoint, terabytes of logs) exceed any context window. RAG is the filter that finds the relevant 0.01% of data that *should* go into the window.
-4. **Access control**: A cached prefix is shared across every user who hits it. If documents carry per-user permissions, you have to filter at retrieval time anyway.
+اقدامات دفاعی که متعلق به لایه بازیابی هستند، نه لایه Prompt:
+- **اعتبار منبع به عنوان یک ویژگی رتبه‌بندی**: به دامنه‌های رسمی و ناشران شناخته‌شده وزن و اولویت بالاتری نسبت به صفحات جدید و کم‌اعتبار مربوط به همان موجودیت اختصاص دهید.
+- **لیست‌های مجاز مخاطبین تاییدشده (Verified-contact allowlists)** برای انواع پاسخ‌های پرخطر (شماره‌های پشتیبانی، درگاه‌های پرداخت، نشانی‌های وب ورود): پاسخ را صرفاً از یک رجیستری اعتبارسنجی‌شده ارائه دهید، یا از پاسخ امتناع کرده و به وب‌سایت رسمی لینک دهید.
+- **ذکر اصالت داده‌ها (Provenance) در پاسخ**: دامنه منبع را در کنار هرگونه اطلاعات تماس ذکر کنید تا کاربران بتوانند عدم تطابق را تشخیص دهند.
 
-### Q: What is "Agentic RAG" and how does it differ from "Advanced RAG"?
-
-**Strong answer:**
-Advanced RAG is a **deterministic pipeline** (Linear: Rewrite -> Search -> Rerank). Agentic RAG is a **stochastic loop**. In Agentic RAG, the model is given tools to decide *how* to retrieve. For example, if the agent finds that the retrieved documents are irrelevant, it can decide to "Search Google" or "Query the SQL database" instead. It essentially adds a "Reasoning step" before and after retrieval to ensure the context is sufficient to answer the prompt.
+برای بررسی تزریق غیرمستقیم Prompt (indirect prompt injection) از طریق محتوای بازیابی‌شده، به بخش [امنیت LLM](../12-security-and-access/01-llm-security.md) مراجعه کنید.
 
 ---
 
-## Key Takeaways
+## سوالات مصاحبه
 
-- Naive RAG (vector search + top-K + LLM) is deprecated for production; ship Advanced RAG (hybrid + RRF + rerank) as the new baseline.
-- Long context windows do not kill RAG: cost, latency, freshness, per-user permissions, and corpus scale all push you back to retrieval even at 1M context.
-- Choose by break-even, not a fixed threshold: in-context with caching wins below roughly retrieved tokens divided by the cache-read multiplier (about 50K tokens at 0.1x and 200K at 0.025x for a 5K-token retrieved context); above it, use standard RAG; aggregative questions go GraphRAG.
-- Web-grounded RAG needs source reputation and allowlists for high-risk answers like support numbers; poisoning attacks target the ranking, not the model.
-- Most RAG failures are retrieval failures, not generation failures; diagnose the three gaps (semantic, missing context, lost-in-the-middle) before tuning prompts.
-- Agentic RAG vs. Advanced RAG is a stochastic-loop vs. deterministic-pipeline choice; only adopt agentic when query patterns are too varied for a fixed pipeline.
+### پرسش: اگر مدل‌های پیشرو با کانتکست‌های ۱ میلیون Token عرضه می‌شوند، چرا همچنان باید از RAG استفاده کرد؟
+
+**پاسخ قوی:**
+چهار دلیل:
+۱. **هزینه و تاخیر (Latency)**: حتی با قابلیت Prompt caching، خواندن مجدد یک پیکره بزرگ در هر کوئری هزینه‌ای معادل `N x cache-read rate` دارد و مرحله prefill روی صدها هزار Token همچنان باعث افزایش TTFT (زمان تا اولین Token / Time to First Token) می‌شود. پیکره نقطه سربه‌سر تقریباً برابر است با Tokenهای بازیابی‌شده تقسیم بر ضریب cache-read: حدود ۵۰ هزار Token در ضریب رایج 0.1x و حدود ۲۰۰ هزار Token در Claude Fable 5.1 با ضریب 0.025x، برای یک کانتکست بازیابی‌شده ۵ هزار Token. بالاتر از این مقدار، بازیابی chunkها ارزان‌تر است. در OpenAI، عبور ورودی از ۲۷۲ هزار Token نیز کل درخواست را با نرخ ۲ برابر برای ورودی و ۱.۵ برابر برای خروجی محاسبه می‌کند.
+۲. **تازگی داده‌ها (Freshness)**: ساختار RAG می‌تواند بدون نیاز به بازنویسی و کَش مجدد یک پیشوند بزرگ، به APIهای بلادرنگ (قیمت سهام، اخبار) و اسناد تغییریافته دسترسی پیدا کند.
+۳. **مقیاس‌پذیری (Scale)**: مجموعه‌داده‌های سازمانی (SharePoint، ترابایت‌ها لاگ) از هر پنجره کانتکستی فراتر می‌روند. RAG فیلتری است که ۰.۰۱ درصد داده‌های مرتبطی را که *باید* وارد پنجره شوند پیدا می‌کند.
+۴. **کنترل دسترسی (Access control)**: یک پیشوند کَش‌شده میان تمام کاربرانی که از آن استفاده می‌کنند به اشتراک گذاشته می‌شود. اگر اسناد دارای مجوزهای دسترسی به ازای هر کاربر باشند، در هر صورت ناچارید فیلتر کردن را در زمان بازیابی انجام دهید.
+
+### پرسش: «Agentic RAG» چیست و چه تفاوتی با «Advanced RAG» دارد؟
+
+**پاسخ قوی:**
+مدل Advanced RAG یک **خط لوله قطعی (deterministic pipeline)** است (خطی: بازنویسی -> جستجو -> بازرتبه‌بندی). در مقابل، Agentic RAG یک **حلقه تصادفی/احتمالاتی (stochastic loop)** است. در Agentic RAG، ابزارهایی در اختیار مدل قرار می‌گیرد تا درباره *نحوه* بازیابی تصمیم‌گیری کند. به عنوان مثال، اگر Agent تشخیص دهد که اسناد بازیابی‌شده نامرتبط هستند، می‌تواند تصمیم بگیرد که به جای آن «در گوگل جستجو کند» یا «پایگاه داده SQL را کوئری کند». این کار اساساً یک «مرحله استدلال» (Reasoning step) را قبل و بعد از بازیابی اضافه می‌کند تا اطمینان حاصل شود که کانتکست برای پاسخ به Prompt کافی است.
 
 ---
 
-## References
-- Gao et al. "Retrieval-Augmented Generation for LLMs: A Survey" (2024 update)
-- [Edge et al. "From Local to Global: A Graph RAG Approach to Query-Focused Summarization" (Microsoft Research, 2024)](https://arxiv.org/abs/2404.16130)
-- [Lee et al. "Can Long-Context Language Models Subsume Retrieval, RAG, SQL, and More?" (Google DeepMind, 2024)](https://arxiv.org/abs/2406.13121)
-- [Anthropic. "Introducing Contextual Retrieval" (Sep 2024)](https://www.anthropic.com/news/contextual-retrieval)
+## نکات کلیدی
+
+- روش Naive RAG (جستجوی برداری + top-K + ‏LLM) برای محیط عملیاتی منسوخ شده است؛ روش Advanced RAG (ترکیبی + RRF + بازرتبه‌بندی) را به عنوان خط پایه جدید پیاده‌سازی کنید.
+- پنجره‌های کانتکست طولانی باعث مرگ RAG نمی‌شوند: هزینه، تاخیر (Latency)، تازگی داده‌ها، مجوزهای دسترسی به ازای هر کاربر، و مقیاس پیکره همگی حتی در کانتکست ۱ میلیون Token شما را مجدداً به سمت بازیابی سوق می‌دهند.
+- انتخاب را بر اساس نقطه سربه‌سر انجام دهید، نه یک آستانه ثابت: روش in-context به همراه caching پایین‌تر از مقدار تقریبی Tokenهای بازیابی‌شده تقسیم بر ضریب cache-read برنده است (حدود ۵۰ هزار Token در 0.1x و ۲۰۰ هزار Token در 0.025x برای یک کانتکست بازیابی‌شده ۵ هزار Token)؛ بالاتر از آن، از RAG استاندارد استفاده کنید؛ و پرسش‌های تجمیعی به سراغ GraphRAG می‌روند.
+- سیستم RAG متکی بر وب نیازمند اعتبار منبع و لیست‌های مجاز برای پاسخ‌های پرخطر مانند شماره‌های پشتیبانی است؛ حملات مسموم‌سازی فرآیند رتبه‌بندی را هدف قرار می‌دهند، نه خود مدل را.
+- بیشتر شکست‌های RAG، شکست در بازیابی هستند نه شکست در تولید؛ پیش از تنظیم Promptها، سه شکاف (معنایی، کانتکست مفقود، گم شدن در میانه) را عیب‌یابی کنید.
+- مقایسه Agentic RAG در برابر Advanced RAG انتخابی بین یک حلقه تصادفی در برابر یک خط لوله قطعی است؛ تنها زمانی رویکرد Agentic را به کار بگیرید که الگوهای پرسش برای یک خط لوله ثابت بیش از حد متنوع باشند.
 
 ---
 
-*Previous: [Prompt Injection Defense](../05-prompting-and-context/08-prompt-injection-defense.md) | Next: [Chunking Strategies](02-chunking-strategies.md)*
+## مراجع
+- مقاله Gao و همکاران. "Retrieval-Augmented Generation for LLMs: A Survey" (به‌روزرسانی ۲۰۲۴)
+- [Edge و همکاران: "From Local to Global: A Graph RAG Approach to Query-Focused Summarization" (تحقیقات مایکروسافت، ۲۰۲۴)](https://arxiv.org/abs/2404.16130)
+- [Lee و همکاران: "Can Long-Context Language Models Subsume Retrieval, RAG, SQL, and More?" (گوگل دیپ‌مایند، ۲۰۲۴)](https://arxiv.org/abs/2406.13121)
+- [Anthropic: "Introducing Contextual Retrieval" (سپتامبر ۲۰۲۴)](https://www.anthropic.com/news/contextual-retrieval)
+
+---
+
+*قبلی: [دفاع در برابر تزریق Prompt (Prompt Injection Defense)](../05-prompting-and-context/08-prompt-injection-defense.md) | بعدی: [استراتژی‌های Chunking](02-chunking-strategies.md)*
+
+</div>

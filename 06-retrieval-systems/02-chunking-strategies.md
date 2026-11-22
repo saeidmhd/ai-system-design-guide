@@ -1,120 +1,124 @@
-# Chunking Strategies
+<div dir="rtl">
 
-Chunking is the process of splitting a document into discrete segments for retrieval. Production pipelines have moved beyond blind fixed-size splits to **structure-aware and semantic segments**, with newer techniques like late chunking and contextual prepending now in the mainstream toolkit.
+# استراتژی‌های Chunking
 
-## Table of Contents
+فرآیند Chunking، تقسیم یک سند به بخش‌های مجزا جهت بازیابی است. پایپ‌لاین‌های محیط عملیاتی (Production) از تقسیم‌بندی‌های کورکورانه با اندازه ثابت فراتر رفته و به سمت **بخش‌های آگاه از ساختار و معنایی** حرکت کرده‌اند؛ به طوری که تکنیک‌های جدیدتری مانند Late Chunking و پیشوندگذاری بافتاری (Contextual prepending) اکنون در جعبه‌ابزار اصلی قرار دارند.
 
-- [The Retrieval-Context Tension](#the-retrieval-context-tension)
-- [Recursive Structure Splitting](#recursive-structure-splitting)
-- [Semantic Chunking](#semantic-chunking)
-- [Hierarchical (Parent-Child) Chunking](#hierarchical-parent-child-chunking)
-- [Late Chunking and Contextualized Chunk Embeddings](#late-chunking-and-contextualized-chunk-embeddings)
-- [Content-Specific Strategies (Code, PDF, Tables)](#content-specific-strategies)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [تنش میان بازیابی و بافتار](#the-retrieval-context-tension)
+- [تقسیم ساختاری بازگشتی](#recursive-structure-splitting)
+- [Chunking معنایی](#semantic-chunking)
+- [Chunking سلسله‌مراتبی (والد-فرزند)](#hierarchical-parent-child-chunking)
+- [Late Chunking و Embeddingهای بافتاری‌شده Chunk](#late-chunking-and-contextualized-chunk-embeddings)
+- [استراتژی‌های خاص هر نوع محتوا (کد، PDF، جدول‌ها)](#content-specific-strategies)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Retrieval-Context Tension
+## تنش میان بازیابی و بافتار
 
-| Aspect | Small Chunks (100t) | Large Chunks (1000t) |
+| جنبه | Chunkهای کوچک (100 Token) | Chunkهای بزرگ (1000 Token) |
 |--------|---------------------|----------------------|
-| **Precision** | High (Exact match) | Low (Diluted) |
-| **Context** | Poor (Broken sentences) | Rich (Surrounding info) |
-| **Storage** | High (More vectors) | Low (Fewer vectors) |
-| **Latency** | Low (Fast search) | High (Heavy retrieval) |
+| **دقت (Precision)** | بالا (تطابق دقیق) | پایین (رقیق‌شده) |
+| **بافتار (Context)** | ضعیف (جملات ناقص) | غنی (اطلاعات پیرامونی) |
+| **فضای ذخیره‌سازی (Storage)** | بالا (بردارهای بیشتر) | پایین (بردارهای کمتر) |
+| **تاخیر (Latency)** | کم (جست‌وجوی سریع) | زیاد (بازیابی سنگین) |
 
-**Rule**: Smaller is better for *finding*, but larger is better for *thinking*. Use **Hierarchical Chunking** to get both.
+**قاعده**: اندازه کوچک‌تر برای *پیدا کردن* مناسب‌تر است، اما اندازه بزرگ‌تر برای *تفکر و تحلیل* بهتر است. از **Chunking سلسله‌مراتبی (Hierarchical Chunking)** استفاده کنید تا هر دو مزیت را به دست آورید.
 
 ---
 
-## Recursive Structure Splitting
+## تقسیم ساختاری بازگشتی
 
-Instead of splitting at every 500 characters, we split at logical boundaries:
+به جای تقسیم‌بندی در هر ۵۰۰ کاراکتر، متن را در مرزهای منطقی تفکیک می‌کنیم:
 `[Double Newline] > [Single Newline] > [Period] > [Space]`.
 
-**Best practice**: Use **Markdown-Aware Splitting**. If a document has `#` headers, ensure the header is prepended to *every* child chunk to preserve context (Contextual Chunking).
+**بهترین شیوه (Best practice)**: از **تقسیم آگاه از ساختار مارک‌داون (Markdown-Aware Splitting)** استفاده کنید. اگر یک سند دارای تیترهای `#` است، مطمئن شوید که تیتر به *تمام* Chunkهای فرزند پیشوند (prepend) می‌شود تا بافتار حفظ گردد (Chunking بافتاری - Contextual Chunking).
 
 ---
 
-## Semantic Chunking
+## Chunking معنایی
 
-Semantic chunking uses an embedding model to detect "topic shifts."
+روش Chunking معنایی از یک مدل Embedding برای تشخیص «تغییرات موضوعی» استفاده می‌کند.
 
-1. Split text into individual sentences.
-2. Group sentences as long as their embedding similarity stays above a threshold (e.g., 0.82).
-3. If similarity drops, start a new chunk.
+۱. متن را به تک‌تک جملات تقسیم کنید.
+۲. جملات را تا زمانی که شباهت Embedding آن‌ها بالاتر از یک آستانه مشخص (مثلاً ۰.۸۲) باقی بماند، با یکدیگر گروه‌بندی کنید.
+۳. در صورت افت شباهت، یک Chunk جدید را آغاز کنید.
 
-**Nuance**: Some pipelines replace the threshold with a **learned segmenter**: a small model scans the text and predicts a separator at every semantic break. It avoids hand-tuning a cosine cutoff per corpus, but published chunking benchmarks swing widely between fixed-size, recursive and semantic strategies, so measure recall on your own documents before paying for the extra model.
-
----
-
-## Hierarchical (Parent-Child) Chunking
-
-This is the industry standard for production RAG.
-
-- **Process**: 
-  1. Create "Parent" chunks of 1,500 tokens.
-  2. Sub-divide each parent into 5 "Child" chunks of 300 tokens.
-  3. **Index only the children**.
-  4. At retrieval, if a child matches, **return the full parent context** to the LLM.
-- **Why?**: The child is small and easy for the vector DB to match. The parent provides enough context for the LLM to actually reason correctly without "Broken Context" hallucinations.
+**نکته ظریف**: برخی از پایپ‌لاین‌ها آستانه شباهت را با یک **بخش‌بندی‌کننده یادگرفته‌شده (Learned Segmenter)** جایگزین می‌کنند: یک مدل کوچک، متن را اسکن کرده و در هر گسست معنایی، یک جداکننده را پیش‌بینی می‌کند. این روش از تنظیم دستی حد آستانه کسینوسی (Cosine cutoff) برای هر پیکره متنی (Corpus) بی‌نیاز است؛ با این حال، بنچمارک‌های منتشرشده برای Chunking نوسانات زیادی میان استراتژی‌های اندازه ثابت، بازگشتی و معنایی نشان می‌دهند، بنابراین پیش از پرداخت هزینه برای مدل اضافی، میزان بازیابی (Recall) را روی اسناد اختصاصی خود بسنجید.
 
 ---
 
-## Late Chunking and Contextualized Chunk Embeddings
+## Chunking سلسله‌مراتبی (والد-فرزند)
 
-Hierarchical chunking fixes context at *read* time. The alternative is to fix it at *embed* time, so each chunk vector already knows which document it came from.
+این روش، استاندارد صنعتی برای RAG در محیط عملیاتی (Production) محسوب می‌شود.
 
-- **Late chunking** (Jina, 2024): run a long-context embedding model over the whole document, then pool token embeddings per chunk span. Every chunk vector is conditioned on the full document, with no extra LLM call.
-- **Contextualized chunk embedding models** package this as an API. **voyage-context-4** (GA June 29, 2026; $0.12 per 1M tokens, 32K window, built-in auto-chunking) returns one document-aware vector per chunk; Voyage reports +2.08% chunk-level and +1.4% document-level retrieval over voyage-context-3 (vendor-reported). Perplexity's **pplx-embed-v2-context** family (9B and 0.6B, MIT, technical report October 28, 2026) encodes a document's chunks together, and the two sizes share a 1024-dimension space, so you can index with 9B and query with 0.6B. It replaced the September 25 preview, whose card says its vectors should not be mixed with later releases, so re-embed anything you built on the preview.
-
-The tradeoff against Anthropic-style contextual prefixes: embedder-side context costs no per-chunk LLM call, but it only helps the dense side. BM25 still sees the bare chunk text, so keep header prepending for the sparse index. The full cost comparison is in [Contextual Retrieval](10-contextual-retrieval.md).
-
----
-
-## Content-Specific Strategies
-
-### 1. Code Chunking
-- **Strategy**: Use AST (Abstract Syntax Tree) parsing.
-- **Rule**: Never split a function mid-body. Keep imports and class declarations with their methods.
-
-### 2. Table Chunking
-- **Strategy**: Use Markdown formatting for tables.
-- **Modern pattern**: "Summarized Tables." Store a natural language summary of the table in the vector DB, but return the full Markdown table to the LLM.
-
-### 3. PDF/Layout Chunking
-- **Strategy A, parse then chunk**: Use a layout-aware parser (Docling, MinerU, Cohere Parse, or an open parsing VLM) that emits reading-order blocks, with tables, figures and sidebars as separate typed elements. Chunk on those block boundaries so charts and sidebars never get mixed into body text.
-- **Strategy B, skip text chunking**: Embed each page image directly with a late-interaction model (ColPali family). Layout survives because the page *is* the unit. See [Multi-Modal RAG](12-multimodal-rag.md).
-- **Agent-facing pattern**: For agentic RAG, consider giving the agent stable block locators instead of pre-cut chunks. MinerU 4.0 (September 16, 2026) returns locators of the form `doc:{id}/tier:{tier}/page:{page}/block:{block}` and reads long documents progressively (the first 10 pages plus a continuation), so the agent navigates the document and citations point at a verifiable block.
+- **فرآیند**:
+  ۱. Chunkهای «والد» (Parent) به اندازه ۱,۵۰۰ Token ایجاد کنید.
+  ۲. هر والد را به ۵ Chunk «فرزند» (Child) با اندازه ۳۰۰ Token تقسیم کنید.
+  ۳. **تنها فرزندان را ایندکس کنید**.
+  ۴. در زمان بازیابی، در صورت تطابق یک فرزند، **بافتار کامل والد را به LLM بازگردانید**.
+- **چرا؟**: Chunk فرزند کوچک است و تطابق آن برای پایگاه داده برداری (Vector Database) آسان خواهد بود. در مقابل، والد بافتار کافی را برای LLM فراهم می‌کند تا بتواند بدون ایجاد توهمات ناشی از «بافتار شکسته» (Broken Context)، به درستی استدلال نماید.
 
 ---
 
-## Interview Questions
+## Late Chunking و Embeddingهای بافتاری‌شده Chunk
 
-### Q: Why is fixed-size chunking with overlap problematic for production systems?
+رویکرد Chunking سلسله‌مراتبی، مسئله بافتار را در زمان *خواندن* (Read time) برطرف می‌کند. راهکار جایگزین این است که بافتار در زمان *Embedding* تثبیت شود تا بردار هر Chunk از قبل بداند که از کدام سند آمده است.
 
-**Strong answer:**
-Fixed-size chunking is "content-blind." It frequently splits sentences mid-thought, breaks mathematical equations, and separates headers from their descriptive text. While "Overlap" (e.g., 10%) mitigates this by duplicating 10% of text across chunks, it doesn't solve the core issue: the model's attention is forced to reconstruct meaning from fragmented strings. Modern pipelines prefer **Semantic or Logical Chunking** because it ensures each vector represents a "Complete Semantic Unit," leading to significantly higher retrieval precision.
+- **روش Late Chunking** (جینا، ۲۰۲۴): اجرای یک مدل Embedding با بافتار طولانی (Long-context) بر روی کل سند، و سپس تجمیع (Pool) کردن Embeddingهای Token به ازای بازه هر Chunk. در این رویکرد، بردار هر Chunk بدون نیاز به فراخوانی اضافی LLM، مشروط به کل سند خواهد بود.
+- **مدل‌های Embedding بافتاری‌شده Chunk** این قابلیت را در قالب یک API ارائه می‌دهند. مدل **voyage-context-4** (عرضه عمومی در ۲۹ ژوئن ۲۰۲۶؛ با قیمت ۰.۱۲ دلار به ازای هر ۱ میلیون Token، پنجره ۳۲ هزارتایی، و ابزار داخلی Chunking خودکار) به ازای هر Chunk یک بردار آگاه از سند بازمی‌گرداند؛ شرکت Voyage بهبود ۲.۰۸٪ در سطح Chunk و ۱.۴٪ در سطح سند را در مقایسه با voyage-context-3 گزارش کرده است (گزارش‌شده توسط ارائه‌دهنده). خانواده **pplx-embed-v2-context** متعلق به Perplexity (شامل مدل‌های 9B و 0.6B، مجوز MIT، گزارش فنی ۲۸ اکتبر ۲۰۲۶) Chunkهای یک سند را به همراه یکدیگر انکود می‌کند و هر دو اندازه از یک فضای ۱۰۲۴ بعدی مشترک بهره می‌برند، بنابراین می‌توانید با مدل 9B ایندکس‌گذاری کرده و با مدل 0.6B پرس‌وجو انجام دهید. این مدل جایگزین نسخه پیش‌نمایش ۲۵ سپتامبر شد که کارت مدل (Model card) آن اعلام می‌کند بردارهایش نباید با نسخه‌های بعدی ترکیب شوند، بنابراین هر چیزی را که روی نسخه پیش‌نمایش ایجاد کرده‌اید، باید مجدداً Embed کنید.
 
-### Q: What is "Contextual Retrieval" (the Anthropic pattern)?
-
-**Strong answer:**
-Contextual Retrieval involves prepending a short, LLM-written context to every chunk before embedding and BM25 indexing it. For example, if a chunk is about "battery life," but it's from a manual for a "2025 Model X Drone," a line like `This chunk is from the Model X drone manual, battery section:` is added to the chunk. This ensures that the vector for "battery life" is influenced by the "Drone" context, preventing it from being accidentally retrieved for "phone battery" queries. Anthropic measured a 35% drop in top-20 retrieval failures from contextual embeddings alone, 49% when contextual BM25 is added, and 67% with reranking on top.
-
-The cost is one LLM call per chunk at ingestion (cheap with prompt caching of the source document). The 2026 alternative is a contextualized chunk embedding model such as voyage-context-4, which gets document-aware vectors with no LLM call but does nothing for BM25. My default: header prepending for both indexes, an embedder-side context model for dense, and LLM contextualization only for the document types that still fail on the golden set.
+مصالحه (Tradeoff) در برابر پیشوندهای بافتاری به سبک Anthropic: بافتار در سمت انکودر هیچ هزینه‌ای بابت فراخوانی LLM به ازای هر Chunk تحمیل نمی‌کند، اما فقط به بخش متراکم (Dense) کمک می‌کند. الگوریتم BM25 همچنان صرفاً متن خام Chunk را می‌بیند، بنابراین پیشوندگذاری تیترها را برای ایندکس تنک (Sparse) حفظ کنید. مقایسه کامل هزینه‌ها در [بازیابی بافتاری](10-contextual-retrieval.md) آورده شده است.
 
 ---
 
-## References
-- [Anthropic. "Introducing Contextual Retrieval" (Sep 2024)](https://www.anthropic.com/news/contextual-retrieval)
-- [Günther et al. "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models" (2024)](https://arxiv.org/abs/2409.04701)
-- [Voyage AI. "voyage-context-4" (June 2026)](https://blog.voyageai.com/2026/06/29/voyage-context-4/)
-- [MinerU 4.0 release notes (Sep 2026)](https://github.com/opendatalab/MinerU/releases/tag/mineru-4.0.0-released)
-- [Smith and Troynikov. "Evaluating Chunking Strategies for Retrieval" (Chroma, July 2024)](https://www.trychroma.com/research/evaluating-chunking)
-- [LangChain. "Text splitter integrations" (docs)](https://docs.langchain.com/oss/python/integrations/splitters)
-- [LlamaIndex. "Node Parser Modules" (docs, semantic and hierarchical parsers)](https://developers.llamaindex.ai/python/framework/module_guides/loading/node_parsers/modules/)
+## استراتژی‌های خاص هر نوع محتوا
+
+### ۱. Chunking کد
+- **استراتژی**: استفاده از تجزیه مبتنی بر درخت نحو انتزاعی (AST - Abstract Syntax Tree).
+- **قاعده**: هرگز یک تابع را در میان بدنه آن قطع نکنید. عبارات import و اعلان‌های کلاس را در کنار متدهای مربوطه‌شان نگه دارید.
+
+### ۲. Chunking جدول
+- **استراتژی**: استفاده از قالب‌بندی مارک‌داون برای جدول‌ها.
+- **الگوی مدرن**: «جدول‌های خلاصه‌شده» (Summarized Tables). خلاصه‌ای از جدول را به زبان طبیعی در پایگاه داده برداری (Vector Database) ذخیره کنید، اما جدول کامل مارک‌داون را به LLM بازگردانید.
+
+### ۳. Chunking چیدمان / PDF
+- **استراتژی الف، تجزیه و سپس Chunking**: استفاده از یک تجزیه‌کننده آگاه از چیدمان (Layout-aware parser مانند Docling، MinerU، Cohere Parse، یا یک VLM باز برای تجزیه) که بلوک‌ها را با حفظ ترتیب خوانش تولید می‌کند و جدول‌ها، تصاویر و بخش‌های کناری (Sidebars) را به عنوان عناصر تایپ‌شده مجزا تفکیک می‌نماید. فرآیند Chunking را روی مرزهای این بلوک‌ها انجام دهید تا نمودارها و حاشیه‌ها هرگز با متن بدنه اصلی آمیخته نشوند.
+- **استراتژی ب، صرف‌نظر از Chunking متن**: تصویر هر صفحه را مستقیماً با یک مدل تعامل متاخر (مانند خانواده ColPali) Embed کنید. چیدمان صفحه حفظ می‌شود، چرا که خود صفحه *واحد مبنا* است. به [RAG چندوجهی](12-multimodal-rag.md) مراجعه کنید.
+- **الگوی متمرکز بر Agent**: برای سیستم‌های RAG عامل‌محور (Agentic RAG)، به جای استفاده از Chunkهای از پیش برش‌خورده، به Agent مکان‌یاب‌های بلوکی پایدار (Stable block locators) اختصاص دهید. ابزار MinerU 4.0 (۱۶ سپتامبر ۲۰۲۶) مکان‌یاب‌هایی با فرمت `doc:{id}/tier:{tier}/page:{page}/block:{block}` تولید کرده و اسناد طولانی را به صورت تدریجی می‌خواند (۱۰ صفحه اول به علاوه ادامه متن)؛ بدین ترتیب Agent می‌تواند در سند پیمایش کند و ارجاعات (Citations) به یک بلوک قابل راستی‌آزمایی اشاره خواهند داشت.
 
 ---
 
-*Previous: [RAG Fundamentals](01-rag-fundamentals.md) | Next: [Embedding Models](03-embedding-models.md)*
+## سوالات مصاحبه
+
+### سوال: چرا Chunking با اندازه ثابت و هم‌پوشانی (Overlap) برای سیستم‌های عملیاتی چالش‌برانگیز است؟
+
+**پاسخ قوی:**
+روش Chunking با اندازه ثابت نسبت به محتوا «نابینا» (Content-blind) است. این روش مکرراً جملات را در میانه بیان یک مفهوم قطع می‌کند، معادلات ریاضی را می‌شکند و تیترها را از متن توضیحی مربوط به آن‌ها جدا می‌سازد. هرچند که «هم‌پوشانی» (Overlap؛ برای مثال ۱۰٪) با تکرار ۱۰٪ از متن در طول Chunkها این مشکل را تعدیل می‌کند، اما معضل اصلی را حل نمی‌کند: توجه (Attention) مدل مجبور است معنا را از رشته‌های متنی تکه‌تکه‌شده بازسازی نماید. پایپ‌لاین‌های امروزی، **Chunking معنایی یا منطقی** را ترجیح می‌دهند؛ زیرا این روش تضمین می‌کند که هر بردار نشان‌دهنده یک «واحد معنایی کامل» باشد که این امر منجر به افزایش چشمگیر دقت بازیابی می‌شود.
+
+### سوال: «بازیابی بافتاری» (Contextual Retrieval - الگوی Anthropic) چیست؟
+
+**پاسخ قوی:**
+بازیابی بافتاری شامل الحاق یک بافتار کوتاه و تدوین‌شده توسط LLM به ابتدای هر Chunk، پیش از فرآیند Embedding و ایندکس‌گذاری BM25 است. برای مثال، اگر یک Chunk درباره «طول عمر باتری» باشد، اما برگرفته از دفترچه راهنمای یک «پهپاد Model X مدل ۲۰۲۵» باشد، عبارتی مانند `This chunk is from the Model X drone manual, battery section:` به ابتدای Chunk افزوده می‌شود. این کار تضمین می‌کند که بردار مربوط به «طول عمر باتری» تحت تاثیر بافتار «پهپاد» قرار گیرد و از بازیابی اشتباه آن برای پرس‌وجوهای مربوط به «باتری تلفن همراه» جلوگیری شود. شرکت Anthropic کاهش ۳۵ درصدی خطاهای بازیابی در ۲۰ نتیجه برتر (Top-20) را تنها با Embeddingهای بافتاری، کاهش ۴۹ درصدی را با اضافه کردن BM25 بافتاری، و کاهش ۶۷ درصدی را با افزودن بازرتبه‌بندی (Reranking) به ثبت رسانده است.
+
+هزینه این رویکرد، یک فراخوانی LLM به ازای هر Chunk در زمان بارگذاری داده‌ها (Ingestion) است (که به لطف قابلیت Prompt Caching سند اصلی، ارزان تمام می‌شود). جایگزین سال ۲۰۲۶ آن، مدلی برای Embedding بافتاری‌شده Chunk مانند voyage-context-4 است که بدون فراخوانی LLM، بردارهای آگاه از سند ارائه می‌دهد اما هیچ تاثیری روی BM25 ندارد. رویکرد پیش‌فرض من: پیشوندگذاری تیترها برای هر دو ایندکس، استفاده از مدل بافتار در سمت انکودر برای بازیابی متراکم (Dense)، و اختصاص بافتاری‌سازی با LLM صرفاً برای اسنادی که همچنان روی مجموعه طلایی (Golden set) با خطا مواجه می‌شوند.
+
+---
+
+## منابع
+- [Anthropic. «معرفی بازیابی بافتاری» (سپتامبر ۲۰۲۴)](https://www.anthropic.com/news/contextual-retrieval)
+- [گونتر و همکاران. «Late Chunking: Embeddingهای بافتاری Chunk با استفاده از مدل‌های Embedding با بافتار طولانی» (۲۰۲۴)](https://arxiv.org/abs/2409.04701)
+- [Voyage AI. «voyage-context-4» (ژوئن ۲۰۲۶)](https://blog.voyageai.com/2026/06/29/voyage-context-4/)
+- [یادداشت‌های انتشار MinerU 4.0 (سپتامبر ۲۰۲۶)](https://github.com/opendatalab/MinerU/releases/tag/mineru-4.0.0-released)
+- [اسمیت و تروینیکوف. «ارزیابی استراتژی‌های Chunking برای بازیابی» (Chroma، ژوئیه ۲۰۲۴)](https://www.trychroma.com/research/evaluating-chunking)
+- [LangChain. «یکپارچه‌سازی‌های تقسیم‌کننده متن» (مستندات)](https://docs.langchain.com/oss/python/integrations/splitters)
+- [LlamaIndex. «ماژول‌های تجزیه‌کننده گره» (مستندات، تجزیه‌کننده‌های معنایی و سلسله‌مراتبی)](https://developers.llamaindex.ai/python/framework/module_guides/loading/node_parsers/modules/)
+
+---
+
+*قبلی: [مبانی RAG](01-rag-fundamentals.md) | بعدی: [مدل‌های Embedding](03-embedding-models.md)*
+
+</div>

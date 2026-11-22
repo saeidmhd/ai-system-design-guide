@@ -1,80 +1,84 @@
+<div dir="rtl">
+
 # Agentic RAG
 
-Agentic RAG moves from a "Linear Pipeline" to a **"Reasoning Loop."** Instead of retrieving once, an agent decides *when* and *what* to retrieve to resolve a query. The dominant production patterns are Self-RAG (model emits reflection tokens), Corrective RAG (retrieval evaluator with corrective routing), Adaptive RAG (classifier picks pipeline depth), ReAct over documents, and multi-hop query decomposition. LangGraph is the most common control-flow runtime for stateful loops; LlamaIndex Workflows is common for single-pipeline retrieval-heavy variants. In 2026, managed search services started shipping the adaptive part as configuration, and a "compile the knowledge once" alternative appeared for workloads where the loop itself is the cost problem.
+رویکرد Agentic RAG از یک «پایپ‌لاین خطی» به سمت یک **«حلقه استدلال» (Reasoning Loop)** حرکت می‌کند. به جای یک‌بار بازیابی، یک Agent تصمیم می‌گیرد که برای پاسخ به یک پرسمان (query)، *چه زمانی* و *چه چیزی* را بازیابی کند. الگوهای غالب در محیط عملیاتی عبارتند از: Self-RAG (مدل Tokenهای بازتابی منتشر می‌کند)، Corrective RAG (ارزیاب بازیابی همراه با مسیریابی اصلاحی)، Adaptive RAG (طبقه‌بندی‌کننده‌ای که عمق پایپ‌لاین را انتخاب می‌کند)، ReAct روی اسناد، و تجزیه پرسمان چندمرحله‌ای (multi-hop query decomposition). فریم‌ورک LangGraph متداول‌ترین محیط زمان اجرای جریان کنترل (control-flow runtime) برای حلقه‌های دارای وضعیت (stateful loops) است؛ در حالی که LlamaIndex Workflows برای گونه‌های تک‌پایپ‌لاینی متمرکز بر بازیابی سنگین متداول است. در سال ۲۰۲۶، سرویس‌های جستجوی مدیریت‌شده ارائه بخش تطبیقی را به صورت پیکربندی آغاز کردند، و یک رویکرد جایگزین تحت عنوان «یک‌بار کامپایل کردن دانش» (compile the knowledge once) برای بارهای کاری که خودِ حلقه عامل اصلی هزینه است پدیدار شد.
 
-## Table of Contents
+## فهرست مطالب
 
-- [Linear vs. Agentic RAG](#linear-vs-agentic-rag)
-- [Self-RAG (Self-Reflection)](#self-rag-self-reflection)
-- [Corrective RAG (CRAG)](#corrective-rag-crag)
-- [Multi-Hop Reasoning Loops](#multi-hop-reasoning-loops)
-- [Agentic Filtering and Plan Revision](#agentic-filtering-and-plan-revision)
-- [Adaptive Retrieval Effort](#adaptive-retrieval-effort)
-- [Compile-Once Knowledge](#compile-once-knowledge)
-- [Training Search Agents: The Co-Cheating Trap](#training-search-agents-the-co-cheating-trap)
-- [Interview Questions](#interview-questions)
-- [References](#references)
-
----
-
-## Linear vs. Agentic RAG
-
-| Model | Linear RAG | Agentic RAG |
-|-------|------------|-------------|
-| **Structure** | Predetermined sequence | Dynamic loop |
-| **Self-Correction** | None | High (Can re-retrieve) |
-| **Query Complexity**| Simple (1-step) | Hard (Multi-step) |
-| **Latency** | Low (Fixed) | Variable (Multiple turns) |
-
-**Principle**: Use Agentic RAG when the query requires "Synthesized Proof" rather than just a "Document Match." Budget for it: a 3-4 iteration loop typically takes 8-12s end-to-end, so route easy queries to a fast path (Adaptive RAG) if your UX needs sub-3s response.
+- [مقایسه RAG خطی و Agentic RAG](#linear-vs-agentic-rag)
+- [روش Self-RAG (بازتاب خود / Self-Reflection)](#self-rag-self-reflection)
+- [روش Corrective RAG (CRAG)](#corrective-rag-crag)
+- [حلقه‌های استدلال چندمرحله‌ای (Multi-Hop)](#multi-hop-reasoning-loops)
+- [فیلترسازی مبتنی بر Agent و بازنگری برنامه](#agentic-filtering-and-plan-revision)
+- [تلاش تطبیقی در بازیابی (Adaptive Retrieval Effort)](#adaptive-retrieval-effort)
+- [دانش با یک‌بار کامپایل (Compile-Once Knowledge)](#compile-once-knowledge)
+- [آموزش Agentهای جستجو: تله فریب متقابل (The Co-Cheating Trap)](#training-search-agents-the-co-cheating-trap)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Self-RAG (Self-Reflection)
+## مقایسه RAG خطی و Agentic RAG
 
-Introduced by Asai et al. (2023, published at ICLR 2024), **Self-RAG** trains the model to emit "Critic Tokens" that evaluate its own work.
+| مدل | Linear RAG | Agentic RAG |
+|---|---|---|
+| **ساختار** | توالی از پیش تعیین‌شده | حلقه پویا |
+| **خوداصلاحی** | ندارد | بالا (امکان بازیابی مجدد) |
+| **پیچیدگی پرسمان** | ساده (تک‌مرحله‌ای) | دشوار (چندمرحله‌ای) |
+| **تاخیر (Latency)** | پایین (ثابت) | متغیر (چندین نوبت) |
 
-1. **Retrieve**: Model pulls Top-K chunks.
-2. **Evaluate**: Is the info relevant? (CRITIC: `Relevant`)
-3. **Generate**: Is the answer supported? (CRITIC: `Supported`)
-4. **Iterate**: If the answer isn't supported, the model *automatically* triggers a broader search.
-
----
-
-## Corrective RAG (CRAG)
-
-CRAG adds a "Reliability Layer" between retrieval and generation.
-
-- **The Logic**: 
-  - If retrieval is **Correct**: Direct generation.
-  - If retrieval is **Ambiguous**: Use a Web-Search tool to supplement.
-  - If retrieval is **Incorrect**: Discard context and use external search or fallback logic.
+**اصل**: زمانی از Agentic RAG استفاده کنید که پرسمان نیازمند «اثبات ترکیبی» (Synthesized Proof) باشد، نه صرفاً «تطابق سند» (Document Match). برای آن بودجه‌بندی کنید: یک حلقه با ۳ تا ۴ تکرار (iteration) معمولاً ۸ تا ۱۲ ثانیه از ابتدا تا انتها طول می‌کشد؛ بنابراین اگر تجربه کاربری (UX) شما به پاسخی زیر ۳ ثانیه نیاز دارد، پرسمان‌های ساده را به یک مسیر سریع (Adaptive RAG) هدایت کنید.
 
 ---
 
-## Multi-Hop Reasoning Loops
+## روش Self-RAG (بازتاب خود / Self-Reflection)
 
-For questions like "Who is the CEO of the company that acquired GitHub?", the system must:
-1. **Hop 1**: Search for "Who acquired GitHub?" (Result: Microsoft).
-2. **Hop 2**: Search for "CEO of Microsoft" (Result: Satya Nadella).
+رویکرد **Self-RAG** که توسط Asai و همکاران (۲۰۲۳، ارائه‌شده در ICLR 2024) معرفی شد، مدل را آموزش می‌دهد تا «Tokenهای نقاد» (Critic Tokens) را برای ارزیابی کار خود تولید (emit) کند.
 
-**Agentic Pattern**: The agent maintains a "State Object" and updates its "Sub-goal" after every retrieval until the chain is complete.
-
----
-
-## Agentic Filtering and Plan Revision
-
-Modern agents use **Sub-Step Plans**.
-- Instead of one big retrieval, the agent writes a plan: "First I will check our internal database for X, then I will look at the public API for Y."
-- **Revised planning**: If Step 1 fails, the agent *rewrites* Step 2.
+1. **بازیابی (Retrieve)**: مدل Chunkهای برتر (Top-K chunks) را واکشی می‌کند.
+2. **ارزیابی (Evaluate)**: آیا اطلاعات مرتبط است؟ (نقاد: `Relevant`)
+3. **تولید (Generate)**: آیا پاسخ پشتیبانی می‌شود؟ (نقاد: `Supported`)
+4. **تکرار (Iterate)**: اگر پاسخ پشتیبانی نشود، مدل *به‌طور خودکار* یک جستجوی گسترده‌تر را آغاز می‌کند.
 
 ---
 
-## Adaptive Retrieval Effort
+## روش Corrective RAG (CRAG)
 
-The cost problem with agentic RAG is that every query pays for the loop, including the simple ones a single retrieval would have answered. **Adaptive RAG** fixes this with a router; in 2026 the router became a managed setting.
+رویکرد CRAG یک «لایه قابلیت اطمینان» (Reliability Layer) میان بازیابی و تولید اضافه می‌کند.
 
-Azure AI Search is the clearest example. Its knowledge bases went GA in REST API 2026-04-01 for extractive retrieval (LLM query planning and answer synthesis remain preview). The 2026-08-01-preview API adds an `auto` effort (`"retrievalReasoningEffort": {"kind": "auto"}`, which needs a model on the knowledge base and returns 400 on earlier API versions): run a lightweight retrieval pass first, and escalate to LLM query planning (up to medium effort) only when grounding is insufficient. The same preview lets the planner turn query hints into filters and boosts. Separately, knowledge sources added in June 2026 (MCP servers, Fabric, Azure SQL) let one retrieve call fan out beyond search indexes; check each source's preview or GA status before you depend on it.
+- **منطق (The Logic)**: 
+  - اگر بازیابی **صحیح (Correct)** باشد: تولید مستقیم پاسخ.
+  - اگر بازیابی **مبهم (Ambiguous)** باشد: استفاده از یک ابزار جستجوی وب (Web-Search) برای تکمیل اطلاعات.
+  - اگر بازیابی **نادرست (Incorrect)** باشد: دور انداختن زمینه (context) و استفاده از جستجوی خارجی یا منطق fallback.
+
+---
+
+## حلقه‌های استدلال چندمرحله‌ای (Multi-Hop Reasoning Loops)
+
+برای سوالاتی مانند «مدیرعامل شرکتی که گیت‌هاب را تصاحب کرد کیست؟»، سیستم باید:
+1. **گام اول (Hop 1)**: جستجو برای «چه کسی گیت‌هاب را تصاحب کرد؟» (نتیجه: مایکروسافت).
+2. **گام دوم (Hop 2)**: جستجو برای «مدیرعامل مایکروسافت» (نتیجه: ساتیا نادلا).
+
+**الگوی مبتنی بر Agent**: این Agent یک «شیء وضعیت» (State Object) را حفظ کرده و پس از هر بازیابی، «زیرهدف» (Sub-goal) خود را به‌روزرسانی می‌کند تا زنجیره کامل شود.
+
+---
+
+## فیلترسازی مبتنی بر Agent و بازنگری برنامه (Agentic Filtering and Plan Revision)
+
+Agentهای مدرن از **برنامه‌های زیرمرحله‌ای (Sub-Step Plans)** استفاده می‌کنند.
+- به جای یک بازیابی بزرگ، Agent برنامه‌ای می‌نویسد: «ابتدا پایگاه داده داخلی‌مان را برای X بررسی می‌کنم، سپس API عمومی را برای Y جستجو خواهم کرد.»
+- **بازنگری برنامه (Revised planning)**: اگر مرحله ۱ شکست بخورد، Agent مرحله ۲ را *بازنویسی می‌کند*.
+
+---
+
+## تلاش تطبیقی در بازیابی (Adaptive Retrieval Effort)
+
+مشکل هزینه در Agentic RAG این است که هر پرسمان هزینه حلقه را پرداخت می‌کند، حتی پرسمان‌های ساده‌ای که یک بازیابی تکی به آن‌ها پاسخ می‌داد. رویکرد **Adaptive RAG** این مشکل را با یک مسیریاب حل می‌کند؛ در سال ۲۰۲۶ این مسیریاب به یک تنظیم مدیریت‌شده تبدیل شد.
+
+سرویس Azure AI Search واضح‌ترین نمونه است. پایگاه‌های دانش آن در REST API نسخه 2026-04-01 برای بازیابی استخراجی (extractive retrieval) به مرحله دسترسی عمومی (GA) رسیدند (برنامه‌ریزی پرسمان با LLM و ترکیب پاسخ در وضعیت پیش‌نمایش باقی مانده‌اند). نسخه `2026-08-01-preview` تلاش `auto` را اضافه می‌کند (`"retrievalReasoningEffort": {"kind": "auto"}` که نیازمند یک مدل روی پایگاه دانش است و در نسخه‌های قبلی API خطای 400 برمی‌گرداند): ابتدا یک دور بازیابی سبک اجرا می‌شود، و ارتقا به برنامه‌ریزی پرسمان توسط LLM (تا سطح تلاش متوسط) تنها زمانی رخ می‌دهد که انطباق شواهد (grounding) ناکافی باشد. همین پیش‌نمایش به برنامه‌ریز اجازه می‌دهد سرنخ‌های پرسمان (query hints) را به فیلترها و تقویت‌کننده‌ها (boosts) تبدیل کند. به‌طور مجزا، منابع دانشی که در ژوئن ۲۰۲۶ اضافه شدند (سرورهای MCP، پلتفرم Fabric، و Azure SQL) به یک فراخوانی بازیابی اجازه می‌دهند به فراتر از نمایه‌های جستجو انشعاب یابد (fan out)؛ قبل از وابستگی به هر منبع، وضعیت preview یا GA آن را بررسی کنید.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -89,67 +93,71 @@ flowchart TD
     G -->|No, budget spent| H[Answer with caveat or escalate]
 ```
 
-Whether you buy it or build it, the design is the same: a cheap first pass, an explicit sufficiency check, a capped number of escalations, and a defined failure path. The sufficiency check is the part to evaluate hardest, because a lenient one silently turns adaptive RAG back into linear RAG.
+</div>
+
+چه آن را خریداری کنید و چه خودتان بسازید، طراحی یکسان است: یک مرحله اول ارزان‌قیمت، یک بررسی صریح کفایت (sufficiency check)، سقف معینی از دفعات ارتقا، و یک مسیر شکستِ مشخص. بررسی کفایت بخشی است که باید با سخت‌گیرانه‌ترین حالت ارزیابی شود، زیرا بررسیِ آسان‌گیرانه به‌طور نامحسوس Adaptive RAG را دوباره به RAG خطی تبدیل می‌کند.
 
 ---
 
-## Compile-Once Knowledge
+## دانش با یک‌بار کامپایل (Compile-Once Knowledge)
 
-Agentic RAG re-derives structure from raw chunks on every query. **Knowledge compilation** moves that work to ingestion: compile the corpus once into structured artifacts, then let agents query the artifacts.
+رویکرد Agentic RAG در هر پرسمان، مجدداً ساختار را از Chunkهای خام استخراج می‌کند. **کامپایل دانش (Knowledge compilation)** این کار را به مرحله بارگذاری داده (ingestion) منتقل می‌کند: مجموعه اسناد (corpus) یک‌بار در قالب آرتیفکت‌های ساختاریافته کامپایل می‌شود و سپس به Agentها اجازه داده می‌شود که این آرتیفکت‌ها را پرسمان کنند.
 
-- **Pinecone Nexus** (public preview July 1, GA August 6, 2026): a subject-matter expert's description of the work becomes a Manifest (entities, relationships, answer shapes). Nexus compiles source documents into summaries, structured extracts and entity-relationship graphs, and agents query them in one call through the KnowQL language. The data plane runs in the customer's AWS, GCP or Azure account, and the compiled layer can be exported. Vendor-reported results: on tau-Knowledge, GPT-5.5 with Nexus held accuracy (47.4% vs 46.4% without) at 77% lower cost per task with about 35% fewer model calls; in the preview, an EU case-law test reached 87% vs 45% for an agentic RAG baseline with about 9x fewer tokens.
-- **Cohere Compass Cloud** (private beta, September 25, 2026): a managed parse, dense-plus-sparse embed, index, permission-aware retrieve and rerank stack, exposed through a dedicated MCP server so agents can progressively narrow the corpus.
+- **Pinecone Nexus** (پیش‌نمایش عمومی در ۱ جولای، دسترسی عمومی یا GA در ۶ اوت ۲۰۲۶): توصیفات یک متخصص حوزه کاری (subject-matter expert) به یک مانیفست یا Manifest (موجودیت‌ها، روابط، قالب‌های پاسخ) تبدیل می‌شود. Nexus اسناد منبع را در قالب خلاصه‌ها، گزیده‌های ساختاریافته و گراف‌های موجودیت-رابطه کامپایل می‌کند و Agentها از طریق زبان KnowQL با یک فراخوانی از آن‌ها پرس‌وجو می‌کنند. لایه داده (data plane) در حساب AWS، GCP یا Azure مشتری اجرا می‌شود و لایه کامپایل‌شده قابل خروجی‌گرفتن (export) است. نتایج گزارش‌شده توسط ارائه‌دهنده: در بنچمارک tau-Knowledge، مدل GPT-5.5 با Nexus دقت را حفظ کرد (۴۷.۴٪ در مقایسه با ۴۶.۴٪ بدون آن) با ۷۷٪ هزینه کمتر به ازای هر تسک و حدود ۳۵٪ فراخوانی کمتر مدل؛ در نسخه پیش‌نمایش، یک آزمون روی رویه قضایی اتحادیه اروپا به دقت ۸۷٪ در برابر ۴۵٪ برای خط مبنای Agentic RAG با حدود ۹ برابر Token کمتر دست یافت.
+- **Cohere Compass Cloud** (بتای خصوصی، ۲۵ سپتامبر ۲۰۲۶): یک پشته (stack) مدیریت‌شده برای پارس، تعبیه‌سازی متراکم به‌علاوه پراکنده (dense-plus-sparse embed)، نمایه‌سازی، بازیابی آگاه از دسترسی‌ها (permission-aware retrieve) و بازرتبه‌بندی (rerank) که از طریق یک سرور اختصاصی MCP ارائه می‌شود تا Agentها بتوانند به مرور دامنه اسناد را محدود کنند.
 
-| Dimension | Agentic RAG loop | Compile-once knowledge |
+| بعد | حلقه Agentic RAG | دانش با یک‌بار کامپایل (Compile-once knowledge) |
 |---|---|---|
-| Cost profile | Per query (multiple LLM and search calls) | Up front (compilation) plus re-compilation on change |
-| Best for | Open-ended questions over a changing corpus | Repeated question shapes over a domain with stable structure |
-| Failure mode | Latency and cost blowups, non-determinism | Knowledge drift between compilations; questions the Manifest did not anticipate |
-| Who maintains it | Engineers tune the loop | A domain expert maintains the Manifest |
+| مشخصه هزینه (Cost profile) | به ازای هر پرسمان (چندین فراخوانی LLM و جستجو) | پیش‌هنگام (کامپایل اولیه) به همراه کامپایل مجدد در زمان تغییرات |
+| بهترین کاربرد | سوالات با پایان باز روی مجموعه‌ای از اسناد متغیر | الگوهای تکراری سوال روی حوزه‌ای با ساختار پایدار |
+| حالت شکست (Failure mode) | جهش‌های شدید تاخیر (Latency) و هزینه، عدم قطعیت (non-determinism) | انحراف دانش (knowledge drift) میان کامپایل‌ها؛ سوالاتی که مانیفست پیش‌بینی نکرده بود |
+| مسئول نگهداری | مهندسان حلقه را تنظیم می‌کنند | یک متخصص حوزه کاری مانیفست را نگهداری می‌کند |
 
-Both results are vendor-run, and the case-law comparison is against an agentic RAG baseline of the vendor's choosing. The structural argument holds regardless: if most queries ask the same few kinds of question, paying once to structure the corpus beats paying on every query to rediscover the structure. GraphRAG's community summaries are an earlier form of the same idea; see [GraphRAG](07-graph-rag.md).
-
----
-
-## Training Search Agents: The Co-Cheating Trap
-
-Teams that train their own retrieval agents with RL increasingly use **self-evolution**: a proposer model writes questions from documents and a solver learns to answer them, with agreement as the reward. "False Frontiers" (arXiv 2609.39102, September 30, 2026) shows the two **co-cheat**: they converge on shared errors, so in-loop reward rises while externally audited label correctness stagnates or falls.
-
-- Multi-sample verification barely helps: false-agreement mass drops only from 6.1% to 5.7% (4B) and from 8.8% to 7.2% (9B).
-- **CrossFit** splits the document set in two and scores questions from one partition with an auxiliary solver trained only on the other, cutting false agreement to 3.0% and 3.7%. At Qwen3.5-4B and 9B it improves the average across seven search benchmarks by 8.8 and 8.4 points over coupled self-evolution, and by 8.7 and 7.8 points over Search-R1.
-
-The general lesson for any synthetic-data loop: never let the component that generates the labels also be the only judge of them. Hold out an independent verifier and audit a sample of labels by hand.
+هر دو نتیجه توسط ارائه‌دهنده اجرا شده‌اند، و مقایسه رویه قضایی در برابر خط مبنایی از Agentic RAG به انتخاب خودِ ارائه‌دهنده بوده است. با این حال، استدلال ساختاری معتبر است: اگر اکثر پرسمان‌ها همان چند نوع سوال را بپرسند، یک‌بار پرداخت هزینه برای ساختاردهی به اسناد، بهتر از پرداخت هزینه در هر پرسمان برای کشف دوباره ساختار است. خلاصه‌های جامعه (community summaries) در GraphRAG شکل اولیه‌تری از همین ایده هستند؛ رجوع کنید به [GraphRAG](07-graph-rag.md).
 
 ---
 
-## Interview Questions
+## آموزش Agentهای جستجو: تله فریب متقابل (The Co-Cheating Trap)
 
-### Q: What is the "Reasoning-Retrieval Balance" in Agentic RAG?
+تیم‌هایی که Agentهای بازیابی خود را با یادگیری تقویتی (RL) آموزش می‌دهند، به‌طور فزاینده‌ای از **خودتکاملی (self-evolution)** استفاده می‌کنند: یک مدل پیشنهاددهنده (proposer) از روی اسناد سوال طرح می‌کند و یک مدل حل‌کننده (solver) یاد می‌گیرد به آن‌ها پاسخ دهد، در حالی که میزان توافق به عنوان پاداش در نظر گرفته می‌شود. مقاله «False Frontiers» (arXiv 2609.39102، ۳۰ سپتامبر ۲۰۲۶) نشان می‌دهد که این دو مدل **دچار فریب متقابل (co-cheat)** می‌شوند: آن‌ها روی خطاهای مشترک همگرا می‌گردند، به طوری که پاداش درون حلقه افزایش می‌یابد در حالی که درستی برچسب‌ها در ارزیابی خارجی راکد می‌ماند یا کاهش پیدا می‌کند.
 
-**Strong answer:**
-Every "Reasoning turn" in an agentic loop adds token cost and user latency. The goal of a production engineer is to find the "Retrieval Threshold." We use **Token-Budgeting** where we allow the agent only 3-5 "turns" before forcing a final answer. We also use **Speculative Retrieval**, where the agent predicts the next 2 steps it will take and retrieves for both simultaneously to reduce round-trip latency. The cheapest turn is the one you never take, so I put an adaptive gate in front: a single hybrid-plus-rerank pass with a sufficiency check, escalating to planning only on failure (Azure AI Search ships this as `retrievalReasoningEffort` with `kind: "auto"` in the 2026-08-01-preview API).
+- اعتبارسنجی چندنمونه‌ای (Multi-sample verification) کمک چندانی نمی‌کند: حجم توافق کاذب (false-agreement mass) فقط از ۶.۱٪ به ۵.۷٪ (در مدل 4B) و از ۸.۸٪ به ۷.۲٪ (در مدل 9B) کاهش می‌یابد.
+- روش **CrossFit** مجموعه اسناد را به دو بخش تقسیم می‌کند و سوالاتِ یک بخش را با یک حل‌کننده کمکی که فقط روی بخش دیگر آموزش دیده امتیازدهی می‌کند، که این کار توافق کاذب را به ۳.۰٪ و ۳.۷٪ کاهش می‌دهد. در مدل‌های Qwen3.5-4B و 9B، این روش میانگین نتایج را در هفت بنچمارک جستجو به میزان ۸.۸ و ۸.۴ امتیاز نسبت به خودتکاملی جفت‌شده، و ۸.۷ و ۷.۸ امتیاز نسبت به Search-R1 بهبود می‌بخشد.
 
-### Q: Why does Agentic RAG often lead to higher quality but lower "Reliability" (Determinism)?
-
-**Strong answer:**
-Agentic RAG is non-deterministic because the model is "Deciding" its path at every step. A small change in the user query might cause the agent to pick a different tool or search strategy, leading to a different answer format. The standard mitigation is **Constrained Agent Frameworks** (like LangGraph or DSPy) where the "Graph of possible paths" is strictly defined, even if the choice *between* those paths is stochastic.
-
-### Q: When would you compile knowledge up front instead of running an agentic retrieval loop?
-
-**Strong answer:**
-When the question shapes repeat and the domain structure is stable. If 80% of queries are variants of "which clauses in contract X conflict with policy Y" or "what is the status of entity Z," an agent rediscovering that structure from chunks on every query is paying the same cost thousands of times. Compiling once (entities, relationships, typed extracts, as Pinecone Nexus or a GraphRAG-style index does) moves that cost to ingestion and makes each query one structured call. I would not compile when the corpus changes faster than I can re-compile, when questions are open-ended research, or when I have no domain owner to maintain the schema, because a stale or incomplete compiled layer answers confidently and wrongly. In practice I run both: compiled artifacts for the known question shapes, with an agentic RAG fallback over raw chunks for everything else, and I track the fallback rate as the signal that the schema needs to grow.
+درس کلی برای هر حلقه داده‌های ساختگی (synthetic-data): هرگز اجازه ندهید مؤلفه‌ای که برچسب‌ها را تولید می‌کند، تنها قاضی آن‌ها نیز باشد. همواره یک اعتبارسنج مستقل کنار بگذارید و نمونه‌ای از برچسب‌ها را به‌صورت دستی ارزیابی و بازرسی کنید.
 
 ---
 
-## References
+## سوالات مصاحبه
+
+### سوال: «تعادل میان استدلال و بازیابی» (Reasoning-Retrieval Balance) در Agentic RAG چیست؟
+
+**پاسخ قوی:**
+هر «نوبت استدلال» (Reasoning turn) در یک حلقه Agentic، هزینه Token و تاخیر (Latency) برای کاربر اضافه می‌کند. هدف یک مهندس محیط عملیاتی پیدا کردن «آستانه بازیابی» (Retrieval Threshold) است. ما از **بودجه‌بندی Tokenها (Token-Budgeting)** استفاده می‌کنیم که در آن به Agent تنها اجازه ۳ تا ۵ «نوبت» داده می‌شود قبل از اینکه مجبور به ارائه پاسخ نهایی شود. همچنین از **بازیابی حدسی (Speculative Retrieval)** بهره می‌بریم؛ جایی که Agent دو مرحله بعدی خود را پیش‌بینی کرده و برای هر دو به‌طور هم‌زمان بازیابی انجام می‌دهد تا تاخیر (Latency) رفت و برگشت کاهش یابد. ارزان‌ترین نوبت، نوبتی است که هرگز اجرا نکنید؛ بنابراین من یک گیت تطبیقی (adaptive gate) در ابتدا قرار می‌دهم: یک مرحله ترکیبی به‌علاوه بازرتبه‌بندی تکی همراه با بررسی کفایت، که ارتقا به مرحله برنامه‌ریزی تنها در صورت شکست انجام می‌شود (Azure AI Search این قابلیت را تحت عنوان `retrievalReasoningEffort` با `kind: "auto"` در API نسخه 2026-08-01-preview ارائه داده است).
+
+### سوال: چرا Agentic RAG اغلب منجر به کیفیت بالاتر اما «قابلیت اطمینان» (قطعیت / Determinism) پایین‌تر می‌شود؟
+
+**پاسخ قوی:**
+رویکرد Agentic RAG غیرقطعی (non-deterministic) است زیرا مدل در هر مرحله در حال «تصمیم‌گیری» برای مسیر خود است. یک تغییر کوچک در پرسمان کاربر ممکن است باعث شود Agent ابزار یا استراتژی جستجوی متفاوتی را انتخاب کند که منجر به قالب پاسخ متفاوتی می‌شود. راهکار استاندارد برای کاهش این اثر، استفاده از **فریم‌ورک‌های مقید Agent (مانند Constrained Agent Frameworks)** (نظیر LangGraph یا DSPy) است که در آن‌ها «گراف مسیرهای ممکن» به‌صورت دقیق تعریف شده است، حتی اگر انتخاب *میان* آن مسیرها تصادفی (stochastic) باشد.
+
+### سوال: چه زمانی دانش را به جای اجرای یک حلقه بازیابی Agentic، از پیش کامپایل می‌کنید؟
+
+**پاسخ قوی:**
+زمانی که ساختار سوالات تکراری بوده و ساختار دامنه پایدار باشد. اگر ۸۰٪ پرسمان‌ها متغیرهایی از قبیل «کدام بندها در قرارداد X با خط‌مشی Y مغایرت دارند» یا «وضعیت موجودیت Z چیست» باشند، اینکه یک Agent در هر پرسمان این ساختار را مجدداً از Chunkها کشف کند به معنای پرداخت هزاران برابری همان هزینه است. یک‌بار کامپایل کردن (موجودیت‌ها، روابط، گزیده‌های نوع‌دار، همان‌طور که Pinecone Nexus یا نمایه‌ای به سبک GraphRAG انجام می‌دهد) این هزینه را به مرحله بارگذاری داده منتقل می‌کند و هر پرسمان را به یک فراخوانی ساختاریافته تبدیل می‌نماید. من زمانی که مجموعه اسناد سریع‌تر از توان کامپایل مجدد تغییر کند، زمانی که سوالات ماهیت پژوهشی با پایان باز داشته باشند، یا زمانی که صاحب حوزه‌ای برای نگهداری اسکیمای داده وجود نداشته باشد، دست به کامپایل نمی‌زنم؛ زیرا یک لایه کامپایل‌شده قدیمی یا ناقص، با اطمینان کاذب اما به‌طور کاملاً اشتباه پاسخ می‌دهد. در عمل من هر دو را اجرا می‌کنم: آرتیفکت‌های کامپایل‌شده برای الگوهای شناخته‌شده سوالات، به همراه fallback از نوع Agentic RAG روی Chunkهای خام برای سایر موارد؛ و نرخ بازگشت به fallback را به عنوان نشانه‌ای برای نیاز به گسترش اسکیما ردیابی می‌کنم.
+
+---
+
+## منابع
 - Asai et al. "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection" (2023)
 - Yan et al. "Corrective Retrieval Augmented Generation (CRAG)" (2024)
 - Jeong et al. "Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity" (2024)
 - LangChain. "Agentic RAG with LangGraph" (2025)
-- [Microsoft. "What's new in Azure AI Search"](https://learn.microsoft.com/en-us/azure/search/whats-new)
-- [Pinecone. "Pinecone Nexus is generally available" (Aug 2026)](https://www.pinecone.io/blog/pinecone-nexus-generally-available/)
-- ["False Frontiers" (arXiv 2609.39102, Sep 2026)](https://arxiv.org/abs/2609.39102)
+- [مایکروسافت. «قابلیت‌های جدید در Azure AI Search»](https://learn.microsoft.com/en-us/azure/search/whats-new)
+- [Pinecone. «Pinecone Nexus به طور عمومی در دسترس قرار گرفت» (اوت ۲۰۲۶)](https://www.pinecone.io/blog/pinecone-nexus-generally-available/)
+- [«False Frontiers» (arXiv 2609.39102، سپتامبر ۲۰۲۶)](https://arxiv.org/abs/2609.39102)
 
 ---
 
-*Previous: [GraphRAG](07-graph-rag.md) | Next: [Advanced Retrieval Patterns](09-advanced-retrieval-patterns.md)*
+*قبلی: [GraphRAG](07-graph-rag.md) | بعدی: [الگوهای پیشرفته بازیابی](09-advanced-retrieval-patterns.md)*
+
+</div>

@@ -1,26 +1,30 @@
-# RAG Evaluation Patterns
+<div dir="rtl">
 
-Evaluation is the hardest unsolved problem in RAG. You can build a retrieval pipeline in a day; knowing whether it actually works takes weeks. The industry has converged on a layered evaluation strategy: the RAG Triad for correctness, component-level metrics for debugging, and automated regression testing for production safety. Langfuse, LangWatch, Braintrust, and Arize Phoenix all ship native RAG eval recipes; pick by deployment model (self-hosted vs SaaS) and whether you need eval-gated CI/CD blocking.
+# الگوهای ارزیابی RAG
 
-## Table of Contents
+ارزیابی، دشوارترین مسئله حل‌نشده در RAG است. شما می‌توانید یک پایپ‌لاین بازیابی را در عرض یک روز بسازید؛ اما دانستن اینکه آیا واقعاً کار می‌کند یا خیر، هفته‌ها زمان می‌برد. صنعت روی یک استراتژی ارزیابی لایه‌بندی‌شده به توافق رسیده است: سه‌گانه RAG برای صحت عملکرد، معیارهای سطح مؤلفه برای اشکال‌زدایی، و آزمون رگرسیون خودکار برای ایمنی محیط عملیاتی. ابزارهای Langfuse، LangWatch، Braintrust و Arize Phoenix همگی دستورالعمل‌های ارزیابی بومی RAG را ارائه می‌دهند؛ انتخاب از میان آن‌ها بر اساس مدل استقرار (Deployment) (میزبانی شخصی در برابر SaaS) و نیاز شما به مسدودسازی CI/CD مبتنی بر ارزیابی انجام می‌شود.
 
-- [The RAG Triad](#the-rag-triad)
-- [RAGAS Framework and Metrics](#ragas-framework-and-metrics)
-- [Component-Level Evaluation](#component-level-evaluation)
-- [LLM-as-Judge for RAG](#llm-as-judge-for-rag)
-- [Building Golden Test Sets](#building-golden-test-sets)
-- [Automated Regression Testing](#automated-regression-testing)
-- [Production Monitoring](#production-monitoring)
-- [Cost of Evaluation at Scale](#cost-of-evaluation-at-scale)
-- [Tools Comparison](#tools-comparison)
-- [System Design Interview Angle](#system-design-interview-angle)
-- [References](#references)
+## فهرست مطالب
+
+- [سه‌گانه RAG](#the-rag-triad)
+- [فریم‌ورک و معیارهای RAGAS](#ragas-framework-and-metrics)
+- [ارزیابی در سطح مؤلفه](#component-level-evaluation)
+- [استفاده از LLM به‌عنوان داور (LLM-as-Judge) برای RAG](#llm-as-judge-for-rag)
+- [ساخت مجموعه‌های آزمون مرجع (Golden Test Sets)](#building-golden-test-sets)
+- [آزمون رگرسیون خودکار](#automated-regression-testing)
+- [مانیتورینگ محیط عملیاتی](#production-monitoring)
+- [هزینه ارزیابی در مقیاس بالا](#cost-of-evaluation-at-scale)
+- [مقایسه ابزارها](#tools-comparison)
+- [زاویه دید مصاحبه طراحی سیستم](#system-design-interview-angle)
+- [منابع](#references)
 
 ---
 
-## The RAG Triad
+## سه‌گانه RAG
 
-The RAG Triad is the foundational framework for evaluating RAG systems. It decomposes correctness into three independent dimensions, each catching a different failure mode.
+سه‌گانه RAG فریم‌ورک بنیادین برای ارزیابی سیستم‌های RAG است. این فریم‌ورک صحت عملکرد را به سه بُعد مستقل تجزیه می‌کند که هر یک حالت شکست متفاوتی را شناسایی می‌کنند.
+
+<div dir="ltr">
 
 ```
                           User Query
@@ -48,65 +52,69 @@ The RAG Triad is the foundational framework for evaluating RAG systems. It decom
              No hallucination       No tangential answers
 ```
 
-### Dimension 1: Context Relevance
+</div>
 
-**Question**: Is each retrieved chunk actually relevant to the user query?
+### بُعد ۱: ارتباط بافتار (Context Relevance)
 
-**What it catches**: Bad retrieval. The vector search returned documents about the wrong topic, or the query was ambiguous and the retriever guessed wrong.
+**پرسش**: آیا هر Chunk بازیابی‌شده واقعاً با پرسش کاربر مرتبط است؟
 
-**How to measure**:
-- For each retrieved chunk, ask: "Is this chunk relevant to answering the query?"
-- Score: (number of relevant chunks) / (total retrieved chunks)
-- A score of 0.3 means 70% of retrieved context is noise, forcing the LLM to find a needle in irrelevant hay.
+**چه چیزی را شناسایی می‌کند**: بازیابی نامناسب. جستجوی برداری اسنادی درباره موضوعی اشتباه بازگردانده است، یا پرسش مبهم بوده و بازیاب (Retriever) حدس اشتباهی زده است.
 
-**Why it matters**: Low context relevance is the root cause of most RAG failures. Even a perfect generator cannot produce a good answer from irrelevant context.
+**نحوه اندازه‌گیری**:
+- برای هر Chunk بازیابی‌شده، این پرسش مطرح می‌شود: «آیا این Chunk با پاسخ‌دادن به پرسش مرتبط است؟»
+- امتیاز: (تعداد Chunkهای مرتبط) / (تعداد کل Chunkهای بازیابی‌شده)
+- امتیاز 0.3 به این معناست که ۷۰٪ از بافتار بازیابی‌شده نویز است و LLM را مجبور می‌کند تا در توده‌ای نامرتبط دنبال سوزن بگردد.
 
-### Dimension 2: Groundedness (Faithfulness)
+**چرا اهمیت دارد**: ارتباط پایین بافتار ریشه اصلی اغلب شکست‌های RAG است. حتی یک مولد بی‌نقص نیز نمی‌تواند از بافتاری نامرتبط، پاسخی مناسب تولید کند.
 
-**Question**: Is every claim in the generated answer supported by the retrieved context?
+### بُعد ۲: استنادپذیری / وفاداری (Groundedness / Faithfulness)
 
-**What it catches**: Hallucination. The LLM generated claims that are plausible but not present in the retrieved documents.
+**پرسش**: آیا تک‌تک ادعاهای مطرح‌شده در پاسخ تولیدی توسط بافتار بازیابی‌شده پشتیبانی می‌شوند؟
 
-**How to measure**:
-- Decompose the answer into individual claims/statements.
-- For each claim, search the retrieved context for supporting evidence.
-- Score: (number of supported claims) / (total claims)
-- A score of 0.7 means 30% of the answer is hallucinated.
+**چه چیزی را شناسایی می‌کند**: توهم (Hallucination). مدل LLM ادعاهایی را تولید کرده است که معقول به نظر می‌رسند اما در اسناد بازیابی‌شده وجود ندارند.
 
-**Why it matters**: This is the metric that enterprise customers care about most. An unfaithful RAG system is worse than no RAG at all because it produces confident-sounding wrong answers with fake citations.
+**نحوه اندازه‌گیری**:
+- پاسخ به ادعاها/گزاره‌های مجزا تجزیه می‌شود.
+- برای هر ادعا، بافتار بازیابی‌شده به دنبال شواهد پشتیبان جستجو می‌شود.
+- امتیاز: (تعداد ادعاهای پشتیبانی‌شده) / (تعداد کل ادعاها)
+- امتیاز 0.7 به این معناست که ۳۰٪ از پاسخ دچار توهم است.
 
-### Dimension 3: Answer Relevance
+**چرا اهمیت دارد**: این معیاری است که مشتریان سازمانی بیش از هر چیز به آن اهمیت می‌دهند. یک سیستم RAG غیروفادار بدتر از نداشتن RAG است، زیرا پاسخ‌های غلط اما مطمئن‌نما به همراه ارجاعات ساختگی تولید می‌کند.
 
-**Question**: Does the final answer actually address what the user asked?
+### بُعد ۳: ارتباط پاسخ (Answer Relevance)
 
-**What it catches**: Tangential answers. The retrieval was good, the answer is grounded, but it does not answer the question. Common when the retriever finds related-but-not-matching content.
+**پرسش**: آیا پاسخ نهایی واقعاً به آنچه کاربر پرسیده است پاسخ می‌دهد؟
 
-**How to measure**:
-- Generate N hypothetical questions that the answer would be a good response to.
-- Measure semantic similarity between these hypothetical questions and the original query.
-- High similarity means the answer is on-topic.
+**چه چیزی را شناسایی می‌کند**: پاسخ‌های حاشیه‌ای و نامربوط. بازیابی مناسب بوده، پاسخ مستند است، اما به پرسش پاسخ نمی‌دهد. این حالت زمانی رایج است که بازیاب محتوایی مرتبط اما غیرمنطبق با هدف پرسش پیدا می‌کند.
 
-**Why it matters**: A system can retrieve relevant context and faithfully summarize it, yet still miss the point of the question. Answer relevance catches this.
+**نحوه اندازه‌گیری**:
+- تولید N پرسش فرضی که پاسخ تولیدشده می‌توانست جوابی مناسب برای آن‌ها باشد.
+- اندازه‌گیری شباهت معنایی بین این پرسش‌های فرضی و پرسش اولیه.
+- شباهت بالا نشان‌دهنده مرتبط بودن پاسخ با موضوع است.
 
-### Triad Failure Modes
+**چرا اهمیت دارد**: یک سیستم ممکن است بافتار مرتبط را بازیابی کند و آن را به‌طور وفادارانه خلاصه نماید، اما همچنان نکته اصلی پرسش را نادیده بگیرد. معیار ارتباط پاسخ این مشکل را شناسایی می‌کند.
 
-| Failure Pattern | Context Relevance | Groundedness | Answer Relevance | Root Cause |
+### حالت‌های شکست سه‌گانه
+
+| الگوی شکست | ارتباط بافتار | استنادپذیری (Groundedness) | ارتباط پاسخ | علت ریشه‌ای |
 |----------------|-------------------|-------------|-----------------|------------|
-| Good RAG | High | High | High | System working correctly |
-| Bad Retrieval | **Low** | High | Low | Embeddings or search misconfigured |
-| Hallucination | High | **Low** | High | LLM ignoring context, prompt issue |
-| Tangential Answer | High | High | **Low** | Query ambiguity, wrong index |
-| Total Failure | **Low** | **Low** | **Low** | Fundamental pipeline issue |
+| RAG مناسب | بالا | بالا | بالا | سیستم به‌درستی کار می‌کند |
+| بازیابی نامناسب | **پایین** | بالا | پایین | پیکربندی نادرست Embeddingها یا جستجو |
+| توهم | بالا | **پایین** | بالا | نادیده‌گرفتن بافتار توسط LLM، مشکل در Prompt |
+| پاسخ حاشیه‌ای | بالا | بالا | **پایین** | ابهام در پرسش، ایندکس اشتباه |
+| شکست کامل | **پایین** | **پایین** | **پایین** | مشکل اساسی در پایپ‌لاین |
 
 ---
 
-## RAGAS Framework and Metrics
+## فریم‌ورک و معیارهای RAGAS
 
-RAGAS (Retrieval Augmented Generation Assessment) is the most widely adopted open-source evaluation framework for RAG, providing reference-free metrics that do not require ground-truth answers.
+ابزار RAGAS مخفف (Retrieval Augmented Generation Assessment) پرکاربردترین فریم‌ورک ارزیابی متن‌باز برای RAG است که معیارهای بدون مرجع ارائه می‌دهد که نیازی به پاسخ‌های واقعیت پایه (Ground-truth) ندارند.
 
-**Maintenance caveat:** as of November 2026, the repository (now vibrantlabsai/ragas) has had no commits since February 24, 2026, and its latest release is v0.4.3 (January 13, 2026). It is not archived, and the metric definitions below still hold, but pin the version, vendor the prompts you depend on, and keep a maintained alternative ready (DeepEval, or your tracing platform's native evaluators) in case a model-SDK change breaks it.
+**نکته مربوط به نگهداری:** تا نوامبر ۲۰۲۶، ریپازیتوری (که اکنون vibrantlabsai/ragas است) از ۲۴ فوریه ۲۰۲۶ تاکنون هیچ کامیت جدیدی نداشته و آخرین نسخه منتشرشده آن v0.4.3 (۱۳ ژانویه ۲۰۲۶) است. این ریپازیتوری آرشیو نشده و تعاریف معیارهای زیر همچنان معتبر هستند، اما بهتر است نسخه آن را تثبیت (Pin) کنید، Promptهایی را که به آن‌ها وابسته هستید Vendor کنید، و یک جایگزین تحت پشتیبانی و فعال (مانند DeepEval یا ارزیاب‌های بومی پلتفرم رهگیری خود) را آماده نگه دارید تا در صورت بروز ناسازگاری ناشی از تغییرات مدل یا SDK، سیستم مختل نشود.
 
-### Core RAGAS Metrics
+### معیارهای اصلی RAGAS
+
+<div dir="ltr">
 
 ```
   RAGAS Metric Suite (v0.2+)
@@ -131,7 +139,9 @@ RAGAS (Retrieval Augmented Generation Assessment) is the most widely adopted ope
         +-- Multimodal Relevance: Are retrieved images relevant?
 ```
 
-### How RAGAS Faithfulness Works (Under the Hood)
+</div>
+
+### نحوه عملکرد وفاداری (Faithfulness) در RAGAS (در پشت صحنه)
 
 ```
 Step 1: Claim Extraction
@@ -154,7 +164,7 @@ Step 3: Score Calculation
   Faithfulness = supported / total = 2/4 = 0.50
 ```
 
-### How RAGAS Context Precision Works
+### نحوه عملکرد دقت بافتار (Context Precision) در RAGAS
 
 ```
   Retrieved chunks ranked by retriever score:
@@ -173,26 +183,28 @@ Step 3: Score Calculation
                     = (1.0 + 0.67) / 2 = 0.835
 ```
 
-### RAGAS vs. Ground-Truth Metrics
+### معیارهای RAGAS در مقایسه با معیارهای مبتنی بر واقعیت پایه
 
-| Metric | Needs Ground Truth? | What It Measures |
+| معیار | به واقعیت پایه نیاز دارد؟ | چه چیزی را اندازه‌گیری می‌کند |
 |--------|-------------------|------------------|
-| Faithfulness | No | Claims supported by context |
-| Context Relevance | No | Retrieved chunks relevance |
-| Answer Relevance | No | Answer addresses query |
-| Context Recall | **Yes** | Coverage of reference answer |
-| Answer Correctness | **Yes** | Match against reference answer |
-| Answer Similarity | **Yes** | Semantic overlap with reference |
+| وفاداری (Faithfulness) | خیر | ادعاهای پشتیبانی‌شده توسط بافتار |
+| ارتباط بافتار (Context Relevance) | خیر | ارتباط Chunkهای بازیابی‌شده |
+| ارتباط پاسخ (Answer Relevance) | خیر | پوشش پرسش توسط پاسخ |
+| بازخوانی بافتار (Context Recall) | **بله** | میزان پوشش پاسخ مرجع |
+| صحت پاسخ (Answer Correctness) | **بله** | تطابق با پاسخ مرجع |
+| شباهت پاسخ (Answer Similarity) | **بله** | هم‌پوشانی معنایی با پاسخ مرجع |
 
-**Insight**: Start with reference-free metrics (faithfulness, context relevance, answer relevance) for rapid iteration. Add ground-truth metrics once you have a golden test set for regression testing.
+**بینش**: برای تکرار و پیشرفت سریع، با معیارهای بدون مرجع (وفاداری، ارتباط بافتار، ارتباط پاسخ) شروع کنید. پس از دستیابی به یک مجموعه آزمون مرجع برای آزمون رگرسیون، معیارهای مبتنی بر واقعیت پایه را اضافه کنید.
 
 ---
 
-## Component-Level Evaluation
+## ارزیابی در سطح مؤلفه
 
-The RAG Triad evaluates the system end-to-end. Component-level evaluation isolates each stage to pinpoint failures.
+سه‌گانه RAG سیستم را به‌صورت سرتاسری ارزیابی می‌کند. ارزیابی در سطح مؤلفه، هر مرحله را جداسازی می‌کند تا محل دقیق خطاها و شکست‌ها مشخص شود.
 
-### Retriever Evaluation
+### ارزیابی بازیاب (Retriever)
+
+<div dir="ltr">
 
 ```
   Query Set (100+ queries with known relevant documents)
@@ -211,33 +223,37 @@ The RAG Triad evaluates the system end-to-end. Component-level evaluation isolat
     +-- Precision@K: What fraction of top K are relevant?
 ```
 
-**Key Retriever Benchmarks**:
+</div>
 
-| Metric | Minimum Threshold | Good | Excellent |
+**بنچمارک‌های کلیدی بازیاب**:
+
+| معیار | حداقل آستانه | خوب | عالی |
 |--------|------------------|------|-----------|
 | Recall@10 | 0.70 | 0.85 | 0.95+ |
 | MRR | 0.50 | 0.70 | 0.85+ |
 | NDCG@10 | 0.50 | 0.70 | 0.85+ |
 | Precision@5 | 0.40 | 0.60 | 0.80+ |
 
-### Separate the Embedder from the Index
+### تفکیک تعبیه‌ساز (Embedder) از ایندکس
 
-A retrieval miss has two possible owners, and they need different tests:
+عدم موفقیت در بازیابی می‌تواند ناشی از دو بخش مجزا باشد و هر یک نیازمند آزمون‌های متفاوتی هستند:
 
-| Question | Metric | Ground truth | Fix if it fails |
+| پرسش | معیار | واقعیت پایه | راه‌حل در صورت شکست |
 |----------|--------|--------------|-----------------|
-| Did the **embedder** rank the right chunk highly? | Recall@K with **exact** (brute-force) kNN | Human relevance labels | Model, chunking, contextualization |
-| Did the **ANN index** return what exact kNN would? | ANN recall@K vs exact kNN | Exact neighbors, no labels needed | Index params (`ef`, probes), quantization, rescoring |
+| آیا **تعبیه‌ساز (Embedder)** رتبه بالایی به Chunk درست اختصاص داده است؟ | Recall@K با kNN **دقیق** (Brute-force) | برچسب‌های ارتباط انسانی | مدل، Chunking، بافتاردهی (Contextualization) |
+| آیا **ایندکس ANN** همان مواردی را که kNN دقیق برمی‌گرداند بازگردانده است؟ | ANN recall@K در برابر kNN دقیق | همسایه‌های دقیق، بدون نیاز به برچسب | پارامترهای ایندکس (`ef`، probes)، کوانتیزاسیون، امتیازدهی مجدد (Rescoring) |
 
-Run both on the same queries. If exact-kNN recall is fine and ANN recall is 0.85, no embedding upgrade will help. Quantization makes this test mandatory: the 1-to-4-bit rotation-based schemes that vector DBs added in 2026 (Qdrant TurboQuant and Turbo4, Weaviate 4-bit RQ preview) trade recall for memory, and are opt-in or preview rather than defaults.
+هر دو آزمون را روی پرسش‌های یکسان اجرا کنید. اگر بازخوانی kNN دقیق مشکلی ندارد اما بازخوانی ANN برابر 0.85 است، ارتقای Embedding هیچ کمکی نخواهد کرد. کوانتیزاسیون این آزمون را الزامی می‌کند: طرح‌های مبتنی بر چرخش ۱ تا ۴ بیتی که پایگاه‌های داده برداری (Vector Databases) در سال ۲۰۲۶ اضافه کردند (مانند TurboQuant و Turbo4 در Qdrant، و پیش‌نمایش ۴ بیتی RQ در Weaviate)، بازخوانی را فدای حافظه می‌کنند و به جای اینکه حالت پیش‌فرض باشند، به‌صورت اختیاری (Opt-in) یا پیش‌نمایش ارائه می‌شوند.
 
-For index behavior at a scale you cannot label, use an open benchmark with exact ground truth. Qdrant-FineWeb-10B (September 1, 2026) ships 10.07B dense plus 10.07B sparse vectors and 100,000 queries with exact top-1,000 neighbors; its companion PubMed-Multi-Vector set compares dense, sparse and ColBERT-style retrieval on the same corpus. Vendor latency claims measured at 10M vectors with shallow top-k and no filters tell you little about a filtered top-100 query at a billion.
+برای بررسی رفتار ایندکس در مقیاسی که نمی‌توانید آن را برچسب‌گذاری کنید، از یک بنچمارک باز با واقعیت پایه دقیق استفاده کنید. مجموعه Qdrant-FineWeb-10B (۱ سپتامبر ۲۰۲۶) شامل ۱۰.۰۷ میلیارد بردار متراکم به‌علاوه ۱۰.۰۷ میلیارد بردار تنک و ۱۰۰٬۰۰۰ پرسش با ۱٬۰۰۰ همسایه برتر دقیق است؛ مجموعه همراه آن، PubMed-Multi-Vector، بازیابی متراکم، تنک و سبک ColBERT را روی همان پیکره مقایسه می‌کند. ادعاهای شرکت‌های ارائه‌دهنده درباره تاخیر (Latency) که با ۱۰ میلیون بردار، با top-k کم‌عمق و بدون فیلتر اندازه‌گیری شده‌اند، اطلاعات چندانی درباره یک پرسش فیلترشده با top-100 در مقیاس یک میلیارد بردار به شما نمی‌دهند.
 
-**Public leaderboards are priors, not results.** MTEB scores can be inflated when models train on data that overlaps the public test sets. RTEB (from the MTEB team, October 2025) mixes open datasets with private held-out sets that the maintainers evaluate, which makes it the better shortlist filter; NVIDIA reports Nemotron 3 Embed 8B (open weights, OpenMDW-1.1) at #1 on RTEB Multilingual with 78.5 (vendor-reported, July 2026). Shortlist from RTEB, then decide on your own golden set.
+**لیدربوردهای عمومی تنها پیش‌فرض‌های اولیه هستند، نه نتایج قطعی.** امتیازهای MTEB می‌توانند به دلیل آموزش مدل‌ها روی داده‌هایی که با مجموعه‌های آزمون عمومی هم‌پوشانی دارند، بیش از حد واقعی (متورم) باشند. بنچمارک RTEB (ارائه‌شده توسط تیم MTEB، اکتبر ۲۰۲۵) دیتاست‌های باز را با مجموعه‌های خصوصی کنارگذاشته‌شده (Held-out) که توسط نگه‌دارندگان ارزیابی می‌شوند ترکیب می‌کند، که آن را به فیلتر بهتری برای انتخاب اولیه تبدیل می‌سازد؛ انویدیا گزارش می‌دهد که مدل Nemotron 3 Embed 8B (با وزن‌های باز، OpenMDW-1.1) با امتیاز 78.5 در رتبه اول RTEB Multilingual قرار دارد (گزارش‌شده توسط ارائه‌دهنده، ژوئیه ۲۰۲۶). فهرست نهایی خود را از RTEB انتخاب کنید و سپس بر اساس مجموعه مرجع اختصاصی خود تصمیم بگیرید.
 
-### Generator Evaluation
+### ارزیابی مولد (Generator)
 
-Isolate the generator by fixing the retrieval context and varying only the generation.
+با ثابت نگه‌داشتن بافتار بازیابی و تغییردادن تنها بخش تولید متن، عملکرد مولد را ایزوله کنید.
+
+<div dir="ltr">
 
 ```
   Fixed Context (known relevant chunks)
@@ -255,7 +271,11 @@ Isolate the generator by fixing the retrieval context and varying only the gener
     +-- Citation Accuracy: Do citations point to the right chunks?
 ```
 
-### Reranker Evaluation
+</div>
+
+### ارزیابی رتبه‌بندی مجدد (Reranker)
+
+<div dir="ltr">
 
 ```
   Query + Initial retrieval results (e.g., top 100 from BM25)
@@ -270,13 +290,17 @@ Isolate the generator by fixing the retrieval context and varying only the gener
     +-- Latency: What did reranking add to query time?
 ```
 
+</div>
+
 ---
 
-## LLM-as-Judge for RAG
+## استفاده از LLM به‌عنوان داور (LLM-as-Judge) برای RAG
 
-Using an LLM to evaluate another LLM's output is the dominant evaluation paradigm. It scales where human evaluation cannot, but has known biases.
+استفاده از یک LLM برای ارزیابی خروجی LLM دیگر، پارادایم غالب در ارزیابی است. این روش در مقیاس‌هایی که ارزیابی انسانی ممکن نیست به‌خوبی مقیاس‌پذیر می‌شود، اما سوگیری‌های شناخته‌شده‌ای دارد.
 
-### How It Works
+### نحوه عملکرد
+
+<div dir="ltr">
 
 ```
   Evaluation Prompt Template:
@@ -298,45 +322,49 @@ Using an LLM to evaluate another LLM's output is the dominant evaluation paradig
   +------------------------------------------------------------------+
 ```
 
-### Known Biases and Mitigations
+</div>
 
-| Bias | Description | Mitigation |
+### سوگیری‌های شناخته‌شده و روش‌های کاهش آن‌ها
+
+| سوگیری | توضیحات | روش کاهش (Mitigation) |
 |------|-------------|------------|
-| **Verbosity** | LLM judges prefer longer answers | Normalize scores by answer length; add conciseness penalty |
-| **Self-preference** | GPT-4 rates GPT-4 answers higher | Use a different judge model than the generator |
-| **Position** | First option in A/B comparisons rated higher | Randomize presentation order |
-| **Sycophancy** | Judge agrees with the system being evaluated | Use structured rubrics with specific criteria |
-| **Leniency** | LLMs rarely give scores below 3/5 | Use binary (pass/fail) instead of Likert scales |
+| **اطناب (Verbosity)** | داوران LLM پاسخ‌های طولانی‌تر را ترجیح می‌دهند | نرمال‌سازی امتیازها بر اساس طول پاسخ؛ افزودن جریمه برای عدم ایجاز |
+| **ترجیح خود (Self-preference)** | مدل GPT-4 به پاسخ‌های خودش امتیاز بالاتری می‌دهد | استفاده از یک مدل داور متفاوت از مدل مولد |
+| **موقعیت (Position)** | گزینه اول در مقایسه‌های A/B امتیاز بالاتری می‌گیرد | تصادفی‌سازی ترتیب نمایش گزینه‌ها |
+| **چاپلوسی (Sycophancy)** | داور با سیستمی که ارزیابی می‌شود موافقت می‌کند | استفاده از شیوه‌نامه‌های ارزیابی (Rubrics) ساختاریافته با معیارهای مشخص |
+| **اغماض و سهل‌گیری (Leniency)** | مدل‌های LLM به‌ندرت امتیازی کمتر از 3/5 می‌دهند | استفاده از مقیاس دودویی (قبول/رد) به جای مقیاس لیکرت |
 
-### Best Practices for LLM-as-Judge
+### بهترین شیوه‌ها برای استفاده از LLM به‌عنوان داور
 
-1. **Use binary decisions over scales**: "Is this claim supported? YES/NO" is more reliable than "Rate support on 1-5."
-2. **Decompose into atomic evaluations**: Evaluate one claim or one dimension at a time.
-3. **Require evidence**: Force the judge to cite the specific context passage that supports/contradicts each claim.
-4. **Calibrate with human agreement**: Run 100+ examples through both LLM and human judges. Measure Cohen's Kappa. Target > 0.7.
-5. **Use a strong model for calibration, a cheap one for volume**: a frontier judge (Claude Opus 5.5, GPT-6 Sol) for the human-agreement calibration set and CI; a small model for sampled production traffic once it matches the frontier judge's verdicts on that set. Never use the same model that generated the answer.
-6. **Pin and version the judge**: a judge swap is a metric change. Claude Sonnet 4.5 retires on November 30, 2026 (Claude API and Foundry), and Claude Haiku 4.5 retires on Foundry on November 15, so teams judging with either there must switch this quarter. The obvious small replacement, Claude Haiku 5.5 (GA October 7), is a metric change too: it rejects `temperature`, `top_p`, `top_k`, and assistant prefill with a 400, and its tokenizer counts about 30% more tokens for the same text. Re-run the human-agreement calibration and re-baseline thresholds before comparing scores across the switch.
+۱. **استفاده از تصمیم‌گیری‌های دودویی به جای مقیاس‌ها**: عبارت «آیا این ادعا پشتیبانی می‌شود؟ بله/خیر» بسیار قابل‌اعتمادتر از «میزان پشتیبانی را از ۱ تا ۵ رتبه‌بندی کنید» است.
+۲. **تجزیه به ارزیابی‌های اتمیک**: در هر مرحله فقط یک ادعا یا یک بُعد را ارزیابی کنید.
+۳. **الزام به ارائه شواهد**: داور را ملزم کنید تا به بخش خاصی از بافتار که ادعا را پشتیبانی یا نقض می‌کند، استناد کند.
+۴. **کالیبراسیون با توافق انسانی**: بیش از ۱۰۰ نمونه را توسط هر دو داور LLM و داوران انسانی بررسی کنید. ضریب کاپای کوهن (Cohen's Kappa) را اندازه‌گیری کنید. هدف: بیش از 0.7.
+۵. **استفاده از مدلی قدرتمند برای کالیبراسیون و مدلی ارزان برای حجم بالا**: از یک داور پیشرو (مانند Claude Opus 5.5 یا GPT-6 Sol) برای مجموعه کالیبراسیون توافق انسانی و CI استفاده کنید؛ پس از آنکه یک مدل کوچک در آن مجموعه با احکام داور پیشرو همخوانی پیدا کرد، از آن برای ترافیک نمونه‌برداری‌شده محیط عملیاتی استفاده نمایید. هرگز از همان مدلی که پاسخ را تولید کرده است به‌عنوان داور استفاده نکنید.
+۶. **نسخه‌بندی و پین کردن مدل داور**: تعویض داور به‌منزله تغییر خودِ معیار است. مدل Claude Sonnet 4.5 در ۳۰ نوامبر ۲۰۲۶ (در Claude API و Foundry) بازنشسته می‌شود و Claude Haiku 4.5 در ۱۵ نوامبر در Foundry بازنشسته می‌گردد؛ بنابراین تیم‌هایی که از هر یک از آن‌ها برای داوری استفاده می‌کنند باید در این فصل مدل را تغییر دهند. جایگزین کوچک و بدیهی آن، یعنی Claude Haiku 5.5 (عرضه عمومی در ۷ اکتبر)، خود نیز یک تغییر معیار محسوب می‌شود: این مدل پارامترهای `temperature`، `top_p`، `top_k` و پیش‌تکمیل دستیار (assistant prefill) را با خطای 400 رد می‌کند، و Tokenizer آن برای همان متن حدود ۳۰٪ Tokenهای بیشتری می‌شمارد. پیش از مقایسه نمرات در طول این جابه‌جایی، کالیبراسیون توافق انسانی را مجدداً اجرا کرده و آستانه‌ها را دوباره مبناگذاری (Re-baseline) کنید.
 
-### A Third Judge Tier: Typed Decision Models
+### رده سومی از داوران: مدل‌های تصمیم‌گیری نوع‌دار (Typed Decision Models)
 
-Many RAG checks are binary ("Is this claim supported? YES/NO"), and a 2026 class of models returns exactly that without generating text. TypeSafe's **Jev** (early access since September 2026) returns typed decisions (yes/no, choice, or score) with probabilities at $0.042 per 1M input tokens, output unmetered, and was integrated into LangSmith, Langfuse, Braintrust, Opik and DeepEval within two weeks of launch. OpenAI's Decisions API is the first-party equivalent, billed on input only ([Research Radar theme 16](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)).
+بسیاری از بررسی‌های RAG دودویی هستند («آیا این ادعا پشتیبانی می‌شود؟ بله/خیر»)، و دسته‌ای از مدل‌های ارائه‌شده در سال ۲۰۲۶ دقیقاً همین خروجی را بدون تولید متن برمی‌گردانند. مدل **Jev** متعلق به TypeSafe (دسترسی زودهنگام از سپتامبر ۲۰۲۶) تصمیمات نوع‌دار (بله/خیر، انتخابی، یا امتیازی) را همراه با احتمال با هزینه ۰.۰۴۲ دلار به ازای هر ۱ میلیون Token ورودی (خروجی بدون هزینه مجزا) بازمی‌گرداند، و ظرف دو هفته پس از عرضه در LangSmith، Langfuse، Braintrust، Opik و DeepEval ادغام شد. ابزار Decisions API شرکت OpenAI معادل مستقیم و رسمی آن است که صورت‌حساب آن صرفاً بر اساس ورودی محاسبه می‌شود ([موضوع ۱۶ در Research Radar](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)).
 
-| | Frontier LLM judge | Small LLM judge | Decision-model judge |
+| | داور LLM پیشرو | داور LLM کوچک | داور مدل تصمیم‌گیری |
 |---|---|---|---|
-| **Example** | Claude Opus 5.5, GPT-6 Sol | GPT-6 Luna, Claude Haiku 5.5 | Jev, OpenAI Decisions API |
-| **Output** | Verdict plus written rationale | Verdict plus rationale | Typed decision with probability; no rationale, no abstention |
-| **Good for** | Calibration, CI, ambiguous cases | Sampled production traffic | Binary claim checks on 100% of traffic |
-| **Cannot do** | Cheap volume | Hardest edge cases | Claim extraction, question generation, open-ended critique |
+| **نمونه** | Claude Opus 5.5, GPT-6 Sol | GPT-6 Luna, Claude Haiku 5.5 | Jev, OpenAI Decisions API |
+| **خروجی** | حکم به همراه توجیه متنی | حکم به همراه توجیه | تصمیم نوع‌دار به همراه احتمال؛ بدون توجیه متنی، بدون خودداری از پاسخ |
+| **مناسب برای** | کالیبراسیون، CI، موارد مبهم | ترافیک نمونه‌برداری‌شده عملیاتی | بررسی دودویی ادعاها روی ۱۰۰٪ ترافیک |
+| **ناتوان در** | حجم بالا با هزینه اندک | دشوارترین موارد حاشیه‌ای | استخراج ادعا، تولید پرسش، نقد با پاسخ باز |
 
-The independent check matters more than the price. A September 2026 study (Rao and Callison-Burch, arXiv 2609.29769) found LLM rubric judges cost 16 to 325x more than Jev with accuracy differing significantly in at most 8 of 27 comparisons, but on Jev's most confident errors about 96% of LLM verdicts repeated the same wrong answer, and no cascade beat the best single judge by more than 2.7 points. **Escalating from a cheap judge to an expensive one saves money; it does not catch correlated errors.** Only a human-labeled slice does. Two reported limitations hit RAG directly: accuracy degrades with irrelevant context (exactly what a long retrieved context contains), and an independent benchmark found weaknesses on graded relevance. Test it at your context lengths before trusting it for faithfulness or context-relevance scoring, and fit any probability threshold on your own labels: an October 2026 benchmark (TypedBench, arXiv 2610.11392) found the hosted decision model it tested systematically underconfident.
+بررسی مستقل بیش از قیمت اهمیت دارد. پژوهشی در سپتامبر ۲۰۲۶ (Rao و Callison-Burch، مقاله arXiv 2609.29769) نشان داد که هزینه داوران LLM مبتنی بر شیوه‌نامه، ۱۶ تا ۳۲۵ برابر بیشتر از Jev است در حالی که دقت آن‌ها حداکثر در ۸ مورد از ۲۷ مقایسه تفاوت معناداری داشت؛ اما در خطاهایی که Jev بالاترین اطمینان را به آن‌ها داشت، حدود ۹۶٪ از احکام LLM همان پاسخ نادرست را تکرار کردند و هیچ ساختار آبشاری نتوانست بهتر از بهترین داور تکی با بیش از ۲.۷ امتیاز عمل کند. **ارتقا از یک داور ارزان‌قیمت به یک داور گران‌قیمت در هزینه‌ها صرفه‌جویی می‌کند، اما خطاهای همبسته (Correlated errors) را شناسایی نمی‌کند.** تنها یک بخش برچسب‌گذاری‌شده توسط انسان می‌تواند این کار را انجام دهد. دو محدودیت گزارش‌شده مستقیماً به RAG آسیب می‌زنند: دقت با افزایش بافتار نامرتبط (دقیقاً همان چیزی که یک بافتار طولانی بازیابی‌شده در بر دارد) کاهش می‌یابد، و یک بنچمارک مستقل نیز نقاط ضعفی را در ارتباط درجه‌بندی‌شده (Graded relevance) نشان داد. پیش از اعتماد به آن برای امتیازدهی وفاداری یا ارتباط بافتار، آن را در طول‌های بافتار موردنظر خود بیازمایید و هرگونه آستانه احتمال را بر اساس برچسب‌های اختصاصی خود تنظیم کنید: یک بنچمارک در اکتبر ۲۰۲۶ (TypedBench، مقاله arXiv 2610.11392) دریافت که مدل تصمیم‌گیری میزبانی‌شده مورد آزمایش، به‌صورت سیستماتیک دچار کم‌اطمینانی (Underconfident) است.
 
 ---
 
-## Building Golden Test Sets
+## ساخت مجموعه‌های آزمون مرجع (Golden Test Sets)
 
-A golden test set is a curated, versioned collection of (query, expected_context, expected_answer) triples that serves as the ground truth for regression testing.
+یک مجموعه آزمون مرجع، مجموعه‌ای گلچین‌شده و نسخه‌بندی‌شده از سه‌گانه‌های (پرسش، بافتار مورد انتظار، پاسخ مورد انتظار) یا (query, expected_context, expected_answer) است که به‌عنوان واقعیت پایه برای آزمون رگرسیون عمل می‌کند.
 
-### Building Process
+### فرایند ساخت
+
+<div dir="ltr">
 
 ```
   Step 1: Seed Collection
@@ -376,17 +404,19 @@ A golden test set is a curated, versioned collection of (query, expected_context
   +-------------------------------------------------------+
 ```
 
-### Golden Set Composition Guidelines
+</div>
 
-| Question Type | Percentage | Purpose |
+### راهنمای ترکیب مجموعه مرجع
+
+| نوع پرسش | درصد | هدف |
 |--------------|-----------|---------|
-| Simple factual | 40% | Baseline: should always pass |
-| Multi-hop reasoning | 25% | Tests cross-document retrieval |
-| Comparative | 15% | Tests retrieval of multiple relevant docs |
-| Temporal | 10% | Tests handling of versioned/dated content |
-| Adversarial | 10% | Tests robustness (unanswerable, out-of-scope) |
+| واقعی و ساده | ۴۰٪ | خط پایه: باید همیشه قبول شود |
+| استدلال چندمرحله‌ای (Multi-hop) | ۲۵٪ | آزمون بازیابی چندسندی |
+| مقایسه‌ای | ۱۵٪ | آزمون بازیابی اسناد مرتبط متعدد |
+| زمانی (Temporal) | ۱۰٪ | آزمون مدیریت محتوای تاریخ‌دار/نسخه‌بندی‌شده |
+| خصمانه (Adversarial) | ۱۰٪ | آزمون پایداری و تاب‌آوری (غیرقابل پاسخ، خارج از محدوده) |
 
-### Synthetic Test Generation with RAGAS
+### تولید آزمون ساختگی با RAGAS
 
 ```python
 # Generate synthetic test queries from your corpus (RAGAS 0.2+ API;
@@ -421,15 +451,15 @@ testset = generator.generate_with_langchain_docs(
 testset.to_pandas().to_csv("golden_set_draft_v4.csv")
 ```
 
-**Warning**: Synthetic test sets are a starting point, not a destination. Always validate with human review to avoid testing against artifacts of the generation model.
+**هشدار**: مجموعه‌های آزمون ساختگی نقطه شروع هستند، نه مقصد نهایی. همواره نتایج را با بازبینی انسانی اعتبارسنجی کنید تا از آزمودن سیستم در برابر الگوهای مصنوعی (Artifacts) مدل مولد جلوگیری شود.
 
 ---
 
-## Automated Regression Testing
+## تست رگرسیون خودکار (Automated Regression Testing)
 
-Every RAG pipeline change (new embeddings, chunk size, prompt edit, reranker swap) needs automated regression testing before deployment.
+هرگونه تغییر در پایپ‌لاین RAG (مانند Embeddingهای جدید، اندازه Chunk، ویرایش Prompt، یا تعویض Reranker) پیش از استقرار (Deployment) به تست رگرسیون خودکار نیاز دارد.
 
-### CI/CD Integration
+### یکپارچه‌سازی با CI/CD (CI/CD Integration)
 
 ```
   PR (RAG change) --> CI: Load golden set --> Run pipeline --> Compute metrics
@@ -437,94 +467,94 @@ Every RAG pipeline change (new embeddings, chunk size, prompt edit, reranker swa
                           --> Post metrics table as PR comment
 ```
 
-### Quality Gates
+### گیت‌های کیفیت (Quality Gates)
 
-| Metric | Absolute Minimum | Regression Threshold |
+| متریک | حداقل مطلق (Absolute Minimum) | آستانه رگرسیون (Regression Threshold) |
 |--------|-----------------|---------------------|
-| Recall@10 | 0.85 | 5% drop from baseline |
-| MRR | 0.70 | 5% drop |
-| Faithfulness | 0.80 | 3% drop |
-| Answer Relevance | 0.75 | 5% drop |
-| Answer Correctness | 0.70 | 5% drop |
+| Recall@10 | 0.85 | ۵٪ افت نسبت به خط مبنا (Baseline) |
+| MRR | 0.70 | ۵٪ افت |
+| وفاداری (Faithfulness) | 0.80 | ۳٪ افت |
+| ارتباط پاسخ (Answer Relevance) | 0.75 | ۵٪ افت |
+| صحت پاسخ (Answer Correctness) | 0.70 | ۵٪ افت |
 
-Any metric below its absolute minimum blocks the PR. Any regression beyond threshold triggers a warning and flags the specific queries that degraded.
+قرارگیری هر متریک پایین‌تر از حداقل مطلق خود، مانع از تایید و ادغام PR می‌شود. هرگونه رگرسیون فراتر از آستانه، هشداری را ایجاد کرده و پرس‌وجوهای خاصی را که کیفیت آن‌ها دچار افت شده است نشانه‌گذاری (Flag) می‌کند.
 
-Run the same suite on a schedule against production, not only on your own PRs. **A pinned model ID is not a pinned behavior**: on September 25, 2026 OpenAI fixed an image-encoding bug in GPT-6 Sol and GPT-6 Luna under unchanged model IDs and told customers to rerun image evals. Image-dependent RAG scores measured before the fix may reflect the defect rather than your pipeline. Aliases move too: since October 8, 2026, Google routes `gemini-3.7-flash` requests to `gemini-3.8-flash` and `gemini-3.5-flash` to `gemini-3.6-flash`, so a judge string can keep working while the model behind it changes. Log the model version the response reports, not just the one you requested.
+همین مجموعه آزمون را طبق یک برنامه زمان‌بندی‌شده روی محیط پروداکشن (Production) نیز اجرا کنید، نه فقط روی PRهای خودتان. **شناسه مدل پین‌شده به معنای رفتار تثبیت‌شده نیست**: در ۲۵ سپتامبر ۲۰۲۶، شرکت OpenAI یک باگ انکودینگ تصویر را در GPT-6 Sol و GPT-6 Luna با وجود تغییر نیافتن شناسه‌های مدل برطرف کرد و از مشتریان خواست که ارزیابی‌های تصویری را مجدداً اجرا کنند. امتیازهای RAG وابسته به تصویر که پیش از این اصلاح اندازه‌گیری شده‌اند، ممکن است به جای عملکرد پایپ‌لاین شما، بازتاب‌دهنده همان نقص باشند. نام‌های مستعار (Aliases) نیز تغییر می‌کنند: از ۸ اکتبر ۲۰۲۶، گوگل درخواست‌های `gemini-3.7-flash` را به `gemini-3.8-flash` و درخواست‌های `gemini-3.5-flash` را به `gemini-3.6-flash` هدایت (Route) می‌کند؛ بنابراین یک رشته شناسه مدل داور (Judge string) ممکن است همچنان کار کند در حالی که مدل پشت آن تغییر کرده است. نسخه مدلی را که در پاسخ گزارش می‌شود لاگ کنید، نه فقط نسخه‌ای که خودتان درخواست داده‌اید.
 
 ---
 
-## Production Monitoring
+## مانیتورینگ پروداکشن (Production Monitoring)
 
-Offline evaluation is necessary but not sufficient. Production queries differ from test sets, and retrieval quality can degrade over time as the corpus changes.
+ارزیابی آفلاین ضروری است اما کافی نیست. پرس‌وجوهای محیط پروداکشن با مجموعه‌های آزمون متفاوت هستند و با تغییر پیکره متنی (Corpus)، کیفیت بازیابی می‌تواند در طول زمان دچار افت شود.
 
-### Key Production Signals
+### سیگنال‌های کلیدی پروداکشن (Key Production Signals)
 
-| Signal | What It Detects | How to Measure |
+| سیگنال | چه چیزی را شناسایی می‌کند | نحوه اندازه‌گیری |
 |--------|----------------|----------------|
-| **Empty Retrieval Rate** | Queries with no relevant results | % of queries where top-1 similarity < threshold |
-| **Similarity Score Drift** | Embedding or corpus degradation | Track avg similarity over time; alert on drop |
-| **Faithfulness Sampling** | Hallucination rate in production | Run LLM-as-judge on 5-10% random sample |
-| **User Feedback Correlation** | Whether metrics match real quality | Compare thumbs-up/down with automated scores |
-| **Latency P99** | Performance degradation | Track retrieval + generation latency |
-| **Token Usage** | Cost drift | Monitor avg context tokens per query |
+| **نرخ بازیابی خالی (Empty Retrieval Rate)** | پرس‌وجوهای فاقد نتایج مرتبط | درصد پرس‌وجوهایی که در آن‌ها شباهت top-1 کمتر از آستانه است |
+| **انحراف امتیاز شباهت (Similarity Score Drift)** | افت کیفیت Embedding یا پیکره متنی (Corpus) | ردیابی میانگین شباهت در طول زمان؛ هشدار در صورت افت |
+| **نمونه‌گیری وفاداری (Faithfulness Sampling)** | نرخ توهم (Hallucination) در پروداکشن | اجرای داوری با LLM (روش LLM-as-judge) روی نمونه تصادفی ۵ تا ۱۰ درصدی |
+| **همبستگی بازخورد کاربر (User Feedback Correlation)** | تطابق داشتن یا نداشتن متریک‌ها با کیفیت واقعی | مقایسه لایک/دیس‌لایک (Thumbs-up/down) با امتیازهای خودکار |
+| **تاخیر صدک ۹۹ (Latency P99)** | افت کارایی و عملکرد | ردیابی تاخیر (Latency) بازیابی + تولید پاسخ |
+| **میزان مصرف Token (Token Usage)** | انحراف و تغییرات هزینه | نظارت بر میانگین Tokenهای کانتکست به ازای هر پرس‌وجو |
 
-### Retrieval Quality Drift
+### انحراف کیفیت بازیابی (Retrieval Quality Drift)
 
-Drift happens when the corpus changes but embeddings, chunks, or prompts do not keep up. Four common scenarios: (1) new documents with different vocabulary cause embedding space mismatch (fix by re-embedding affected collections); (2) user query patterns shift to topics with no content (detect via empty retrieval rate monitoring); (3) stale content returns outdated answers (add freshness metadata and prefer recent docs); (4) embedding model updates change similarity distributions (re-calibrate all thresholds after model changes).
+انحراف (Drift) زمانی رخ می‌دهد که پیکره متنی (Corpus) تغییر کند اما Embeddingها، Chunkها یا Promptها همگام با آن به‌روز نشوند. چهار سناریوی رایج عبارتند از: (۱) اسناد جدید با دایره واژگان متفاوت باعث عدم تطابق در فضای برداری Embedding می‌شوند (رفع مشکل: تولید مجدد Embedding برای مجموعه‌های تحت تأثیر)؛ (۲) الگوی پرس‌وجوهای کاربران به سمت موضوعاتی تغییر می‌کند که محتوایی برای آن‌ها وجود ندارد (شناسایی از طریق مانیتورینگ نرخ بازیابی خالی)؛ (۳) محتوای قدیمی و بیات پاسخ‌های منسوخ برمی‌گرداند (رفع مشکل: افزودن متادیتای تازگی محتوا و اولویت دادن به اسناد جدیدتر)؛ (۴) به‌روزرسانی مدل‌های Embedding توزیع شباهت را تغییر می‌دهد (رفع مشکل: کالیبراسیون مجدد تمامی آستانه‌ها پس از تغییرات مدل).
 
 ---
 
-## Cost of Evaluation at Scale
+## هزینه ارزیابی در مقیاس بالا (Cost of Evaluation at Scale)
 
-LLM-as-judge evaluation is powerful but expensive. Understanding the cost structure is critical for budgeting.
+ارزیابی به روش LLM به عنوان داور (LLM-as-judge) بسیار قدرتمند اما پرهزینه است. درک ساختار هزینه‌ها برای بودجه‌بندی امری حیاتی است.
 
-### Cost per Query (Full RAG Triad)
+### هزینه به ازای هر پرس‌وجو (سه‌گانه کامل RAG)
 
-List prices on November 2, 2026, assuming 90% of tokens are input and 10% output, before reasoning tokens:
+قیمت‌های رسمی در ۲ نوامبر ۲۰۲۶، با فرض اینکه ۹۰٪ از Tokenها ورودی و ۱۰٪ خروجی باشند، بدون احتساب Tokenهای استدلال (Reasoning tokens):
 
-| Metric | LLM Calls | Tokens | Claude Opus 5.5 ($4 / $20) | Claude Sonnet 5.5 or GPT-6 Sol ($2 / $10) | GPT-6 Luna or Claude Haiku 5.5 ($0.10 / $0.50) |
+| متریک | فراخوانی‌های LLM | Tokenها | Claude Opus 5.5 ($4 / $20) | Claude Sonnet 5.5 یا GPT-6 Sol ($2 / $10) | GPT-6 Luna یا Claude Haiku 5.5 ($0.10 / $0.50) |
 |--------|-----------|--------|----------------------------|-------------------------------------------|------------------------------------------------|
-| Faithfulness | ~3 (extract + verify) | ~3k | $0.017 | $0.0084 | $0.00042 |
-| Context Relevance | ~5 (per chunk) | ~2.5k | $0.014 | $0.0070 | $0.00035 |
-| Answer Relevance | ~2 (question gen) | ~1.6k | $0.009 | $0.0045 | $0.00022 |
-| **Full Triad** | **~10** | **~7k** | **~$0.04** | **~$0.02** | **~$0.001** |
+| وفاداری (Faithfulness) | ۳~ (استخراج + راستی‌آزمایی) | 3k~ | $0.017 | $0.0084 | $0.00042 |
+| ارتباط کانتکست (Context Relevance) | ۵~ (به ازای هر Chunk) | 2.5k~ | $0.014 | $0.0070 | $0.00035 |
+| ارتباط پاسخ (Answer Relevance) | ۲~ (تولید سوال) | 1.6k~ | $0.009 | $0.0045 | $0.00022 |
+| **سه‌گانه کامل (Full Triad)** | **~۱۰** | **~7k** | **~$0.04** | **~$0.02** | **~$0.001** |
 
-Haiku 5.5's price holds only while a prompt (counting cache reads and writes) stays at or under 100K tokens. Judge prompts sit far below that, but its tokenizer counts about 30% more tokens than Haiku 4.5's for the same text, so measure its token counts instead of assuming parity with Luna.
+قیمت Haiku 5.5 تنها تا زمانی معتبر است که یک Prompt (با احتساب خواندن و نوشتن حافظه کش) در حد یا زیر ۱۰۰ هزار Token باقی بماند. Promptهای داوری بسیار پایین‌تر از این حد قرار دارند، اما Tokenizer آن برای همان متن، حدود ۳۰٪ Tokenهای بیشتری نسبت به Haiku 4.5 می‌شمارد؛ بنابراین به جای فرض برابری با Luna، تعداد Tokenهای واقعی آن را اندازه‌گیری کنید.
 
-Two caveats change the real bill. Claude Opus 5.5 cannot run with thinking disabled (default effort `medium`), so set `low` effort for judge calls and measure the reasoning tokens. And the binary verification calls can move to a decision-model judge (about $0.0003 per query at Jev's $0.042 per 1M input tokens), leaving only claim extraction and question generation on a generative model.
+دو نکته مهم، رقم واقعی قبض نهایی را تغییر می‌دهند: اول اینکه Claude Opus 5.5 نمی‌تواند بدون تفکر (Thinking غیرفعال) اجرا شود (میزان تلاش یا Effort پیش‌فرض آن `medium` است)، بنابراین تلاش را برای فراخوانی‌های داوری روی `low` تنظیم کنید و Tokenهای استدلال را اندازه بگیرید. دوم اینکه فراخوانی‌های راستی‌آزمایی باینری (Binary verification) را می‌توان به یک داور مدل تصمیم‌گیری (Decision-model judge) منتقل کرد (حدود ۰.۰۰۰۳ دلار به ازای هر پرس‌وجو با نرخ ۰.۰۴۲ دلار Jev به ازای هر ۱ میلیون Token ورودی)، تا تنها استخراج ادعاها (Claim extraction) و تولید سوال روی مدل زایشی (Generative model) باقی بماند.
 
-### Scaling Strategy
+### استراتژی مقیاس‌پذیری (Scaling Strategy)
 
-| Evaluation Type | Frequency | Volume | Judge Model | Monthly Cost (10k queries/day) |
+| نوع ارزیابی | تناوب / تکرار | حجم | مدل داور | هزینه ماهانه (۱۰ هزار پرس‌وجو در روز) |
 |----------------|-----------|--------|-------------|-------------------------------|
-| **CI Regression** | Per PR | Golden set (500 queries) | Frontier (Claude Opus 5.5 / GPT-6 Sol) | ~$20/run |
-| **Nightly Batch** | Daily | Random 1k production queries | Small (GPT-6 Luna), Batch API | ~$15/month |
-| **Production Sample** | Real-time | 5% of traffic (500/day) | Small (GPT-6 Luna) | ~$15/month |
-| **Deep Audit** | Weekly | Full golden set + analysis | Frontier, Batch API | ~$45/month |
+| **رگرسیون CI** | به ازای هر PR | مجموعه طلایی (۵۰۰ پرس‌وجو) | پیشرو (Claude Opus 5.5 / GPT-6 Sol) | ۲۰$~ به ازای هر اجرا |
+| **بچ شبانه (Nightly Batch)** | روزانه | ۱۰۰۰ پرس‌وجوی تصادفی پروداکشن | کوچک (GPT-6 Luna)، از طریق Batch API | ۱۵$~ در ماه |
+| **نمونه پروداکشن** | بلادرنگ (Real-time) | ۵٪ از ترافیک (۵۰۰ مورد در روز) | کوچک (GPT-6 Luna) | ۱۵$~ در ماه |
+| **وارسی عمیق (Deep Audit)** | هفتگی | مجموعه طلایی کامل + تحلیل | پیشرو (Frontier)، از طریق Batch API | ۴۵$~ در ماه |
 
-Frontier rows use Claude Opus 5.5 prices; GPT-6 Sol at $2 / $10 roughly halves them.
+ردیف‌های مدل پیشرو (Frontier) از قیمت‌های Claude Opus 5.5 استفاده می‌کنند؛ مدل GPT-6 Sol با قیمت ۲ دلار / ۱۰ دلار این هزینه‌ها را تقریباً به نصف کاهش می‌دهد.
 
-**Insight**: The judge bill is small next to the human-labeling bill; the expensive mistake is a cheap judge that disagrees with your annotators. Use a small model (GPT-6 Luna, Claude Haiku 5.5) for high-volume sampling only after it matches the frontier judge on the calibration set, and reserve Claude Opus 5.5 or GPT-6 Sol for CI and deep audits. Nightly and weekly jobs can wait, so run them through a Batch API at 50% off.
+**نکته کلیدی (Insight)**: هزینه داوری مدل در مقایسه با هزینه برچسب‌گذاری انسانی بسیار ناچیز است؛ اشتباه پرهزینه واقعی، استفاده از داور ارزانی است که با برچسب‌گذاران (Annotators) انسانی شما هم‌نظر نباشد. از یک مدل کوچک (GPT-6 Luna, Claude Haiku 5.5) برای نمونه‌گیری با حجم بالا تنها زمانی استفاده کنید که تطابق آن با مدل داور پیشرو (Frontier) روی مجموعه کالیبراسیون اثبات شده باشد، و مدل‌های Claude Opus 5.5 یا GPT-6 Sol را برای تست‌های CI و وارسی‌های عمیق اختصاص دهید. وظایف شبانه و هفتگی می‌توانند منتظر بمانند، بنابراین آن‌ها را از طریق یک Batch API با ۵۰٪ تخفیف اجرا کنید.
 
 ---
 
-## Tools Comparison
+## مقایسه ابزارها (Tools Comparison)
 
-### Framework Overview
+### نمای کلی فریم‌ورک‌ها (Framework Overview)
 
-| Tool | Best For | Open Source | Key Strength | Key Weakness |
+| ابزار | مناسب‌ترین برای | متن‌باز | نقطه قوت کلیدی | نقطه ضعف کلیدی |
 |------|----------|------------|--------------|--------------|
-| **RAGAS** | Quick RAG evaluation, synthetic data | Yes | Reference-free metrics, widely adopted | Metric results lack explanations; no commits since February 2026 (v0.4.3 is latest), so pin it |
-| **DeepEval** | CI/CD integration, TDD for LLMs | Yes | pytest-compatible, self-explaining scores | Heavier setup |
-| **TruLens** | RAG Triad evaluation, observability | Yes | Coined the RAG Triad, good tracing | Less active development |
-| **UpTrain** | Production monitoring, drift detection | Yes | Hybrid eval (LLM + heuristic), drift alerts | Lower ranking accuracy |
-| **Braintrust** | Team collaboration, experiment tracking | Commercial | Best UI/UX, experiment comparison | Paid for advanced features |
-| **LangSmith** | Tracing, evals, trace-to-fine-tune loop | Commercial | Deepest LangChain/LangGraph integration; SDK and OTel ingestion for other stacks | Usage-based LSU pricing since Oct 1, 2026 (1 LSU = $1); SaaS extended-retention traces capped at 180 days (from Sep 14, 2026): not an audit log |
-| **Langfuse** | Self-hosted tracing + evals | Yes | OTel-native, exportable; Python SDK v5 (October 14, 2026; `pip install langfuse` now resolves to 5.x on Python 3.11+, needs server v4.59.0 or newer, and removes `api.scores_v3`, `set_current_trace_io()` and other v4 calls, so pin `langfuse<5` or port v4 samples) | Self-hosting means operating ClickHouse, Redis and object storage alongside Postgres |
-| **Arize Phoenix** | Self-hosted tracing + RAG evals | Source-available (Elastic-2.0) | OTel-native, strong retrieval views | Part of Dynatrace since October 1, 2026: watch the roadmap and license |
-| **Promptfoo** | CI assertions, red-teaming | Yes (MIT) | Declarative test suites; OpenAI's migration target for OpenAI Evals (shuts down Nov 30, 2026) | Now part of OpenAI (still MIT): weigh vendor neutrality |
+| **RAGAS** | ارزیابی سریع RAG، داده‌های ساختگی (Synthetic) | بله | متریک‌های بی‌نیاز از مرجع (Reference-free)، پذیرش و کاربرد گسترده | نتایج متریک‌ها فاقد توضیحات هستند؛ از فوریه ۲۰۲۶ کامیت جدیدی نداشته است (v0.4.3 آخرین نسخه است)، بنابراین نسخه آن را پین کنید |
+| **DeepEval** | یکپارچه‌سازی با CI/CD، رویکرد TDD برای LLMها | بله | سازگار با pytest، امتیازهای خودتوضیح‌دهنده | راه‌اندازی سنگین‌تر |
+| **TruLens** | ارزیابی سه‌گانه RAG، مشاهده‌پذیری (Observability) | بله | مبدع اصطلاح سه‌گانه RAG (RAG Triad)، قابلیت ردیابی (Tracing) خوب | توسعه و فعالیت کمتر |
+| **UpTrain** | مانیتورینگ پروداکشن، شناسایی انحراف (Drift) | بله | ارزیابی ترکیبی (LLM + هیوریستیک)، هشدارهای انحراف | دقت رتبه‌بندی پایین‌تر |
+| **Braintrust** | همکاری تیمی، ردیابی آزمایش‌ها | تجاری | بهترین UI/UX، مقایسه آزمایش‌ها | پولی بودن قابلیت‌های پیشرفته |
+| **LangSmith** | ردیابی (Tracing)، ارزیابی‌ها، چرخه Trace به Fine-tuning | تجاری | عمیق‌ترین یکپارچگی با LangChain/LangGraph؛ قابلیت دریافت داده از طریق SDK و OTel برای سایر پشته‌های فناوری | قیمت‌گذاری مبتنی بر مصرف با LSU از اول اکتبر ۲۰۲۶ (هر 1 LSU = $1)؛ محدود شدن سوابق نگهداری طولانی‌مدت ردها (Extended-retention traces) در سرویس SaaS به ۱۸۰ روز (از ۱۴ سپتامبر ۲۰۲۶): مناسب برای لاگ حسابرسی (Audit log) نیست |
+| **Langfuse** | ردیابی و ارزیابی‌های سلف‌هاست (Self-hosted) | بله | بومی OTel، با قابلیت برون‌بری (Exportable)؛ نسخه ۵ از Python SDK (۱۴ اکتبر ۲۰۲۶؛ دستور `pip install langfuse` اکنون روی پایتون 3.11+ نسخه 5.x را نصب می‌کند، به نسخه سرور v4.59.0 یا جدیدتر نیاز دارد و متدهای `api.scores_v3`، `set_current_trace_io()` و سایر فراخوانی‌های v4 را حذف کرده است، بنابراین `langfuse<5` را پین کنید یا کدهای نمونه v4 را پورت نمایید) | سلف‌هاست کردن نیازمند مدیریت ClickHouse، Redis و Object Storage در کنار Postgres است |
+| **Arize Phoenix** | ردیابی سلف‌هاست + ارزیابی‌های RAG | سورس در دسترس (Elastic-2.0) | بومی OTel، نماهای قدرتمند برای بازیابی | پیوستن به Dynatrace از ۱ اکتبر ۲۰۲۶: نقشه راه و لایسنس آن را زیر نظر داشته باشید |
+| **Promptfoo** | اعتبارسنجی‌ها (Assertions) در CI، تیم قرمز (Red-teaming) | بله (MIT) | مجموعه‌های آزمون توصیفی (Declarative)؛ مقصد مهاجرت ارائه‌شده توسط OpenAI برای OpenAI Evals (که در ۳۰ نوامبر ۲۰۲۶ متوقف می‌شود) | اکنون بخشی از OpenAI است (همچنان با مجوز MIT): بی‌طرفی نسبت به ارائه‌دهنده (Vendor neutrality) را مد نظر قرار دهید |
 
-### When to Use What
+### چه زمانی از چه ابزاری استفاده کنیم؟ (When to Use What)
 
 ```
   Starting a new RAG project?
@@ -547,9 +577,9 @@ Frontier rows use Claude Opus 5.5 prices; GPT-6 Sol at $2 / $10 roughly halves t
     --> Roll your own with LLM-as-judge + the RAG Triad structure
 ```
 
-### Custom Evaluator Pattern
+### الگوی ارزیاب سفارشی (Custom Evaluator Pattern)
 
-The core pattern for a custom evaluator is simple: for each triad dimension, use binary LLM-as-judge calls and aggregate.
+الگوی محوری برای یک ارزیاب سفارشی ساده است: به ازای هر یک از ابعاد سه‌گانه (Triad)، از فراخوانی‌های باینری داوری با مدل (LLM-as-judge) استفاده کنید و سپس نتایج را تجمیع (Aggregate) نمایید.
 
 ```python
 # Pseudocode: Core faithfulness evaluator (other dimensions follow the same pattern)
@@ -569,66 +599,66 @@ def evaluate_faithfulness(answer: str, context: str, judge) -> float:
     return supported / max(len(json.loads(claims)), 1)
 ```
 
-Apply the same decompose-then-judge pattern for context relevance (per-chunk: "Is this relevant to the query?") and answer relevance (generate hypothetical questions, measure similarity to original query).
+همین الگوی تجزیه و سپس داوری (Decompose-then-judge) را برای ارتباط کانتکست (Context relevance به ازای هر Chunk: «آیا این بخش به پرس‌وجو مرتبط است؟») و ارتباط پاسخ (Answer relevance: تولید سوالات فرضی و اندازه‌گیری شباهت به پرس‌وجوی اصلی) نیز به کار ببرید.
 
 ---
 
-## System Design Interview Angle
+## زاویه دید مصاحبه طراحی سیستم (System Design Interview Angle)
 
-### Q: You deployed a RAG system and users report that answers are sometimes wrong. How do you systematically diagnose and fix the problem?
+### سوال: شما یک سیستم RAG را مستقر (Deploy) کرده‌اید و کاربران گزارش می‌دهند که پاسخ‌ها گاهی اشتباه هستند. چگونه این مشکل را به طور سیستماتیک ریشه‌یابی، عیب‌یابی و برطرف می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-I would use the RAG Triad to isolate the failure mode:
+من از سه‌گانه RAG (RAG Triad) برای ایزوله‌سازی حالت شکست (Failure mode) استفاده می‌کنم:
 
-1. **Sample failing queries**: Collect 50-100 queries where users flagged bad answers. Categorize them by failure type.
+۱. **نمونه‌گیری از پرس‌وجوهای ناموفق**: جمع‌آوری ۵۰ تا ۱۰۰ پرس‌وجو که کاربران در آن‌ها پاسخ‌های نادرست را نشانه‌گذاری کرده‌اند. سپس دسته‌بندی آن‌ها بر اساس نوع شکست.
 
-2. **Run the triad**:
-   - **Context Relevance low?** --> Retrieval problem. The system is fetching wrong documents. Fix: inspect embedding similarity scores, check if the query language matches document language, try hybrid search (BM25 + dense), add a reranker.
-   - **Groundedness low?** --> Hallucination problem. The LLM is making things up despite having good context. Fix: strengthen the system prompt ("Only answer from the provided context"), require citations to chunk IDs and verify them, or switch to a more instruction-following model. Lowering temperature is no longer a universal lever: GPT-6 Astra rejects `temperature`, and the newest Claude models reject non-default sampling parameters.
-   - **Answer Relevance low?** --> The system retrieves related content and faithfully summarizes it, but misses the actual question. Fix: improve query understanding (query rewriting, HyDE), add query classification to route to the correct index.
+۲. **اجرای سه‌گانه (Run the triad)**:
+   - **ارتباط کانتکست (Context Relevance) پایین است؟** --> مشکل از بازیابی (Retrieval) است. سیستم اسناد اشتباهی را واکشی می‌کند. راه‌حل: بررسی امتیازهای شباهت Embedding، بررسی تطابق زبان پرس‌وجو با زبان اسناد، امتحان جستجوی ترکیبی یا هیبرید (BM25 + متراکم/Dense)، افزودن یک Reranker.
+   - **مستند بودن (Groundedness) پایین است؟** --> مشکل از توهم (Hallucination) است. LLM با وجود داشتن کانتکست مناسب، از خود اطلاعات نادرست سرهم می‌کند. راه‌حل: تقویت System Prompt («تنها بر اساس کانتکست ارائه‌شده پاسخ بده»)، الزام به ارجاع به شناسه Chunkها (Chunk IDs) و راستی‌آزمایی آن‌ها، یا سوییچ به مدلی با توانایی پیروی بهتر از دستورالعمل‌ها. کاهش دما (Temperature) دیگر یک اهرم سراسری و تضمین‌شده نیست: مدل GPT-6 Astra پارامتر `temperature` را رد می‌کند و جدیدترین مدل‌های Claude نیز پارامترهای نمونه‌برداری غیرپیش‌فرض را نمی‌پذیرند.
+   - **ارتباط پاسخ (Answer Relevance) پایین است؟** --> سیستم محتوای مرتبط را بازیابی کرده و صادقانه خلاصه می‌کند، اما اصل سوال را از دست می‌دهد. راه‌حل: بهبود درک پرس‌وجو (بازنویسی پرس‌وجو، رویکرد HyDE)، افزودن دسته‌بندی پرس‌وجو برای هدایت (Route) به ایندکس صحیح.
 
-3. **Build a regression test**: Take the 50 failing queries, annotate the expected answers, and add them to the golden test set. Every future pipeline change must pass these cases.
+۳. **ساخت تست رگرسیون**: ۵۰ پرس‌وجوی ناموفق را بردارید، پاسخ‌های مورد انتظار را برچسب‌گذاری (Annotate) کنید و آن‌ها را به مجموعه آزمون طلایی (Golden test set) بیفزایید. هر تغییر آتی در پایپ‌لاین باید از پس این موارد آزمون با موفقیت برآید.
 
-4. **Set up ongoing monitoring**: Sample 5% of production traffic for automated evaluation. Alert when faithfulness drops below 0.80 or context relevance drops below 0.60.
+۴. **راه‌اندازی مانیتورینگ مداوم**: نمونه‌گیری از ۵٪ ترافیک پروداکشن برای ارزیابی خودکار. ارسال هشدار زمانی که وفاداری (Faithfulness) به زیر 0.80 یا ارتباط کانتکست (Context relevance) به زیر 0.60 افت کند.
 
-The key insight is that "answers are wrong" is not a diagnosis; it is a symptom. The RAG Triad turns a vague complaint into a specific, actionable root cause.
+بینش کلیدی این است که «پاسخ‌ها اشتباه هستند» یک تشخیص ریشه‌ای نیست، بلکه صرفاً یک نشانه (علامت بیماری) است. سه‌گانه RAG یک شکایت مبهم را به یک علت ریشه‌ای مشخص و قابل اقدام تبدیل می‌کند.
 
-### Q: How do you evaluate a RAG system when you do not have ground-truth answers?
+### سوال: چگونه یک سیستم RAG را زمانی که پاسخ‌های حقیقت پایه (Ground-truth) در اختیار ندارید، ارزیابی می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-This is the most common real-world scenario. I use a three-layer approach:
+این رایج‌ترین سناریو در دنیای واقعی است. من از یک رویکرد سه‌لایه استفاده می‌کنم:
 
-**Layer 1: Reference-free metrics (Day 1)**. RAGAS faithfulness and context relevance require no ground truth. They tell you whether the system is hallucinating and whether retrieval is working. You can run these immediately on any query.
+**لایه ۱: متریک‌های بی‌نیاز از مرجع (روز اول)**. متریک‌های وفاداری (Faithfulness) و ارتباط کانتکست (Context relevance) در RAGAS به هیچ حقیقت پایه‌ای (Ground truth) نیاز ندارند. آن‌ها به شما می‌گویند که آیا سیستم دچار توهم است و آیا بازیابی به درستی کار می‌کند یا خیر. شما می‌توانید بلافاصله این متریک‌ها را روی هر پرس‌وجویی اجرا کنید.
 
-**Layer 2: Synthetic golden set (Week 1)**. Use RAGAS TestsetGenerator to create synthetic (query, answer) pairs from your corpus. This gives you approximate ground truth for answer correctness and context recall. Human-review a sample to validate quality.
+**لایه ۲: مجموعه طلایی داده‌های ساختگی (هفته اول)**. از TestsetGenerator در RAGAS برای ساخت جفت‌های ساختگی (پرس‌وجو، پاسخ) از روی پیکره متنی (Corpus) خود استفاده کنید. این کار حقیقت پایه‌ای تقریبی برای صحت پاسخ و بازیابی کانتکست (Context recall) در اختیارتان می‌گذارد. نمونه‌ای از آن‌ها را برای اعتبارسنجی کیفیت، به صورت انسانی بازبینی کنید.
 
-**Layer 3: Production-derived golden set (Month 1)**. Mine production logs for queries with high user satisfaction (thumbs-up, no follow-up questions). Have annotators label these with reference answers. This creates a golden set that reflects real usage patterns, not synthetic distributions.
+**لایه ۳: مجموعه طلایی برگرفته از پروداکشن (ماه اول)**. لاگ‌های پروداکشن را برای پرس‌وجوهایی با رضایت بالای کاربران (لایک، عدم وجود سوالات تکمیلی/Follow-up) استخراج و کاوش کنید. از ارزیاب‌ها و برچسب‌گذاران انسانی بخواهید این موارد را با پاسخ‌های مرجع برچسب‌گذاری کنند. این کار یک مجموعه طلایی می‌سازد که الگوهای استفاده واقعی را منعکس می‌کند، نه توزیع‌های ساختگی و مصنوعی را.
 
-The trade-off is accuracy vs. speed. Layer 1 gives you signal in hours but is approximate. Layer 3 gives you ground truth but takes weeks. Run all three in parallel, starting with Layer 1 for immediate feedback.
+بده‌بستان (Trade-off) اصلی در اینجا میان دقت در برابر سرعت است. لایه ۱ در عرض چند ساعت به شما سیگنال می‌دهد اما تقریبی است. لایه ۳ حقیقت پایه را در اختیارتان می‌گذارد اما هفته‌ها زمان می‌برد. هر سه لایه را به صورت موازی اجرا کنید و از لایه ۱ برای دریافت بازخورد فوری کار را آغاز نمایید.
 
-### Q: Your RAG evaluation pipeline costs $500/day in LLM judge calls. How do you reduce it?
+### سوال: پایپ‌لاین ارزیابی RAG شما روزانه ۵۰۰ دلار هزینه فراخوانی‌های داوری LLM تولید می‌کند. چگونه این هزینه را کاهش می‌دهید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-Five strategies, in order of impact:
+پنج استراتژی به ترتیب میزان اثرگذاری:
 
-1. **Tiered judge models**: Use a small judge such as GPT-6 Luna (~$0.001/query for the full triad) for production sampling (90% of volume), after checking it agrees with the frontier judge on the calibration set. Reserve Claude Opus 5.5 (~$0.04/query) or GPT-6 Sol (~$0.02/query) for CI regression tests and weekly deep audits. With a 20-40x price gap, this alone cuts costs by well over 80%.
+۱. **سطح‌بندی مدل‌های داور (Tiered judge models)**: از یک داور کوچک مانند GPT-6 Luna (حدود ۰.۰۰۱ دلار به ازای هر پرس‌وجو برای سه‌گانه کامل) پس از اطمینان از هم‌نظری آن با داور پیشرو روی مجموعه کالیبراسیون، برای نمونه‌گیری پروداکشن (۹۰٪ از حجم ترافیک) استفاده کنید. مدل‌های Claude Opus 5.5 (حدود ۰.۰۴ دلار به ازای هر پرس‌وجو) یا GPT-6 Sol (حدود ۰.۰۲ دلار به ازای هر پرس‌وجو) را برای تست‌های رگرسیون CI و وارسی‌های عمیق هفتگی رزرو کنید. با توجه به اختلاف قیمت ۲۰ تا ۴۰ برابری، همین اقدام به تنهایی هزینه‌ها را بیش از ۸۰٪ کاهش می‌دهد.
 
-2. **Smart sampling**: Do not evaluate every query. Sample 5% of production traffic, stratified by query type and user segment. For CI, only run the golden set (500 queries), not the full synthetic set.
+۲. **نمونه‌گیری هوشمند (Smart sampling)**: همه پرس‌وجوها را ارزیابی نکنید. ۵٪ از ترافیک پروداکشن را به صورت لایه‌بندی‌شده بر اساس نوع پرس‌وجو و بخش‌بندی کاربران نمونه‌گیری کنید. برای CI، تنها مجموعه طلایی (۵۰۰ پرس‌وجو) را اجرا کنید، نه کل مجموعه ساختگی را.
 
-3. **Caching**: Many production queries are similar. Hash the (query, context, answer) tuple and cache evaluation results. Identical or near-identical inputs get the cached score.
+۳. **کش کردن (Caching)**: بسیاری از پرس‌وجوهای پروداکشن مشابه هستند. چندتایی (Tuple) شامل (پرس‌وجو، کانتکست، پاسخ) را هش (Hash) کرده و نتایج ارزیابی را کش کنید. ورودی‌های یکسان یا تقریباً یکسان امتیاز کش‌شده را دریافت می‌کنند.
 
-4. **Heuristic pre-filters**: Before calling the LLM judge, run cheap heuristic checks. If the answer contains "I don't know" or has zero overlap with the context (ROUGE-L < 0.1), skip the expensive faithfulness evaluation and assign a score directly.
+۴. **پیش‌فیلترهای هیوریستیک (Heuristic pre-filters)**: پیش از فراخوانی داور LLM، بررسی‌های ارزان‌قیمت هیوریستیک را اجرا کنید. اگر پاسخ حاوی «نمی‌دانم» است یا همپوشانی صفر با کانتکست دارد (ROUGE-L < 0.1)، ارزیابی پرهزینه وفاداری (Faithfulness) را نادیده بگیرید و مستقیماً امتیاز را اختصاص دهید.
 
-5. **Batch and decision models**: Move nightly and weekly runs to a Batch API (50% off), and move binary claim verification to a typed decision-model judge such as Jev or OpenAI's Decisions API. I would not expect the decision model to add accuracy: research in September 2026 found its confident errors are mostly shared by LLM judges, so cascading saves money but a human-labeled slice is still the real check.
+۵. **مدل‌های تصمیم‌گیری و پردازش دسته‌ای (Batch and decision models)**: اجراهای شبانه و هفتگی را به یک Batch API (با ۵۰٪ تخفیف) منتقل کنید، و راستی‌آزمایی باینری ادعاها را به یک داور مدل تصمیم‌گیری تایپ‌شده (Typed decision-model judge) مانند Jev یا Decisions API شرکت OpenAI بسپارید. نباید انتظار داشت مدل تصمیم‌گیری دقت را افزایش دهد: پژوهش‌های سپتامبر ۲۰۲۶ نشان داد خطاهای بااطمینان آن غالباً با داوران LLM مشترک است؛ بنابراین آبشاری کردن فرآیند در هزینه‌ها صرفه‌جویی می‌کند، اما یک بخش برچسب‌گذاری‌شده توسط انسان همچنان معیار اصلی راستی‌آزمایی واقعی است.
 
-The goal is to spend evaluation budget where it provides the most signal: on ambiguous, borderline cases where the LLM judge's nuanced reasoning matters, and on the human labels that keep every judge honest.
+هدف این است که بودجه ارزیابی را در جایی صرف کنید که بیشترین سیگنال را ارائه می‌دهد: روی موارد مبهم و لب مرزی که استدلال دقیق و ظریف داور LLM در آن‌ها اهمیت دارد، و روی برچسب‌های انسانی که هر داوری را در مسیر درست نگه می‌دارند.
 
 ---
 
-## References
+## مراجع (References)
 
 - Es et al. "RAGAS: Automated Evaluation of Retrieval Augmented Generation" (2023, arXiv:2309.15217)
 - TruLens. "The RAG Triad" (2024)
@@ -639,8 +669,10 @@ The goal is to spend evaluation budget where it provides the most signal: on amb
 - Rao and Callison-Burch. "JEV vs. LLMs as Rubric Judges: Cheaper, Faster, and Wrong in the Same Places" (arXiv 2609.29769, 2026)
 - MTEB team. "RTEB: Retrieval Embedding Benchmark" (October 2025)
 - Qdrant. "Qdrant-FineWeb-10B" (September 2026)
-- RAGAS documentation. "Testset Generation for RAG" (docs.ragas.io)
+- مستندات RAGAS. "Testset Generation for RAG" (docs.ragas.io)
 
 ---
 
-*Previous: [Multi-Modal RAG](12-multimodal-rag.md) | Next: [Production RAG at Scale](14-production-rag-at-scale.md)*
+*قبلی: [RAG چندوجهی (Multi-Modal RAG)](12-multimodal-rag.md) | بعدی: [RAG در مقیاس پروداکشن (Production RAG at Scale)](14-production-rag-at-scale.md)*
+
+</div>
