@@ -1,128 +1,132 @@
-# Quantization Deep Dive
+<div dir="rtl">
 
-Quantization is the process of reducing the precision of model weights (e.g., from 16-bit to 4-bit) to save memory and increase inference speed. This is the primary tool for deploying large models on consumer and single-GPU hardware, and in 2026 it is also the default for datacenter serving, where FP4 weights with an FP8 KV cache are the headline configuration.
+# بررسی عمیق کوانتیزاسیون (Quantization Deep Dive)
 
-## Table of Contents
+کوانتیزاسیون (Quantization) فرایند کاهش دقت (precision) وزن‌های مدل (مثلاً از ۱۶ بیتی به ۴ بیتی) برای صرفه‌جویی در حافظه و افزایش سرعت استنتاج (Inference) است. این تکنیک ابزار اصلی برای استقرار (Deployment) مدل‌های بزرگ روی سخت‌افزارهای مصرفی و تک‌GPU به شمار می‌رود، و در سال ۲۰۲۶ همچنین به حالت پیش‌فرض برای سرویس‌دهی در مراکز داده (datacenter serving) تبدیل شده است؛ جایی که وزن‌های FP4 همراه با یک حافظه موقت FP8 KV cache پیکربندی شاخص و اصلی محسوب می‌شوند.
 
-- [The Precision-Performance Tradeoff](#the-precision-performance-tradeoff)
-- [Quantization Methods (NF4, AWQ, FP8, FP4)](#quantization-methods)
-- [File and Serving Formats](#file-and-serving-formats)
-- [KV Cache Quantization (The VRAM Saver)](#kv-cache-quantization-the-vram-saver)
-- [Quantization-Aware Training](#quantization-aware-training-qat)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [موازنه میان دقت و عملکرد](#the-precision-performance-tradeoff)
+- [روش‌های کوانتیزاسیون (NF4, AWQ, FP8, FP4)](#quantization-methods)
+- [فرمت‌های فایل و سرویس‌دهی](#file-and-serving-formats)
+- [کوانتیزاسیون KV Cache (نجات‌دهنده VRAM)](#kv-cache-quantization-the-vram-saver)
+- [آموزش آگاه از کوانتیزاسیون](#quantization-aware-training-qat)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Precision-Performance Tradeoff
+## موازنه میان دقت و عملکرد (The Precision-Performance Tradeoff)
 
-Traditional models use **BF16** (16-bit). Quantization seeks to reduce this to **8-bit (FP8)**, **4-bit (Int4, NF4, NVFP4, MXFP4)**, or even **~1.6-bit ternary** (BitNet b1.58 and its descendants).
+مدل‌های سنتی از **BF16** (۱۶ بیتی) استفاده می‌کنند. کوانتیزاسیون به دنبال کاهش این مقدار به **8-bit (FP8)**، **4-bit (Int4, NF4, NVFP4, MXFP4)** یا حتی مقادیر **سه‌تایی (ternary) حدود ۱.۶ بیتی** (BitNet b1.58 و نسل‌های بعدی آن) است.
 
-| Precision | Bits | Weight size (8B Model) | Quality Loss | Hardware |
+| دقت (Precision) | بیت‌ها | اندازه وزن‌ها (مدل 8B) | افت کیفیت | سخت‌افزار |
 |-----------|------|------------------------|--------------|-------------------|
-| **BF16** | 16 | 16 GB | 0% (Baseline) | All Modern |
-| **FP8** | 8 | 8 GB | < 1% | H100 / H200 / B200 / RTX 4090 and later; AMD MI300 and later |
-| **4-bit integer (NF4, AWQ, GPTQ)**| 4 | 4.5-5 GB | 1-2% | All Modern |
-| **4-bit float (NVFP4 / MXFP4)** | 4 | ~4.5 GB | Small with good calibration and kernels | NVFP4: Blackwell, Rubin. MXFP4: AMD MI350/MI455X and Blackwell |
-| **2-bit (naive PTQ)** | 2 | 2.5 GB | 10-15% | Research / Specialized |
-| **Ternary (trained or adapted for it)** | ~1.6-1.7 | ~1.7 GB | Vendor claims near-FP16 on some 27B-class models | Custom kernels only |
+| **BF16** | 16 | 16 GB | ۰٪ (پایه / Baseline) | تمام سخت‌افزارهای مدرن |
+| **FP8** | 8 | 8 GB | کمتر از ۱٪ | H100 / H200 / B200 / RTX 4090 و جدیدتر؛ AMD MI300 و جدیدتر |
+| **عدد صحیح ۴ بیتی (NF4, AWQ, GPTQ)** | 4 | 4.5-5 GB | ۱-۲٪ | تمام سخت‌افزارهای مدرن |
+| **ممیز شناور ۴ بیتی (NVFP4 / MXFP4)** | 4 | ~4.5 GB | با کالیبراسیون و کرنل‌های خوب اندک است | NVFP4: معماری‌های Blackwell، Rubin. فرمت MXFP4: شتاب‌دهنده‌های AMD MI350/MI455X و Blackwell |
+| **۲ بیتی (PTQ ساده / naive PTQ)** | 2 | 2.5 GB | ۱۰-۱۵٪ | پژوهشی / تخصصی |
+| **سه‌تایی / Ternary (آموزش‌دیده یا تطبیق‌یافته برای آن)** | ~1.6-1.7 | ~1.7 GB | ادعای سازنده: نزدیک به FP16 در برخی مدل‌های رده 27B | فقط کرنل‌های سفارشی |
 
-The 2-bit and ternary rows show why "bits" alone does not predict quality: naive post-training quantization to 2-bit wrecks reasoning, while a model adapted for ternary weights can hold up. PrismML's Ternary Bonsai 2 27B (September 2026, Apache 2.0, derived from Qwen3.8-27B) averages 1.72 bits per weight in a 5.95 GB file and reports 98.2% of FP16 quality across 14 thinking-mode benchmarks (vendor-reported). It needs PrismML's forks of llama.cpp and MLX; stock llama.cpp cannot load it, which is the usual price of exotic formats.
+ردیف‌های ۲ بیتی و سه‌تایی (ternary) نشان می‌دهند که چرا صرف «تعداد بیت‌ها» معیاری برای پیش‌بینی کیفیت نیست: کوانتیزاسیون پس از آموزش ساده (naive post-training quantization) به ۲ بیتی، توانایی استدلال مدل را نابود می‌کند، در حالی که مدلی که برای وزن‌های سه‌تایی تطبیق داده شده باشد می‌تواند پایداری خود را حفظ کند. مدل Ternary Bonsai 2 27B شرکت PrismML (سپتامبر ۲۰۲۶، با مجوز Apache 2.0، مشتق‌شده از Qwen3.8-27B) به طور میانگین ۱.۷۲ بیت به ازای هر وزن در یک فایل ۵.۹۵ گیگابایتی دارد و ۹۸.۲٪ از کیفیت FP16 را در ۱۴ بنچمارک حالت تفکر (thinking-mode) گزارش می‌کند (طبق گزارش سازنده). این مدل نیازمند فورک‌های اختصاصی PrismML از llama.cpp و MLX است؛ نسخه اصلی (stock) ابزار llama.cpp قادر به بارگذاری آن نیست، که این بهای معمول استفاده از فرمت‌های نامتعارف محسوب می‌شود.
 
 ---
 
-## Quantization Methods
+## روش‌های کوانتیزاسیون (Quantization Methods)
 
-### 1. NF4 (NormalFloat4)
-The gold standard for fine-tuning (QLoRA). It assumes weights follow a normal distribution and maps them to a set of 16 values.
+### ۱. NF4 (NormalFloat4)
+استاندارد طلایی برای Fine-tuning (روش QLoRA). این روش فرض می‌کند که وزن‌ها از یک توزیع نرمال پیروی می‌کنند و آن‌ها را به مجموعه‌ای از ۱۶ مقدار نگاشت می‌دهد.
 
-### 2. AWQ (Activation-aware Weight Quantization)
-AWQ observes that about **1% of weights are "salient"** (they multiply large activations) and dominate quantization error. Keeping them in higher precision would fix that but needs hardware-unfriendly mixed precision, so AWQ instead **scales the salient input channels up before quantization** (and folds the inverse scale into the preceding op), which protects them while every weight still ends up in 4-bit.
-- **Pro**: Better accuracy than GPTQ at the same bit width in many settings, with no backpropagation and a small calibration set.
+### ۲. AWQ (Activation-aware Weight Quantization)
+روش AWQ مشاهده می‌کند که حدود **۱٪ از وزن‌ها «حیاتی و برجسته» (salient) هستند** (در اکتیویشن‌های بزرگ ضرب می‌شوند) و بیشترین سهم را در خطای کوانتیزاسیون دارند. نگه‌داشتن آن‌ها با دقت بالاتر این مشکل را برطرف می‌کند اما به دقت ترکیبی (mixed precision) نیاز دارد که با سخت‌افزار سازگار نیست؛ بنابراین AWQ در عوض **کانال‌های ورودی حیاتی را پیش از کوانتیزاسیون به سمت بالا مقیاس‌بندی می‌کند (scale up)** (و مقیاس معکوس را درون عملیات قبلی ادغام می‌نماید)؛ این امر از آن‌ها محافظت کرده در حالی که تمام وزن‌ها در نهایت در قالب ۴ بیتی ذخیره می‌شوند.
+- **مزیت**: دقت بالاتر نسبت به GPTQ در پهنای بیت یکسان در بسیاری از سناریوها، بدون نیاز به پس‌انتشار (backpropagation) و تنها با یک مجموعه کالیبراسیون کوچک.
 
-### 3. FP8
-Hardware-native on Hopper and later through NVIDIA's Transformer Engine (and on AMD MI300-class parts).
-- **Why it wins**: It provides the speed of Int8 but with far more dynamic range, making it stable for both training and inference. E4M3 is used for weights and activations, E5M2 where range matters more (gradients).
+### ۳. FP8
+پشتیبانی بومی سخت‌افزاری در معماری Hopper و نسل‌های پس از آن از طریق موتور Transformer Engine شرکت NVIDIA (و روی قطعات رده MI300 شرکت AMD).
+- **چرا برنده است**: سرعت Int8 را به همراه دامنه دینامیکی (dynamic range) به مراتب وسیع‌تری فراهم می‌آورد و موجب پایداری آن هم در آموزش و هم در استنتاج (Inference) می‌گردد. فرمت E4M3 برای وزن‌ها و اکتیویشن‌ها، و فرمت E5M2 در مواردی که دامنه اهمیت بیشتری دارد (گرادیان‌ها) استفاده می‌شود.
 
-### 4. FP4: NVFP4 and MXFP4
-The 2026 headline serving precision. Both are 4-bit floats (E2M1) with block scaling; they differ in block size and scale format:
+### ۴. FP4: NVFP4 و MXFP4
+دقت شاخص سرویس‌دهی در سال ۲۰۲۶. هر دو نوع، ممیز شناور ۴ بیتی (E2M1) با مقیاس‌بندی بلوکی (block scaling) هستند؛ تفاوت آن‌ها در اندازه بلوک و فرمت مقیاس است:
 
-| Format | Block size | Scale | Where |
+| فرمت | اندازه بلوک | مقیاس (Scale) | محل پشتیبانی |
 |--------|-----------|-------|-------|
-| **NVFP4** | 16 values | FP8 (E4M3) per block plus an FP32 per-tensor scale | NVIDIA Blackwell, Rubin |
-| **MXFP4** (OCP Microscaling) | 32 values | Power-of-two (E8M0) per block | AMD MI350 and MI455X, NVIDIA Blackwell |
+| **NVFP4** | ۱۶ مقدار | مقیاس FP8 (E4M3) به ازای هر بلوک به علاوه یک مقیاس FP32 به ازای کل تنسور | NVIDIA Blackwell, Rubin |
+| **MXFP4** (میکرومقیاس‌بندی OCP) | ۳۲ مقدار | توانی از دو (E8M0) به ازای هر بلوک | AMD MI350 و MI455X، NVIDIA Blackwell |
 
-Evidence it is mainstream: NVIDIA rates a Vera Rubin NVL72 rack at 3,600 PFLOPS NVFP4 for inference (a sparse figure; the dense training rating is 2,520 PFLOPS); MLPerf Inference v6.1 (September 2026) had submissions moving from FP8 to FP4, including NVFP4 weights with an FP8 KV cache; DeepSeek-V4 ships FP4 MoE expert weights with FP8 for most other parameters. Checkpoints are increasingly portable across vendors: SGLang v0.5.18 requantizes NVFP4 checkpoints to MXFP4 at load on AMD, reporting 97.5% to 100.2% GSM8K recovery across five large MoE models.
+شواهدی مبنی بر جریان اصلی (mainstream) بودن آن: شرکت انویدیا یک رک Vera Rubin NVL72 را معادل ۳,۶۰۰ پتافلاپس (PFLOPS) در NVFP4 برای استنتاج (Inference) ارزیابی می‌کند (یک عدد پراکنده / sparse؛ در حالی که توان اسمی آموزش متراکم / dense معادل ۲,۵۲۰ پتافلاپس است)؛ نتایج MLPerf Inference v6.1 (سپتامبر ۲۰۲۶) حاکی از مهاجرت ارائه‌دهندگان از FP8 به FP4 بود، از جمله وزن‌های NVFP4 با یک حافظه موقت FP8 KV cache؛ مدل DeepSeek-V4 وزن‌های کارشناس‌های MoE را در قالب FP4 و سایر پارامترها را عمدتاً با FP8 عرضه می‌کند. همچنین چک‌پوینت‌ها میان تولیدکنندگان سخت‌افزار روزبه‌روز قابلیت جابه‌جایی بیشتری پیدا می‌کنند: SGLang نسخه v0.5.18 هنگام بارگذاری روی پلتفرم AMD، چک‌پوینت‌های NVFP4 را به MXFP4 تبدیل مجدد (requantize) می‌کند و بازیابی ۹۷.۵٪ تا ۱۰۰.۲٪ را در بنچمارک GSM8K در پنج مدل بزرگ MoE گزارش می‌دهد.
 
-**The kernel caveat.** Lower precision only wins when the kernel path is good. NVIDIA's own Dynamo recipe for Nemotron 3.5 Lightning on B200/GB200 measured BF16 **80% faster** than NVFP4 with Marlin kernels and still 12% faster than NVFP4 with CuTeDSL kernels. vLLM v0.30.0 made FlashInfer CuTeDSL the default NVFP4 W4A16 path on SM100/103 instead of Marlin, so the same checkpoint can change speed across an engine upgrade. Benchmark the exact model, engine version, and kernel backend before you migrate.
+**هشدار مهم درباره کرنل (The kernel caveat).** دقت پایین‌تر تنها زمانی برنده است که مسیر کرنل بهینه و کارآمد باشد. دستورالعمل Dynamo خود انویدیا برای Nemotron 3.5 Lightning روی شتاب‌دهنده‌های B200/GB200 نشان داد که BF16 با کرنل‌های Marlin تا **۸۰٪ سریع‌تر** از NVFP4 بوده و با کرنل‌های CuTeDSL همچنان ۱۲٪ سریع‌تر از NVFP4 اجرا می‌شود. نسخه vLLM v0.30.0 مسیر FlashInfer CuTeDSL را به جای Marlin به عنوان مسیر پیش‌فرض NVFP4 W4A16 روی SM100/103 قرار داد، بنابراین سرعت یک چک‌پوینت یکسان می‌تواند با ارتقای موتور سرویس‌دهی تغییر کند. قبل از مهاجرت، حتماً مدل دقیق، نسخه موتور سرویس‌دهی و بک‌اند کرنل را بنچمارک کنید.
 
 ---
 
-## File and Serving Formats
+## فرمت‌های فایل و سرویس‌دهی (File and Serving Formats)
 
 ### GGUF (llama.cpp)
-- **Deployment**: CPU + GPU offloading; the local format for llama.cpp, Ollama, and LM Studio.
-- **Pros**: Cross-platform (Mac, Linux, Windows), single file, highly portable.
-- **Cons**: Slower than GPU-native serving formats under concurrency.
+- **استقرار (Deployment)**: آف‌لودینگ روی CPU + GPU؛ فرمت محلی برای llama.cpp، Ollama و LM Studio.
+- **مزایا**: چندسکویی (Mac، Linux، Windows)، تک‌فایل، قابلیت حمل بسیار بالا.
+- **معایب**: در شرایط همزمانی (concurrency) از فرمت‌های سرویس‌دهی بومی GPU کندتر است.
 
 ### EXL2 / EXL3 (ExLlama)
-- **Deployment**: GPU-only (NVIDIA), single-user local inference.
-- **Pros**: Very fast on consumer NVIDIA GPUs with flexible bits per weight; ExLlamaV3's EXL3 format is a streamlined variant of QTIP.
-- **Cons**: NVIDIA-only and not a multi-tenant serving format.
+- **استقرار (Deployment)**: فقط GPU (انویدیا)، استنتاج (Inference) محلی تک‌کاربره.
+- **مزایا**: بسیار سریع روی GPUهای مصرفی NVIDIA با تعداد بیت انعطاف‌پذیر به ازای هر وزن؛ فرمت EXL3 در ExLlamaV3 نسخه‌ای بهینه‌سازی‌شده از QTIP است.
+- **معایب**: فقط مخصوص NVIDIA بوده و یک فرمت سرویس‌دهی چندمستأجره (multi-tenant) نیست.
 
-### Datacenter serving formats
-- **AWQ / GPTQ** int4 checkpoints, served with Marlin-family kernels in vLLM, SGLang, and TensorRT-LLM.
-- **FP8, NVFP4, MXFP4** checkpoints produced with tools such as NVIDIA Model Optimizer or llm-compressor, often published officially by the model vendor (for example IBM's Granite 4.2 ships FP8, MXFP4, NVFP4, GGUF and MLX builds).
-- **bitsandbytes (NF4)** is a training-time format first: vLLM moved bitsandbytes to an out-of-tree plugin in v0.28.0 (August 2026). Merge QLoRA adapters and requantize to a serving format before production.
-
----
-
-## KV Cache Quantization (The VRAM Saver)
-
-In long-context serving, the **KV Cache** often consumes more VRAM than the model weights themselves. For Llama 3.1 8B (32 layers, 8 KV heads, head dim 128):
-
-- **BF16 KV cache**: 128 KiB per token, so 128K tokens ≈ 16 GB (as much as the BF16 weights) and 1M tokens ≈ 128 GB.
-- **FP8 KV cache**: half that (64 KiB per token); **4-bit KV**: a quarter.
-
-**Nuance**: Serving engines (vLLM, SGLang, TensorRT-LLM) quantize KV on write, so FP8 KV roughly doubles the number of concurrent long-context requests per GPU at small quality cost, which is why FP4 weights plus FP8 KV is the default pairing. The bigger lever in 2026 is architecture, not dtype: DeepSeek V4.1-Flash stores FP4 main KV with compressed sparse attention for about 890 bytes per token of global KV, versus 320 KiB per token for a BF16 Llama-3.1-70B. See [KV Cache and Context Caching](../04-inference-optimization/02-kv-cache-and-context-caching.md).
+### فرمت‌های سرویس‌دهی در مراکز داده (Datacenter serving formats)
+- **چک‌پوینت‌های int4 مبتنی بر AWQ / GPTQ** که با کرنل‌های خانواده Marlin در vLLM، SGLang و TensorRT-LLM سرویس‌دهی می‌شوند.
+- **چک‌پوینت‌های FP8، NVFP4 و MXFP4** تولید شده توسط ابزارهایی مانند NVIDIA Model Optimizer یا llm-compressor، که اغلب به طور رسمی توسط ارائه‌دهنده مدل منتشر می‌شوند (به عنوان مثال مدل Granite 4.2 شرکت IBM نسخه‌های FP8، MXFP4، NVFP4، GGUF و MLX را منتشر می‌کند).
+- **فرمت bitsandbytes (NF4)** پیش از هر چیز یک فرمت زمان آموزش است: vLLM در نسخه v0.28.0 (آگوست ۲۰۲۶) bitsandbytes را به یک پلاگین خارج از درخت اصلی (out-of-tree) منتقل کرد. پیش از ورود به محیط پروداکشن، آداپتورهای QLoRA را ادغام کرده و مدل را به یک فرمت سرویس‌دهی مجدداً کوانتیزه (requantize) کنید.
 
 ---
 
-## Quantization-Aware Training (QAT)
+## کوانتیزاسیون KV Cache (نجات‌دهنده VRAM)
 
-Instead of quantizing a model *after* it's trained (Post-training Quantization), QAT simulates quantization *during* the training process.
-- **Result**: The model learns to compensate for the lost precision.
-- **Status**: The default for small and on-device models where 4-bit is the target. Google ships QAT int4 builds of Gemma (including Gemma 4 12B), and Apple says its third-generation foundation models used quantization-aware training. Quantization-aware distillation, where the full-precision model is the teacher, is the same idea with a stronger signal (see [Knowledge Distillation](05-knowledge-distillation.md#quantization-aware-distillation)).
+در سرویس‌دهی با کانتکست طولانی، **KV Cache** اغلب حافظه VRAM بیشتری نسبت به وزن‌های خود مدل مصرف می‌کند. برای مدل Llama 3.1 8B (شامل ۳۲ لایه، ۸ هد KV و بُعد هد ۱۲۸):
 
----
+- **حافظه موقت BF16 KV cache**: معادل ۱۲۸ KiB به ازای هر Token؛ بنابراین 128K Token تقریباً برابر با ۱۶ گیگابایت (به اندازه حجم کل وزن‌های BF16) و 1M Token تقریباً معادل ۱۲۸ گیگابایت خواهد بود.
+- **حافظه موقت FP8 KV cache**: نصف این مقدار (۶۴ KiB به ازای هر Token)؛ و **4-bit KV**: یک‌چهارم آن.
 
-## Interview Questions
-
-### Q: Why do we use NF4 instead of standard Float4 for QLoRA?
-
-**Strong answer:**
-Standard Float4 has a fixed grid that doesn't map well to the actual distribution of LLM weights, which typically follow a zero-centered normal distribution. NF4 (NormalFloat4) is a data type that is mathematically optimized so that each quantization bin contains an equal number of values from the normal distribution. This prevents "clustering" of weights and ensures that the model preserves as much information (entropy) as possible, leading to significantly higher accuracy than standard 4-bit integers.
-
-### Q: How does AWQ differ from GPTQ?
-
-**Strong answer:**
-GPTQ quantizes layer by layer and uses approximate second-order (Hessian) information from a calibration set to update the remaining weights so each layer's output error stays small. AWQ is activation-aware: it uses calibration activations to find the roughly 1% of salient input channels, then scales those channels up before quantization so their relative rounding error shrinks, folding the inverse scale into the previous operation. Everything still ends up in 4-bit, which keeps kernels simple; the common misconception is that AWQ stores the salient weights in higher precision. AWQ needs no backpropagation or weight reconstruction, generalizes well across domains because it overfits the calibration set less, and often beats GPTQ at 4-bit and below.
-
-### Q: The team wants to move serving from FP8 to NVFP4 to cut cost. What do you check?
-
-**Strong answer:**
-Four things. First, hardware: NVFP4 needs Blackwell or Rubin tensor cores; on AMD the equivalent is MXFP4, and some engines can requantize NVFP4 checkpoints to MXFP4 at load, so check quality recovery on that path. Second, kernels: lower precision is not automatically faster. NVIDIA's own Dynamo recipe measured BF16 80% faster than NVFP4 on Marlin kernels and 12% faster on CuTeDSL, so I would benchmark the exact model, engine version, and kernel backend at our real batch sizes and context lengths, on a throughput-versus-interactivity curve rather than one number. Third, quality: run our task evals, not just perplexity, with special attention to long-context and reasoning tasks, and prefer a vendor-published or QAT checkpoint over our own PTQ. Fourth, the KV cache: weights shrink 2x, but at long context the KV cache may dominate memory, so pair FP4 weights with an FP8 KV cache and recompute how many concurrent sequences fit. The decision is cost per million tokens at our SLO, measured, not the bit width.
+**نکته ظریف (Nuance)**: موتورهای سرویس‌دهی (vLLM، SGLang، TensorRT-LLM) حافظه KV را هنگام نوشتن کوانتیزه می‌کنند، بنابراین FP8 KV تقریباً تعداد درخواست‌های همزمان با کانتکست طولانی به ازای هر GPU را با افتی ناچیز در کیفیت، دو برابر می‌کند؛ به همین دلیل است که جفت‌کردن وزن‌های FP4 به همراه FP8 KV پیکربندی پیش‌فرض است. در سال ۲۰۲۶ اهرم بزرگ‌تر، معماری مدل است نه نوع داده (dtype): مدل DeepSeek V4.1-Flash حافظه اصلی KV را در قالب FP4 همراه با مکانیزم توجه پراکنده فشرده (compressed sparse attention) با مصرف حدود ۸۹۰ بایت به ازای هر Token از global KV ذخیره می‌کند، در مقایسه با ۳۲۰ KiB به ازای هر Token برای مدل BF16 Llama-3.1-70B. به بخش [حافظه موقت KV و کش‌کردن کانتکست (KV Cache and Context Caching)](../04-inference-optimization/02-kv-cache-and-context-caching.md) مراجعه کنید.
 
 ---
 
-## References
-- Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)
-- Frantar et al. "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers" (2022)
-- Lin et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration" (2023)
-- Ma et al. "The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits" (BitNet b1.58, 2024)
-- Open Compute Project. "OCP Microscaling Formats (MX) Specification" (2023)
-- NVIDIA. [Vera Rubin NVL72](https://www.nvidia.com/en-us/data-center/vera-rubin-nvl72/)
+## آموزش آگاه از کوانتیزاسیون (Quantization-Aware Training - QAT)
+
+روش QAT به جای کوانتیزه‌کردن مدل *پس از* پایان آموزش (کوانتیزاسیون پس از آموزش یا Post-training Quantization)، فرایند کوانتیزاسیون را *در حین* آموزش شبیه‌سازی می‌کند.
+- **نتیجه**: مدل یاد می‌گیرد افت ناشی از کاهش دقت را جبران کند.
+- **وضعیت کنونی**: رویکرد پیش‌فرض برای مدل‌های کوچک و روی دستگاه (on-device) که هدف آن‌ها دقت ۴ بیتی است. گوگل نسخه‌های int4 آموزش‌دیده با QAT مدل Gemma (از جمله Gemma 4 12B) را عرضه می‌کند، و اپل اعلام کرده که مدل‌های پایه نسل سوم آن از آموزش آگاه از کوانتیزاسیون استفاده کرده‌اند. تقطیر آگاه از کوانتیزاسیون (Quantization-aware distillation)، که در آن مدل با دقت کامل به عنوان معلم (teacher) عمل می‌کند، همین ایده را با سیگنالی قوی‌تر اجرا می‌نماید (به بخش [تقطیر دانش (Knowledge Distillation)](05-knowledge-distillation.md#quantization-aware-distillation) مراجعه کنید).
 
 ---
 
-*Next: [Training Reasoning Models: RLVR and GRPO](08-rlvr-and-reasoning-models.md)*
+## سوالات مصاحبه (Interview Questions)
+
+### پرسش: چرا در QLoRA به جای Float4 استاندارد از NF4 استفاده می‌کنیم؟
+
+**پاسخ قوی:**
+فرمت Float4 استاندارد شبکه مقادیر (grid) ثابتی دارد که با توزیع واقعی وزن‌های LLMها که معمولاً از یک توزیع نرمال متمرکز بر صفر پیروی می‌کنند، سازگار نیست. فرمت NF4 (NormalFloat4) نوع داده‌ای بهینه‌سازی‌شده از نظر ریاضی است به گونه‌ای که هر بازه کوانتیزاسیون (quantization bin) شامل تعداد برابری از مقادیر حاصل از توزیع نرمال باشد. این ویژگی از «تجمع و خوشه‌بندی» (clustering) وزن‌ها جلوگیری می‌کند و تضمین می‌نماید که مدل تا حد امکان بیشترین اطلاعات (آنتروپی) را حفظ کند، که منجر به دقتی به مراتب بالاتر در مقایسه با اعداد صحیح ۴ بیتی استاندارد می‌شود.
+
+### پرسش: روش AWQ چه تفاوتی با GPTQ دارد؟
+
+**پاسخ قوی:**
+روش GPTQ مدل را لایه به لایه کوانتیزه می‌کند و از اطلاعات مرتبه دوم تقریبی (Hessian) حاصل از یک مجموعه کالیبراسیون برای به‌روزرسانی وزن‌های باقی‌مانده بهره می‌گیرد تا خطای خروجی هر لایه کوچک بماند. در مقابل، روش AWQ به اکتیویشن‌ها آگاه است (activation-aware): از اکتیویشن‌های کالیبراسیون برای شناسایی تقریباً ۱٪ از کانال‌های ورودی حیاتی (salient) استفاده می‌کند، سپس پیش از کوانتیزاسیون مقیاس آن کانال‌ها را افزایش می‌دهد تا خطای نسبی گرد کردن آن‌ها کاهش یابد، و مقیاس معکوس را در عملیات پیشین ادغام می‌نماید. در نهایت همه وزن‌ها همچنان در قالب ۴ بیتی ذخیره می‌شوند که سادگی کرنل‌ها را حفظ می‌کند؛ این یک باور غلط رایج است که AWQ وزن‌های حیاتی را با دقت بالاتری ذخیره می‌کند. روش AWQ نیازی به پس‌انتشار یا بازسازی وزن‌ها ندارد، به دلیل برازش کمتر روی داده‌های کالیبراسیون (کمتر overfit شدن) در دامنه‌های مختلف به خوبی تعمیم می‌یابد، و اغلب در ۴ بیت و پایین‌تر نسبت به GPTQ نتایج بهتری به همراه دارد.
+
+### پرسش: تیم قصد دارد برای کاهش هزینه، سرویس‌دهی را از FP8 به NVFP4 منتقل کند. چه مواردی را بررسی می‌کنید؟
+
+**پاسخ قوی:**
+چهار مورد را بررسی می‌کنم. نخست سخت‌افزار: NVFP4 نیازمند هسته‌های تنسور Blackwell یا Rubin است؛ در پلتفرم AMD معادل آن MXFP4 است و برخی موتورها می‌توانند در زمان بارگذاری، چک‌پوینت‌های NVFP4 را به MXFP4 تبدیل مجدد (requantize) کنند، بنابراین باید میزان بازیابی کیفیت در این مسیر سنجیده شود. دوم کرنل‌ها: دقت پایین‌تر لزوماً و خودکار سریع‌تر نیست. دستورالعمل Dynamo خود انویدیا برای Nemotron 3.5 Lightning نشان داد که BF16 روی کرنل‌های Marlin تا ۸۰٪ سریع‌تر از NVFP4 و روی CuTeDSL تا ۱۲٪ سریع‌تر از آن بوده است؛ بنابراین من مدل دقیق، نسخه موتور سرویس‌دهی و بک‌اند کرنل را در اندازه‌های واقعی دسته (batch sizes) و طول‌های کانتکست خودمان، بر روی نمودار توان عملیاتی (Throughput) در برابر تعاملی‌بودن (interactivity) ارزیابی می‌کنم نه بر اساس یک عدد منفرد. سوم کیفیت: اجرای ارزیابی‌های اختصاصی تسک‌های خودمان (evals) و نه صرفاً معیار perplexity، با تمرکز ویژه بر تسک‌های دارای کانتکست طولانی و استدلال، و ترجیح دادن یک چک‌پوینت رسمی منتشرشده توسط سازنده یا چک‌پوینت QAT بر PTQ اختصاصی خودمان. چهارم حافظه موقت KV cache: حجم وزن‌ها ۲ برابر کاهش می‌یابد، اما در کانتکست‌های طولانی ممکن است KV cache بخش غالب حافظه را اشغال کند؛ بنابراین وزن‌های FP4 را با FP8 KV cache جفت می‌کنم و تعداد توالی‌های همزمانِ قابل استقرار را مجدداً محاسبه می‌نمایم. معیار تصمیم‌گیری نهایی، هزینه به ازای هر یک میلیون Token اندازه‌گیری‌شده در توافق‌نامه سطح خدمت (SLO) ما است، نه صرفاً پهنای بیت‌ها.
+
+---
+
+## منابع (References)
+- دتمرز و همکاران (Dettmers et al.)، مقاله "QLoRA: Efficient Finetuning of Quantized LLMs" (سال ۲۰۲۳)
+- فرانتر و همکاران (Frantar et al.)، مقاله "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers" (سال ۲۰۲۲)
+- لین و همکاران (Lin et al.)، مقاله "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration" (سال ۲۰۲۳)
+- ما و همکاران (Ma et al.)، مقاله "The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits" (مدل BitNet b1.58، سال ۲۰۲۴)
+- پروژه محاسبات باز (Open Compute Project)، مشخصات فنی "OCP Microscaling Formats (MX) Specification" (سال ۲۰۲۳)
+- شرکت انویدیا (NVIDIA)، [Vera Rubin NVL72](https://www.nvidia.com/en-us/data-center/vera-rubin-nvl72/)
+
+---
+
+*بخش بعدی: [آموزش مدل‌های استدلال: RLVR و GRPO](08-rlvr-and-reasoning-models.md)*
+
+</div>

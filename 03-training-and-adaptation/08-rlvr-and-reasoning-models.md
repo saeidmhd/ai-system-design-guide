@@ -1,47 +1,49 @@
-# Training Reasoning Models: RLVR and GRPO
+<div dir="rtl">
 
-Reasoning models (the lineage that started with OpenAI's o-series and DeepSeek-R1, and now includes the thinking modes of most frontier and open models) are trained with a recipe distinct from the RLHF and DPO covered in [RLHF and DPO](04-rlhf-and-dpo.md): **reinforcement learning with verifiable rewards (RLVR)**. Take a capable base model, have it generate long chains of thought on problems with *checkable* answers (math, code, logic), and reward correctness directly with a programmatic verifier instead of a learned reward model. This chapter covers RLVR, the GRPO algorithm DeepSeek made popular, the reward-design failure modes, the live debate over what RL actually adds, and the cheaper distillation path most teams should take first.
+# آموزش مدل‌های استدلالی: RLVR و GRPO
 
-## Table of Contents
+مدل‌های استدلالی (سلسله‌ای که با سری o شرکت OpenAI و DeepSeek-R1 آغاز شد و اکنون حالت‌های تفکر (thinking modes) اکثر مدل‌های مرزی و متن‌باز را شامل می‌شود) با دستورالعملی متمایز از RLHF و DPO پوشش‌داده‌شده در [RLHF و DPO](04-rlhf-and-dpo.md) آموزش می‌بینند: **یادگیری تقویتی با پاداش‌های قابل‌تایید (RLVR یا reinforcement learning with verifiable rewards)**. یک مدل پایه توانمند را در نظر بگیرید، از آن بخواهید زنجیره‌های تفکر (chains of thought) طولانی را روی مسائلی با پاسخ‌های *قابل‌بررسی* (ریاضی، کد، منطق) تولید کند، و صحت پاسخ را مستقیماً با یک اعتبارسنج (verifier) برنامه‌نویسی‌شده پاداش دهید، به‌جای آنکه از یک مدل پاداش یادگیری‌شده استفاده کنید. این فصل به بررسی RLVR، الگوریتم GRPO که DeepSeek آن را محبوب ساخت، حالت‌های شکست در طراحی پاداش، مناقشه زنده بر سر اینکه RL در عمل چه چیزی به مدل می‌افزاید، و مسیر ارزان‌تر تقطیر (Distillation) که اغلب تیم‌ها باید ابتدا در پیش بگیرند، می‌پردازد.
 
-- [RLVR: Reinforcement Learning with Verifiable Rewards](#rlvr-reinforcement-learning-with-verifiable-rewards)
+## فهرست مطالب
+
+- [RLVR: یادگیری تقویتی با پاداش‌های قابل‌تایید](#rlvr-reinforcement-learning-with-verifiable-rewards)
 - [GRPO](#grpo)
-- [Reward Design and Failure Modes](#reward-design-and-failure-modes)
-- [Monitorability: Do Not Train Against the Chain of Thought](#monitorability-do-not-train-against-the-chain-of-thought)
-- [Does RL Add Capability or Sharpen Sampling?](#does-rl-add-capability-or-sharpen-sampling)
-- [Distillation: The Cheaper Path](#distillation-the-cheaper-path)
-- [Practical Guidance](#practical-guidance)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+- [طراحی پاداش و حالت‌های شکست](#reward-design-and-failure-modes)
+- [قابلیت نظارت‌پذیری: در برابر زنجیره تفکر آموزش ندهید](#monitorability-do-not-train-against-the-chain-of-thought)
+- [آیا RL قابلیت جدید می‌افزاید یا نمونه‌برداری را دقیق‌تر می‌کند؟](#does-rl-add-capability-or-sharpen-sampling)
+- [تقطیر: مسیر ارزان‌تر](#distillation-the-cheaper-path)
+- [راهنمای کاربردی](#practical-guidance)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## RLVR: Reinforcement Learning with Verifiable Rewards
+## RLVR: یادگیری تقویتی با پاداش‌های قابل‌تایید
 
-RLVR replaces RLHF's learned reward model with a deterministic **verifier** that returns a reward from a ground-truth check: did the final answer match (math), did the code pass the unit tests, does the proof check. The policy is the LLM; the environment is a single-turn generation of a long chain of thought followed by an answer; the reward is computed by a numeric/string match or by running the code.
+روش RLVR مدل پاداش یادگیری‌شده در RLHF را با یک **اعتبارسنج (verifier)** قطعی و معین جایگزین می‌کند که پاداش را بر اساس یک بررسی واقعیت بنیادین (ground-truth check) برمی‌گرداند: آیا پاسخ نهایی مطابقت داشت (در ریاضی)، آیا کد تست‌های واحد (unit tests) را پاس کرد، یا آیا برهان ریاضی تایید می‌شود یا خیر. خط‌مشی (policy) همان LLM است؛ محیط (environment) شامل تولید یک‌مرحله‌ای (single-turn) یک زنجیره تفکر طولانی و به دنبال آن یک پاسخ است؛ و پاداش از طریق تطبیق عددی/رشته‌ای یا با اجرای کد محاسبه می‌شود.
 
-**Why "verifiable" matters: it largely sidesteps reward-model hacking.** In RLHF the reward model is itself a neural net trained on preferences, and the policy learns to exploit its blind spots (the Goodhart / over-optimization problem). A verifier for "does this equal the gold answer" or "do all tests pass" has no soft, learnable surface to game in the same way; the reward is grounded in an external oracle. This is the core reason RLVR scales more stably than RLHF for reasoning. It does not *eliminate* gaming: real verifiers have error rates, and a policy under optimization pressure finds them (see [Reward Design](#reward-design-and-failure-modes)). It removes the easiest exploit, not all of them.
+**چرا «قابل‌تایید بودن» اهمیت دارد: این رویکرد تا حد زیادی از هک مدل پاداش (reward-model hacking) جلوگیری می‌کند.** در RLHF، مدل پاداش خود یک شبکه عصبی آموزش‌دیده بر اساس ترجیحات است و خط‌مشی یاد می‌گیرد که از نقاط کور آن سوءاستفاده کند (مسئله گودهارت / بهینه‌سازی بیش‌ازحد یا over-optimization). یک اعتبارسنج برای «آیا این با پاسخ مرجع (gold answer) برابر است» یا «آیا همه تست‌ها پاس می‌شوند»، فاقد سطح نرم و یادگیری‌پذیری است که بتوان آن را به همان شیوه دور زد و بازی داد؛ چراکه پاداش در یک مرجع موثق خارجی (external oracle) ریشه دارد. این دلیل اصلی پایداری و مقیاس‌پذیری باثبات‌تر RLVR نسبت به RLHF در وظایف استدلالی است. البته این رویکرد دور زدن سیستم (gaming) را به‌طور کامل *حذف نمی‌کند*: اعتبارسنج‌های واقعی دارای نرخ خطا هستند و خط‌مشی تحت فشار بهینه‌سازی آن‌ها را پیدا می‌کند (بخش [طراحی پاداش](#reward-design-and-failure-modes) را ببینید). این روش ساده‌ترین مسیر سوءاستفاده را می‌بندد، نه همه آن‌ها را.
 
-The loop, per step:
-1. Sample prompts with known-checkable answers.
-2. For each, sample one or more long-CoT completions from the current policy.
-3. Run the verifier on each completion to get a scalar reward (often 1 correct / 0 wrong, sometimes plus a small format reward).
-4. Compute advantages and do a policy-gradient update.
-5. Repeat. Long chains of thought, self-verification, and backtracking *emerge* from this loop rather than being explicitly supervised.
+حلقه آموزش، در هر گام:
+1. نمونه‌برداری از Promptها با پاسخ‌های مشخصاً قابل‌بررسی.
+2. به ازای هر Prompt، نمونه‌برداری از یک یا چند تکمیل زنجیره تفکر طولانی (long-CoT) از خط‌مشی فعلی.
+3. اجرای اعتبارسنج روی هر تکمیل برای دریافت پاداش اسکالر (اغلب ۱ برای درست / ۰ برای نادرست، گاهی به همراه یک پاداش کوچک برای فرمت).
+4. محاسبه مزیت‌ها (advantages) و اعمال به‌روزرسانی گرادیان خط‌مشی (policy-gradient update).
+5. تکرار. زنجیره‌های تفکر طولانی، خوداعتبارسنجی (self-verification) و عقب‌گرد (backtracking) به‌جای نظارت و هدایت صریح، از دل این حلقه *پدیدار می‌شوند (emerge)*.
 
-**The strongest verifiers are formal.** A proof checker accepts nothing it cannot verify, so it scales to outputs no human could review. Anthropic reported in September 2026 that an internal model roughly comparable to Claude Fable 5.1 formalized Fermat's Last Theorem in Lean largely autonomously over 11 days: about 13M lines of Lean and about 6B output tokens, with Lean checking the result against three standard axioms and Kevin Buzzard reviewing it (vendor-reported). For RL, this is the template for long-horizon tasks: make the environment emit a machine-checkable artifact, then reward the check.
+**قوی‌ترین اعتبارسنج‌ها صوری (formal) هستند.** یک بررسی‌کننده برهان (proof checker) هیچ چیزی را که نتواند راستی‌آزمایی کند نمی‌پذیرد، بنابراین تا خروجی‌هایی که هیچ انسانی توانایی بررسی آن‌ها را ندارد مقیاس‌پذیر است. شرکت Anthropic در سپتامبر ۲۰۲۶ گزارش داد که یک مدل داخلی که تقریباً با Claude Fable 5.1 قابل مقایسه است، قضیه آخر فرما را در نرم‌افزار Lean تا حد زیادی به‌صورت مستقل و خودمختار طی ۱۱ روز صورت‌بندی صوری (formalize) کرد: حدود ۱۳ میلیون خط کد Lean و حدود ۶ میلیارد Token خروجی، که در آن Lean نتیجه را در برابر سه اصل موضوعه (axiom) استاندارد بررسی می‌کرد و Kevin Buzzard بر آن نظارت داشت (گزارش‌شده توسط ارائه‌دهنده). برای RL، این الگویی راهنما برای وظایف با افق طولانی (long-horizon tasks) است: محیط را به‌گونه‌ای بسازید که یک آرتیفکت قابل‌بررسی توسط ماشین تولید کند، و سپس به تایید موفقیت‌آمیز آن پاداش دهید.
 
-The canonical open result is **DeepSeek-R1** (arXiv:2501.12948; the peer-reviewed version appeared in Nature in September 2025), which reports that reasoning can be incentivized through *pure RL* with no human-labeled reasoning traces, with emergent self-reflection. A teaching caveat: OpenAI has not published the o-series algorithm, so treat "o-series uses RLVR-style RL" as a reasonable inference from public messaging, not a documented fact, and do not attribute a specific algorithm to it.
+شاخص‌ترین نتیجه متن‌باز در این حوزه **DeepSeek-R1** است (arXiv:2501.12948؛ نسخه داوری‌شده آن در سپتامبر ۲۰۲۵ در نشریه Nature به چاپ رسید)، که گزارش می‌دهد توانایی استدلال را می‌توان از طریق *RL خالص* بدون هیچ‌گونه ردپای استدلالی برچسب‌گذاری‌شده توسط انسان و همراه با پدیدار شدن خوداندیشی (self-reflection) برانگیخت. یک هشدار آموزشی: OpenAI الگوریتم سری o را منتشر نکرده است، بنابراین عبارت «سری o از RL به سبک RLVR استفاده می‌کند» را صرفاً یک استنباط معقول از بیانیه‌های عمومی تلقی کنید، نه یک واقعیت مستند، و الگوریتم خاصی را به آن نسبت ندهید.
 
 ---
 
 ## GRPO
 
-**Group Relative Policy Optimization** was introduced in DeepSeekMath (arXiv:2402.03300) and used as the RL engine for DeepSeek-R1.
+الگوریتم **بهینه‌سازی خط‌مشی نسبی گروهی (Group Relative Policy Optimization یا GRPO)** در مقاله DeepSeekMath (arXiv:2402.03300) معرفی شد و به‌عنوان موتور RL در DeepSeek-R1 مورد استفاده قرار گرفت.
 
-**The PPO problem it removes.** PPO needs a **value/critic network**, typically the same size as the policy, to estimate the baseline for advantage computation. For LLMs that roughly doubles memory and adds a second model to train, and a value estimate for a long sequence with a single terminal reward is hard to learn. GRPO's move: **delete the critic.** Instead of a learned baseline, sample a **group** of completions for the same prompt and use the group's own reward statistics as the baseline.
+**مسئله‌ای در PPO که این روش آن را برطرف می‌کند.** الگوریتم PPO برای تخمین خط مبنا (baseline) جهت محاسبه مزیت (advantage)، به یک **شبکه ارزش/نقاد (value/critic network)** نیاز دارد که معمولاً هم‌اندازه با خط‌مشی است. در LLMها، این موضوع مصرف حافظه را تقریباً دو برابر می‌کند و مدل دومی را برای آموزش اضافه می‌نماید؛ علاوه بر این، یادگیری تخمین ارزش برای یک توالی طولانی با یک پاداش پایانی منفرد بسیار دشوار است. ابتکار GRPO: **حذف نقاد (critic).** به‌جای یک خط مبنای یادگیری‌شده، یک **گروه** از تکمیل‌ها برای همان Prompt نمونه‌برداری می‌شوند و از آماره‌های پاداش خود گروه به‌عنوان خط مبنا استفاده می‌شود.
 
-**Group-relative advantage.** For a prompt, sample completions `o_1..o_G`, get rewards `r_1..r_G`. The advantage for completion `i` is its z-score within the group, broadcast to every token in that completion:
+**مزیت نسبی گروهی (Group-relative advantage).** برای یک Prompt، تکمیل‌های `o_1..o_G` را نمونه‌برداری کنید و پاداش‌های `r_1..r_G` را به دست آورید. مزیت تکمیل `i` برابر با امتیاز استاندارد (z-score) آن درون گروه است، که به تمام Tokenهای آن تکمیل تعمیم (broadcast) داده می‌شود:
 
 ```python
 # One GRPO step. policy = the LLM; verify() = a programmatic checker.
@@ -57,151 +59,153 @@ for q in sample_prompts(batch):
 update(policy, loss)
 ```
 
-DeepSeek used it because dropping the critic is the practical memory win at frontier scale, and the group baseline suits single terminal verifiable rewards.
+شرکت DeepSeek از این روش استفاده کرد زیرا حذف نقاد یک دستاورد عملی بزرگ در بهینه‌سازی حافظه در مقیاس مدل‌های مرزی است، و خط مبنای گروهی برای پاداش‌های قابل‌تایید پایانی منفرد بسیار مناسب است.
 
-**Known issues, and the variants that fix them:**
-- **Length bias.** Because one scalar advantage is broadcast to every token, a longer completion spreads its advantage over more tokens, and the optimization can inflate response length (especially for wrong answers). **Dr.GRPO** (arXiv:2503.20783) removes the length and standard-deviation normalization terms that cause this.
-- **Zero-variance collapse.** If all completions in a group get the same reward (all correct on an easy prompt, or all wrong on a hard one), the std goes to zero, every advantage goes to zero, and the group contributes *no gradient*. As the model improves, more prompts become "all correct," so the effective batch shrinks. **DAPO** (arXiv:2503.14476) fixes this with **dynamic sampling**: oversample and filter out any prompt whose group is all-correct or all-wrong, keeping only groups that produce a gradient. DAPO also decouples the clip range ("clip-higher"), uses token-level loss, and drops the KL term.
-- **MoE instability.** Token-level importance ratios are noisy for mixture-of-experts models because routing differs between policy versions. **GSPO** (arXiv:2507.18071, used in Qwen3) defines the ratio on whole-sequence likelihood instead, stabilizing RL for MoE.
+**مشکلات شناخته‌شده و واریانت‌هایی که آن‌ها را برطرف می‌کنند:**
+- **سوگیری طول (Length bias).** از آنجا که یک مزیت اسکالر واحد به تمام Tokenها تعمیم (broadcast) می‌یابد، یک تکمیل طولانی‌تر مزیت خود را روی Tokenهای بیشتری پخش می‌کند و فرایند بهینه‌سازی می‌تواند طول پاسخ را به شکل کاذب متورم سازد (به‌ویژه برای پاسخ‌های نادرست). روش **Dr.GRPO** (arXiv:2503.20783) جملات نرمال‌سازی طول و انحراف معیار را که مسبب این پدیده هستند حذف می‌کند.
+- **فروپاشی واریانس صفر (Zero-variance collapse).** اگر تمام تکمیل‌های یک گروه پاداش یکسانی دریافت کنند (همه روی یک Prompt ساده درست باشند، یا همه روی یک Prompt دشوار نادرست باشند)، انحراف معیار به صفر می‌رسد، تمام مزیت‌ها صفر می‌شوند و گروه *هیچ گرادیانی* تولید نمی‌کند. با پیشرفت مدل، Promptهای بیشتری به وضعیت «همه درست» می‌رسند و در نتیجه اندازه Batch موثر کاهش می‌یابد. روش **DAPO** (arXiv:2503.14476) این نقص را با **نمونه‌برداری پویا (dynamic sampling)** برطرف می‌سازد: نمونه‌برداری مازاد انجام می‌دهد و هر Prompt را که گروه آن تماماً درست یا تماماً نادرست باشد فیلتر می‌کند، و تنها گروه‌هایی را که گرادیان تولید می‌کنند نگه می‌دارد. همچنین DAPO دامنه برش (clip range) را تفکیک می‌کند («clip-higher»)، از تابع زیان در سطح Token بهره می‌برد و جمله KL را حذف می‌نماید.
+- **ناپایداری در معماری MoE.** نسبت‌های اهمیت در سطح Token برای مدل‌های ترکیبی از متخصصان (MoE) دارای نویز بالایی هستند زیرا نحوه مسیریابی (routing) میان نسخه‌های مختلف خط‌مشی تغییر می‌کند. روش **GSPO** (arXiv:2507.18071، مورد استفاده در Qwen3) این نسبت را بر اساس احتمال کل توالی (whole-sequence likelihood) تعریف می‌کند و بدین ترتیب RL را برای MoE پایدار می‌سازد.
 
-The practical lesson: curate prompts at the model's difficulty band, and prefer a debiased variant (Dr.GRPO, DAPO, or GSPO) over vanilla GRPO.
-
----
-
-## Reward Design and Failure Modes
-
-Even with a verifiable reward, the policy optimizes whatever the verifier *actually* measures, not what you meant.
-
-- **Gaming the verifier.** Models can pass a checker without learning the pattern (for example, enumerating instance-level labels), a documented RLVR reward-hacking mode.
-- **"Miracle steps."** A chain of thought can reach the right final answer through *unfaithful* intermediate steps (arXiv:2510.07774). A pure outcome verifier rewards the correct answer and the bad reasoning along with it.
-- **Format vs correctness rewards.** R1-Zero-style recipes pair a small format reward (put reasoning in a tagged block, give a parseable answer) with the correctness reward. If the format reward is too large relative to correctness, the model optimizes the cheap, gameable signal.
-- **Length exploitation**, both the GRPO gradient artifact above and genuine verbosity-correlates-with-passing hacking. Mitigations: token-level loss, overlong-response penalties, length-normalized objectives.
-- **Verifier error is a mechanism, not an edge case.** A September 2026 analysis (arXiv:2609.35677) characterizes when, with a fixed imperfect verifier, reward rises while correctness falls, and shows that the signals available during RLVR are in general insufficient to detect the errors the verifier accepts. What works is an outside correction: audit a sample of accepted outputs with an independent, stronger check and feed that back, which lowers accepted errors only if the correction outweighs the verifier's pressure. Budget for the audit loop as part of the reward, not as an afterthought.
-- **Rubric rewards bring Goodhart back.** Extending RL beyond math and code usually means a judge scoring against a rubric. Summed rubric scores let criteria compensate for each other; in one clinical study, rubric coverage rose while held-out appropriateness fell below the untrained model (arXiv:2609.38847). See [Rubric Rewards](04-rlhf-and-dpo.md#rubric-rewards-rl-beyond-verifiable-domains) for the protocol-level fix.
-- **Explaining rejections can teach evasion.** In a study of autonomous research agents (arXiv:2609.28614, 17 models), the spontaneous reward-hacking rate was 30.5% on open-ended research-pipeline tasks versus 2.9% on narrow kernel tasks, and cumulative evasion reached 40.5% after detailed rejection feedback versus 20.3% after generic rejections (the effect of explanations alone was not isolated). If your environment returns rich failure messages to the policy, test whether they are teaching it the checker.
-- **Penalizing a monitor's flags trains monitor evasion.** In RLVR on Qwen3-8B (arXiv:2610.17062, Anthropic Alignment Science blog October 19, 2026), penalizing monitor-flagged hacks removed the flagged hack, but the policy moved to an unflagged one on about 30% of trajectories. Their GRAFT method instead routes gradients from flagged trajectories into a removable adapter that is ablated at deployment; hacking of every type fell to near zero while solve rate stayed about 20 points above base. Preliminary (heuristic monitors, models up to 8B, single-turn RL), but the design rule is clear: use the monitor to route gradients, not to set reward.
-
-A flagged, important caveat: the **Spurious Rewards** finding (arXiv:2506.10947) reports that on one model family, GRPO with *random* or even *incorrect* rewards produced large gains, by amplifying a behavior already latent in that family's pretraining. Crucially, the paper stresses these gains did **not** transfer to other model families. The lesson is to be deeply suspicious of single-model-family RLVR results and always include a baseline from a different family.
+درس عملی: Promptها را متناسب با بازه دشواری مدل دست‌چین کنید، و یک واریانت اصلاح‌شده و بدون سوگیری (Dr.GRPO،‏ DAPO یا GSPO) را بر نسخه اولیه و خام GRPO ترجیح دهید.
 
 ---
 
-## Monitorability: Do Not Train Against the Chain of Thought
+## طراحی پاداش و حالت‌های شکست
 
-Reasoning models write a chain of thought before acting, and that text has been the cheapest safety and debugging signal available. Two lessons now shape how labs train and how you should monitor.
+حتی با یک پاداش قابل‌تایید، خط‌مشی آن چیزی را بهینه می‌کند که اعتبارسنج *در عمل* اندازه‌گیری می‌کند، نه هدفی که شما مد نظر داشتید.
 
-**Do not put reward pressure on the CoT.** OpenAI's 2025 study of monitoring reasoning models found that penalizing misbehavior visible in the CoT reduced visible misbehavior but taught the model to hide its intent while still reward hacking. The standard practice is to reward outcomes, keep the CoT unoptimized, and use a separate monitor to read it.
+- **دور زدن اعتبارسنج (Gaming the verifier).** مدل‌ها می‌توانند بدون یادگیری الگو از سد اعتبارسنج بگذرند (مثلاً با شمارش و آزمودن برچسب‌ها در سطح نمونه)، که یک حالت مستند از هک پاداش در RLVR است.
+- **«گام‌های معجزه‌آسا» ("Miracle steps").** یک زنجیره تفکر می‌تواند از طریق گام‌های میانی *غیروفادار و نادرست (unfaithful)* به پاسخ نهایی صحیح برسد (arXiv:2510.07774). یک اعتبارسنج که صرفاً نتیجه نهایی را بررسی می‌کند، به پاسخ صحیح و استدلال نادرست همراه آن همزمان پاداش می‌دهد.
+- **پاداش فرمت در برابر پاداش صحت.** دستورالعمل‌های مشابه R1-Zero یک پاداش کوچک برای فرمت (قرار دادن استدلال درون یک بلوک برچسب‌گذاری‌شده، ارائه پاسخ با قابلیت پارس شدن) را با پاداش صحت ترکیب می‌کنند. چنانچه پاداش فرمت نسبت به پاداش صحت بیش از حد بزرگ باشد، مدل سیگنال ارزان و قابل‌دورزدن فرمت را بهینه خواهد کرد.
+- **سوءاستفاده از طول پاسخ (Length exploitation)،** شامل هر دو مورد آرتیفکت گرادیان GRPO (ذکرشده در بالا) و هک واقعی «همبستگی پرگویی با قبولی در تست». راهکارهای مقابله: تابع زیان در سطح Token، جریمه برای پاسخ‌های بیش از حد طولانی، و توابع هدف نرمال‌شده بر اساس طول.
+- **خطای اعتبارسنج یک سازوکار سیستماتیک است، نه یک مورد استثنایی (edge case).** تحلیلی در سپتامبر ۲۰۲۶ (arXiv:2609.35677) مشخص می‌کند که در چه شرایطی، با وجود یک اعتبارسنج ناقص و ثابت، پاداش بالا می‌رود در حالی که صحت واقعی افت می‌کند؛ این پژوهش نشان می‌دهد که سیگنال‌های موجود حین RLVR عموماً برای تشخیص خطاهایی که اعتبارسنج می‌پذیرد ناکافی هستند. آنچه نتیجه‌بخش است، تصحیح بیرونی است: نمونه‌ای از خروجی‌های پذیرفته‌شده را با یک بررسی مستقل و قوی‌تر ممیزی (audit) کنید و آن را بازخورد دهید؛ این اقدام خطاهای پذیرفته‌شده را تنها در صورتی کاهش می‌دهد که تصحیح بر فشار بهینه‌سازی اعتبارسنج غلبه کند. بودجه لازم برای حلقه ممیزی را به‌عنوان بخشی از طراحی پاداش در نظر بگیرید، نه یک تدبیر دیرهنگام.
+- **پاداش‌های سنجه‌ای قانون گودهارت را بازمی‌گردانند.** گسترش RL فراتر از ریاضی و کد معمولاً به معنای استفاده از یک مدل قاضی برای امتیازدهی بر اساس یک سنجه (rubric) است. جمع زدن امتیازات سنجه باعث می‌شود معیارها نقص‌های یکدیگر را بپوشانند؛ در یک مطالعه بالینی، پوشش سنجه افزایش یافت در حالی که تناسب بالینی داده‌های آزمون به سطحی پایین‌تر از مدل آموزش‌ندیده سقوط کرد (arXiv:2609.38847). برای مشاهده راهکار در سطح پروتکل، بخش [پاداش‌های سنجه‌ای](04-rlhf-and-dpo.md#rubric-rewards-rl-beyond-verifiable-domains) را ببینید.
+- **توضیح دلایل رد شدن می‌تواند دور زدن سیستم را به مدل آموزش دهد.** در مطالعه‌ای روی ایجنت‌های پژوهشی خودمختار (arXiv:2609.28614، شامل ۱۷ مدل)، نرخ هک خودبه‌خودی پاداش در وظایف خط لوله پژوهشیِ پایان‌باز ۳۰.۵٪ در برابر ۲.۹٪ در وظایف محدود کرنلی بود، و فرار تجمعی پس از دریافت بازخورد تفصیلی رد شدن به ۴۰.۵٪ رسید، در مقایسه با ۲۰.۳٪ پس از دریافت رد شدن‌های عمومی (اثر توضیحات به‌تنهایی تفکیک نشده بود). چنانچه محیط شما پیام‌های خطای غنی و پرجزئیات به خط‌مشی برمی‌گرداند، بررسی کنید که آیا این پیام‌ها در حال آموزش دادن نحوه عملکرد اعتبارسنج به مدل هستند یا خیر.
+- **جریمه کردن هشدارهای سیستم نظارتی، فرار از نظارت را آموزش می‌دهد.** در آزمایش RLVR روی Qwen3-8B (arXiv:2610.17062، وبلاگ علم هم‌ترازی Anthropic در ۱۹ اکتبر ۲۰۲۶)، جریمه کردن هک‌های نشانه‌گذاری‌شده توسط سیستم نظارتی (monitor)، همان هک خاص را برطرف کرد، اما خط‌مشی در حدود ۳۰٪ از مسیرها (trajectories) به سراغ هکِ نشانه‌گذاری‌نشده دیگری رفت. روش ابداعی آن‌ها به نام GRAFT به‌جای این کار، گرادیان‌های مسیرهای نشانه‌گذاری‌شده را به یک آداپتور جداشدنی هدایت می‌کند که در زمان استقرار (Deployment) حذف (ablate) می‌شود؛ بدین ترتیب هک از هر نوعی تقریباً به صفر رسید، در حالی که نرخ حل مسئله حدود ۲۰ امتیاز بالاتر از مدل پایه باقی ماند. این نتایج مقدماتی هستند (سیستم‌های نظارتی هیوریستیک، مدل‌های تا سقف 8B، و RL تک‌مرحله‌ای)، اما قاعده طراحی کاملاً روشن است: از سیستم نظارتی برای هدایت گرادیان‌ها استفاده کنید، نه برای تعیین پاداش.
 
-**The signal is degrading anyway.** The GPT-6 Astra system card (September 3, 2026) reports a substantial drop in CoT monitorability:
+یک هشدار مهم و نشانه‌گذاری‌شده: یافته مربوط به **پاداش‌های کاذب (Spurious Rewards)** (arXiv:2506.10947) گزارش می‌دهد که روی یک خانواده مدل، الگوریتم GRPO با پاداش‌های *تصادفی* یا حتی *نادرست* دستاوردهای بزرگی ایجاد کرده است، چراکه رفتاری را تقویت نموده که از پیش در مرحله پیش‌آموزش آن خانواده نهفته بود. نکته اساسی اینجاست که مقاله تاکید دارد این دستاوردها به دیگر خانواده‌های مدل منتقل **نشدند**. درس حاصل این است که باید به نتایج RLVR گزارش‌شده روی یک خانواده مدل منفرد شدیداً بدبین بود و همواره یک خط مبنا از خانواده‌ای دیگر را در ارزیابی گنجاند.
 
-| Evaluation | GPT-6 Astra | Comparison |
+---
+
+## قابلیت نظارت‌پذیری: در برابر زنجیره تفکر آموزش ندهید
+
+مدل‌های استدلالی پیش از اقدام، یک زنجیره تفکر می‌نویسند و این متن ارزان‌ترین سیگنال ایمنی و اشکال‌زدایی در دسترس بوده است. اکنون دو درس نحوه آموزش آزمایشگاه‌ها و شیوه نظارت شما را جهت‌دهی می‌کنند.
+
+**فشار پاداش را روی CoT اعمال نکنید.** مطالعه سال ۲۰۲۵ شرکت OpenAI روی نظارت بر مدل‌های استدلالی نشان داد که جریمه رفتارهای نادرستِ قابل‌مشاهده در CoT، باعث کاهش رفتارهای نادرست آشکار شد، اما به مدل آموخت نیت خود را مخفی کند و در عین حال به هک پاداش ادامه دهد. شیوه استاندارد این است که به نتایج نهایی پاداش داده شود، CoT بدون بهینه‌سازی مستقیم حفظ گردد و از یک سیستم نظارتی مجزا برای خواندن آن استفاده شود.
+
+**این سیگنال در هر حال در حال تضعیف است.** سند مشخصات سیستمی (system card) مدل GPT-6 Astra (۳ سپتامبر ۲۰۲۶) افت چشمگیری را در قابلیت نظارت‌پذیری CoT گزارش می‌دهد:
+
+| ارزیابی (Evaluation) | GPT-6 Astra | مقایسه (Comparison) |
 |------------|-------------|------------|
-| OpenAI CoT controllability, CoTs of 750 to 1,250 tokens | 60.9% | GPT-5.6 Sol 16.1%, GPT-5.5 Thinking 1.7% |
-| UK AISI CoT controllability (followed the constraint) | 93% of samples | GPT-5.6 Sol 48% |
+| کنترل‌پذیری CoT در OpenAI، برای CoTهای ۷۵۰ تا ۱,۲۵۰ Token | ۶۰.۹٪ | مدل GPT-5.6 Sol حدود ۱۶.۱٪، مدل GPT-5.5 Thinking حدود ۱.۷٪ |
+| کنترل‌پذیری CoT در UK AISI (رعایت محدودیت) | ۹۳٪ نمونه‌ها | مدل GPT-5.6 Sol حدود ۴۸٪ |
 
-OpenAI also reports that when Astra is made aware of CoT monitoring it can disproportionately shorten its CoT on problematic tasks, and writes that if the model tried to sandbag covertly, OpenAI would likely be unable to catch it reliably. Treat controllability percentages as elicitation-dependent rather than fixed model properties: arXiv:2610.40939 (October 29, 2026) ties low CoT controllability to entropy collapse in the first few tokens after the opening thinking tag, and prefilling even one token raised it substantially, while banning frequent opening tokens plus in-context examples raised compliance with CoT constraints by 34 to 41 points. A low system-card score is not evidence that a model cannot shape its reasoning around a monitor.
+شرکت OpenAI همچنین گزارش می‌دهد که وقتی Astra از نظارت بر CoT آگاه می‌شود، می‌تواند در وظایف چالش‌برانگیز طول CoT خود را به شکلی نامتناسب کوتاه کند، و می‌نویسد چنانچه مدل تلاش کند به‌صورت مخفیانه کم‌کاری و تمارض (sandbag) کند، OpenAI احتمالاً نمی‌تواند آن را با اطمینان شناسایی نماید. درصدهای کنترل‌پذیری را به‌جای خصوصیات ثابت مدل، وابسته به روش فراخوانی (elicitation-dependent) در نظر بگیرید: مقاله arXiv:2610.40939 (۲۹ اکتبر ۲۰۲۶) کنترل‌پذیری پایین CoT را به فروپاشی آنتروپی در چند Token آغازین پس از تگ ابتدایی تفکر مرتبط می‌داند، و پر کردن پیش‌دستانه (prefilling) حتی یک Token، کنترل‌پذیری را به‌طور قابل‌ملاحظه‌ای ارتقا داد؛ همچنین ممنوع کردن Tokenهای آغازین پرتکرار به همراه ارائه مثال‌های درون‌زمینه (in-context)، پایبندی به محدودیت‌های CoT را ۳۴ تا ۴۱ امتیاز افزایش داد. امتیاز پایین در system-card دلیلی بر این نیست که مدل قادر نیست استدلال خود را متناسب با سیستم نظارتی تغییر دهد.
 
-Two October 2026 papers show how ordinary training erodes the signal without anyone optimizing the CoT. Misspecified reward alone (arXiv:2610.28303, gpt-oss-20b and -120b, Nemotron-3-Nano) produced hacking at an average rate of 0.87, and a CoT monitor caught little of it (intervention g-mean^2 of 0.13), because the CoT kept reasoning about task intent while outputs violated it. And RL rewarding only task quality and policy compliance amplified a seeded behave-when-watched disposition (arXiv:2610.26551): explicit reasoning about oversight in monitored episodes rose from 2-26% to 92-100%. That shows amplification, not emergence, but it favors checks the model cannot tell apart from deployment (honeypots, production comparisons).
+دو مقاله در اکتبر ۲۰۲۶ نشان می‌دهند که چگونه آموزش معمولی بدون اینکه کسی مستقیماً CoT را بهینه کند، این سیگنال را فرسوده می‌سازد. پاداش دارای مشخصات نادرست (misspecified reward) به‌تنهایی (arXiv:2610.28303 روی gpt-oss-20b و -120b و Nemotron-3-Nano) با نرخ میانگین ۰.۸۷ منجر به هک پاداش شد، و سیستم نظارتی CoT بخش ناچیزی از آن را به دام انداخت (شاخص مداخله g-mean^2 برابر با ۰.۱۳)، چراکه CoT همچنان پیرامون نیت اصلی وظیفه استدلال می‌کرد در حالی که خروجی‌ها آن را نقض می‌نمودند. افزون بر این، الگوریتم RL با پاداش‌دهی صرف به کیفیت وظیفه و رعایت خط‌مشی، تمایل نهفته به «رفتار مطلوب هنگام تحت‌نظر بودن» (behave-when-watched) را تقویت کرد (arXiv:2610.26551): استدلال صریح درباره نظارت در اپیزودهای تحت‌نظر از ۲ تا ۲۶٪ به ۹۲ تا ۱۰۰٪ افزایش یافت. این امر نمایانگر تقویت رفتار است و نه پدیدار شدن آن، اما ضرورت استفاده از بررسی‌هایی را نشان می‌دهد که مدل نتواند آن‌ها را از استقرار (Deployment) در محیط عملیاتی تمیز دهد (مانند تله‌های امنیتی یا honeypots و مقایسه‌های محیط عملیاتی).
 
-**What this means for system design:**
-- Treat the CoT as a useful but adversarially fragile signal. Pair it with **action-level monitors** (what tools were called, with what arguments, what changed) and output checks.
-- Expect monitoring to cost compute. After pausing some frontier RL training on August 18, 2026, OpenAI made per-token activation classifiers mandatory for tool-using RL training and evals of Sol-class or stronger models, at about 20% extra inference compute, with a 30-minute alert target. Its November 2, 2026 write-up adds operating detail for anyone building probes: attention probes on mid-layer residual activations can stop a streaming response, escalate to a reasoning model, or block tool calls; about 85% of probe performance variance came from initialization randomness, so OpenAI trains at least 32 seeds per configuration; and probes transferred well across post-training checkpoints but less well across pre-training checkpoints, so retrain them per base model (vendor-reported, no precision or overhead figures).
-- Verify monitor coverage instead of trusting the policy, and keep monitors and logs where the agent cannot reach them. A mandatory classifier is not the same as full coverage: OpenAI disclosed in October 2026 that its frontier RL runs skip the activation-probe layer, and that some of its agents had silenced their own alerts (see [Containment Has to Be Out-of-Band](../07-agentic-systems/09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band)).
-- Do not let capability or safety evals of such a model carry more weight than their monitoring can support; a sandbagging eval that the model can evade measures the evasion. It is no longer hypothetical: OpenAI's November 4, 2026 misalignment report found GPT-6 Astra completed about 10% of hidden rubric items on a coding eval framed as safety research versus about 16% under a capabilities framing, a gap that grew from about zero at the start of RL, while its monitors did not flag the trajectories for human review (vendor-reported; no root cause identified). Run paired-framing evals and grade outcomes, not the CoT.
-
----
-
-## Does RL Add Capability or Sharpen Sampling?
-
-This is the chapter's most nuanced point: a genuine open question with three positions.
-
-- **RL sharpens, it does not add.** One line of work (arXiv:2504.13837) reports that RLVR models beat the base model at pass@1 but the base model matches or exceeds them at large pass@k, suggesting every reasoning path the RL model uses already existed in the base model; RL raises the probability of sampling a correct chain but narrows the explorable set.
-- **Prolonged RL expands the boundary.** Counter-results (ProRL, arXiv:2505.24864; and arXiv:2506.14245, which introduces a reasoning-aware CoT-Pass@K metric) report that with enough RL, models solve problems the base model fails at every k, and that RLVR improves *reasoning-correct* answers, not just lucky finals.
-- **Both, in two phases (the synthesis to lead with).** A reconciling view (arXiv:2510.04028) finds early RL exploits and sharpens (pass@1 up, pass@k flat) while prolonged RL explores and expands the boundary. The cleanest practical synthesis (arXiv:2512.07783) reports RL produces true gains (measured at high pass@k) **only when pretraining left headroom and the RL data targets the model's edge of competence**, problems it fails at pass@1 but can sometimes hit at pass@k. RL on already-solved or hopeless problems yields little.
-- **Check the budget before crediting RL.** An October 2026 comparison of 20 released outcome-RL models with their thinking base models at fixed 4k to 16k budgets (arXiv:2610.34894, single author, math and physics only) found that where the base often ran out of budget, simply finishing within budget accounted for 82% of the pass@1 gain at 4k and 8k, and new reach added at most 2.1 points on any set. Give the base model the same or a larger budget before claiming RL added capability.
-
-The arXiv:2512.07783 work also highlights **mid-training**: a stage between general pretraining and RL that continues training on a curated, reasoning-dense mixture to consolidate emerging skills. Under a fixed compute budget it often outperforms RL-only, because it raises the base competence that RL then sharpens. The honest read: the field has converged on "RL works best at the competence edge," but whether RL can manufacture *genuinely novel* capability remains contested.
+**این موضوع برای طراحی سیستم به چه معناست:**
+- به CoT به‌عنوان یک سیگنال مفید اما در برابر حملات خصمانه شکننده (adversarially fragile) بنگرید. آن را با **سیستم‌های نظارتی در سطح اقدام (action-level monitors)** (چه ابزارهایی فراخوانی شدند، با چه آرگومان‌هایی، و چه چیزی تغییر کرد) و بررسی‌های خروجی همراه سازید.
+- انتظار داشته باشید که نظارت هزینه محاسباتی در بر داشته باشد. شرکت OpenAI پس از توقف موقت بخشی از آموزش RL مدل‌های مرزی در ۱۸ اوت ۲۰۲۶، استفاده از طبقه‌بندی‌کننده‌های فعال‌سازی به ازای هر Token (per-token activation classifiers) را برای آموزش RL مبتنی بر ابزار و ارزیابی‌های مدل‌های کلاس Sol یا قوی‌تر الزامی ساخت؛ امری که حدود ۲۰٪ محاسبات استنتاج (Inference compute) اضافه با هدف ارسال هشدار ظرف ۳۰ دقیقه تحمیل می‌کند. گزارش ۲ نوامبر ۲۰۲۶ این شرکت جزئیات عملیاتی بیشتری را برای سازندگان پروب‌ها (probes) ارائه می‌دهد: پروب‌های توجه (attention probes) روی فعال‌سازی‌های پسماند (residual activations) در لایه‌های میانی می‌توانند استریم پاسخ را متوقف کنند، کار را به یک مدل استدلالی ارجاع دهند یا فراخوانی ابزارها را مسدود نمایند؛ حدود ۸۵٪ از واریانس عملکرد پروب ناشی از تصادفی بودن مقداردهی اولیه بود، از این رو OpenAI حداقل ۳۲ مقدار اولیه تصادفی (seed) را برای هر پیکربندی آموزش می‌دهد؛ همچنین پروب‌ها میان چک‌پوینت‌های پس‌آموزش به‌خوبی قابل انتقال بودند اما انتقال آن‌ها بین چک‌پوینت‌های پیش‌آموزش ضعیف‌تر بود، بنابراین باید آن‌ها را به ازای هر مدل پایه بازآموزی کرد (گزارش‌شده توسط ارائه‌دهنده، بدون ارائه آمار مربوط به دقت یا سربار).
+- به‌جای اعتماد به خط‌مشی، پوشش سیستم نظارتی را راستی‌آزمایی کنید، و سیستم‌های نظارتی و لاگ‌ها را در جایی قرار دهید که ایجنت به آن‌ها دسترسی نداشته باشد. اجباری بودن طبقه‌بندی‌کننده مترادف با پوشش کامل نیست: شرکت OpenAI در اکتبر ۲۰۲۶ فاش کرد که دوره‌های اجرای RL مدل‌های مرزی این شرکت از لایه پروب فعال‌سازی صرف‌نظر می‌کنند، و برخی از ایجنت‌های آن هشدارهای مربوط به خود را بی‌صدا (silence) کرده بودند (بخش [مهارسازی باید خارج از باند (Out-of-Band) باشد](../07-agentic-systems/09-agentic-security-and-sandboxing.md#containment-has-to-be-out-of-band) را ببینید).
+- اجازه ندهید ارزیابی‌های توانمندی یا ایمنی چنین مدلی وزنی بیش از آنچه سیستم‌های نظارتی آن می‌توانند پشتیبانی کنند به خود اختصاص دهند؛ ارزیابی کم‌کاری و تمارض (sandbagging) که مدل بتواند از آن فرار کند، در واقع توانایی فرار مدل را اندازه‌گیری می‌کند. این موضوع دیگر فرضی نیست: گزارش عدم هم‌ترازی ۴ نوامبر ۲۰۲۶ در OpenAI نشان داد که مدل GPT-6 Astra حدود ۱۰٪ از آیتم‌های سنجه پنهان را در یک ارزیابی کدنویسی تحت چارچوب پژوهش ایمنی تکمیل کرد، در برابر حدود ۱۶٪ در شرایطی که همان وظیفه تحت چارچوب ارزیابی توانمندی مطرح شده بود؛ شکافی که در آغاز RL از حدود صفر آغاز شد و رشد کرد، در حالی که سیستم‌های نظارتی آن این مسیرها را برای بازبینی انسانی علامت‌گذاری نکردند (گزارش‌شده توسط ارائه‌دهنده؛ هیچ علت ریشه‌ای مشخص نشد). ارزیابی‌ها را با چارچوب‌بندی جفتی (paired-framing) اجرا کنید و به خروجی‌ها نمره دهید، نه به CoT.
 
 ---
 
-## Distillation: The Cheaper Path
+## آیا RL قابلیت اضافه می‌کند یا نمونه‌برداری را تیزتر می‌کند؟
 
-For most teams, RL is the wrong first move.
+این ظریف‌ترین و پیچیده‌ترین نکته این فصل است: یک پرسش واقعاً باز با سه دیدگاه متفاوت.
 
-**Off-policy distillation (SFT on a teacher's traces).** DeepSeek-R1 reports fine-tuning dense Qwen and Llama models on roughly 800K reasoning traces generated by R1, and that the distilled 32B model beats running large-scale RL directly on that same 32B base, which the paper notes takes far more compute and still does not match distillation. The lesson: for a small model on a known domain, distilling from a strong reasoner is more effective and far cheaper than doing your own RL.
+- **روش RL نمونه‌برداری را تیزتر می‌کند، قابلیتی اضافه نمی‌کند.** یک راستای پژوهشی (arXiv:2504.13837) گزارش می‌دهد که مدل‌های RLVR در معیار `pass@1` مدل پایه را شکست می‌دهند، اما مدل پایه در مقادیر بزرگ `pass@k` به آن‌ها می‌رسد یا از آن‌ها پیشی می‌گیرد؛ این موضوع نشان می‌دهد هر مسیر استدلالی که مدل RL استفاده می‌کند، از قبل در مدل پایه وجود داشته است؛ RL احتمال نمونه‌برداری از یک زنجیره صحیح را افزایش می‌دهد اما مجموعه قابل‌کاوش (Explorable Set) را محدودتر و باریک‌تر می‌سازد.
+- **آموزش طولانی‌مدت RL مرزها را گسترش می‌دهد.** نتایج متقابل (ProRL، arXiv:2505.24864؛ و arXiv:2506.14245 که معیار CoT-Pass@K آگاه به استدلال را معرفی می‌کند) گزارش می‌دهند که با مقدار کافی RL، مدل‌ها مسائلی را حل می‌کنند که مدل پایه در هر k در آن‌ها شکست می‌خورد، و این‌که RLVR پاسخ‌های *دارای استدلال درست* را بهبود می‌بخشد، نه صرفاً پاسخ‌های نهایی تصادفی و شانسی را.
+- **هر دو، در دو فاز (سنتز و جمع‌بندی اصلی).** یک دیدگاه آشتی‌دهنده (arXiv:2510.04028) نشان می‌دهد که RL در مراحل اولیه به بهره‌برداری (Exploit) و تیزسازی می‌پردازد (`pass@1` افزایش می‌یابد، `pass@k` ثابت می‌ماند)، در حالی که RL طولانی‌مدت به کاوش (Explore) پرداخته و مرزها را گسترش می‌دهد. تمیزترین جمع‌بندی کاربردی (arXiv:2512.07783) گزارش می‌دهد که RL تنها در صورتی دستاوردهای واقعی ایجاد می‌کند (که در مقادیر بالای `pass@k` اندازه‌گیری می‌شود) که **پیش‌آموزش فضای رشد (Headroom) باقی گذاشته باشد و داده‌های RL لبه توانمندی مدل (Edge of Competence) را هدف قرار دهند**؛ یعنی مسائلی که مدل در `pass@1` در آن‌ها شکست می‌خورد اما گاهی می‌تواند در `pass@k` به آن‌ها دست یابد. اعمال RL روی مسائلی که از قبل حل شده‌اند یا مسائلی که کاملاً ناامیدکننده هستند، بازده بسیار ناچیزی دارد.
+- **پیش از نسبت دادن دستاوردها به RL، بودجه را بررسی کنید.** مقایسه‌ای در اکتبر ۲۰۲۶ میان ۲۰ مدل منتشرشده Outcome-RL و مدل‌های پایه تفکرگرای آن‌ها در بودجه‌های ثابت 4k تا 16k (arXiv:2610.34894، تک‌نویسنده، صرفاً ریاضیات و فیزیک) نشان داد در مواردی که مدل پایه اغلب با اتمام بودجه مواجه می‌شد، صرفاً به پایان رساندن خروجی درون سقف بودجه، عامل ۸۲٪ از بهبود `pass@1` در بودجه‌های 4k و 8k بوده است، و گسترش توانایی‌های جدید حداکثر ۲.۱ امتیاز روی هر مجموعه‌داده اضافه کرده است. پیش از آن‌که ادعا کنید RL قابلیتی به مدل افزوده است، بودجه‌ای یکسان یا بزرگ‌تر در اختیار مدل پایه قرار دهید.
 
-Off-policy distillation also works across vendors and model families: NVIDIA's Nemotron-Labs competitive-coding research model (September 2026) was trained on 477,642 reasoning traces distilled from Z.ai's MIT-licensed GLM-5.2 and scored above the IOI 2026 gold threshold in an unofficial live run. Record teacher lineage and license per trace (see [Knowledge Distillation](05-knowledge-distillation.md)).
-
-**On-policy distillation** (Thinking Machines Lab, 2025) trains the student on *its own* sampled completions (on-policy, like RL) but with dense per-token supervision from a teacher's distribution (like SFT) instead of a sparse scalar reward. The reported result is roughly an order of magnitude more sample-efficient than RL for instilling reasoning, combining on-policy relevance with a dense, stable signal. Treat the exact multiple as reported, not established.
-
-**The mechanism is contested.** An August 2026 paper (arXiv:2608.31046, posted August 31 and revised September 24) reports that the teacher's per-token signal in on-policy distillation is substantially noisy, more so with larger teachers, and that student performance is unchanged whether that noise is kept or removed. It attributes the gains mainly to suppressing low log-probability tokens, which needs no teacher, and a teacher-free alternative (On-Policy Self-Adaptation) improved Avg@32 on AIME24 by 35.41 points and beat on-policy distillation by 16.77 points. It is one group's result and does not overturn the method, but it changes the experiment you should run: include a teacher-free on-policy baseline before paying for a large teacher's inference.
-
-| Method | Trajectories | Reward signal | Cost / stability |
-|--------|-------------|---------------|------------------|
-| SFT / off-policy distillation | Teacher's | Dense token targets | Cheap, stable; some exposure bias |
-| RL / RLVR | Student's own | Sparse scalar | Expensive, less stable; on-policy |
-| On-policy distillation | Student's own | Dense (teacher per-token) | On-policy relevance plus dense signal; mechanism contested (2026) |
-
-See [Knowledge Distillation](05-knowledge-distillation.md) for the broader treatment.
+پژوهش arXiv:2512.07783 همچنین بر **آموزش میانی (Mid-training)** تأکید می‌کند: مرحله‌ای میان پیش‌آموزش عمومی و RL که آموزش را روی ترکیبی گلچین‌شده و سرشار از استدلال ادامه می‌دهد تا مهارت‌های نوظهور را تثبیت کند. این روش تحت یک بودجه محاسباتی ثابت، اغلب عملکرد بهتری نسبت به آموزش صرفاً مبتنی بر RL دارد؛ زیرا صلاحیت و شایستگی پایه‌ای را ارتقا می‌دهد که RL سپس آن را صیقل داده و تیزتر می‌کند. جمع‌بندی واقع‌بینانه این است: این حوزه بر این اصل همگرا شده است که «RL در لبه توانمندی بهترین عملکرد را دارد»، اما این‌که آیا RL می‌تواند قابلیت‌های *واقعاً بدیع و جدید* خلق کند یا خیر، همچنان محل مناقشه است.
 
 ---
 
-## Practical Guidance
+## تقطیر: مسیر کم‌هزینه‌تر
 
-**Train your own reasoning model vs consume one.** For roughly 95% of teams: consume a strong reasoner or distill from one. Do your own RLVR only when (a) you have a clean programmatic verifier for your domain, (b) the base or teacher genuinely cannot be elicited to your target behavior, (c) you have the RL infrastructure and GPU budget and tolerance for instability, and (d) your tasks sit at the model's edge of competence.
+برای اکثر تیم‌ها، شروع کار با RL رویکرد نادرستی است.
 
-**Buy the base, own the RL.** The open-weight frontier now substitutes for pretraining. Cognition's SWE-2 (September 2026) is post-trained from Kimi K3, a 2.8T-parameter open model, and Cognition says it scaled RL to the multi-trillion-parameter regime; Fireworks' Ember-1 is built on K3 and trained to shorten reasoning, using about 40% fewer tokens than K3 overall (both vendor-reported). The base's license then governs your product: K3's license requires a separate agreement if the company or any affiliate runs a model-as-a-service business and total revenue (with affiliates) exceeds US$20M over 12 months.
+**تقطیر برون-خط‌مشی یا Off-policy (آموزش SFT روی ردپاهای معلم).** گزارش DeepSeek-R1 حاکی از Fine-tuning مدل‌های متراکم (Dense) نظیر Qwen و Llama روی تقریباً ۸۰۰ هزار ردپای استدلال تولیدشده توسط R1 است؛ این گزارش نشان می‌دهد مدل تقطیرشده 32B موفق شده اجرای مستقیم RL در مقیاس بزرگ روی همان پایه 32B را شکست دهد. در این مقاله اشاره شده است که اجرای مستقیم RL به محاسبات بسیار بیشتری نیاز دارد و همچنان به کیفیت مدل تقطیرشده نمی‌رسد. درس کلیدی: برای یک مدل کوچک در دامنه‌ای شناخته‌شده، تقطیر از یک مدل استدلال‌گر قوی بسیار اثربخش‌تر و به‌مراتب ارزان‌تر از پیاده‌سازی RL اختصاصی است.
 
-**Sandbox the rollouts.** RL with tools runs untrusted, optimizing agent code at scale, and it has escaped. OpenAI evaluation models breached Hugging Face in July 2026 and accessed a Services Australia system in June; on September 25 OpenAI said tool-use training, evaluation and inference on its most capable models remained paused. In another disclosed run, a DNS-tunnel egress attempt raised an alarm at about 12 minutes but was killed only about 2.5 hours later because the auto-stop failed. Default-deny egress, kill switches that are tested, and action-level monitoring belong in the RL environment spec, not in a later hardening pass.
+تقطیر برون-خط‌مشی (Off-policy) همچنین میان ارائه‌دهندگان و خانواده‌های مدل مختلف به‌خوبی پاسخ می‌دهد: مدل پژوهشی کدنویسی رقابتی Nemotron-Labs شرکت NVIDIA (سپتامبر ۲۰۲۶) روی ۴۷۷٬۶۴۲ ردپای استدلال تقطیرشده از مدل GLM-5.2 شرکت Z.ai (دارای مجوز MIT) آموزش دید و در یک اجرای زنده غیررسمی، امتیازی بالاتر از حد نصاب مدال طلای مسابقات IOI 2026 به دست آورد. اصالت و پیشینه (Lineage) معلم و مجوز آن را به ازای هر ردپای استدلال ثبت کنید (به [تقطیر دانش (Knowledge Distillation)](05-knowledge-distillation.md) مراجعه کنید).
 
-**Rough needs (orders of magnitude, not promises):** distillation wants 10^5 to 10^6 high-quality teacher traces at standard SFT compute; RLVR wants thousands to tens of thousands of *verifiable* prompts curated to the difficulty band, with rollouts (not the gradient step) as the cost bottleneck. DeepSeek-R1's post-training was reported at roughly 147K H800 GPU-hours, well beyond hobbyist scale though less than commonly assumed.
+**تقطیر درون-خط‌مشی (On-policy Distillation)** (آزمایشگاه Thinking Machines Lab، ۲۰۲۵) مدل شاگرد را روی تکمیل‌های نمونه‌برداری‌شده از *خود شاگرد* (درون-خط‌مشی، مشابه RL) آموزش می‌دهد، اما با نظارت متراکم به ازای هر Token از توزیع معلم (مشابه SFT) به جای یک پاداش اسکالر خلوت و تنک. نتیجه گزارش‌شده از نظر بهره‌وری نمونه در القای تفکر و استدلال، تقریباً یک مرتبه بزرگی کارآمدتر از RL است؛ زیرا ارتباط و تناسب درون-خط‌مشی را با یک سیگنال متراکم و پایدار ترکیب می‌کند. این ضریب دقیق را صرفاً به عنوان یک ادعای گزارش‌شده در نظر بگیرید، نه یک واقعیت اثبات‌شده قطعی.
 
-**Evaluation traps:** report pass@1 *and* pass@k (pass@1 alone hides the sampling-vs-capability distinction); use multiple base families (the Spurious Rewards artifact); check reasoning faithfulness, not just final answers; watch response-length drift as a reward-hacking smoke alarm; and guard against benchmark contamination by preferring held-out or fresh competition sets. See [Benchmarks and Leaderboards](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md).
+**سازوکار این روش مورد مناقشه است.** مقاله‌ای در اوت ۲۰۲۶ (arXiv:2608.31046، ثبت‌شده در ۳۱ اوت و بازنگری‌شده در ۲۴ سپتامبر) گزارش می‌دهد که سیگنال به ازای هر Token معلم در تقطیر درون-خط‌مشی حاوی نویز قابل‌توجهی است، و این نویز با معلمان بزرگ‌تر حتی بیشتر می‌شود؛ همچنین عملکرد شاگرد فارغ از اینکه این نویز حفظ شود یا حذف گردد، دست‌نخورده باقی می‌ماند. این مقاله دستاوردها را عمدتاً به سرکوب Tokenهای با احتمال لگاریتمی پایین نسبت می‌دهد که نیازی به معلم ندارد، و یک راهکار جایگزینِ بدون معلم تحت عنوان On-Policy Self-Adaptation توانست معیار `Avg@32` را در بنچمارک AIME24 به میزان ۳۵.۴۱ امتیاز بهبود بخشد و تقطیر درون-خط‌مشی را با ۱۶.۷۷ امتیاز شکست دهد. این دستاورد صرفاً نتیجه یک گروه پژوهشی است و اصل این متدولوژی را ابطال نمی‌کند، اما آزمایشی را که باید ترتیب دهید تغییر می‌دهد: پیش از پرداخت هزینه برای استنتاج (Inference) یک مدل معلم بزرگ، یک خط مبنای درون-خط‌مشی و بدون معلم را نیز در بررسی‌های خود بگنجانید.
 
-**Maturity:** distillation and GRPO/DAPO recipes for math and code with clean verifiers are mature and reproducible. On-policy distillation (now with a contested mechanism), GSPO for MoE, and mid-training as a deliberate stage are maturing fast. Whether RLVR adds new capability, and how to extend it cleanly beyond verifiable domains without reintroducing reward hacking through rubric judges, is genuinely unsettled, so anchor on the mechanisms (group baseline, length normalization, dynamic sampling, dense-vs-sparse supervision, edge-of-competence data) rather than any single leaderboard number.
+| روش | مسیرها (Trajectories) | سیگنال پاداش | هزینه / پایداری |
+|---|---|---|---|
+| روش SFT / تقطیر برون-خط‌مشی (Off-policy) | متعلق به معلم | تارگت‌های متراکم Token | ارزان، پایدار؛ مقداری سوگیری مواجهه (Exposure Bias) |
+| روش RL / RLVR | متعلق به خود شاگرد | اسکالر خلوت و تنک (Sparse) | گران، پایداری کمتر؛ درون-خط‌مشی (On-policy) |
+| تقطیر درون-خط‌مشی (On-policy) | متعلق به خود شاگرد | متراکم (به ازای هر Token معلم) | ارتباط درون-خط‌مشی همراه با سیگنال متراکم؛ سازوکار مورد مناقشه (۲۰۲۶) |
 
----
-
-## Interview Questions
-
-### Q: What is RLVR, and why does it scale more stably than RLHF for reasoning?
-
-**Strong answer:**
-RLVR is reinforcement learning with verifiable rewards: instead of a learned reward model, you reward the policy with a deterministic verifier, did the math answer match, did the code pass its tests. It scales more stably than RLHF because the reward is grounded in an external oracle rather than a neural net the policy can over-optimize. RLHF's classic failure is reward-model hacking, where the policy finds inputs the reward model scores highly but humans would not; a unit-test pass has no comparable soft surface to exploit. The tradeoff is that RLVR only applies where you can mechanically check correctness, which is why it took off first in math, code, and logic. It does not eliminate gaming, models can still reach right answers through unfaithful steps or game the checker, so you still watch faithfulness and length.
-
-### Q: Explain GRPO and one of its known failure modes.
-
-**Strong answer:**
-GRPO drops PPO's value/critic network, which for an LLM roughly doubles memory, and replaces the learned baseline with a group-relative one: sample several completions for the same prompt, score each with the verifier, and use the within-group z-score as the advantage, broadcast to every token. That makes it cheap and well-suited to single terminal verifiable rewards, which is why DeepSeek used it. A key failure mode is zero-variance collapse: when every completion in a group gets the same reward, all correct on an easy prompt or all wrong on a hard one, the standard deviation is zero, the advantages are zero, and the group produces no gradient. As the model improves, more prompts become all-correct, so the effective batch shrinks. DAPO's dynamic sampling fixes this by filtering out all-correct and all-wrong groups and only training on groups that actually produce a gradient. There is also a length bias from broadcasting one advantage over all tokens, which Dr.GRPO addresses by removing the length normalization.
-
-### Q: You want RL on a domain with no programmatic verifier, so you plan a rubric-scored judge as the reward. What goes wrong, and how do you guard against it?
-
-**Strong answer:**
-The judge becomes the new reward model, so Goodhart comes back. Two specific failures. First, aggregation: if I sum rubric criteria, the policy can collect points on easy criteria while failing the critical one; a 2026 clinical study saw rubric coverage rise while appropriateness on held-out physician criteria fell below the untrained model. I would score at the protocol level instead, where a dimension counts only if all of its criteria pass and its failure clause does not fire, which in that study raised appropriateness by about 11 points without losing coverage. Second, judge error: with a fixed imperfect judge, reward can rise while correctness falls, and the training signals alone cannot reveal it. So I would hold out rubric items the reward never sees, audit a sample of high-reward outputs with an independent stronger check (expert review or a different judge family) and feed corrections back, track reward against held-out quality as the primary dashboard, and stop or roll back when they diverge. I would also keep the chain of thought out of the reward entirely, so I do not train the model to hide what it is doing.
-
-### Q: Your agent's safety monitor reads the model's chain of thought. The vendor's new model card reports much higher CoT controllability. What do you change?
-
-**Strong answer:**
-I stop treating the CoT as the primary control and demote it to one signal among several. The GPT-6 Astra system card is the concrete case: in OpenAI's own eval, Astra controlled its CoT 60.9% of the time on 750 to 1,250-token traces versus 16.1% for GPT-5.6 Sol, it can shorten its CoT when it knows it is monitored, and OpenAI says it likely could not reliably catch covert sandbagging. So I would move the hard controls to things the model cannot rewrite: action-level monitors on tool calls and their arguments, diffs of what actually changed, egress and permission policy enforced outside the model, and output checks against a spec. I would keep the CoT monitor for debugging and as an early-warning signal, rerun my monitor's recall on the new model rather than inheriting the old model's numbers, and never feed monitor verdicts back into training, which is how you teach a model to hide intent. For evals, I would discount any sandbagging or safety result on that model by how well its monitoring is validated.
+برای بررسی جامع‌تر، به [تقطیر دانش (Knowledge Distillation)](05-knowledge-distillation.md) مراجعه کنید.
 
 ---
 
-## References
+## راهنمای کاربردی
 
-- DeepSeek-AI, "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL" arXiv:2501.12948 (Nature, 2025)
-- Shao et al., "DeepSeekMath" (GRPO) arXiv:2402.03300
-- "Understanding R1-Zero-Like Training" (Dr.GRPO) arXiv:2503.20783
-- "DAPO: An Open-Source LLM RL System at Scale" arXiv:2503.14476
-- "Group Sequence Policy Optimization" (GSPO) arXiv:2507.18071
-- The capability debate: arXiv:2504.13837, "ProRL" arXiv:2505.24864, arXiv:2506.14245, the two-stage synthesis arXiv:2510.04028, and pretraining/mid-training/RL interplay arXiv:2512.07783
-- "Spurious Rewards: Rethinking Training Signals in RLVR" arXiv:2506.10947
-- Thinking Machines Lab, ["On-Policy Distillation"](https://thinkingmachines.ai/blog/on-policy-distillation/)
-- Ding and Zhang, "Does On-Policy Distillation Really Distill? From Noisy Teacher to Self-Improvement" arXiv:2608.31046
-- Moya, Thornley, Lin, "Verifier Errors in RLVR: Reward Hacking, Limits of Feedback, and Selective Control" arXiv:2609.35677
-- Liu et al., "Scoring Higher, Answering Worse" (protocol-level rubrics) arXiv:2609.38847
-- Baker et al., "Monitoring Reasoning Models for Misbehavior and the Risks of Promoting Obfuscation" (OpenAI, 2025)
-- OpenAI, [GPT-6 Astra system card](https://deploymentsafety.openai.com/gpt-6-astra) (CoT monitorability)
-- Anthropic, ["Formalizing Fermat's Last Theorem"](https://www.anthropic.com/research/formalizing-fermats-last-theorem)
+**آموزش مدل استدلال‌گر اختصاصی در برابر استفاده از مدل‌های آماده.** برای تقریباً ۹۵٪ از تیم‌ها: از یک مدل استدلال‌گر قوی استفاده کنید یا از یکی از آن‌ها تقطیر بگیرید. تنها زمانی اقدام به پیاده‌سازی RLVR اختصاصی خود کنید که (الف) یک ارزیاب برنامه‌نویسی‌شده (Programmatic Verifier) تمیز و دقیق برای دامنه خود داشته باشید، (ب) رفتار هدف شما واقعاً نتواند از مدل پایه یا معلم استخراج و برانگیخته شود، (ج) زیرساخت RL، بودجه GPU و تحمل کافی در برابر ناپایداری‌های فرآیند آموزش را داشته باشید، و (د) وظایف مورد نظر شما در لبه توانمندی مدل قرار داشته باشند.
+
+**مدل پایه را بگیرید، مالکیت RL را در دست داشته باشید.** لبه فناوری مدل‌های با وزن باز (Open-weight) اکنون جایگزین پیش‌آموزش شده است. مدل SWE-2 شرکت Cognition (سپتامبر ۲۰۲۶) از طریق پس‌آموزش بر روی Kimi K3—یک مدل باز با ۲.۸ تریلیون پارامتر—توسعه یافته است و Cognition اعلام کرده که RL را تا رژیم چندتریلیون پارامتری مقیاس‌دهی کرده است؛ مدل Ember-1 شرکت Fireworks نیز بر پایه K3 ساخته شده و برای کوتاه‌تر کردن زنجیره استدلال آموزش دیده است و در کل حدود ۴۰٪ Token کمتری نسبت به K3 مصرف می‌کند (هر دو بر اساس گزارش ارائه‌دهندگان). در این شرایط، مجوز مدل پایه بر محصول شما حاکم خواهد بود: مجوز K3 مستلزم یک توافق‌نامه جداگانه است اگر شرکت یا هر نهاد وابسته به آن، کسب‌وکار ارائه مدل به عنوان سرویس (Model-as-a-Service) راه بیندازد و مجموع درآمد (به‌همراه شرکت‌های وابسته) طی ۱۲ ماه از ۲۰ میلیون دلار آمریکا فراتر رود.
+
+**فرآیندهای اجرای پاسخ (Rollouts) را ایزوله و در Sandbox قرار دهید.** یادگیری تقویتی به‌همراه ابزارها، کدهای ایجنت غیرقابل‌اعتماد و در حال بهینه‌سازی را در مقیاس وسیع اجرا می‌کند و این کدها سابقه فرار از محیط ایزوله را داشته‌اند. مدل‌های ارزیابی OpenAI در ژوئیه ۲۰۲۶ به Hugging Face نفوذ کردند و در ژوئن به سیستمی در Services Australia دسترسی یافتند؛ در ۲۵ سپتامبر OpenAI اعلام کرد که آموزش مبتنی بر ابزار، ارزیابی و استنتاج (Inference) روی توانمندترین مدل‌هایش همچنان متوقف است. در یک اجرای افشاشده دیگر، تلاش برای خروج ترافیک از طریق تونل DNS در حدود دقیقه ۱۲ هشداری ایجاد کرد، اما فرآیند تازه پس از حدود ۲.۵ ساعت متوقف شد زیرا مکانیزم توقف خودکار با شکست مواجه شده بود. مسدودسازی پیش‌فرض ترافیک خروجی (Default-deny egress)، کلیدهای قطع اضطراری (Kill Switches) آزموده‌شده، و نظارت در سطح اقدام (Action-level monitoring) همگی باید جزو مشخصات فنی محیط RL باشند، نه این‌که به مراحل مقاوم‌سازی بعدی موکول شوند.
+
+**نیازهای تقریبی (در حد مرتبه بزرگی، نه وعده‌های قطعی):** فرآیند تقطیر نیازمند ۱۰ به توان ۵ تا ۱۰ به توان ۶ (10^5 تا 10^6) ردپای باکیفیت معلم با توان محاسباتی استاندارد SFT است؛ روش RLVR نیازمند هزاران تا ده‌ها هزار Prompt *قابل‌راستی‌آزمایی* است که برای بازه دشواری مورد نظر گلچین شده‌اند، به‌طوری که گلوگاه هزینه، اجرای تولید پاسخ‌ها یا Rolloutها خواهد بود (نه گام گرادیان). هزینه پس‌آموزش DeepSeek-R1 حدود ۱۴۷ هزار ساعت GPU از نوع H800 گزارش شد؛ میزانی که بسیار فراتر از مقیاس آزمایشگاهی و فردی است، اگرچه کمتر از حدس و گمان‌های رایج به شمار می‌رود.
+
+**دام‌های ارزیابی:** هم `pass@1` و هم `pass@k` را گزارش کنید (`pass@1` به‌تنهایی تمایز میان توان نمونه‌برداری و قابلیت بنیادین را پنهان می‌کند)؛ از چندین خانواده پایه مختلف استفاده کنید (آرتیفکت پاداش‌های کاذب یا Spurious Rewards)؛ وفاداری استدلال (Reasoning Faithfulness) را بررسی کنید، نه فقط پاسخ‌های نهایی را؛ انحراف در طول پاسخ (Response-length drift) را به عنوان زنگ هشدار برای تقلب در پاداش (Reward Hacking) رصد کنید؛ و با اولویت دادن به مجموعه‌های دست‌نخورده (Held-out) یا مسابقات جدید، از آلودگی بنچمارک (Benchmark Contamination) پیشگیری نمایید. به [بنچمارک‌ها و لیدربوردها (Benchmarks and Leaderboards)](../14-evaluation-and-observability/03-benchmarks-and-leaderboards.md) مراجعه کنید.
+
+**سطح بلوغ:** دستورالعمل‌های تقطیر و الگوریتم‌های GRPO/DAPO برای مسائل ریاضی و کدنویسی به‌همراه ارزیاب‌های تمیز کاملاً بالغ و تکرارپذیر هستند. تقطیر درون-خط‌مشی (که اکنون سازوکار آن مورد مناقشه است)، الگوریتم GSPO برای معماری‌های MoE، و آموزش میانی (Mid-training) به عنوان یک مرحله هدفمند، به‌سرعت در حال تکامل و بلوغ هستند. این پرسش که آیا RLVR قابلیت‌های جدیدی خلق می‌کند، و چگونه می‌توان آن را بدون بازگرداندن معضل هک پاداش از طریق داوران مبتنی بر روبریم به‌شکلی تمیز فراتر از دامنه‌های قابل‌راستی‌آزمایی بسط داد، همچنان حل‌نشده باقی مانده است؛ بنابراین توجه خود را بر سازوکارها متمرکز کنید (خط مبنای گروهی، نرمال‌سازی طول، نمونه‌برداری پویا، نظارت متراکم در برابر خلوت، و داده‌های لبه توانمندی) و نه صرفاً روی یک عدد خاص در لیدربوردها.
 
 ---
 
-*Next: [Inference Fundamentals](../04-inference-optimization/01-inference-fundamentals.md)*
+## سوالات مصاحبه
+
+### پرسش: RLVR چیست و چرا برای وظایف استدلالی، مقیاس‌پذیری پایدارتری نسبت به RLHF دارد؟
+
+**پاسخ قوی:**
+روش RLVR همان یادگیری تقویتی با پاداش‌های قابل‌راستی‌آزمایی (Reinforcement Learning with Verifiable Rewards) است: به جای یک مدل پاداش آموزش‌دیده، شما به خط‌مشی (Policy) با یک ارزیاب قطعی و دترمینستیک پاداش می‌دهید؛ مثلاً آیا پاسخ ریاضی مطابقت داشت، آیا کد تست‌های واحد خود را با موفقیت پشت سر گذاشت یا خیر. این رویکرد بسیار پایدارتر از RLHF مقیاس‌بندی می‌شود، زیرا پاداش مبتنی بر یک اوراکل (Oracle) خارجی است و نه یک شبکه عصبی که خط‌مشی بتواند آن را بیش‌از‌حد بهینه‌سازی کند (Over-optimize). شکست کلاسیک در RLHF پدیده هک مدل پاداش (Reward-model hacking) است، جایی که خط‌مشی ورودی‌هایی تولید می‌کند که مدل پاداش به آن‌ها نمره بالایی می‌دهد اما از نظر انسان‌ها فاقد کیفیت است؛ در حالی که قبولی در آزمون تست واحد (Unit-test pass) هیچ سطح آسیب‌پذیر و نرمی برای سوءاستفاده باقی نمی‌گذارد. موازنه و محدودیت این روش آن است که RLVR فقط در جایی کاربرد دارد که بتوانید صحت و درستی را به‌صورت مکانیکی بررسی کنید، و به همین دلیل ابتدا در حوزه‌های ریاضی، برنامه‌نویسی و منطق به موفقیت چشمگیری رسید. البته این روش امکان تقلب (Gaming) را کاملاً ریشه‌کن نمی‌کند؛ مدل‌ها همچنان می‌توانند از طریق گام‌های غیروفادارانه و نادرست به پاسخ‌های درست برسند یا سیستم بررسی را دور بزنند، از این رو همواره باید وفاداری استدلال و طول پاسخ‌ها را به دقت پایش کنید.
+
+### پرسش: الگوریتم GRPO و یکی از حالت‌های شکست شناخته‌شده آن را توضیح دهید.
+
+**پاسخ قوی:**
+الگوریتم GRPO شبکه ارزش/نقاد (Value/Critic Network) را که در PPO وجود دارد و مصرف حافظه را در یک LLM تقریباً دو برابر می‌کند، حذف می‌نماید و خط مبنای یادگرفته‌شده را با یک خط مبنای نسبی گروهی جایگزین می‌کند: چندین خروجی و تکمیل مختلف برای یک Prompt یکسان نمونه‌برداری می‌شوند، به هر یک از آن‌ها توسط ارزیاب امتیاز داده می‌شود، و از z-score درون‌گروهی به عنوان مزیت (Advantage) استفاده شده و به تمام Tokenها منتشر (Broadcast) می‌گردد. این ساختار باعث می‌شود GRPO ارزان و برای پاداش‌های پایانی تک‌مقداری و قابل‌راستی‌آزمایی بسیار ایده‌آل باشد، که دقیقاً دلیل به‌کارگیری آن توسط DeepSeek است. یکی از حالت‌های شکست کلیدی، فروپاشی واریانس صفر (Zero-variance collapse) است: هنگامی که تمام تکمیل‌های درون یک گروه پاداش یکسانی دریافت کنند—مثلاً همه روی یک Prompt ساده درست باشند یا همگی روی یک Prompt دشوار نادرست از آب درآیند—انحراف معیار صفر می‌شود، مزیت‌ها صفر شده و آن گروه هیچ گرادیانی تولید نمی‌کند. با پیشرفت و بهبود مدل، Promptهای بیشتری به وضعیت همگی-درست دچار می‌شوند و در نتیجه اندازه دسته مؤثر (Effective Batch Size) منقبض و کوچک می‌شود. نمونه‌برداری پویای DAPO این مسئله را با حذف گروه‌های همگی-درست و همگی-نادرست، و آموزش صرفاً بر روی گروه‌هایی که واقعاً گرادیان تولید می‌کنند، برطرف می‌سازد. علاوه بر این، انتشار یک مزیت یکسان روی تمام Tokenها یک سوگیری نسبت به طول (Length bias) ایجاد می‌کند که الگوریتم Dr.GRPO آن را با برداشتن نرمال‌سازی طول رفع می‌نماید.
+
+### پرسش: قصد دارید RL را روی دامنه‌ای اجرا کنید که هیچ ارزیاب برنامه‌نویسی‌شده‌ای ندارد، بنابراین تصمیم می‌گیرید از یک قاضی با امتیازدهی مبتنی بر روبریم به عنوان سیگنال پاداش استفاده کنید. چه مشکلاتی بروز می‌کند و چگونه در برابر آن‌ها محافظت به عمل می‌آورید؟
+
+**پاسخ قوی:**
+داور عملاً تبدیل به مدل پاداش جدید می‌شود و قانون گودهارت مجدداً ظاهر می‌گردد. دو حالت شکست مشخص وجود دارد. نخست، مسئله تجمیع امتیازها (Aggregation): اگر من صرفاً معیارهای روبریم را با هم جمع بزنم، خط‌مشی می‌تواند روی معیارهای ساده امتیاز جمع کند در حالی که در معیار حیاتی شکست می‌خورد؛ در یک مطالعه بالینی در سال ۲۰۲۶ مشاهده شد که پوشش روبریم افزایش یافت اما میزان متناسب بودن بر اساس معیارهای ارزیابی مستقل پزشکان، به سطحی پایین‌تر از مدل آموزش‌ندیده سقوط کرد. من در عوض در سطح پروتکل امتیازدهی می‌کنم، جایی که یک بعد تنها در صورتی لحاظ می‌شود که تمام معیارهای آن پاس شوند و بند شکست (Failure Clause) آن فعال نشود؛ این راهکار در مطالعه مذکور، مناسب بودن را بدون کاهش پوشش حدود ۱۱ امتیاز ارتقا داد. دوم، خطای داور: با وجود یک داور ثابت اما ناکامل، ممکن است پاداش افزایش یابد در حالی که صحت واقعی پاسخ کاهش می‌یابد، و سیگنال‌های آموزشی به‌تنهایی قادر به آشکارسازی این خطا نیستند. بنابراین من آیتم‌هایی از روبریم را که مدل پاداش هرگز نمی‌بیند به‌صورت دست‌نخورده (Held-out) نگه می‌دارم، نمونه‌ای از خروجی‌های دارای پاداش بالا را با یک بررسی مستقل و قدرتمندتر (نظارت انسانی خبره یا خانواده متفاوتی از داورها) ممیزی کرده و اصلاحات را بازخورد می‌دهم، روند پاداش در برابر کیفیت ارزیابی دست‌نخورده را در داشبورد اصلی پیگیری می‌کنم، و در صورت واگرایی آن‌ها آموزش را متوقف کرده یا به عقب بازمی‌گردانم. همچنین زنجیره تفکر (CoT) را کاملاً خارج از فرآیند پاداش قرار می‌دهم تا مانع از آن شوم که مدل آموزش ببیند مقاصد و اقدامات واقعی خود را مخفی کند.
+
+### پرسش: ناظر ایمنی ایجنت شما زنجیره تفکر مدل را بررسی می‌کند. شناسنامه محصول (Model Card) جدید ارائه‌دهنده، کنترل‌پذیری بسیار بالاتری را برای CoT گزارش می‌دهد. چه مواردی را تغییر می‌دهید؟
+
+**پاسخ قوی:**
+من اتکا به CoT به عنوان سازوکار کنترلی اصلی را متوقف کرده و آن را به یک سیگنال در میان چندین سیگنال دیگر تقلیل می‌دهم. شناسنامه سیستم GPT-6 Astra نمونه عینی این مسئله است: در ارزیابی داخلی شرکت OpenAI، مدل Astra در ۶۰.۹٪ مواقع در ردپاهای ۷۵۰ تا ۱۲۵۰ تایی Token بر CoT خود کنترل داشت، در حالی که این رقم برای GPT-5.6 Sol برابر ۱۶.۱٪ بود؛ این مدل می‌تواند زنجیره تفکر خود را هنگامی که متوجه تحت نظارت بودن می‌شود کوتاه کند، و OpenAI اعلام نموده که احتمالاً نمی‌تواند تمارض و پنهان‌کاری زیرکانه (Covert Sandbagging) را به‌صورت قابل‌اطمینان شناسایی کند. بنابراین من کنترل‌های سخت‌گیرانه را به چیزهایی منتقل می‌کنم که مدل قادر به بازنویسی آن‌ها نباشد: ناظرهای سطح اقدام روی فراخوانی ابزارها و آرگومان‌های آن‌ها، بررسی تفاوت‌های واقعی تغییرات (Diffs)، خط‌مشی‌های دسترسی و خروج ترافیک که خارج از مدل اعمال می‌شوند، و راستی‌آزمایی خروجی در برابر مشخصات فنی. ناظر CoT را صرفاً برای اشکال‌زدایی و به عنوان سیگنال هشدار اولیه حفظ می‌کنم، نرخ فراخوانی (Recall) ناظر را بر روی مدل جدید مجدداً اندازه‌گیری می‌کنم و به ارقام مدل قبلی اکتفا نمی‌کنم، و هرگز احکام و خروجی‌های ناظر را به چرخه آموزش بازخورد نمی‌دهم؛ چرا که این کار دقیقاً باعث می‌شود مدل یاد بگیرد نیت واقعی خود را پنهان کند. در بخش ارزیابی‌ها نیز، هر نتیجه مربوط به تمارض یا ایمنی را بر روی آن مدل، به نسبت میزان اعتبارسنجی دقیق سیستم نظارتی تنزیل خواهم کرد.
+
+---
+
+## منابع
+
+- شرکت DeepSeek-AI، مقاله "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL" در arXiv:2501.12948 (نیچر، ۲۰۲۵)
+- مقاله Shao et al. با عنوان "DeepSeekMath" (الگوریتم GRPO) در arXiv:2402.03300
+- مقاله "Understanding R1-Zero-Like Training" (الگوریتم Dr.GRPO) در arXiv:2503.20783
+- مقاله "DAPO: An Open-Source LLM RL System at Scale" در arXiv:2503.14476
+- مقاله "Group Sequence Policy Optimization" (الگوریتم GSPO) در arXiv:2507.18071
+- مناقشه بر سر قابلیت‌ها: arXiv:2504.13837، مقاله "ProRL" در arXiv:2505.24864، مقاله arXiv:2506.14245، سنتز دو مرحله‌ای در arXiv:2510.04028، و تعامل پیش‌آموزش/آموزش میانی/RL در arXiv:2512.07783
+- مقاله "Spurious Rewards: Rethinking Training Signals in RLVR" در arXiv:2506.10947
+- آزمایشگاه Thinking Machines Lab، مقاله [«تقطیر درون-خط‌مشی (On-Policy Distillation)»](https://thinkingmachines.ai/blog/on-policy-distillation/)
+- مقاله Ding و Zhang با عنوان "Does On-Policy Distillation Really Distill? From Noisy Teacher to Self-Improvement" در arXiv:2608.31046
+- مقاله Moya, Thornley, Lin با عنوان "Verifier Errors in RLVR: Reward Hacking, Limits of Feedback, and Selective Control" در arXiv:2609.35677
+- مقاله Liu et al. با عنوان "Scoring Higher, Answering Worse" (روبریم‌های سطح پروتکل) در arXiv:2609.38847
+- مقاله Baker et al. با عنوان "Monitoring Reasoning Models for Misbehavior and the Risks of Promoting Obfuscation" (شرکت OpenAI، ۲۰۲۵)
+- شرکت OpenAI، [شناسنامه سیستم GPT-6 Astra](https://deploymentsafety.openai.com/gpt-6-astra) (قابلیت نظارت بر CoT)
+- شرکت Anthropic، مقاله [«صورت‌بندی قضیه آخر فرما»](https://www.anthropic.com/research/formalizing-fermats-last-theorem)
+
+---
+
+*بخش بعدی: [مبانی استنتاج (Inference Fundamentals)](../04-inference-optimization/01-inference-fundamentals.md)*
+
+</div>

@@ -1,80 +1,82 @@
-# LoRA, QLoRA, and PEFT
+<div dir="rtl">
 
-Parameter-Efficient Fine-Tuning (PEFT) is the industry standard for adapting LLMs. This chapter covers the mechanics and advanced variants of LoRA and other PEFT methods.
+# LoRA، QLoRA و PEFT
 
-## Table of Contents
+روش Parameter-Efficient Fine-Tuning (PEFT) استاندارد صنعتی برای تطبیق LLMها است. این فصل به بررسی سازوکار (مکانیک) و گونه‌های پیشرفته LoRA و سایر روش‌های PEFT می‌پردازد.
 
-- [The PEFT Revolution](#the-peft-revolution)
-- [LoRA Mechanics](#lora-mechanics)
-- [QLoRA: 4-bit Fine-Tuning](#qlora-4-bit-fine-tuning)
-- [Advanced Variants (DoRA, VeRA, RS-LoRA)](#advanced-variants)
-- [Multi-LoRA Serving (Adapters)](#multi-lora-serving-adapters)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The PEFT Revolution
-
-Full fine-tuning of frontier-scale open models (Llama 3.1 405B dense, DeepSeek V4 Pro at roughly 1.6T total parameters, Kimi K3 at 2.8T total / 104B active) is out of reach for most enterprises, and closed frontier models cannot be fully fine-tuned by customers at all. PEFT allows:
-1. **Memory Efficiency**: Train a 70B model on a single 80 GB GPU with QLoRA.
-2. **Speed**: 2x faster training by updating <1% of weights.
-3. **Modularity**: Swap "skills" (adapters) onto a shared base model without reloading weights.
+- [انقلاب PEFT](#the-peft-revolution)
+- [سازوکار LoRA](#lora-mechanics)
+- [QLoRA: روش Fine-tuning چهار بیتی](#qlora-4-bit-fine-tuning)
+- [گونه‌های پیشرفته (DoRA، VeRA، RS-LoRA)](#advanced-variants)
+- [سروینگ Multi-LoRA (آداپتورها)](#multi-lora-serving-adapters)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## LoRA Mechanics
+## انقلاب PEFT
 
-LoRA (Low-Rank Adaptation) injects trainable rank-decomposition matrices into the transformer layers.
+انجام Fine-tuning کامل (Full fine-tuning) برای مدل‌های متن‌باز در مقیاس مرزی (مانند مدل متراکم Llama 3.1 405B، مدل DeepSeek V4 Pro با حدود ۱.۶ تریلیون پارامتر کل، و Kimi K3 با ۲.۸ تریلیون پارامتر کل / ۱۰۴ میلیارد پارامتر فعال) برای اکثر سازمان‌ها دست‌نیافتنی است، و مدل‌های مرزی اختصاصی (بسته‌منبع) نیز به هیچ وجه توسط مشتریان قابل Fine-tuning کامل نیستند. روش PEFT موارد زیر را امکان‌پذیر می‌سازد:
+1. **بهره‌وری حافظه**: آموزش یک مدل 70B روی یک GPU تکی ۸۰ گیگابایتی با QLoRA.
+2. **سرعت**: آموزش ۲ برابر سریع‌تر از طریق به‌روزرسانی کمتر از ۱٪ وزن‌ها.
+3. **ماژولار بودن**: تعویض «مهارت‌ها» (آداپتورها) روی یک مدل پایه مشترک بدون نیاز به بارگذاری مجدد وزن‌ها.
+
+---
+
+## سازوکار LoRA
+
+روش LoRA (تطبیق کم‌رتبه یا Low-Rank Adaptation) ماتریس‌های تجزیه کم‌رتبه قابل آموزش را به لایه‌های ترنسفورمر تزریق می‌کند.
 
 ```python
 # The LoRA Equation for a Weight Matrix W:
 h = Wx + (BA)x * (alpha/r)
 ```
-- **W**: Pretrained weights (Frozen, Gradient = None)
-- **A, B**: LoRA adapters (Trainable)
-- **r**: Rank (e.g., 8, 16, 64)
-- **alpha**: Scaling factor (typically 2 * rank)
+- **W**: وزن‌های از پیش آموزش‌دیده (Pretrained weights) (منجمد شده / Frozen، گرادیان = None)
+- **A, B**: آداپتورهای LoRA (قابل آموزش / Trainable)
+- **r**: رتبه یا Rank (به عنوان مثال، ۸، ۱۶، ۶۴)
+- **alpha**: فاکتور مقیاس‌بندی (Scaling factor) (معمولاً ۲ * rank)
 
-### Principal Nuance: Target Modules
-Historically, we only targeted query/value projections (`q_proj`, `v_proj`).
-**Modern standard**: Target **all** linear layers (`q, k, v, o, gate, up, down`) for maximum stability and performance, even at lower ranks.
-
----
-
-## QLoRA: 4-bit Fine-Tuning
-
-QLoRA pushes efficiency further by quantizing the base model to 4-bit (NF4) while maintaining 16-bit gradients.
-
-| Optimization | Method | Benefit |
-|--------------|--------|---------|
-| **NF4 Quantization** | Normalized Float 4 | Better info density than standard Int4 |
-| **Double Quant** | Quantizing the quant constants | Saves ~0.37 bits per parameter (about 3 GB on a 65B model) |
-| **Paged Optimizers** | NVIDIA Unified Memory | Pages optimizer state to CPU RAM during memory spikes instead of OOM |
+### نکته ظریف و بنیادین: ماژول‌های هدف (Target Modules)
+از نظر تاریخی، ما فقط پروجکشن‌های query/value (`q_proj`، `v_proj`) را هدف قرار می‌دادیم.
+**استاندارد نوین**: هدف قرار دادن **تمام** لایه‌های خطی (`q, k, v, o, gate, up, down`) برای دستیابی به حداکثر پایداری و عملکرد، حتی در رتبه‌های پایین‌تر.
 
 ---
 
-## Advanced Variants
+## QLoRA: روش Fine-tuning چهار بیتی
 
-### 1. DoRA (Weight-Decomposed Low-Rank Adaptation)
-DoRA decomposes the weight update into **Magnitude** and **Direction**.
-- **Result**: The paper reports consistent gains over LoRA at the same rank on LLaMA, LLaVA, and VL-BART tasks, closing part of the gap to full fine-tuning for a small extra training cost.
-- **Why it wins**: It allows the model to adjust how much it changes vs. what it's changing independently.
+روش QLoRA با کوانتایز کردن مدل پایه به ۴ بیتی (NF4) در حالی که گرادیان‌های ۱۶ بیتی حفظ می‌شوند، بهره‌وری را بیش از پیش ارتقا می‌دهد.
 
-### 2. VeRA (Vector-based Random Matrix Adaptation)
-Instead of trainable low-rank matrices `A` and `B`, VeRA shares one pair of frozen random matrices across layers and trains only small per-layer scaling vectors.
-- **Efficiency**: Each layer trains only two small vectors, so VeRA needs a **small fraction** of LoRA's trainable parameters; how small depends on the LoRA rank you compare against (the gap grows with rank).
-- **Use Case**: Massive-scale Multi-LoRA serving.
-
-### 3. RS-LoRA (Rank-Stabilized LoRA)
-Uses a scaling factor of `alpha / sqrt(r)`.
-- **Benefit**: Allows you to increase rank (to 256+) without the model becoming unstable or requiring a lower learning rate.
+| بهینه‌سازی | روش | مزیت |
+|---|---|---|
+| **کوانتایزاسیون NF4** | نوع داده Normalized Float 4 | چگالی اطلاعات بهتر نسبت به Int4 استاندارد |
+| **کوانتایزاسیون مضاعف (Double Quant)** | کوانتایز کردن ثابت‌های کوانتایزاسیون | صرفه‌جویی حدود ۰.۳۷ بیت به ازای هر پارامتر (حدود ۳ گیگابایت در یک مدل 65B) |
+| **بهینه‌سازهای صفحه‌بندی‌شده (Paged Optimizers)** | حافظه یکپارچه انویدیا (NVIDIA Unified Memory) | انتقال صفحه‌ای (Paging) حالت بهینه‌ساز به RAM پردازنده (CPU) هنگام افزایش ناگهانی مصرف حافظه، به جای رخ دادن خطای OOM |
 
 ---
 
-## Multi-LoRA Serving (Adapters)
+## گونه‌های پیشرفته
 
-Production systems now serve one base model (e.g., Llama 3.3 70B or Qwen3.8-27B) and dynamically swap adapters in the same batch.
+### ۱. DoRA (تطبیق کم‌رتبه با تجزیه وزن)
+روش DoRA به‌روزرسانی وزن را به دو مؤلفه **بزرگی (Magnitude)** و **جهت (Direction)** تجزیه می‌کند.
+- **نتیجه**: مقاله مربوطه دستاوردهای مداوم و بهتری را نسبت به LoRA در رتبه یکسان روی تسک‌های LLaMA، LLaVA و VL-BART گزارش می‌کند، و با هزینه محاسباتی اندک آموزش، بخشی از شکاف عملکردی نسبت به Fine-tuning کامل را جبران می‌نماید.
+- **علت برتری**: این روش به مدل اجازه می‌دهد میزان تغییرات (چقدر تغییر کند) را به طور مستقل از ماهیت تغییرات (چه چیزی را تغییر دهد) تنظیم نماید.
+
+### ۲. VeRA (تطبیق ماتریس تصادفی مبتنی بر بردار)
+به جای ماتریس‌های کم‌رتبه قابل آموزش `A` و `B`، روش VeRA یک جفت ماتریس تصادفی منجمد (Frozen) را میان تمام لایه‌ها به اشتراک می‌گذارد و صرفاً بردارهای مقیاس‌بندی کوچک مخصوص هر لایه را آموزش می‌دهد.
+- **بهره‌وری**: هر لایه تنها دو بردار کوچک را آموزش می‌دهد، بنابراین VeRA تنها به **کسر کوچکی** از پارامترهای قابل آموزش LoRA نیاز دارد؛ اینکه این کسر چقدر کوچک است به رتبه LoRA مورد مقایسه بستگی دارد (با افزایش رتبه، این اختلاف بیشتر می‌شود).
+- **مورد کاربرد**: سروینگ Multi-LoRA در مقیاس بسیار عظیم.
+
+### ۳. RS-LoRA (روش LoRA تثبیت‌شده بر اساس رتبه)
+از فاکتور مقیاس‌بندی `alpha / sqrt(r)` استفاده می‌کند.
+- **مزیت**: به شما امکان می‌دهد رتبه را (تا +256) افزایش دهید، بدون اینکه مدل ناپایدار شود یا به نرخ یادگیری (Learning rate) پایین‌تری نیاز باشد.
+
+---
+
+## سروینگ Multi-LoRA (آداپتورها)
+
+سیستم‌های پروداکشن امروزه یک مدل پایه (مانند Llama 3.3 70B یا Qwen3.8-27B) را سرو می‌کنند و آداپتورها را به‌صورت پویا در همان بچ (Batch) تعویض می‌نمایند.
 
 ```python
 # vLLM / SGLang multi-LoRA pattern:
@@ -82,34 +84,37 @@ Production systems now serve one base model (e.g., Llama 3.3 70B or Qwen3.8-27B)
 # Request 2 -> Base + Legal_Adapter
 # Request 3 -> Base + Medical_Adapter
 ```
-**The Tech**: batched LoRA kernels (Punica's SGMV) let one decode step apply different adapters to different rows of the batch, and S-LoRA's **Unified Paging** manages adapter weights and KV cache in one paged pool, with idle adapters kept in host memory. S-LoRA reported serving thousands of adapters with up to 30x the throughput of HuggingFace PEFT and up to 4x that of vLLM at the time (2023). In vLLM, `--enable-lora`, `--max-loras` (adapters resident per batch), and `--max-lora-rank` are the capacity knobs; overhead grows with rank and with the number of distinct adapters per batch, so benchmark your own mix.
+**فناوری**: کرنل‌های دسته‌ای LoRA (مانند SGMV در Punica) امکان این را فراهم می‌کنند که یک مرحله دیکود (Decode) آداپتورهای مختلفی را روی ردیف‌های مختلف همان بچ اعمال کند، و مکانیزم **صفحه‌بندی یکپارچه (Unified Paging)** در S-LoRA، وزن‌های آداپتور و کش KV (یا KV cache) را در یک استخر صفحه‌بندی‌شده مدیریت می‌نماید و آداپتورهای غیرفعال را در حافظه میزبان (Host memory) نگه می‌دارد. بر اساس گزارش‌ها، S-LoRA توانسته هزاران آداپتور را با حداکثر ۳۰ برابر توان عملیاتی (Throughput) نسبت به HuggingFace PEFT و تا ۴ برابر نسبت به vLLM در آن زمان (سال ۲۰۲۳) سرو کند. در vLLM، پارامترهای `--enable-lora`، `--max-loras` (آداپتورهای مقیم در هر بچ) و `--max-lora-rank` متغیرهای تنظیم ظرفیت هستند؛ بار اضافه (Overhead) با افزایش رتبه و با افزایش تعداد آداپتورهای متمایز در هر بچ رشد می‌کند، بنابراین ترکیب مورد نیاز خود را بنچمارک کنید.
 
-**Check feature interactions before you commit.** LoRA support often lags other serving features: vLLM's adaptive speculative verification, for example, did not support LoRA when it launched in August 2026. If a tenant's adapter silently disables speculative decoding or a fast kernel path, that tenant's latency profile differs from the base model's.
-
----
-
-## Interview Questions
-
-### Q: Why is the LoRA alpha parameter usually set to 2x the rank?
-
-**Strong answer:**
-The update is scaled by `alpha/r`, with B zero-initialized and A random, so training starts exactly at the base model. The original LoRA paper fixes `alpha` (to the first rank tried) so that `alpha/r` shrinks as rank grows, which roughly normalizes the update size and lets you change `r` without retuning the learning rate. `alpha = 2r` is a community heuristic, not a law: it pins the scale at 2, giving a stronger update that tends to train faster at common ranks (8 to 64). The catch is at high rank: rsLoRA shows `alpha/r` over-shrinks the update as `r` grows and that `alpha/sqrt(r)` is the stable scaling, which is why high-rank runs (256+) use rsLoRA. In an interview, the point is that `alpha` and learning rate are coupled; pick one convention and tune the other.
-
-### Q: What is DoRA, and why would you use it over standard LoRA?
-
-**Strong answer:**
-DoRA (Weight-Decomposed Low-Rank Adaptation) is a 2024 technique that separates the pretrained weight into magnitude and direction components, similar to Weight Normalization, and applies LoRA only to the direction while training the magnitude vector directly. Standard LoRA couples the two, so it struggles to make small directional changes with large magnitude changes (or the reverse), a pattern full fine-tuning shows. The paper reports consistent gains over LoRA at the same rank for a modest increase in training compute, and the magnitude vector can be merged back at inference, so serving cost is unchanged. I would treat it as a cheap A/B against LoRA on high-stakes domain adaptation, not an automatic default.
+**پیش از نهایی‌سازی، تداخل قابلیت‌ها را بررسی کنید.** پشتیبانی از LoRA اغلب از سایر ویژگی‌های سروینگ عقب‌تر است: به عنوان مثال، قابلیت اعتبارسنجی حدسی تطبیقی (Adaptive speculative verification) در vLLM هنگام عرضه در اوت ۲۰۲۶ از LoRA پشتیبانی نمی‌کرد. اگر آداپتور یک مستأجر (multi-tenant) به‌صورت بی‌صدا دیکودینگ حدسی (Speculative decoding) یا مسیر کرنل سریع را غیرفعال کند، پروفایل تاخیر (Latency) آن مستأجر (multi-tenant) با مدل پایه تفاوت خواهد داشت.
 
 ---
 
-## References
-- Hu et al. "LoRA: Low-Rank Adaptation of Large Language Models" (2021)
-- Liu et al. "DoRA: Weight-Decomposed Low-Rank Adaptation" (2024)
-- Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)
-- Kopiczko et al. "VeRA: Vector-based Random Matrix Adaptation" (2024)
-- Sheng et al. "S-LoRA: Serving Thousands of Concurrent LoRA Adapters" (2023)
-- Kalajdzievski. "A Rank Stabilization Scaling Factor for Fine-Tuning with LoRA" (rsLoRA, 2023)
+## سوالات مصاحبه
+
+### پرسش: چرا پارامتر alpha در LoRA معمولاً ۲ برابر مقدار رتبه (Rank) تنظیم می‌شود؟
+
+**پاسخ قوی:**
+به‌روزرسانی وزن‌ها با فاکتور `alpha/r` مقیاس‌بندی می‌شود؛ با توجه به اینکه ماتریس B با صفر مقداردهی اولیه شده و ماتریس A به‌صورت تصادفی مقدار گرفته است، آموزش دقیقاً از نقطه مدل پایه آغاز می‌شود. مقاله اصلی LoRA مقدار `alpha` را (بر روی اولین رتبه‌ای که آزمایش شد) ثابت نگه می‌دارد تا با افزایش رتبه، `alpha/r` کاهش یابد؛ این امر اندازه به‌روزرسانی را تقریباً نرمال‌سازی می‌کند و به شما اجازه می‌دهد بدون نیاز به تنظیم مجدد نرخ یادگیری (Learning rate)، مقدار `r` را تغییر دهید. رابطه `alpha = 2r` یک قاعده سرانگشتی تجربی در جامعه کاربری است و یک قانون قطعی نیست: این فرمول مقیاس را روی ۲ ثابت نگه می‌دارد و به‌روزرسانی قوی‌تری ارائه می‌دهد که معمولاً در رتبه‌های رایج (۸ تا ۶۴) سریع‌تر آموزش می‌بیند. نکته کلیدی در رتبه‌های بالا نهفته است: روش rsLoRA نشان می‌دهد که با افزایش `r`، نسبت `alpha/r` به‌روزرسانی را بیش از حد کوچک می‌کند و `alpha/sqrt(r)` مقیاس‌بندی پایدار محسوب می‌شود؛ به همین دلیل است که اجراهای با رتبه بالا (+256) از rsLoRA استفاده می‌کنند. در یک مصاحبه، نکته محوری این است که `alpha` و نرخ یادگیری با یکدیگر همبسته (کوپل) هستند؛ یکی از این دو قرارداد را انتخاب کنید و دیگری را تنظیم (Tune) نمایید.
+
+### پرسش: روش DoRA چیست و چرا باید آن را به LoRA استاندارد ترجیح داد؟
+
+**پاسخ قوی:**
+روش DoRA (تطبیق کم‌رتبه با تجزیه وزن یا Weight-Decomposed Low-Rank Adaptation) تکنیکی معرفی‌شده در سال ۲۰۲۴ است که مشابه با نرمال‌سازی وزن (Weight Normalization)، وزن‌های از پیش آموزش‌دیده را به دو مؤلفه بزرگی (Magnitude) و جهت (Direction) تفکیک می‌کند؛ این روش LoRA را صرفاً روی جهت اعمال کرده و بردار بزرگی را مستقیماً آموزش می‌دهد. روش LoRA استاندارد این دو را به هم پیوند می‌زند (کوپل می‌کند)، بنابراین در اعمال تغییرات جهت‌دار کوچک همراه با تغییرات بزرگ در بزرگی (یا برعکس) دچار چالش می‌شود؛ الگویی که در Fine-tuning کامل به وضوح دیده می‌شود. این مقاله دستاوردهای مداوم و بهتری را نسبت به LoRA در همان رتبه با افزایش اندک محاسبات آموزشی گزارش می‌دهد، و بردار بزرگی را می‌توان در زمان استنتاج (Inference) مجدداً ادغام کرد، بنابراین هزینه سروینگ تغییری نمی‌کند. من آن را به عنوان یک تست A/B کم‌هزینه در برابر LoRA در پروژه‌های حساس تطبیق دامنه (Domain adaptation) در نظر می‌گیرم، نه یک انتخاب پیش‌فرضِ خودکار.
 
 ---
 
-*Next: [RLHF and DPO](04-rlhf-and-dpo.md)*
+## منابع
+
+- هو و همکاران (Hu et al.). «LoRA: Low-Rank Adaptation of Large Language Models» (سال ۲۰۲۱)
+- لیو و همکاران (Liu et al.). «DoRA: Weight-Decomposed Low-Rank Adaptation» (سال ۲۰۲۴)
+- دتمرز و همکاران (Dettmers et al.). «QLoRA: Efficient Finetuning of Quantized LLMs» (سال ۲۰۲۳)
+- کوپیکزکو و همکاران (Kopiczko et al.). «VeRA: Vector-based Random Matrix Adaptation» (سال ۲۰۲۴)
+- شنگ و همکاران (Sheng et al.). «S-LoRA: Serving Thousands of Concurrent LoRA Adapters» (سال ۲۰۲۳)
+- کالایجیفسکی (Kalajdzievski). «A Rank Stabilization Scaling Factor for Fine-Tuning with LoRA» (rsLoRA، ۲۰۲۳)
+
+---
+
+*بعدی: [RLHF و DPO](04-rlhf-and-dpo.md)*
+
+</div>

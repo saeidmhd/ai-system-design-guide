@@ -1,42 +1,44 @@
-# Synthetic Data Generation
+<div dir="rtl">
 
-The industry has hit the "Data Wall", the exhaustion of high-quality human text on the web. Synthetic data is now the primary engine for model improvement, sitting at the core of every modern frontier-model recipe.
+# تولید داده‌های سنتتیک (Synthetic Data Generation)
 
-## Table of Contents
+صنعت هوش مصنوعی با «دیوار داده» (Data Wall) یا همان اتمام متون باکیفیت انسانی در وب مواجه شده است. داده‌های سنتتیک (Synthetic Data) اکنون موتور اصلی ارتقای مدل‌ها هستند و در کانون هر دستورالعمل مدرن برای آموزش مدل‌های پیشرو (frontier models) قرار دارند.
 
-- [The Data Wall and the Synthetic Shift](#after-the-data-wall-the-synthetic-shift)
-- [Evol-Instruct Pattern](#evol-instruct-pattern)
-- [Constitutional AI & AI Feedback (RLAIF)](#constitutional-ai--ai-feedback-rlaif)
-- [Verifiable Synthetic Data (Math/Code)](#verifiable-synthetic-data)
-- [De-biasing and Diversity](#de-biasing-and-diversity)
-- [Provenance and Licensing](#provenance-and-licensing)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## After the "Data Wall": The Synthetic Shift
-
-Disclosed pretraining budgets for open models already reach 15T to 45T tokens (Llama 4's mixture was more than 30T, and Thinking Machines Lab's Inkling disclosed 45T multimodal tokens in July 2026), and the supply of high-quality, legally clean human text is not growing at that rate. Closed labs do not disclose their totals.
-**The reality:** Post-training sets are now mostly model-generated (reasoning traces, rewrites, verified solutions), and synthetic shares of pretraining are rising: Microsoft's Phi-4 report allocates **40% of pretraining tokens** to synthetic data. Most labs do not publish their mix, so treat any single industry-wide percentage as a guess.
-
-| Source | Human Data | Synthetic Data |
-|--------|------------|----------------|
-| **Volume** | Fixed (Finite) | Infinite |
-| **Quality** | Variable (Noisy) | Controllable (Purified) |
-| **Cost** | High (Human Labelers) | Cheap (Inference/GPU) |
-| **Bias** | Mirror of internet | Can be manually balanced |
+- [دیوار داده و گذار به داده‌های سنتتیک](#after-the-data-wall-the-synthetic-shift)
+- [الگوی Evol-Instruct](#evol-instruct-pattern)
+- [هوش مصنوعی قانون‌محور و بازخورد هوش مصنوعی (RLAIF)](#constitutional-ai--ai-feedback-rlaif)
+- [داده‌های سنتتیک قابل‌راستی‌آزمایی (ریاضی/کد)](#verifiable-synthetic-data)
+- [سوگیری‌زدایی و تنوع](#de-biasing-and-diversity)
+- [اصالت و مجوزها](#provenance-and-licensing)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Evol-Instruct Pattern
+## پس از «دیوار داده»: گذار به داده‌های سنتتیک
 
-Evol-Instruct is a recursive process where an LLM takes a simple instruction and evolves it into a more complex one.
+بودجه‌های اعلام‌شده‌ی پیش‌آموزش برای مدل‌های باز در حال حاضر به 15T تا 45T Token می‌رسد (ترکیب داده‌های Llama 4 بیش از 30T بود و مدل Inkling از Thinking Machines Lab در ژوئیه ۲۰۲۶ اعلام کرد که از 45T Token چندحالته استفاده کرده است)، در حالی که عرضه متون انسانی باکیفیت و از نظر حقوقی بی‌مسئله با این نرخ رشد نمی‌کند. آزمایشگاه‌های انحصاری (Closed labs) مجموع داده‌های خود را فاش نمی‌کنند.
+**واقعیت:** مجموعه‌های داده‌ی پس‌آموزش (Post-training) اکنون عمدتاً توسط مدل‌ها تولید می‌شوند (ردپاهای استدلال یا reasoning traces، بازنویسی‌ها، و راه‌حل‌های راستی‌آزمایی‌شده)، و سهم داده‌های سنتتیک در پیش‌آموزش نیز رو به افزایش است: گزارش Phi-4 مایکروسافت **۴۰٪ از Tokenهای پیش‌آموزش** را به داده‌های سنتتیک اختصاص داده است. از آنجا که بیشتر آزمایشگاه‌ها ترکیب داده‌های خود را منتشر نمی‌کنند، هر درصد واحد در سطح کل صنعت را باید صرفاً یک حدس در نظر گرفت.
 
-**The Evolution Directions (from the WizardLM paper):**
-1. **In-depth**: Add constraints, deepen the question, make it more concrete, or require more reasoning steps.
-2. **In-breadth**: Mutate the instruction into a new, rarer one in the same domain to widen topic coverage.
-3. **Elimination**: Discard failed evolutions (no new information, unanswerable, or just a copy of the evolving prompt) before they reach the training set.
+| منبع | داده‌های انسانی | داده‌های سنتتیک |
+|------|-----------------|-----------------|
+| **حجم (Volume)** | محدود و ثابت (Finite) | نامحدود (Infinite) |
+| **کیفیت (Quality)** | متغیر و دارای نوفه (Noisy) | قابل‌کنترل و پالایش‌شده (Purified) |
+| **هزینه (Cost)** | بالا (برچسب‌زن‌های انسانی) | ارزان (استنتاج (Inference) / GPU) |
+| **سوگیری (Bias)** | بازتابی از کل اینترنت | قابلیت توازن‌بخشی به‌صورت دستی |
+
+---
+
+## الگوی Evol-Instruct
+
+روش Evol-Instruct یک فرایند بازگشتی (recursive) است که در آن یک LLM یک دستورالعمل ساده را دریافت کرده و آن را به یک دستورالعمل پیچیده‌تر ارتقا می‌دهد (تکامل می‌بخشد).
+
+**جهت‌های تکامل (برگرفته از مقاله WizardLM):**
+۱. **تکامل در عمق (In-depth):** افزودن محدودیت‌ها، عمیق‌تر کردن سوال، ملموس‌تر کردن آن، یا ملزم کردن مدل به طی مراحل استدلال بیشتر.
+۲. **تکامل در سطح (In-breadth):** جهش دادن دستورالعمل به یک دستورالعمل جدید و کم‌یاب‌تر در همان حوزه به منظور گسترش پوشش موضوعی.
+۳. **حذف (Elimination):** کنار گذاشتن تکامل‌های ناموفق (بدون اطلاعات جدید، غیرقابل‌پاسخ، یا صرفاً یک کپی از Prompt در حال تکامل) پیش از آنکه وارد مجموعه‌ی داده‌های آموزش شوند.
 
 ```python
 # Simple Instruction: "Write a function to add two numbers."
@@ -46,69 +48,69 @@ Evol-Instruct is a recursive process where an LLM takes a simple instruction and
 
 ---
 
-## Constitutional AI & AI Feedback (RLAIF)
+## هوش مصنوعی قانون‌محور (Constitutional AI) و بازخورد هوش مصنوعی (RLAIF)
 
-Developed by Anthropic and widely adopted across the industry, RLAIF uses a "Constitution" (a set of rules) to guide a model in evaluating and improving its own data.
+رویکرد RLAIF که توسط Anthropic توسعه یافته و به‌طور گسترده در صنعت هوش مصنوعی به کار گرفته می‌شود، از یک «قانون اساسی» (مجموعه‌ای از اصول و قواعد) برای هدایت مدل در ارزیابی و بهبود داده‌های خودش استفاده می‌کند.
 
-**The Loop:**
-1. **Propose**: Model A generates a response.
-2. **Critique**: The same model, or a separate judge, identifies flaws against the constitution's principles.
-3. **Revise**: Model A produces a better version based on the critique.
-4. **Train**: The final (Prompt, Revise) pair is added to the SFT set.
-
----
-
-## Verifiable Synthetic Data
-
-The biggest risk of synthetic data is **Model Collapse** (the model learning its own mistakes).
-**The standard fix**: Focus on domains where the "Truth" is verifiable without an LLM.
-
-- **Math**: Use Formal Verification (Lean/Isabelle) or Python execution to verify answers. Formal checking now scales to very long machine-generated outputs: Anthropic reports an internal model formalized Fermat's Last Theorem in Lean in 11 days, about 13M lines, with Lean verifying the result (vendor-reported, reviewed by Kevin Buzzard).
-- **Code**: Run generated code against test cases (Unit Tests).
-- **RAG**: Use "Gold Context" to generate questions where the answer is explicitly in the text.
+**حلقه کاری (The Loop):**
+۱. **پیشنهاد (Propose):** مدل A یک پاسخ تولید می‌کند.
+۲. **نقد (Critique):** همان مدل، یا یک مدل ارزیاب (judge) مجزا، نقص‌ها و ایرادات را بر اساس اصول قانون اساسی شناسایی می‌کند.
+۳. **بازبینی (Revise):** مدل A بر اساس نقد ارائه‌شده، نسخه‌ی بهتری تولید می‌کند.
+۴. **آموزش (Train):** جفت نهایی (Prompt, Revise) به مجموعه داده‌ی SFT اضافه می‌شود.
 
 ---
 
-## De-biasing and Diversity
+## داده‌های سنتتیک قابل‌راستی‌آزمایی (Verifiable Synthetic Data)
 
-Synthetic data is used to "fill the gaps" in human data.
-- **Languages**: Generating high-quality text in low-resource languages (e.g., Swahili, Marathi) by translating conceptual templates.
-- **Logic**: Creating 1,000,000 variations of a specific logical fallacy to "harden" the model against it.
+بزرگ‌ترین ریسک داده‌های سنتتیک، **فروپاشی مدل (Model Collapse)** است (یعنی زمانی که مدل اشتباهات خودش را یاد می‌گیرد).
+**راهکار استاندارد**: تمرکز بر حوزه‌هایی که در آن‌ها «حقیقت» بدون نیاز به یک LLM قابل‌راستی‌آزمایی است.
 
----
-
-## Provenance and Licensing
-
-Every synthetic row inherits obligations from the model that generated it.
-
-- **Teacher terms**: Closed-model terms usually forbid training competing models on outputs, and vendors now detect bulk CoT-harvesting traffic (see [Knowledge Distillation](05-knowledge-distillation.md#distillation-as-a-threat-extraction-via-api)). Open teachers vary: MIT and Apache 2.0 are clean; custom licenses (Kimi K3, Qwen Community 1.0) add conditions for hosted products.
-- **Lineage crosses borders**: NVIDIA's competitive-coding research model (above the IOI 2026 gold threshold in an unofficial run) was trained on 477,642 traces distilled from Z.ai's GLM-5.2. GLM-5.2's MIT license permits that, but your compliance team will still ask which models touched the data.
-- **Record per row**: generator model and version, its license, the prompt template, the verifier that accepted it, and the seed corpus it was derived from. Courts are separating lawful training from unlawful acquisition of source material, so the seed data's acquisition record matters as much as the generator's license.
+- **ریاضیات (Math):** استفاده از راستی‌آزمایی صوری (Formal Verification با استفاده از Lean/Isabelle) یا اجرای کد پایتون برای اعتبارسنجی پاسخ‌ها. اعتبارسنجی صوری اکنون به خروجی‌های بسیار طولانیِ تولیدشده توسط ماشین تعمیم می‌یابد: Anthropic گزارش می‌دهد که یک مدل داخلی قضیه آخر فرما را ظرف ۱۱ روز در قالب حدود ۱۳ میلیون خط کد در Lean صورت‌بندی صوری (formalize) کرد و Lean درستی نتیجه را تایید نمود (گزارش‌شده توسط توسعه‌دهنده، بررسی‌شده توسط Kevin Buzzard).
+- **کد (Code):** اجرای کد تولیدشده در برابر موارد آزمون (Unit Tests).
+- **RAG:** استفاده از «کانتکست طلایی» (Gold Context) برای تولید سوالاتی که پاسخ آن‌ها به‌طور صریح در متن وجود دارد.
 
 ---
 
-## Interview Questions
+## سوگیری‌زدایی و تنوع (De-biasing and Diversity)
 
-### Q: What is the risk of "Model Collapse" when training on synthetic data?
-
-**Strong answer:**
-Model Collapse occurs when a model is trained on data generated by an earlier version of itself. Because the model's distribution is narrower than the real world (it has preferences/biases for certain words and patterns), the training loop becomes a "positive feedback loop" of errors and blandness. The standard mitigations:
-1. Mixing in 5-20% "Golden" human-authenticated data.
-2. Using "Verifiable" rewards (Math/Code) so mistakes are never learned.
-3. Using more powerful "Teacher" models to generate data for "Student" models.
-
-### Q: How do you ensure the *quality* of a synthetic dataset of 10 million rows?
-
-**Strong answer:**
-We use a **Multi-Stage Filtering Pipeline**:
-1. **Semantic Deduplication**: Using embeddings to remove near-identical clusters.
-2. **LLM-as-Judge**: Sampling 1% of the data and having a stronger model score it for logic and safety, with the judge calibrated against a small human-labeled set first.
-3. **Perplexity Filtering**: Using a small model to calculate the perplexity of the text. If it's too high (nonsense) or too low (repetitive/simple), it's discarded.
-4. **Verifiable Execution**: If the data contains code or math, it must pass a local compiler/interpreter check.
+از داده‌های سنتتیک برای «پر کردن شکاف‌ها» در داده‌های انسانی استفاده می‌شود.
+- **زبان‌ها (Languages):** تولید متون باکیفیت در زبان‌های کم‌منبع (مانند سواحیلی یا مراتی) از طریق ترجمه‌ی قالب‌های مفهومی.
+- **منطق (Logic):** ایجاد ۱,۰۰۰,۰۰۰ نسخه از یک مغالطه منطقی خاص به منظور «مقاوم‌سازی» (harden) مدل در برابر آن.
 
 ---
 
-## References
+## اصالت و مجوزها (Provenance and Licensing)
+
+هر ردیف از داده‌های سنتتیک، تعهدات و الزامات مدلی را که آن را تولید کرده به ارث می‌برد.
+
+- **شرایط و قوانین مدل آموزگار (Teacher terms):** شرایط استفاده از مدل‌های انحصاری معمولاً آموزش مدل‌های رقیب با استفاده از خروجی‌های خود را منع می‌کنند، و ارائه‌دهندگان اکنون ترافیک استخراج عمده‌ی ردپاهای تفکر (bulk CoT-harvesting) را شناسایی می‌کنند (به [تقطیر دانش (Knowledge Distillation)](05-knowledge-distillation.md#distillation-as-a-threat-extraction-via-api) مراجعه کنید). آموزگاران باز (Open teachers) متفاوت هستند: مجوزهای MIT و Apache 2.0 بدون مانع و شفاف هستند؛ اما مجوزهای سفارشی (مانند Kimi K3 و Qwen Community 1.0) شروطی را برای محصولات میزبانی‌شده (hosted) اضافه می‌کنند.
+- **تبار داده‌ها از مرزها عبور می‌کند (Lineage crosses borders):** مدل پژوهشی انویدیا برای مسابقات کدنویسی (که در یک اجرای غیررسمی بالاتر از حد نصاب مدال طلای IOI 2026 قرار گرفت) روی ۴۷۷,۶۴۲ ردپای استدلالِ تقطیرشده از GLM-5.2 شرکت Z.ai آموزش دیده بود. اگرچه مجوز MIT مدل GLM-5.2 این کار را مجاز می‌داند، اما تیم انطباق و قوانین (compliance) شما همچنان پیگیری خواهد کرد که چه مدل‌هایی با این داده‌ها تعامل داشته‌اند.
+- **موارد الزامی برای ثبت در هر ردیف (Record per row):** مدل و نسخه تولیدکننده، مجوز آن، قالب Prompt، سیستم راستی‌آزمایی (verifier) که آن را تایید کرده، و پیکره‌ی داده اولیه (seed corpus) که از آن مشتق شده است. دادگاه‌ها در حال تفکیک آموزش قانونی از تحصیل غیرقانونی منابع اولیه هستند؛ بنابراین سوابق نحوه به‌دست آوردن داده‌های پایه به همان اندازه مجوزِ مدل تولیدکننده اهمیت دارد.
+
+---
+
+## سوالات مصاحبه
+
+### پرسش: ریسک «فروپاشی مدل» (Model Collapse) در زمان آموزش با داده‌های سنتتیک چیست؟
+
+**پاسخ قوی:**
+فروپاشی مدل زمانی رخ می‌دهد که یک مدل بر روی داده‌های تولیدشده توسط نسخه‌های قبلی خودش آموزش ببیند. از آنجا که توزیع آماری مدل محدودتر از دنیای واقعی است (مدل تمایلات و سوگیری‌هایی نسبت به واژه‌ها و الگوهای خاص دارد)، حلقه‌ی آموزش به یک «حلقه بازخورد مثبت» (positive feedback loop) از خطاها و یکنواختیِ بی‌روح تبدیل می‌شود. راهکارهای استاندارد برای کاهش این ریسک عبارتند از:
+۱. ترکیب ۵ تا ۲۰ درصد داده‌های معتبر انسانی موسوم به «داده‌های طلایی» (Golden data).
+۲. استفاده از پاداش‌های «قابل‌راستی‌آزمایی» (در حوزه‌های ریاضی و کد) تا اشتباهات هرگز توسط مدل فراگرفته نشوند.
+۳. استفاده از مدل‌های قدرتمندتر «آموزگار» (Teacher) برای تولید داده جهت آموزش مدل‌های «دانش‌آموز» (Student).
+
+### پرسش: چگونه *کیفیت* یک مجموعه‌داده سنتتیک شامل ۱۰ میلیون ردیف را تضمین می‌کنید؟
+
+**پاسخ قوی:**
+ما از یک **پایپ‌لاین فیلترسازی چندمرحله‌ای (Multi-Stage Filtering Pipeline)** استفاده می‌کنیم:
+۱. **حذف تکرار معنایی (Semantic Deduplication):** استفاده از امبدینگ‌ها (Embeddings) برای شناسایی و حذف خوشه‌های داده‌ای که تقریباً یکسان هستند.
+۲. **استفاده از مدل به‌عنوان داور (LLM-as-Judge):** نمونه‌برداری از ۱٪ داده‌ها و استفاده از یک مدل قوی‌تر برای امتیازدهی به منطق و ایمنی آن‌ها، به‌طوری که مدل داور ابتدا در برابر یک مجموعه داده کوچک برچسب‌گذاری‌شده توسط انسان کالیبره شده باشد.
+۳. **فیلترسازی بر اساس سردرگمی (Perplexity Filtering):** استفاده از یک مدل کوچک برای محاسبه میزان سردرگمی (Perplexity) متن. اگر این مقدار بیش از حد بالا باشد (متن نامفهوم و مهمل) یا بیش از حد پایین باشد (بسیار ساده و تکراری)، داده کنار گذاشته می‌شود.
+۴. **اجرای قابل‌راستی‌آزمایی (Verifiable Execution):** اگر داده‌ها شامل کد یا محاسبات ریاضی باشند، باید آزمون کامپایلر یا مفسر محلی را با موفقیت پشت سر بگذارند.
+
+---
+
+## منابع
 - Xu et al. "WizardLM: Empowering Large Language Models to Follow Complex Instructions" (2023)
 - Bai et al. "Constitutional AI: Harmlessness from AI Feedback" (2022)
 - OpenAI. "Weak-to-Strong Generalization" (2023)
@@ -116,4 +118,6 @@ We use a **Multi-Stage Filtering Pipeline**:
 
 ---
 
-*Next: [Quantization Deep Dive](07-quantization-deep-dive.md)*
+*مبحث بعدی: [بررسی عمیق کوانتایزیشن (Quantization Deep Dive)](07-quantization-deep-dive.md)*
+
+</div>

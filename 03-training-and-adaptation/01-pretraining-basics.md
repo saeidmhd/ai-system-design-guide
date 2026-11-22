@@ -1,137 +1,142 @@
-# Pretraining Basics
+<div dir="rtl">
 
-Pretraining is the most computationally expensive phase of building an LLM, where a model learns general knowledge and language patterns from massive datasets.
+# مبانی پیش‌آموزش (Pretraining)
 
-## Table of Contents
+پیش‌آموزش (Pretraining) از نظر محاسباتی پرهزینه‌ترین فاز در ساخت یک LLM است، جایی که مدل دانش عمومی و الگوهای زبانی را از مجموعه‌داده‌های عظیم فرا می‌گیرد.
 
-- [The Pretraining Objective](#the-pretraining-objective)
-- [Data Curriculum and Quality](#data-curriculum-and-quality)
-- [Scaling Laws (Inference-Optimal)](#scaling-laws-training-vs-inference-optimal)
-- [Computational Requirements](#computational-requirements)
-- [Training Stability](#training-stability)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [هدف پیش‌آموزش](#the-pretraining-objective)
+- [برنامه آموزشی و کیفیت داده](#data-curriculum-and-quality)
+- [قوانین مقیاس‌پذیری (بهینه برای استنتاج)](#scaling-laws-training-vs-inference-optimal)
+- [الزامات محاسباتی](#computational-requirements)
+- [پایداری آموزش](#training-stability)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The Pretraining Objective
+## هدف پیش‌آموزش (The Pretraining Objective)
 
-Most modern LLMs are **Decoder-only** and use **Causal Language Modeling (CLM)**:
+اکثر LLMهای مدرن از معماری **فقط دیکودر (Decoder-only)** هستند و از **مدل‌سازی زبانی علّی (Causal Language Modeling یا CLM)** استفاده می‌کنند:
 
 ```python
 # Objective: Minimize Cross-Entropy Loss
 Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 ```
 
-The model predicts the next token given the context. This simple objective, at scale, leads to emergent reasoning capabilities. Many current models add an auxiliary **multi-token prediction (MTP)** objective (DeepSeek-V3 popularized it), which both improves training signal and leaves behind draft heads that serving engines reuse for [speculative decoding](../04-inference-optimization/03-speculative-decoding.md).
+مدل، Token بعدی را بر اساس متن زمینه (context) پیش‌بینی می‌کند. این هدف ساده، در مقیاس بزرگ، منجر به قابلیت‌های استدلال نوظهور (emergent reasoning) می‌شود. بسیاری از مدل‌های کنونی یک هدف کمکی به نام **پیش‌بینی چند Token هم‌زمان (multi-token prediction یا MTP)** را اضافه می‌کنند (که DeepSeek-V3 آن را محبوب کرد)؛ این کار هم سیگنال آموزش را بهبود می‌بخشد و هم هدهای پیش‌نویسی (draft heads) بر جای می‌گذارد که موتورهای سرویس‌دهی از آن‌ها برای [کدگشایی حدسی (speculative decoding)](../04-inference-optimization/03-speculative-decoding.md) مجدداً استفاده می‌کنند.
 
 ---
 
-## Data Curriculum and Quality
+## برنامه آموزشی و کیفیت داده (Data Curriculum and Quality)
 
-The focus has shifted from "More Data" to "Better Curriculum."
+تمرکز از «داده‌های بیشتر» به «برنامه آموزشی (Curriculum) بهتر» تغییر یافته است.
 
-### Token Budgets at the Frontier
-Disclosed pretraining budgets for open models now run from about 15T to 45T tokens: Llama 3 used about 15T, DeepSeek-V3 14.8T, Qwen3 about 36T, Meta says the Llama 4 mixture was more than 30T, and Thinking Machines Lab's Inkling (July 2026) was pretrained on 45T multimodal tokens (vendor-reported). Closed labs (OpenAI, Anthropic, Google) do not publish token counts, so treat any specific figure for GPT, Claude, or Gemini as a guess. At this scale, **Deduplication** and **Quality Filtering** are the primary differentiators.
+### بودجه‌های Token در لبه فناوری (Frontier)
+بودجه‌های اعلام‌شده‌ی پیش‌آموزش برای مدل‌های باز در حال حاضر بین حدود 15T تا 45T Token متغیر است: Llama 3 حدود 15T، مدل DeepSeek-V3 حدود 14.8T و Qwen3 حدود 36T استفاده کرده‌اند؛ Meta اعلام کرده که ترکیب داده‌ی Llama 4 بیش از 30T بوده است، و مدل Inkling از آزمایشگاه Thinking Machines Lab (جولای ۲۰۲۶) طبق گزارش ارائه‌دهنده بر روی 45T Token چندحالته (multimodal) پیش‌آموزش دیده است. آزمایشگاه‌های انحصاری (OpenAI، Anthropic، Google) تعداد Tokenها را منتشر نمی‌کنند، بنابراین هر عدد مشخصی برای GPT، Claude یا Gemini را باید در حد حدس و گمان در نظر گرفت. در این مقیاس، **حذف داده‌های تکراری (Deduplication)** و **فیلترسازی کیفی (Quality Filtering)** عوامل اصلی تمایز هستند.
 
-### Data Mixture Standard
-| Component | Percentage | Purpose |
-|-----------|------------|---------|
-| Web (CommonCrawl) | 50-60% | General knowledge, diverse styles |
-| Code (GitHub, StackOverflow)| 15-20% | **Critical for Logic & Reasoning** |
-| Books (Project Gutenberg) | 10% | Narrative coherence, long context |
-| Academic (ArXiv, PubMed) | 10% | Specialized technical knowledge |
-| Synthetic (Model-generated) | 5-10% | Math, Logic, and specific instruction paths |
+### استاندارد ترکیب داده (Data Mixture Standard)
+| مؤلفه | درصد | هدف |
+|-------|------|-----|
+| وب (CommonCrawl) | 50-60% | دانش عمومی، سبک‌های متنوع نگارش |
+| کد (GitHub، StackOverflow) | 15-20% | **حیاتی برای منطق و استدلال (Logic & Reasoning)** |
+| کتاب‌ها (Project Gutenberg) | 10% | انسجام روایی، زمینه طولانی (Long Context) |
+| متون دانشگاهی (ArXiv، PubMed) | 10% | دانش فنی تخصصی |
+| داده‌های سنتتیک (تولیدشده توسط مدل) | 5-10% | ریاضیات، منطق، و مسیرهای دستورالعملی خاص |
 
-These shares are a typical general-purpose mix, not a law. Small reasoning-focused models go much further on synthetic data: Microsoft's Phi-4 report allocates 40% of pretraining tokens to synthetic data (see [Synthetic Data Generation](06-synthetic-data-generation.md)).
+این سهم‌ها یک ترکیب معمول با کاربرد عمومی هستند، نه یک قانون قطعی. مدل‌های کوچک با تمرکز بر استدلال، بسیار فراتر رفته و به شکل گسترده‌تری از داده‌های سنتتیک استفاده می‌کنند: گزارش مدل Phi-4 مایکروسافت، ۴۰٪ از Tokenهای پیش‌آموزش را به داده‌های سنتتیک اختصاص داده است (به [تولید داده‌های سنتتیک (Synthetic Data Generation)](06-synthetic-data-generation.md) مراجعه کنید).
 
-**Nuance: The "Code Effect":**
-Research shows that increasing code in the pretraining mix improves a model's performance on **non-coding** reasoning tasks (e.g., math, logic puzzles) by teaching structured thinking.
+**نکته ظریف: «اثر کد» (The "Code Effect"):**
+پژوهش‌ها نشان می‌دهند که افزایش سهم کد در ترکیب پیش‌آموزش، از طریق آموزش تفکر ساختاریافته، عملکرد مدل را در وظایف استدلالی **غیر برنامه‌نویسی** (مانند ریاضیات، معماهای منطقی) ارتقا می‌دهد.
 
-**Provenance is now a design requirement.** Courts are separating whether training on a work is lawful from how the work was acquired (the Bartz v. Anthropic ruling held training lawful but piracy-sourced acquisition not, and the case settled for $1.5B). Keep acquisition records per corpus, not just a license field.
+**اصالت و منشأ داده‌ها (Provenance) اکنون یک الزام در طراحی است.** دادگاه‌ها در حال تفکیک این مسئله هستند که آیا آموزش روی یک اثر قانونی است یا خیر، از نحوه به‌دست آوردن آن اثر (حکم دادگاه در پرونده Bartz در برابر Anthropic، آموزش را قانونی اما دستیابی از طریق منابع غیرمجاز/دزدی دریایی را غیرقانونی دانست، و پرونده با توافق ۱.۵ میلیارد دلاری مختومه شد). سوابق جمع‌آوری را به تفکیک هر پیکره متنی (corpus) ثبت و نگهداری کنید، نه فقط در قالب یک فیلد مجوز (license).
 
 ---
 
-## Scaling Laws: Training vs. Inference Optimal
+## قوانین مقیاس‌پذیری: بهینگی در آموزش در برابر بهینگی در استنتاج (Scaling Laws: Training vs. Inference Optimal)
 
-### The Chinchilla Paradigm (2022-2024)
+### پارادایم چینچیلا (Chinchilla Paradigm: 2022-2024)
 `Data Tokens (D) ≈ 20 * Parameters (N)`
-For a 70B model, this suggests ~1.4T tokens.
+برای یک مدل 70B، این رابطه مقدار ~1.4T Token را پیشنهاد می‌دهد.
 
-### The Inference-Optimal Paradigm
-Modern models (Llama 3, Llama 4, Qwen3) are **heavily overtrained** relative to Chinchilla.
-- **Why?**: Training cost is paid once; inference cost is paid billions of times.
-- **Result**: Small models (8B) are now trained on 15T+ tokens, making them as capable as older 70B models but much cheaper to serve.
+### پارادایم بهینه برای استنتاج (Inference-Optimal Paradigm)
+مدل‌های مدرن (Llama 3، Llama 4، Qwen3) در مقایسه با چینچیلا **به‌شدت بیش‌ازحد آموزش دیده‌اند (heavily overtrained)**.
+- **چرا؟**: هزینه آموزش تنها یک بار پرداخت می‌شود؛ در حالی که هزینه استنتاج (Inference) میلیاردها بار پرداخت خواهد شد.
+- **نتیجه**: مدل‌های کوچک (8B) اکنون بر روی بیش از 15T Token آموزش داده می‌شوند، که باعث می‌شود همانند مدل‌های قدیمی‌تر 70B توانمند باشند، اما هزینه سرویس‌دهی آن‌ها بسیار ارزان‌تر باشد.
 
-| Strategy | Token/Param Ratio | Best For |
-|----------|-------------------|----------|
-| Chinchilla | 20:1 | Research / Proof of Concept |
-| **Inference-Optimal** | **200:1 to 2,000:1+**| Production deployment (Llama 3 8B on ~15T tokens is ~1,900:1) |
-
----
-
-## Computational Requirements
-
-The standard back-of-envelope: **training FLOPs ≈ 6 × N × D**, where N is parameters touched per token and D is training tokens (2ND for the forward pass, 4ND for the backward pass).
-
-| Model | N (per token) | D | ≈ FLOPs | Reported compute |
-|-------|---------------|---|---------|------------------|
-| Llama 3.1 405B (dense) | 405B | 15.6T | 3.8 × 10^25 | 30.84M H100 GPU-hours (Meta model card) |
-| DeepSeek-V3 (MoE, 671B total) | 37B active | 14.8T | ~3.3 × 10^24 | 2.788M H800 GPU-hours (DeepSeek report) |
-
-Two lessons interviewers probe:
-- **For MoE, use active parameters**, not total. Counting DeepSeek-V3's 671B total parameters would overstate its compute by about 18x. It uses 37B active parameters per token against Llama 3.1 405B's 405B dense, so on similar token counts its training FLOPs are about a tenth.
-- **GPU-hours = FLOPs / (peak FLOPs × MFU)**. Model FLOPs utilization of 35-45% is typical for well-tuned large dense runs in BF16; Meta reports 390 TFLOPs per GPU in FP8 on 32K GPUs for Llama 4 Behemoth. Memory for training (weights, gradients, optimizer state at ~16 bytes per parameter in mixed precision before sharding) is what forces ZeRO/FSDP sharding and pipeline parallelism, long before FLOPs run out.
+| استراتژی | نسبت Token/پارامتر | بهترین کاربرد برای |
+|----------|--------------------|-------------------|
+| چینچیلا (Chinchilla) | 20:1 | پژوهش / اثبات مفهوم (Proof of Concept) |
+| **بهینه برای استنتاج (Inference-Optimal)** | **200:1 تا +2,000:1** | استقرار (Deployment) در محیط عملیاتی (مدل Llama 3 8B روی حدود 15T Token تقریباً 1,900:1 است) |
 
 ---
 
-## Training Stability
+## الزامات محاسباتی (Computational Requirements)
 
-Training at the "Ultra" scale (100k+ GPUs) faces massive stability issues.
+محاسبه سرانگشتی استاندارد: **training FLOPs ≈ 6 × N × D**، که در آن N تعداد پارامترهای فعال به ازای هر Token و D تعداد Tokenهای آموزش است (2ND برای گذر رو به جلو (forward pass) و 4ND برای گذر رو به عقب (backward pass)).
 
-### 1. Loss Spikes
-Sudden jumps in loss that can ruin a training run.
-- **Standard fix**: **Periodic Checkpointing** and **Automatic Rollbacks**.
-- **Architecture fix**: **Residual Scaling** (initializing weights such that the residual branch starts at near-zero).
+| مدل | N (به ازای هر Token) | D | مقادیر تقریبی FLOPs | توان محاسباتی گزارش‌شده |
+|-----|----------------------|---|---------------------|------------------------|
+| Llama 3.1 405B (متراکم / dense) | 405B | 15.6T | 3.8 × 10^25 | 30.84M ساعت-GPU مدل H100 (شناسنامه مدل Meta) |
+| DeepSeek-V3 (معماری MoE، مجموعاً 671B) | 37B فعال | 14.8T | ~3.3 × 10^24 | 2.788M ساعت-GPU مدل H800 (گزارش DeepSeek) |
 
-### 2. Precision: BF16, FP8, and FP4
-- **BF16**: Still the stable default for most teams.
-- **FP8 mixed precision**: Standard at frontier scale since DeepSeek-V3 showed it at 671B (fine-grained block-wise scaling, higher-precision accumulation, sensitive ops kept in BF16/FP32); Meta trained Llama 4 in FP8. FP8 doubles peak tensor-core throughput on H100/B200, but end-to-end gains are smaller because not every op runs in FP8.
-- **FP4 (NVFP4 / MXFP4)**: The emerging frontier. NVIDIA trained a 12B model on 10T tokens in NVFP4 with results comparable to an FP8 baseline, using random Hadamard transforms and stochastic rounding (arXiv:2509.25149). NVIDIA rates a Vera Rubin NVL72 rack at 2,520 PFLOPS NVFP4 for training, and The Register reports Meta's MTIA 400 as a training-first part rated at 12 PFLOPS MXFP4. Expect FP4 pretraining recipes to spread through 2027; treat them as a recipe-and-kernel question, not a free 2x.
-
----
-
-## Interview Questions
-
-### Q: Why train an 8B model on 15T tokens if Chinchilla says 160B tokens is optimal?
-
-**Strong answer:**
-Chinchilla optimality focuses on the best use of a fixed **training** compute budget. However, in production, we care about the **Total Cost of Ownership (TCO)**, which is dominated by inference. By overtraining a small model, we "bake in" more intelligence into fewer parameters. This results in a model that is significantly more efficient to serve (higher TPS, lower VRAM) while matching the quality of much larger models trained to the Chinchilla point. The returns diminish (each extra trillion tokens buys less), so the stopping point is a cost decision, not a law.
-
-### Q: What is the "curriculum" in LLM pretraining?
-
-**Strong answer:**
-Curriculum refers to the order and mixture of data. A common modern pattern is:
-1. **General Knowledge Phase:** 80% of tokens (Web, Books).
-2. **Reasoning Focus Phase:** 15% tokens (Code, Math, Logic).
-3. **High-Quality "Cooling" Phase:** The last 1-5% of tokens are extremely high-quality, human-curated, or textbook data. This "cooling" phase helps the model jitter less and follow instructions better before any fine-tuning starts.
-
-Labs increasingly run a longer, reasoning-dense version of phase 3 as a deliberate **mid-training** stage before RL, because it raises the base competence that RL then sharpens (see [RLVR and Reasoning Models](08-rlvr-and-reasoning-models.md)).
-
-### Q: Estimate the compute to pretrain a 70B dense model on 15T tokens.
-
-**Strong answer:**
-6 × 70e9 × 15e12 ≈ 6.3 × 10^24 FLOPs. An H100 delivers about 1 PFLOPS dense BF16 at peak; at 40% MFU that is ~4 × 10^14 FLOPs per second, so roughly 1.6 × 10^10 GPU-seconds, about 4.4M GPU-hours. On a 16K-GPU cluster that is about 11-12 days of pure compute, before restarts, evals, and failed runs, which usually add 20-50%. As a sanity check, Meta reports 7.0M H100 GPU-hours for Llama 3.1 70B. If the model were an MoE with the same active parameters, the FLOPs would be the same, but memory and communication (expert parallelism, all-to-all) would dominate the engineering.
+دو نکته کلیدی که مصاحبه‌کنندگان به ارزیابی آن می‌پردازند:
+- **برای MoE، از پارامترهای فعال استفاده کنید**، نه کل پارامترها. احتساب ۶۷۱ میلیارد پارامتر کل مدل DeepSeek-V3 باعث می‌شود حجم محاسبات آن حدود ۱۸ برابر بیش از واقعیت برآورد شود. این مدل به ازای هر Token از 37B پارامتر فعال در برابر 405B پارامتر متراکم Llama 3.1 405B استفاده می‌کند، بنابراین در تعداد Token مشابه، FLOPs آموزش آن تقریباً یک دهم است.
+- **رابطه GPU-hours = FLOPs / (peak FLOPs × MFU)**: نرخ بهره‌وری FLOPs مدل (معادل MFU) حدود ۳۵ تا ۴۵ درصد برای اجراهای بزرگ متراکم و تنظیم‌شده در فرمت BF16 معمول است؛ Meta برای Llama 4 Behemoth توان 390 TFLOPs به ازای هر GPU را در دقت FP8 روی ۳۲ هزار GPU گزارش داده است. حافظه مورد نیاز برای آموزش (وزن‌ها، گرادیان‌ها، وضعیت بهینه‌ساز در حدود ۱۶ بایت به ازای هر پارامتر در دقت ترکیبی پیش از شاردینگ)، عاملی است که استفاده از شاردینگ ZeRO/FSDP و موازی‌سازی پایپ‌لاین (pipeline parallelism) را بسیار پیش از اتمام ظرفیت FLOPs ضروری می‌سازد.
 
 ---
 
-## References
-- Kaplan et al. "Scaling Laws for Neural Language Models" (2020)
-- Hoffmann et al. "Training Compute-Optimal Large Language Models" (Chinchilla, 2022)
-- Meta AI. "The Llama 3 Herd of Models" (2024) and "The Llama 4 herd" (blog, 2025)
-- DeepSeek-AI. "DeepSeek-V3 Technical Report" arXiv:2412.19437 (2024)
-- NVIDIA. "Pretraining Large Language Models with NVFP4" arXiv:2509.25149 (2025)
+## پایداری آموزش (Training Stability)
+
+آموزش در مقیاس بسیار بالا یا "Ultra" (بیش از ۱۰۰ هزار GPU) با چالش‌های پایداری شدیدی روبه‌رو است.
+
+### ۱. جهش‌های ناگهانی Loss (Loss Spikes)
+پرش‌های ناگهانی در Loss که می‌توانند یک فرایند آموزش را به کلی مختل کنند.
+- **راه‌حل استاندارد**: **چک‌پوینت‌گیری دوره‌ای (Periodic Checkpointing)** و **بازگردانی خودکار (Automatic Rollbacks)**.
+- **راه‌حل معماری**: **مقیاس‌بندی پسماند (Residual Scaling)** (مقداردهی اولیه وزن‌ها به طوری که شاخه پسماند (residual) تقریباً از صفر آغاز شود).
+
+### ۲. دقت محاسباتی: BF16، FP8 و FP4
+- **BF16**: همچنان پیش‌فرض پایدار برای بیشتر تیم‌ها محسوب می‌شود.
+- **دقت ترکیبی FP8 (FP8 mixed precision)**: از زمان ارائه مدل 671B توسط DeepSeek-V3، به استانداردی در لبه فناوری تبدیل شده است (مقیاس‌بندی بلوکی دقیق، انباشت با دقت بالاتر، و نگهداری عملیات حساس در BF16/FP32)؛ Meta نیز Llama 4 را با FP8 آموزش داد. فرمت FP8 توان عملیاتی (Throughput) اوج هسته‌های تانسور را روی H100/B200 دو برابر می‌کند، اما بهبودهای سرتاسری (end-to-end) کمتر هستند زیرا همه عملیات در FP8 اجرا نمی‌شوند.
+- **FP4 (NVFP4 / MXFP4)**: مرز نوظهور فناوری. شرکت NVIDIA یک مدل 12B را روی 10T Token در فرمت NVFP4 با استفاده از تبدیلات تصادفی هادامارد (random Hadamard transforms) و گرد کردن تصادفی (stochastic rounding) آموزش داد که نتایجی قابل مقایسه با مبنای FP8 داشت (arXiv:2509.25149). شرکت NVIDIA توان یک رک Vera Rubin NVL72 را معادل 2,520 PFLOPS در NVFP4 برای آموزش ارزیابی کرده است، و وب‌سایت The Register گزارش می‌دهد که شتاب‌دهنده MTIA 400 شرکت Meta به عنوان قطعه‌ای با اولویت آموزش با توان 12 PFLOPS در MXFP4 رتبه‌بندی شده است. انتظار داشته باشید که دستورالعمل‌های پیش‌آموزش FP4 تا پایان سال ۲۰۲۷ فراگیر شوند؛ البته باید به آن‌ها به چشم یک مسئله مربوط به دستورالعمل و کرنل (recipe-and-kernel) نگریست، نه یک ارتقای ۲ برابری رایگان.
 
 ---
 
-*Next: [Fine-Tuning Strategies](02-fine-tuning-strategies.md)*
+## سوالات مصاحبه (Interview Questions)
+
+### پرسش: چرا وقتی قانون چینچیلا 160B Token را بهینه می‌داند، یک مدل 8B روی 15T Token آموزش داده می‌شود؟
+
+**پاسخ قوی:**
+بهینگی چینچیلا بر بهترین استفاده از یک بودجه محاسباتی ثابت در مرحله **آموزش** تمرکز دارد. با این حال، در محیط عملیاتی، آنچه برای ما اهمیت دارد **هزینه کل مالکیت (Total Cost of Ownership یا TCO)** است که بخش عمده آن تحت تأثیر استنتاج (Inference) قرار دارد. با آموزش بیش‌ازحد (overtraining) یک مدل کوچک، ما هوشمندی بیشتری را در تعداد پارامترهای کمتری تثبیت می‌کنیم. این امر منجر به مدلی می‌شود که سرویس‌دهی آن به مراتب کارآمدتر است (TPS بالاتر، مصرف VRAM کمتر)، در حالی که کیفیتی هم‌تراز با مدل‌های بسیار بزرگ‌تر آموزش‌دیده تا نقطه بهینه چینچیلا ارائه می‌دهد. بازدهی با گذر زمان کاهش می‌یابد (هر یک تریلیون Token اضافی دستاورد کمتری به همراه دارد)، بنابراین تعیین نقطه توقف یک تصمیم مبتنی بر هزینه است، نه یک قانون قطعی.
+
+### پرسش: منظور از «برنامه آموزشی» (Curriculum) در پیش‌آموزش LLM چیست؟
+
+**پاسخ قوی:**
+برنامه آموزشی (Curriculum) به ترتیب و ترکیب ارائه داده‌ها اشاره دارد. یک الگوی رایج مدرن عبارت است از:
+۱. **فاز دانش عمومی (General Knowledge Phase):** ۸۰٪ از Tokenها (وب، کتاب‌ها).
+۲. **فاز تمرکز بر استدلال (Reasoning Focus Phase):** ۱۵٪ از Tokenها (کد، ریاضیات، منطق).
+۳. **فاز «خنک‌سازی» با کیفیت بالا (High-Quality "Cooling" Phase):** ۱ تا ۵ درصد پایانی Tokenها شامل داده‌های فوق‌العاده باکیفیت، دست‌چین‌شده توسط انسان یا متون آموزشی کتاب‌های درسی است. این فاز «خنک‌سازی» به مدل کمک می‌کند نوسان (jitter) کمتری داشته باشد و پیش از شروع هرگونه Fine-tuning، دستورالعمل‌ها را بهتر دنبال کند.
+
+آزمایشگاه‌ها به‌طور فزاینده‌ای نسخه‌ای طولانی‌تر و متراکم از نظر استدلال از فاز ۳ را به عنوان یک مرحله هدفمند **آموزش میانی (mid-training)** پیش از RL اجرا می‌کنند، زیرا شایستگی پایه‌ای را ارتقا می‌دهد که سپس توسط RL تقویت و صیقل داده می‌شود (به [RLVR و مدل‌های استدلالی (RLVR and Reasoning Models)](08-rlvr-and-reasoning-models.md) مراجعه کنید).
+
+### پرسش: میزان توان محاسباتی لازم برای پیش‌آموزش یک مدل متراکم (dense) 70B روی 15T Token را تخمین بزنید.
+
+**پاسخ قوی:**
+محاسبه به صورت 6 × 70e9 × 15e12 ≈ 6.3 × 10^24 FLOPs است. یک پردازنده H100 در حالت اوج در فرمت dense BF16 حدود 1 PFLOPS توان محاسباتی ارائه می‌دهد؛ با MFU معادل ۴۰٪، این مقدار تقریباً ~4 × 10^14 FLOPs در هر ثانیه خواهد بود، که معادل حدود 1.6 × 10^10 ثانیه-GPU، یا حدود 4.4M ساعت-GPU (GPU-hours) است. در یک کلاستر دارای ۱۶ هزار GPU، این میزان تقریباً ۱۱ تا ۱۲ روز محاسبات خالص زمان می‌برد؛ پیش از احتساب راه‌اندازی‌های مجدد، ارزیابی‌ها (evals) و اجراهای ناموفق که معمولاً ۲۰ تا ۵۰ درصد به این زمان اضافه می‌کنند. برای اعتبارسنجی (sanity check)، شرکت Meta برای Llama 3.1 70B رقم 7.0M ساعت-GPU با H100 را گزارش کرده است. اگر این مدل یک MoE با همان تعداد پارامتر فعال می‌بود، میزان FLOPs یکسان می‌ماند، اما حافظه و ارتباطات بین پردازنده‌ای (موازی‌سازی کارشناسان یا expert parallelism، ارتباطات all-to-all) به چالش‌های اصلی مهندسی تبدیل می‌شدند.
+
+---
+
+## منابع (References)
+
+- مقاله Kaplan et al. با عنوان "Scaling Laws for Neural Language Models" (سال ۲۰۲۰)
+- مقاله Hoffmann et al. با عنوان "Training Compute-Optimal Large Language Models" (چینچیلا، ۲۰۲۲)
+- شرکت Meta AI با عنوان "The Llama 3 Herd of Models" (سال ۲۰۲۴) و "The Llama 4 herd" (پست وبلاگ، ۲۰۲۵)
+- شرکت DeepSeek-AI، گزارش فنی "DeepSeek-V3 Technical Report" در arXiv:2412.19437 (سال ۲۰۲۴)
+- شرکت NVIDIA، مقاله "Pretraining Large Language Models with NVFP4" در arXiv:2509.25149 (سال ۲۰۲۵)
+
+---
+
+*بخش بعدی: [استراتژی‌های Fine-Tuning](02-fine-tuning-strategies.md)*
+
+</div>
