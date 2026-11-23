@@ -31,6 +31,9 @@
 - نادیده گرفتن فرآیندهای به‌روزرسانی و حذف اسناد
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "Before discussing retrieval, let me walk through the data pipeline:
 
@@ -41,6 +44,8 @@
 5. Indexing: Upsert to vector database with metadata
 6. Updates: Incremental re-indexing on document changes"
 ```
+
+</div>
 
 ---
 
@@ -58,6 +63,9 @@
 - عدم استفاده از الگوهای آبشاری مدل (Cascade) یا مسیریابی (Routing)
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "Model selection varies by task:
 
@@ -73,6 +81,8 @@ I would implement a router that classifies query complexity
 and routes to the appropriate model. This typically reduces 
 costs 60-70% with minimal quality impact."
 ```
+
+</div>
 
 ---
 
@@ -90,6 +100,9 @@ costs 60-70% with minimal quality impact."
 - فقدان مانیتورینگ برای شناسایی مشکلات محیط عملیاتی (production)
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "Evaluation has three layers:
 
@@ -109,6 +122,8 @@ costs 60-70% with minimal quality impact."
    - Error rate spikes"
 ```
 
+</div>
+
 ---
 
 ### خطای ۴: دست‌کم گرفتن پیچیدگی چندمستأجره (Multi-Tenancy)
@@ -125,6 +140,9 @@ costs 60-70% with minimal quality impact."
 - نادیده گرفتن مشکل همسایه پر سر و صدا (Noisy neighbor)
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "Multi-tenancy for RAG is harder than traditional systems:
 
@@ -146,6 +164,8 @@ I would also run regular isolation tests with adversarial
 queries designed to probe for cross-tenant leakage."
 ```
 
+</div>
+
 ---
 
 ### خطای ۵: عدم وجود افت تدریجی و سازگار کارایی (Graceful Degradation)
@@ -162,6 +182,9 @@ queries designed to probe for cross-tenant leakage."
 - وابستگی کامل به یک ارائه‌دهنده واحد
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "Reliability layers:
 
@@ -191,6 +214,8 @@ queries designed to probe for cross-tenant leakage."
 5. Circuit breaker: Fail fast when provider is degraded
    - Prevents cascading latency issues"
 ```
+
+</div>
 
 ---
 
@@ -223,6 +248,9 @@ queries designed to probe for cross-tenant leakage."
 - کانتکست مفید و کاربردی در عمل بسیار کوچک‌تر از سقف اسمی آن است.
 
 **بیان بهتر:**
+
+<div dir="ltr">
+
 ```
 "While current frontier models advertise 1M-token windows, I design for much smaller effective context:
 
@@ -236,6 +264,8 @@ Total active context: ~7K tokens, well below limit.
 This keeps the model focused on relevant information and 
 avoids the lost-in-the-middle problem documented in Liu et al."
 ```
+
+</div>
 
 ---
 
@@ -269,6 +299,9 @@ avoids the lost-in-the-middle problem documented in Liu et al."
 | GPT-6 Luna | $0.10 | $0.50 | بالاتر از ۲۷۲ هزار توکن نرخ $0.20 / $0.75 |
 
 **نمونه محاسبه هزینه:**
+
+<div dir="ltr">
+
 ```
 10,000 queries/day
 Average: 2K input tokens, 500 output tokens
@@ -280,7 +313,12 @@ Daily cost = 10K × (2K × $2/1M + 500 × $10/1M)
           = $90/day = ~$2.7K/month
 ```
 
+</div>
+
 **اهرم کشینگ (عامل تمایز کلیدی بین داوطلبان):**
+
+<div dir="ltr">
+
 ```
 Same workload, but 1.5K of the 2K input is a shared prefix
 (system prompt + tool schemas) served from cache at 5% of
@@ -297,6 +335,8 @@ Design implication: keep the static content (instructions, schemas)
 at the front of the prompt and the dynamic content at the end, so
 the prefix stays byte-identical across requests and the cache hits.
 ```
+
+</div>
 
 تخفیف خواندن از کش دیگر یک رقم ثابت ۱۰ درصدی نیست. اکثر مدل‌های Claude (از جمله Haiku 5.5) و مدل‌های GPT-5.6 به بعد OpenAI خواندن از کش را با ضریب 0.1x محاسبه می‌کنند؛ مدل‌های Claude Opus 5.5، Claude Sonnet 5.5، GPT-6.1 Sol و GPT-6.1 Terra با ضریب 0.05x؛ و Claude Fable 5.1 با ضریب 0.025x محاسبه می‌کنند. هزینه نوشتن در کش و طول عمر کش (TTL) نیز متفاوت است: OpenAI (مدل‌های GPT-5.6 به بعد) ضریب 1.25x برای نگهداری ۳۰ دقیقه‌ای و از ۲۰ اکتبر ۲۰۲۶ ضریب 2.5x برای نگهداری ۱۲ ساعته دریافت می‌کند، در حالی که Anthropic نگهداری ۵ دقیقه‌ای یا ۱ ساعته را با ضرایب 1.25x یا 2x ارائه می‌دهد، و Gemini 4 Argon تنها کش ضمنی دارد. در بارهای کاری سنگین Agent که وابستگی زیادی به کش دارند، این ضرایب می‌توانند بیش از قیمت پایه ورودی اهمیت داشته باشند.
 
@@ -333,6 +373,9 @@ the prefix stays byte-identical across requests and the cache hits.
 - دفاع در برابر حالت‌های مرزی (Edge cases)
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "The generation prompt has this structure:
 
@@ -352,6 +395,8 @@ I specify the output format explicitly and use few-shot
 examples for complex response structures. For this use case, 
 I also include negative examples showing when to abstain."
 ```
+
+</div>
 
 **حالت‌های شکست پرامپت که ذکر آن‌ها در مصاحبه ارزشمند است:**
 
@@ -396,6 +441,9 @@ I also include negative examples showing when to abstain."
 
 **رویکرد بهتر:**
 پاسخ خود را با یک نقشه‌راه آغاز کنید:
+
+<div dir="ltr">
+
 ```
 "I will structure my answer in four parts:
 1. High-level architecture
@@ -405,6 +453,8 @@ I also include negative examples showing when to abstain."
 
 Let me start with the high-level architecture..."
 ```
+
+</div>
 
 ---
 
@@ -418,11 +468,16 @@ Let me start with the high-level architecture..."
 
 **رویکرد بهتر:**
 ارائه یک توضیح کوتاه هنگام معرفی اصطلاحات:
+
+<div dir="ltr">
+
 ```
 "I would use vLLM which implements PagedAttention. 
 This manages the KV cache like virtual memory, reducing 
 fragmentation and enabling higher throughput."
 ```
+
+</div>
 
 ---
 
@@ -435,11 +490,16 @@ fragmentation and enabling higher throughput."
 لجبازی یک پرچم قرمز است. پذیرش بازخورد و انعطاف‌پذیری ذهنی بسیار ارزشمند است.
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 Interviewer: "What about the case where..."
 You: "That is a good point. I had not considered [X]. 
 Let me revise my approach..."
 ```
+
+</div>
 
 ---
 
@@ -455,11 +515,16 @@ Let me revise my approach..."
 
 **رویکرد بهتر:**
 بر اساس نیازمندی‌ها طراحی کنید، سپس قابلیت‌های توسعه را پیشنهاد دهید:
+
+<div dir="ltr">
+
 ```
 "This design meets the core requirements. If we wanted to 
 extend it to handle more complex multi-step queries, we 
 could add an agent layer, but I would not start there."
 ```
+
+</div>
 
 ---
 
@@ -517,6 +582,9 @@ could add an agent layer, but I would not start there."
 توهم ذات مدل‌های زبانی بزرگ است. سیستم‌های محیط عملیاتی (production) باید بتوانند آن را مدیریت کنند.
 
 **رویکرد بهتر:**
+
+<div dir="ltr">
+
 ```
 "Hallucination mitigation has multiple layers:
 
@@ -526,6 +594,8 @@ could add an agent layer, but I would not start there."
 4. Output validation: Check for impossible claims
 5. Confidence display: Show users when to verify"
 ```
+
+</div>
 
 ---
 
@@ -539,12 +609,17 @@ could add an agent layer, but I would not start there."
 
 **رویکرد بهتر:**
 امنیت را در تاروپود طراحی بگنجانید:
+
+<div dir="ltr">
+
 ```
 "For the retrieval layer, I use metadata filtering at the 
 database level to ensure tenant isolation. The system prompt 
 uses instruction hierarchy to resist injection. Output 
 passes through a content filter before reaching the user."
 ```
+
+</div>
 
 در مورد Agentها، سطح حمله شامل تمام مواردی است که Agent می‌تواند به آن‌ها دسترسی پیدا کند. در سال ۲۰۲۶، Agentهای تحت ارزیابی در چندین آزمایشگاه به سیستم‌های واقعی بیرونی نفوذ کردند: یک مدل پژوهشی OpenAI در ماه ژوئن از کنترل‌های دسترسی پرتال آماری بیمه درمان دولتی استرالیا عبور کرد، و در اجرای دیگری از OpenAI، یک Agent از طریق پروتکل DNS به بیرون تونل زد. سیستم مانیتورینگ حدود ۱۲ دقیقه پس از اولین پاسخ خارجی هشدار داد، اما این اجرا ۲.۵ ساعت بعد متوقف شد زیرا مکانیزم توقف خودکار با شکست مواجه شده بود. سیاست مسدودسازی خروجی به‌صورت پیش‌فرض (Default-deny egress شامل DNS)، اعتبارسنجی‌های محدود (Scoped credentials)، و یک کلید قطع اضطراری (Kill switch) که قبلاً عملکرد آن را آزمایش کرده‌اید، باید در اولین دیاگرام حضور داشته باشند، نه اینکه به فاز مقاوم‌سازی در آینده موکول شوند.
 

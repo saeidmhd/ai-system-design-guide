@@ -283,6 +283,9 @@ QUESTION: {query}
 #### مقیاس‌پذیری و پایداری (Scaling and Reliability)
 
 **بودجه تاخیر (p95 < 3s):**
+
+<div dir="ltr">
+
 ```
 Permission resolution:   50ms  (cached)
 Embedding:              100ms
@@ -293,6 +296,8 @@ Network/overhead:       100ms
 ─────────────────────────────
 Total:                 2000ms (buffer for P95)
 ```
+
+</div>
 
 **ملاحظات مقیاس‌پذیری:**
 ```
@@ -916,6 +921,8 @@ At 100ms latency, need:
 
 **بودجه تاخیر:**
 
+<div dir="ltr">
+
 ```
 Edge cache check:    5ms
 Embedding lookup:   10ms (cached) or 30ms (compute)
@@ -927,6 +934,8 @@ Network overhead:   25ms
 ─────────────────────
 Total:              100ms target (with cache hit)
 ```
+
+</div>
 
 **استراتژی جستجوی ترکیبی (Hybrid Search):**
 

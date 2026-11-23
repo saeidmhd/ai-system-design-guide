@@ -49,6 +49,9 @@ flowchart LR
 - محدودیت بودجه چقدر است؟
 
 **مثال:**
+
+<div dir="ltr">
+
 ```
 Interviewer: Design a customer support chatbot.
 
@@ -59,6 +62,8 @@ You: Before I dive in, I want to clarify a few things:
 - Do we need to integrate with existing ticketing systems?
 - What is our accuracy target for resolved vs escalated?
 ```
+
+</div>
 
 **ضدالگو (Anti-pattern):** پریدن مستقیم به سراغ معماری بدون درک نیازمندی‌ها.
 
@@ -78,10 +83,15 @@ You: Before I dive in, I want to clarify a few things:
 | چندزبانه بودن (Multi-language) | متوسط | انتخاب مدل Embedding را تحت تاثیر قرار می‌دهد |
 
 **اولویت‌های خود را به‌صورت شفاف بیان کنید:**
+
+<div dir="ltr">
+
 ```
 "Given these requirements, I will prioritize latency and accuracy. 
 Cost optimization will be a second-order concern once we have the basic system working."
 ```
+
+</div>
 
 ---
 
@@ -128,9 +138,14 @@ Cost optimization will be a second-order concern once we have the basic system w
 - امنیت: ایزوله‌سازی، دسترسی‌ها و ممیزی (Audit)
 
 **قصد خود را اعلام کنید:**
+
+<div dir="ltr">
+
 ```
 "I will now go deeper on the RAG pipeline since retrieval quality is critical to this system."
 ```
+
+</div>
 
 ---
 
@@ -175,6 +190,8 @@ Cost optimization will be a second-order concern once we have the basic system w
 ## نمونه پیاده‌سازی‌شده: SPIDER در یک جلسه ۴۵ دقیقه‌ای
 
 یک متن گفت‌وگوی فشرده که نشان می‌دهد این چارچوب در یک مصاحبه واقعی چگونه به نظر می‌رسد. موضوع: «طراحی سیستم پرسش و پاسخ اسناد برای شرکتی با ۱۰,۰۰۰ کارمند». یادداشت‌های درون براکت مراحل چارچوب و زمان‌سنج را نشان می‌دهند.
+
+<div dir="ltr">
 
 ```
 [0:00 - S: Scope]
@@ -242,6 +259,8 @@ gives me ~400ms retrieval, ~150ms rerank (worth it for quality),
 second. Anything else you'd like me to go deeper on?"
 ```
 
+</div>
+
 **آنچه این سناریو نشان می‌دهد:**
 - تعیین دامنه (Scope) پنج دقیقه زمان برد و اعدادی را تولید کرد که کل طراحی به آن‌ها ارجاع داد.
 - داوطلب هم‌زمان با رسم نقشه صحبت کرد و در هر فاز مصاحبه‌کننده را به هدایت بحث دعوت نمود.
@@ -262,10 +281,15 @@ second. Anything else you'd like me to go deeper on?"
 با یک تعریف یک‌جمله‌ای که برای هر کسی قابل فهم باشد شروع کنید.
 
 **مثال برای KV Cache:**
+
+<div dir="ltr">
+
 ```
 "KV cache stores intermediate computations during LLM generation so we 
 do not have to redo work for previous tokens when generating each new token."
 ```
+
+</div>
 
 ---
 
@@ -274,6 +298,9 @@ do not have to redo work for previous tokens when generating each new token."
 عمق فنی مناسب متناسب با سطح مصاحبه‌کننده را اضافه کنید.
 
 **مثال برای KV Cache:**
+
+<div dir="ltr">
+
 ```
 "Specifically, for each layer in the transformer, we cache the Key and 
 Value tensors for all positions. On each new token, we only compute K 
@@ -286,6 +313,8 @@ For Llama 3.1 70B (80 layers, 8 KV heads, head_dim 128, BF16), that is
 320 KiB per token, so one 8K-token request holds about 2.5 GiB."
 ```
 
+</div>
+
 ---
 
 ### مرحله A - کاربردها و موازنه‌ها (Applications and Tradeoffs)
@@ -293,6 +322,9 @@ For Llama 3.1 70B (80 layers, 8 KV heads, head_dim 128, BF16), that is
 مفهوم را به کاربردهای عملی پیوند دهید و درباره موازنه‌ها (Tradeoffs) صحبت کنید.
 
 **مثال برای KV Cache:**
+
+<div dir="ltr">
+
 ```
 "This is critical for production serving. Without it, generation would be 
 quadratic in sequence length.
@@ -309,6 +341,8 @@ server-side KV cache persistence for shared prefixes, which is why cache
 reads bill at 0.1x the input price or less on current models."
 ```
 
+</div>
+
 ---
 
 ## چارچوب تحلیل موازنه‌ها (Tradeoff Analysis)
@@ -316,6 +350,8 @@ reads bill at 0.1x the input price or less on current models."
 هنگامی که از شما خواسته می‌شود گزینه‌ها را با هم مقایسه کنید یا تصمیمی را توجیه نمایید، از این ساختار استفاده کنید.
 
 ### گام ۱: گزینه‌ها را به‌صورت شفاف بیان کنید
+
+<div dir="ltr">
 
 ```
 "For embedding models, we have three main options:
@@ -325,6 +361,8 @@ reads bill at 0.1x the input price or less on current models."
 3. Self-hosted open model (Nemotron 3 Embed 8B, Qwen3-Embedding-8B, or a
    BGE variant): full control, operational overhead"
 ```
+
+</div>
 
 ### گام ۲: معیارهای ارزیابی را مشخص کنید
 
@@ -349,6 +387,8 @@ reads bill at 0.1x the input price or less on current models."
 
 ### گام ۴: یک پیشنهاد مستدل ارائه دهید
 
+<div dir="ltr">
+
 ```
 "I would recommend Cohere Embed 5 for this use case because:
 1. On our own 300-query domain eval it matches or beats
@@ -366,6 +406,8 @@ The risk is vendor dependency: switching providers means re-embedding
 50B tokens. We mitigate it by abstracting the embedding interface and
 keeping the raw chunks so a re-embed is a batch job, not a project."
 ```
+
+</div>
 
 ---
 
@@ -389,6 +431,8 @@ flowchart TD
 
 ### گام ۱: جمع‌آوری اطلاعات
 
+<div dir="ltr">
+
 ```
 "First, I would ask:
 - When did this start? What changed?
@@ -397,7 +441,11 @@ flowchart TD
 - Are there patterns (time of day, user segment, query type)?"
 ```
 
+</div>
+
 ### گام ۲: صورت‌بندی فرضیه‌ها
+
+<div dir="ltr">
 
 ```
 "Based on the symptoms, my top hypotheses are:
@@ -407,7 +455,11 @@ flowchart TD
 4. Rate limiting causing timeouts"
 ```
 
+</div>
+
 ### گام ۳: شرح رویکرد تشخیصی
+
+<div dir="ltr">
 
 ```
 "To isolate the cause:
@@ -417,7 +469,11 @@ flowchart TD
 4. Review metrics for any correlated changes"
 ```
 
+</div>
+
 ### گام ۴: ارائه راهکار و تایید اعتبار
+
+<div dir="ltr">
 
 ```
 "If it is retrieval quality, I would:
@@ -426,6 +482,8 @@ flowchart TD
 3. Roll out gradually with A/B comparison
 4. Set up alerts on retrieval quality metrics to catch future issues"
 ```
+
+</div>
 
 ---
 
@@ -437,23 +495,33 @@ flowchart TD
 
 بستر و زمینه ماجرا را به‌صورت خلاصه تعریف کنید.
 
+<div dir="ltr">
+
 ```
 "We had just launched our RAG-powered search feature and were getting 
 complaints about incorrect answers for technical queries."
 ```
 
+</div>
+
 ### مرحله T - وظیفه (Task)
 
 مسئولیت دقیق شما چه بود؟
+
+<div dir="ltr">
 
 ```
 "As the tech lead, I needed to diagnose the issue and ship a fix quickly 
 while maintaining user trust."
 ```
 
+</div>
+
 ### مرحله A - اقدام (Action)
 
 شما چه کاری انجام دادید؟ از ضمیر «من» استفاده کنید، نه «ما».
+
+<div dir="ltr">
 
 ```
 "I first instrumented detailed tracing to understand where failures occurred.
@@ -462,24 +530,34 @@ I designed a code-aware chunking approach that preserved semantic units.
 I also added a confidence score display so users could calibrate trust."
 ```
 
+</div>
+
 ### مرحله R - نتیجه (Result)
 
 در صورت امکان نتایج را کمّی و عددی بیان کنید.
+
+<div dir="ltr">
 
 ```
 "Answer quality on technical queries improved from 65% to 89% in our 
 evaluation suite. User complaints dropped 70% within two weeks."
 ```
 
+</div>
+
 ### مرحله L - آموخته‌ها (Learnings)
 
 اگر دوباره با آن مواجه می‌شدید چه کاری را متفاوت انجام می‌دادید؟
+
+<div dir="ltr">
 
 ```
 "I learned that chunking strategies need to be content-aware from the start.
 Now I always test chunking with the actual document distribution before 
 launching. I also build evaluation suites earlier in the process."
 ```
+
+</div>
 
 ---
 
@@ -489,13 +567,19 @@ launching. I also build evaluation suites earlier in the process."
 
 ### اگر اصلاً در مورد موضوع چیزی نمی‌دانید
 
+<div dir="ltr">
+
 ```
 "I am not familiar with [X]. Based on the name, I would guess it is related 
 to [Y]. Can you tell me more about what it does, and I can discuss how 
 I would approach the problem it solves?"
 ```
 
+</div>
+
 ### اگر تا حدی با آن آشنایی دارید
+
+<div dir="ltr">
 
 ```
 "I have read about [X] but have not used it in production. My understanding 
@@ -503,13 +587,19 @@ is that it [description]. In practice, I would need to read the documentation
 and likely prototype before making architectural decisions."
 ```
 
+</div>
+
 ### اگر مفهوم کلی را می‌دانید اما جزئیات را نه
+
+<div dir="ltr">
 
 ```
 "I understand the general approach of [X] - [brief explanation]. I do not 
 have the specific parameters or benchmarks memorized, but I know where to 
 find them and what questions to ask when evaluating it."
 ```
+
+</div>
 
 ---
 
@@ -518,27 +608,45 @@ find them and what questions to ask when evaluating it."
 ### اشتباه ۱: پریدن سریع به سراغ راه‌حل‌ها
 
 **غلط:**
+
+<div dir="ltr">
+
 ```
 Interviewer: "How would you design a document Q&A system?"
 You: "I would use LangChain with Pinecone and GPT-6.1 Sol."
 ```
 
+</div>
+
 **درست:**
+
+<div dir="ltr">
+
 ```
 "Before defining the solution, I want to understand the requirements.
 What types of documents? What volume? What accuracy is needed?"
 ```
+
+</div>
 
 ---
 
 ### اشتباه ۲: نادیده گرفتن هزینه‌ها
 
 **غلط:**
+
+<div dir="ltr">
+
 ```
 "I would always use the biggest frontier model for the best quality."
 ```
 
+</div>
+
 **درست:**
+
+<div dir="ltr">
+
 ```
 "Model selection depends on the quality bar and volume. For high-volume, 
 lower-stakes queries, I might use GPT-6 Luna or Claude Haiku 5.5 
@@ -550,16 +658,26 @@ a $0.10/$0.50 tier brings that to about $60K, provided evals show the
 cheap tier holds the bar on that 70%."
 ```
 
+</div>
+
 ---
 
 ### اشتباه ۳: عدم بحث درباره حالت‌های شکست
 
 **غلط:**
+
+<div dir="ltr">
+
 ```
 "The system retrieves documents, sends them to the LLM, and returns the answer."
 ```
 
+</div>
+
 **درست:**
+
+<div dir="ltr">
+
 ```
 "The happy path is straightforward. But let me discuss failure modes:
 - What if retrieval returns no relevant documents?
@@ -569,18 +687,28 @@ cheap tier holds the bar on that 70%."
 For each, we need detection and fallback strategies."
 ```
 
+</div>
+
 ---
 
 ### اشتباه ۴: بیش از حد پیچیده کردن طراحی
 
 **غلط:**
+
+<div dir="ltr">
+
 ```
 "We need a separate service for chunking, another for embedding, 
 a message queue between them, a stream processor for real-time, 
 three different vector databases for redundancy..."
 ```
 
+</div>
+
 **درست:**
+
+<div dir="ltr">
+
 ```
 "Let me start with the simplest architecture that could work, 
 then add complexity only where justified by requirements.
@@ -589,20 +717,32 @@ For this scale, a single service with async processing might be sufficient.
 If we need higher throughput, we can add message queues at that point."
 ```
 
+</div>
+
 ---
 
 ### اشتباه ۵: درخواست نکردن بازخورد از مصاحبه‌کننده
 
 **غلط:**
+
+<div dir="ltr">
+
 ```
 *Talks for 10 minutes without checking in*
 ```
 
+</div>
+
 **درست:**
+
+<div dir="ltr">
+
 ```
 "I have covered the high-level architecture. Would you like me to dive 
 deepere into any specific component, or should I move on to evaluation?"
 ```
+
+</div>
 
 ---
 
