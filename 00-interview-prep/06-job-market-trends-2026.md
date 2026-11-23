@@ -43,7 +43,7 @@
 
 شواهد مربوط به سطح ورودی نیز دقیق‌تر شد و نشان داد که فشار اصلی بر نرخ استخدام و حقوق است نه بیکاری:
 
-- **Indeed Hiring Lab (۱۷ سپتامبر ۲۰۲۶):** در مشاغلی که بیشترین مواجهه را با هوش مصنوعی دارند، سهم آگهی‌های سطح ورودی از ۲۹٪ در سال ۲۰۲۱ به ۱۰٪ در سال ۲۰۲۶ کاهش یافته، در حالی که سهم نقش‌های ارشد از ۲۲٪ به ۴۷٪ جهش کرده است. دستمزدهای آگهی‌شده در مشاغل پرمواجهه سریع‌تر رشد کرده، اما بخش عمده این «پاداش هوش مصنوعی» با کنترل ترکیب سابقه کار از بین می‌رود.
+- **گزارش Indeed Hiring Lab (۱۷ سپتامبر ۲۰۲۶):** در مشاغلی که بیشترین مواجهه را با هوش مصنوعی دارند، سهم آگهی‌های سطح ورودی از ۲۹٪ در سال ۲۰۲۱ به ۱۰٪ در سال ۲۰۲۶ کاهش یافته، در حالی که سهم نقش‌های ارشد از ۲۲٪ به ۴۷٪ جهش کرده است. دستمزدهای آگهی‌شده در مشاغل پرمواجهه سریع‌تر رشد کرده، اما بخش عمده این «پاداش هوش مصنوعی» با کنترل ترکیب سابقه کار از بین می‌رود.
 - **اداره سرشماری آمریکا (مقاله CES-WP-26-56، سپتامبر ۲۰۲۶):** پس از اواخر ۲۰۲۲، دستمزد اولیه فارغ‌التحصیلان رشته‌های با بیشترین مواجهه (در رأس آن‌ها علوم کامپیوتر) نسبت به رشته‌های کم‌مواجهه حدود ۱۳٪ افت کرد، که نویسندگان آن را به فارغ‌التحصیلی در یک دوره رکود بزرگ تشبیه می‌کنند. حدود نیمی از این افت ناشی از اشتغال در صنایع با دستمزد پایین‌تر است و این شکاف پس از دو سال به حدود ۵٪ کاهش می‌یابد.
 - **بانک فدرال رزرو دالاس (۲۲ سپتامبر ۲۰۲۶):** هر ۱۰ درصد افزایش در سهم وظایف قابل اتوماسیون یک رشته دانشگاهی، با ۱.۷ درصد کاهش شانس اشتغال در تگزاس ظرف یک سال پس از فارغ‌التحصیلی و گرایش بیشتر به ادامه تحصیل در مقاطع تکمیلی همراه است.
 - **مقاله کار NBER شماره w35796 (سپتامبر ۲۰۲۶):** بیکاری دارندگان مدرک کارشناسی ۲۲ تا ۲۵ ساله در تابستان ۲۰۲۶ برابر با ۷.۳٪ بود که در محدوده چهار تابستان گذشته قرار دارد و افزایش معناداری نسبت به فارغ‌التحصیلان قدیمی‌تر نشان نمی‌دهد.
@@ -76,30 +76,30 @@
 | **LLM Engineer** | متمرکز بر Fine-tuning مدل‌های ترنسفورمر، RAG و ایجنت‌ها. متمایز از مهندس ML. | شرکت‌های متوسط و بزرگ؛ [شرح شغل LLM Engineer در iSmart](https://www.ismartrecruit.com/job-descriptions/llm-engineer) |
 | **ML Engineer / ML+AI Software Engineer** | نقش کلاسیک آموزش و استقرار (Deployment) مدل‌ها. | [تمرکز ML/AI در levels.fyi](https://www.levels.fyi/t/software-engineer/focus/ml-ai) |
 | **Applied AI Engineer** | نسخه مستقر در تعامل با مشتری در آزمایشگاه‌های مرز فناوری. | [Applied AI در Anthropic](https://job-boards.greenhouse.io/anthropic/jobs/5116274008) |
-| **Member of Technical Staff (MTS)** | عنوان عامدانه مبهم که مرز میان پژوهش و مهندسی را کمرنگ می‌کند. | OpenAI، Anthropic، Thinking Machines، Mistral ([بررسی عنوان MTS در Scout AI](https://scoutnow.ai/blog/rebirth-member-of-technical-staff)) |
+| **Member of Technical Staff (MTS)** | عنوان عامدانه مبهم که مرز میان پژوهش و مهندسی را کمرنگ می‌کند. | شرکت OpenAI، Anthropic، Thinking Machines، Mistral ([بررسی عنوان MTS در Scout AI](https://scoutnow.ai/blog/rebirth-member-of-technical-staff)) |
 | **AI Research Engineer / Research Scientist** | اختصاصی آزمایشگاه‌های frontier؛ ترجیحاً با مدرک دکتری. | [راهنمای جامع مصاحبه Research Engineer 2026](https://www.sundeepteki.org/advice/the-ultimate-ai-research-engineer-interview-guide-cracking-openai-anthropic-google-deepmind-top-ai-labs) |
-| **AI Solutions Architect** | تمرکز بالا در بخش‌های سازمانی و شرکتی. | EY، Caterpillar، Deloitte ([آگهی استخدامی EY](https://careers.ey.com/ey/job/Amsterdam-AI-Solution-Architect-1083-HP/1258705801/)) |
+| **AI Solutions Architect** | تمرکز بالا در بخش‌های سازمانی و شرکتی. | شرکت‌های EY، Caterpillar، Deloitte ([آگهی استخدامی EY](https://careers.ey.com/ey/job/Amsterdam-AI-Solution-Architect-1083-HP/1258705801/)) |
 | **AI Platform Engineer** | مالکیت پلتفرم داخلی LLM-ops برای توسعه‌دهندگان سازمان. | [مشخصات شغلی لید پلتفرم AI در Augment Code](https://www.augmentcode.com/guides/ai-platform-engineering-leader-job-spec) |
 | **AI Engineering Manager** | بالاترین دستمزد در میان نقش‌های تکی؛ میانه ۲۹۳.۵ هزار دلار ([بنچمارک‌های AI Pulse](https://theaimarketpulse.com/salaries/)). | عمومی در شرکت‌های اسکیل‌آپ به بالا |
 | **AI Product Manager** | ضروری برای تقریباً تمام شرکت‌های B2B SaaS. | عمومی ([نیازمندی‌های محصولی آکاش گوپتا](https://www.aakashg.com/product-manager-requirements/)) |
-| **AI Technical Program Manager (TPM)** | گرایش‌های تخصصی: TPM هوش مصنوعی مسئولانه، TPM زیرساخت هوش مصنوعی، TPM عملکرد مشتری در GenAI | Microsoft، AMD، Together AI |
+| **AI Technical Program Manager (TPM)** | گرایش‌های تخصصی: TPM هوش مصنوعی مسئولانه، TPM زیرساخت هوش مصنوعی، TPM عملکرد مشتری در GenAI | شرکت‌های Microsoft، AMD، Together AI |
 
 ### عناوین جدید از سال ۲۰۲۵ به بعد
 
 | عنوان شغلی | دلیل پیدایش | محل درج آگهی |
 |-------|----------------|-------------------|
-| **Forward Deployed Engineer (FDE)** | مشتریان بزرگ حضور فیزیکی مهندس در محل را درخواست می‌کنند. | OpenAI (شامل شرکت استقرار OpenAI)، Anthropic، Google ([استخدام FDE در Anthropic](https://job-boards.greenhouse.io/anthropic/jobs/4985877008))؛ شرکت‌های مشاوره از دانشگاه (BCG X) |
-| **AI Evaluation Engineer** | ارزیابی (Eval) به یک حوزه تخصصی و مستقل مهندسی تبدیل شده است. | OpenAI ([بخش Applied Evals](https://openai.com/careers/software-engineer-applied-evals-san-francisco/)، [Frontier Evals](https://openai.com/careers/research-engineer-frontier-evals-and-environments-san-francisco/))، Apple، Scale AI، Distyl، Apex؛ ارزیابی‌کنندگان مستقر در شرکت‌های مشاوره |
-| **Agentic Systems Engineer / AI Agent Engineer** | ایجنت‌ها به یک سطح مهندسی مستقل تبدیل شده‌اند. | Teradata، GE Vernova، Deloitte، OpenAI ([مهندسی زیرساخت Agent در OpenAI](https://openai.com/careers/software-engineer-agent-infrastructure-san-francisco/)) |
-| **AI Reliability Engineer** | سیستم‌های غیرقطعی به انضباطی مشابه SRE نیاز دارند؛ متمایز از SRE سنتی. | Anthropic ([نقش‌های ارشد و Staff پایداری در Anthropic](https://www.anthropic.com/jobs))؛ شکل‌گیری دسته‌بندی AI SRE توسط Resolve.ai و Rootly. |
-| **AI Security Engineer / LLM Red Team Specialist** | دفاع در برابر تزریق پرامپت و شکستن حفاظ‌ها (Jailbreak) به عنوان یک تخصص. | Life360 ([مهندس ارشد امنیت هوش مصنوعی](https://www.remoterocketship.com/us/company/life360/jobs/principal-ai-security-engineer-ai-native-platform-united-states-remote/))؛ ۱۰ نقش نوظهور امنیت در [Practical DevSecOps](https://www.practical-devsecops.com/emerging-ai-security-roles/). |
-| **MCP Engineer / MCP Software Engineer** | پذیرش پروتکل MCP ساخت سرور را به تخصصی جداگانه تبدیل کرد. | Descope ([مهندس نرم‌افزار MCP](https://careers.descope.com/p/fe57f6224769-mcp-model-context-protocol-software-engineer)) |
+| **Forward Deployed Engineer (FDE)** | مشتریان بزرگ حضور فیزیکی مهندس در محل را درخواست می‌کنند. | شرکت OpenAI (شامل شرکت استقرار OpenAI)، Anthropic، Google ([استخدام FDE در Anthropic](https://job-boards.greenhouse.io/anthropic/jobs/4985877008))؛ شرکت‌های مشاوره از دانشگاه (BCG X) |
+| **AI Evaluation Engineer** | ارزیابی (Eval) به یک حوزه تخصصی و مستقل مهندسی تبدیل شده است. | شرکت OpenAI ([بخش Applied Evals](https://openai.com/careers/software-engineer-applied-evals-san-francisco/)، [Frontier Evals](https://openai.com/careers/research-engineer-frontier-evals-and-environments-san-francisco/))، Apple، Scale AI، Distyl، Apex؛ ارزیابی‌کنندگان مستقر در شرکت‌های مشاوره |
+| **Agentic Systems Engineer / AI Agent Engineer** | ایجنت‌ها به یک سطح مهندسی مستقل تبدیل شده‌اند. | شرکت‌های Teradata، GE Vernova، Deloitte، OpenAI ([مهندسی زیرساخت Agent در OpenAI](https://openai.com/careers/software-engineer-agent-infrastructure-san-francisco/)) |
+| **AI Reliability Engineer** | سیستم‌های غیرقطعی به انضباطی مشابه SRE نیاز دارند؛ متمایز از SRE سنتی. | شرکت Anthropic ([نقش‌های ارشد و Staff پایداری در Anthropic](https://www.anthropic.com/jobs))؛ شکل‌گیری دسته‌بندی AI SRE توسط Resolve.ai و Rootly. |
+| **AI Security Engineer / LLM Red Team Specialist** | دفاع در برابر تزریق پرامپت و شکستن حفاظ‌ها (Jailbreak) به عنوان یک تخصص. | شرکت Life360 ([مهندس ارشد امنیت هوش مصنوعی](https://www.remoterocketship.com/us/company/life360/jobs/principal-ai-security-engineer-ai-native-platform-united-states-remote/))؛ ۱۰ نقش نوظهور امنیت در [Practical DevSecOps](https://www.practical-devsecops.com/emerging-ai-security-roles/). |
+| **MCP Engineer / MCP Software Engineer** | پذیرش پروتکل MCP ساخت سرور را به تخصصی جداگانه تبدیل کرد. | شرکت Descope ([مهندس نرم‌افزار MCP](https://careers.descope.com/p/fe57f6224769-mcp-model-context-protocol-software-engineer)) |
 | **AI Operator / Computer-Use Specialist** | مرتبط با ایجنت‌های کار با کامپیوتر نظیر ChatGPT agent، دستیار Cowork کلود، و Copilot Autopilot مایکروسافت. | سطح تخصصی ۷۵ تا ۱۲۰ هزار دلار ([گزارش پلتفرم‌های کار با کامپیوتر در Coasty](https://coasty.ai/blog/best-computer-use-platform-2026-20260402)) |
 
 ### نقش‌های در حال ناپدید شدن یا ادغام
 
-- **Prompt Engineer (به‌صورت مستقل):** این عنوان در حال از بین رفتن است؛ اما مهارت آن به عنوان پیش‌فرض اولیه در تمام نقش‌ها باقی می‌ماند.
-- **Distillation Engineer:** بیشتر به عنوان یک *مسئولیت* در آگهی‌های مهندسی Fine-tuning و استنتاج (Inference) ظاهر می‌شود، نه به عنوان یک درخواست شغلی مستقل و فراگیر.
+- **پرامپت (Prompt) Engineer (به‌صورت مستقل):** این عنوان در حال از بین رفتن است؛ اما مهارت آن به عنوان پیش‌فرض اولیه در تمام نقش‌ها باقی می‌ماند.
+- **عنوان شغلی Distillation Engineer:** بیشتر به عنوان یک *مسئولیت* در آگهی‌های مهندسی Fine-tuning و استنتاج (Inference) ظاهر می‌شود، نه به عنوان یک درخواست شغلی مستقل و فراگیر.
 
 ---
 
@@ -170,10 +170,10 @@
 
 رتبه‌بندی بر اساس فراوانی تکرار:
 
-۱. **Python** - در ۷۱٪ از کل آگهی‌های هوش مصنوعی
-۲. **PyTorch / JAX** - فراگیر در تمام آزمایشگاه‌های پیشرو
-۳. **LangChain / LangGraph** - در ۳۴.۳٪ از آگهی‌های ایجنتیک، فریم‌ورک شماره ۱
-۴. **LlamaIndex** - همراه با ۳۸٪ از آگهی‌های LangChain
+۱. **زبان Python** - در ۷۱٪ از کل آگهی‌های هوش مصنوعی
+۲. **فریم‌ورک‌های PyTorch / JAX** - فراگیر در تمام آزمایشگاه‌های پیشرو
+۳. **فریم‌ورک LangChain / LangGraph** - در ۳۴.۳٪ از آگهی‌های ایجنتیک، فریم‌ورک شماره ۱
+۴. **کتابخانه LlamaIndex** - همراه با ۳۸٪ از آگهی‌های LangChain
 ۵. **سرویس‌های ابری:** AWS (۳۲.۹٪) / Azure (۲۶٪) / GCP / Vertex / Bedrock
 ۶. **کانتینرها:** Kubernetes (۱۷.۶٪) + Docker (۱۵.۴٪)
 ۷. **پایگاه‌های داده برداری:** Pinecone، Weaviate، Qdrant، Chroma، pgvector
@@ -200,7 +200,7 @@
 | **OpenAI MTS / Research Scientist** | - | پایه $245K تا $685K (ثبت فدرال) | مه ۲۰۲۶ |
 | **OpenAI FDE** | سطح متوسط تا ارشد | پایه $153K-$325K؛ تخمین TC بین $350K-$550K (تخمین Aced) | سپتامبر ۲۰۲۶ |
 | **OpenAI Deployment Company** | مهندس موسس FDE | تا $400K (آگهی از طریق a16z jobs؛ تا ۵۰٪ سفر کاری) | سپتامبر ۲۰۲۶ |
-| **Cursor (اکنون بخشی از SpaceX)** | مهندس نرم‌افزار | میانه دریافتی $950K (شامل $325K پایه به علاوه $625K سهام سالانه)، بالاترین رقم $1.65M (تعداد نمونه ۱۸) | نوامبر ۲۰۲۶ |
+| **ابزار Cursor (اکنون بخشی از SpaceX)** | مهندس نرم‌افزار | میانه دریافتی $950K (شامل $325K پایه به علاوه $625K سهام سالانه)، بالاترین رقم $1.65M (تعداد نمونه ۱۸) | نوامبر ۲۰۲۶ |
 | **Sierra** | مهندس نرم‌افزار | میانه دریافتی $460K (شامل $300K پایه، $150K سهام، $10K پاداش)، بالاترین رقم $789K (تعداد نمونه ۲۵) | نوامبر ۲۰۲۶ |
 | **Thinking Machines Lab** | کل مهندسان | پایه $450K تا $500K (داده‌های ویزای H-1B در Q1) | مه ۲۰۲۶ |
 | Google AI Engineer | سطوح L3 تا L6 | میانه $240K (تعداد ۳۸)؛ میانگین L3 برابر $196K، سطح L5 برابر $355K، سطح L6 برابر $583K (بررسی ۲ اکتبر میانه $260K و سطح L6 را $1.15M نشان می‌داد) | نوامبر ۲۰۲۶ |
@@ -225,8 +225,8 @@
 | برلین / آلمان | سطح ارشد | دامنه €95-130K | مه ۲۰۲۶ |
 | **بنگلور (مراکز GCC برتر / شرکت‌های AI-first)** | سطح ارشد | کل دریافتی ۱ تا ۲ کرور روپیه (₹1-2 Cr) | مه ۲۰۲۶ |
 | بنگلور (فارغ‌التحصیلان دکتری / کارشناسی ارشد برتر) | سطح ورودی | دامنه ۲۲ تا ۳۲ لاخ روپیه (₹22-32 LPA) | مه ۲۰۲۶ |
-| سنگاپور | میانگین کل | S$221,200 دلار سنگاپور | مه ۲۰۲۶ |
-| سنگاپور (Principal/Lead) | بالای ۱۰ سال سابقه | S$323,505 دلار سنگاپور | مه ۲۰۲۶ |
+| سنگاپور | میانگین کل | مبلغ S$221,200 دلار سنگاپور | مه ۲۰۲۶ |
+| سنگاپور (Principal/Lead) | بالای ۱۰ سال سابقه | مبلغ S$323,505 دلار سنگاپور | مه ۲۰۲۶ |
 
 ---
 

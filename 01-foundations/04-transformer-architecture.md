@@ -298,7 +298,7 @@ loss = cross_entropy(logits, targets)
 |-----------|----------------|
 | توجه (Attention) | توجه کوئری گروه‌بندی‌شده (Grouped Query Attention - GQA) |
 | موقعیت (Position) | تعبیه موقعیت چرخشی (Rotary Position Embedding - RoPE) |
-| نرمال‌سازی (Normalization) | RMSNorm (از نوع pre-norm) |
+| نرمال‌سازی (Normalization) | نرمال‌سازی RMSNorm (از نوع pre-norm) |
 | فعال‌ساز (Activation) | SwiGLU |
 | بایاس (Bias) | بدون بایاس در لایه‌های خطی |
 
@@ -328,7 +328,7 @@ loss = cross_entropy(logits, targets)
 | نرمال‌سازی (Norm) | Post-LN | Pre-LN / RMSNorm | پایداری و سرعت آموزش |
 | موقعیت (Position) | سینوسی / یادگیری‌شده (Sinusoidal/Learned) | RoPE | برون‌یابی بهتر |
 | فعال‌ساز (Activation) | GELU | SwiGLU | کیفیت بالاتر (۱٪+ در بنچمارک‌ها) |
-| توجه (Attention) | MHA | GQA؛ لایه‌های MLA یا هیبریدی در مدل‌های پرچم‌دار متن‌باز ۲۰۲۶ | کاهش ۸ برابری اندازه KV cache با GQA، و بسیار بیشتر با MLA یا مدل‌های هیبریدی |
+| توجه (Attention) | MHA | مکانیزم GQA؛ لایه‌های MLA یا هیبریدی در مدل‌های پرچم‌دار متن‌باز ۲۰۲۶ | کاهش ۸ برابری اندازه KV cache با GQA، و بسیار بیشتر با MLA یا مدل‌های هیبریدی |
 | بایاس (Bias) | با بایاس | بدون بایاس | پارامترهای کمتر، کیفیت مشابه |
 
 ---
@@ -343,7 +343,7 @@ loss = cross_entropy(logits, targets)
 | پروجکشن Q/K/V در هر لایه | 3 * d_model * d_model (برای MHA) |
 | پروجکشن O در هر لایه | d_model * d_model |
 | لایه FFN در هر لایه | 3 * d_model * d_ff (برای SwiGLU) |
-| سر زبانی (LM head) | d_model * vocab_size (در مدل‌های کوچک به‌صورت اشتراکی/tied) |
+| سر زبانی (LM head) | ماتریس d_model * vocab_size (در مدل‌های کوچک به‌صورت اشتراکی/tied) |
 
 **تقریب برای مدل‌های فقط دیکودر (decoder-only):**
 ```
@@ -382,8 +382,8 @@ D (data tokens) ≈ 20 * N (parameters)
 | Llama 2 70B | 70B | 80 | 8192 | 64 | 8 | SwiGLU | 4K |
 | Llama 3.1 405B | 405B | 126 | 16384 | 128 | 8 | SwiGLU | 128K |
 | DeepSeek V3 | 671B (۳۷B فعال) | 61 | 7168 | 128 | MLA | MoE | 128K |
-| Llama 4 Maverick | 400B (۱۷B فعال) | 48 | 5120 | 40 | 8 | MoE، لایه‌های متناوب | 1M |
-| DeepSeek V4.1-Flash | بدنه اصلی ۵۵۲B (۸B فعال در prefill / ۱۶B در decode) | ۴۰ (۲۰ انکودر + ۲۰ دیکودر) | 5120 | 64 | فشرده (پروجکت‌شده از انکودر) | MoE، ۳۸۴ + ۱ مشترک | 1M |
+| Llama 4 Maverick | 400B (۱۷B فعال) | 48 | 5120 | 40 | 8 | معماری MoE، لایه‌های متناوب | 1M |
+| DeepSeek V4.1-Flash | بدنه اصلی ۵۵۲B (۸B فعال در prefill / ۱۶B در decode) | ۴۰ (۲۰ انکودر + ۲۰ دیکودر) | 5120 | 64 | فشرده (پروجکت‌شده از انکودر) | معماری MoE، ۳۸۴ + ۱ مشترک | 1M |
 
 مدل Mistral 7B (که در جدول نمایش داده نشده است) در تمام لایه‌ها از توجه پنجره لغزان (sliding window attention) استفاده می‌کند؛ مدل‌های متن‌باز سال ۲۰۲۶ در عوض لایه‌های پنجره لغزان یا لایه‌های توجه خطی (linear-attention) را با لایه‌های سراسری (global) به‌صورت متناوب ترکیب می‌کنند.
 
@@ -398,7 +398,7 @@ D (data tokens) ≈ 20 * N (parameters)
 **پاسخ قوی:**
 برای یک مدل فقط دیکودر (decoder-only) در حال تولید متن:
 
-۱. **Tokenization:** تبدیل متن ورودی به شناسه‌های Token (یا همان token IDها)
+۱. **فرآیند Tokenization:** تبدیل متن ورودی به شناسه‌های Token (یا همان token IDها)
 
 ۲. **تعبیه (Embedding):** بازیابی Embeddingهای Token از جدول Embedding
 
@@ -476,9 +476,9 @@ x = x + Sublayer(LayerNorm(x))
 | مولفه | GPT-2 | Llama 2 |
 |-----------|-------|---------|
 | نرمال‌سازی (Norm) | Post-LayerNorm | Pre-RMSNorm |
-| موقعیت (Position) | مطلق یادگیری‌شده (Learned absolute) | RoPE (چرخشی / rotary) |
+| موقعیت (Position) | مطلق یادگیری‌شده (Learned absolute) | مکانیزم RoPE (چرخشی / rotary) |
 | فعال‌ساز (Activation) | GELU | SwiGLU |
-| توجه (Attention) | MHA | GQA (برای 70B) |
+| توجه (Attention) | MHA | مکانیزم GQA (برای 70B) |
 | بایاس (Bias) | وجود دارد (Present) | حذف شده (Removed) |
 
 اثرات:

@@ -20,7 +20,7 @@
 
 ## چرا Agentها مدل معمول خرابی را برهم می‌زنند
 
-Agentها فرآیندهایی طولانی‌مدت، دارای وضعیت (stateful) و دارای اثرات جانبی (side-effecting) هستند که سه فرض اساسی را برهم می‌زنند:
+ایجنت‌ها (Agentها) فرآیندهایی طولانی‌مدت، دارای وضعیت (stateful) و دارای اثرات جانبی (side-effecting) هستند که سه فرض اساسی را برهم می‌زنند:
 
 - **اثرات جانبی دقیقاً یک‌بار (Exactly-once side effects).** اگر فراخوانی یک ابزار موفقیت‌آمیز باشد اما Agent پیش از ثبت آن دچار خرابی (crash) شود، یک اجرای از سر گرفته‌شده ممکن است فراخوانی را مجدداً تکرار کند، که به معنای پرداخت‌ها، تیکت‌ها یا استقرارها (Deploymentهای) تکراری است. ابهام اصلی این است که پس از خرابی در حین فعالیت (mid-activity crash)، نمی‌توانید تشخیص دهید که آیا اثر جانبی اعمال (commit) شده است یا فقط تاییدیه دریافت (acknowledgment) آن از دست رفته است؛ بنابراین یک تلاش مجدد (retry) ساده‌لوحانه آن را دو بار ارسال می‌کند.
 - **توقف‌های انسان در حلقه (Human-in-the-loop) که پس از راه‌اندازی مجدد (restart) دوام می‌آورند.** یک Agent ممکن است لازم باشد ساعت‌ها یا یک روز برای دریافت تأیید متوقف (block) شود، بدون اینکه پیشرفت خود را از دست بدهد یا توان پردازشی هدر دهد. توقفی که در حافظه فرآیند نگه‌داری شود، با استقرار (Deployment) بعدی از بین می‌رود.
@@ -50,7 +50,7 @@ Agentها فرآیندهایی طولانی‌مدت، دارای وضعیت (st
 
 | ابزار | محل نگه‌داری وضعیت | ردپا (Footprint) | توضیحات |
 |------|-------------------|-----------|-------|
-| **Temporal** (مرجع) | یک کلاستر مجزا (یا Temporal Cloud) | بالا (High) | تاریخچه رویداد به‌علاوه بازپخش قطعی؛ زبان‌های متعدد؛ اثبات‌شده در مقیاس‌های بزرگ؛ عمیق‌ترین یکپارچه‌سازی‌ها با فریم‌ورک‌های Agent. |
+| **پلتفرم Temporal** (مرجع) | یک کلاستر مجزا (یا Temporal Cloud) | بالا (High) | تاریخچه رویداد به‌علاوه بازپخش قطعی؛ زبان‌های متعدد؛ اثبات‌شده در مقیاس‌های بزرگ؛ عمیق‌ترین یکپارچه‌سازی‌ها با فریم‌ورک‌های Agent. |
 | **Restate** | موتور سبک‌وزن، سایدکار (sidecar) یا تعبیه‌شده (embedded) | پایین (Low) | هر مرحله را ژورنال می‌کند؛ آبجکت‌های مجازی (Virtual Objects) را اضافه می‌کند (جلسات دارای وضعیت با کلید کاربر/نشست همراه با کنترل همزمانی خودکار). |
 | **DBOS** | سطرهای Postgres | کمترین (Lowest) | کتابخانه‌ای که import می‌کنید؛ وضعیت گردش کار و اثرات جانبی تراکنشی می‌توانند یک تراکنش Postgres مشترک را برای تضمین دقیقاً یک‌بار در مراحل پایگاه داده به کار گیرند؛ بدون کلاستر مجزا. |
 | **Inngest** | مدیریت‌شده، رویدادمحور (event-driven) | پایین (Low) | مراحلی که مستقلاً تلاش مجدد می‌شوند، همراه با پرایمتیوهای ویژه هوش مصنوعی، و همزمانی داخلی و کنترل نرخ (throttling) برای محدودیت‌های نرخ (rate limits) در LLM. |
@@ -66,9 +66,9 @@ Agentها فرآیندهایی طولانی‌مدت، دارای وضعیت (st
 
 چشم‌انداز یکپارچه‌سازی در سال ۲۰۲۶:
 - **یکپارچه‌سازی‌های فریم‌ورک Temporal در تاریخ ۳۰ اکتبر ۲۰۲۶ به مرحله عرضه عمومی (GA) رسیدند**؛ این یکپارچه‌سازی‌ها شامل Google ADK (پایتون، Go، تایپ‌اسکریپت)، OpenAI Agents SDK در تایپ‌اسکریپت (نسخه پایتون از اوایل ۲۰۲۶ در وضعیت GA بود)، AWS Strands Agents (پایتون، تایپ‌اسکریپت)، LangGraph (پایتون)، LangSmith (پایتون، تایپ‌اسکریپت)، Vercel AI SDK، و Gemini SDK است که هر یک از آن‌ها فراخوانی‌های Agent و ابزارها را به‌عنوان فعالیت‌های پایدار کپسوله‌سازی می‌کنند. ابزارهای Pydantic AI، Mastra و Braintrust دارای یکپارچه‌سازی‌های ساخته‌شده توسط همکاران تجاری (partner-built) هستند؛ Claude Agent SDK در این فهرست قرار ندارد. پوشش‌دهنده‌های (wrappers) ADK از این جهت قابل توجه هستند که به حداقل تغییر کد نیاز دارند (آن‌ها تشخیص می‌دهند که آیا درون یک گردش کار اجرا می‌شوند یا خیر و در غیر این صورت به اجرای مستقیم بازمی‌گردند).
-- **LangGraph** همچنین از طریق **چک‌پوینترها (checkpointers)** پایداریِ سبک‌وزن‌تر و بومیِ فریم‌ورک را فراهم می‌کند که وضعیت گراف را در هر سوپر-مرحله (super-step) در حافظه پایدار ذخیره می‌سازند، با حالت‌های پایداری قابل انتخاب (چک‌پوینت هنگام خروج، به‌صورت غیرهمگام، یا به‌صورت همگام پیش از هر مرحله). راهنمای آن بازتاب‌دهنده قاعده قطعیت است: گردش کار را قطعی و برابری‌پیوسته (idempotent) نگه دارید و اثرات جانبی را در taskها بپیچید.
-- **DBOS و Restate** در سطح کتابخانه با فریم‌ورک‌های Agent یکپارچه می‌شوند و اجراهای Agent و فراخوانی‌های sub-agent را به‌عنوان گردش‌های کاری پایدار و گردش‌های کاری فرزند (child workflows) کپسوله‌سازی می‌کنند.
-- **Temporal + Amazon Bedrock AgentCore Runtime** در ۲۱ سپتامبر ۲۰۲۶ وارد نسخه پیش‌انتشار (prerelease) شد: یک گردش کار Temporal حلقه پایدار Agent را اجرا می‌کند، فراخوانی‌های مدل و ابزار فعالیت‌هایی با سیاست‌های تلاش مجدد (retry policies) هستند، Strands Agents مدل برنامه‌نویسی را ارائه می‌دهد، و AgentCore Runtime توان پردازشی پشت Temporal Serverless Workers است.
+- **فریم‌ورک LangGraph** همچنین از طریق **چک‌پوینترها (checkpointers)** پایداریِ سبک‌وزن‌تر و بومیِ فریم‌ورک را فراهم می‌کند که وضعیت گراف را در هر سوپر-مرحله (super-step) در حافظه پایدار ذخیره می‌سازند، با حالت‌های پایداری قابل انتخاب (چک‌پوینت هنگام خروج، به‌صورت غیرهمگام، یا به‌صورت همگام پیش از هر مرحله). راهنمای آن بازتاب‌دهنده قاعده قطعیت است: گردش کار را قطعی و برابری‌پیوسته (idempotent) نگه دارید و اثرات جانبی را در taskها بپیچید.
+- **پلتفرم‌های DBOS و Restate** در سطح کتابخانه با فریم‌ورک‌های Agent یکپارچه می‌شوند و اجراهای Agent و فراخوانی‌های sub-agent را به‌عنوان گردش‌های کاری پایدار و گردش‌های کاری فرزند (child workflows) کپسوله‌سازی می‌کنند.
+- **پلتفرم Temporal + Amazon Bedrock AgentCore Runtime** در ۲۱ سپتامبر ۲۰۲۶ وارد نسخه پیش‌انتشار (prerelease) شد: یک گردش کار Temporal حلقه پایدار Agent را اجرا می‌کند، فراخوانی‌های مدل و ابزار فعالیت‌هایی با سیاست‌های تلاش مجدد (retry policies) هستند، Strands Agents مدل برنامه‌نویسی را ارائه می‌دهد، و AgentCore Runtime توان پردازشی پشت Temporal Serverless Workers است.
 
 چالش و تعارض صادقانه‌ای که باید آموزش داد: **چک‌پوینت‌گذاری بومیِ فریم‌ورک *وضعیت (state)* را بازیابی می‌کند؛ اما یک موتور کامل اجرای پایدار علاوه بر آن، اثرات جانبی دقیقاً یک‌بار، تایمرهای پایدار، سیگنال‌ها، و معناشناسی بازپخش در طول استقرارها (Deploymentها) را فراهم می‌آورد.** این شکاف زمانی بیشترین اهمیت را پیدا می‌کند که فراخوانی‌های ابزار دارای اثرات خارجی برگشت‌ناپذیر باشند. برای Agentهایی که عمدتاً استدلال‌های LLM با ابزارهای قابل بازیابی و برابری‌پیوسته (idempotent) هستند، چک‌پوینت‌گذاری فریم‌ورک به‌همراه کلیدهای برابری‌پیوستگی روی معدود ابزارهای غیربرابری‌پیوسته معمولاً کافی است.
 
@@ -84,7 +84,7 @@ Agentها فرآیندهایی طولانی‌مدت، دارای وضعیت (st
 |----------|--------------------------|---------------------------------|----------------------|
 | **Claude Managed Agents** | بتا (هدر `managed-agents-2026-04-01`) روی Claude API، پلتفرم Claude روی AWS، و از ۲۲ اکتبر، Claude روی Google Cloud | نشست‌های بادوام؛ بودجه‌های سخت‌گیرانه برای نشست که با `budget_reached` متوقف می‌شوند (۷ اوت)؛ استقرارهای (Deployments) زمان‌بندی‌شده با cron (از ۹ ژوئن)؛ معماری Agentها به‌صورت کد از طریق `ant apply` با فایل کامیت‌شده `claude-lock.json` (در ant CLI 1.30.0، ۳ سپتامبر)؛ خط‌مشی اعطای مجوز خودکار ارزیابی‌شده در سرور و اتصال زنده به ترمینال (۱۰ سپتامبر) | صورت‌حساب بر اساس Tokenها به‌علاوه ۰٫۰۸ دلار به ازای هر ساعت اجرای نشست (زمان بیکاری رایگان است)؛ بدون تخفیف دسته‌ای (Batch) |
 | **OpenAI Agents API** | بتای عمومی از ۱۰ سپتامبر؛ زمان عرضه عمومی (GA) اعلام نشده است | بستر اجرایی مدیریت‌شده Codex: نشست‌های بادوام، فشرده‌سازی کانتکست، بازیابی، واگذاری به subagent، سرورهای MCP روی HTTP، هدایت در میانه اجرا؛ محیط‌های ایزوله (sandboxes) میزبانی‌شده توسط OpenAI یا خودمیزبان؛ استفاده کامپیوتری از مرورگر میزبانی‌شده (۲۹ سپتامبر) | تنها ماندگاری داده در آمریکا و عدم وجود عدم‌ذخیره‌سازی داده (Zero Data Retention) در زمان عرضه؛ صورت‌حساب بر اساس نرخ‌های مدل، ابزار و کانتینر (کانتینرهای میزبانی‌شده از ۰٫۰۳ دلار برای ۱ گیگابایت تا ۱٫۹۲ دلار برای ۶۴ گیگابایت در هر نشست ۲۰ دقیقه‌ای، با محاسبه دقیقه‌ای و حداقل ۵ دقیقه). از ۹ اکتبر، پردازش محیط ایزوله میزبانی‌شده توسط OpenAI فقط در طول نوبت‌های فعال محاسبه می‌شود؛ بنابراین زمان بیکاری بین نوبت‌ها، مانند انتظار برای تایید انسانی، دیگر هزینه زمان sandbox ندارد و با شیوه محاسبه زمان اجرای Claude مطابقت دارد |
-| **Amazon Bedrock Managed Agents** (قدرت‌گرفته از OpenAI) | پیش‌نمایش عمومی از ۲۹ سپتامبر | یک نسخه سفارشی از OpenAI Agents API که درون AWS اجرا می‌شود: نقش IAM اختصاصی به ازای هر Agent، لاگ‌گیری در CloudTrail، نشست‌های بادوام، تایید انسانی پیش از اقدامات پیامددار | فقط در us-east-1، us-east-2 و us-west-2؛ بدون هزینه اضافی در طول دوره پیش‌نمایش |
+| **سرویس Amazon Bedrock Managed Agents** (قدرت‌گرفته از OpenAI) | پیش‌نمایش عمومی از ۲۹ سپتامبر | یک نسخه سفارشی از OpenAI Agents API که درون AWS اجرا می‌شود: نقش IAM اختصاصی به ازای هر Agent، لاگ‌گیری در CloudTrail، نشست‌های بادوام، تایید انسانی پیش از اقدامات پیامددار | فقط در us-east-1، us-east-2 و us-west-2؛ بدون هزینه اضافی در طول دوره پیش‌نمایش |
 | **AWS AgentCore Runtime V2** | معرفی‌شده در ۱۸ سپتامبر | بازیابی هر نمونه (instance) از یک اسنپ‌شات از یک Agent مقداردهی اولیه شده؛ استارت سرد در صدک P75 حدود ۲ ثانیه در مقایسه با تقریباً ۵٫۴ ثانیه تا ۳۰ ثانیه در زمان اجرای اصلی (گزارش‌شده توسط AWS) | فعال‌سازی اختیاری با `platformVersion` نسخه V2؛ نرخ بالاتر بر روی گیگابایت-ساعت بسیار کمتر |
 | **Microsoft Foundry Agent Service** | عرضه عمومی روتین‌ها (۲۴ سپتامبر) | تریگرهای تکرارشونده، تایمر تک‌باره و مبتنی بر رویداد برای Agentهای منتشرشده | کنترل‌های خروج ترافیک شبکه (Network egress) هنوز در مرحله پیش‌نمایش است |
 
@@ -134,15 +134,15 @@ Agentها فرآیندهایی طولانی‌مدت، دارای وضعیت (st
 
 ## منابع
 
-- Resonate، [«محدودیت‌های قطعی (deterministic) از کجا می‌آیند؟»](https://journal.resonatehq.io/p/from-where-do-deterministic-constraints)
-- Restate، [«اجرای بادوام چیست؟»](https://www.restate.dev/what-is-durable-execution)
-- Temporal، [یکپارچه‌سازی با OpenAI Agents SDK](https://temporal.io/blog/announcing-openai-agents-sdk-integration)، [اعلامیه سرمایه‌گذاری سری D](https://temporal.io/news/temporal-raises-300M-to-make-agentic-ai-real-for-companies) و [اعلامیه سرمایه‌گذاری سری E](https://temporal.io/news/temporal-raises-550m-at-a-12-55b-valuation)
-- OpenAI، [بررسی اجمالی Agents API](https://developers.openai.com/api/docs/guides/agents-api/overview)
-- Anthropic، [یادداشت‌های انتشار پلتفرم Claude (زمان‌های اجرای مدیریت‌شده Agent)](https://platform.claude.com/docs/en/release-notes/overview)
-- Temporal، [از نمونه اولیه تا هوش مصنوعی Agentic آماده بهره‌برداری: مطالعه موردی Grid Dynamics](https://temporal.io/blog/prototype-to-prod-ready-agentic-ai-grid-dynamics)
-- Google ADK، [یکپارچه‌سازی با Temporal](https://adk.dev/integrations/temporal/)
-- LangChain، [اجرای بادوام در LangGraph](https://docs.langchain.com/oss/python/langgraph/durable-execution)
-- Diagrid، [«چک‌پوینت‌ها اجرای بادوام نیستند»](https://www.diagrid.io/blog/checkpoints-are-not-durable-execution-why-langgraph-crewai-google-adk-and-others-fall-short-for-production-agent-workflows)
+- پلتفرم Resonate، [«محدودیت‌های قطعی (deterministic) از کجا می‌آیند؟»](https://journal.resonatehq.io/p/from-where-do-deterministic-constraints)
+- پلتفرم Restate، [«اجرای بادوام چیست؟»](https://www.restate.dev/what-is-durable-execution)
+- پلتفرم Temporal، [یکپارچه‌سازی با OpenAI Agents SDK](https://temporal.io/blog/announcing-openai-agents-sdk-integration)، [اعلامیه سرمایه‌گذاری سری D](https://temporal.io/news/temporal-raises-300M-to-make-agentic-ai-real-for-companies) و [اعلامیه سرمایه‌گذاری سری E](https://temporal.io/news/temporal-raises-550m-at-a-12-55b-valuation)
+- شرکت OpenAI، [بررسی اجمالی Agents API](https://developers.openai.com/api/docs/guides/agents-api/overview)
+- شرکت Anthropic، [یادداشت‌های انتشار پلتفرم Claude (زمان‌های اجرای مدیریت‌شده Agent)](https://platform.claude.com/docs/en/release-notes/overview)
+- پلتفرم Temporal، [از نمونه اولیه تا هوش مصنوعی Agentic آماده بهره‌برداری: مطالعه موردی Grid Dynamics](https://temporal.io/blog/prototype-to-prod-ready-agentic-ai-grid-dynamics)
+- شرکت Google ADK، [یکپارچه‌سازی با Temporal](https://adk.dev/integrations/temporal/)
+- فریم‌ورک LangChain، [اجرای بادوام در LangGraph](https://docs.langchain.com/oss/python/langgraph/durable-execution)
+- شرکت Diagrid، [«چک‌پوینت‌ها اجرای بادوام نیستند»](https://www.diagrid.io/blog/checkpoints-are-not-durable-execution-why-langgraph-crewai-google-adk-and-others-fall-short-for-production-agent-workflows)
 
 ---
 

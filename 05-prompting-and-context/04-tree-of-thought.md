@@ -99,7 +99,7 @@ def tree_of_thought(problem, propose, evaluate, depth=3, breadth=3, threshold=0.
 - Yao et al. "Tree of Thoughts: Deliberate Problem Solving with Large Language Models" (2023)
 - Hao et al. "Reasoning with Language Model is Planning with World Model" (RAP, 2023)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (2023)
-- Silver et al. "Mastering the Game of Go without Human Knowledge" (الهام‌بخش MCTS)
+- پژوهش Silver et al. "Mastering the Game of Go without Human Knowledge" (الهام‌بخش MCTS)
 - [ARC Prize: بررسی مدل GPT-6 Astra روی ARC-AGI-3 (سپتامبر ۲۰۲۶)](https://arcprize.org/blog/astra)
 
 ---

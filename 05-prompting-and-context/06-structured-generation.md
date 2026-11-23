@@ -127,7 +127,7 @@ phone = model("Extract the phone number: call me at 415-555-0199", Regex(r"\d{3}
 ---
 
 ## منابع
-- OpenAI. «مستندات خروجی‌های ساختاریافته» (به‌روزرسانی اوت ۲۰۲۴)
+- شرکت OpenAI. «مستندات خروجی‌های ساختاریافته» (به‌روزرسانی اوت ۲۰۲۴)
 - [Anthropic. استفاده دقیق از ابزار و خروجی‌های ساختاریافته](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use)
 - [یادداشت‌های انتشار Claude API (حذف استفاده اجباری از ابزار)](https://platform.claude.com/docs/en/release-notes/overview)
 - [Anthropic. «امتناع‌ها و راهکارهای جایگزین»: نگه‌داشتن استدلال در بلوک‌های تفکر](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)

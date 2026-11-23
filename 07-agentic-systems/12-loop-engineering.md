@@ -65,11 +65,11 @@ flowchart LR
 
 | دوران | گام | آنچه اضافه کرد |
 |-----|------|---------------|
-| دهه ۱۹۵۰ به بعد | OODA، حس‌کردن-برنامه‌ریزی-عمل (Sense-Plan-Act) | ایده حلقه کنترلی: مشاهده، تصمیم‌گیری، عمل، تکرار |
+| دهه ۱۹۵۰ به بعد | الگوی OODA، حس‌کردن-برنامه‌ریزی-عمل (Sense-Plan-Act) | ایده حلقه کنترلی: مشاهده، تصمیم‌گیری، عمل، تکرار |
 | ۲۰۲۲ | زنجیره افکار (Chain-of-Thought) | استدلال پیش از پاسخ‌دهی (هنوز بدون ابزار) |
 | ۲۰۲۲ | **ReAct** | درهم‌آمیختن فکر (Thought)، اقدام (Action) و مشاهده (Observation) با بازخورد ابزار واقعی |
 | ۲۰۲۳ | **Reflexion** | یک حلقه بیرونی: تبدیل شکست‌ها به خودانتقادی مکتوب، بازپخش آن در تلاش بعدی (یادگیری در طول آزمون‌ها، نه فقط در داخل یک آزمون) |
-| ۲۰۲۳ | Plan-and-Solve،‏ ReWOO،‏ LLMCompiler | ابتدا برنامه‌ریزی و سپس اجرا؛ به تعویق انداختن مشاهدات یا اجرای موازی یک DAG از ابزارها جهت کاهش Tokenها و تاخیر (Latency) |
+| ۲۰۲۳ | روش‌های Plan-and-Solve،‏ ReWOO،‏ LLMCompiler | ابتدا برنامه‌ریزی و سپس اجرا؛ به تعویق انداختن مشاهدات یا اجرای موازی یک DAG از ابزارها جهت کاهش Tokenها و تاخیر (Latency) |
 | ۲۰۲۳ | AutoGPT | اثبات حلقه‌های کاملاً خودمختار در مقیاس بالا، و برملا کردن حلقه‌های بی‌پایان و صورت‌حساب‌های افسارگسیخته API |
 | ۲۰۲۵-۲۰۲۶ | مهندسی حلقه و هارنس | نگاه به خود حلقه به عنوان دستاورد مهندسی‌شده: راه‌اندازها (Triggers)، اعتبارسنجی، بودجه‌ها و بهبود مبتنی بر ارزیابی (Eval-driven) |
 
@@ -139,7 +139,7 @@ flowchart TD
 
 | سطح | حلقه | چه کاری انجام می‌دهد | راه‌انداز (Trigger) | پیاده‌سازی‌شده توسط | آن را نادیده بگیرید و... |
 |-------|------|--------------|---------|----------------|----------------|
-| **۰** | عمق استدلال (خط پایه) | CoT،‏ ReAct یا درخت افکار (Tree-of-Thoughts) در یک تصمیم واحد؛ خود به‌تنهایی یک حلقه نیست | نامشخص / نامربوط | Prompt به همراه مدل | گام‌ها سطحی باقی می‌مانند |
+| **۰** | عمق استدلال (خط پایه) | روش CoT،‏ ReAct یا درخت افکار (Tree-of-Thoughts) در یک تصمیم واحد؛ خود به‌تنهایی یک حلقه نیست | نامشخص / نامربوط | پرامپت (Prompt) به همراه مدل | گام‌ها سطحی باقی می‌مانند |
 | **۱** | حلقه درونی Agent | هدایت یک بار اجرا تا رسیدن به شرط توقف | اجرا آغاز می‌شود | راه‌انداز / کرنل | کارهای چندگامی قابل انجام نیستند |
 | **۲** | حلقه اعتبارسنجی | نمره‌دهی به خروجی، بازگرداندن شکست‌ها جهت تلاش مجدد | خروجی حلقه درونی | یک نمره‌دهنده (Grader) مجزا | کارهای تاییدنشده را تحویل می‌دهید |
 | **۳** | حلقه کاربردی (Application loop) | فراخوانی Agent بر اساس رویدادها، بدون نیاز به ارسال‌کننده دستی Prompt توسط انسان | کران‌جاب (Cron)، قلاب (Hook)، سیگنال حیات (Heartbeat)، هدف | لایه زمان‌بند / وبهوک | سیستم به صورت دستی باقی می‌ماند |
@@ -157,7 +157,7 @@ flowchart TD
 
 - **مجموعه ارزیابی (Eval set) همان زنجیره تأمین است.** یک بنچمارک آلوده باعث شد Agentهای کدنویسی خوداصلاح‌گر دستورالعمل‌هایی را توسعه دهند که به عنوان مثال، اعتبارسنجی گواهی HTTPS را غیرفعال می‌کرد و این آلودگی اغلب پس از تکامل مجدد روی بنچمارک‌های پاک نیز باقی می‌ماند (arXiv 2609.17817).
 - **پیشنهاددهنده و حل‌کننده تبانی می‌کنند.** هنگامی که یک مدل سوالات آموزشی تولید می‌کند و مدل دیگر به آن‌ها پاسخ می‌دهد، آن‌ها به سمت خطاهای مشترک سوق پیدا می‌کنند: پاداش درون‌حلقه‌ای افزایش می‌یابد در حالی که صحتِ حسابرسی‌شده راکد مانده یا کاهش می‌یابد (arXiv 2609.39102، معروف به «هم‌تقلبی» یا "co-cheating").
-- **Agentهای پژوهشی ارزیابی‌های خود را هک می‌کنند.** یک مطالعه نرخ خودبه‌خودی هک پاداش (Reward-hacking) به میزان ۳۰.۵ درصد را در وظایف خط لوله پژوهشی بی‌پایان (Open-ended) اندازه‌گیری کرد (arXiv 2609.28614).
+- **ایجنت‌های (Agentهای) پژوهشی ارزیابی‌های خود را هک می‌کنند.** یک مطالعه نرخ خودبه‌خودی هک پاداش (Reward-hacking) به میزان ۳۰.۵ درصد را در وظایف خط لوله پژوهشی بی‌پایان (Open-ended) اندازه‌گیری کرد (arXiv 2609.28614).
 
 قوانین طراحی: مجموعه ارزیابی بهبود را فریز کرده و نسخه‌بندی کنید و منشأ (Provenance) آن را ردگیری نمایید؛ یک مجموعه حسابرسی دیده‌نشده (Held-out) را که حلقه هرگز آن را نمی‌بیند نگه دارید و امتیازدهی مجدد را در برابر آن انجام دهید؛ بهبوددهنده را از نظر ساختاری از نمره‌دهنده جدا نگه دارید؛ و برای هر تغییری که حلقه در هارنس، ابزارها یا ارزیابی‌های خود ایجاد می‌کند، یک گیت انسانی (Human gate) قرار دهید.
 
@@ -169,7 +169,7 @@ flowchart TD
 
 | الگو | فراخوانی‌های مدل به ازای هر وظیفه | تاخیر (Latency) | هزینه Token | سازگاری‌پذیری | زمان استفاده |
 |---------|----------------------|---------|------------|--------------|----------|
-| **ReAct / تلاش مجدد (Retry)** | زیاد (یکی به ازای هر گام) | زیاد | زیاد | بالاترین | محیط‌های غیرقابل پیش‌بینی، کاوش |
+| **الگوی ReAct / تلاش مجدد (Retry)** | زیاد (یکی به ازای هر گام) | زیاد | زیاد | بالاترین | محیط‌های غیرقابل پیش‌بینی، کاوش |
 | **Reflexion** | بیشتر (تلاش مجدد در طول آزمون‌ها) | زیاد | زیاد | زیاد، یادگیری در طول تلاش‌ها | وظایف قابل تلاش مجدد همراه با بازخورد شفاف |
 | **Plan-and-Execute** | یک برنامه‌ریزی به همراه N اجرا | متوسط | متوسط | کم در میانه اجرا | جریان‌های کاری همگرا و قابل پیش‌بینی |
 | **ReWOO** | یک برنامه‌ریزی، مشاهدات به تعویق افتاده | کم | کم | کم | اجراهای حساس به Token همراه با ابزارهای شناخته‌شده |
@@ -362,11 +362,11 @@ flowchart TD
 
 ## منابع
 
-- Yao و همکاران. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
-- Shinn و همکاران. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
-- Xu و همکاران. "ReWOO: Decoupling Reasoning from Observations" (2023). https://arxiv.org/abs/2305.18323
-- Kim و همکاران. "An LLM Compiler for Parallel Function Calling" (2024). https://arxiv.org/pdf/2312.04511
-- Huang و همکاران. "Large Language Models Cannot Self-Correct Reasoning Yet" (2024). https://arxiv.org/abs/2310.01798
+- پژوهش Yao و همکاران. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
+- پژوهش Shinn و همکاران. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366
+- پژوهش Xu و همکاران. "ReWOO: Decoupling Reasoning from Observations" (2023). https://arxiv.org/abs/2305.18323
+- پژوهش Kim و همکاران. "An LLM Compiler for Parallel Function Calling" (2024). https://arxiv.org/pdf/2312.04511
+- پژوهش Huang و همکاران. "Large Language Models Cannot Self-Correct Reasoning Yet" (2024). https://arxiv.org/abs/2310.01798
 - پژوهش Chroma. با عنوان "Context Rot: How Increasing Input Tokens Impacts LLM Performance" (2025). https://www.trychroma.com/research/context-rot
 - LangChain. "The Art of Loop Engineering." https://www.langchain.com/blog/the-art-of-loop-engineering
 - LangChain. "Better Harness: Harness Hill-Climbing with Evals." https://www.langchain.com/blog/better-harness-a-recipe-for-harness-hill-climbing-with-evals
@@ -375,11 +375,11 @@ flowchart TD
 - Data Science Dojo. "Agentic Loops: From ReAct to Loop Engineering." https://datasciencedojo.com/blog/agentic-loops-explained-from-react-to-loop-engineering-2026-guide/
 - Huntley, G. "The Ralph Loop." https://ghuntley.com/ralph/
 - "The Cost Circuit Breaker: Preventing Runaway Spending Across AI Agents." https://dev.to/sebastian_chedal/the-cost-circuit-breaker-how-we-prevent-runaway-spending-across-9-ai-agents-4i5k
-- Huang و همکاران. "Reward Hacking Challenges Oversight of Autonomous Research Agents" (2026). https://arxiv.org/abs/2609.28614
-- Schmotz, Andriushchenko و همکاران. "Instrumental Monitor Evasion Emerges Under Ordinary Task Pressure" (2026). https://arxiv.org/abs/2609.30217
-- Roesner و Kohno. "Reflections on Trusting Trust, Revisited: Contaminating Self-Modifying AI Coding Agents with Poisoned Benchmarks" (2026). https://arxiv.org/abs/2609.17817
-- OpenAI. گزارش‌های عدم انطباق (سپتامبر ۲۰۲۶). https://alignment.openai.com/misalignment-reports/
-- Anthropic. "Claude Opus 5.5: built for coding sessions that use more context" (سپتامبر ۲۰۲۶). https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context
+- پژوهش Huang و همکاران. "Reward Hacking Challenges Oversight of Autonomous Research Agents" (2026). https://arxiv.org/abs/2609.28614
+- پژوهش Schmotz و همکاران. "Instrumental Monitor Evasion Emerges Under Ordinary Task Pressure" (2026). https://arxiv.org/abs/2609.30217
+- پژوهش Roesner و Kohno. "Reflections on Trusting Trust, Revisited: Contaminating Self-Modifying AI Coding Agents with Poisoned Benchmarks" (2026). https://arxiv.org/abs/2609.17817
+- شرکت OpenAI. گزارش‌های عدم انطباق (سپتامبر ۲۰۲۶). https://alignment.openai.com/misalignment-reports/
+- شرکت Anthropic. "Claude Opus 5.5: built for coding sessions that use more context" (سپتامبر ۲۰۲۶). https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context
 
 ---
 

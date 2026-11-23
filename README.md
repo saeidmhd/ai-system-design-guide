@@ -44,13 +44,13 @@
 | **برای مصاحبه آماده شوم** | [بانک سؤالات](00-interview-prep/01-question-bank.md) → [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) |
 | **با یک مصاحبه‌کننده‌ی واقعی تمرین کنم** | [رزرو مصاحبه‌ی آزمایشی یک‌به‌یک یا منتورینگ](https://enginebogie.com/u/ombharatiya) (در [Topmate](https://topmate.io/ombharatiya) هم موجود است) |
 | **سریع سیستم‌های هوش مصنوعی را یاد بگیرم** | [سازوکار داخلی LLM](01-foundations/01-llm-internals.md) → [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) |
-| **RAG مناسب محیط تولید بسازم** | [Chunking](06-retrieval-systems/02-chunking-strategies.md) → [پایگاه‌های داده‌ی برداری (Vector Databases)](06-retrieval-systems/04-vector-databases.md) → [Reranking](06-retrieval-systems/06-reranking-strategies.md) → [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) |
+| **معماری RAG مناسب محیط تولید بسازم** | [Chunking](06-retrieval-systems/02-chunking-strategies.md) → [پایگاه‌های داده‌ی برداری (Vector Databases)](06-retrieval-systems/04-vector-databases.md) → [Reranking](06-retrieval-systems/06-reranking-strategies.md) → [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) |
 | **بازیابی پیشرفته** | [بازیابی زمینه‌ای](06-retrieval-systems/10-contextual-retrieval.md) → [ColBERT](06-retrieval-systems/11-late-interaction-colbert.md) → [RAG چندوجهی](06-retrieval-systems/12-multimodal-rag.md) |
 | **هوش مصنوعی چندمستأجره (multi-tenant) طراحی کنم** | [کنترل دسترسی](12-security-and-access/02-access-control.md) → [مطالعه‌ی موردی](16-case-studies/08-multi-tenant-saas.md) |
-| **Agent بسازم** | [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) → [MCP و A2A](07-agentic-systems/03-tool-use-and-mcp.md) → [LangGraph](09-frameworks-and-tools/02-langgraph-orchestration.md) |
+| **ایجنت (Agent) بسازم** | [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) → [MCP و A2A](07-agentic-systems/03-tool-use-and-mcp.md) → [LangGraph](09-frameworks-and-tools/02-langgraph-orchestration.md) |
 | **حلقه‌های Agent خودران اجرا کنم** | [مهندسی حلقه](07-agentic-systems/12-loop-engineering.md) (چهار سطح حلقه، شرط خاتمه، بودجه‌بندی، راستی‌آزمایی، loopmaxxing) |
-| **Agentهای استفاده از ابزار و کنترل کامپیوتر** | [چشم‌انداز](17-tool-use-and-computer-agents/01-tool-use-landscape.md) → [OpenClaw](17-tool-use-and-computer-agents/03-openclaw-deep-dive.md) → [ایمنی](17-tool-use-and-computer-agents/07-safety-and-governance.md) |
-| **Agentهای کدنویسی خودکار** | [Claude Code](09-frameworks-and-tools/09-claude-code.md) → [چشم‌انداز OpenCoder](09-frameworks-and-tools/10-opencoderguide.md) |
+| **ایجنت‌های (Agentهای) استفاده از ابزار و کنترل کامپیوتر** | [چشم‌انداز](17-tool-use-and-computer-agents/01-tool-use-landscape.md) → [OpenClaw](17-tool-use-and-computer-agents/03-openclaw-deep-dive.md) → [ایمنی](17-tool-use-and-computer-agents/07-safety-and-governance.md) |
+| **ایجنت‌های (Agentهای) کدنویسی خودکار** | [Claude Code](09-frameworks-and-tools/09-claude-code.md) → [چشم‌انداز OpenCoder](09-frameworks-and-tools/10-opencoderguide.md) |
 | **از آشفتگی نسخه‌های فریم‌ورک (Framework) جان سالم به در ببرم** | [پیمایش آشفتگی فریم‌ورک‌ها](09-frameworks-and-tools/12-navigating-framework-churn.md) (آموزش‌های منسوخ، قفل کردن نسخه، آنچه واقعاً باید یاد گرفت) |
 | **مدل مناسب را انتخاب کنم (۲۰۲۶)** | [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) → [قیمت‌گذاری](02-model-landscape/03-pricing-and-costs.md) |
 | **هوش مصنوعی را در محیط تولید ارزیابی کنم** | [راهنمای ارزیابی هوش مصنوعی (Phoenix/Langfuse)](ai_evals_comprehensive_study_guide.md) → [راهنمای ارزیابی هوش مصنوعی (LangWatch/Langfuse)](ai_evals_complete_guide_langwatch_langfuse.md) |
@@ -63,7 +63,7 @@
 | **تصویر، ویدیو و صدا تولید کنم** | [تولید چندوجهی](19-multimodal-generation/01-multimodal-generation.md) (pipelineها، منشأ‌یابی، ارزیابی) |
 | **یک مدل استدلالگر آموزش دهم** | [RLVR و GRPO](03-training-and-adaptation/08-rlvr-and-reasoning-models.md) (نحوه‌ی آموزش مدل‌های o-series و R1) |
 | **مدل‌ها را به‌صورت محلی اجرا کنم** | [استقرار (Deployment) روی دستگاه و لبه](04-inference-optimization/09-on-device-and-edge-deployment.md) (Ollama در برابر vLLM، کوانتیزاسیون، سخت‌افزار) |
-| **Agentها را در برابر کرش مقاوم کنم** | [اجرای پایدار](07-agentic-systems/11-durable-execution.md) (replay، exactly-once، Temporal) |
+| **ایجنت‌ها (Agentها) را در برابر کرش مقاوم کنم** | [اجرای پایدار](07-agentic-systems/11-durable-execution.md) (replay، exactly-once، Temporal) |
 | **لایه‌ی داده را مهندسی کنم** | [مهندسی داده برای هوش مصنوعی](06-retrieval-systems/15-data-engineering-for-ai.md) (ingestion، حذف تکرار، PII، decontamination) |
 | **بهترین دوره‌های یادگیری هوش مصنوعی را پیدا کنم** | [دوره‌ها و مسیرهای یادگیری پیشنهادی](COURSES.md) |
 | **از نقش فعلی‌ام به هوش مصنوعی گذار کنم** | [راهنمای گذار نقش](TRANSITION_GUIDE.md) |
@@ -97,7 +97,7 @@ flowchart TD
 | این راهنما | کتاب‌های چاپی |
 |------------|---------------|
 | مدل‌های نوامبر ۲۰۲۶ (Claude Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1, GPT-6 Astra/Sol/Luna, GPT-6.1 Sol/Terra, Gemini 4 Argon, Gemini 3.8 Flash, Grok 4.7, Muse Wonder, Muse Spark 1.3, DeepSeek V4.1-Flash, Mistral Large 4, MiMo-V2.6, GLM-5.3, Kimi K3.1 Pro, Qwen3.8) | گیر کرده روی GPT-4 |
-| MCP spec 2026-07-28، A2A v1.0.1، OpenClaw، Computer Use، Agentهای صوتی دوطرفه‌ی همزمان، RAG عاملی (Agentic RAG)، ColBERT، استدلال نهفته، سرو MoE | وجود ندارد |
+| پروتکل MCP spec 2026-07-28، A2A v1.0.1، OpenClaw، Computer Use، Agentهای صوتی دوطرفه‌ی همزمان، RAG عاملی (Agentic RAG)، ColBERT، استدلال نهفته، سرو MoE | وجود ندارد |
 | قیمت‌های واقعی با تاریخ راستی‌آزمایی نوامبر ۲۰۲۶ | همین حالا هم اشتباه است |
 | پرسش و پاسخ مصاحبه‌ی سطح Staff (۱۹۳ سؤال تا نوامبر ۲۰۲۶، شامل هوش مصنوعی صوتی و دورهایی از گزارش‌های اخیر داوطلبان) + روندهای بازار کار | سؤالات عمومی |
 
@@ -203,21 +203,21 @@ mindmap
 
 | مطالعه‌ی موردی | مسئله | الگوهای کلیدی |
 |------------|---------|--------------|
-| [جست‌وجوی بلادرنگ](16-case-studies/06-real-time-search.md) | تازگی داده در ۵ دقیقه در مقیاس بالا | Streaming + جست‌وجوی ترکیبی |
-| [Agent کدنویسی](16-case-studies/07-autonomous-coding-agent.md) | تغییرات خودکار چندفایلی | Sandboxing + اصلاح خودکار |
-| [SaaS چندمستأجره (multi-tenant)](16-case-studies/08-multi-tenant-saas.md) | Coca-Cola و Pepsi روی یک زیرساخت | ایزوله‌سازی دفاع در عمق |
+| [جست‌وجوی بلادرنگ](16-case-studies/06-real-time-search.md) | تازگی داده در ۵ دقیقه در مقیاس بالا | قابلیت Streaming + جست‌وجوی ترکیبی |
+| [Agent کدنویسی](16-case-studies/07-autonomous-coding-agent.md) | تغییرات خودکار چندفایلی | محیط Sandboxing + اصلاح خودکار |
+| [SaaS چندمستأجره (multi-tenant)](16-case-studies/08-multi-tenant-saas.md) | سناریوی Coca-Cola و Pepsi روی یک زیرساخت | ایزوله‌سازی دفاع در عمق |
 | [پشتیبانی مشتری](16-case-studies/09-customer-support-automation.md) | نرخ حل خودکار ۶۰٪ | مسیریابی لایه‌ای + ارجاع (Escalation) |
-| [هوش اسناد](16-case-studies/10-document-intelligence.md) | استخراج از ۵۰ هزار قرارداد در ماه | Vision-LLM + استخراج‌گرهای موازی |
+| [هوش اسناد](16-case-studies/10-document-intelligence.md) | استخراج از ۵۰ هزار قرارداد در ماه | مدل Vision-LLM + استخراج‌گرهای موازی |
 | [موتور توصیه‌گر](16-case-studies/11-recommendation-engine.md) | توضیحات شخصی‌سازی‌شده برای ۵۰ میلیون کاربر | رتبه‌بندی ML + توضیحات LLM |
 | [اتوماسیون انطباق](16-case-studies/12-compliance-automation.md) | پیش‌غربال‌گری مقررات FDA | استخراج ادعا + پایگاه داده‌ی رویه‌های قبلی |
-| [هوش مصنوعی صوتی در سلامت](16-case-studies/13-voice-ai-healthcare.md) | تولید بلادرنگ یادداشت بالینی | ASR تحت BAA + یادداشت‌های مبتنی بر منبع + بازبینی پرستار |
+| [هوش مصنوعی صوتی در سلامت](16-case-studies/13-voice-ai-healthcare.md) | تولید بلادرنگ یادداشت بالینی | سامانه ASR تحت BAA + یادداشت‌های مبتنی بر منبع + بازبینی پرستار |
 | [تشخیص تقلب](16-case-studies/14-fraud-detection.md) | تصمیم در ۱۰۰ms با توضیح‌پذیری | ترکیب ML + قواعد |
-| [مدیریت دانش](16-case-studies/15-knowledge-management.md) | ۲ میلیون سند با کنترل دسترسی | RAG آگاه از دسترسی |
-| [Agent کنترل کامپیوتر](16-case-studies/16-computer-use-agent-production.md) | خودکارسازی گزارش هزینه در ۳ رابط قدیمی | Firecracker VMs + Action Gate + دفاع در برابر IPI |
-| [Fine-tuning چندمستأجره (multi-tenant)](16-case-studies/17-multi-tenant-fine-tuning-platform.md) | ۲۸۰ مستأجر روی یک مدل پایه‌ی مشترک + LoRA مخصوص هر مستأجر | LoRA Hot-Swap + Eval-as-PRD برای هر مستأجر |
+| [مدیریت دانش](16-case-studies/15-knowledge-management.md) | ۲ میلیون سند با کنترل دسترسی | معماری RAG آگاه از دسترسی |
+| [Agent کنترل کامپیوتر](16-case-studies/16-computer-use-agent-production.md) | خودکارسازی گزارش هزینه در ۳ رابط قدیمی | فناوری Firecracker VMs + Action Gate + دفاع در برابر IPI |
+| [Fine-tuning چندمستأجره (multi-tenant)](16-case-studies/17-multi-tenant-fine-tuning-platform.md) | ۲۸۰ مستأجر روی یک مدل پایه‌ی مشترک + LoRA مخصوص هر مستأجر | روش LoRA Hot-Swap + Eval-as-PRD برای هر مستأجر |
 | [CI/CD مبتنی بر ارزیابی](16-case-studies/18-eval-gated-cicd.md) | مسدود کردن PRهایی که کیفیت هوش مصنوعی را پس‌رفت می‌دهند | مجموعه‌های طلایی + داورهای LLM + اصلاح آماری |
 | [تقطیر برای مشتری](16-case-studies/19-customer-distillation-pipeline.md) | کاهش صورت‌حساب ۵۰ هزار دلاری ماهانه‌ی مدل پیشرو به حدود ۹ هزار دلار در ماه با بازگشت سرمایه‌ی کمتر از ۳ ماه | تقطیر مبتنی بر Trace + عرضه‌ی Canary |
-| [Agent دانش MCP](16-case-studies/20-mcp-knowledge-agent.md) | پاسخ‌های میان‌سیستمی از Snowflake/Confluence/Jira/Slack | MCP + OAuth Resource Server + دروازه‌بندی قابلیت‌ها |
+| [Agent دانش MCP](16-case-studies/20-mcp-knowledge-agent.md) | پاسخ‌های میان‌سیستمی از Snowflake/Confluence/Jira/Slack | پروتکل MCP + OAuth Resource Server + دروازه‌بندی قابلیت‌ها |
 
 ---
 
@@ -227,7 +227,7 @@ mindmap
 
 | راهنما | پلتفرم‌های پوشش‌داده‌شده | محتوا |
 |-------|------------------|---------------|
-| [ارزیابی هوش مصنوعی: راهنمای مطالعه‌ی جامع](ai_evals_comprehensive_study_guide.md) | Arize Phoenix + Langfuse | LLM-as-a-Judge، ارزیابی RAG، ارزیابی چندنوبتی، ایمنی محیط تولید، اصلاح آماری با `judgy`، مسیر یادگیری ۳۰ روزه |
+| [ارزیابی هوش مصنوعی: راهنمای مطالعه‌ی جامع](ai_evals_comprehensive_study_guide.md) | Arize Phoenix + Langfuse | مدل LLM-as-a-Judge، ارزیابی RAG، ارزیابی چندنوبتی، ایمنی محیط تولید، اصلاح آماری با `judgy`، مسیر یادگیری ۳۰ روزه |
 | [ارزیابی هوش مصنوعی: راهنمای LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md) | LangWatch + Langfuse | همان سرفصل‌ها با بیش از ۳۰ ارزیاب آماده‌ی LangWatch، مقایسه‌ی پلتفرم‌ها کنار هم، راهنمای انتخاب پلتفرم |
 
 **موضوعات پوشش‌داده‌شده در هر دو راهنما:**
@@ -237,7 +237,7 @@ mindmap
 - ارزیابی‌های مبتنی بر کد (regex، JSON schema، اعتبارسنج‌های قالب)
 - ارزیابی‌های ویژه‌ی RAG: faithfulness، context recall، answer relevance
 - ارزیابی pipelineهای چندمرحله‌ای و ارزیابی مکالمه‌ی چندنوبتی
-- Guardrailهای محیط تولید، پایش ایمنی، تشخیص drift بلادرنگ
+- سپرهای امنیتی (Guardrailهای) محیط تولید، پایش ایمنی، تشخیص drift بلادرنگ
 - اصلاح آماری با کتابخانه‌ی `judgy`
 - بهترین شیوه‌های حاشیه‌نویسی انسانی و توافق بین ارزیاب‌ها
 - بهینه‌سازی هزینه و تاخیر (Latency) برای pipelineهای ارزیابی در مقیاس بالا
@@ -273,14 +273,14 @@ mindmap
 ### چگونه برای مصاحبه‌ی مهندسی هوش مصنوعی آماده شوم؟
 از [بانک سؤالات](00-interview-prep/01-question-bank.md) (۱۹۳ سؤال تا نوامبر ۲۰۲۶) شروع کنید، سپس با [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) و [تمرین‌های تخته‌سفید](00-interview-prep/04-whiteboard-exercises.md) تمرین کنید. بیشتر مصاحبه‌های ارشد، طراحی RAG، اشکال‌زدایی Agent، ایزوله‌سازی چندمستأجره (multi-tenant) و مصالحه‌های هزینه/تاخیر (Latency) را می‌سنجند که همگی در [مطالعه‌ی موردی‌ها](16-case-studies/) پوشش داده شده‌اند. پیش از مصاحبه‌ی واقعی، دست‌کم یک مصاحبه‌ی آزمایشی زمان‌دار با کسی انجام دهید که حرفتان را قطع کند و زیر سؤال ببرد؛ می‌توانید با Om از طریق [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
 
-### RAG (Retrieval-Augmented Generation) چیست؟
-RAG الگویی است که در آن یک LLM پیش از تولید پاسخ، زمینه‌ی مرتبط را از یک منبع دانش خارجی (پایگاه داده‌ی برداری (Vector Database)، شاخص جست‌وجو، گراف) بازیابی می‌کند؛ این کار توهم را کاهش می‌دهد و پاسخ‌ها را به داده‌های شما متکی می‌سازد. pipeline کامل در [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) و مقیاس‌پذیر کردن آن در [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) آمده است.
+### معماری RAG (Retrieval-Augmented Generation) چیست؟
+معماری RAG الگویی است که در آن یک LLM پیش از تولید پاسخ، زمینه‌ی مرتبط را از یک منبع دانش خارجی (پایگاه داده‌ی برداری (Vector Database)، شاخص جست‌وجو، گراف) بازیابی می‌کند؛ این کار توهم را کاهش می‌دهد و پاسخ‌ها را به داده‌های شما متکی می‌سازد. pipeline کامل در [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) و مقیاس‌پذیر کردن آن در [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) آمده است.
 
-### Agentهای هوش مصنوعی چیستند و چه تفاوتی با چت‌بات‌ها دارند؟
-Agentهای هوش مصنوعی سیستم‌های مبتنی بر LLM هستند که برای رسیدن به اهداف، طی چند مرحله برنامه‌ریزی می‌کنند، ابزار فرا می‌خوانند و عمل می‌کنند؛ در حالی که چت‌بات‌ها معمولاً در یک نوبت پاسخ می‌دهند. Agentها حلقه، حافظه، بازیابی از خطا و استفاده از ابزار از طریق پروتکل‌هایی مانند MCP را وارد کار می‌کنند. از [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) شروع کنید.
+### ایجنت‌های (Agentهای) هوش مصنوعی چیستند و چه تفاوتی با چت‌بات‌ها دارند؟
+ایجنت‌های (Agentهای) هوش مصنوعی سیستم‌های مبتنی بر LLM هستند که برای رسیدن به اهداف، طی چند مرحله برنامه‌ریزی می‌کنند، ابزار فرا می‌خوانند و عمل می‌کنند؛ در حالی که چت‌بات‌ها معمولاً در یک نوبت پاسخ می‌دهند. Agentها حلقه، حافظه، بازیابی از خطا و استفاده از ابزار از طریق پروتکل‌هایی مانند MCP را وارد کار می‌کنند. از [مبانی Agent](07-agentic-systems/01-agent-fundamentals.md) شروع کنید.
 
 ### پروتکل MCP (Model Context Protocol) چیست و چه تفاوتی با A2A دارد؟
-MCP یک پروتکل باز است که به برنامه‌های LLM امکان می‌دهد ابزارها و منابع داده‌ی خارجی را به شیوه‌ای استاندارد کشف و فراخوانی کنند. A2A (Agent2Agent) پروتکل مکمل برای سپردن کار به Agentی است که کنترلش را ندارید: Agent راه دور یک Agent Card را در `/.well-known/agent-card.json` منتشر می‌کند، کلاینت برایش پیام می‌فرستد و Agent راه دور تصمیم می‌گیرد یک task طولانی‌مدت باز کند یا نه. این دو لایه‌های متفاوتی را حل می‌کنند: MCP مرز ابزار است و A2A مرز Agent، و بیشتر سیستم‌ها مدت‌ها پیش از نیاز به A2A به MCP نیاز دارند. هر دو اکنون زیر نظر Agentic AI Foundation متعلق به Linux Foundation هستند (A2A در اوت ۲۰۲۶ پیوست). نسخه‌ها را در مصاحبه دقیق ذکر کنید: spec پروتکل MCP به‌صورت بازنگری‌های تاریخ‌دار منتشر می‌شود، نسخه‌ی فعلی (2026-07-28) هسته‌ی پروتکل را stateless کرد، نسخه‌ی بعدی برای ۳۰ مارس ۲۰۲۷ برنامه‌ریزی شده است و چیزی به نام «MCP 2.0» وجود ندارد؛ آخرین انتشار spec برای A2A نسخه‌ی v1.0.1 است. [استفاده از ابزار و MCP](07-agentic-systems/03-tool-use-and-mcp.md) را ببینید.
+پروتکل MCP یک پروتکل باز است که به برنامه‌های LLM امکان می‌دهد ابزارها و منابع داده‌ی خارجی را به شیوه‌ای استاندارد کشف و فراخوانی کنند. A2A (Agent2Agent) پروتکل مکمل برای سپردن کار به Agentی است که کنترلش را ندارید: Agent راه دور یک Agent Card را در `/.well-known/agent-card.json` منتشر می‌کند، کلاینت برایش پیام می‌فرستد و Agent راه دور تصمیم می‌گیرد یک task طولانی‌مدت باز کند یا نه. این دو لایه‌های متفاوتی را حل می‌کنند: MCP مرز ابزار است و A2A مرز Agent، و بیشتر سیستم‌ها مدت‌ها پیش از نیاز به A2A به MCP نیاز دارند. هر دو اکنون زیر نظر Agentic AI Foundation متعلق به Linux Foundation هستند (A2A در اوت ۲۰۲۶ پیوست). نسخه‌ها را در مصاحبه دقیق ذکر کنید: spec پروتکل MCP به‌صورت بازنگری‌های تاریخ‌دار منتشر می‌شود، نسخه‌ی فعلی (2026-07-28) هسته‌ی پروتکل را stateless کرد، نسخه‌ی بعدی برای ۳۰ مارس ۲۰۲۷ برنامه‌ریزی شده است و چیزی به نام «MCP 2.0» وجود ندارد؛ آخرین انتشار spec برای A2A نسخه‌ی v1.0.1 است. [استفاده از ابزار و MCP](07-agentic-systems/03-tool-use-and-mcp.md) را ببینید.
 
 ### در محیط تولید از کدام LLM استفاده کنم: Claude، GPT، Gemini یا متن‌باز؟
 بستگی به بودجه‌ی تاخیر (Latency)، طول زمینه (Context length)، هزینه به ازای هر کار (تعداد Token در هر کار ضربدر قیمت، نه قیمت به ازای هر Token)، کیفیت استفاده از ابزار و محل نگهداری داده دارد. یک نقطه‌ی شروع معقول برای نوامبر ۲۰۲۶: Claude Opus 5.5 (به ازای هر ۱ میلیون $4/$20) برای کدنویسی عاملی و کارهای سخت، رده‌ی $2/$10 (Claude Sonnet 5.5، GPT-6 Sol، GPT-6.1 Sol) برای بیشتر ترافیک محیط تولید، GPT-6.1 Terra ($1/$5) هر جا که معیار کیفیت شما را برآورده کند، Claude Haiku 5.5، GPT-6 Luna یا Gemini 3.8 Flash برای حجم بالا (Haiku 5.5 فقط روی Promptهای زیر ۱۰۰ هزار Token که قیمت $0.10/$0.50 اعمال می‌شود) و Claude Fable 5.1 یا GPT-6 Astra ($10/$50) فقط وقتی ارزیابی‌های شما نشان می‌دهد رده‌های ارزان‌تر کم می‌آورند. فصل‌های [طبقه‌بندی مدل‌ها](02-model-landscape/01-model-taxonomy.md) و [قیمت‌گذاری](02-model-landscape/03-pricing-and-costs.md) اینها را به‌علاوه‌ی Gemini 4 Argon، Grok 4.7، Muse Spark 1.3، DeepSeek V4.1-Flash و مدل‌های با وزن باز مانند MiMo-V2.6، GLM-5.3، Kimi K3.1 Pro (وزن‌ها از ۴ نوامبر ۲۰۲۶) و Mistral Large 4 مقایسه می‌کنند و [راهنمای انتخاب مدل](02-model-landscape/04-model-selection-guide.md) آن‌ها را به یک درخت تصمیم تبدیل می‌کند. پیش از جابه‌جایی، ارزیابی‌های خودتان را اجرا کنید: امتیازهای فروشندگان بین harnessها و تنظیمات effort قابل انتقال نیستند.
@@ -291,8 +291,8 @@ MCP یک پروتکل باز است که به برنامه‌های LLM امکا
 ### چگونه یک سیستم RAG چندمستأجره (multi-tenant) ایمن بسازم؟
 از دفاع در عمق استفاده کنید: شاخص‌ها یا namespaceهای جداگانه برای هر مستأجر، بررسی دسترسی در زمان کوئری و guardهای لایه‌ی Prompt. فصل [کنترل دسترسی](12-security-and-access/02-access-control.md) و [مطالعه‌ی موردی SaaS چندمستأجره (multi-tenant)](16-case-studies/08-multi-tenant-saas.md) الگوهایی را پوشش می‌دهند که هم در مصاحبه و هم در محیط تولید پابرجا می‌مانند.
 
-### RAG عاملی (Agentic RAG) چیست؟
-RAG عاملی، بازیابی را با یک حلقه‌ی Agent ترکیب می‌کند که می‌تواند تصمیم بگیرد چه چیزی را جست‌وجو کند، چه زمانی دوباره کوئری بزند و چه زمانی ارجاع دهد، به‌جای اجرای یک گذر ثابت بازیابی-سپس-تولید. برای معماری‌ها و مصالحه‌ها [RAG عاملی](06-retrieval-systems/08-agentic-rag.md) را ببینید.
+### معماری RAG عاملی (Agentic RAG) چیست؟
+معماری RAG عاملی، بازیابی را با یک حلقه‌ی Agent ترکیب می‌کند که می‌تواند تصمیم بگیرد چه چیزی را جست‌وجو کند، چه زمانی دوباره کوئری بزند و چه زمانی ارجاع دهد، به‌جای اجرای یک گذر ثابت بازیابی-سپس-تولید. برای معماری‌ها و مصالحه‌ها [RAG عاملی](06-retrieval-systems/08-agentic-rag.md) را ببینید.
 
 ### آیا این راهنما رایگان است؟ می‌توانم مشارکت کنم؟
 بله، با مجوز MIT و رایگان است. PRها پذیرفته می‌شوند؛ [راهنمای مشارکت](CONTRIBUTING.md) را ببینید. اگر حالت‌های شکست محیط تولید، بنچمارک‌های مدل جدید یا سؤالات مصاحبه برای افزودن دارید، یک PR باز کنید.
@@ -329,9 +329,9 @@ RAG عاملی، بازیابی را با یک حلقه‌ی Agent ترکیب م
 اگر این راهنما برایتان مفید است، ساده‌ترین راه حمایت این است که جایی را دنبال کنید که فصل‌های جدید و به‌روزرسانی‌ها ابتدا در آن اعلام می‌شوند:
 
 - **وب‌سایت:** [aidaddy.tech](https://www.aidaddy.tech) - کل راهنما را با جست‌وجو، ناوبری تمیز و چیدمان سازگار با موبایل بخوانید.
-- **GitHub:** [@ombharatiya](https://github.com/ombharatiya) - برای مخزن دنبال کنید، به پروژه ستاره بدهید و منتظر انتشارهای جدید بمانید.
-- **X / Twitter:** [@ombharatiya](https://x.com/ombharatiya) - نکته‌های کوتاه درباره‌ی انتشار مدل‌ها، MCP، Agentها و مصاحبه‌ها.
-- **LinkedIn:** [ombharatiya](https://linkedin.com/in/ombharatiya) - نوشته‌های عمیق‌تر و نکات آمادگی مصاحبه برای نقش‌های ارشد هوش مصنوعی.
+- **گیت‌هاب (GitHub):** [@ombharatiya](https://github.com/ombharatiya) - برای مخزن دنبال کنید، به پروژه ستاره بدهید و منتظر انتشارهای جدید بمانید.
+- **شبکه توییتر (X / Twitter):** [@ombharatiya](https://x.com/ombharatiya) - نکته‌های کوتاه درباره‌ی انتشار مدل‌ها، MCP، Agentها و مصاحبه‌ها.
+- **صفحه LinkedIn:** [ombharatiya](https://linkedin.com/in/ombharatiya) - نوشته‌های عمیق‌تر و نکات آمادگی مصاحبه برای نقش‌های ارشد هوش مصنوعی.
 - **مصاحبه‌ی آزمایشی و منتورینگ:** [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) - یک مصاحبه‌ی آزمایشی یک‌به‌یک طراحی سیستم هوش مصنوعی، بازبینی پاسخ‌هایتان یا منتورینگ مستمر برای گذار به نقش‌های هوش مصنوعی رزرو کنید.
 
 <p align="center">

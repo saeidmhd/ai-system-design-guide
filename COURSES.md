@@ -47,7 +47,7 @@
 
 ---
 
-## AI ایجنتی و سیستم‌های چند ایجنتی (Agentic AI & Multi-Agent Systems) <a name="agents"></a>
+## فناوری AI ایجنتی و سیستم‌های چند ایجنتی (Agentic AI & Multi-Agent Systems) <a name="agents"></a>
 
 | دوره (Course) | ارائه‌دهنده (Provider) | هزینه (Cost) | چرا قابل اعتماد است (Why It's Trusted) |
 |--------|----------|------|-----------------|
@@ -67,8 +67,8 @@
 |--------|----------|------|-----------------|
 | **[ساخت سیستم‌ها با API چت‌جی‌پی‌تی (Building Systems with the ChatGPT API)](https://www.deeplearning.ai/short-courses/building-systems-with-chatgpt/)** | DeepLearning.AI + OpenAI | رایگان (Free) | وضعیت گفتگوی چندنوبته (multi-turn conversation state)، مدیریت زمینه (context) و زنجیره‌های تعدیل محتوا (moderation chains) را پوشش می‌دهد. |
 | **[مهندسی Prompt با لاما ۲ (Prompt Engineering with Llama 2)](https://www.deeplearning.ai/short-courses/prompt-engineering-with-llama-2/)** | DeepLearning.AI + Meta | رایگان (Free) | بده‌بستان‌های پنجره کانتکست (context window tradeoffs) و مدیریت Prompt سیستم (system prompt) را با لاما ۲ نشان می‌دهد. |
-| **[استدلال با مدل o1 (Reasoning with o1)](https://www.deeplearning.ai/short-courses/reasoning-with-o1/)** | DeepLearning.AI + OpenAI | رایگان (Free) | Promptنویسی (Prompting) و برنامه‌ریزی با مدل‌های استدلالی. هرچند خود مدل قدیمی‌تر از چیزی است که امروزه استقرار (Deployment) می‌دهید، اما ایده‌های آن مستقیماً با ابزارهای کنترلی تلاش استدلال (reasoning-effort controls) امروزی همخوانی دارند (`reasoning.effort` در OpenAI، و تفکر تطبیقی با تنظیمات effort در Claude). |
-| **[مستندات Mem0 (Mem0 Documentation)](https://docs.mem0.ai/)** | Mem0 (رسمی) | رایگان (Free) | مرجع رسمی برای حافظه چندسطحی (multi-tier memory) در ایجنت‌های عملیاتی (production). نسخه 2.x پلتفرم Mem0 مدل نوشتن را تغییر داده است (حافظه‌ها از نسخه ۲.۰ به بعد صرفاً افزودنی یا add-only هستند) و در نسخه‌های فعلی درایورهای گراف حذف شده‌اند، بنابراین آموزش‌های قدیمی‌تر کارایی ندارند. |
+| **[استدلال با مدل o1 (Reasoning with o1)](https://www.deeplearning.ai/short-courses/reasoning-with-o1/)** | DeepLearning.AI + OpenAI | رایگان (Free) | مهارت Promptنویسی (Prompting) و برنامه‌ریزی با مدل‌های استدلالی. هرچند خود مدل قدیمی‌تر از چیزی است که امروزه استقرار (Deployment) می‌دهید، اما ایده‌های آن مستقیماً با ابزارهای کنترلی تلاش استدلال (reasoning-effort controls) امروزی همخوانی دارند (`reasoning.effort` در OpenAI، و تفکر تطبیقی با تنظیمات effort در Claude). |
+| **[مستندات Mem0 (Mem0 Documentation)](https://docs.mem0.ai/)** | پلتفرم Mem0 (رسمی) | رایگان (Free) | مرجع رسمی برای حافظه چندسطحی (multi-tier memory) در ایجنت‌های عملیاتی (production). نسخه 2.x پلتفرم Mem0 مدل نوشتن را تغییر داده است (حافظه‌ها از نسخه ۲.۰ به بعد صرفاً افزودنی یا add-only هستند) و در نسخه‌های فعلی درایورهای گراف حذف شده‌اند، بنابراین آموزش‌های قدیمی‌تر کارایی ندارند. |
 
 ---
 
@@ -100,7 +100,7 @@
 ---
 
 
-## Fine-tuning و سازگارسازی (Fine-tuning & Adaptation) <a name="finetuning"></a>
+## فرآیند Fine-tuning و سازگارسازی (Fine-tuning & Adaptation) <a name="finetuning"></a>
 
 | دوره (Course) | ارائه‌دهنده (Provider) | هزینه (Cost) | چرا قابل اعتماد است (Why It's Trusted) |
 |---|---|---|---|

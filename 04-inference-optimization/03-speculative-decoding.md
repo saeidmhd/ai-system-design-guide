@@ -50,7 +50,7 @@
 | روش | چه چیزی پیش‌نویس می‌کند | نکات |
 |--------|-------------|-------|
 | **EAGLE-3** | یک هد سبک که توسط ویژگی‌های پنهان لایه‌های مختلف مدل هدف تغذیه می‌شود | مقاله تا ۶.۵ برابر افزایش سرعت و ۱.۳۸ برابر توان عملیاتی (Throughput) را در Batch 64 در SGLang گزارش می‌کند؛ پیش‌فرض رایج برای مدل‌های باز بدون MTP بومی (Native MTP) |
-| **MTP بومی (Native MTP)** | هدهای پیش‌بینی چند-Tokenای (Multi-token-prediction) آموزش‌دیده همراه با مدل (از DeepSeek-V3 به بعد) | به‌صورت درون‌ساخت در MiMo-V2.6 و Qwen3.8-Flash-Next (یک ماژول 4B MTP) عرضه شده است |
+| **روش MTP بومی (Native MTP)** | هدهای پیش‌بینی چند-Tokenای (Multi-token-prediction) آموزش‌دیده همراه با مدل (از DeepSeek-V3 به بعد) | به‌صورت درون‌ساخت در MiMo-V2.6 و Qwen3.8-Flash-Next (یک ماژول 4B MTP) عرضه شده است |
 | **DFlash / DFlash 2** | یک مدل دیفیوژن بلوکی (Block-diffusion) کوچک که یک بلوک کامل را به صورت موازی پیشنهاد می‌کند | مدل DFlash 2 (شرکت Inco AI، ۱۸ اوت ۲۰۲۶) توان عملیاتی (Throughput) ۲.۷ تا ۳.۴ برابری را روی Qwen3.8-27B گزارش می‌کند (گزارش‌شده توسط توسعه‌دهنده)؛ بین ۱۹ تا ۲۷ اوت به SGLang، vLLM و llama.cpp اضافه (Merge) شد |
 | **DSpark** | ماژول حدسی DeepSeek، ارائه‌شده درون چک‌پوینت | شرکت DeepSeek این ماژول را درون چک‌پوینت‌های خود عرضه می‌کند: ابتدا V4-Flash-DSpark و V4-Pro-DSpark (۲۷ ژوئن، MIT)، سپس V4-Flash-0731، V4-Pro-0813 و V4.1-Flash (۱۰ سپتامبر، شامل بیلد ۱۷ اکتبر)، همگی با مجوز MIT؛ پیش‌نویس‌های DSpark دیگری برای Kimi K3 (شرکت RadixArk) و MiniMax-M3 (شرکت NVIDIA) وجود دارد، و ناشران پیش‌نویس‌های اختصاصی خود را برای Nemotron 3.5 (شرکت NVIDIA) و LFM2.5 (شرکت Liquid) عرضه می‌کنند |
 | **مدل پیش‌نویس مجزا** | یک مدل کوچک‌تر از همان خانواده | هنوز زمانی که هیچ‌کدام از موارد بالا وجود نداشته باشد مفید است؛ انواع PARD (پیش‌نویس موازی) تاخیر (Latency) پیش‌نویس را کاهش می‌دهند |
@@ -109,7 +109,7 @@
 - DeepSeek-AI. "DeepSeek-V3 Technical Report" (multi-token prediction) arXiv:2412.19437
 - "DFlash" (block-diffusion drafter) arXiv:2602.06036; DeepSeek, "DSpark" arXiv:2607.05147
 - Fu et al. "Lookahead Decoding" (2024)
-- vLLM Blog. [«DSpark و تأیید انطباقی»](https://vllm.ai/blog/2026-08-14-dspark-adaptive-verification) (2026)
+- فریم‌ورک vLLM Blog. [«DSpark و تأیید انطباقی»](https://vllm.ai/blog/2026-08-14-dspark-adaptive-verification) (2026)
 
 ---
 

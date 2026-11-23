@@ -36,7 +36,7 @@ flowchart LR
 
 </div>
 
-### S - مشخص کردن دامنه و شفاف‌سازی (Scope and Clarify)
+### مرحله S - مشخص کردن دامنه و شفاف‌سازی (Scope and Clarify)
 
 **هدف:** محدود کردن فضای مسئله و نشان دادن اینکه شما پیش از ساخت، فکر می‌کنید.
 
@@ -64,7 +64,7 @@ You: Before I dive in, I want to clarify a few things:
 
 ---
 
-### P - اولویت‌بندی نیازمندی‌ها (Prioritize Requirements)
+### مرحله P - اولویت‌بندی نیازمندی‌ها (Prioritize Requirements)
 
 **هدف:** شناسایی مواردی که بیشترین اهمیت را دارند و طراحی بر اساس آن‌ها.
 
@@ -85,7 +85,7 @@ Cost optimization will be a second-order concern once we have the basic system w
 
 ---
 
-### I - معماری اولیه (Initial Architecture)
+### مرحله I - معماری اولیه (Initial Architecture)
 
 **هدف:** ترسیم نمای کلی سیستم در سطح بالا پیش از ورود به جزئیات.
 
@@ -112,7 +112,7 @@ Cost optimization will be a second-order concern once we have the basic system w
 
 ---
 
-### D - ورود عمیق به مسیرهای حیاتی (Deep Dive into Critical Paths)
+### مرحله D - ورود عمیق به مسیرهای حیاتی (Deep Dive into Critical Paths)
 
 **هدف:** نشان دادن عمق دانش فنی روی مهم‌ترین بخش‌های سیستم.
 
@@ -134,7 +134,7 @@ Cost optimization will be a second-order concern once we have the basic system w
 
 ---
 
-### E - ارزیابی و مشاهده‌پذیری (Evaluation and Observability)
+### مرحله E - ارزیابی و مشاهده‌پذیری (Evaluation and Observability)
 
 **هدف:** نشان دادن اینکه شما به عملیات استقرار در محیط عملیاتی (production) فکر می‌کنید.
 
@@ -153,7 +153,7 @@ Cost optimization will be a second-order concern once we have the basic system w
 
 ---
 
-### R - پایداری و مقیاس‌پذیری (Reliability and Scale)
+### مرحله R - پایداری و مقیاس‌پذیری (Reliability and Scale)
 
 **هدف:** بررسی حالت‌های شکست و نحوه رشد سیستم.
 
@@ -257,7 +257,7 @@ second. Anything else you'd like me to go deeper on?"
 
 از این چارچوب برای سؤالات مفهومی مانند «RAG را توضیح دهید» یا «Speculative Decoding چیست؟» استفاده کنید.
 
-### E - توضیح ساده (Explain Simply)
+### مرحله E - توضیح ساده (Explain Simply)
 
 با یک تعریف یک‌جمله‌ای که برای هر کسی قابل فهم باشد شروع کنید.
 
@@ -269,7 +269,7 @@ do not have to redo work for previous tokens when generating each new token."
 
 ---
 
-### T - جزئیات فنی (Technical Details)
+### مرحله T - جزئیات فنی (Technical Details)
 
 عمق فنی مناسب متناسب با سطح مصاحبه‌کننده را اضافه کنید.
 
@@ -288,7 +288,7 @@ For Llama 3.1 70B (80 layers, 8 KV heads, head_dim 128, BF16), that is
 
 ---
 
-### A - کاربردها و موازنه‌ها (Applications and Tradeoffs)
+### مرحله A - کاربردها و موازنه‌ها (Applications and Tradeoffs)
 
 مفهوم را به کاربردهای عملی پیوند دهید و درباره موازنه‌ها (Tradeoffs) صحبت کنید.
 
@@ -433,7 +433,7 @@ flowchart TD
 
 برای سؤالات رفتاری در نقش‌های هوش مصنوعی، از STAR-L (شامل STAR به اضافه آموخته‌ها یا Learnings) استفاده کنید.
 
-### S - موقعیت (Situation)
+### مرحله S - موقعیت (Situation)
 
 بستر و زمینه ماجرا را به‌صورت خلاصه تعریف کنید.
 
@@ -442,7 +442,7 @@ flowchart TD
 complaints about incorrect answers for technical queries."
 ```
 
-### T - وظیفه (Task)
+### مرحله T - وظیفه (Task)
 
 مسئولیت دقیق شما چه بود؟
 
@@ -451,7 +451,7 @@ complaints about incorrect answers for technical queries."
 while maintaining user trust."
 ```
 
-### A - اقدام (Action)
+### مرحله A - اقدام (Action)
 
 شما چه کاری انجام دادید؟ از ضمیر «من» استفاده کنید، نه «ما».
 
@@ -462,7 +462,7 @@ I designed a code-aware chunking approach that preserved semantic units.
 I also added a confidence score display so users could calibrate trust."
 ```
 
-### R - نتیجه (Result)
+### مرحله R - نتیجه (Result)
 
 در صورت امکان نتایج را کمّی و عددی بیان کنید.
 
@@ -471,7 +471,7 @@ I also added a confidence score display so users could calibrate trust."
 evaluation suite. User complaints dropped 70% within two weeks."
 ```
 
-### L - آموخته‌ها (Learnings)
+### مرحله L - آموخته‌ها (Learnings)
 
 اگر دوباره با آن مواجه می‌شدید چه کاری را متفاوت انجام می‌دادید؟
 

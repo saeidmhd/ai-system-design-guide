@@ -121,10 +121,10 @@
 ## منابع
 - Google Cloud. "Cost Optimization for Generative AI" (2024)
 - Anyscale. "LLM Inference: API vs. Self-Hosted Costs" (2024)
-- OpenAI. [قیمت‌گذاری API](https://developers.openai.com/api/docs/pricing)؛ Anthropic. [قیمت‌گذاری](https://platform.claude.com/docs/en/about-claude/pricing)؛ DeepSeek. [مدل‌ها و قیمت‌گذاری](https://api-docs.deepseek.com/quick_start/pricing)
-- Silicon Data. [شاخص اجاره B200](https://www.silicondata.com/products/silicon-index/b200)، [شاخص B300](https://www.silicondata.com/products/silicon-index/b300)، [شاخص H200](https://www.silicondata.com/products/silicon-index/h200) و [شاخص H100](https://www.silicondata.com/products/silicon-index/h100)
-- OpenAI. [راهنمای Decisions API](https://developers.openai.com/api/docs/guides/decisions)
-- RunPod. [قیمت‌گذاری](https://www.runpod.io/pricing)؛ Lambda. [نمونه‌ها (Instances)](https://lambda.com/instances)
+- شرکت OpenAI. [قیمت‌گذاری API](https://developers.openai.com/api/docs/pricing)؛ Anthropic. [قیمت‌گذاری](https://platform.claude.com/docs/en/about-claude/pricing)؛ DeepSeek. [مدل‌ها و قیمت‌گذاری](https://api-docs.deepseek.com/quick_start/pricing)
+- پلتفرم Silicon Data. [شاخص اجاره B200](https://www.silicondata.com/products/silicon-index/b200)، [شاخص B300](https://www.silicondata.com/products/silicon-index/b300)، [شاخص H200](https://www.silicondata.com/products/silicon-index/h200) و [شاخص H100](https://www.silicondata.com/products/silicon-index/h100)
+- شرکت OpenAI. [راهنمای Decisions API](https://developers.openai.com/api/docs/guides/decisions)
+- پلتفرم RunPod. [قیمت‌گذاری](https://www.runpod.io/pricing)؛ Lambda. [نمونه‌ها (Instances)](https://lambda.com/instances)
 - Sun et al. "What Effort Level Should I Choose?" (arXiv 2610.34491, 2026)
 
 ---

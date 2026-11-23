@@ -329,7 +329,7 @@ Engineering Manager
 **ماه ۳: استراتژی و استخدام**
 - ماتریس مهارت‌های هوش مصنوعی را برای تیم خود تعریف کنید: چه کسی چه مهارتی دارد و چه چیزهایی کم است
 - یک روبیک مصاحبه برای مهندسان هوش مصنوعی بسازید (از [00-interview-prep](00-interview-prep/) به عنوان منبع خود استفاده کنید)
-- OKRهای کیفیت هوش مصنوعی را در سطح تیم برای فصل آینده تعیین کنید
+- اهداف OKR کیفیت هوش مصنوعی را در سطح تیم برای فصل آینده تعیین کنید
 - دوره: *CS294 LLM Agents* (دانشگاه برکلی، رایگان)، که عمق لازم برای گفتگو‌های استراتژیک را در اختیارتان قرار می‌دهد
 
 ---
@@ -469,12 +469,12 @@ EM              6–12 mo      $200–280K    AI Engineering Manager
 | پایپ‌لاین RAG | [06-retrieval-systems](06-retrieval-systems/) | مسیر مهندسی بک‌اند / داده |
 | سیستم‌های Agentic | [07-agentic-systems](07-agentic-systems/) | مسیر مهندسی بک‌اند / مهندس ارشد هوش مصنوعی |
 | حافظه و وضعیت (Memory & state) | [08-memory-and-state](08-memory-and-state/) | تمام مهندسانی که ایجنت می‌سازند |
-| LangGraph، CrewAI، Claude Code | [09-frameworks-and-tools](09-frameworks-and-tools/) | انتخاب کاربردی ابزارها |
+| فریم‌ورک LangGraph، CrewAI، Claude Code | [09-frameworks-and-tools](09-frameworks-and-tools/) | انتخاب کاربردی ابزارها |
 | پارس و پردازش اسناد | [10-document-processing](10-document-processing/) | مسیر مهندسی داده / RAG |
 | زیرساخت GPU، LLMOps | [11-infrastructure-and-mlops](11-infrastructure-and-mlops/) | مسیر DevOps / پلتفرم |
 | امنیت چندمستأجری (multi-tenant) | [12-security-and-access](12-security-and-access/) | مسیر بک‌اند / مدیر محصول (PM) |
 | گاردریل‌ها، تیم قرمز (Red teaming) | [13-reliability-and-safety](13-reliability-and-safety/) | مسیر تضمین کیفیت (QA) / تیم قرمز |
-| RAGAS، LangSmith، ارزیابی‌ها (Evals) | [14-evaluation-and-observability](14-evaluation-and-observability/) | مسیر QA / مدیر محصول / تمامی نقش‌ها |
+| ابزار RAGAS، LangSmith، ارزیابی‌ها (Evals) | [14-evaluation-and-observability](14-evaluation-and-observability/) | مسیر QA / مدیر محصول / تمامی نقش‌ها |
 | الگوهای طراحی (Design patterns) | [15-ai-design-patterns](15-ai-design-patterns/) | آمادگی برای سطح ارشد (Senior) |
 | مطالعات موردی (Case studies) | [16-case-studies](16-case-studies/) | آمادگی مصاحبه، طراحی‌های مرجع |
 | بررسی عمیق ارزیابی‌ها (Evals deep dive) | [راهنمای جامع AI Evals](ai_evals_comprehensive_study_guide.md) | مسیر QA / مدیر محصول (PM) |
@@ -490,13 +490,13 @@ EM              6–12 mo      $200–280K    AI Engineering Manager
 
 | نقش شما | دوره اول | دوره دوم | دوره سوم |
 |-----------|-------------|---------------|--------------|
-| **بک‌اند** | ChatGPT Prompt Engineering for Devs (DL.AI، رایگان) | Building & Evaluating RAG (DL.AI، رایگان) | AI Agents in LangGraph (DL.AI، رایگان) |
-| **فرانت‌اند** | ChatGPT Prompt Engineering for Devs (DL.AI، رایگان) | Building Systems with ChatGPT API (DL.AI، رایگان) | Evaluating & Debugging GenAI (DL.AI + W&B، رایگان) |
-| **تضمین کیفیت (QA)** | راهنمای AI Evals در این مخزن (رایگان) | Quality & Safety for LLM Apps (DL.AI، رایگان) | AI Evals For Engineers & PMs (Maven، هامل + شریا، پولی) |
-| **مدیر محصول (PM)** | AI for Everyone (Coursera، رایگان) | فصل ۳ راهنمای AI Evals (رایگان) | AI Evals For Engineers & PMs (Maven، هامل + شریا، پولی) |
-| **دواپس (DevOps)** | Efficiently Serving LLMs (DL.AI، رایگان) | Evaluating & Debugging GenAI (DL.AI + W&B، رایگان) | Machine Learning in Production (Coursera) |
-| **مهندسی داده** | Building & Evaluating RAG (DL.AI، رایگان) | Finetuning LLMs (DL.AI، رایگان) | راهنمای AI Evals در این مخزن (رایگان) |
-| **مدیر مهندسی (EM)** | Generative AI with LLMs (Coursera) | AI Agents in LangGraph (DL.AI، رایگان) | CS294 LLM Agents (Berkeley، رایگان) |
+| **بک‌اند** | دوره ChatGPT Prompt Engineering for Devs (DL.AI، رایگان) | دوره Building & Evaluating RAG (DL.AI، رایگان) | فناوری AI Agents in LangGraph (DL.AI، رایگان) |
+| **فرانت‌اند** | دوره ChatGPT Prompt Engineering for Devs (DL.AI، رایگان) | دوره Building Systems with ChatGPT API (DL.AI، رایگان) | دوره Evaluating & Debugging GenAI (DL.AI + W&B، رایگان) |
+| **تضمین کیفیت (QA)** | راهنمای AI Evals در این مخزن (رایگان) | دوره Quality & Safety for LLM Apps (DL.AI، رایگان) | فناوری AI Evals For Engineers & PMs (Maven، هامل + شریا، پولی) |
+| **مدیر محصول (PM)** | فناوری AI for Everyone (Coursera، رایگان) | فصل ۳ راهنمای AI Evals (رایگان) | فناوری AI Evals For Engineers & PMs (Maven، هامل + شریا، پولی) |
+| **دواپس (DevOps)** | دوره Efficiently Serving LLMs (DL.AI، رایگان) | دوره Evaluating & Debugging GenAI (DL.AI + W&B، رایگان) | Machine Learning in Production (Coursera) |
+| **مهندسی داده** | دوره Building & Evaluating RAG (DL.AI، رایگان) | دوره Finetuning LLMs (DL.AI، رایگان) | راهنمای AI Evals در این مخزن (رایگان) |
+| **مدیر مهندسی (EM)** | Generative AI with LLMs (Coursera) | فناوری AI Agents in LangGraph (DL.AI، رایگان) | دوره CS294 LLM Agents (Berkeley، رایگان) |
 
 *DL.AI = DeepLearning.AI*
 

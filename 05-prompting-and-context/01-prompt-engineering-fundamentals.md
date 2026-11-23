@@ -127,7 +127,7 @@ $USER_INPUT_HERE
 ---
 
 ## منابع
-- OpenAI. «راهنمای مهندسی Prompt» و «بهترین شیوه‌های استدلال» (2024-2026)
+- شرکت OpenAI. «راهنمای مهندسی Prompt» و «بهترین شیوه‌های استدلال» (2024-2026)
 - [Anthropic. «بهترین شیوه‌های Prompting» (2026)](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 - [Anthropic. «امتناع‌ها و راهکارهای جایگزین»: نگه‌داشتن استدلال در بلوک‌های تفکر](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#keep-reasoning-in-thinking-blocks)
 - Wallace et al. "The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions" (2024)

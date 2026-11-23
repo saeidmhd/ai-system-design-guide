@@ -41,7 +41,7 @@
 
 | فاز | گلوگاه | چرا؟ | بهینه‌سازی اصلی |
 |-------|------------|------|----------------------|
-| **Prefill** | محاسبات (FLOPs) | پردازش موازی، واحدهای محاسباتی GPU را اشباع می‌کند. | FlashAttention، دقت FP8/FP4، کش‌کردن پیشوند (prefix caching). |
+| **Prefill** | محاسبات (FLOPs) | پردازش موازی، واحدهای محاسباتی GPU را اشباع می‌کند. | مکانیزم FlashAttention، دقت FP8/FP4، کش‌کردن پیشوند (prefix caching). |
 | **Decode** | پهنای باند حافظه | وزن‌ها باید برای *تک‌تک Tokenها* از HBM بارگذاری شوند. | کوانتیزاسیون (4-bit)، GQA/MLA، دسته‌بندی (Batching)، رمزگشایی گمانه‌زن (speculative decoding). |
 
 **بینش دیوار حافظه (The Memory Wall)**
@@ -55,7 +55,7 @@
 |--------|-----------|------|------------|
 | **TTFT** | زمان تا اولین Token (Time To First Token) | < 200ms | پاسخگویی ادراک‌شده توسط کاربر. |
 | **TPOT / ITL** | زمان به ازای هر Token خروجی / تاخیر (Latency) بین Tokenها | < 30ms | سرعت خواندن و روان بودن جریان گفتگو. |
-| **توان عملیاتی (Throughput)** | Tokenها بر ثانیه (تجمعی / Agg) | بیشینه‌سازی | تعیین هزینه به ازای هر پرس‌وجو (Query). |
+| **توان عملیاتی (Throughput)** | واحدهای Token بر ثانیه (تجمعی / Agg) | بیشینه‌سازی | تعیین هزینه به ازای هر پرس‌وجو (Query). |
 | **Goodput** | درخواست‌ها بر ثانیه که **هر دو** SLO مربوط به TTFT و ITL را برآورده کنند | بیشینه‌سازی | آنچه واقعاً می‌توانید بر اساس SLO خود ارائه دهید (بفروشید). |
 | **تاخیر (Latency)** | زمان سرتاسری (End-to-End Time) | < 2.0s | کل زمان رفت و برگشت برای Agent. |
 
@@ -69,12 +69,12 @@
 
 ## بهینه‌سازی‌های مبتنی بر سخت‌افزار (FP8 و FP4)
 
-**FP8 (ممیز شناور ۸ بیتی / 8-bit Floating Point)** به‌صورت بومی (native) روی معماری Hopper و پس از آن پشتیبانی می‌شود و همچنان پیش‌فرض ایمن برای وزن‌ها و به‌ویژه برای KV cache باقی مانده است.
+**فرمت FP8 (ممیز شناور ۸ بیتی / 8-bit Floating Point)** به‌صورت بومی (native) روی معماری Hopper و پس از آن پشتیبانی می‌شود و همچنان پیش‌فرض ایمن برای وزن‌ها و به‌ویژه برای KV cache باقی مانده است.
 
 - **مزیت**: تا ۲ برابر اوج توان عملیاتی (Throughput) تانسوری در مقایسه با FP16/BF16، با افت دقت معمولاً ناچیز (کمتر از ۱٪) در صورت کالیبره‌شدن.
 - **نحوه کارکرد**: فرمت FP8 E4M3 بیت‌ها را به جای دقت مانتیس، به محدوده توان (exponent range) اختصاص می‌دهد؛ بنابراین دامنه دینامیکی اکتیویشن‌های LLM را بسیار بهتر از INT8 پوشش داده و به کالیبراسیون ساده‌تری نیاز دارد.
 
-**FP4 (NVFP4 روی NVIDIA Blackwell و Rubin، و MXFP4 روی AMD و Blackwell)** دقت پیشتاز سرویس‌دهی در سال ۲۰۲۶ است: وزن‌های FP4 به همراه KV cache با دقت FP8. شرکت NVIDIA عملکرد Vera Rubin NVL72 را معادل ۳,۶۰۰ پتافلاپس NVFP4 به ازای هر رک رتبه‌بندی می‌کند، و در نتایج ثبت‌شده MLPerf Inference v6.1 حرکت از FP8 به سمت FP4 مشاهده شد.
+**فرمت FP4 (NVFP4 روی NVIDIA Blackwell و Rubin، و MXFP4 روی AMD و Blackwell)** دقت پیشتاز سرویس‌دهی در سال ۲۰۲۶ است: وزن‌های FP4 به همراه KV cache با دقت FP8. شرکت NVIDIA عملکرد Vera Rubin NVL72 را معادل ۳,۶۰۰ پتافلاپس NVFP4 به ازای هر رک رتبه‌بندی می‌کند، و در نتایج ثبت‌شده MLPerf Inference v6.1 حرکت از FP8 به سمت FP4 مشاهده شد.
 
 **نکته ظریف در سطح مهندس ارشد (Principal-level Nuance)**: انتخاب دقت اکنون یک تصمیم وابسته به کرنل و سخت‌افزار است، نه صرفاً یک تصمیم در مورد عرض بیت‌ها (bit-width). دستورالعمل Dynamo خود NVIDIA برای Nemotron 3.5 Lightning نشان داد که BF16 با کرنل‌های Marlin تا ۸۰٪ سریع‌تر از NVFP4 بوده و با کرنل‌های CuTeDSL تا ۱۲٪ سریع‌تر عمل کرده است. فریم‌ورک‌های سرویس‌دهی از مقیاس‌بندی پویای بلوک‌به‌بلوک (per-block) و تانسور‌به‌تانسور (per-tensor) استفاده می‌کنند تا از افت کیفیت مدل بر اثر داده‌های پرت (outliers) جلوگیری نمایند؛ اما اینکه آیا FP4 سریع‌تر است یا خیر، به نسخه موتور (engine) و بک‌اند کرنلی که در عمل اجرا می‌کنید بستگی دارد. به [بررسی عمیق کوانتیزاسیون](../03-training-and-adaptation/07-quantization-deep-dive.md) مراجعه کنید.
 
@@ -106,7 +106,7 @@
 - vLLM Blog. "Understanding LLM Inference Latency" (2023)
 - SemiAnalysis. ["Vera Rubin NVL72: agentic inference"](https://newsletter.semianalysis.com/p/vera-rubin-nvl72-agentic-inference) (2026)
 - Artificial Analysis. ["Vera Rubin NVL72 on AA-AgentPerf"](https://artificialanalysis.ai/articles/vera-rubin-nvl72-agentperf) (2026)
-- MLCommons. [نتایج MLPerf Inference v6.1](https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/) (2026)
+- سازمان MLCommons. [نتایج MLPerf Inference v6.1](https://mlcommons.org/2026/09/mlperf-inference-v6-1-results/) (2026)
 
 ---
 

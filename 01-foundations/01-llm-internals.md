@@ -70,9 +70,9 @@ flowchart LR
 
 | معماری | نوع توجه | نمونه‌ها | بهترین کاربرد برای |
 |--------------|---------------|----------|----------|
-| صرفاً انکودر (Encoder-only) | دوطرفه (Bidirectional) | BERT، RoBERTa | طبقه‌بندی، NER، تعبیه‌ها (embeddings) |
-| صرفاً دکودر (Decoder-only) | علی (Causal - از چپ به راست) | GPT-3، Llama، Qwen، Mistral | تولید متن، چت |
-| انکودر-دکودر (Encoder-Decoder) | توجه متقاطع (Cross-attention) | T5، BART | ترجمه، خلاصه‌سازی |
+| صرفاً انکودر (Encoder-only) | دوطرفه (Bidirectional) | مدل‌های BERT و RoBERTa | طبقه‌بندی، NER، تعبیه‌ها (embeddings) |
+| صرفاً دکودر (Decoder-only) | علی (Causal - از چپ به راست) | مدل GPT-3، Llama، Qwen، Mistral | تولید متن، چت |
+| انکودر-دکودر (Encoder-Decoder) | توجه متقاطع (Cross-attention) | مدل‌های T5 و BART | ترجمه، خلاصه‌سازی |
 | انکودر-دکودر علی (Causal encoder-decoder - سال ۲۰۲۶) | علی؛ نگاشت KV دکودر از حالت‌های انکودر | DeepSeek V4.1-Flash | سرویس‌دهی با زمینه طولانی (Long-context) همراه با KV cache کوچک |
 
 ### صرفاً دکودر (اکثر LLMهای امروزی)
@@ -228,9 +228,9 @@ Attention(Q, K, V) = softmax(QK^T / √d_k) × V
 ```
 
 **گام‌به‌گام:**
-۱. **QK^T**: ضرب داخلی، میزان شباهت بین پرس‌وجوها (queries) و کلیدها (keys) را می‌سنجد (ماتریس n × n)
+۱. **حاصل‌ضرب QK^T**: ضرب داخلی، میزان شباهت بین پرس‌وجوها (queries) و کلیدها (keys) را می‌سنجد (ماتریس n × n)
 ۲. **/ √d_k**: مقیاس‌گذاری برای جلوگیری از اشباع تابع softmax در ابعاد بزرگ
-۳. **softmax**: تبدیل به احتمالات (مجموع هر سطر برابر ۱ می‌شود)
+۳. **تابع softmax**: تبدیل به احتمالات (مجموع هر سطر برابر ۱ می‌شود)
 ۴. **× V**: مجموع وزن‌دار مقادیر (values) بر اساس وزن‌های توجه
 
 ### چرا مقیاس‌گذاری با √d_k؟
@@ -300,11 +300,11 @@ scaled_dot = dot / np.sqrt(d)  # Expected magnitude: ~1
 
 **حیاتی برای سیستم‌های عملیاتی (production)**: مکانیزم استاندارد Multi-Head Attention نیازمند ذخیره K و V جداگانه برای هر سر در KV cache است. در مقابل، GQA مقادیر K و V را در میان گروه‌هایی از سرها به اشتراک می‌گذارد.
 
-| نوع توجه | K,V به ازای هر Query | کاهش حافظه KV Cache | نمونه‌ها |
+| نوع توجه | نسبت K,V به ازای هر Query | کاهش حافظه KV Cache | نمونه‌ها |
 |----------------|---------------|-------------------|----------|
 | چند سر (Multi-Head - MHA) | ۱:۱ | مبنا (Baseline) | GPT-3 |
-| پرس‌وجوی گروه‌بندی‌شده (Grouped-Query - GQA) | معمولاً ۸:۱ | حدود 8x | Llama 2 70B، Llama 3، Mistral |
-| چند پرس‌وجویی (Multi-Query - MQA) | All:1 (همه به ۱) | حدود n_heads × | PaLM، Falcon |
+| پرس‌وجوی گروه‌بندی‌شده (Grouped-Query - GQA) | معمولاً ۸:۱ | حدود 8x | مدل Llama 2 70B، Llama 3، Mistral |
+| چند پرس‌وجویی (Multi-Query - MQA) | نسبت All:1 (همه به ۱) | حدود n_heads × | مدل‌های PaLM و Falcon |
 
 **اثر عملی:**
 برای مدل Llama 3 70B (با همان ساختار توجه Llama 2 70B) در زمینه 8K با فرمت BF16:
@@ -360,7 +360,7 @@ RoPE(x, pos) = x × cos(pos × θ) + rotate(x) × sin(pos × θ)
 - استفاده شده در: Llama, Mistral, PaLM, Qwen, DeepSeek
 - گسترش طول زمینه (Context extension): روش‌های مقیاس‌بندی مانند Position Interpolation و YaRN یک پنجره آموزش‌دیده RoPE را بسط می‌دهند. مدل Qwen3.8-Flash-Next به‌صورت بومی دارای ۲۶۲K است و با YaRN به ۱M می‌رسد.
 
-### ALiBi (توجه با بایاس‌های خطی / Attention with Linear Biases)
+### مکانیزم ALiBi (توجه با بایاس‌های خطی / Attention with Linear Biases)
 
 افزودن بایاس وابسته به موقعیت به‌طور مستقیم به امتیازهای توجه:
 
@@ -601,9 +601,9 @@ H100 SXM: ~989 TFLOPS dense BF16, ~3.35 TB/s HBM bandwidth
 **پاسخ قوی:**
 هر سه از گونه‌های توجه چندسره هستند که تفاوت آن‌ها در نحوه اشتراک‌گذاری هدهای K و V است:
 
-- **MHA (توجه چندسره / Multi-Head Attention)**: هر هد Query هدهای K و V اختصاصی خود را دارد. نسبت N:N.
-- **MQA (توجه چندکوئری / Multi-Query Attention)**: تمام هدهای Query یک جفت هد مشترک K و V دارند. نسبت N:1.
-- **GQA (توجه کوئری گروه‌بندی‌شده / Grouped-Query Attention)**: گروه‌هایی از هدهای Query هدهای K و V را به اشتراک می‌گذارند. نسبت N:G (معمولاً G=8).
+- **مکانیزم MHA (توجه چندسره / Multi-Head Attention)**: هر هد Query هدهای K و V اختصاصی خود را دارد. نسبت N:N.
+- **مکانیزم MQA (توجه چندکوئری / Multi-Query Attention)**: تمام هدهای Query یک جفت هد مشترک K و V دارند. نسبت N:1.
+- **مکانیزم GQA (توجه کوئری گروه‌بندی‌شده / Grouped-Query Attention)**: گروه‌هایی از هدهای Query هدهای K و V را به اشتراک می‌گذارند. نسبت N:G (معمولاً G=8).
 
 اثر بر میزان حافظه KV cache:
 - روش MHA: اندازه کامل
