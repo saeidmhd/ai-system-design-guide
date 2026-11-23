@@ -9,7 +9,24 @@ Failure to follow these rules will break the project's rendering or Git synchron
 -   **GitHub RTL Wrapping:** Wrap the entire content of every translated Markdown file inside an RTL container:
     -   Place `<div dir="rtl">` on the very first line, followed by **one blank line** (required for GitHub to render Markdown inside HTML).
     -   Place **one blank line** before `</div>` on the very last line.
-    -   If a Mermaid or ASCII diagram breaks visually inside RTL, wrap that specific block in `<div dir="ltr">` ... `</div>` with blank lines around it.
+-   **LTR Wrapping for ALL Code Blocks & Diagrams (CRITICAL):**
+    Wrap **EVERY** fenced code block (``` or ````) — including programming code (Python, YAML, JSON, Bash, SQL), mock interview dialogues (Interviewer/You), prompt templates, math formulas, ASCII art/architecture diagrams, and Mermaid charts — inside an explicit `<div dir="ltr">` ... `</div>` container with **one blank line** before and after the opening and closing tags.
+    -   *Why:* In GitHub, VS Code, and web Markdown renderers, `<pre>` and `<code>` blocks inside a `<div dir="rtl">` parent inherit `direction: rtl` and `text-align: right` unless explicitly overridden. This causes English dialogues, prompt examples, code, and ASCII diagrams to align to the right, reversing punctuation (`?`, `:`, `-`, quotes, parentheses) and flipping arrows (`->`).
+    -   *Exact Syntax Template:*
+        ```markdown
+        متن توضیحی قبل از کد...
+
+        <div dir="ltr">
+
+        ```python
+        def example():
+            return True
+        ```
+
+        </div>
+
+        متن توضیحی بعد از کد...
+        ```
 -   **BiDi & Sentence-Start RTL Protection (CRITICAL):**
     NEVER start a paragraph, sentence, list item, or table cell directly with an English/Latin word (e.g., `Agentها`, `LLM`, `Promptها`, `RAG`, `Tokenها`). Starting a line with a Latin character breaks the Unicode BiDi (Bidirectional) algorithm in GitHub, browsers, and Markdown viewers, causing words to flip, text to scramble, and punctuation to land on the wrong side.
     -   **Always start sentences and bullet points with a Persian word or structural phrasing:**
@@ -18,7 +35,7 @@ Failure to follow these rules will break the project's rendering or Git synchron
         -   Instead of starting with `Promptها...` -> Write `دستورهای Prompt...` or `الگوهای Prompt...`
         -   Instead of starting with `RAG...` -> Write `معماری RAG...` or `سیستم‌های RAG...`
         -   Instead of starting with `Tokenها...` -> Write `واحدهای Token...`
--   **Code Blocks:** NEVER modify or translate anything inside triple backticks (```). Keep the code, comments within the code, and the language identifier exactly as they are.
+-   **Code Blocks:** NEVER modify or translate anything inside triple backticks (```). Keep the code, comments within the code, and the language identifier exactly as they are. Always ensure the entire block is wrapped in `<div dir="ltr">` ... `</div>` with surrounding blank lines.
 -   **Inline Code:** NEVER translate anything inside single backticks (`). (e.g., `LangChain` must remain `LangChain`).
 -   **Links:** In the format `[Link Text](https://...)` or relative paths `[Link Text](./path/file.md)`, translate ONLY the `Link Text`. NEVER touch the URL, relative path, or anchor links (`#section`).
 -   **Images:** In the format `![Alt Text](image_path)`, translate ONLY the `Alt Text`.
@@ -57,5 +74,5 @@ To ensure the guide remains useful for engineers, do NOT blindly translate stand
 ## 5. Execution Instructions
 When given a file or text to translate:
 1. Analyze the Markdown structure.
-2. Apply the translations following the glossary, RTL wrapping, sentence-start Persian rule (BiDi protection), and typography rules.
+2. Apply the translations following the glossary, RTL wrapping, LTR code block wrapping, sentence-start Persian rule (BiDi protection), and typography rules.
 3. Output ONLY the translated Markdown. Do not add introductory or conversational filler like "Here is the translation:". Just output the final file content.
