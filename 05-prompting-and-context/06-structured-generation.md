@@ -37,6 +37,8 @@
 
 فراخوانی توابع (Function calling) نوعی تولید ساختاریافته است که در آن LLM یک تابع را «انتخاب» کرده و آرگومان‌های آن را مقداردهی می‌کند.
 
+<div dir="ltr">
+
 ```json
 // Example Tool Call
 {
@@ -44,6 +46,8 @@
   "arguments": { "symbol": "AAPL", "interval": "1d" }
 }
 ```
+
+</div>
 
 **نکته ظریف**: **فراخوانی موازی توابع (Parallel Function Calling)** اکنون به یک استاندارد تبدیل شده است. یک مدل می‌تواند تصمیم بگیرد ۵ ابزار مختلف را به طور هم‌زمان فراخوانی کند (مثلاً بررسی موجودی حساب، بررسی امتیاز اعتباری، بررسی نرخ وام) و نتایج را تجمیع نماید.
 
@@ -63,6 +67,8 @@
 
 برای مدل‌های خودمیزبان (self-hosted)، ما از **گرامرهای مستقل از متن (Context-Free Grammars یا CFG)** یا **Regex** استفاده می‌کنیم. سامانه‌های vLLM و SGLang بک‌اند‌های گرامر (XGrammar، llguidance) را در پشت گزینه‌های خروجی ساختاریافته خود ارائه می‌دهند، llama.cpp از گرامرهای GBNF استفاده می‌کند و Outlines مستقیماً با مدل‌های Hugging Face کار می‌کند.
 
+<div dir="ltr">
+
 ```python
 # Outlines pattern (1.x API)
 import outlines
@@ -77,6 +83,8 @@ model = outlines.from_transformers(
 phone = model("Extract the phone number: call me at 415-555-0199", Regex(r"\d{3}-\d{3}-\d{4}"))
 # Result: The model can ONLY output telephone numbers.
 ```
+
+</div>
 
 کامپایل گرامر رایگان نیست: یک اسکیما یا گرامر بزرگ می‌تواند تاخیر (Latency) قابل‌توجهی به اولین درخواست اضافه کند؛ بنابراین گرامرهای کامپایل‌شده را کش (cache) کنید و در صورت امکان اسکیماها را مسطح (flat) نگه دارید.
 

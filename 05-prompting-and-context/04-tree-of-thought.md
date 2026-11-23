@@ -35,6 +35,8 @@
 ۲. **ارزیاب وضعیت (State Evaluator)**: به هر گام نمره می‌دهد (مثلاً «خوب»، «شاید»، «غیرممکن»).
 ۳. **الگوریتم جستجو (Search Algorithm)**: روش‌هایی مانند BFS یا DFS برای تصمیم‌گیری در مورد اینکه کدام شاخه در مرحله بعد کاوش شود.
 
+<div dir="ltr">
+
 ```python
 # The ToT logic (simplified breadth-first search with pruning)
 def tree_of_thought(problem, propose, evaluate, depth=3, breadth=3, threshold=0.5):
@@ -53,6 +55,8 @@ def tree_of_thought(problem, propose, evaluate, depth=3, breadth=3, threshold=0.
             return None  # every branch was pruned
     return frontier[0]
 ```
+
+</div>
 
 ---
 

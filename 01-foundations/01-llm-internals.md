@@ -219,6 +219,8 @@ flowchart TD
 
 برای توالی ورودی X متشکل از n تا Token با بعد d:
 
+<div dir="ltr">
+
 ```
 Q = XW_Q   (Query: What am I looking for?)
 K = XW_K   (Key: What do I contain?)
@@ -226,6 +228,8 @@ V = XW_V   (Value: What do I contribute?)
 
 Attention(Q, K, V) = softmax(QK^T / √d_k) × V
 ```
+
+</div>
 
 **گام‌به‌گام:**
 ۱. **حاصل‌ضرب QK^T**: ضرب داخلی، میزان شباهت بین پرس‌وجوها (queries) و کلیدها (keys) را می‌سنجد (ماتریس n × n)
@@ -239,6 +243,8 @@ Attention(Q, K, V) = softmax(QK^T / √d_k) × V
 
 بدون مقیاس‌گذاری، با رشد بعد d، حاصل‌ضرب‌های داخلی نیز به تناسب رشد می‌کنند. مقادیر بزرگ حاصل‌ضرب داخلی، تابع softmax را به نواحی اشباع سوق می‌دهند که در آن گرادیان‌ها ناپدید (صفر) می‌شوند.
 
+<div dir="ltr">
+
 ```python
 # Without scaling (problematic for large d)
 d = 512
@@ -249,6 +255,8 @@ dot = np.dot(q, k)  # Expected magnitude: ~√d ≈ 22.6
 # With scaling
 scaled_dot = dot / np.sqrt(d)  # Expected magnitude: ~1
 ```
+
+</div>
 
 ### پیچیدگی محاسباتی توجه
 
@@ -323,10 +331,14 @@ scaled_dot = dot / np.sqrt(d)  # Expected magnitude: ~1
 
 از توابع سینوس و کسینوس با بسامدهای مختلف استفاده می‌کند:
 
+<div dir="ltr">
+
 ```
 PE(pos, 2i) = sin(pos / 10000^(2i/d))
 PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - قطعی (Deterministic)، بدون پارامترهای یادگیری‌پذیر
@@ -337,9 +349,13 @@ PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
 
 یادگیری یک Embedding مجزا برای هر موقعیت:
 
+<div dir="ltr">
+
 ```python
 position_embeddings = nn.Embedding(max_length, d_model)
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - ساده و کارآمد
@@ -350,9 +366,13 @@ position_embeddings = nn.Embedding(max_length, d_model)
 
 کدگذاری موقعیت از طریق چرخاندن بردارهای Query و Key:
 
+<div dir="ltr">
+
 ```
 RoPE(x, pos) = x × cos(pos × θ) + rotate(x) × sin(pos × θ)
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - نسبی: توجه (Attention) به (pos_q - pos_k) بستگی دارد
@@ -364,9 +384,13 @@ RoPE(x, pos) = x × cos(pos × θ) + rotate(x) × sin(pos × θ)
 
 افزودن بایاس وابسته به موقعیت به‌طور مستقیم به امتیازهای توجه:
 
+<div dir="ltr">
+
 ```
 Attention = softmax(QK^T / √d_k - m × distance)
 ```
+
+</div>
 
 که در آن m یک شیب اختصاصی برای هر هد (head-specific slope) و distance برابر با |pos_q - pos_k| است.
 
@@ -390,12 +414,16 @@ Attention = softmax(QK^T / √d_k - m × distance)
 
 هر لایه ترنسفورمر دارای یک شبکه پیش‌خور (FFN) است که هر موقعیت را به‌صورت مستقل پردازش می‌کند:
 
+<div dir="ltr">
+
 ```python
 def feed_forward(x):
     hidden = activation(x @ W1 + b1)  # Expand: d → 4d
     output = hidden @ W2 + b2         # Contract: 4d → d
     return output
 ```
+
+</div>
 
 **ویژگی‌های کلیدی:**
 - وابسته به موقعیت (Position-wise): وزن‌های یکسانی روی هر موقعیت اعمال می‌شود
@@ -414,6 +442,8 @@ def feed_forward(x):
 
 ### گونه‌های مختلف GLU
 
+<div dir="ltr">
+
 ```python
 # Standard FFN
 hidden = gelu(x @ W1)
@@ -425,11 +455,15 @@ hidden = x @ W_up
 output = (gate * hidden) @ W_down
 ```
 
+</div>
+
 ---
 
 ## نرمال‌سازی لایه‌ای (Layer Normalization)
 
 نرمال‌سازی لایه‌ای با نرمال کردن فعال‌سازی‌ها، فرآیند آموزش را پایدار می‌کند:
+
+<div dir="ltr">
 
 ```python
 def layer_norm(x, gamma, beta):
@@ -439,17 +473,29 @@ def layer_norm(x, gamma, beta):
     return gamma * normalized + beta
 ```
 
+</div>
+
 ### مقایسه Pre-LN در برابر Post-LN
 
 **روش Post-LN (ترنسفورمر اولیه):**
+
+<div dir="ltr">
+
 ```
 x = LayerNorm(x + Attention(x))  # Post-LN: normalize after residual
 ```
 
+</div>
+
 **روش Pre-LN (مدل‌های مدرن LLM):**
+
+<div dir="ltr">
+
 ```
 x = x + Attention(LayerNorm(x))  # Pre-LN: normalize before sublayer
 ```
+
+</div>
 
 | گونه (Variant) | پایداری آموزش | عملکرد نهایی | کاربرد |
 |---------|-------------------|-------------------|-------|
@@ -462,11 +508,15 @@ x = x + Attention(LayerNorm(x))  # Pre-LN: normalize before sublayer
 
 ساده‌سازی که از تفریق میانگین (mean centering) صرف‌نظر می‌کند:
 
+<div dir="ltr">
+
 ```python
 def rms_norm(x, gamma):
     rms = sqrt(mean(x^2) + eps)
     return gamma * (x / rms)
 ```
+
+</div>
 
 حدود ۱۰ تا ۱۵٪ سریع‌تر از LayerNorm با عملکردی مشابه. استفاده شده در Llama و Mistral.
 
@@ -475,6 +525,8 @@ def rms_norm(x, gamma):
 ## جمع‌بندی اجزا (Putting It All Together)
 
 یک لایه کامل ترنسفورمر:
+
+<div dir="ltr">
 
 ```python
 class TransformerLayer:
@@ -492,10 +544,17 @@ class TransformerLayer:
         return out
 ```
 
+</div>
+
 **مدل کامل:**
+
+<div dir="ltr">
+
 ```
 Token IDs → Embedding → [Transformer Layer × N] → Output Norm → LM Head → Logits
 ```
+
+</div>
 
 ---
 
@@ -511,6 +570,8 @@ Token IDs → Embedding → [Transformer Layer × N] → Output Norm → LM Head
 | Mistral 7B | 7B | 32 | 32 | 4,096 | 14,336 |
 
 ### نیازمندی‌های حافظه
+
+<div dir="ltr">
 
 ```
 Model weights ≈ bytes_per_parameter × parameters
@@ -528,7 +589,11 @@ KV cache per token (BF16, standard MHA/GQA attention):
   (its sliding-window KV is extra, capped at the window length)
 ```
 
+</div>
+
 ### نیازمندی‌های محاسباتی
+
+<div dir="ltr">
 
 ```
 FLOPs per token, forward pass ≈ 2 × active parameters
@@ -542,6 +607,8 @@ H100 SXM: ~989 TFLOPS dense BF16, ~3.35 TB/s HBM bandwidth
   weight read across many requests (in practice 70B BF16 spans 2+ GPUs;
   the ratio is the point)
 ```
+
+</div>
 
 ---
 

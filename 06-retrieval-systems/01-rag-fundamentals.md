@@ -92,9 +92,13 @@ flowchart TD
 
 بدون در نظر گرفتن نوشتن در کَش، Tokenهای خروجی و تاخیر (Latency)، قرار دادن یک پیکره کَش‌شده با **N** عدد Token به ازای هر کوئری تقریباً زمانی هزینه‌ای معادل ارسال **k** عدد Token تازه بازیابی‌شده دارد که:
 
+<div dir="ltr">
+
 ```
 N x cache_read_multiplier = k        =>        N_break_even = k / multiplier
 ```
+
+</div>
 
 با یک کانتکست بازیابی‌شده ۵ هزار Token (همان فرضی که در [RAG در مقیاس عملیاتی](14-production-rag-at-scale.md#the-cache-read-break-even) استفاده شده است):
 

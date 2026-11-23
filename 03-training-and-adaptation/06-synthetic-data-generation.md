@@ -40,11 +40,15 @@
 ۲. **تکامل در سطح (In-breadth):** جهش دادن دستورالعمل به یک دستورالعمل جدید و کم‌یاب‌تر در همان حوزه به منظور گسترش پوشش موضوعی.
 ۳. **حذف (Elimination):** کنار گذاشتن تکامل‌های ناموفق (بدون اطلاعات جدید، غیرقابل‌پاسخ، یا صرفاً یک کپی از Prompt در حال تکامل) پیش از آنکه وارد مجموعه‌ی داده‌های آموزش شوند.
 
+<div dir="ltr">
+
 ```python
 # Simple Instruction: "Write a function to add two numbers."
 # Evolved Instruction: "Write a thread-safe Python class that performs 
 # matrix addition with error handling and unit tests, adhering to PEP8."
 ```
+
+</div>
 
 ---
 

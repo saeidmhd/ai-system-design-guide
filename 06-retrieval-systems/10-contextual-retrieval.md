@@ -26,6 +26,8 @@
 
 **نمونه‌ای از رقیق‌سازی بافتار (Context Dilution):**
 
+<div dir="ltr">
+
 ```
 Original Document: "Acme Corp Q3 2025 Financial Report"
   Section 4: Product Pricing
@@ -39,6 +41,8 @@ Chunk 17: "It costs $200/month."
 Chunk 18: "The Enterprise plan includes SSO and audit
            logs for $800/month."
 ```
+
+</div>
 
 **مشکل چانک ۱۷ (Chunk 17)**: کاربری که عبارت "How much does Acme Standard plan cost?" (هزینه طرح استاندارد Acme چقدر است؟) را جستجو می‌کند، احتمالاً این چانک را از دست خواهد داد؛ زیرا در آن هیچ اشاره‌ای به "Acme"، "Standard" یا "plan" نشده است. تعبیه عبارت "It costs $200/month" از نظر معنایی با پرس‌وجو (Query) فاصله دارد.
 
@@ -76,6 +80,8 @@ Chunk 18: "The Enterprise plan includes SSO and audit
 
 **مرحله بافتاربخشی (Contextualization)** کل سند + چانک منفرد را به همراه این Prompt به یک LLM ارسال می‌کند:
 
+<div dir="ltr">
+
 ```
 <document>
 {{WHOLE_DOCUMENT}}
@@ -92,7 +98,11 @@ search retrieval of the chunk. Answer only with the succinct
 context and nothing else.
 ```
 
+</div>
+
 **نتیجه برای چانک ۱۷ (Chunk 17)**:
+
+<div dir="ltr">
 
 ```
 Before: "It costs $200/month."
@@ -102,6 +112,8 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
          the cost of the Standard plan.
          It costs $200/month."
 ```
+
+</div>
 
 اکنون تعبیه این چانک شامل "Acme" ،"Standard plan" و "Product Pricing" است: تمام اصطلاحاتی که یک کاربر به طور طبیعی جستجو می‌کند.
 
@@ -213,6 +225,8 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
 
 همان تکنیک RRF که در جستجوی ترکیبی استاندارد استفاده می‌شود، در اینجا نیز کاربرد دارد:
 
+<div dir="ltr">
+
 ```
 RRF_Score(doc) = sum( 1 / (k + rank_in_list) )
                  for each list where doc appears
@@ -220,11 +234,15 @@ RRF_Score(doc) = sum( 1 / (k + rank_in_list) )
 k = 60 (standard smoothing constant)
 ```
 
+</div>
+
 ---
 
 ## الگوهای پیاده‌سازی
 
 ### الگوی ۱: بازیابی بافتاری پایه‌ای (Python)
+
+<div dir="ltr">
 
 ```python
 import anthropic
@@ -279,9 +297,13 @@ def process_document(document: str, chunks: List[str]) -> List[str]:
     return contextualized
 ```
 
+</div>
+
 ### الگوی ۲: بهینه‌سازی هزینه با Prompt Caching
 
 بزرگ‌ترین محرک هزینه، ارسال کل سند همراه با هر چانک است. قابلیت **Prompt Caching** این مسئله را حل می‌کند:
+
+<div dir="ltr">
 
 ```python
 def contextualize_with_caching(
@@ -328,6 +350,8 @@ def contextualize_with_caching(
     return results
 ```
 
+</div>
+
 **اثر هزینه‌ای Prompt Caching**: برای یک سند ۱۰,۰۰۰ Token که به ۳۰ چانک تقسیم شده است، Prompt Caching هزینه ورودی سند را تقریباً **۸۵٪** کاهش می‌دهد: یک عملیات نوشتن در کش با نرخ ۱.۲۵ برابر قیمت ورودی، و سپس ۲۹ بار خواندن با نرخ ۰.۱ برابر، به جای ۳۰ بار خواندن با قیمت کامل.
 
 سه تله عملیاتی می‌توانند این صرفه‌جویی را از بین ببرند:
@@ -339,6 +363,8 @@ def contextualize_with_caching(
 ### الگوی ۳: هدرهای بافتاری چانک (جایگزین سبک‌وزن)
 
 اگر بافتاربخشی مبتنی بر LLM بسیار گران است، از **هدرهای بافتاری چانک (Contextual Chunk Headers - CCH)** به عنوان یک جایگزین قطعی (Deterministic) استفاده کنید:
+
+<div dir="ltr">
 
 ```python
 def add_chunk_headers(
@@ -375,6 +401,8 @@ contextualized = add_chunk_headers(
 #
 # It costs $200/month.
 ```
+
+</div>
 
 **چه زمانی از CCH در مقایسه با بافتاربخشی با LLM استفاده کنیم:**
 

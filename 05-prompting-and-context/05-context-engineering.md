@@ -98,6 +98,8 @@
 
 ### کلود (Claude Opus 5.5, Sonnet 5.5, Fable 5.1): تفکر تطبیقی (Adaptive Thinking) + تلاش (Effort)
 
+<div dir="ltr">
+
 ```python
 response = client.messages.create(
     model="claude-opus-5-5",
@@ -117,6 +119,8 @@ for block in response.content:
         print("[ANSWER]", block.text)
 ```
 
+</div>
+
 **پارامترهای کلیدی:**
 - پارامتر `effort`: از `low` تا `max`. مقادیر پیش‌فرض بر اساس مدل تفاوت دارند: `medium` در Opus 5.5، و `high` در Sonnet 5.5 و Fable 5.1. آن را به‌طور صریح تنظیم کنید.
 - مقدار ثابت `budget_tokens` حذف شده است: این پارامتر در Opus 4.7 و نسخه‌های بعدی، Sonnet 5 و 5.5، Fable 5 و 5.1، و Haiku 5.5 خطای 400 برمی‌گرداند، و در Opus 4.6 و Sonnet 4.6 منسوخ (deprecated) شده است. Haiku 4.5 همچنان از آن استفاده می‌کند.
@@ -125,6 +129,8 @@ for block in response.content:
 - استریمینگ (Streaming) کار می‌کند؛ با تنظیم پیش‌فرض `display: "omitted"`، بلوک‌های تفکر به‌صورت متن خالی استریم می‌شوند که در رابط کاربری (UI) شبیه به یک مکث طولانی به نظر می‌رسد.
 
 ### شرکت OpenAI (GPT-6.1 Sol, GPT-6 Astra): تلاش استدلال (Reasoning Effort)
+
+<div dir="ltr">
 
 ```python
 response = client.responses.create(
@@ -135,6 +141,8 @@ response = client.responses.create(
 print(response.output_text)
 # Reasoning tokens are billed as output but not returned; summaries are optional
 ```
+
+</div>
 
 مقدار پیش‌فرض در GPT-6.1 Sol برابر با `medium` است. مدل GPT-6 Astra گزینه‌های `low` تا `max` را بدون سطح `none` ارائه می‌دهد، پارامترهای سفارشی `temperature`، `top_p` یا `logprobs` را نمی‌پذیرد، و برای ابزارها به Responses API نیاز دارد.
 
@@ -156,6 +164,8 @@ print(response.output_text)
 
 **الگوی محیط عملیاتی (Production pattern)**: به‌جای یک تنظیم سراسری، سطح تلاش (Effort) را به‌ازای هر درخواست با یک دسته‌بندی‌کننده پیچیدگی (Complexity Classifier) هدایت (Route) کنید.
 
+<div dir="ltr">
+
 ```python
 def smart_generate(query: str) -> str:
     complexity = classifier.predict(query)  # 0-1 score
@@ -167,6 +177,8 @@ def smart_generate(query: str) -> str:
         effort = "low"
     return call_model(query, effort=effort)
 ```
+
+</div>
 
 دو نکته احتیاطی: کش‌ها در محدوده مدل هستند (Model-scoped)، بنابراین مسیریابی بین مدل‌ها باعث از دست رفتن امکان استفاده مجدد از کش می‌شود؛ پیش از ساخت یک آبشار چندمدلی (Multi-model cascade)، قوی‌ترین مدل را در سطوح تلاش پایین‌تر بیازمایید. علاوه بر این در کلود، تغییر سطح تلاش در سطح بالا (Top-level effort) در میانه مکالمه، پیام‌های کش‌شده را باطل (Invalidate) می‌کند؛ نسخه آزمایشی (Beta) تلاش به‌ازای هر پیام از این مشکل جلوگیری می‌کند.
 

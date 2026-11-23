@@ -48,6 +48,8 @@
 
 #### سؤالات شفاف‌کننده
 
+<div dir="ltr">
+
 ```
 1. What is the document size distribution? (PDFs, wikis, code?)
 2. How often do permissions change? (Impacts caching strategy)
@@ -55,6 +57,8 @@
 4. What is the accuracy bar? (Can we say "I don't know"?)
 5. Are there compliance requirements? (Audit, data residency)
 ```
+
+</div>
 
 #### معماری در سطح بالا
 
@@ -99,6 +103,9 @@
 #### تحلیل عمیق پایپ‌لاین داده
 
 **۱. اتصال‌دهنده‌ها (Connectors):**
+
+<div dir="ltr">
+
 ```
 Each source has a dedicated connector:
 - SharePoint: Graph API with delta sync
@@ -112,7 +119,12 @@ Connector responsibilities:
 - Normalize to common document schema
 ```
 
+</div>
+
 **۲. شمای اسناد (Document Schema):**
+
+<div dir="ltr">
+
 ```json
 {
   "doc_id": "uuid",
@@ -136,7 +148,12 @@ Connector responsibilities:
 }
 ```
 
+</div>
+
 **۳. استراتژی Chunking:**
+
+<div dir="ltr">
+
 ```
 Given mixed document types, use adaptive chunking:
 
@@ -152,7 +169,12 @@ Chunk parameters:
 Each chunk inherits parent document permissions.
 ```
 
+</div>
+
 **۴. ساخت بردار (Embedding):**
+
+<div dir="ltr">
+
 ```
 Multilingual requirement suggests:
 - Model: Cohere Embed 5 (embed-v5.0-pro: 100+ languages, 128K
@@ -173,7 +195,12 @@ Batch embedding:
 - Store embedding with chunk in vector DB
 ```
 
+</div>
+
 **۵. انتخاب پایگاه داده برداری (Vector Database):**
+
+<div dir="ltr">
+
 ```
 Pinecone or Qdrant for this scale.
 
@@ -190,9 +217,14 @@ Schema:
 - Metadata: doc_id, chunk_id, language, permissions, source
 ```
 
+</div>
+
 #### تحلیل عمیق پایپ‌لاین پرس‌وجو
 
 **۱. تحلیل و تفکیک دسترسی‌ها:**
+
+<div dir="ltr">
+
 ```python
 def get_user_permissions(user_id: str) -> PermissionSet:
     """
@@ -213,7 +245,12 @@ def get_user_permissions(user_id: str) -> PermissionSet:
     return perms
 ```
 
+</div>
+
 **۲. بازیابی همراه با اعمال فیلتر دسترسی:**
+
+<div dir="ltr">
+
 ```python
 def retrieve(query: str, user_id: str, top_k: int = 20) -> List[Chunk]:
     perms = get_user_permissions(user_id)
@@ -243,7 +280,12 @@ def retrieve(query: str, user_id: str, top_k: int = 20) -> List[Chunk]:
     return results
 ```
 
+</div>
+
 **۳. رتبه‌بندی مجدد (Reranking):**
+
+<div dir="ltr">
+
 ```
 Rerank top-20 to get top-5 with a cross-encoder.
 Model: a hosted 32K-context reranker, Cohere Rerank 5 (Pro $0.05,
@@ -253,7 +295,12 @@ and Mandarin queries before choosing
 Latency budget: ~150ms (matches the p95 budget below)
 ```
 
+</div>
+
 **۴. تولید پاسخ (Generation):**
+
+<div dir="ltr">
+
 ```python
 def generate(query: str, chunks: List[Chunk], user_id: str) -> Response:
     context = format_chunks_with_citations(chunks)
@@ -278,6 +325,8 @@ QUESTION: {query}
     return format_with_source_links(response, chunks)
 ```
 
+</div>
+
 در اینجا از پارامتر `temperature` استفاده نمی‌شود: نسخه `2026-10-21` در API کلود برای هرگونه پارامتر نمونه‌برداری در تمام مدل‌ها خطای 400 برمی‌گرداند (حتی روی مقدار پیش‌فرض آن)، و GPT-6 Astra نیز آن‌ها را نمی‌پذیرد. مستندسازی پاسخ بر پایه پرامپت، بازیابی دقیق و بررسی ارجاعات حاصل می‌شود، نه تنظیمات نمونه‌برداری.
 
 #### مقیاس‌پذیری و پایداری (Scaling and Reliability)
@@ -300,6 +349,9 @@ Total:                 2000ms (buffer for P95)
 </div>
 
 **ملاحظات مقیاس‌پذیری:**
+
+<div dir="ltr">
+
 ```
 - Vector DB: Sharded by source or hash
 - Embedding service: Horizontal scale, stateless
@@ -307,7 +359,12 @@ Total:                 2000ms (buffer for P95)
 - Cache: Redis cluster for permissions and responses
 ```
 
+</div>
+
 **مدیریت شکست:**
+
+<div dir="ltr">
+
 ```
 - Vector DB down: Return cached results + degraded warning
 - LLM down: Fallback to secondary provider
@@ -315,29 +372,46 @@ Total:                 2000ms (buffer for P95)
 - Embedding service: Batch retries with circuit breaker
 ```
 
+</div>
+
 #### رویکرد ارزیابی (Evaluation)
 
 **متریک‌های آفلاین:**
+
+<div dir="ltr">
+
 ```
 - Retrieval: Precision@5, Recall@5, MRR
 - Generation: RAGAS (faithfulness, relevance)
 - End-to-end: Answer correctness on test set
 ```
 
+</div>
+
 **متریک‌های آنلاین:**
+
+<div dir="ltr">
+
 ```
 - User feedback: Thumbs up/down
 - Query reformulation rate: User rephrasing indicates failure
 - Citation click-through: Are sources useful?
 ```
 
+</div>
+
 **مانیتورینگ:**
+
+<div dir="ltr">
+
 ```
 - Latency dashboards by percentile
 - Permission filter hit rate
 - Empty result rate by source
 - Cost per query
 ```
+
+</div>
 
 ---
 
@@ -386,6 +460,9 @@ Total:                 2000ms (buffer for P95)
 </div>
 
 ۲. **طراحی ابزارها (Tools):**
+
+<div dir="ltr">
+
 ```python
 tools = [
     {
@@ -425,7 +502,12 @@ tools = [
 ]
 ```
 
+</div>
+
 ۳. **معیارهای ارجاع به انسان (Escalation Criteria):**
+
+<div dir="ltr">
+
 ```
 Escalate to human when:
 - Customer explicitly requests human
@@ -436,7 +518,12 @@ Escalate to human when:
 - Refund above threshold amount
 ```
 
+</div>
+
 ۴. **الگوی یکپارچه‌سازی با Zendesk:**
+
+<div dir="ltr">
+
 ```
 Zendesk integration:
 - Webhook receives new tickets
@@ -445,6 +532,8 @@ Zendesk integration:
 - Escalation → assign to queue with context summary
 - All interactions logged to ticket timeline
 ```
+
+</div>
 
 ---
 
@@ -466,6 +555,9 @@ Zendesk integration:
 **انتخاب‌های فنی کلیدی:**
 
 ۱. **سرهم‌بندی کانتکست (Context Assembly):**
+
+<div dir="ltr">
+
 ```
 For each changed file, assemble context:
 - The diff (changed lines)
@@ -475,7 +567,12 @@ For each changed file, assemble context:
 - Previous review comments (learn from feedback)
 ```
 
+</div>
+
 ۲. **دسته‌بندی‌های بررسی:**
+
+<div dir="ltr">
+
 ```python
 review_types = [
     "bug_risk",           # Potential bugs
@@ -487,7 +584,12 @@ review_types = [
 ]
 ```
 
+</div>
+
 ۳. **انتخاب مدل:**
+
+<div dir="ltr">
+
 ```
 Primary: Claude Sonnet 5.5 or GPT-6.1 Sol (both $2/$10 per 1M);
   pick with a bake-off on a few hundred past PRs whose real
@@ -510,7 +612,12 @@ prefix, skip generated and vendored files, set effort per route
 (thinking tokens bill as output), escalate selectively.
 ```
 
+</div>
+
 ۴. **فرمت خروجی:**
+
+<div dir="ltr">
+
 ````markdown
 ## Review Summary
 
@@ -529,7 +636,12 @@ prefix, skip generated and vendored files, set effort per route
 ...
 ````
 
+</div>
+
 ۵. **استراتژی مدیریت تاخیر (Latency):**
+
+<div dir="ltr">
+
 ```
 Target: Review ready within 2 minutes of PR creation
 
@@ -539,6 +651,8 @@ Strategy:
 - Stream results as available
 - Cache repository conventions
 ```
+
+</div>
 
 ۶. **اختیار تایید (Approval Authority):**
 دستیار هوش مصنوعی کامنت ثبت می‌کند؛ اما به‌صورت پیش‌فرض تایید (Approve) نمی‌کند. از ۲۸ اکتبر ۲۰۲۶ قابلیت تایید بررسی کد با Copilot در گیت‌هاب به‌صورت عمومی عرضه شد: هنگامی که مدیر مخزن آن را فعال می‌کند، تایید Copilot جزو تاییدیه‌های الزامی مخزن شمرده می‌شود، مدیران مشخص می‌کنند Copilot مجاز به تایید چه مسیرهایی است، و پوش کردن کامیت‌های جدید تاییدیه را باطل می‌سازد. بنابراین سناریوی «تایید یک Agent توسط Agent دیگر» اکنون یک پیکربندی واقعی است، نه صرفاً یک فرض نظری. اگر چنین قابلیتی را فعال می‌کنید، آن را به مسیرهای کم‌ریسک محدود کنید، هرگز اجازه ندهید یک Agent پول ریکوئستی را که خودش نوشته تایید کند، و تاییدیه را با هر کامیت جدید باطل نمایید. انتظار پرسیدن این سؤال درباره تفکیک وظایف (Separation of duties) را در مصاحبه داشته باشید.
@@ -579,6 +693,9 @@ Strategy:
 **مولفه‌های کلیدی:**
 
 ۱. **کلاس‌بندی اسناد:**
+
+<div dir="ltr">
+
 ```
 Fine-tuned classifier on document types:
 - Invoice, Contract, Receipt, Form, ID, Other
@@ -587,7 +704,12 @@ Model: LayoutLMv3 or fine-tuned ViT
 Confidence threshold: 0.95 for auto-routing
 ```
 
+</div>
+
 ۲. **استراتژی استخراج (Extraction Strategy):**
+
+<div dir="ltr">
+
 ```
 Tiered extraction based on document type:
 
@@ -610,7 +732,12 @@ degraded image understanding in GPT-6 Sol and GPT-6 Luna on
 September 25, 2026, without changing either ID.
 ```
 
+</div>
+
 ۳. **قوانین اعتبارسنجی (Validation Rules):**
+
+<div dir="ltr">
+
 ```python
 validation_rules = {
     "invoice": [
@@ -627,7 +754,12 @@ validation_rules = {
 }
 ```
 
+</div>
+
 ۴. **رابط کاربری بازبینی انسانی:**
+
+<div dir="ltr">
+
 ```
 Reviewer sees:
 - Original document image
@@ -637,7 +769,12 @@ Reviewer sees:
 - One-click approval or field-level corrections
 ```
 
+</div>
+
 ۵. **تدابیر انطباق و امنیت:**
+
+<div dir="ltr">
+
 ```
 HIPAA/SOC2 requirements:
 - All documents encrypted at rest (AES-256)
@@ -651,6 +788,8 @@ HIPAA/SOC2 requirements:
   retention, while Fable 5.1 requires 30-day retention unless
   Anthropic expressly authorizes ZDR
 ```
+
+</div>
 
 ---
 
@@ -700,6 +839,9 @@ HIPAA/SOC2 requirements:
 **تصمیمات کلیدی طراحی:**
 
 ۱. **بهینه‌سازی تاخیر (Latency):**
+
+<div dir="ltr">
+
 ```
 Target: 500ms total
 
@@ -718,7 +860,12 @@ Stage 3 (LLM): 400ms (async for borderline)
 - Used for nuanced decisions
 ```
 
+</div>
+
 ۲. **استراتژی آستانه‌های تصمیم‌گیری (Thresholds):**
+
+<div dir="ltr">
+
 ```python
 class ModerationDecision:
     BLOCK = "block"          # High confidence violation
@@ -740,7 +887,12 @@ thresholds = {
 }
 ```
 
+</div>
+
 ۳. **جریان کاری تجدیدنظر (Appeal Workflow):**
+
+<div dir="ltr">
+
 ```
 1. User submits appeal
 2. Content queued for human review
@@ -751,6 +903,8 @@ thresholds = {
    - Original decision added to training data as negative
    - Model retrained periodically
 ```
+
+</div>
 
 ---
 
@@ -806,6 +960,8 @@ thresholds = {
 
 **نقاط حیاتی ایزوله‌سازی:**
 
+<div dir="ltr">
+
 ```python
 class TenantContext:
     tenant_id: str
@@ -830,7 +986,11 @@ def enforce_tenant_context(request, call_next):
     return response
 ```
 
+</div>
+
 **محاسبه صورت‌حساب و رهگیری مصرف:**
+
+<div dir="ltr">
 
 ```python
 usage_schema = {
@@ -857,6 +1017,8 @@ async def track_usage(tenant_id: str, operation: Usage):
     await redis.incr(f"usage:{tenant_id}:{today()}", operation.tokens)
 ```
 
+</div>
+
 **موقعیت داده‌ها (Residency) به عنوان یک سطح با قیمت‌گذاری مجزا:**
 
 مستأجرهای سازمانی که به پردازش در یک منطقه جغرافیایی خاص نیاز دارند، هزینه سرویس‌دهی بالاتری دارند. شرکت Anthropic ضریب ۱.۱ برابری برای استنتاج صرفاً در خاک آمریکا (`inference_geo`) در مدل‌های Claude 4.6 به بعد دریافت می‌کند، OpenAI هزینه ۱۰ درصدی مازاد برای اندپوینت‌های اقامت داده‌ها برای مدل‌های پس از ۵ مارس ۲۰۲۶ اعمال می‌کند، و اندپوینت‌های منطقه‌ای کلود روی Bedrock و Google Cloud حدود ۱۰٪ هزینه بالاتری نسبت به اندپوینت‌های جهانی دارند (در پلتفرم Vertex گوگل، مدل‌های فعلی مانند Opus 5.5 و Sonnet 5.5 فقط اقامت چندمنطقه‌ای `us` یا `eu` را با این ضریب ارائه می‌دهند، نه یک منطقه منفرد؛ بخش [قیمت‌گذاری و هزینه‌ها](../02-model-landscape/03-pricing-and-costs.md) را ببینید). تنها مشتریانی را که قید اقامت دارند به مناطق پین‌شده هدایت کنید، مسیر انتخابی را در رکوردهای مصرف ثبت نمایید، و هزینه آن را در پکیج مشتری لحاظ کنید به جای اینکه ضریب مازاد را روی تمام ترافیک بپردازید.
@@ -880,6 +1042,8 @@ async def track_usage(tenant_id: str, operation: Usage):
 
 **چالش کلیدی: تاخیر ۱۰۰ میلی‌ثانیه در ۱۰۰ میلیون پرس‌وجوی روزانه**
 
+<div dir="ltr">
+
 ```
 100M queries/day = 1,157 QPS average
 Peak: 5,000-10,000 QPS
@@ -890,6 +1054,8 @@ At 100ms latency, need:
 - Optimized retrieval
 - Minimal LLM involvement
 ```
+
+</div>
 
 **معماری سیستم:**
 <div dir="ltr">
@@ -939,6 +1105,8 @@ Total:              100ms target (with cache hit)
 
 **استراتژی جستجوی ترکیبی (Hybrid Search):**
 
+<div dir="ltr">
+
 ```python
 def search(query: str, filters: dict, user_id: str) -> List[Product]:
     # Determine search strategy based on query
@@ -967,7 +1135,11 @@ def search(query: str, filters: dict, user_id: str) -> List[Product]:
     return personalized[:20]
 ```
 
+</div>
+
 **به‌روزرسانی‌های بلادرنگ:**
+
+<div dir="ltr">
 
 ```
 Product updates (price, inventory) flow:
@@ -980,6 +1152,8 @@ Reindexing (description changes):
 2. Run as async job
 3. Swap index when complete
 ```
+
+</div>
 
 ---
 
@@ -1026,6 +1200,8 @@ Reindexing (description changes):
 
 **۱. استراتژی مجموعه داده (بخشی که بیشتر داوطلبان نادیده می‌گیرند):**
 
+<div dir="ltr">
+
 ```
 Golden dataset composition:
 - 40% sampled from real production traces (stratified by intent cluster)
@@ -1037,6 +1213,8 @@ Split: dev (iterate freely) / held-out (CI-only, never inspected)
 Refresh: quarterly, sampled from recent traffic; archive old sets
 ```
 
+</div>
+
 **۲. طراحی امتیازدهی (Scoring):**
 
 - استفاده از تایید/رد دودویی (Binary pass/fail) برای هر بعد کیفی (وفاداری، جامعیت، لحن، ایمنی)، نه مقیاس‌های ۱ تا ۵. تصمیمات باینری قابل تکرار هستند؛ مقیاس‌های لیکرت دچار لغزش و بی‌ثباتی می‌شوند.
@@ -1044,6 +1222,8 @@ Refresh: quarterly, sampled from recent traffic; archive old sets
 - کالیبراسیون قاضی: بررسی ماهانه نرخ توافق با نمونه بررسی‌شده توسط انسان. نرخ توافق قاضی و انسان خودش یک متریک در داشبورد است؛ زیر ۸۵٪ توافق، ابتدا پرامپت قاضی اصلاح می‌شود و سپس نتیجه‌گیری محصولی صورت می‌گیرد.
 
 **۳. گیت‌های کنترلی CI/CD:**
+
+<div dir="ltr">
 
 ```python
 def eval_gate(pr_results, baseline_results):
@@ -1059,6 +1239,8 @@ def eval_gate(pr_results, baseline_results):
     return Pass()
 ```
 
+</div>
+
 **۴. مانیتورینگ در محیط عملیاتی:**
 
 - نمونه‌برداری و نمره‌دهی قاضی روی ۱ تا ۵ درصد از ترافیک زنده و ثبت روند روزانه.
@@ -1066,6 +1248,8 @@ def eval_gate(pr_results, baseline_results):
 - هشدارهای انحراف و تغییر توزیع: جابه‌جایی در توزیع ورودی‌ها، افت امتیاز در بخش‌های خاص، و افت سازگاری قاضی.
 
 **۵. کنترل هزینه‌ها:**
+
+<div dir="ltr">
 
 ```
 50K DAU, ~3 requests each = 150K requests/day
@@ -1076,6 +1260,8 @@ CI runs: 500 cases x ~2K tokens per PR = under $2 per PR
 Total: well under the 2% budget; the human slice is the
 dominant cost and it is what keeps the judge honest.
 ```
+
+</div>
 
 **۶. ابزارها و قابلیت حمل (Portability):**
 
@@ -1176,6 +1362,8 @@ Session ends (or hits checkpoint)
 
 **۵. تخمین مقیاس (برای ۱ میلیون کاربر):**
 
+<div dir="ltr">
+
 ```
 Storage: ~thousands of L2 entries + hundreds of L3 facts per
   active user; vector DB partitioned by user_id (metadata
@@ -1186,6 +1374,8 @@ Cost: extraction pass on session close is the main LLM cost;
   use a cheap model (GPT-6 Luna, Gemini 3.8 Flash, or DeepSeek
   V4.1-Flash) with a strict schema
 ```
+
+</div>
 
 ### ویژگی‌های متمایزکننده داوطلبان برتر
 
@@ -1217,6 +1407,8 @@ Cost: extraction pass on session close is the main LLM cost;
 
 **۱. دو حالت کاری، دو رویکرد Batching:**
 
+<div dir="ltr">
+
 ```
 Single forward pass (embed, classify, score):
   Dynamic batching. Flush when the batch reaches 100 OR the oldest
@@ -1228,6 +1420,8 @@ Autoregressive generation:
   sequence. Use continuous (iteration-level) batching: after each
   decode step, finished sequences leave and queued ones join.
 ```
+
+</div>
 
 **۲. معماری سیستم:**
 <div dir="ltr">
@@ -1261,6 +1455,8 @@ Client ──► API (auth, validation, max_tokens cap)
 
 **۳. محدودیت اصلی حافظه KV است، نه سقف اسمی ۱۰۰ درخواست:**
 
+<div dir="ltr">
+
 ```
 Llama 3.1 8B in BF16:
   2 × 32 layers × 8 KV heads × 128 head_dim × 2 bytes
@@ -1270,6 +1466,8 @@ Llama 3.1 8B in BF16:
 Average context 2K tokens → ~200 sequences fit: the 100 cap binds
 Average context 8K tokens → ~50 sequences fit: memory binds first
 ```
+
+</div>
 
 بنابراین زمان‌بند بر مبنای بلوک‌های حافظه آزاد KV (مشابه تکنیک PagedAttention) درخواست‌ها را می‌پذیرد، فضایی را برای رشد توکن‌های خروجی رزرو می‌کند، و سقف ۱۰۰ درخواست در هر بچ را به عنوان سقف نهایی در نظر می‌گیرد، نه هدف.
 

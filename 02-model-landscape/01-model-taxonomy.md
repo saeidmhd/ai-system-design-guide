@@ -1293,9 +1293,14 @@ What is your primary constraint?
 - سنجش صحت پاسخ، نرخ توهم (hallucination rate) و دقت ارجاعات (citation accuracy)
 
 **۲. تحلیل هزینه:**
+
+<div dir="ltr">
+
 ```
 Monthly cost = requests/day × 30 × (input_tokens × input_rate + output_tokens × output_rate)
 ```
+
+</div>
 همیشه محاسبه را برای ۲ تا ۳ کاندیدای برتر، بر اساس قیمتی که در فصل آینده اعمال خواهد شد (قیمت Gemini 4 Argon در ۱ دسامبر دو برابر می‌شود و Gemini 3.8 Flash در ۱ ژانویه ۲۰۲۷ افزایش می‌یابد)، همراه با نرخ موفقیت کش (cache hit rate) اندازه‌گیری‌شده خودتان، توزیع اندازه Prompt و میزان مصرف Token به ازای هر وظیفه انجام دهید.
 
 **۳. الزامات تاخیر (Latency):**

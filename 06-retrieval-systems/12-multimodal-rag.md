@@ -142,6 +142,8 @@
 
 ### تصمیم‌گیری در مورد استراتژی امبدینگ
 
+<div dir="ltr">
+
 ```
 Is your content mostly natural images (photos, products)?
   YES --> CLIP or SigLIP fine-tuned on your domain
@@ -165,6 +167,8 @@ Does it include audio or video clips?
           or EmbeddingGemma 2 if the media must stay self-hosted,
           plus transcripts in the text index for exact-term search
 ```
+
+</div>
 
 ---
 
@@ -222,6 +226,8 @@ Does it include audio or video clips?
 
 ### نحوه کار ColPali
 
+<div dir="ltr">
+
 ```
   Document Page Image
         |
@@ -248,6 +254,8 @@ Does it include audio or video clips?
   Late Interaction (MaxSim):
     Score = Sum over query tokens of Max similarity to any patch
 ```
+
+</div>
 
 ### مقایسه ColPali در برابر خط لوله سنتی
 
@@ -281,6 +289,8 @@ Does it include audio or video clips?
 
 ### راهبرد ۱: استخراج مبتنی بر VLM
 
+<div dir="ltr">
+
 ```python
 # Pseudocode: Extract tables using a VLM
 def extract_tables_from_page(page_image: bytes) -> list[dict]:
@@ -299,6 +309,8 @@ def extract_tables_from_page(page_image: bytes) -> list[dict]:
     return json.loads(response)
 ```
 
+</div>
+
 ### راهبرد ۲: پارسرهای تخصصی جدول
 
 - **ابزار Tabula / Camelot**: استخراج مبتنی بر قاعده (Rule-based) جدول از PDF. سریع اما در چیدمان‌های پیچیده شکننده است.
@@ -307,6 +319,8 @@ def extract_tables_from_page(page_image: bytes) -> list[dict]:
 - **مدل‌های VLM پارس اسناد** (مانند Cohere Parse، MinerU 4.0، Docling با بک‌اند‌های VLM با قابلیت اتصال افزونه): جدول‌ها را به‌صورت درون‌خطی در قالب HTML یا Markdown همراه با کادرهای احاطه‌کننده (Bounding boxes) و ترتیب خواندن تولید می‌کنند که ارجاعات جدول به صفحه را دست‌نخورده نگه می‌دارد. به [OCR و تحلیل چیدمان](../10-document-processing/01-ocr-and-layout.md) مراجعه کنید.
 
 ### راهبرد ۳: Chunking آگاه از جدول
+
+<div dir="ltr">
 
 ```
   Original Table (20 rows x 8 columns)
@@ -323,6 +337,8 @@ def extract_tables_from_page(page_image: bytes) -> list[dict]:
         v
   At generation time: pass the FULL table to the LLM, not a fragment
 ```
+
+</div>
 
 **اصل کلیدی**: جدول‌ها باید واحدهای بازیابی اتمی (Atomic) باشند. هرگز یک جدول را در مرزهای Chunkها تقسیم نکنید.
 
@@ -431,6 +447,8 @@ AGENTIC (opt-in):   video + question ──► model picks segments, speed, moda
 ## نمونه پیاده‌سازی
 
 ### معماری RAG چندوجهی سرتاسری (End-to-End) با ColPali + VLM
+
+<div dir="ltr">
 
 ```python
 # Pseudocode: Production multi-modal RAG pipeline
@@ -568,6 +586,8 @@ def generate_answer(query: str, retrieved_context: list) -> str:
     )
     return next(b.text for b in response.content if b.type == "text")
 ```
+
+</div>
 
 ---
 

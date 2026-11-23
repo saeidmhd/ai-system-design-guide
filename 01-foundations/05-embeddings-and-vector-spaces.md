@@ -53,6 +53,8 @@
 
 مدل‌های مبتنی بر ترنسفورمر امبدینگ‌های وابسته به زمینه تولید می‌کنند:
 
+<div dir="ltr">
+
 ```python
 # Static embedding (Word2Vec)
 embed("bank") = [0.1, 0.3, ...]  # Same vector always
@@ -61,6 +63,8 @@ embed("bank") = [0.1, 0.3, ...]  # Same vector always
 embed("river bank") = [0.1, 0.3, ...]   # Geography sense
 embed("bank account") = [0.5, 0.2, ...]  # Finance sense
 ```
+
+</div>
 
 ### امبدینگ‌های جمله/سند
 
@@ -79,12 +83,16 @@ embed("bank account") = [0.5, 0.2, ...]  # Finance sense
 
 معماری استاندارد امبدینگ برای بازیابی:
 
+<div dir="ltr">
+
 ```
 Document -> Encoder -> Document Embedding
 Query    -> Encoder -> Query Embedding
 
 Similarity = cosine(doc_embedding, query_embedding)
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - اسناد را می‌توان از پیش محاسبه و ایندکس کرد
@@ -95,9 +103,13 @@ Similarity = cosine(doc_embedding, query_embedding)
 
 رویکردی جایگزین که پرس‌وجو و سند را هم‌زمان با یکدیگر پردازش می‌کند:
 
+<div dir="ltr">
+
 ```
 [Query, Document] -> Encoder -> Relevance Score
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - دقت بالاتر (چرا که هر دو متن را با هم می‌بیند)
@@ -114,6 +126,8 @@ Similarity = cosine(doc_embedding, query_embedding)
 
 اکثر مدل‌های امبدینگ امروزی از یادگیری مقابله‌ای (Contrastive Learning) استفاده می‌کنند:
 
+<div dir="ltr">
+
 ```python
 # Simplified contrastive loss
 def contrastive_loss(anchor, positive, negatives):
@@ -125,6 +139,8 @@ def contrastive_loss(anchor, positive, negatives):
                 (exp(pos_sim / tau) + sum(exp(neg_sim / tau) for neg_sim in neg_sims)))
     return loss
 ```
+
+</div>
 
 **عوامل کلیدی:**
 - **جفت‌های مثبت (Positive pairs):** متونی با شباهت معنایی (جملات موازی، جفت‌های پرس‌وجو-سند)
@@ -145,11 +161,15 @@ def contrastive_loss(anchor, positive, negatives):
 
 مدل‌های اخیر دستورالعمل‌های وظیفه (Task Instructions) را می‌پذیرند:
 
+<div dir="ltr">
+
 ```python
 # Instruction-tuned (e.g., E5, BGE)
 query_embedding = embed("Represent this query for retrieval: What is RAG?")
 doc_embedding = embed("Represent this document for retrieval: RAG combines...")
 ```
+
+</div>
 
 این قابلیت از طریق مشخص کردن نحوه استفاده مورد نظر، کارایی و عملکرد را بهبود می‌بخشد.
 
@@ -161,10 +181,14 @@ doc_embedding = embed("Represent this document for retrieval: RAG combines...")
 
 رایج‌ترین سنجه برای امبدینگ‌های متنی:
 
+<div dir="ltr">
+
 ```python
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - بازه: [-1, 1] (در صورتی که تمام مولفه‌ها غیرمنفی باشند: [0, 1])
@@ -175,10 +199,14 @@ def cosine_similarity(a, b):
 
 ### ضرب داخلی (Dot Product)
 
+<div dir="ltr">
+
 ```python
 def dot_product(a, b):
     return np.dot(a, b)
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - بزرگی (طول) بردار اهمیت دارد
@@ -189,10 +217,14 @@ def dot_product(a, b):
 
 ### فاصله اقلیدسی (Euclidean Distance)
 
+<div dir="ltr">
+
 ```python
 def euclidean_distance(a, b):
     return np.linalg.norm(a - b)
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - تفاوت مطلق را اندازه می‌گیرد
@@ -262,6 +294,8 @@ def euclidean_distance(a, b):
 
 یادگیری بازنمایی ماتریوشکا (Matryoshka Representation Learning یا MRL) مدل‌های Embedding را به‌گونه‌ای آموزش می‌دهد که پیشوندهای بردار کامل Embedding نیز معنادار و کارآمد باشند:
 
+<div dir="ltr">
+
 ```python
 full_embedding = model.encode(text)  # 1024 dimensions
 
@@ -271,6 +305,8 @@ dim_256 = full_embedding[:256]
 dim_128 = full_embedding[:128]
 dim_64 = full_embedding[:64]
 ```
+
+</div>
 
 ### چرا این موضوع اهمیت دارد
 
@@ -291,6 +327,8 @@ dim_64 = full_embedding[:64]
 
 ### استفاده از Embeddingهای ماتریوشکا
 
+<div dir="ltr">
+
 ```python
 from openai import OpenAI
 client = OpenAI()
@@ -302,6 +340,8 @@ response = client.embeddings.create(
     dimensions=256  # Request 256 instead of full 3072
 )
 ```
+
+</div>
 
 ---
 
@@ -335,6 +375,8 @@ response = client.embeddings.create(
 
 **پیاده‌سازی:**
 
+<div dir="ltr">
+
 ```python
 # Using RAGatouille
 from ragatouille import RAGPretrainedModel
@@ -350,6 +392,8 @@ model.index(
 # Search
 results = model.search(query="What is RAG?", k=10)
 ```
+
+</div>
 
 ---
 
@@ -376,6 +420,8 @@ results = model.search(query="What is RAG?", k=10)
 
 ### پردازش دسته‌ای (Batch Processing)
 
+<div dir="ltr">
+
 ```python
 # Inefficient: one API call per document
 embeddings = [embed(doc) for doc in documents]
@@ -389,9 +435,13 @@ for i in range(0, len(documents), batch_size):
     embeddings.extend(batch_embeddings)
 ```
 
+</div>
+
 ### فرآیند Chunking برای Embeddingها
 
 اسناد طولانی پیش از اعمال Embedding باید Chunking (تکه‌بندی) شوند:
+
+<div dir="ltr">
 
 ```python
 def embed_document(document: str, max_tokens: int = 512) -> list[np.array]:
@@ -403,6 +453,8 @@ def embed_document(document: str, max_tokens: int = 512) -> list[np.array]:
     return embeddings
 ```
 
+</div>
+
 **ملاحظات:**
 - اندازه هر تکه (Chunk size) باید کمتر از حداکثر تعداد Tokenهای مدل باشد
 - هم‌پوشانی (Overlap) به حفظ کانتکست در سراسر مرزهای تکه‌ها کمک می‌کند
@@ -411,6 +463,8 @@ def embed_document(document: str, max_tokens: int = 512) -> list[np.array]:
 ### نرمال‌سازی (Normalization)
 
 بسیاری از سیستم‌ها انتظار Embeddingهای نرمال‌شده را دارند:
+
+<div dir="ltr">
 
 ```python
 def normalize(embedding):
@@ -421,11 +475,15 @@ def normalize(embedding):
 similarity = np.dot(normalize(a), normalize(b))
 ```
 
+</div>
+
 بیشتر پایگاه‌های داده برداری (Vector Database) و APIهای تولید Embedding عمل نرمال‌سازی را خودکار انجام می‌دهند، اما حتماً آن را بررسی و تایید کنید.
 
 ### کش‌گذاری (Caching)
 
 محاسبه Embeddingها هزینه‌بر است. فرآیند کش‌گذاری (Caching) را به صورت تهاجمی پیاده‌سازی کنید:
+
+<div dir="ltr">
 
 ```python
 import hashlib
@@ -440,6 +498,8 @@ def get_embedding(text: str, cache: dict) -> np.array:
     cache[key] = embedding
     return embedding
 ```
+
+</div>
 
 ---
 
@@ -462,6 +522,9 @@ def get_embedding(text: str, cache: dict) -> np.array:
 ### راهبردهای کاهش اثر (Mitigation Strategies)
 
 **۱. Embeddingهای خود را نسخه‌بندی کنید:**
+
+<div dir="ltr">
+
 ```python
 embedding_metadata = {
     "model": "text-embedding-3-large",
@@ -471,18 +534,25 @@ embedding_metadata = {
 }
 ```
 
+</div>
+
 **۲. برای فرآیند باز-تولید Embeddingها برنامه‌ریزی کنید:**
 - هزینه و زمان مورد نیاز برای باز-تولید کامل را تخمین بزنید
 - پایپ‌لاین‌هایی بسازید که بتوانند در پس‌زمینه اجرا شوند
 - پیش از سوئیچ کردن نهایی، Embeddingهای جدید را ارزیابی و آزمایش کنید
 
 **۳. استقرار (Deployment) آبی-سبز:**
+
+<div dir="ltr">
+
 ```
 Index A: Current embeddings
 Index B: New embeddings (building)
 
 Query -> Both indexes -> Merge or switch
 ```
+
+</div>
 
 **۴. ردیابی کیفیت Embedding:**
 - معیارهای بازیابی را به صورت پیوسته پایش کنید

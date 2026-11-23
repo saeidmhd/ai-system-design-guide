@@ -50,6 +50,9 @@
 4. تکرار تا رسیدن به اندازه واژگان مورد نظر
 
 **مثال:**
+
+<div dir="ltr">
+
 ```
 Corpus: "low lower lowest"
 Initial: ['l', 'o', 'w', ' ', 'l', 'o', 'w', 'e', 'r', ' ', 'l', 'o', 'w', 'e', 's', 't']
@@ -66,6 +69,8 @@ Step 3: Most frequent pair is ('low', 'e'). Merge to 'lowe'.
 Continue until vocabulary size target...
 ```
 
+</div>
+
 **ویژگی‌ها:**
 - فرایند Tokenization قطعی (Deterministic) با داشتن واژگان آموزش‌دیده
 - کلمات رایج تمایل دارند به صورت تک Token ظاهر شوند
@@ -79,16 +84,25 @@ Continue until vocabulary size target...
 - الگوریتم BPE: ادغام بر اساس فرکانس (تکرار)
 - الگوریتم WordPiece: ادغام بر اساس بهبود درستی‌نمایی (Likelihood)
 
+<div dir="ltr">
+
 ```
 Score = freq(AB) / (freq(A) * freq(B))
 ```
 
+</div>
+
 این رویکرد ادغام‌هایی را ترجیح می‌دهد که نسبت به هم‌آیی‌های تصادفی، معنادارتر باشند.
 
 **نشانگر بصری:** WordPiece از پیشوند ## برای Tokenهای ادامه استفاده می‌کند:
+
+<div dir="ltr">
+
 ```
 "embedding" becomes ["em", "##bed", "##ding"]
 ```
+
+</div>
 
 ### الگوریتم Unigram (SentencePiece)
 
@@ -147,6 +161,8 @@ Score = freq(AB) / (freq(A) * freq(B))
 - می‌تواند هر متنی را بدون Tokenهای UNK نمایش دهد
 - یونی‌کد (Unicode) به صورت طبیعی به عنوان توالی‌هایی از بایت‌ها مدیریت می‌شود
 
+<div dir="ltr">
+
 ```python
 # Character-level: Needs explicit handling of characters
 text = "cafe"  # Unknown character might become [UNK]
@@ -154,6 +170,8 @@ text = "cafe"  # Unknown character might become [UNK]
 # Byte-level: Works with any text (no UNK needed)
 text = "cafe"  # Becomes bytes, then BPE operates on bytes
 ```
+
+</div>
 
 ---
 
@@ -174,6 +192,9 @@ text = "cafe"  # Becomes bytes, then BPE operates on bytes
 مدل‌های چت امروزی از Tokenهای ویژه برای تعیین ساختار مکالمه استفاده می‌کنند:
 
 **قالب Llama 2:**
+
+<div dir="ltr">
+
 ```
 [INST] <<SYS>>
 You are a helpful assistant.
@@ -182,7 +203,12 @@ You are a helpful assistant.
 User message here [/INST] Assistant response here
 ```
 
+</div>
+
 **قالب ChatML (سبک OpenAI):**
+
+<div dir="ltr">
+
 ```
 <|im_start|>system
 You are a helpful assistant.<|im_end|>
@@ -191,6 +217,8 @@ Hello!<|im_end|>
 <|im_start|>assistant
 Hi there!<|im_end|>
 ```
+
+</div>
 
 **چرا این موضوع اهمیت دارد:**
 - قالب‌بندی نادرست به نتایج ضعیف منجر می‌شود
@@ -262,6 +290,8 @@ Hi there!<|im_end|>
 - **کاراکترها به Token:** حدود ۴ کاراکتر به ازای هر Token
 - **صفحات به Token:** حدود ۵۰۰ تا ۸۰۰ Token به ازای هر صفحه
 
+<div dir="ltr">
+
 ```python
 def estimate_tokens(text: str) -> int:
     # Rough estimation for English
@@ -269,9 +299,13 @@ def estimate_tokens(text: str) -> int:
     return int(word_count * 1.3)
 ```
 
+</div>
+
 ### شمارش دقیق
 
 از Tokenizer اختصاصی هر مدل استفاده کنید، یا در مواردی که Tokenizer عمومی نیست، از اندپوینت شمارش ارائه‌دهنده بهره ببرید:
+
+<div dir="ltr">
 
 ```python
 import tiktoken
@@ -298,6 +332,8 @@ count = client.messages.count_tokens(
 token_count = count.input_tokens
 ```
 
+</div>
+
 مدل Gemini فراخوانی معادل `countTokens` را دارد و Responses API شرکت OpenAI نیز یک اندپوینت شمارش Token ورودی برای مدل‌هایی که tiktoken آن‌ها را نگاشت نمی‌کند، ارائه می‌دهد. هرگز Tokenهای مدل‌های Claude یا Gemini را با tiktoken تخمین نزنید: دایره واژگان مختلف، شمارش‌های متفاوتی برای یک متن یکسان ارائه می‌دهند.
 
 ### واحدهای Token استدلال (Reasoning Tokens)
@@ -305,6 +341,8 @@ token_count = count.input_tokens
 در مدل‌های استدلالی، پاسخ قابل‌مشاهده تنها بخشی از صورت‌حساب خروجی است. Tokenهای تفکر یا استدلال (Thinking or reasoning tokens) در مدل‌های OpenAI،‏ Anthropic و Google حتی زمانی که متن خام استدلال بازگردانده نمی‌شود، به‌عنوان خروجی محاسبه می‌شوند و حجم آن‌ها به سطح تلاش (Effort) یا تفکری که تعیین می‌کنید بستگی دارد. بودجه‌بندی را بر اساس فیلد `usage` در API روی ترافیک واقعی انجام دهید، نه بر اساس طول پاسخ قابل‌مشاهده.
 
 ### محاسبه هزینه
+
+<div dir="ltr">
 
 ```python
 # USD per 1M tokens, standard tier list prices as of November 2026.
@@ -328,6 +366,8 @@ def calculate_cost(input_tokens: int, output_tokens: int, model: str) -> float:
     )
 ```
 
+</div>
+
 ---
 
 ## مشکلات رایج Tokenization
@@ -336,6 +376,8 @@ def calculate_cost(input_tokens: int, output_tokens: int, model: str) -> float:
 
 **مشکل:** عملیات متنی ممکن است با مرزهای Tokenها هم‌تراز نباشد.
 
+<div dir="ltr">
+
 ```python
 text = "Hello world"
 # Tokens: ["Hello", " world"]  # Note: space is part of second token
@@ -343,11 +385,15 @@ text = "Hello world"
 # Truncating at character 6 ("Hello ") splits a token
 ```
 
+</div>
+
 **راه‌حل:** هنگام مدیریت کانتکست، همیشه برش متن (Truncate) را در مرزهای Tokenها انجام دهید.
 
 ### مشکل ۲: Tokenization ناسازگار (Inconsistent Tokenization)
 
 **مشکل:** یک متن یکسان بسته به کانتکست پیرامونی، به شکل متفاوتی Tokenize می‌شود.
+
+<div dir="ltr">
 
 ```python
 # GPT tokenizer example
@@ -356,11 +402,15 @@ text = "Hello world"
 " New York"    # Might be [" New", " York"]
 ```
 
+</div>
+
 **پیامد:** تعداد Tokenها می‌تواند بر اساس متن اطراف تغییر کند. همیشه کل کانتکست را به‌صورت کامل Tokenize کنید.
 
 ### مشکل ۳: کد و داده‌های ساختاریافته
 
 **مشکل:** کدها و داده‌های JSON اغلب از نظر Tokenization ناکارآمد هستند (تعداد زیادی Token مصرف می‌کنند).
+
+<div dir="ltr">
 
 ```python
 # Python code often tokenizes poorly
@@ -372,6 +422,8 @@ text = "Hello world"
 # Many tokens for structure
 ```
 
+</div>
+
 **راهکارهای کاهش اثر (Mitigation):**
 - برخی مدل‌ها دارای Tokenizerهای بهینه‌سازی‌شده برای کد هستند
 - فشرده‌سازی JSON را پیش از ارسال در نظر داشته باشید
@@ -381,6 +433,8 @@ text = "Hello world"
 
 **مشکل:** Tokenizerها فاصله‌های خالی (Whitespace) را به شیوه‌های متفاوتی مدیریت می‌کنند.
 
+<div dir="ltr">
+
 ```python
 # Leading spaces often become separate tokens
 " Hello"  # [" ", "Hello"] or [" Hello"]
@@ -389,6 +443,8 @@ text = "Hello world"
 "Hello  world"  # Behavior varies by tokenizer
 ```
 
+</div>
+
 **بهترین شیوه (Best practice):** پیش از Tokenize کردن، فاصله‌های خالی را نرمال‌سازی کنید.
 
 ---
@@ -396,6 +452,8 @@ text = "Hello world"
 ## الگوهای کاربردی Tokenization
 
 ### الگوی ۱: مدیریت پنجره کانتکست (Context Window Management)
+
+<div dir="ltr">
 
 ```python
 def fit_to_context(
@@ -431,7 +489,11 @@ def fit_to_context(
     return format_prompt(system_prompt, included_history, user_message)
 ```
 
+</div>
+
 ### الگوی ۲: Chunking در مرزهای Tokenها
+
+<div dir="ltr">
 
 ```python
 def chunk_at_token_boundaries(
@@ -454,7 +516,11 @@ def chunk_at_token_boundaries(
     return chunks
 ```
 
+</div>
+
 ### الگوی ۳: تخصیص بودجه Token (Token Budget Allocation)
+
+<div dir="ltr">
 
 ```python
 class TokenBudget:
@@ -480,6 +546,8 @@ budget.allocate("user_message", 200)
 budget.allocate("output_reserve", 2000)
 # Remaining: 3300 tokens for conversation history
 ```
+
+</div>
 
 ---
 
@@ -538,6 +606,9 @@ budget.allocate("output_reserve", 2000)
 ۳. **در نظر گرفتن فضای خالی کافی (Headroom):** تکه‌های (Chunks) بازیابی‌شده به‌همراه سوال باید در پنجره کانتکست بگنجند
 
 رویکرد پیاده‌سازی:
+
+<div dir="ltr">
+
 ```python
 # Determine available tokens for chunks
 available = max_context - system_prompt_tokens - question_tokens - output_reserve
@@ -554,6 +625,8 @@ for chunk in ranked_chunks:
         selected.append(chunk)
         tokens_used += chunk_tokens
 ```
+
+</div>
 
 ---
 

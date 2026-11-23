@@ -41,12 +41,16 @@
 
 ### بنچمارک‌ها چه چیزی به شما می‌گویند
 
+<div dir="ltr">
+
 ```
 Benchmark results tell you: "Model X scored 58% on Terminal-Bench 4.0"
 
 What you need to know: "Will Model X, at the effort level I can afford,
 in my harness, finish my team's real tasks without supervision?"
 ```
+
+</div>
 
 **قاعده سرانگشتی:** از بنچمارک‌ها برای غربالگری اولیه استفاده کنید، سپس ارزیابی اختصاصی خود را انجام دهید.
 
@@ -88,6 +92,8 @@ in my harness, finish my team's real tasks without supervision?"
 
 مدل تا چه حد در استفاده از ابزارها و دنبال کردن دستورالعمل‌های چندمرحله‌ای خوب عمل می‌کند؟
 
+<div dir="ltr">
+
 ```python
 def evaluate_agentic_flow(agent, task_environment):
     """
@@ -107,6 +113,8 @@ def evaluate_agentic_flow(agent, task_environment):
         })
     return aggregate(results)
 ```
+
+</div>
 
 وضعیت نهایی را با بررسی‌های تازه و ایزوله‌شده ارزیابی کنید، نه بر اساس گزارش خود Agent، و تا حد امکان شبکه ساندباکس را صرفاً به Endpoint مدل محدود و قفل کنید. SWE-Bench Pro v2 اکنون هر دو کار را انجام می‌دهد (یک ساندباکس با شبکه قفل‌شده به‌علاوه ارزیابی مجدد هر diff روی یک ایمیج دست‌نخورده)، و این ارزیابی مجدد مچ یک مدل پیشرو را در جعل نسخه یک ماژول Go گرفت.
 
@@ -159,6 +167,8 @@ def evaluate_agentic_flow(agent, task_environment):
 ۲. **داور (The Judge):** یک مدل قوی (Claude Opus 5.5، GPT-6 Astra یا انسان) برنده را انتخاب می‌کند. هر جفت را دو بار با جابه‌جایی موقعیت‌ها اجرا کنید؛ در اکثر داورهای پیشرو دیگر نمی‌توانید پارامتر دما (temperature) را ثابت نگه دارید، بنابراین واریانس داور را اندازه بگیرید نه اینکه آن را نادیده فرض کنید.
 ۳. **به‌روزرسانی Elo:** لیدربورد داخلی را به‌روزرسانی کنید.
 
+<div dir="ltr">
+
 ```python
 def update_elo(winner_elo, loser_elo, k=32):
     expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
@@ -166,6 +176,8 @@ def update_elo(winner_elo, loser_elo, k=32):
     new_loser_elo = loser_elo + k * (0 - (1 - expected_winner))
     return new_winner_elo, new_loser_elo
 ```
+
+</div>
 
 **چرا این روش برتر است:** این شیوه یک رتبه‌بندی **نسبی** ارائه می‌دهد که در برابر تغییرات رفتار داور یا نسخه‌بندی مدل‌ها بسیار مقاوم‌تر است.
 
@@ -176,6 +188,8 @@ def update_elo(winner_elo, loser_elo, k=32):
 ## ساخت ارزیابی‌های سفارشی
 
 ### گام ۱: تعریف معیارهای ارزیابی
+
+<div dir="ltr">
 
 ```python
 evaluation_criteria = {
@@ -209,7 +223,11 @@ evaluation_criteria = {
 }
 ```
 
+</div>
+
 ### گام ۲: ایجاد مجموعه آزمون (Test Set)
+
+<div dir="ltr">
 
 ```python
 test_set = [
@@ -233,6 +251,8 @@ test_set = [
 ]
 ```
 
+</div>
+
 **راهنمای مجموعه آزمون:**
 - پوشش تمام موارد کاربرد اصلی
 - شامل نمونه‌های آسان، متوسط و دشوار
@@ -242,6 +262,8 @@ test_set = [
 - استخراج از ترافیک واقعی پروداکشن در صورت امکان، به گونه‌ای که شبیه یک آزمون تصنعی نباشد
 
 ### گام ۳: پیاده‌سازی ارزیابی
+
+<div dir="ltr">
 
 ```python
 class ModelEvaluator:
@@ -287,7 +309,11 @@ class ModelEvaluator:
         # return cosine_sim(embed(response), embed(case["ground_truth"]))
 ```
 
+</div>
+
 ### گام ۴: استفاده از LLM به عنوان داور (LLM-as-Judge)
+
+<div dir="ltr">
 
 ```python
 def llm_judge(case: dict, response: str) -> dict:
@@ -311,6 +337,8 @@ Output JSON:
     return parse_json(result)
 ```
 
+</div>
+
 ---
 
 ## دام‌های رایج در ارزیابی
@@ -325,12 +353,16 @@ Output JSON:
 
 **مشکل:** پاسخ‌های «منطقی» و قابل قبول، به اشتباه نادرست علامت‌گذاری می‌شوند.
 
+<div dir="ltr">
+
 ```
 Query: "What is the capital of Australia?"
 Ground truth: "Canberra"
 Model answer: "The capital of Australia is Canberra."
 Exact match: FAIL (but clearly correct)
 ```
+
+</div>
 
 **راه‌حل:** به‌جای تطابق دقیق (exact match)، از تطابق معنایی (semantic matching) یا داور LLM (LLM judge) استفاده کنید.
 
@@ -352,6 +384,8 @@ Exact match: FAIL (but clearly correct)
 
 **راه‌حل:** همواره هزینه تعدیل‌شده بر اساس کیفیت (quality-adjusted cost) را به ازای هر تسک گزارش دهید، نه به ازای هر Token. تساوی سه‌جانبه DeepSWE v1.1 در امتیاز ۷۴٪، دامنه‌ای از ۲.۳۶ دلار تا ۱۱.۸۴ دلار به ازای هر تسک را در بر می‌گیرد.
 
+<div dir="ltr">
+
 ```python
 def quality_adjusted_cost(model_results):
     return {
@@ -363,6 +397,8 @@ def quality_adjusted_cost(model_results):
         for model, results in model_results.items()
     }
 ```
+
+</div>
 
 ### دام ۶: ارزیابی سیستمی متفاوت از آنچه به مرحله استقرار می‌رسانید
 
@@ -382,13 +418,19 @@ def quality_adjusted_cost(model_results):
 
 ### هفته اول: راه‌اندازی و غربال‌گری اولیه
 
+<div dir="ltr">
+
 ```
 Day 1-2: Define evaluation criteria and create test set
 Day 3-4: Benchmark 4-6 candidate models at the effort level you can afford to ship
 Day 5: Analyze results, filter to top 2-3
 ```
 
+</div>
+
 ### هفته دوم: ارزیابی عمیق
+
+<div dir="ltr">
 
 ```
 Day 1-2: Expand test set for top candidates
@@ -397,7 +439,11 @@ Day 4: Measure latency and throughput
 Day 5: Calculate total cost of ownership
 ```
 
+</div>
+
 ### هفته سوم: اعتبارسنجی در محیط عملیاتی
+
+<div dir="ltr">
 
 ```
 Day 1-2: Shadow mode deployment
@@ -405,7 +451,11 @@ Day 3-4: A/B test if traffic allows
 Day 5: Final decision and documentation
 ```
 
+</div>
+
 ### الگوی تصمیم‌گیری (Decision Template)
+
+<div dir="ltr">
 
 ```markdown
 ## Model Evaluation Report
@@ -433,6 +483,8 @@ Model C (GLM-5.3-Flash) for high-volume, cost-sensitive paths
 [Detailed reasoning, including harness, effort and retirement dates]
 ```
 
+</div>
+
 ---
 
 ## آزمون A/B مدل‌ها (A/B Testing Models)
@@ -445,6 +497,8 @@ Model C (GLM-5.3-Flash) for high-volume, cost-sensitive paths
 - نیاز به اعتبارسنجی در محیط عملیاتی
 
 ### طراحی آزمون A/B
+
+<div dir="ltr">
 
 ```python
 import hashlib
@@ -486,6 +540,8 @@ class ModelABTest:
         }
 ```
 
+</div>
+
 هنگامی که مدل‌ها حالت (state) گفتگو را در طول نوبت‌ها حفظ می‌کنند، مسیریابی را بر اساس یک واحد پایدار (شناسه کاربر یا شناسه گفتگو) انجام دهید، نه شناسه درخواست (request ID). در Claude Fable 5.1،‏ Opus 5.5،‏ Sonnet 5.5 و Haiku 5.5، بلوک‌های تفکر (thinking blocks) به مدلی که آن‌ها را تولید کرده است وابسته (bound) هستند (و در Sonnet 5.5 و Haiku 5.5 به حساب کاربری تولیدکننده وابسته هستند)؛ بنابراین جابه‌جا کردن یک گفتگو بین بازوهای آزمون در میانه مسیر، بدون اعلام خطا زنجیره استدلال را حذف می‌کند.
 
 ### معیارهایی که باید رصد شوند
@@ -518,6 +574,9 @@ class ModelABTest:
 - پایش میزان پیروی از دستورالعمل‌ها (فرمت، طول پاسخ)
 
 **۳. معیارها:**
+
+<div dir="ltr">
+
 ```python
 metrics = {
     "resolution_accuracy": "Does answer solve the problem?",
@@ -526,6 +585,8 @@ metrics = {
     "escalation_appropriate": "Knows when to involve human?"
 }
 ```
+
+</div>
 
 **۴. اعتبارسنجی در محیط عملیاتی:**
 - حالت سایه (Shadow mode): اجرای مدل جدید و مقایسه خروجی‌ها

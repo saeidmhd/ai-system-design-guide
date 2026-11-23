@@ -66,6 +66,8 @@ flowchart LR
 
 در یک معماری ماشین وضعیت (state-machine)، ابزار Mem0 به‌عنوان یک **ارائه‌دهنده وضعیت خارجی (External State Provider)** عمل می‌کند.
 
+<div dir="ltr">
+
 ```python
 # Conceptual LangGraph node (Mem0 OSS SDK)
 from mem0 import Memory
@@ -89,6 +91,8 @@ def remember_node(state: AgentState):
     )
     return {}
 ```
+
+</div>
 
 ---
 

@@ -143,6 +143,8 @@
 
 ### نحوه عملکرد وفاداری (Faithfulness) در RAGAS (در پشت صحنه)
 
+<div dir="ltr">
+
 ```
 Step 1: Claim Extraction
   Answer: "Revenue grew 15% in Q3, driven by APAC expansion
@@ -164,7 +166,11 @@ Step 3: Score Calculation
   Faithfulness = supported / total = 2/4 = 0.50
 ```
 
+</div>
+
 ### نحوه عملکرد دقت بافتار (Context Precision) در RAGAS
+
+<div dir="ltr">
 
 ```
   Retrieved chunks ranked by retriever score:
@@ -182,6 +188,8 @@ Step 3: Score Calculation
   Average Precision = (1.0*1 + 0.5*0 + 0.67*1 + 0.5*0) / 2
                     = (1.0 + 0.67) / 2 = 0.835
 ```
+
+</div>
 
 ### معیارهای RAGAS در مقایسه با معیارهای مبتنی بر واقعیت پایه
 
@@ -418,6 +426,8 @@ Step 3: Score Calculation
 
 ### تولید آزمون ساختگی با RAGAS
 
+<div dir="ltr">
+
 ```python
 # Generate synthetic test queries from your corpus (RAGAS 0.2+ API;
 # the 0.1-era ragas.testset.generator / evolutions imports no longer exist)
@@ -451,6 +461,8 @@ testset = generator.generate_with_langchain_docs(
 testset.to_pandas().to_csv("golden_set_draft_v4.csv")
 ```
 
+</div>
+
 **هشدار**: مجموعه‌های آزمون ساختگی نقطه شروع هستند، نه مقصد نهایی. همواره نتایج را با بازبینی انسانی اعتبارسنجی کنید تا از آزمودن سیستم در برابر الگوهای مصنوعی (Artifacts) مدل مولد جلوگیری شود.
 
 ---
@@ -461,11 +473,15 @@ testset.to_pandas().to_csv("golden_set_draft_v4.csv")
 
 ### یکپارچه‌سازی با CI/CD (CI/CD Integration)
 
+<div dir="ltr">
+
 ```
   PR (RAG change) --> CI: Load golden set --> Run pipeline --> Compute metrics
                           --> Compare vs. baseline --> FAIL if drop > 5%, WARN if > 2%
                           --> Post metrics table as PR comment
 ```
+
+</div>
 
 ### گیت‌های کیفیت (Quality Gates)
 
@@ -556,6 +572,8 @@ testset.to_pandas().to_csv("golden_set_draft_v4.csv")
 
 ### چه زمانی از چه ابزاری استفاده کنیم؟ (When to Use What)
 
+<div dir="ltr">
+
 ```
   Starting a new RAG project?
     --> RAGAS for quick baseline metrics + synthetic test generation
@@ -577,9 +595,13 @@ testset.to_pandas().to_csv("golden_set_draft_v4.csv")
     --> Roll your own with LLM-as-judge + the RAG Triad structure
 ```
 
+</div>
+
 ### الگوی ارزیاب سفارشی (Custom Evaluator Pattern)
 
 الگوی محوری برای یک ارزیاب سفارشی ساده است: به ازای هر یک از ابعاد سه‌گانه (Triad)، از فراخوانی‌های باینری داوری با مدل (LLM-as-judge) استفاده کنید و سپس نتایج را تجمیع (Aggregate) نمایید.
+
+<div dir="ltr">
 
 ```python
 # Pseudocode: Core faithfulness evaluator (other dimensions follow the same pattern)
@@ -598,6 +620,8 @@ def evaluate_faithfulness(answer: str, context: str, judge) -> float:
     )
     return supported / max(len(json.loads(claims)), 1)
 ```
+
+</div>
 
 همین الگوی تجزیه و سپس داوری (Decompose-then-judge) را برای ارتباط کانتکست (Context relevance به ازای هر Chunk: «آیا این بخش به پرس‌وجو مرتبط است؟») و ارتباط پاسخ (Answer relevance: تولید سوالات فرضی و اندازه‌گیری شباهت به پرس‌وجوی اصلی) نیز به کار ببرید.
 

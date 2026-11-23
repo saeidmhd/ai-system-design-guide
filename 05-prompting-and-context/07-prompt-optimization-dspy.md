@@ -30,6 +30,8 @@
 
 به‌جای نوشتن یک Prompt، شما یک **امضا (Signature)** تعریف می‌کنید: ورودی چیست و خروجی چه باید باشد.
 
+<div dir="ltr">
+
 ```python
 # Signature pattern
 class MultiHopQA(dspy.Signature):
@@ -41,6 +43,8 @@ class MultiHopQA(dspy.Signature):
 # Logic is handled by a Module
 qa_system = dspy.ChainOfThought(MultiHopQA)
 ```
+
+</div>
 
 به‌طور پیش‌فرض، `ChainOfThought` یک فیلد خروجی متنی ساده `reasoning` را در ابتدا اضافه می‌کند که مدل قبل از پاسخ آن را پر می‌کند. در مدل‌های استدلالی (Reasoning models)، این کار تکراری و بیهوده است، و در جدیدترین مدل‌های Claude (شامل Fable 5.1، Opus 5.5، Sonnet 5.5)، وجود فیلد `reasoning` در خروجی یکی از محرک‌های ثبت‌شده برای امتناع‌های `reasoning_extraction` است. آن را با `dspy.Predict` به‌همراه تفکر بومی (Native thinking) در یک سطح تلاش (Effort level) ثابت مقایسه کنید و اجازه دهید متریک انتخاب کند.
 

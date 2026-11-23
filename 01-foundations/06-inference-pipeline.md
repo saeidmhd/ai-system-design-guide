@@ -26,6 +26,8 @@
 
 مدل‌های LLM متن را به‌صورت خودبازگشتی (autoregressively) تولید می‌کنند: هر بار یک Token، با استفاده از تمام Tokenهای قبلی به عنوان زمینه (context).
 
+<div dir="ltr">
+
 ```
 Input: "The quick brown"
 Step 1: Generate "fox" -> "The quick brown fox"
@@ -34,7 +36,11 @@ Step 3: Generate "over" -> "The quick brown fox jumps over"
 ...
 ```
 
+</div>
+
 ### حلقه تولید (Generation Loop)
+
+<div dir="ltr">
 
 ```python
 def generate(prompt: str, max_tokens: int, model) -> str:
@@ -56,6 +62,8 @@ def generate(prompt: str, max_tokens: int, model) -> str:
     return detokenize(tokens)
 ```
 
+</div>
+
 ---
 
 ## فازهای Prefill و Decode
@@ -65,6 +73,8 @@ def generate(prompt: str, max_tokens: int, model) -> str:
 ### فاز Prefill
 
 کل Prompt ورودی را به‌صورت موازی پردازش می‌کند.
+
+<div dir="ltr">
 
 ```
 Input: "The quick brown fox" (4 tokens)
@@ -76,6 +86,8 @@ Prefill:
 - Output: logits for next token
 ```
 
+</div>
+
 **ویژگی‌ها:**
 - محدود به محاسبات یا Compute-bound (تعداد زیادی عملیات ماتریسی)
 - قابلیت موازی‌سازی در میان Tokenها
@@ -85,6 +97,8 @@ Prefill:
 ### فاز Decode
 
 هر بار یک Token تولید می‌کند.
+
+<div dir="ltr">
 
 ```
 Decode step 1:
@@ -99,6 +113,8 @@ Decode step 2:
 
 ...repeat until done
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - محدود به حافظه یا Memory-bound (هر گام وزن‌ها و KV cache را مجدداً از HBM می‌خواند)
@@ -149,10 +165,14 @@ flowchart LR
 
 همیشه Token با بالاترین احتمال را انتخاب می‌کند:
 
+<div dir="ltr">
+
 ```python
 def greedy_sample(logits):
     return torch.argmax(logits)
 ```
+
+</div>
 
 **ویژگی‌ها:**
 - قطعی (Deterministic)
@@ -163,12 +183,16 @@ def greedy_sample(logits):
 
 مقیاس‌بندی لاجیت‌ها پیش از softmax برای کنترل تصادفی بودن:
 
+<div dir="ltr">
+
 ```python
 def temperature_sample(logits, temperature=1.0):
     scaled_logits = logits / temperature
     probs = torch.softmax(scaled_logits, dim=-1)
     return torch.multinomial(probs, num_samples=1)
 ```
+
+</div>
 
 **اثرات دما (Temperature):**
 
@@ -183,6 +207,8 @@ def temperature_sample(logits, temperature=1.0):
 
 فقط K تا از Tokenهای با بالاترین احتمال را در نظر می‌گیرد:
 
+<div dir="ltr">
+
 ```python
 def top_k_sample(logits, k=50):
     values, indices = torch.topk(logits, k)
@@ -191,11 +217,15 @@ def top_k_sample(logits, k=50):
     return indices[sampled_idx]
 ```
 
+</div>
+
 **اثر:** فیلتر کردن Tokenهای با احتمال پایینی که ممکن است بی‌معنی باشند.
 
 ### نمونه‌برداری Top-P (هسته‌ای یا Nucleus)
 
 شامل کردن Tokenها تا زمانی که احتمال تجمعی از P فراتر رود:
+
+<div dir="ltr">
 
 ```python
 def top_p_sample(logits, p=0.9):
@@ -215,6 +245,8 @@ def top_p_sample(logits, p=0.9):
     return sorted_indices[sampled_idx]
 ```
 
+</div>
+
 **مزیت نسبت به Top-K:** تنظیم پویا بر اساس توزیع احتمال. پیش‌بینی‌های با اطمینان بالا Tokenهای کمتری را شامل می‌شوند؛ پیش‌بینی‌های نامطمئن Tokenهای بیشتری را در بر می‌گیرند.
 
 ### پیکربندی‌های رایج
@@ -233,12 +265,16 @@ def top_p_sample(logits, p=0.9):
 
 کاهش احتمال Tokenهایی که اخیراً تولید شده‌اند:
 
+<div dir="ltr">
+
 ```python
 def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
     for token_id in set(generated_tokens):
         logits[token_id] /= penalty
     return logits
 ```
+
+</div>
 
 **انواع:**
 - جریمه حضور (Presence penalty): جریمه کردن تمام Tokenهایی که ظاهر شده‌اند
@@ -270,23 +306,33 @@ def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
 
 مدل Token پایان توالی (end-of-sequence) را تولید می‌کند:
 
+<div dir="ltr">
+
 ```python
 if next_token == tokenizer.eos_token_id:
     break
 ```
 
+</div>
+
 ### حداکثر تعداد Tokenها (Max Tokens)
 
 محدودیت قطعی (hard limit) برای طول تولید:
+
+<div dir="ltr">
 
 ```python
 for i in range(max_tokens):
     # generate...
 ```
 
+</div>
+
 ### توالی‌های توقف (Stop Sequences)
 
 رشته‌های سفارشی که به تولید متن خاتمه می‌دهند:
+
+<div dir="ltr">
 
 ```python
 stop_sequences = ["###", "\n\n", "Human:"]
@@ -297,6 +343,8 @@ for seq in stop_sequences:
         break
 ```
 
+</div>
+
 ---
 
 ## رمزگشایی حدسی (Speculative Decoding)
@@ -305,12 +353,16 @@ for seq in stop_sequences:
 
 یک مدل پیش‌نویس‌کننده ارزان (cheap drafter) تعداد K تا از Tokenهای بعدی را پیشنهاد می‌دهد؛ مدل هدف (target model) تمام این K تا Token را در یک گذر روبه‌جلو (forward pass) اعتبارسنجی می‌کند و طولانی‌ترین پیشوندی را که با آن موافق است نگه می‌دارد، به علاوه یک Token که خودش نمونه‌برداری می‌کند. با اعتبارسنجی استاندارد نمونه‌برداری ردشده (rejection-sampling)، توزیع خروجی دقیقاً با مدل هدف مطابقت دارد؛ بنابراین پیش‌بینی حدسی سرعت را تغییر می‌دهد، نه کیفیت را.
 
+<div dir="ltr">
+
 ```
 Drafter (cheap): proposes "The", "quick", "brown", "fox", "jumps"
 Target (large):  verifies all 5 in ONE forward pass
 Result: if the target accepts 4, it adds 1 of its own: 5 tokens for one
         large forward pass (plus the drafter's cost)
 ```
+
+</div>
 
 | روش | منشأ پیش‌نویس‌ها (Drafts) | وضعیت (اکتبر ۲۰۲۶) |
 |--------|------------------------|-----------------------|
@@ -339,9 +391,13 @@ Result: if the target accepts 4, it adds 1 of its own: 5 tokens for one
 
 زمان سپری‌شده از ارسال درخواست تا اولین Token تولیدشده.
 
+<div dir="ltr">
+
 ```
 TTFT = network_latency + queue_time + prefill_time
 ```
+
+</div>
 
 **عوامل موثر بر TTFT:**
 - طول Prompt (مرحله prefill به‌صورت خطی با طول Prompt افزایش می‌یابد و در کانتکست‌های طولانی که توجه درجه‌دوم (quadratic attention) غالب است، سریع‌تر رشد می‌کند)
@@ -358,9 +414,13 @@ TTFT = network_latency + queue_time + prefill_time
 
 نرخ تولید Token پس از اولین Token. مقدار TPS به ازای هر درخواست، معکوس **تاخیر بین Tokenها** (inter-token latency یا ITL، که زمان به ازای هر Token خروجی نیز نامیده می‌شود) است.
 
+<div dir="ltr">
+
 ```
 TPS = (total_tokens - 1) / (total_time - TTFT)
 ```
+
+</div>
 
 **عوامل موثر بر TPS:**
 - اندازه مدل (پارامترهای فعال در MoE)
@@ -387,9 +447,13 @@ TPS = (total_tokens - 1) / (total_time - TTFT)
 
 ### تاخیر کل (Total Latency)
 
+<div dir="ltr">
+
 ```
 Total = TTFT + (output_tokens / TPS)
 ```
+
+</div>
 
 **مثال:**
 - مقدار TTFT برابر با 200ms
@@ -401,9 +465,13 @@ Total = TTFT + (output_tokens / TPS)
 
 تعداد درخواست‌های تکمیل‌شده در واحد زمان:
 
+<div dir="ltr">
+
 ```
 Throughput = concurrent_requests * TPS / average_output_tokens
 ```
+
+</div>
 
 اندازه‌های بزرگ‌تر دسته (Batch size) باعث افزایش توان عملیاتی (Throughput) می‌شوند، اما ممکن است تاخیر (Latency) هر درخواست را افزایش دهند.
 
@@ -419,6 +487,8 @@ Throughput = concurrent_requests * TPS / average_output_tokens
 
 ### وزن‌های مدل (Model Weights)
 
+<div dir="ltr">
+
 ```
 Memory = parameters * bytes_per_parameter
 
@@ -428,11 +498,15 @@ Memory = parameters * bytes_per_parameter
   (plus block scales: NVFP4 ~4.5 bits/weight, ~39 GB; MXFP4 ~4.25 bits, ~37 GB)
 ```
 
+</div>
+
 **دقت محاسباتی در سال ۲۰۲۶:** وزن‌های FP4 (فرمت NVFP4 روی NVIDIA، فرمت MXFP4 روی AMD و سایر سخت‌افزارهای مبتنی بر فرمت OCP) به‌همراه KV cache با فرمت FP8، پیکربندی شاخص سرویس‌دهی محسوب می‌شود؛ همچنین SGLang می‌تواند چک‌پوینت‌های NVFP4 را هنگام بارگذاری به MXFP4 بازکوانتایز (requantize) کند تا روی AMD اجرا شوند. دقت پایین‌تر تنها در صورت وجود کرنل بهینه برنده می‌شود: دستورالعمل Nemotron 3.5 Lightning در NVIDIA Dynamo نشان داد که فرمت BF16 روی کرنل‌های Marlin حدود ۸۰٪ سریع‌تر از NVFP4، و روی کرنل‌های CuTeDSL حدود ۱۲٪ سریع‌تر از NVFP4 بوده است. پیش از آنکه فرض کنید FP4 سریع‌تر است، مسیر دقیق کرنل را بنچمارک کنید.
 
 برای مدل‌های MoE، حافظه را بر اساس **کل** پارامترها (زیرا تمام کارشناسان/expertها باید مقیم در حافظه باشند) و محاسبات را بر اساس پارامترهای **فعال** تعیین اندازه کنید.
 
 ### کش KV (KV Cache)
+
+<div dir="ltr">
 
 ```
 Per token: 2 * layers * kv_heads * head_dim * bytes
@@ -448,9 +522,13 @@ At 128K context: ~43 GB per request
 (FP8 KV halves these. Full MHA with 64 KV heads would be 8x larger.)
 ```
 
+</div>
+
 این فرمول تنها برای لایه‌های استاندارد GQA/MHA برقرار است. مدل‌های مبتنی بر پنجره لغزان (Sliding-window)، توجه خطی (linear-attention) و KV فشرده‌شده به محاسبات خاص خود نیاز دارند؛ بخش [توجه ترکیبی و تنک](03-attention-mechanisms.md#hybrid-and-sparse-attention-in-2026-open-models) را مشاهده کنید.
 
 ### کل حافظه GPU
+
+<div dir="ltr">
 
 ```
 Total = model_weights + kv_cache * batch_size + activations
@@ -463,7 +541,11 @@ Example: Llama 3.x 70B, 8K context, batch 16
   or one H100 with FP8 KV (~21 GB of KV instead of ~43 GB)
 ```
 
+</div>
+
 ### تعداد FLOPs به ازای هر Token
+
+<div dir="ltr">
 
 ```
 Forward pass FLOPs ≈ 2 * active parameters
@@ -477,6 +559,8 @@ Decode is bound by memory bandwidth, not FLOPs, until batching
 raises arithmetic intensity.
 ```
 
+</div>
+
 ---
 
 ## استریمینگ (Streaming)
@@ -484,6 +568,8 @@ raises arithmetic intensity.
 برای برنامه‌های تعاملی، Tokenها را به محض تولید استریم کنید:
 
 ### رویدادهای ارسالی سرور (Server-Sent Events یا SSE)
+
+<div dir="ltr">
 
 ```python
 # Server
@@ -497,6 +583,8 @@ async for event in sse_client.stream("/generate"):
     token = json.loads(event.data)["token"]
     display(token)
 ```
+
+</div>
 
 ### مزایا
 
@@ -523,6 +611,8 @@ async for event in sse_client.stream("/generate"):
 
 ترکیب چندین درخواست جهت به حداکثر رساندن بهره‌وری GPU:
 
+<div dir="ltr">
+
 ```python
 # Without batching: GPU underutilized
 for request in requests:
@@ -532,6 +622,8 @@ for request in requests:
 batch = collect_requests(timeout_s=0.010, max_batch=32)
 responses = model.generate_batch(batch)
 ```
+
+</div>
 
 ### دسته‌بندی پیوسته و کش‌کردن پیشوند
 
@@ -557,6 +649,8 @@ responses = model.generate_batch(batch)
 
 ### اولویت‌بندی درخواست‌ها (Request Prioritization)
 
+<div dir="ltr">
+
 ```python
 class RequestQueue:
     def __init__(self):
@@ -569,6 +663,8 @@ class RequestQueue:
         return await self.low_priority.get()
 ```
 
+</div>
+
 **معیارهای اولویت:**
 - لایه اشتراک مشتری (Customer tier)
 - نوع درخواست
@@ -576,6 +672,8 @@ class RequestQueue:
 - هزینه محاسباتی تخمینی
 
 ### مدیریت مهلت زمانی (Timeout Handling)
+
+<div dir="ltr">
 
 ```python
 async def generate_with_timeout(prompt: str, timeout: float):
@@ -589,7 +687,11 @@ async def generate_with_timeout(prompt: str, timeout: float):
         return {"error": "timeout", "partial": partial_output}
 ```
 
+</div>
+
 ### تنزل کارایی کنترل‌شده (Graceful Degradation)
+
+<div dir="ltr">
 
 ```python
 async def generate_with_fallback(prompt: str):
@@ -601,9 +703,13 @@ async def generate_with_fallback(prompt: str):
         return await small_fast_model.generate(prompt)
 ```
 
+</div>
+
 حداقل یک مسیر جایگزین (fallback) بین ارائه‌دهندگان مختلف (cross-vendor) ایجاد کنید. اختلالات ارائه‌دهندگان معمولاً تمام مدل‌ها و محصولات آن شرکت را به‌طور همزمان از کار می‌اندازند؛ بنابراین، تغییر مسیر به مدلی دیگر از همان خانواده اغلب در همان لحظه با شکست مواجه می‌شود. بین ۱۶ اوت تا ۲۹ سپتامبر ۲۰۲۶، صفحه وضعیت Anthropic حداقل ۱۲ حادثه بزرگ یا بحرانی را ثبت کرد، و قطعی ۲۹ سپتامبر OpenAI (حدود ۵ ساعت و ۲۰ دقیقه) همزمان API، ChatGPT و Codex را تحت تاثیر قرار داد.
 
 ### رهگیری هزینه‌ها (Cost Tracking)
+
+<div dir="ltr">
 
 ```python
 @dataclass
@@ -632,6 +738,8 @@ def calculate_cost(metrics: RequestMetrics) -> float:
         (metrics.output_tokens / 1_000_000) * rates["output"]
     )
 ```
+
+</div>
 
 ---
 

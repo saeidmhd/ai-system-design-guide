@@ -87,6 +87,8 @@
 
 تبدیل شناسه Tokenها (token IDs) به بردارهای متراکم (dense vectors):
 
+<div dir="ltr">
+
 ```python
 class TokenEmbedding(nn.Module):
     def __init__(self, vocab_size, d_model):
@@ -96,6 +98,8 @@ class TokenEmbedding(nn.Module):
     def forward(self, token_ids):
         return self.embedding(token_ids)
 ```
+
+</div>
 
 **ابعاد (Dimensions):**
 - ورودی: شناسه Tokenها با ابعاد [batch_size, seq_len]
@@ -107,6 +111,9 @@ class TokenEmbedding(nn.Module):
 
 **۱. تعبیه موقعیت چرخشی (RoPE - Rotary Position Embedding):**
 درون سازوکار توجه اعمال می‌شود و به Embeddingها اضافه نمی‌گردد:
+
+<div dir="ltr">
+
 ```python
 def apply_rope(q, k, positions):
     # Rotate q and k vectors based on position
@@ -116,12 +123,19 @@ def apply_rope(q, k, positions):
     return q_rotated, k_rotated
 ```
 
+</div>
+
 **۲. تعبیه موقعیت یادگیری‌شده (Learned Position Embeddings):**
 مستقیماً به Embeddingهای Token اضافه می‌شود:
+
+<div dir="ltr">
+
 ```python
 position_embeddings = nn.Embedding(max_seq_len, d_model)
 x = token_embeddings + position_embeddings(positions)
 ```
+
+</div>
 
 **مدل‌های متن‌باز مدرن (Llama، Mistral، Qwen، DeepSeek و Gemma) از RoPE استفاده می‌کنند** تا تعمیم‌پذیری به طول‌های بیشتر (Length Generalization) بهبود یابد؛ این مدل‌ها اغلب از روش‌های مقیاس‌بندی نظیر YaRN برای گسترش پنجره کانتکست آموزش‌دیده بهره می‌برند. آزمایشگاه‌های سازنده مدل‌های بسته، اطلاعات مربوط به روش‌های کدگذاری موقعیت خود را منتشر نمی‌کنند.
 
@@ -132,6 +146,8 @@ x = token_embeddings + position_embeddings(positions)
 ### ساختار پیش‌نرمال‌سازی
 
 ترنسفورمرهای مدرن از پیش‌نرمال‌سازی (Pre-normalization) استفاده می‌کنند:
+
+<div dir="ltr">
 
 ```python
 class TransformerBlock(nn.Module):
@@ -159,7 +175,11 @@ class TransformerBlock(nn.Module):
         return out
 ```
 
+</div>
+
 ### مؤلفه توجه
+
+<div dir="ltr">
 
 ```python
 class GroupedQueryAttention(nn.Module):
@@ -203,7 +223,11 @@ class GroupedQueryAttention(nn.Module):
         return out
 ```
 
+</div>
+
 ### شبکه پیش‌خور
+
+<div dir="ltr">
 
 ```python
 class SwiGLUFFN(nn.Module):
@@ -220,9 +244,13 @@ class SwiGLUFFN(nn.Module):
         return self.down_proj(gate * up)
 ```
 
+</div>
+
 **بُعد پنهان FFN (FFN hidden dimension)** برای SwiGLU معمولاً ۲.۷ تا ۳.۵ برابر بُعد مدل است (در مقایسه با ۴ برابر در یک FFN استاندارد با GELU). در نسبت ۸/۳ (حدود ۲.۶۷ برابر)، سه ماتریس SwiGLU به اندازه یک FFN دوماتریسی با ضریب ۴ برابر پارامتر دارند؛ مدل Llama 2 7B از حدود ۲.۷ برابر استفاده می‌کند، در حالی که Llama 2 70B و Llama 3 این بُعد را تا ۳.۵ برابر افزایش می‌دهند.
 
 ### نرمال‌سازی RMS (RMSNorm)
+
+<div dir="ltr">
 
 ```python
 class RMSNorm(nn.Module):
@@ -236,6 +264,8 @@ class RMSNorm(nn.Module):
         return self.weight * (x / rms)
 ```
 
+</div>
+
 ساده‌تر و سریع‌تر از LayerNorm است؛ چرا که مرحله کسر میانگین (Mean Centering) را حذف می‌کند.
 
 ---
@@ -246,13 +276,19 @@ class RMSNorm(nn.Module):
 
 اعمال RMSNorm پس از آخرین بلاک ترنسفورمر:
 
+<div dir="ltr">
+
 ```python
 hidden_states = self.output_norm(hidden_states)
 ```
 
+</div>
+
 ### سر مدل زبانی (Language Model Head)
 
 نگاشت به اندازه واژگان (Vocabulary Size):
+
+<div dir="ltr">
 
 ```python
 class LMHead(nn.Module):
@@ -264,7 +300,11 @@ class LMHead(nn.Module):
         return self.linear(x)  # Returns logits
 ```
 
+</div>
+
 ### دریافت پیش‌بینی‌ها
+
+<div dir="ltr">
 
 ```python
 # During generation
@@ -275,6 +315,8 @@ next_token = sample(logits)
 logits = lm_head(hidden_states)  # All positions
 loss = cross_entropy(logits, targets)
 ```
+
+</div>
 
 ## مقایسه Embeddingهای متصل و غیرمتصل (Untied vs. Tied Embeddings)
 
@@ -346,9 +388,14 @@ loss = cross_entropy(logits, targets)
 | سر زبانی (LM head) | ماتریس d_model * vocab_size (در مدل‌های کوچک به‌صورت اشتراکی/tied) |
 
 **تقریب برای مدل‌های فقط دیکودر (decoder-only):**
+
+<div dir="ltr">
+
 ```
 Total ≈ 12 * n_layers * d_model^2 (for d_ff = 4 * d_model, MHA)
 ```
+
+</div>
 
 این رابطه یک FFN دوماتریسی را در ضریب 4x فرض می‌کند. یک FFN از نوع SwiGLU در d_ff = 8/3 * d_model همان مقدار 8 * d_model^2 به ازای هر لایه را به همراه دارد؛ GQA و FFNهای عریض‌تر SwiGLU این نسبت تسهیم را تغییر می‌دهند، و جدول Embedding نیز مقدار vocab_size * d_model را به این مجموع اضافه می‌کند.
 
@@ -364,9 +411,13 @@ Total ≈ 12 * n_layers * d_model^2 (for d_ff = 4 * d_model, MHA)
 
 قانون مقیاس‌پذیری چینچیلا (Chinchilla) تخصیص بهینه را پیشنهاد می‌دهد:
 
+<div dir="ltr">
+
 ```
 D (data tokens) ≈ 20 * N (parameters)
 ```
+
+</div>
 
 برای یک مدل ۷۰B، جهت آموزش بهینه از نظر محاسباتی (compute-optimal)، آموزش روی حدود ۱.۴T از Tokenها انجام می‌شود.
 
@@ -427,15 +478,25 @@ D (data tokens) ≈ 20 * N (parameters)
 تفاوت در این است که نرمال‌سازی لایه‌ای در مقایسه با زیرلایه‌ها (توجه، FFN) در کجا اعمال می‌شود:
 
 **روش Post-norm (ترنسفورمر اولیه):**
+
+<div dir="ltr">
+
 ```
 x = LayerNorm(x + Sublayer(x))
 ```
+
+</div>
 نرمال‌سازی پس از افزودن اتصال پسماند (residual) اعمال می‌شود.
 
 **روش Pre-norm (ترنسفورمرهای مدرن):**
+
+<div dir="ltr">
+
 ```
 x = x + Sublayer(LayerNorm(x))
 ```
+
+</div>
 نرمال‌سازی پیش از ورود به زیرلایه اعمال می‌شود.
 
 روش Pre-norm ترجیح داده می‌شود زیرا:

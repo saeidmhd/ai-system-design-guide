@@ -21,6 +21,8 @@
 
 «وضعیت» (State) **تنها منبع حقیقت (Single Source of Truth)** برای یک جلسه کاری (session) متعلق به یک Agent است.
 
+<div dir="ltr">
+
 ```python
 from typing import Annotated, Any, TypedDict
 
@@ -36,6 +38,8 @@ class AgentState(TypedDict):
     user_context: dict[str, Any]
     iteration_count: int
 ```
+
+</div>
 
 **بهترین شیوه (Best practice)**: وضعیت باید تا حد امکان دارای **نوع‌بندی صریح (Strictly Typed)** و **فقط‌افزودنی (Append-Only)** باشد تا از دست رفتن داده‌ها در حین حلقه‌های اجرایی طولانی جلوگیری شود. رویکرد فقط‌افزودنی اکنون برای خود مدل نیز اهمیت دارد: جدیدترین مدل‌های Claude در صورت تغییر پیام‌های قبلی، بلوک‌های تفکر (thinking blocks) را باطل (invalidate) می‌کنند؛ بنابراین یک کاهنده وضعیت (state reducer) که `messages` را به‌صورت درجا بازنویسی می‌کند، در سکوت به قیمت از بین رفتن پیوستگی استدلال (reasoning continuity) شما تمام می‌شود.
 

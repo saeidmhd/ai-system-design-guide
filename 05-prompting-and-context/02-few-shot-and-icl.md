@@ -24,11 +24,15 @@
 2. **استدلال (اختیاری - Reasoning)**: توضیحی کوتاه درباره این‌که *چرا* خروجی به این شکل است.
 3. **خروجی (Output)**: نتیجه منطبق بر «استاندارد طلایی» (Gold Standard).
 
+<div dir="ltr">
+
 ```markdown
 User: "The weather is okay, but the flight was late."
 Reasoning: The user is neutral about the weather but negative about the service.
 Sentiment: Mixed
 ```
+
+</div>
 
 ---
 

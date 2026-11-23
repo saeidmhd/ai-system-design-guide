@@ -20,10 +20,14 @@
 
 اکثر LLMهای مدرن از معماری **فقط دیکودر (Decoder-only)** هستند و از **مدل‌سازی زبانی علّی (Causal Language Modeling یا CLM)** استفاده می‌کنند:
 
+<div dir="ltr">
+
 ```python
 # Objective: Minimize Cross-Entropy Loss
 Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 ```
+
+</div>
 
 مدل، Token بعدی را بر اساس متن زمینه (context) پیش‌بینی می‌کند. این هدف ساده، در مقیاس بزرگ، منجر به قابلیت‌های استدلال نوظهور (emergent reasoning) می‌شود. بسیاری از مدل‌های کنونی یک هدف کمکی به نام **پیش‌بینی چند Token هم‌زمان (multi-token prediction یا MTP)** را اضافه می‌کنند (که DeepSeek-V3 آن را محبوب کرد)؛ این کار هم سیگنال آموزش را بهبود می‌بخشد و هم هدهای پیش‌نویسی (draft heads) بر جای می‌گذارد که موتورهای سرویس‌دهی از آن‌ها برای [کدگشایی حدسی (speculative decoding)](../04-inference-optimization/03-speculative-decoding.md) مجدداً استفاده می‌کنند.
 

@@ -68,6 +68,8 @@
 3. **آستانه‌های اطمینان (Confidence Thresholds)**: مدل را ملزم کنید که یک امتیاز `confidence` برای فراخوانی ابزار در خروجی ارائه دهد. با آن به عنوان یک سرنخ مسیریابی برخورد کنید، نه یک احتمال کالیبره‌شده.
 4. **خطاهای تعمدی و قابل مشاهده برای مدل (Deliberate, Model-Visible Errors)**: از نسخه 2.1.0 مربوط به MCP Python SDK، خطاهای غیرمنتظره در یک هندلر لاگ می‌شوند و کلاینت تنها عبارت `Error executing tool <name>` را می‌بیند؛ برای پیام‌هایی که مدل باید بر اساس آن‌ها اقدام کند، `ToolError` صادر کنید. این رفتار پیش‌فرض درست است (زیرا ردگیری پشته یا stack trace جزئیات داخلی را افشا می‌کند)، اما به این معنی است که خطاهای قابل اقدام باید به صورت هدفمند طراحی شوند، نه اینکه نشت پیدا کنند.
 
+<div dir="ltr">
+
 ```python
 # MCP Python SDK 2.x: `pip install mcp` now resolves to 2.x, and FastMCP was renamed MCPServer.
 # Projects not ready to migrate should pin mcp<2 (v1 receives security and critical fixes only).
@@ -82,6 +84,8 @@ def execute_sql(query: str) -> list[dict]:
     by the database role, not just by this docstring."""
     ...  # parameterize, enforce a row limit, run under a read-only role
 ```
+
+</div>
 
 ---
 
@@ -127,11 +131,15 @@ def execute_sql(query: str) -> list[dict]:
 ### ۲. مجوزدهی با OAuth 2.1
 سرورهای MCP از راه دور می‌توانند OAuth 2.1 همراه با PKCE را الزامی کنند. از تاریخ 2025-06-18 سرور MCP یک **سرور منبع (Resource Server)** تحت پروتکل OAuth است: سرور مجوزدهی خود را از طریق فراداده منبع محافظت‌شده (Protected Resource Metadata بر اساس RFC 9728) اعلام می‌کند و کلاینت‌ها باید پارامتر `resource` در RFC 8707 را ارسال کنند تا هر Token منحصراً وابسته به مخاطب هدف (Audience-bound) در یک سرور مشخص باشد. درخواستی که فاقد Token باشد با یک چالش مواجه می‌شود که به کلاینت می‌گوید از کجا شروع کند:
 
+<div dir="ltr">
+
 ```http
 HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource",
                          scope="files:read"
 ```
+
+</div>
 
 این امر سرورهای سازمانی MCP را با کنترل دسترسی دقیق به ازای هر سرور امکان‌پذیر می‌سازد. بازنگری 2025-11-25 اسناد فراداده شناسه کلاینت (Client ID Metadata Documents) را به عنوان مکانیسم پیشنهادی ثبت‌نام و موافقت تدریجی با محدوده دسترسی (Incremental scope consent) اضافه کرد؛ جایی که سرور در پاسخ به HTTP 403 `insufficient_scope`، محدوده مورد نیاز خود را اعلام می‌کند (افزایش سطح دسترسی یا step-up). سپس بازنگری 2026-07-28 ثبت پویای کلاینت (Dynamic Client Registration) را به نفع این اسناد فراداده منسوخ کرد و کلاینت‌ها را ملزم نمود تا در صورت ارسال پارامتر `iss` در RFC 9207 توسط سرور مجوزدهی، آن را اعتبارسنجی کنند؛ هر دوی این موارد در ادامه بررسی شده‌اند.
 
@@ -625,6 +633,8 @@ flowchart TD
 | `computer_toolset_20260801` | ماوس، صفحه‌کلید، اسکرین‌شات، زوم | ۱۷ عضو؛ اقدامات دسته‌ای؛ عرضه عمومی روی Claude API و Google Cloud |
 | `browser_toolset_20260801` | هدایت مرورگری که برنامه شما میزبان آن است | ۳۱ عضو (۴ مورد اختیاری / opt-in)؛ هدف‌گیری مراجع عناصر درخت دسترسی‌پذیری و همچنین پیکسل‌ها؛ فقط روی Claude API و Google Cloud |
 
+<div dir="ltr">
+
 ```python
 import anthropic
 
@@ -641,6 +651,8 @@ response = client.messages.create(  # GA: no beta namespace or beta header
     messages=[{"role": "user", "content": "Open Firefox, go to GitHub, and clone my repo."}],
 )
 ```
+
+</div>
 
 **دام مهاجرت:** مدل‌های Claude 5.5 (شامل Opus، Sonnet و Haiku) برای ابزار قدیمی‌تر `computer_20251124` روی Claude API و Google Cloud خطای HTTP 400 برمی‌گردانند (Bedrock هنوز آن را می‌پذیرد)، و نمونه‌هایی که `claude-3-7-sonnet-20250219` یا `claude-sonnet-4-20250514` را هدف قرار می‌دهند به مدل‌های بازنشسته‌شده اشاره دارند.
 
@@ -660,6 +672,8 @@ response = client.messages.create(  # GA: no beta namespace or beta header
 
 یکی از کاربردی‌ترین سرورهای MCP در سال ۲۰۲۶، سرور **Context7** است. این ابزار مشکل «داده‌های آموزشی قدیمی» را برای Agentهای کدنویسی حل می‌کند:
 
+<div dir="ltr">
+
 ```
 # Without Context7:
 Agent: "I'll use langchain's `create_openai_tools_agent` function..."
@@ -672,7 +686,12 @@ MCP -> Agent: Returns current 1.x docs
 Agent: "I'll use the 1.x `create_agent` API..."
 ```
 
+</div>
+
 **راه‌اندازی به عنوان یک سرور ریموت (فایل `.mcp.json` در Claude Code):**
+
+<div dir="ltr">
+
 ```json
 {
   "mcpServers": {
@@ -684,6 +703,8 @@ Agent: "I'll use the 1.x `create_agent` API..."
   }
 }
 ```
+
+</div>
 
 همچنین Context7 یک نصاب هدایت‌شده (`npx ctx7 setup`) ارائه می‌دهد که کلید API را ایجاد کرده و Agent کدنویسی را پیکربندی می‌کند. دو ابزار آن `resolve-library-id` و `query-docs` هستند؛ Agent پیش از نوشتن کد بر اساس کتابخانه‌ای که ممکن است API آن پس از تاریخ نهایی آموزش مدل تغییر کرده باشد، این ابزارها را فراخوانی می‌کند. گذار از یک سرور محلی stdio مبتنی بر `npx` به یک اندپوینت میزبانی‌شده HTTP با کلید حامل (bearer key)، همان حرکت از محلی به ریموت است که کل این اکوسیستم در حال پیمودن آن است.
 

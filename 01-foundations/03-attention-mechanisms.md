@@ -40,6 +40,8 @@
 | کلید یا Key (K) | چه چیزی در بر دارم؟ | نمایه یا ایندکس سند (Document index) |
 | مقدار یا Value (V) | چه چیزی ارائه می‌دهم؟ | محتوای سند (Document content) |
 
+<div dir="ltr">
+
 ```python
 # Input: x of shape [batch, seq_len, d_model]
 
@@ -48,11 +50,15 @@ K = x @ W_k  # [batch, seq_len, d_k]
 V = x @ W_v  # [batch, seq_len, d_v]
 ```
 
+</div>
+
 ---
 
 ## توجه ضرب نقطه‌ای مقیاس‌شده (Scaled Dot-Product Attention)
 
 عملیات بنیادین توجه:
+
+<div dir="ltr">
 
 ```python
 def scaled_dot_product_attention(Q, K, V, mask=None):
@@ -75,6 +81,8 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
     return output, attention_weights
 ```
 
+</div>
+
 ### چرا مقیاس‌بندی با جذر d_k انجام می‌شود؟
 
 **محبوب در مصاحبه‌ها**: این سوال شهود عددی (Numerical intuition) شما را می‌سنجد.
@@ -85,6 +93,8 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
 - انحراف معیار = sqrt(d)
 
 هنگامی که d بزرگ باشد (۵۱۲ یا بیشتر)، مقادیر حاصل از ضرب نقطه‌ای می‌توانند بسیار بزرگ یا بسیار کوچک شوند. اعمال Softmax بر روی مقادیر بزرگ به توزیع وان-هات (one-hot) نزدیک می‌شود که به ناپدید شدن گرادیان (vanishing gradients) می‌انجامد.
+
+<div dir="ltr">
 
 ```python
 # Demonstration
@@ -98,9 +108,13 @@ unscaled = np.dot(q, k)      # Magnitude ~ sqrt(512) ~ 22
 scaled = unscaled / np.sqrt(d)  # Magnitude ~ 1
 ```
 
+</div>
+
 ### ماسک‌گذاری علی (Causal Masking)
 
 برای تولید خودبازگشتی (Autoregressive generation)، هر موقعیت تنها می‌تواند به موقعیت‌های قبلی توجه کند:
+
+<div dir="ltr">
 
 ```python
 def create_causal_mask(seq_len):
@@ -115,6 +129,8 @@ def create_causal_mask(seq_len):
 #  [1, 1, 1, 1]]
 ```
 
+</div>
+
 موقعیت‌هایی با mask=0 امتیاز منفی بی‌نهایت (negative infinity) دریافت می‌کنند که پس از اعمال softmax به ۰ تبدیل می‌شوند.
 
 ---
@@ -122,6 +138,8 @@ def create_causal_mask(seq_len):
 ## توجه چند سر (Multi-Head Attention)
 
 به جای یک تابع توجه واحد، از چندین «سر» (Heads) استفاده می‌شود که به جنبه‌های متفاوتی توجه می‌کنند:
+
+<div dir="ltr">
 
 ```python
 class MultiHeadAttention(nn.Module):
@@ -161,6 +179,8 @@ class MultiHeadAttention(nn.Module):
         return output
 ```
 
+</div>
+
 **چرا سرهای متعدد؟**
 ۱. سرهای مختلف الگوهای گوناگونی را می‌آموزند (نحو، معناشناسی، هم‌مرجعی یا coreference)
 ۲. تنوع بازنمایی (اثر تجمیعی یا ensemble effect) فراهم می‌کند
@@ -197,6 +217,8 @@ class MultiHeadAttention(nn.Module):
 
 وزن‌های توجه را می‌توان به صورت نقشه‌های حرارتی (Heatmaps) مصورسازی کرد که نشان می‌دهند کدام موقعیت‌ها به کدام موقعیت‌ها توجه دارند:
 
+<div dir="ltr">
+
 ```
 Query positions (rows) vs Key positions (columns)
 
@@ -212,6 +234,8 @@ mat     [○    ●    ○    ●    ●    □ ]
 
 ● = high attention, ○ = low attention
 ```
+
+</div>
 
 کلمه "mat" به شدت به "cat" (معنایی)، "on" (نحوی) و "the" (حرف تعریف/تعیین‌کننده) توجه می‌کند.
 
@@ -233,6 +257,9 @@ mat     [○    ●    ○    ●    ●    □ ]
 | بلوکی (Block) | توجه بلوکی-قطری (Block-diagonal) | O(n * b) | BigBird |
 
 **الگوی Longformer:**
+
+<div dir="ltr">
+
 ```
 Local window + Global tokens
 
@@ -242,9 +269,13 @@ G: Global tokens (attend to/from all)
 L: Local tokens (attend within window)
 ```
 
+</div>
+
 ### توجه خطی (Linear Attention)
 
 جایگزینی softmax با جایگزین‌های خطی‌پذیر:
+
+<div dir="ltr">
 
 ```python
 # Standard attention (quadratic)
@@ -253,6 +284,8 @@ attention = softmax(Q @ K.T) @ V
 # Linear attention approximation
 attention = (Q @ (K.T @ V))  # Associativity trick
 ```
+
+</div>
 
 **گونه‌ها:**
 - مدل Performer: تقریب ویژگی‌های تصادفی (Random feature approximation)
@@ -308,10 +341,14 @@ attention = (Q @ (K.T @ V))  # Associativity trick
 
 فلش اتنشن (Flash Attention) برای اجتناب از ذخیره‌سازی ماتریس کامل توجه، از روش کاشی‌کاری (tiling) و محاسبه مجدد (recomputation) استفاده می‌کند:
 
+<div dir="ltr">
+
 ```
 Standard: Q, K -> Attention Matrix (n x n) -> Output
 Flash:    Q, K -> Tiles (block_size x block_size) -> Incremental Output
 ```
+
+</div>
 
 **ایده‌های کلیدی:**
 ۱. پردازش توجه در بلوک‌هایی که در حافظه SRAM روی تراشه جای می‌گیرند
@@ -377,6 +414,8 @@ Key, Value (Down-projected) ─▶ [Low-dim Latent Cache] ─▶ [Output]
 
 اشتراک‌گذاری یک جفت K و V واحد میان تمام هدهای Query:
 
+<div dir="ltr">
+
 ```python
 # Standard MHA
 Q: [batch, num_heads, seq, d_k]  # 32 heads
@@ -389,11 +428,15 @@ K: [batch, 1, seq, d_k]          # 1 shared K
 V: [batch, 1, seq, d_k]          # 1 shared V
 ```
 
+</div>
+
 **اثر:** ۳۲ برابر کاهش در حجم KV cache، با مقداری افت کیفیت.
 
 ### توجه کوئری گروه‌بندی‌شده (GQA - Grouped-Query Attention)
 
 اشتراک‌گذاری K و V میان گروه‌هایی از هدهای Query:
+
+<div dir="ltr">
 
 ```python
 # GQA with 8 KV heads for 64 query heads (8:1 ratio)
@@ -403,6 +446,8 @@ V: [batch, 8, seq, d_k]   # 8 KV heads
 
 # Each KV head serves 8 query heads
 ```
+
+</div>
 
 **اثر:** ۸ برابر کاهش در حجم KV cache با کمترین افت کیفیت.
 

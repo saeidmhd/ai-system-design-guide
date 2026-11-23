@@ -43,10 +43,14 @@
 ### ۲. تقطیر برچسب نرم با مقیاس‌بندی دما (Soft Label Distillation - Temperature Scaling)
 شاگرد از **توزیع احتمال** (Logits) معلم یاد می‌گیرد. این شیوه بسیار غنی‌تر است زیرا نه تنها پاسخ درست را به شاگرد نشان می‌دهد، بلکه مشخص می‌کند کدام پاسخ‌های نادرست «تقریباً» درست بوده‌اند.
 
+<div dir="ltr">
+
 ```python
 # Distillation Loss (KL Divergence):
 Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 ```
+
+</div>
 *که در آن T نشان‌دهنده دما یا Temperature است (معمولاً بین ۲.۰ تا ۵.۰).*
 
 ### ۳. تقطیر درون‌خط‌مشی (On-Policy Distillation)

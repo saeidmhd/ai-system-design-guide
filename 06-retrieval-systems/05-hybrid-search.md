@@ -40,6 +40,8 @@
 
 بازیابی متراکم ممکن است تطابق‌های دقیق را از دست بدهد:
 
+<div dir="ltr">
+
 ```
 Query: "Configure NVIDIA_VISIBLE_DEVICES"
 Document: "Set the NVIDIA_VISIBLE_DEVICES environment variable..."
@@ -49,6 +51,8 @@ Dense search may miss this because:
 - Semantic embedding does not capture exact string matching
 - Training data may not have this specific term
 ```
+
+</div>
 
 جستجوی تنک (BM25) به دلیل تطابق دقیق Token، این مورد را بلافاصله پیدا می‌کند.
 
@@ -60,12 +64,16 @@ Dense search may miss this because:
 
 از امبدینگ‌های عصبی برای تطبیق معنایی استفاده می‌کند.
 
+<div dir="ltr">
+
 ```python
 def dense_search(query: str, top_k: int = 10) -> list[Result]:
     query_embedding = embedding_model.encode(query)
     results = vector_db.search(query_embedding, top_k=top_k)
     return results
 ```
+
+</div>
 
 **نقاط قوت:**
 - درک بازنویسی‌ها و کلمات مترادف
@@ -81,12 +89,16 @@ def dense_search(query: str, top_k: int = 10) -> list[Result]:
 
 از بسامد عبارات و محاسبات آماری (BM25 و TF-IDF) استفاده می‌کند.
 
+<div dir="ltr">
+
 ```python
 def sparse_search(query: str, top_k: int = 10) -> list[Result]:
     tokens = tokenize(query)
     results = bm25_index.search(tokens, top_k=top_k)
     return results
 ```
+
+</div>
 
 **نقاط قوت:**
 - عملکرد عالی برای تطابق‌های دقیق
@@ -152,6 +164,8 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
 
 برخی از پایگاه‌های داده برداری (Vector Database) به‌صورت نیتیو از جستجوی ترکیبی پشتیبانی می‌کنند:
 
+<div dir="ltr">
+
 ```python
 # Weaviate (Python client v4)
 docs = client.collections.use("Document")
@@ -178,10 +192,14 @@ results = client.query_points(
 ).points
 ```
 
+</div>
+
 **مزایا:** سیستم واحد، عملیات نگهداری ساده‌تر، تاخیر (Latency) کمتر
 **معایب:** سفارشی‌سازی محدود در ادغام، انعطاف‌پذیری کمتر در مقیاس‌پذیری زیرساخت کلیدواژه‌ای در برابر برداری
 
 ### معماری ۳: بازیابی چندمرحله‌ای
+
+<div dir="ltr">
 
 ```
 Query --> Sparse (fast, broad) --> Top 1000
@@ -193,6 +211,8 @@ Query --> Sparse (fast, broad) --> Top 1000
            Cross-encoder --> Top 10
 ```
 
+</div>
+
 **مزایا:** کارآمد، هر مرحله نتایج را پالایش می‌کند
 **معایب:** پیچیدگی بیشتر، خطر بروز خطا در مراحل اولیه
 
@@ -203,6 +223,8 @@ Query --> Sparse (fast, broad) --> Top 1000
 ### ادغام رتبه متقابل (RRF)
 
 روش RRF استاندارد طلایی برای ترکیب نتایج حاصل از دو موتور جستجوی متفاوت است. این روش به *امتیاز* (که در میان موتورهای مختلف غیرقابل مقایسه است) نگاه نمی‌کند، بلکه **رتبه** را در نظر می‌گیرد.
+
+<div dir="ltr">
 
 ```python
 def reciprocal_rank_fusion(
@@ -219,6 +241,8 @@ def reciprocal_rank_fusion(
     return sorted_docs
 ```
 
+</div>
+
 **ویژگی‌ها:**
 - مبتنی بر موقعیت، امتیازهای خام را نادیده می‌گیرد
 - مقاوم در برابر تفاوت مقیاس امتیازها: از «غالب شدن» یک موتور صرفاً به دلیل داشتن امتیازهای عددی بالا جلوگیری می‌کند
@@ -230,6 +254,8 @@ def reciprocal_rank_fusion(
 ### ادغام امتیاز وزنی
 
 ترکیب امتیازهای نرمال‌شده:
+
+<div dir="ltr">
 
 ```python
 def weighted_fusion(
@@ -264,6 +290,8 @@ def normalize_scores(results: list[Result]) -> list[Result]:
     ]
 ```
 
+</div>
+
 **ویژگی‌ها:**
 - استفاده از امتیازهای واقعی (اطلاعات بیشتر نسبت به رتبه)
 - نیاز به نرمال‌سازی امتیازها دارد
@@ -272,6 +300,8 @@ def normalize_scores(results: list[Result]) -> list[Result]:
 ### ادغام امتیاز نسبی
 
 لحاظ کردن توزیع امتیازها:
+
+<div dir="ltr">
 
 ```python
 def relative_score_fusion(
@@ -299,6 +329,8 @@ def z_score_normalize(results: list[Result]) -> list[Result]:
     return [Result(id=r.id, score=(r.score - mean) / std) for r in results]
 ```
 
+</div>
+
 ### مقایسه روش‌های ادغام
 
 | روش | استفاده از امتیازها | انطباق‌پذیر با پرس‌وجو | پیچیدگی |
@@ -323,6 +355,8 @@ def z_score_normalize(results: list[Result]) -> list[Result]:
 
 ### پیاده‌سازی SPLADE
 
+<div dir="ltr">
+
 ```python
 from sentence_transformers import SparseEncoder  # sentence-transformers >= 5.0
 
@@ -339,6 +373,8 @@ class SpladeEncoder:
         return dict(self.model.decode(emb)[0])
 ```
 
+</div>
+
 مدل naver/splade-v3 دارای دسترسی کنترل‌شده (gated) است و تحت مجوز CC BY-NC-SA 4.0 (غیرتجاری) عرضه شده است، همانند چک‌پوینت قدیمی‌تر SPLADE++؛ بنابراین پیش از استقرار (Deployment) در محیط عملیاتی، مجوز آن را بررسی کنید یا مدلی تنک و یادگرفته‌شده با مجوز تجاری را برگزینید.
 
 **چه زمانی از SPLADE به جای ترکیب BM25 و متراکم (BM25 + Dense Hybrid) استفاده کنیم:** مدل SPLADE یک بردار تنک تولید می‌کند که می‌تواند در پایگاه‌های داده برداری (Vector Database) مدرن (مانند Milvus یا Qdrant) در کنار بردار متراکم ذخیره شود، و جستجوی ترکیبی را در یک گام واحد بدون نیاز به یک نمایه مجزای Elasticsearch یا BM25 ممکن سازد. اگر مجموعه داده شما حاوی Tokenهای بسیار نادر و غیرزبانی است (مانند شماره سریال‌های یکتا) که ممکن است یک مدل عصبی در طول آموزش ندیده باشد، همچنان از BM25 استفاده کنید.
@@ -350,6 +386,8 @@ class SpladeEncoder:
 ## الگوهای پیاده‌سازی
 
 ### الگوی ۱: ترکیب Elasticsearch و پایگاه داده برداری (Vector Database)
+
+<div dir="ltr">
 
 ```python
 import asyncio
@@ -392,7 +430,11 @@ class HybridSearcher:
         ]
 ```
 
+</div>
+
 ### الگوی ۲: جستجوی ترکیبی نیتیو با Weaviate
+
+<div dir="ltr">
 
 ```python
 import weaviate
@@ -415,6 +457,8 @@ def hybrid_search_weaviate(
     return [obj.properties for obj in response.objects]
 ```
 
+</div>
+
 ---
 
 ## تنظیم و بهینه‌سازی
@@ -422,6 +466,8 @@ def hybrid_search_weaviate(
 ### تنظیم Alpha
 
 پارامتر alpha تعادل بین متراکم و تنک را برقرار می‌کند:
+
+<div dir="ltr">
 
 ```python
 def find_optimal_alpha(
@@ -446,6 +492,8 @@ def find_optimal_alpha(
     return best_alpha
 ```
 
+</div>
+
 **بهترین تجارب / یافته‌های متداول:**
 - مستندات فنی و کد: مقدار alpha بین ۰.۳ تا ۰.۴ (تمرکز بالا بر کلیدواژه)
 - متون عمومی: مقدار alpha برابر با ۰.۵ (متعادل)
@@ -454,6 +502,8 @@ def find_optimal_alpha(
 ### تنظیم Alpha منطبق با پرس‌وجو
 
 پیش‌بینی مقدار بهینه alpha به ازای هر پرس‌وجو:
+
+<div dir="ltr">
 
 ```python
 def predict_alpha(query: str) -> float:
@@ -475,6 +525,8 @@ def predict_alpha(query: str) -> float:
     return 0.5  # Default balanced
 ```
 
+</div>
+
 ### تنوع و قواعد کسب‌وکار
 
 ادغام نتایج، ارتباط موضوعی را به ازای هر سند بهینه‌سازی می‌کند، بنابراین تکه‌های متنی (chunks) تقریباً تکراری از یک منبع مشترک می‌توانند نتایج top-k را پر کنند. دو مکانیزم کنترلی که پیش‌تر در کد برنامه پیاده‌سازی می‌شدند، اکنون در Weaviate 1.39 (آگوست ۲۰۲۶) به ویژگی‌های عمومی موتور تبدیل شده‌اند:
@@ -484,6 +536,8 @@ def predict_alpha(query: str) -> float:
 ### عمق بازیابی
 
 تعداد نتایجی که باید پیش از ادغام واکشی شوند:
+
+<div dir="ltr">
 
 ```python
 # Rule of thumb: fetch 3-5x more from each source
@@ -497,11 +551,15 @@ def hybrid_search(query: str, final_k: int = 10):
     return fused[:final_k]
 ```
 
+</div>
+
 ---
 
 ## ملاحظات محیط عملیاتی
 
 ### بودجه تاخیر (Latency)
+
+<div dir="ltr">
 
 ```
 Typical hybrid search latency breakdown:
@@ -512,6 +570,8 @@ Sparse retrieval:         20-40ms  (parallel with dense)
 Fusion:                    1-5ms
 Total:                   60-100ms
 ```
+
+</div>
 
 **بهینه‌سازی‌ها:**
 - اجرای موازی جستجوی متراکم و تنک
@@ -524,6 +584,8 @@ Total:                   60-100ms
 الگوریتم BM25 به آمارهای پیکره متنی (IDF) وابسته است. در یک کالکشن چندمستأجری (multi-tenant) اشتراکی، دایره واژگان یک مستأجر (tenant / multi-tenant) بزرگ می‌تواند امتیازهای کلیدواژه‌ای سایر مستأجرها (tenant / multi-tenant) را تغییر دهد؛ بنابراین یک پرس‌وجو و اسناد یکسان بسته به اینکه چه داده‌های دیگری در نمایه حضور دارند رتبه‌بندی متفاوتی خواهند داشت و آمار اصطلاحات میان مستأجرها (tenant / multi-tenant) نشت می‌کند. نسخه Qdrant 1.19 قابلیت IDF به ازای هر مستأجر (tenant / multi-tenant) را برای جستجوی تنک و BM25 اضافه کرده است؛ در سایر سیستم‌ها، به مستأجرهای (tenant / multi-tenant) بزرگ نمایه اختصاصی خودشان را بدهید یا این انحراف آماری را بپذیرید و ارزیابی را به تفکیک هر مستأجر (tenant / multi-tenant) انجام دهید.
 
 ### استراتژی کشینگ
+
+<div dir="ltr">
 
 ```python
 class HybridSearchCache:
@@ -546,7 +608,11 @@ class HybridSearchCache:
         ).hexdigest()
 ```
 
+</div>
+
 ### استراتژی پشتیبان (Fallback)
+
+<div dir="ltr">
 
 ```python
 def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
@@ -559,6 +625,8 @@ def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
         # Fallback to dense only
         return dense_search(query, top_k=top_k)
 ```
+
+</div>
 
 ---
 

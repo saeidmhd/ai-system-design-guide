@@ -203,6 +203,8 @@ flowchart TD
 
 ### الگوهای قابلیت اطمینان (Reliability Patterns)
 
+<div dir="ltr">
+
 ```python
 class ReliableModelClient:
     def __init__(self):
@@ -228,11 +230,15 @@ class ReliableModelClient:
         raise AllProvidersUnavailable()
 ```
 
+</div>
+
 **سازوکارهای جایگزین (Fallbacks) باید بین ارائه‌دهندگان مختلف (cross-vendor) باشند.** شرکت Anthropic بین ۱۶ اوت تا ۲۹ سپتامبر ۲۰۲۶ حداقل ۱۲ حادثه بزرگ یا بحرانی را تجربه کرد، و شرکت OpenAI در ۲۹ سپتامبر قطعی حدود ۵ ساعت و ۲۰ دقیقه‌ای را در سراسر API،‏ ChatGPT و Codex پشت سر گذاشت. تعریف سازوکار جایگزین (fallback) روی همان ارائه‌دهنده، در خرابی سهیم خواهد بود.
 
 **انتقال هنگام خطا (Failover) در میانه گفتگو بین مدل‌های Claude نیازمند دقت است.** در مدل‌های Fable 5.1،‏ Opus 5.5،‏ Sonnet 5.5 و Haiku 5.5، بلوک‌های تفکر (thinking blocks) مقید به مدلی هستند که آن‌ها را تولید کرده و به پیشوند گفتگو وابسته‌اند، و در Sonnet 5.5 و Haiku 5.5 به حساب کاربری تولیدکننده نیز پیوند خورده‌اند. یک مدل جایگزین (fallback)، بلوک‌هایی را که نتواند بخواند بی‌صدا حذف می‌کند (Haiku 5.5 بلوک‌های ناشی از Opus 5،‏ Opus 5.5،‏ Sonnet 5.5،‏ Fable و Mythos را بدون خطا حذف می‌کند؛ بنابراین یک جابجایی از Sonnet به Haiku استدلال‌های شکل‌گرفته را از بین می‌برد)، و بازنویسی هر بخشی پیش از یک بلوک تفکر، برای حساب‌های کاربری ایجادشده در تاریخ ۳۱ اوت ۲۰۲۶ یا پس از آن، خطای 400 برمی‌گرداند. بازپخش (replay) تاریخچه را فقط‌افزودنی (append-only) انجام دهید؛ آن را در مسیر انتقال به مدل جایگزین ویرایش نکنید.
 
 ### لایه انتزاع (Abstraction Layer)
+
+<div dir="ltr">
 
 ```python
 class LLMClient:
@@ -275,11 +281,15 @@ class LLMClient:
         pass
 ```
 
+</div>
+
 ---
 
 ## استراتژی‌های چندمدلی (Multi-Model Strategies)
 
 ### مسیریابی مدل (Model Routing)
+
+<div dir="ltr">
 
 ```python
 class ModelRouter:
@@ -311,9 +321,13 @@ class ModelRouter:
         return model
 ```
 
+</div>
+
 ### الگوی آبشاری (Cascade Pattern)
 
 **منطق اصلی (The Logic):** هرگز از یک مدل 70B برای تسکی که یک مدل 1B از عهده آن برمی‌آید استفاده نکنید. از یک «مسیریاب» (Router) برای امتیازدهی به میزان اطمینان (confidence) بهره بگیرید.
+
+<div dir="ltr">
 
 ```python
 class ModelCascade:
@@ -335,6 +349,8 @@ class ModelCascade:
             
         return response
 ```
+
+</div>
 
 **نکته در سطح مهندس ارشد (Principal-level Tip):** قابلیت «Fallback معنایی» (Semantic Fallback) را پیاده‌سازی کنید؛ به‌گونه‌ای که هنگام بروز خطا صرفاً همان مدل را مجدداً امتحان (retry) نکنید، بلکه بلافاصله به یک مدل بزرگ‌تر یا ارائه‌دهنده‌ای متفاوت (OpenAI -> Anthropic) سوییچ کنید تا از شکست‌های همبسته (correlated failures) جلوگیری شود.
 

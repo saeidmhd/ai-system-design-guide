@@ -58,6 +58,8 @@
 
 مدل‌های پیشرو کنونی کانتکست‌های 1M-Token را پردازش می‌کنند. جداکننده‌ها (Delimiters) به مدل کمک می‌کنند تا بین دستورالعمل‌ها و داده‌ها تمایز قائل شود.
 
+<div dir="ltr">
+
 ```markdown
 # Instructions
 Analyze the following text for PII.
@@ -70,6 +72,8 @@ $USER_INPUT_HERE
 # Output Schema
 { "pii_found": boolean, "types": [] }
 ```
+
+</div>
 
 **جداکننده‌های قابل استفاده**: تگ‌های XML (مانند `<context>`، `</context>`)، هدرهای Markdown (مانند `#`)، یا علامت‌های سه‌تایی نقل‌قول (`"""`). برای اسکیمای خروجی، خروجی‌های ساختاریافته بومی (Native Structured Outputs) را بر اسکیمایی که به صورت نثر نوشته شده است ترجیح دهید (رجوع کنید به [تولید ساختاریافته (Structured Generation)](06-structured-generation.md)).
 

@@ -24,9 +24,13 @@
 
 بیشتر APIهای LLM بر اساس هر Token هزینه دریافت می‌کنند:
 
+<div dir="ltr">
+
 ```
 Cost = (input_tokens × input_rate) + (output_tokens × output_rate)
 ```
+
+</div>
 
 **نکات کلیدی:**
 - هزینه Tokenهای خروجی معمولاً ۲ تا ۸ برابر بیشتر از Tokenهای ورودی است (۵ برابر در Claude Opus 5.5،‏ Sonnet 5.5 و Haiku 5.5،‏ GPT-6 Sol،‏ GPT-6.1 Terra،‏ Gemini 4 Argon و Gemini 3.8 Flash؛ ۳ برابر در Grok 4.7؛ ۶ برابر در GPT-5.6 Sol و Terra با نرخ رسمی؛ حدود ۸ برابر در Gemini 3.5 Flash-Lite؛ ۲ برابر در MiMo-V2.6 میزبانی‌شده)، و برخی ارائه‌دهندگان مدل‌های با وزن باز هزینه یکسانی برای هر دو دریافت می‌کنند (مدل Llama 3.3 70B در Together AI با قیمت ۱.۰۴ دلار / ۱.۰۴ دلار)؛ از این رو، بارهای کاری خروجی‌محور (output-heavy) باید ابتدا بر اساس ستون خروجی قیمت‌گذاری شوند.
@@ -53,6 +57,8 @@ Cost = (input_tokens × input_rate) + (output_tokens × output_rate)
 
 بنابراین، قیمت موثر یک درخواست برابر است با:
 
+<div dir="ltr">
+
 ```
 effective_cost = residency_mult × tier_mult × (
       uncached_in × in_rate(prompt_size)
@@ -62,6 +68,8 @@ effective_cost = residency_mult × tier_mult × (
 )
 # rate(prompt_size) jumps for the WHOLE request past the vendor's long-context threshold
 ```
+
+</div>
 
 ### قیمت‌گذاری بر اساس حجم و تعهد (Volume and Commitment Pricing)
 
@@ -73,10 +81,14 @@ effective_cost = residency_mult × tier_mult × (
 | رشد (Growth) | ۵ تا ۵۰ هزار دلار | ۱۰ تا ۲۰٪ |
 | سازمانی (Enterprise) | بیش از ۵۰ هزار دلار | مذاکره اختصاصی |
 
+<div dir="ltr">
+
 ```
 Standard: $2.50 / 1M input tokens
 Committed (1-year): $2.00 / 1M input tokens (20% savings)
 ```
+
+</div>
 
 **ظرفیت اکنون جدا از قیمت خریداری می‌شود.** شرکت Anthropic دیگر تعهدات سطح اولویت (Priority Tier) را نمی‌فروشد (قراردادهای موجود تا پایان دوره خود ادامه می‌یابند، و Claude Haiku 5.5 در Priority Tier پشتیبانی نمی‌شود، بنابراین تعهد Haiku 4.5 به آن منتقل نمی‌گردد)؛ در نتیجه ظرفیت تضمین‌شده از طریق توافق‌نامه‌های سفارشی یا رزروهای ابری نظیر Bedrock Reserved (دوره‌های ۱ یا ۳ ماهه) حاصل می‌شود. سطوح سلف‌سرویس Anthropic (شامل Start،‏ Build و Scale) دارای سقف‌های هزینه ماهانه قطعی به میزان ۵۰۰ دلار، ۱,۰۰۰ دلار و ۲۰۰,۰۰۰ دلار هستند؛ رسیدن به این سقف‌ها خطای HTTP 429 با کد `enforced_spend_limit_reached` را برمی‌گرداند و فاقد هدر `retry-after` تا ساعت 00:00 به وقت UTC روز اول ماه بعد است. سقف بودجه اکنون یک ریسک در دسترس‌پذیری (availability risk) محسوب می‌شود، بنابراین بسیار پیش از رسیدن به آن سیستم‌های هشدار را تنظیم کنید.
 
@@ -328,6 +340,8 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 
 تابع زیر دو موردی را مدل‌سازی می‌کند که محاسبات ساده‌لوحانه `tokens × rate` از قلم می‌اندازند: تفکیک‌های Cache و پرتگاه کانتکست طولانی برای کل درخواست (whole-request long-context cliff) که اکنون علاوه بر OpenAI و xAI در Anthropic (مدل Haiku 5.5) نیز وجود دارد.
 
+<div dir="ltr">
+
 ```python
 # USD per 1M tokens, Standard tier, list prices as of November 6, 2026.
 # lc_at = smallest prompt size that moves the WHOLE request to long-context rates.
@@ -380,11 +394,16 @@ def request_cost(
     return cost * tier_mult * residency_mult
 ```
 
+</div>
+
 **پرتگاه هزینه در قالب ارقام (مدل GPT-6 Sol با ۲ هزار Token خروجی):** یک Prompt با ۲۷۰ هزار Token هزینه‌ای معادل ۱M / (۱۰ دلار × ۲,۰۰۰ + ۲ دلار × ۲۷۰,۰۰۰) = **۰.۵۶ دلار** دارد. یک Prompt با ۲۷۵ هزار Token هزینه‌ای معادل ۱M / (۱۵ دلار × ۲,۰۰۰ + ۴ دلار × ۲۷۵,۰۰۰) = **۱.۱۳ دلار** خواهد داشت. پنج هزار Token اضافی، صورت‌حساب را دو برابر کرد. این نمودار برای Claude Haiku 5.5 پایین‌تر و شیب‌دارتر است: یک Prompt با ۹۹ هزار Token با ۲ هزار Token خروجی هزینه‌ای معادل ۱M / (۰.۵۰ دلار × ۲,۰۰۰ + ۰.۱۰ دلار × ۹۹,۰۰۰) = **۰.۰۱۰۹ دلار** دارد، و یک Prompt با ۱۰۱ هزار Token هزینه‌ای معادل ۱M / (۲.۵۰ دلار × ۲,۰۰۰ + ۰.۵۰ دلار × ۱۰۱,۰۰۰) = **۰.۰۵۵۵ دلار** به همراه دارد، یعنی حدود ۵ برابر هزینه تنها برای ۲ هزار Token بیشتر. از آنجا که Tokenهای Cacheشده نیز در محاسبه آستانه Haiku لحاظ می‌شوند، Cache کردن یک پیشوند طولانی مانع از این جهش قیمتی نمی‌شود. در مدل Claude Fable 5.1 برای یک Prompt با ۹۰۰ هزار Token همان نرخ ۱۰ دلار به ازای هر ۱ میلیون Token محاسبه می‌شود که برای یک Prompt با ۹ هزار Token دریافت می‌گردد؛ اما در GPT-6 Astra همین Prompt با نرخ ۲۰ دلار به ازای هر ۱ میلیون Token صورت‌حساب صادر می‌کند. تصمیم‌گیری‌ها پیرامون RAG با کانتکست طولانی، اکنون تا حدی تصمیماتی در زمینه قیمت‌گذاری به شمار می‌آیند.
 
 ### نمونه محاسبات هزینه (Example Cost Calculations)
 
 **سناریوی ۱: چت‌بات RAG (RAG Chatbot)**
+
+<div dir="ltr">
+
 ```
 Per request:
 - System prompt: 500 tokens
@@ -403,7 +422,12 @@ Monthly: $2,460
 (GPT-6 Luna: $4.10/day, $123/month, if quality holds on your evals)
 ```
 
+</div>
+
 **سناریوی ۲: خلاصه‌سازی اسناد (Document Summarization)**
+
+<div dir="ltr">
+
 ```
 Per document:
 - Document: 8,000 tokens
@@ -415,7 +439,11 @@ GPT-6 Sol cost: (8000 × $2 + 500 × $10) / 1M = $0.021
 10,000 documents: $210 (Batch API: $105)
 ```
 
+</div>
+
 ### برآورد هزینه ماهانه (Monthly Cost Projection)
+
+<div dir="ltr">
 
 ```python
 def project_monthly_cost(
@@ -450,6 +478,8 @@ costs = project_monthly_cost(
 # Output: $0.008/request, $400/day, ~$12,000/month
 ```
 
+</div>
+
 ---
 
 ## استراتژی‌های بهینه‌سازی هزینه (Cost Optimization Strategies)
@@ -457,6 +487,8 @@ costs = project_monthly_cost(
 ### استراتژی ۱: مسیریابی مدل (Model Routing)
 
 مسیریابی درخواست‌ها به رده‌های مناسب مدل:
+
+<div dir="ltr">
 
 ```python
 class ModelRouter:
@@ -484,11 +516,15 @@ class ModelRouter:
         return self.try_model("gpt-6.1-sol", query, context)
 ```
 
+</div>
+
 **صرفه‌جویی بالقوه:** ۵۰ تا ۷۰ درصد با کمترین اثر بر کیفیت. شکاف قیمتی میان سطوح مختلف، اکنون بین GPT-6 Luna و GPT-6.1 Sol در هر دو بخش ورودی و خروجی برابر با 20x است و GPT-6.1 Terra نیز نصف قیمت Sol هزینه دارد؛ بنابراین مسیریابی نسبت به یک سال پیش سودمندی بسیار بیشتری به همراه دارد. همین سه پله در شرکت Anthropic نیز وجود دارند (Haiku 5.5،‏ Sonnet 5.5 و Opus 5.5)، تا زمانی که ترافیک مدل Haiku زیر آستانه Promptهای ۱۰۰ هزار Token باقی بماند.
 
 ### استراتژی ۲: بهینه‌سازی Prompt (Prompt Optimization)
 
 کاهش تعداد Tokenها بدون از دست دادن کیفیت:
+
+<div dir="ltr">
 
 ```python
 # Before: 2,500 tokens
@@ -515,9 +551,13 @@ Rules:
 # At 10K requests/day: $34/day = $1,020/month (before caching, which shrinks this further)
 ```
 
+</div>
+
 ### استراتژی ۳: کش‌گذاری (Caching)
 
 کش‌گذاری پاسخ‌ها برای پرس‌وجوهای (queries) تکراری یا مشابه:
+
+<div dir="ltr">
 
 ```python
 class ResponseCache:
@@ -549,9 +589,13 @@ class ResponseCache:
 # Savings: $900/month
 ```
 
+</div>
+
 ### استراتژی ۴: پردازش دسته‌ای و سطوح سرویس (Batch Processing and Service Tiers)
 
 هر کاری که انسانی منتظر نتیجه آن نیست، به رده ارزان‌تر تعلق دارد:
+
+<div dir="ltr">
 
 ```python
 # Real-time: pay full price
@@ -566,11 +610,15 @@ batch_responses = model.batch_generate(queries)
 # for slower, lower-priority processing
 ```
 
+</div>
+
 این نردبان اکنون از ضریب 0.5x (حالت‌های Batch و Flex) از مسیر استاندارد (Standard) تا ضریب 2x (حالت OpenAI Fast و حالت سریع Anthropic) و ضریب 6x (حالت OpenAI Ultrafast) امتداد می‌یابد. یک هدف سطح سرویس در زمینه تاخیر (latency SLO)، در واقع یک تصمیم‌گیری در مورد هزینه است: هر کلاس از بار کاری (تعاملی، حلقه داخلی ایجنت، آفلاین) را به یک سطح نگاشت کرده و نرخ ترکیبی (blended rate) را گزارش دهید.
 
 ### استراتژی ۵: کنترل طول خروجی (Output Length Control)
 
 محدود کردن مناسب طول پاسخ:
+
+<div dir="ltr">
 
 ```python
 # Reduce unnecessary output
@@ -585,6 +633,8 @@ response = model.generate(
 # After: avg 250 output tokens = $0.0025 per request
 # Savings: 50% on output costs
 ```
+
+</div>
 
 ### استراتژی ۶: مسیریابی بر اساس طول Prompt (Prompt-Length Routing)
 
@@ -669,6 +719,8 @@ response = model.generate(
 
 ### چه زمانی میزبانی شخصی توجیه‌پذیر است (When Self-Hosting Makes Sense)
 
+<div dir="ltr">
+
 ```
 API cost at scale (1M requests/month, 2,000 input + 500 output tokens each):
 - Claude Opus 5.5:                $8,000 + $10,000 = $18,000/month
@@ -686,6 +738,8 @@ Self-hosted MiMo-V2.6-Flash (309B / 15B active, MIT) on one 8x H100 node:
 - Ops overhead: $2,000/month
 - Total: ~$24,300 to $33,800/month, before N+1 redundancy
 ```
+
+</div>
 
 در این حجم کاری، خودمیزبانی (Self-Hosting) در برابر **تمام** ردیف‌های API، از جمله Opus، بازنده است (هزینه بیشتری دارد). قاعده سرانگشتی قدیمی («خودمیزبانی بالاتر از تقریباً ۵۰۰ هزار درخواست در ماه») بر پایه APIهای صرفاً پیشتاز (frontier-only) فرض شده بود؛ این قاعده در برابر پلن تجاری اختصاصی با قیمت ۰.۱۰ دلار / ۰.۵۰ دلار و وزن‌های متن‌باز میزبانی‌شده با قیمت ۰.۱۴ دلار / ۰.۲۸ دلار دیگر دوام نمی‌آورد. نقطه سربه‌سر (Break-even) اکنون به میزان بهره‌وری وابسته است: هر نود باید تقریباً ۲۴ هزار دلار از هزینه ماهانه API را جبران کند (حدود ۳۴ هزار دلار بر اساس نرخ on-demand پلتفرم Lambda در ۱۶ نوامبر). با این الگوی درخواست (request shape)، این مقدار در مقایسه با Sonnet 5.5 یا GPT-6 Sol حدود ۲.۷ میلیون درخواست در ماه است، در برابر GPT-6.1 Terra حدود ۵.۴ میلیون، اما در مقایسه با GPT-6 Luna حدود ۵۴ میلیون درخواست (تقریباً ۱۳۴ میلیارد Token، یا حدود ۵۲ هزار Token در ثانیه به‌صورت شبانه‌روزی) است. پیش از پذیرش هر یک از این اعداد، توان عملیاتی (Throughput) خود را روی مدل هدف اندازه‌گیری کنید.
 
@@ -715,6 +769,8 @@ Self-hosted MiMo-V2.6-Flash (309B / 15B active, MIT) on one 8x H100 node:
 
 ### فریم‌ورک تصمیم‌گیری
 
+<div dir="ltr">
+
 ```
 Choose API when:
 - Volume cannot keep a GPU node busy around the clock
@@ -740,11 +796,15 @@ Before either, check the license:
   US$10B revenue), Mistral Medium 3.5 (no rights above US$20M monthly revenue)
 ```
 
+</div>
+
 ---
 
 ## هزینه کل مالکیت (TCO)
 
 ### مؤلفه‌های TCO
+
+<div dir="ltr">
 
 ```python
 def calculate_tco(scenario: dict) -> dict:
@@ -782,6 +842,8 @@ def calculate_tco(scenario: dict) -> dict:
         }
     }
 ```
+
+</div>
 
 ### نمونه مقایسه TCO
 
@@ -824,6 +886,9 @@ def calculate_tco(scenario: dict) -> dict:
 - فشرده‌سازی Prompt: به حداقل رساندن Tokenهای System Prompt و نگه داشتن Promptها زیر آستانه‌های زمینه طولانی (Long-context) (۲۷۲ هزار در OpenAI، ۱۰۰ هزار در Claude Haiku 5.5)
 
 **۲. انتخاب مدل:**
+
+<div dir="ltr">
+
 ```
 Request shape: 2,600 input + 300 output tokens
 Simple queries (60%): GPT-6 Luna at $0.00041/request
@@ -831,6 +896,8 @@ Complex queries (40%): GPT-6 Sol at $0.0082/request
 Weighted avg: $0.0035/request (vs $0.0082 all GPT-6 Sol)
 Savings: 57%
 ```
+
+</div>
 
 **۳. زیرساخت:**
 - استفاده از Batch یا Flex برای به‌روزرسانی امبدینگ‌ها و ارزیابی‌های آفلاین (۵۰٪ ارزان‌تر)

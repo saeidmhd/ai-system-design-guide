@@ -74,9 +74,13 @@
 
 ارزان‌تر شدن خواندن از کَش، مرز این معادله را برای پیکره‌های متنی **پایدار** جابه‌جا کرده است. روی یک مدل یکسان، هزینه‌ی ورودی به ازای هر پرس‌وجو برای یک پیکره متنی که در کَش Prompt ارائه‌دهنده گرم نگه داشته شده است، کمتر از RAG خواهد بود هرگاه:
 
+<div dir="ltr">
+
 ```
 corpus_tokens x cache_read_multiplier  <  retrieved_context_tokens
 ```
+
+</div>
 
 | مدل (قیمت‌های رسمی، ۲ نوامبر ۲۰۲۶) | خواندن از کَش (Cache Read) | حجم پیکره متنی با هزینه معادل یک کانتکست RAG با ۵ هزار Token |
 |---|---|---|
@@ -181,6 +185,8 @@ corpus_tokens x cache_read_multiplier  <  retrieved_context_tokens
 
 ### پیاده‌سازی: مسیریاب سبک (Lightweight Router)
 
+<div dir="ltr">
+
 ```python
 class QueryRouter:
     """Routes queries to the optimal retrieval strategy."""
@@ -230,9 +236,13 @@ class QueryRouter:
         return result.strip().lower()
 ```
 
+</div>
+
 ### مسیریابی مبتنی بر حوزه (Domain-Specific)
 
 برای سیستم‌هایی با چندین حوزه دانشی، پیش از بازیابی، پرس‌وجوها را به نمایه صحیح هدایت کنید.
+
+<div dir="ltr">
 
 ```python
 # Rule-based domain routing
@@ -255,6 +265,8 @@ class DomainRouter:
         }
         return max(similarities, key=similarities.get)
 ```
+
+</div>
 
 ---
 
@@ -297,6 +309,8 @@ class DomainRouter:
 </div>
 
 ### پیاده‌سازی کَش معنایی
+
+<div dir="ltr">
 
 ```python
 class SemanticCache:
@@ -350,6 +364,8 @@ class SemanticCache:
         )
 ```
 
+</div>
+
 ### استراتژی‌های ابطال کَش (Cache Invalidation)
 
 | استراتژی | محرک (Trigger) | مورد استفاده (Use Case) |
@@ -361,6 +377,8 @@ class SemanticCache:
 
 **قاعده حیاتی**: همواره شناسه (ID) اسناد منبع را در کنار پاسخ کَش کنید. هنگامی که هر سند منبعی به‌روزرسانی می‌شود، تمام ورودی‌های کَش را که به آن ارجاع دارند، باطل سازید.
 
+<div dir="ltr">
+
 ```python
 # Webhook-based cache invalidation
 @app.post("/webhook/document-updated")
@@ -371,6 +389,8 @@ async def on_document_updated(doc_id: str):
         semantic_cache.invalidate(entry.response_id)
     logger.info(f"Invalidated {len(affected)} cache entries for doc {doc_id}")
 ```
+
+</div>
 
 ---
 
@@ -486,6 +506,8 @@ With cache hit:  ~5ms
 
 ### بازیابی موازی (Parallel Retrieval)
 
+<div dir="ltr">
+
 ```python
 async def parallel_retrieve(
     query: str,
@@ -513,9 +535,13 @@ async def parallel_retrieve(
     return merged[:20]  # top 20 after fusion
 ```
 
+</div>
+
 ### تعبیه‌سازی دسته‌ای (Batched Embedding)
 
 هنگام پردازش ورود داده (Ingestion) یا چندین پرس‌وجو به صورت هم‌زمان، فراخوانی‌های تعبیه‌سازی (Embedding) را دسته‌بندی (Batch) کنید تا میزان بهره‌وری GPU به حداکثر برسد.
+
+<div dir="ltr">
 
 ```python
 class EmbeddingBatcher:
@@ -568,9 +594,13 @@ class EmbeddingBatcher:
                 continue
 ```
 
+</div>
+
 ### تولید جریانی (Streaming Generation) با بازیابی زودهنگام
 
 پیش از آنکه کاربر تایپ کردن را به پایان برساند (با تشخیص مکث در تایپ) بازیابی را آغاز کنید و Tokenهای تولیدشده را هم‌زمان با تولید، استریم کنید.
+
+<div dir="ltr">
 
 ```
 Timeline:
@@ -590,6 +620,8 @@ vs. without speculation:
 1500ms  First token
 2300ms  Full response complete
 ```
+
+</div>
 
 ---
 
@@ -631,6 +663,8 @@ vs. without speculation:
 شاخه AMBIGUOUS نیازمند یک بک‌اند جستجوی وب است، و درگاه‌ها (Gateways) اکنون چنین سرویسی ارائه می‌دهند. سرویس Web Search API شرکت Cloudflare (نسخه بتا، ۲ اکتبر ۲۰۲۶) درون AI Gateway اجرا می‌شود و بریده‌های وب (Web Snippets) ساختاریافته را از Ceramic.ai، Exa و Linkup با قیمت پایه و رسمی این همکاران و بدون هیچ کارمزد اضافه‌ای بازمی‌گرداند که صورت‌حساب و لاگ آن‌ها مستقیماً از طریق درگاه مدیریت می‌شود. صرف‌نظر از ارائه‌دهنده، با نتایج وب به عنوان ورودی غیرقابل اعتماد برخورد کنید: آن‌ها می‌توانند حامل تزریق Prompt (Prompt Injection) باشند، بنابراین آن‌ها را در یک بلوک متنی (Context Block) مجزا و برچسب‌گذاری‌شده قرار دهید و هرگز اجازه ندهید اولویت بالاتری نسبت به اسناد اختصاصی هر مستاجر (multi-tenant) در Prompt پیدا کنند.
 
 ### پیاده‌سازی
+
+<div dir="ltr">
 
 ```python
 class CorrectiveRAG:
@@ -697,6 +731,8 @@ JSON response:"""
         return RelevanceGrade(**json.loads(result))
 ```
 
+</div>
+
 ### الگوی Self-RAG: استفاده از Tokenهای نقاد (Critic Tokens)
 
 الگوی Self-RAG این ساختار را با Tokenهای نقاد درون‌خطی (Inline Critic Tokens) گسترش می‌دهد. مدل در هر مرحله خروجی خود را ارزیابی می‌کند:
@@ -747,6 +783,8 @@ answer  +-+--+---------+
 
 ### تخمین‌گر پیچیدگی پرس‌وجو (Query Complexity Estimator)
 
+<div dir="ltr">
+
 ```python
 class AdaptiveRetriever:
     """Decides retrieval strategy based on query characteristics."""
@@ -790,9 +828,13 @@ class AdaptiveRetriever:
         return any(re.search(p, query.lower()) for p in single_hop_patterns)
 ```
 
+</div>
+
 ### بازیابی آگاه از بودجه Token (Token-Budget Aware Retrieval)
 
 میزان تلاش بازیابی را بر اساس بودجه Token موجود و پیچیدگی مورد انتظار برای پاسخ تنظیم کنید (مقیاس‌بندی کنید).
+
+<div dir="ltr">
 
 ```python
 def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
@@ -811,6 +853,8 @@ def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
         return {"context_tokens": 3500, "generation_tokens": 500, "top_k": 15}
 ```
 
+</div>
+
 ### تلاش تطبیقی به عنوان یک قابلیت مدیریت‌شده (Managed Feature)
 
 سرویس‌های جستجوی مدیریت‌شده اکنون این الگوی ارتقا و تشدید (Escalation) را در قالب پیکربندی ارائه می‌دهند. پایگاه‌های دانش Azure AI Search در نسخه REST API 2026-04-01 به صورت عمومی در دسترس (GA) قرار گرفتند (بازیابی استخراجی؛ برنامه‌ریزی پرس‌وجو و ترکیب پاسخ همچنان در حالت پیش‌نمایش هستند)، و در API پیش‌نمایش 2026-08-01 قابلیت تلاش `auto` (`"retrievalReasoningEffort": {"kind": "auto"}` اضافه شده است که به یک مدل روی پایگاه دانش نیاز دارد و در نسخه‌های قبلی API خطای 400 برمی‌گرداند): ابتدا یک دور بازیابی سبک اجرا می‌شود و ارتقا به برنامه‌ریزی پرس‌وجو توسط LLM (تا سطح تلاش متوسط) تنها زمانی صورت می‌گیرد که اتصال به زمینه (Grounding) ناکافی باشد. همین نسخه پیش‌نمایش، نتایج بازیابی را از طریق Server-Sent Events استریم می‌کند و امکان دور زدن رتبه‌بندی مجدد (Reranking) را به ازای هر منبع دانش فراهم می‌سازد. اگر مسیریاب (Router) را خودتان پیاده‌سازی می‌کنید، از همین ساختار الگوبرداری کنید: مسیر کم‌هزینه باید حالت پیش‌فرض باشد، و محرک ارتقای مسیر باید یک سیگنال سنجیده‌شده از Grounding باشد، نه حدس و گمانی درباره پیچیدگی پرس‌وجو.
@@ -823,6 +867,8 @@ def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
 
 ### تفکیک هزینه‌های یک پرس‌وجوی معمول در RAG
 
+<div dir="ltr">
+
 ```
 Component         Cost per Query    % of Total    Optimization
 -----------------------------------------------------------------
@@ -834,6 +880,8 @@ LLM Generation    $0.0004-0.008     ~80-95%       Model tiering, caching
 Total (naive)     ~$0.001-0.01
 Total (optimized) ~$0.0002-0.002    (5-10x reduction)
 ```
+
+</div>
 
 ### استراتژی مدل‌های لایه‌بندی‌شده (Tiered Model Strategy)
 
@@ -862,6 +910,8 @@ Total (optimized) ~$0.0002-0.002    (5-10x reduction)
 ### الگوی جزئیات تدریجی (Progressive Detail Pattern)
 
 در ابتدا با حداقل میزان بازیابی پاسخ دهید. ارتقای سطح بازیابی را فقط در صورتی انجام دهید که کاربر سوالات تکمیلی بپرسد یا سطح اطمینان پایین باشد.
+
+<div dir="ltr">
 
 ```python
 class ProgressiveRAG:
@@ -899,7 +949,11 @@ class ProgressiveRAG:
         return await self.agentic_pipeline.run(query)  # Cost: ~$0.05
 ```
 
+</div>
+
 ### گاردریل‌های هزینه (Cost Guardrails)
+
+<div dir="ltr">
 
 ```python
 class CostGuard:
@@ -925,6 +979,8 @@ class CostGuard:
 
         return True
 ```
+
+</div>
 
 ### ساختن در برابر خریدن (Build vs Buy): قیمت‌های واحد در RAG مدیریت‌شده
 
@@ -997,6 +1053,8 @@ class CostGuard:
 
 ### چک‌لیست اشکال‌زدایی
 
+<div dir="ltr">
+
 ```
 When RAG quality drops, investigate in this order:
 
@@ -1020,6 +1078,8 @@ When RAG quality drops, investigate in this order:
    [ ] Check for context window overflow (truncated chunks)
    [ ] Verify system prompt is not conflicting with retrieved context
 ```
+
+</div>
 
 ### حالت‌های شکست در Agentic RAG
 
@@ -1084,6 +1144,8 @@ When RAG quality drops, investigate in this order:
 
 هر پرس‌وجو باید یک ردگیری (Trace) تولید کند که تمام مراحل پایپ‌لاین را با یک شناسه درخواست (Request ID) واحد به یکدیگر متصل نماید.
 
+<div dir="ltr">
+
 ```python
 @dataclass
 class RAGTrace:
@@ -1109,9 +1171,13 @@ class RAGTrace:
         return asdict(self)
 ```
 
+</div>
+
 ### نمونه‌برداری خودکار کیفیت
 
 ارزیابی آفلاین را روی نمونه‌ای از پرس‌وجوهای محیط عملیاتی (Production) اجرا کنید تا پیش از آنکه کاربران متوجه شوند، افت و تغییر کیفیت (Quality Drift) را شناسایی نمایید.
+
+<div dir="ltr">
 
 ```python
 async def nightly_quality_check(sample_size: int = 200):
@@ -1141,6 +1207,8 @@ async def nightly_quality_check(sample_size: int = 200):
     publish_metrics("rag.nightly.relevancy", avg_relevancy)
 ```
 
+</div>
+
 ---
 
 ## مقیاس‌پذیری تا میلیون‌ها سند
@@ -1148,6 +1216,8 @@ async def nightly_quality_check(sample_size: int = 200):
 گذار از هزاران سند به میلیون‌ها سند، چالش‌هایی را در توان عملیاتی (Throughput) نمایه‌سازی، تاخیر (Latency) بازیابی و مدیریت نمایه به همراه دارد.
 
 ### ابعاد مقیاس‌پذیری
+
+<div dir="ltr">
 
 ```
 Documents:   1K  -->  100K  -->  1M  -->  100M
@@ -1160,6 +1230,8 @@ Strategy:    Single   Single    Sharded   Distributed
              Node     Node +    Index     Cluster +
                       Replicas             Tiered
 ```
+
+</div>
 
 ### خط لوله ورود داده در مقیاس بزرگ
 
@@ -1209,6 +1281,8 @@ Strategy:    Single   Single    Sharded   Distributed
 
 در مقیاس میلیون‌ها سند، نگهداری نمایه به یک دغدغه عملیاتی حیاتی تبدیل می‌شود.
 
+<div dir="ltr">
+
 ```python
 class IndexMaintenanceScheduler:
     """Scheduled tasks for index health at scale."""
@@ -1238,6 +1312,8 @@ class IndexMaintenanceScheduler:
             if not health.ok:
                 alert(f"Shard {shard.id} unhealthy: {health.reason}")
 ```
+
+</div>
 
 ### بازتولید Embedding بدون توقف سرویس (Re-Embedding Without Downtime)
 
@@ -1327,6 +1403,8 @@ Cost: $$      Best for: Mixed customer base
 
 ### امنیت: دفاع در عمق (Defense in Depth)
 
+<div dir="ltr">
+
 ```python
 class TenantIsolatedRetriever:
     """Enforces tenant isolation at every retrieval layer."""
@@ -1364,6 +1442,8 @@ class TenantIsolatedRetriever:
 
         return chunks
 ```
+
+</div>
 
 ### رخنه‌هایی که فیلتر مستأجر (Tenant Filter in multi-tenant) مانع آن‌ها نمی‌شود
 
@@ -1414,6 +1494,8 @@ Document Upload (Tenant A)
 
 در مدل اشتراکی (Pool model)، مصرف سنگین یک مستأجر می‌تواند کارایی را برای تمامی مستأجران (tenants in multi-tenant) دچار افت کند.
 
+<div dir="ltr">
+
 ```python
 class TenantRateLimiter:
     """Per-tenant rate limiting and resource quotas."""
@@ -1446,6 +1528,8 @@ class TenantRateLimiter:
 
         return True
 ```
+
+</div>
 
 ---
 

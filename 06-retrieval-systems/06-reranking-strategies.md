@@ -35,6 +35,8 @@
 
 ### مثال
 
+<div dir="ltr">
+
 ```
 Query: "How to configure CUDA memory"
 
@@ -53,6 +55,8 @@ Cross-encoder scores (relevance):
 - Doc 3: 0.42
 ```
 
+</div>
+
 مدل Cross-encoder متوجه می‌شود که «CUDA memory» در کوئری، با «GPU memory...CUDA» در Doc 1 مرتبط است.
 
 ---
@@ -62,18 +66,28 @@ Cross-encoder scores (relevance):
 ### مقایسه Bi-Encoder در برابر Cross-Encoder
 
 **مدل Bi-Encoder (مرحله اول):**
+
+<div dir="ltr">
+
 ```
 Query --> Encoder --> Query Embedding -+
                                       +-> Similarity
 Document --> Encoder --> Doc Embedding +
 ```
+
+</div>
 - از مرتبه O(1) به ازای هر سند (امبدینگ‌ها از قبل محاسبه شده‌اند)
 - عدم توانایی در مشاهده تعاملات بین کوئری و سند
 
 **مدل Cross-Encoder (بازرتبه‌بندی):**
+
+<div dir="ltr">
+
 ```
 [Query, Document] --> Encoder --> Relevance Score
 ```
+
+</div>
 - از مرتبه O(n) به ازای هر کوئری (پردازش هر کاندیدا)
 - مشاهده کانتکست کامل کوئری و سند
 - استفاده از **مکانیزم توجه (Attention Mechanism)** برای مقایسه نحوه تغییر معنای کلمات سند توسط کلمات خاص در کوئری (تعامل کامل و اولیه یا early interaction؛ «تعامل دیرهنگام یا late interaction» در ColBERT بین این مدل و یک Bi-encoder قرار می‌گیرد)
@@ -110,11 +124,15 @@ Document --> Encoder --> Doc Embedding +
 
 برای پیکره‌های متنی (Corpora) بسیار بزرگ:
 
+<div dir="ltr">
+
 ```
 Stage 1: Sparse (BM25)      -> Top 1000
 Stage 2: Dense (Bi-encoder) -> Top 100
 Stage 3: Cross-encoder      -> Top 10
 ```
+
+</div>
 
 هر مرحله سرعت را در ازای دقت مبادله می‌کند.
 
@@ -146,6 +164,8 @@ Stage 3: Cross-encoder      -> Top 10
 
 ### استفاده از Cross-Encoderها
 
+<div dir="ltr">
+
 ```python
 from sentence_transformers import CrossEncoder
 
@@ -169,7 +189,11 @@ def rerank(query: str, documents: list[str], top_k: int = 5) -> list[tuple[str, 
     return scored_docs[:top_k]
 ```
 
+</div>
+
 ### ابزار Cohere Rerank
+
+<div dir="ltr">
 
 ```python
 import cohere
@@ -199,6 +223,8 @@ def cohere_rerank(
     ]
 ```
 
+</div>
+
 ### راهنمای انتخاب مدل
 
 | مورد کاربرد | مدل پیشنهادی | توضیحات |
@@ -217,6 +243,8 @@ def cohere_rerank(
 ## الگوهای پیاده‌سازی
 
 ### الگوی ۱: بازرتبه‌بندی پایه
+
+<div dir="ltr">
 
 ```python
 class RerankedRetriever:
@@ -254,7 +282,11 @@ class RerankedRetriever:
         return reranked[:self.rerank_k]
 ```
 
+</div>
+
 ### الگوی ۲: بازرتبه‌بندی دسته‌ای (Batched)
+
+<div dir="ltr">
 
 ```python
 def batch_rerank(
@@ -291,7 +323,11 @@ def batch_rerank(
     return results
 ```
 
+</div>
+
 ### الگوی ۳: بازرتبه‌بندی ناهمگام (Async)
+
+<div dir="ltr">
 
 ```python
 import asyncio
@@ -315,6 +351,8 @@ class AsyncReranker:
             )
             return sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
 ```
+
+</div>
 
 ---
 
@@ -357,6 +395,8 @@ class AsyncReranker:
 
 چه تعداد کاندیدا باید قبل از رتبه‌بندی مجدد بازیابی شوند:
 
+<div dir="ltr">
+
 ```python
 def optimize_candidate_count(test_set, retriever, reranker):
     """Find optimal retrieval_k for reranking."""
@@ -394,6 +434,8 @@ def optimize_candidate_count(test_set, retriever, reranker):
 # K=100: NDCG 0.77, latency 280ms  <-- Diminishing returns
 ```
 
+</div>
+
 ---
 
 ## رتبه‌بندی مجدد مبتنی بر LLM (LLM-Based Reranking)
@@ -401,6 +443,8 @@ def optimize_candidate_count(test_set, retriever, reranker):
 ### استفاده از LLMها به عنوان رتبه‌بندی‌کننده (Rerankers)
 
 مدل‌های LLM می‌توانند میزان ارتباط را امتیازدهی کنند، اما گران‌قیمت هستند:
+
+<div dir="ltr">
 
 ```python
 def llm_rerank(
@@ -424,6 +468,8 @@ Format: DOC_NUM: SCORE
     return sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
 ```
 
+</div>
+
 **مزایا:**
 - توانایی مدیریت قضاوت‌های پیچیده در مورد میزان ارتباط
 - درک تفاوت‌های ظریف معنایی (Nuance) و زمینه (Context)
@@ -439,13 +485,21 @@ Format: DOC_NUM: SCORE
 ### رتبه‌بندی مجدد مبتنی بر LLM: روش Listwise در برابر Pointwise
 
 **روش Pointwise:** امتیازدهی مستقل به هر سند
+
+<div dir="ltr">
+
 ```
 For document: [doc text]
 Query: [query]
 Rate relevance 0-10: _
 ```
 
+</div>
+
 **روش Listwise:** رتبه‌بندی تمام اسناد در کنار یکدیگر
+
+<div dir="ltr">
+
 ```
 Query: [query]
 Rank these documents by relevance:
@@ -455,9 +509,13 @@ C: [doc3]
 Output order: _
 ```
 
+</div>
+
 **روش Listwise معمولاً بهتر است** زیرا LLM می‌تواند اسناد را مستقیماً با یکدیگر مقایسه کند. مدل‌های کوچک کنونی (GPT-6 Luna، Claude Haiku 5.5) رتبه‌بندی Listwise را به اندازه‌ای ارزان می‌کنند که با تلاش کم قابل امتحان باشد، اما باید کیفیت آن را روی مجموعه ارزیابی (eval set) خود بررسی کنید؛ این روش همچنان ۱ تا ۲ ثانیه تاخیر (Latency) اضافه می‌کند، بنابراین آن را برای جستجوهای سازمانی با ریسک بالا (حقوقی، پزشکی) نگه دارید. مدل‌های اختصاصی رتبه‌بندی مجدد Listwise (مانند jina-reranker-v3.5 و نسخه‌های Listwise از LightOn-rerank) مقایسه بین‌اسنادی را با تاخیر (Latency) در حد کراس-انکودر در اختیارتان قرار می‌دهند.
 
 ### پنجره لغزان (Sliding Window) برای اسناد زیاد
+
+<div dir="ltr">
 
 ```python
 def sliding_window_rerank(
@@ -483,6 +541,8 @@ def sliding_window_rerank(
     return [documents[i] for i in ranked]
 ```
 
+</div>
+
 ---
 
 ## تقطیر مدل‌های زبانی کوچک (SLM Distillation)
@@ -498,6 +558,8 @@ def sliding_window_rerank(
 ## ملاحظات محیط عملیاتی
 
 ### بهینه‌سازی تاخیر (Latency)
+
+<div dir="ltr">
 
 ```python
 class OptimizedReranker:
@@ -517,6 +579,8 @@ class OptimizedReranker:
         return sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
 ```
 
+</div>
+
 **تکنیک‌های بهینه‌سازی:**
 - استنتاج (Inference) با دقت FP16: دو برابر افزایش سرعت
 - دسته‌بندی (Batching): سرشکن کردن بار پردازشی اضافه (Overhead)
@@ -529,6 +593,8 @@ class OptimizedReranker:
 یک مدل رتبه‌بندی مجدد به هر کاندیدا بدون در نظر گرفتن سایرین امتیاز می‌دهد، بنابراین سه چانک تقریباً یکسان از یک منبع می‌توانند سه رتبه اول را تصاحب کنند. تنوع‌بخشی (MMR) و قوانین کسب‌وکار (کاهش ارزش با گذشت زمان، «اولویت دادن به مستندات رسمی») را **بعد از** امتیازدهی میزان ارتباط اعمال کنید، نه قبل از آن؛ در غیر این صورت مدل رتبه‌بندی مجدد اثر آن‌ها را از بین خواهد برد. برخی موتورها امروزه این کار را در داخل پایگاه داده انجام می‌دهند: Weaviate 1.39 قابلیت MMR و یک Boost API (ترفیع یا تنزل رتبه بر اساس فیلتر، ویژگی، زوال زمانی یا زوال عددی) را به صورت در دسترس عموم (GA) ارائه کرد، و قابلیت Function Chain در Milvus 3.0 مراحل امتیازدهی مجدد و رتبه‌بندی مجدد را در سمت سرور ترکیب می‌کند.
 
 ### کش کردن نتایج مدل رتبه‌بندی مجدد
+
+<div dir="ltr">
 
 ```python
 class CachedReranker:
@@ -555,7 +621,11 @@ class CachedReranker:
         return f"{query_hash}:{doc_hash}"
 ```
 
+</div>
+
 ### استراتژی جایگزین (Fallback Strategy)
+
+<div dir="ltr">
 
 ```python
 def rerank_with_fallback(
@@ -580,6 +650,8 @@ def rerank_with_fallback(
         logger.error(f"Reranker error: {e}")
         return candidates
 ```
+
+</div>
 
 ---
 

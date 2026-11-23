@@ -133,6 +133,8 @@ Token Embeddings:
 
 ### نحوه کارکرد MaxSim
 
+<div dir="ltr">
+
 ```
 For each query token qi:
   1. Compute dot product with EVERY document token dj
@@ -141,7 +143,11 @@ For each query token qi:
 Score(Q, D) = SUM over all qi of MAX over all dj of (qi . dj)
 ```
 
+</div>
+
 ### یک مثال گام‌به‌گام
+
+<div dir="ltr">
 
 ```
             d1        d2       d3       d4       d5
@@ -158,6 +164,8 @@ Score(Q, D) = SUM over all qi of MAX over all dj of (qi . dj)
 
   Total Score = sum of all max values across all query tokens
 ```
+
+</div>
 
 ### چرا MaxSim بهتر از شباهت تک‌برداری عمل می‌کند
 
@@ -182,6 +190,8 @@ Score(Q, D) = SUM over all qi of MAX over all dj of (qi . dj)
 
 **۱. فشرده‌سازی باقیمانده (Residual Compression)**:
 
+<div dir="ltr">
+
 ```
 Original ColBERT:
   Each token vector: 128 dims x 32-bit float = 512 bytes
@@ -193,6 +203,8 @@ ColBERTv2 Residual Compression:
 
   Each token vector: ~16-32 bytes (16-32x compression)
 ```
+
+</div>
 
 **۲. نظارت نویززدایی‌شده (Denoised Supervision)**:
 - آموزش بر روی نمونه‌های منفی دشوار (hard negatives) که از یک مدل معلم cross-encoder استخراج شده‌اند
@@ -335,6 +347,8 @@ QUERY:  query token vectors ──► FDE ──► ANN top-k candidates
 
 ### کاربرد پایه
 
+<div dir="ltr">
+
 ```python
 from ragatouille import RAGPretrainedModel
 
@@ -366,7 +380,11 @@ for result in results:
     print(f"Text:  {result['content']}\n")
 ```
 
+</div>
+
 ### یکپارچه‌سازی با LangChain
+
+<div dir="ltr">
 
 ```python
 from ragatouille import RAGPretrainedModel
@@ -395,6 +413,8 @@ chain = (
 
 response = chain.invoke("What features does the Enterprise plan include?")
 ```
+
+</div>
 
 ### سایر کتابخانه‌ها و یکپارچه‌سازی‌های ColBERT
 

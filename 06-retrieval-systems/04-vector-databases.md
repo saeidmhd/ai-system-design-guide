@@ -25,10 +25,14 @@
 
 یک پایگاه داده برداری (Vector Database)، Embeddingها (بردارهای متراکم یا Dense) را ذخیره کرده و جستجوی سریع شباهت را روی آن‌ها امکان‌پذیر می‌سازد.
 
+<div dir="ltr">
+
 ```
 Traditional DB:      SELECT * FROM docs WHERE category = 'tech'
 Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_embedding) LIMIT 10
 ```
+
+</div>
 
 ### قابلیت‌های کلیدی
 
@@ -110,6 +114,8 @@ Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_emb
 3. لایه‌های متعدد تجرید (سلسله‌مراتبی)
 4. جستجو: پیمایش حریصانه از لایه بالا به پایین به سمت نزدیک‌ترین همسایه
 
+<div dir="ltr">
+
 ```
 Layer 2:   *--------*--------*
            |        |        |
@@ -117,6 +123,8 @@ Layer 1:   *--*--*--*--*--*--*
            |  |  |  |  |  |  |
 Layer 0:   ********************  (all vectors)
 ```
+
+</div>
 
 **مزایا:**
 - موازنه عالی میان بازیابی (Recall) و تاخیر (Latency)
@@ -277,6 +285,8 @@ Layer 0:   ********************  (all vectors)
 
 امری حیاتی برای موارد استفاده چندمستاجری (multi-tenant) و فیلتر کردن داده‌ها.
 
+<div dir="ltr">
+
 ```python
 # Pinecone
 results = index.query(
@@ -299,6 +309,8 @@ results = client.query_points(
 ).points
 ```
 
+</div>
+
 **تاثیر بر عملکرد:** فیلتر کردن در طول جستجو انجام می‌شود، نه پس از آن. ایندکس‌های از پیش فیلترشده سریع‌تر هستند اما انعطاف‌پذیری کمتری دارند.
 
 **چرا فیلتر کردن فراداده اغلب به یک گلوگاه تبدیل می‌شود:** در جستجوی برداری ساده‌لوحانه (naive)، ابتدا «Top K» نزدیک‌ترین همسایه را پیدا می‌کنیم و سپس آن‌ها را بر اساس فراداده فیلتر می‌نماییم. اگر فیلتر بسیار محدودکننده باشد، ممکن است پس از اعمال فیلتر به ۰ نتیجه برسیم. اکنون پایگاه‌های داده تخصصی از **پیش‌فیلترسازی به همراه HNSW (Pre-Filtering with HNSW)** استفاده می‌کنند؛ به این صورت که گراف را پیمایش کرده اما فقط گره‌هایی را در نظر می‌گیرند که شرط بولی فراداده را برآورده کنند. این روش برای پایین نگه داشتن تاخیرها (Latencies)، به بیت‌ماسک‌های تخصصی یا شتاب‌دهنده‌های سخت‌افزاری (SIMD) نیاز دارد.
@@ -311,6 +323,8 @@ results = client.query_points(
 
 ### الگوی ۱: جستجوی معنایی ساده
 
+<div dir="ltr">
+
 ```python
 def semantic_search(query: str, top_k: int = 5) -> list[Document]:
     query_embedding = embed(query)
@@ -318,7 +332,11 @@ def semantic_search(query: str, top_k: int = 5) -> list[Document]:
     return [Document(id=r.id, text=r.payload["text"], score=r.score) for r in results]
 ```
 
+</div>
+
 ### الگوی ۲: جستجوی فیلترشده
+
+<div dir="ltr">
 
 ```python
 def filtered_search(query: str, filters: dict, top_k: int = 5) -> list[Document]:
@@ -331,7 +349,11 @@ def filtered_search(query: str, filters: dict, top_k: int = 5) -> list[Document]
     return results
 ```
 
+</div>
+
 ### الگوی ۳: جستجوی ترکیبی (متراکم + پراکنده)
+
+<div dir="ltr">
 
 ```python
 def hybrid_search(query: str, alpha: float = 0.5, top_k: int = 5) -> list[Document]:
@@ -351,7 +373,11 @@ def hybrid_search(query: str, alpha: float = 0.5, top_k: int = 5) -> list[Docume
     return combined[:top_k]
 ```
 
+</div>
+
 برخی پایگاه‌های داده (Weaviate، Qdrant، Milvus، Elasticsearch) نتایج متراکم (dense) و کلیدواژه‌ای را به صورت بومی با هم ادغام می‌کنند. جستجوی تمام‌متن BM25 در Pinecone بر اساس یک نوع امتیازدهی در هر درخواست رتبه‌بندی می‌کند، بنابراین باید جستجوهای لغوی (lexical) و برداری را جداگانه اجرا کرده و آن‌ها را در سمت کلاینت (به عنوان مثال با RRF) ادغام نمایید.
+
+<div dir="ltr">
 
 ```python
 # Weaviate native hybrid (Python client v4)
@@ -363,9 +389,13 @@ results = docs.query.hybrid(
 )
 ```
 
+</div>
+
 ### الگوی ۴: کوئری چندبرداری (Multi-Vector Query)
 
 برای بازیابی والد-فرزند (parent-child) یا چندجنبه‌ای:
+
+<div dir="ltr">
 
 ```python
 def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
@@ -383,11 +413,15 @@ def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
     return reranked[:top_k]
 ```
 
+</div>
+
 ---
 
 ## عملیات محیط تولید (Production Operations)
 
 ### برنامه‌ریزی ظرفیت (Capacity Planning)
+
+<div dir="ltr">
 
 ```python
 def estimate_resources(
@@ -419,7 +453,11 @@ def estimate_resources(
     }
 ```
 
+</div>
+
 ### نگهداری ایندکس (Index Maintenance)
+
+<div dir="ltr">
 
 ```python
 class VectorDBMaintenance:
@@ -454,6 +492,8 @@ class VectorDBMaintenance:
             points=[doc_id]
         )
 ```
+
+</div>
 
 ### دسترسی‌پذیری بالا (High Availability)
 
@@ -495,6 +535,8 @@ class VectorDBMaintenance:
 
 ### مانیتورینگ (Monitoring)
 
+<div dir="ltr">
+
 ```python
 VECTOR_DB_METRICS = [
     "query_latency_p50",
@@ -523,6 +565,8 @@ def alert_rules():
         }
     }
 ```
+
+</div>
 
 ---
 
@@ -561,6 +605,8 @@ def alert_rules():
 
 ### هزینه‌های خودمیزبان (Self-Hosted Costs)
 
+<div dir="ltr">
+
 ```python
 def estimate_self_hosted_cost(
     vectors: int,
@@ -587,6 +633,8 @@ def estimate_self_hosted_cost(
         "total_monthly": instance_pricing[instance] + storage_gb * 0.10
     }
 ```
+
+</div>
 
 ### تصمیم‌گیری: مدیریت‌شده در مقابل خودمیزبان
 
@@ -721,26 +769,41 @@ Need < 100K vectors?
 سه رویکرد اصلی وجود دارد:
 
 **۱. فیلتر کردن فراداده (بسیار رایج):**
+
+<div dir="ltr">
+
 ```python
 results = db.search(
     vector=query,
     filter={"tenant_id": current_tenant}
 )
 ```
+
+</div>
 - مزایا: ساده، یک ایندکس منفرد
 - معایب: همه مستأجران (tenants / multi-tenant) منابع را به اشتراک می‌گذارند، احتمال بروز باگ‌هایی که داده‌ها را افشا کنند
 
 **۲. یک کالکشن به ازای هر مستأجر (per-tenant / multi-tenant):**
+
+<div dir="ltr">
+
 ```python
 results = db.collection(f"tenant_{tenant_id}").search(vector=query)
 ```
+
+</div>
 - مزایا: جداسازی قوی، مقیاس‌پذیری به ازای هر مستأجر (per-tenant / multi-tenant)
 - معایب: تعداد کالکشن‌های زیاد، بار عملیاتی بالا
 
 **۳. یک Namespace به ازای هر مستأجر (per-tenant / multi-tenant) (در Pinecone):**
+
+<div dir="ltr">
+
 ```python
 results = index.query(vector=query, namespace=tenant_id)
 ```
+
+</div>
 - مزایا: جداسازی در چارچوب یک ایندکس منفرد
 - معایب: وابسته به ارائه‌دهنده (Vendor-specific)
 

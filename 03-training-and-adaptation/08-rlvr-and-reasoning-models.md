@@ -45,6 +45,8 @@
 
 **مزیت نسبی گروهی (Group-relative advantage).** برای یک Prompt، تکمیل‌های `o_1..o_G` را نمونه‌برداری کنید و پاداش‌های `r_1..r_G` را به دست آورید. مزیت تکمیل `i` برابر با امتیاز استاندارد (z-score) آن درون گروه است، که به تمام Tokenهای آن تکمیل تعمیم (broadcast) داده می‌شود:
 
+<div dir="ltr">
+
 ```python
 # One GRPO step. policy = the LLM; verify() = a programmatic checker.
 for q in sample_prompts(batch):
@@ -58,6 +60,8 @@ for q in sample_prompts(batch):
         loss += beta * KL(policy, ref_policy)            # original GRPO keeps a KL term
 update(policy, loss)
 ```
+
+</div>
 
 شرکت DeepSeek از این روش استفاده کرد زیرا حذف نقاد یک دستاورد عملی بزرگ در بهینه‌سازی حافظه در مقیاس مدل‌های مرزی است، و خط مبنای گروهی برای پاداش‌های قابل‌تایید پایانی منفرد بسیار مناسب است.
 

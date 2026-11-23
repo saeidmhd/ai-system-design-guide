@@ -64,12 +64,16 @@
 
 خطوط لوله در محیط عملیاتی دیگر به یک زنجیره تفکر منفرد اعتماد نمی‌کنند. آن‌ها **خوداعتبارسنجی (Self-Verification)** را لایه‌بندی و ادغام می‌کنند.
 
+<div dir="ltr">
+
 ```markdown
 # Process
 1. Generate Answer A via CoT.
 2. Critique: "Are there any errors in the logic above?"
 3. If errors: "Correct the logic and provide Answer B."
 ```
+
+</div>
 
 **نکته ظریف**: خوداصلاحی درونی (Intrinsic self-correction، یعنی انتقاد مدل از خودش بدون دریافت اطلاعات جدید) اغلب در بهبود استدلال ناموفق است و حتی می‌تواند آن را بدتر کند (Huang et al., 2024). آنچه کارایی دارد **بازخورد بیرونی (External Feedback)** است: **CoT با اعتبارسنجی اجرا (Execution-Verified CoT)** برای کدنویسی، که در آن مدل منطق را می‌نویسد، کد را اجرا می‌کند، و اگر آزمون‌ها ناموفق شوند خود را تصحیح می‌کند، یا یک اعتبارسنج مجزا با یک Prompt، مدل یا ابزار متفاوت. به [مهندسی حلقه](../07-agentic-systems/12-loop-engineering.md#verification-and-grading) مراجعه کنید.
 
