@@ -1,174 +1,178 @@
-# Framework Selection Guide
+<div dir="rtl">
 
-The landscape of AI frameworks has consolidated significantly over the past year. Every major AI lab now ships an agent SDK, Microsoft merged AutoGen and Semantic Kernel into a unified Agent Framework (GA April 2026), the labs now also rent the agent loop as a managed runtime, and interoperability protocols (MCP, A2A) are table stakes. This guide provides the **Decision Matrix** for choosing your stack based on production requirements, team expertise, and system scale.
+# راهنمای انتخاب فریم‌ورک
 
-## Table of Contents
+چشم‌انداز فریم‌ورک‌های هوش مصنوعی در طول سال گذشته به‌طور چشمگیری یکپارچه شده است. اکنون هر آزمایشگاه بزرگ هوش مصنوعی یک Agent SDK اختصاصی عرضه می‌کند، مایکروسافت پروژه‌های AutoGen و Semantic Kernel را در قالب یک فریم‌ورک یکپارچه با نام Microsoft Agent Framework ادغام کرده است (عرضه عمومی در آوریل ۲۰۲۶)، آزمایشگاه‌ها حلقه عاملیت را به‌عنوان یک محیط اجرای مدیریت‌شده اجاره می‌دهند، و پروتکل‌های تعامل‌پذیری (مانند MCP و A2A) به استانداردهای بنیادین تبدیل شده‌اند. این راهنما یک **ماتریس تصمیم‌گیری** جامع برای انتخاب فناوری متناسب با نیازمندی‌های تولید، مهارت‌های تیم، و مقیاس سیستم ارائه می‌دهد.
 
-- [The Framework Landscape](#the-framework-landscape)
-- [The Decision Matrix](#the-decision-matrix)
-- [Build vs. Buy vs. Framework](#build-vs-buy-vs-framework)
-- [Anti-Patterns to Avoid](#anti-patterns-to-avoid)
-- [Staff-Level Recommendation](#staff-level-recommendation)
-- [Interview Questions](#interview-questions)
+## فهرست مطالب
 
----
-
-## The Framework Landscape
-
-### Orchestration & Agent Frameworks
-
-| Framework | Tier | Primary Value | Key Weakness |
-|-----------|------|---------------|--------------|
-| **LangGraph** | L1 (Core) | Precise state control, graph-based, checkpoint time travel | Complexity, steep learning curve |
-| **DSPy** | L1 (Core) | Reliability & Optimization (MIPROv2, GEPA, Flex) | Upfront cost (compile runs per model) |
-| **LlamaIndex**| L2 (Data) | Advanced Retrieval (RAG), ingestion, parsing | Logic flexibility; vendor focus shifted to parsing products (Sep 2026) |
-| **CrewAI** | L3 (App) | Business process speed, enterprise RBAC, checkpointing (1.14+) | Hides failures |
-| **MS Agent Framework** | L1 (Enterprise) | Unified .NET + Python, replaces AutoGen + SK, GA with LTS (Apr 2026) | Azure-first; fast weekly release cadence |
-| **Pydantic AI / Mastra** | L1 (Typed) | Typed agents for Python (Pydantic AI 2.x) and TypeScript (Mastra) | Smaller ecosystems; see [chapter 11](11-pydantic-ai-and-mastra.md) |
-| **Vercel AI SDK 7** | L2 (TS runtime) | Provider-neutral TS calls, durable `WorkflowAgent`, experimental `HarnessAgent` | Agent abstractions newer than its core |
-| **Haystack 3** | L2 (Data + Agent) | Agent with lifecycle hooks, skills, tool-result offloading (3.0, Jul 2026) | 3.0 removed `ToolInvoker` and moved 30 components to separate packages |
-| **Agno 3** | L2 (Agent) | Tool-result offloading, CodeMode (one sandboxed interpreter instead of wide tool schemas) | 3.0 (Aug 2026) required a database migration |
-
-### Agent SDKs (Lab-Specific)
-
-| Framework | Tier | Primary Value | Key Weakness |
-|-----------|------|---------------|--------------|
-| **Claude Agent SDK** | L1 (Agent) | Built-in tools, production agent loop, budgets | Requires Claude models |
-| **OpenAI Agents SDK** | L1 (Agent) | Lightweight handoffs, guardrails, sandbox agents | OpenAI-centric; 0.x with behavior-changing minors |
-| **Google ADK** | L1 (Agent) | Graph workflows (2.0), multi-language, native A2A + Google Cloud | Google ecosystem bias; Java still on 1.x |
-| **AWS Strands Agents** | L1 (Agent) | AWS-native, model-agnostic, most-downloaded lab SDK on PyPI | Harness packages change default models between releases |
-
-### Managed Agent Runtimes
-
-| Runtime | Tier | Primary Value | Key Weakness |
-|-----------|------|---------------|--------------|
-| **Claude Managed Agents** | L1 (Hosted) | Sandboxes, session budgets, server-evaluated permission policy, agents-as-code (`ant apply`); Claude API, Claude Platform on AWS and Claude on Google Cloud | Beta; Claude only; second cost meter ($0.08 per running session-hour) |
-| **OpenAI Agents API** | L1 (Hosted) | Managed Codex harness: compaction, recovery, subagents; hosted sandboxes bill only during active turns (since Oct 9) | Public beta; US residency only, no ZDR |
-| **Bedrock Managed Agents** | L1 (Hosted) | The Agents API inside AWS with IAM and CloudTrail | Public preview; three US regions |
-
-### Coding Agents
-
-| Framework | Tier | Primary Value | Key Weakness |
-|-----------|------|---------------|--------------|
-| **Claude Code** | L1 (Coding) | Autonomous CLI coding agent, plugins, enterprise managed settings | Requires Claude models; closed source |
-| **Codex CLI** | L1 (Coding) | Open-source (Apache-2.0) CLI, cloud environments, code review | OpenAI-centric defaults |
-| **Cursor / Devin Desktop** | L2 (IDE) | Tight IDE + agent integration, cloud agents | Closed-source infra; Cursor is part of SpaceX, and Devin Desktop (Windsurf until June 2026) belongs to Cognition |
-| **GitHub Copilot** | L2 (IDE + platform) | GitHub-native coding agent and review; Copilot Fusion (GA Oct 28, 2026) routes across models with Standard, High and Max effort | Strongest inside GitHub; computer use and dynamic workflows launched as public previews (Oct 1) |
-| **OpenCode / OpenHands** | L2 (Coding) | Open-source, any model | You own hosting, sandboxing and upgrades |
-
-Semantic Kernel is not listed as a choice for new work: Microsoft Agent Framework is its successor, and existing SK users should plan the migration.
-
-Adoption data backs the "lab SDK at the leaf, neutral orchestrator at the core" advice. In the 30 days to Nov 1, 2026 on PyPI: `langchain` 170.5M, `langgraph` 44.8M, `strands-agents` 37.1M, `claude-agent-sdk` 29.8M, `openai-agents` 12.5M, `google-adk` 10.1M, `llama-index-core` 6.6M, `pydantic-ai` 5.4M, `dspy` 5.3M, `crewai` 2.4M, `agno` 1.8M, `agent-framework-core` 1.0M, `haystack-ai` 0.57M, `autogen-agentchat` 0.38M, `semantic-kernel` 0.30M. On npm in October: `ai` (Vercel AI SDK) 115.4M, `@anthropic-ai/claude-agent-sdk` 46.4M, `@langchain/langgraph` 14.0M, `@mastra/core` 8.2M, `@openai/agents` 7.5M (Mastra passed OpenAI's TypeScript SDK this month). The ranking at the top has not moved in months. CI installs and transitive dependencies inflate all of these, so read them as relative signals.
+- [چشم‌انداز فریم‌ورک‌ها](#the-framework-landscape)
+- [ماتریس تصمیم‌گیری](#the-decision-matrix)
+- [ساخت در برابر خرید در برابر فریم‌ورک](#build-vs-buy-vs-framework)
+- [ضدالگوهایی که باید از آن‌ها اجتناب کرد](#anti-patterns-to-avoid)
+- [توصیه در سطح مهندس ارشد (Staff-Level)](#staff-level-recommendation)
+- [پرسش‌های مصاحبه](#interview-questions)
 
 ---
 
-## The Decision Matrix
+## چشم‌انداز فریم‌ورک‌ها <a id="the-framework-landscape"></a>
 
-**Use this logic to select your stack:**
+### فریم‌ورک‌های ارکستراسیون و ساخت عامل (Agent)
 
-### Core Orchestration
-1. **Is it a pure RAG app?** → **LlamaIndex** (keep it behind your own retrieval interface).
-2. **Does it require long-running state/Human-in-the-loop?** → **LangGraph**.
-3. **Is high reliability (99%+) and cross-model portability critical?** → **DSPy**.
-4. **Are you a C#/.NET enterprise shop?** → **Microsoft Agent Framework** (replaces Semantic Kernel + AutoGen).
-5. **Are you building high-level automations for business users?** → **CrewAI + Flows**.
-6. **Is the service TypeScript-first?** → **Vercel AI SDK** for calls, **Mastra** or **LangGraph TS** for agents and workflows.
+| فریم‌ورک | لایه | ارزش اصلی | نقطه ضعف کلیدی |
+|---|---|---|---|
+| فریم‌ورک **LangGraph** | لایه L1 (هسته) | کنترل دقیق وضعیت، معماری مبتنی بر گراف، بازگشت به گذشته (Time Travel) در چک‌پوینت‌ها | پیچیدگی و شیب یادگیری تند |
+| کتابخانه **DSPy** | لایه L1 (هسته) | قابلیت اطمینان و بهینه‌سازی الگوریتمی (MIPROv2، GEPA، Flex) | هزینه اولیه زمان کامپایل (اجراهای کامپایل به ازای هر مدل) |
+| ابزار **LlamaIndex** | لایه L2 (داده) | بازیابی پیشرفته (RAG)، آماده‌سازی داده و پارسینگ اسناد | انعطاف‌پذیری محدود در منطق؛ معطوف شدن تمرکز سازنده به محصولات پارسینگ اسناد (از سپتامبر ۲۰۲۶) |
+| فریم‌ورک **CrewAI** | لایه L3 (برنامه) | سرعت راه‌اندازی فرایندهای تجاری، کنترل دسترسی RBAC سازمانی، ثبت چک‌پوینت (از نسخه ۱.۱۴ به بعد) | تمایل به پنهان‌سازی خطاها |
+| فریم‌ورک **MS Agent Framework** | لایه L1 (سازمانی) | پشتیبانی یکپارچه از دات‌نت و پایتون، جانشین رسمی AutoGen و SK، عرضه با پشتیبانی LTS (آوریل ۲۰۲۶) | تمرکز اولیه بر زیرساخت Azure؛ انتشار هفتگی سریع |
+| پلتفرم‌های **Pydantic AI / Mastra** | لایه L1 (تایپ‌شده) | توسعه عامل‌های مبتنی بر سیستم نوع‌ها در پایتون (Pydantic AI 2.x) و تایپ‌اسکریپت (Mastra) | اکوسیستم‌های کوچک‌تر؛ به [فصل ۱۱](11-pydantic-ai-and-mastra.md) مراجعه کنید |
+| کیت **Vercel AI SDK 7** | لایه L2 (رانتایم تایپ‌اسکریپت) | فراخوانی‌های مستقل از ارائه‌دهنده در تایپ‌اسکریپت، کلاس پایدار `WorkflowAgent`، کلاس تجربی `HarnessAgent` | انتزاع‌های عاملی آن نسبت به هسته سیستم جدیدتر هستند |
+| فریم‌ورک **Haystack 3** | لایه L2 (داده + Agent) | عامل با هوک‌های چرخه حیات، مهارت‌ها، تخلیه بار نتایج ابزارها (نسخه ۳.۰، ژوئیه ۲۰۲۶) | در نسخه ۳.۰ مؤلفه `ToolInvoker` حذف شد و ۳۰ ابزار به بسته‌های مجزا انتقال یافتند |
+| فریم‌ورک **Agno 3** | لایه L2 (عامل) | تخلیه بار نتایج ابزارها، قابلیت CodeMode (یک مفسر سندباکس به جای تعاریف عریض اسکیماها) | نسخه ۳.۰ (اوت ۲۰۲۶) نیازمند مایگریشن پایگاه داده بود |
 
-### Agent SDKs (choose based on your primary model provider)
-7. **Building agents on Claude / Anthropic API?** → **Claude Agent SDK** (Python/TS, built-in tools for file/code/command).
-8. **Building agents on OpenAI API?** → **OpenAI Agents SDK** (lightweight handoffs, guardrails, MCP support).
-9. **Building agents on Google Cloud / Gemini?** → **Google ADK** (graph workflows, native A2A, Vertex AI deployment, multi-language).
-10. **Need cross-vendor agent communication?** → Use **A2A protocol** on top of any framework above.
-11. **Want the vendor to run the loop (compaction, recovery, sandboxes)?** → A **managed runtime**, after checking data residency, ZDR, and the session-time meter.
+### کیت‌های توسعه Agent SDK (مختص به هر آزمایشگاه)
 
-### Coding Agents
-12. **Are you doing autonomous file-system level coding tasks?** → **Claude Code** or **Codex CLI** (terminal), **Cline** (VS Code).
-13. **Need an open-source coding agent that works with any LLM?** → **OpenCode** (MIT) or **OpenHands** (Docker).
-14. **Want the best IDE experience with AI?** → **Cursor** (closed, SpaceX), **Devin Desktop** (Cognition, formerly Windsurf), or **GitHub Copilot** if you live in GitHub.
+| فریم‌ورک | لایه | ارزش اصلی | نقطه ضعف کلیدی |
+|---|---|---|---|
+| کیت **Claude Agent SDK** | لایه L1 (عامل) | ابزارهای داخلی، حلقه عاملیت استاندارد محیط پروداکشن، مدیریت بودجه | وابستگی به مدل‌های Claude |
+| کیت **OpenAI Agents SDK** | لایه L1 (عامل) | سیستم دست‌به‌دست (Handoff) سبک، حفاظ‌ها (Guardrails)، عامل‌های سندباکس | تمرکز بر OpenAI؛ نسخه‌های 0.x همراه با تغییرات رفتاری در آپدیت‌های جزئی |
+| کیت **Google ADK** | لایه L1 (عامل) | جریان‌های کاری گرافی (نسخه ۲.۰)، چندزبانه، پروتکل بومی A2A و گوگل کلود | تمایل به اکوسیستم گوگل؛ نسخه جاوا همچنان در سری 1.x است |
+| کیت **AWS Strands Agents** | لایه L1 (عامل) | هماهنگ با زیرساخت بومی AWS، مستقل از مدل، پردانلودترین SDK آزمایشگاه‌ها در PyPI | بسته‌های Harness مدل‌های پیش‌فرض را در نسخه‌های مختلف تغییر می‌دهند |
+
+### محیط‌های اجرای مدیریت‌شده Agent
+
+| محیط اجرا | لایه | ارزش اصلی | نقطه ضعف کلیدی |
+|---|---|---|---|
+| سرویس **Claude Managed Agents** | لایه L1 (میزبانی‌شده) | سندباکس‌ها، بودجه‌بندی نشست، سیاست مجوزدهی سمت سرور، عامل به‌صورت کد (`ant apply`)؛ روی Claude API، پلتفرم کلود AWS و کلود گوگل | نسخه بتا؛ انحصاری Claude؛ سنجه دوم هزینه (۰.۰۸ دلار در ساعت زمان اجرای فعال) |
+| سرویس **OpenAI Agents API** | لایه L1 (میزبانی‌شده) | مهارکننده مدیریت‌شده Codex: فشرده‌سازی، بازیابی از کرش، زیرعامل‌ها؛ سندباکس‌های میزبانی‌شده فقط در نوبت‌های فعال صورت‌حساب می‌شوند (از ۹ اکتبر) | نسخه بتای عمومی؛ اقامت داده فقط در آمریکا، بدون ZDR |
+| سرویس **Bedrock Managed Agents** | لایه L1 (میزبانی‌شده) | سرویس Agents API درون AWS همراه با یکپارچگی کامل IAM و لاگ‌های CloudTrail | پیش‌نمایش عمومی؛ محدود به سه منطقه در آمریکا |
+
+### عامل‌های کدنویسی (Coding Agents)
+
+| فریم‌ورک | لایه | ارزش اصلی | نقطه ضعف کلیدی |
+|---|---|---|---|
+| ابزار **Claude Code** | لایه L1 (کدنویسی) | عامل کدنویسی خودمختار CLI، پشتیبانی از پلاگین‌ها، تنظیمات مدیریت‌شده سازمانی | نیازمند مدل‌های Claude؛ کد بسته (Closed source) |
+| ابزار **Codex CLI** | لایه L1 (کدنویسی) | کلاینت CLI منبع‌باز (مجوز Apache-2.0)، محیط‌های ابری، بازبینی کد | پیش‌فرض‌های متمرکز بر اکوسیستم OpenAI |
+| ابزارهای **Cursor / Devin Desktop** | لایه L2 (محیط IDE) | یکپارچگی عمیق میان IDE و Agent، عامل‌های ابری | زیرساخت منبع‌بسته؛ Cursor متعلق به SpaceX و Devin Desktop (که تا ژوئن ۲۰۲۶ با نام Windsurf شناخته می‌شد) متعلق به Cognition است |
+| ابزار **GitHub Copilot** | لایه L2 (محیط IDE + پلتفرم) | عامل کدنویسی و بازبینی محلی در بستر گیت‌هاب؛ قابلیت Copilot Fusion (نسخه GA در ۲۸ اکتبر ۲۰۲۶) با مسیریابی مدل‌ها در سطوح تلاش Standard، High و Max | بهترین عملکرد درون محیط گیت‌هاب؛ کاربری کامپیوتر و جریان‌های کاری پویا در پیش‌نمایش عمومی (۱ اکتبر) عرضه شدند |
+| ابزارهای **OpenCode / OpenHands** | لایه L2 (کدنویسی) | کاملاً منبع‌باز، قابل استفاده با هر مدل LLM | میزبانی، ایزوله‌سازی سندباکس و به‌روزرسانی‌ها به عهده تیم شماست |
+
+پروژه Semantic Kernel دیگر به‌عنوان گزینه‌ای برای کارهای جدید توصیه نمی‌شود: پلتفرم Microsoft Agent Framework جانشین رسمی آن است و کاربران SK باید برای مهاجرت برنامه‌ریزی کنند.
+
+آمارهای پذیرش در صنعت از رویکرد «استفاده از SDK اختصاصی آزمایشگاه در لایه‌های انتهایی (برگ‌ها) و ارکستریتور بی‌طرف در هسته سیستم» پشتیبانی می‌کند. در بازه ۳۰ روزه منتهی به ۱ نوامبر ۲۰۲۶ در مخزن PyPI: بسته `langchain` با ۱۷۰.۵ میلیون دانلود، `langgraph` با ۴۴.۸ میلیون، `strands-agents` با ۳۷.۱ میلیون، `claude-agent-sdk` با ۲۹.۸ میلیون، `openai-agents` با ۱۲.۵ میلیون، `google-adk` با ۱۰.۱ میلیون، `llama-index-core` با ۶.۶ میلیون، `pydantic-ai` با ۵.۴ میلیون، `dspy` با ۵.۳ میلیون، `crewai` با ۲.۴ میلیون، `agno` با ۱.۸ میلیون، `agent-framework-core` با ۱.۰ میلیون، `haystack-ai` با ۰.۵۷ میلیون، `autogen-agentchat` با ۰.۳۸ میلیون، و `semantic-kernel` با ۰.۳۰ میلیون دانلود ثبت شده‌اند. در مخزن npm طی ماه اکتبر: پکیج `ai` (کیت Vercel AI SDK) با ۱۱۵.۴ میلیون، `@anthropic-ai/claude-agent-sdk` با ۴۶.۴ میلیون، `@langchain/langgraph` با ۱۴.۰ میلیون، `@mastra/core` با ۸.۲ میلیون، و `@openai/agents` با ۷.۵ میلیون دانلود (Mastra در این ماه از TypeScript SDK اوپن‌ای‌آی پیشی گرفت). جایگاه صدرنشینان ماه‌هاست تغییری نکرده است. فرآیندهای CI و وابستگی‌های زنجیره‌ای این آمارها را متورم می‌کنند، بنابراین به آن‌ها به‌عنوان سیگنال‌های نسبی نگاه کنید.
 
 ---
 
-## Build vs. Buy vs. Framework
+## ماتریس تصمیم‌گیری <a id="the-decision-matrix"></a>
 
-As a Staff Engineer, you must resist **Framework Bloat**.
+**از این منطق برای انتخاب استک فناوری خود استفاده کنید:**
 
-- **Use a Framework** when it solves a **Non-Trivial Computer Science Problem** (e.g., State persistence, Bayesian prompt optimization, Vector-Graph linking).
-- **Build Custom (Thin Wrapper)** when you are just making simple calls to an LLM. Frameworks add latency, update-churn, and debugging overhead that isn't worth it for a single-turn agent.
+### ارکستراسیون هسته سیستم
+۱. **آیا سیستم شما یک برنامه صرفاً مبتنی بر RAG است؟** ← استفاده از **LlamaIndex** (آن را پشت اینترفیس بازیابی اختصاصی خود پنهان نگه دارید).
+۲. **آیا نیازمند مدیریت وضعیت طولانی‌مدت یا توقف برای بازخورد انسانی (Human-in-the-loop) هستید؟** ← استفاده از **LangGraph**.
+۳. **آیا قابلیت اطمینان بالا (۹۹٪+) و قابلیت حمل آسان میان مدل‌های مختلف اهمیت دارد؟** ← استفاده از **DSPy**.
+۴. **آیا در یک سازمان مبتنی بر اکوسیستم C#/.NET فعالیت می‌کنید؟** ← استفاده از **Microsoft Agent Framework** (جانشین Semantic Kernel و AutoGen).
+۵. **آیا در حال پیاده‌سازی اتوماسیون‌های سطح بالا برای کاربران تجاری و بیزینس هستید؟** ← استفاده از **CrewAI + Flows**.
+۶. **آیا معماری سرویس شما اولویت را به TypeScript می‌دهد؟** ← استفاده از **Vercel AI SDK** برای فراخوانی‌ها، و **Mastra** یا **LangGraph TS** برای عامل‌ها و جریان‌های کاری.
 
-**Name the pattern before the framework.** Between late June and late September 2026, independent frameworks shipped the same three primitives:
+### انتخاب Agent SDK (بر پایه ارائه‌دهنده مدل اصلی)
+۷. **توسعه Agent بر بستر Claude یا Anthropic API؟** ← استفاده از **Claude Agent SDK** (پایتون/تایپ‌اسکریپت، ابزارهای داخلی برای مدیریت فایل، کد و اجرای دستورات).
+۸. **توسعه Agent بر بستر OpenAI API؟** ← استفاده از **OpenAI Agents SDK** (قابلیت Handoff سبک، گاردریل‌ها، پشتیبانی از پروتکل MCP).
+۹. **توسعه Agent بر بستر Google Cloud و مدل‌های Gemini؟** ← استفاده از **Google ADK** (جریان‌های کاری گرافی، پروتکل بومی A2A، استقرار روی Vertex AI، پشتیبانی از زبان‌های متعدد).
+۱۰. **آیا به هماهنگی و تبادل اطلاعات میان عامل‌های چندین شرکت مختلف نیاز دارید؟** ← استفاده از **پروتکل A2A** در رأس هر یک از فریم‌ورک‌های فوق.
+۱۱. **آیا می‌خواهید اجرای حلقه، فشرده‌سازی، بازیابی و محیط‌های سندباکس بر عهده ارائه‌دهنده باشد؟** ← استفاده از یک **محیط اجرای مدیریت‌شده (Managed Runtime)**، پس از اطمینان از اقامتگاه داده، سیاست عدم ذخیره‌سازی داده (ZDR) و سنجه هزینه زمان نشست.
 
-| Pattern | What it does | Shipped as |
+### عامل‌های کدنویسی (Coding Agents)
+۱۲. **آیا به دنبال انجام مستقل وظایف کدنویسی در سطح فایل‌سیستم هستید؟** ← استفاده از **Claude Code** یا **Codex CLI** (در ترمینال)، یا **Cline** (در VS Code).
+۱۳. **آیا نیازمند یک عامل کدنویسی منبع‌باز سازگار با هر مدل دلخواه هستید؟** ← استفاده از **OpenCode** (مجوز MIT) یا **OpenHands** (بر بستر داکر).
+۱۴. **آیا بهترین تجربه هوش مصنوعی درون محیط کدنویسی (IDE) را می‌خواهید؟** ← استفاده از **Cursor** (کدبسته، متعلق به SpaceX)، **Devin Desktop** (متعلق به Cognition، نام پیشین Windsurf)، یا **GitHub Copilot** اگر روند کاری شما کاملاً در گیت‌هاب قرار دارد.
+
+---
+
+## ساخت در برابر خرید در برابر فریم‌ورک <a id="build-vs-buy-vs-framework"></a>
+
+به عنوان یک مهندس ارشد (Staff Engineer)، باید در برابر **تورم و سربار فریم‌ورک‌ها (Framework Bloat)** مقاومت کنید.
+
+- **از فریم‌ورک استفاده کنید** زمانی که مسئله‌ای **پیچیده و غیربدیهی در علوم کامپیوتر** را حل می‌کند (مانند: ذخیره‌سازی پایدار وضعیت، بهینه‌سازی بیزی پرامپت‌ها، پیوند گراف دانش و بردارهای معنایی).
+- **پوسته اختصاصی سبک (Thin Custom Wrapper) بسازید** زمانی که هدف صرفاً ارسال فراخوانی‌های ساده به یک LLM است. فریم‌ورک‌ها سربار تأخیر، ناپایداری در به‌روزرسانی‌ها و دشواری در خطایابی به همراه دارند که به هیچ وجه برای یک عامل تک‌نوبته مقرون‌به‌صرفه نیست.
+
+**الگو را پیش از نام فریم‌ورک بشناسید.** بین اواخر ژوئن و اواخر سپتامبر ۲۰۲۶، فریم‌ورک‌های مستقل مختلف دقیقاً همین سه الگوی بنیادین را پیاده‌سازی کردند:
+
+| الگو | کارکرد | پیاده‌سازی‌شده در قالب |
 |---|---|---|
-| **Harness-first APIs** | The agent is a configurable harness (tools, hooks, instructions, settings bundled as capabilities), not a bare loop | Pydantic AI 2 capabilities, AI SDK 7 `HarnessAgent` (experimental), MAF Harness Agent, OpenAI Agents API (managed Codex harness) |
-| **Tool-result offloading** | Large tool outputs go to a file or store; the context gets a pointer and read/search tools | Haystack 3.0 `ToolResultOffloadHook`, Agno 3.0 (results over 16,000 characters) |
-| **Code-mode tools** | The model writes code that calls tools inside a sandboxed interpreter instead of one JSON call per tool | Agno CodeMode, MAF `HyperlightCodeActProvider` (Microsoft reports more than 60% fewer tokens on its workload), DSPy 3.4 `LocalInterpreter` |
+| **رابط‌های مهارکننده (Harness-first APIs)** | عامل به جای یک حلقه خام، یک مهارکننده با قابلیت پیکربندی است (ابزارها، هوک‌ها، پرامپت‌ها و تنظیمات تجمیع‌شده به‌عنوان قابلیت‌ها) | قابلیت‌های Pydantic AI 2، کلاس تجربی `HarnessAgent` در AI SDK 7، مهارکننده MAF Harness Agent، سرویس OpenAI Agents API (مهارکننده مدیریت‌شده Codex) |
+| **تخلیه بار خروجی ابزارها (Tool-result offloading)** | خروجی‌های بسیار بزرگ ابزارها در فایل یا پایگاه داده ذخیره می‌شوند؛ زمینه ورودی صرفاً یک اشاره‌گر و ابزارهای جستجو دریافت می‌کند | قابلیت `ToolResultOffloadHook` در Haystack 3.0، نسخه Agno 3.0 (برای داده‌های بیش از ۱۶٬۰۰۰ کاراکتر) |
+| **ابزارهای مبتنی بر کد (Code-mode tools)** | مدل به جای فراخوانی‌های مکرر JSON، کدی می‌نویسد که ابزارها را درون یک مفسر ایزوله فراخوانی می‌کند | قابلیت CodeMode در Agno، قابلیت `HyperlightCodeActProvider` در MAF (مایکروسافت کاهش بیش از ۶۰ درصدی مصرف توکن را گزارش می‌دهد)، مفسر `LocalInterpreter` در DSPy 3.4 |
 
-A strong design answer describes these mechanisms and treats the framework as an implementation detail. If your framework lacks one, it is usually a few hundred lines to add.
-
----
-
-## Anti-Patterns to Avoid
-
-1. **Framework Tunneling**: Trying to force a complex logic flow into a framework that doesn't support it (e.g., using a pure RAG library for a coding agent).
-2. **The Golden Hammer**: Using LangChain just because it's popular, when a 50-line Python script would be faster and cheaper.
-3. **Ignoring Observability**: Deploying any framework without an LLMOps layer (LangSmith, Langfuse, Phoenix), ideally one that ingests OpenTelemetry so you can export your traces.
-4. **Trusting Defaults**: Letting the framework pick the model, or the agent's permissions. In August and September 2026, the OpenAI Agents SDK (0.20.0), Claude Code (2.1.280 and 2.1.284), Codex CLI (rust-v0.159.1) and the Strands harness packages all changed their default model, which silently changed cost, latency and behavior for every caller that never set one. In October, Claude Code 2.1.302 started headless and Agent SDK sessions with no permission mode in `default` mode on third-party providers, with telemetry off, or on a fresh install, so the same CI job could behave differently per environment.
+یک معماری سیستم قدرتمند این مکانیزم‌ها را تشریح می‌کند و خود فریم‌ورک را جزئیات پیاده‌سازی در نظر می‌گیرد. اگر فریم‌ورک شما فاقد یکی از این‌ها باشد، افزودن آن معمولاً با چند صد خط کد اختصاصی ممکن است.
 
 ---
 
-## Staff-Level Recommendation
+## ضدالگوهایی که باید از آن‌ها اجتناب کرد <a id="anti-patterns-to-avoid"></a>
 
-For a modern, production-grade agentic system:
-- **Orchestration**: LangGraph (for state and loops) or Microsoft Agent Framework (for .NET shops).
-- **Agent SDK**: Match to your model provider: Claude Agent SDK (Anthropic), Agents SDK (OpenAI), ADK (Google), Strands (AWS). All support MCP for tool access.
-- **Managed runtime**: Only for leaf agents where compaction, recovery and sandboxing save more than the lock-in costs, and only where residency and ZDR terms fit.
-- **Optimization**: DSPy (to compile prompts for different model tiers).
-- **Retrieval**: LlamaIndex (for multi-stage RAG).
-- **Observability**: An OpenTelemetry-friendly tracer you can export from (LangSmith, Langfuse, Phoenix).
-- **Cross-vendor agents**: A2A protocol for agent-to-agent coordination across organizational boundaries.
-- **Autonomous coding**: Claude Code or Codex CLI (terminal), Cline (VS Code) for file-level editing tasks.
-- **Open coding agent**: OpenCode or OpenHands for self-hosted or CI pipeline integration.
-
-**The 2026 insights**:
-1. Agentic coding tools (Claude Code, Codex, Cursor, OpenHands) are not replacements for orchestration frameworks. They are a **new category** that operates at the file-system level, above the LLM API but below the application logic. The AI SDK 7 `HarnessAgent` goes one step further and treats those harnesses as pluggable dependencies.
-2. The protocol layer has matured: **MCP for agent-to-tool** and **A2A for agent-to-agent** are becoming infrastructure standards, not optional add-ons. Design your architecture to support both.
-3. Every lab shipping its own agent SDK, and now its own managed runtime, creates a **vendor lock-in risk**. Mitigate by using MCP for tool access (portable across SDKs), A2A for agent coordination (vendor-neutral), and agent definitions kept as code in your repo.
-4. Frameworks are converging on the same runtime primitives (harness-first APIs, tool-result offloading, code-mode tools), so the durable skill is knowing the primitives, not the class names.
+۱. **تونل‌زنی فریم‌ورک (Framework Tunneling)**: تلاش برای گنجاندن یک منطق پیچیده در فریم‌ورکی که ذاتاً برای آن طراحی نشده است (برای مثال، استفاده از یک کتابخانه صرفاً RAG برای ساخت عامل کدنویسی).
+۲. **چکش طلایی (The Golden Hammer)**: اصرار بر استفاده از LangChain صرفاً به دلیل شهرت آن، در حالی که یک اسکریپت ساده ۵۰ خطی در پایتون بسیار سریع‌تر، سبک‌تر و شفاف‌تر عمل می‌کند.
+۳. **نادیده گرفتن پایش و مشاهده‌پذیری (Ignoring Observability)**: استقرار هرگونه فریم‌ورک هوش مصنوعی بدون لایه اختصاصی LLMOps (مانند LangSmith، Langfuse، Phoenix)، ترجیحاً سیستمی که از استانداردهای OpenTelemetry پشتیبانی کند تا بتوان تریس‌ها را آزادانه استخراج کرد.
+۴. **اعتماد به تنظیمات پیش‌فرض (Trusting Defaults)**: سپردن انتخاب مدل یا تعیین مجوزهای Agent به مقادیر پیش‌فرض فریم‌ورک. در ماه‌های اوت و سپتامبر ۲۰۲۶، کیت‌های توسعه OpenAI Agents SDK (نسخه 0.20.0)، Claude Code (نسخه‌های 2.1.280 و 2.1.284)، Codex CLI (نسخه rust-v0.159.1) و مهارکننده‌های Strands همگی مدل پیش‌فرض خود را تغییر دادند؛ این امر هزینه، تأخیر و خروجی را برای هر فراخوانی‌کننده‌ای که مدل را به‌صورت صریح ثبت نکرده بود دگرگون کرد. در ماه اکتبر، نسخه Claude Code 2.1.302 در اجراهای بدون واسط و نشست‌های Agent SDK بدون مشخص کردن سطح دسترسی، در صورت عدم فعال بودن تله‌متری، روی ارائه‌دهندگان متفرقه یا در نصب تازه، کار را با حالت پیش‌فرض `default` آغاز می‌کرد؛ در نتیجه همان تسک CI در محیط‌های مختلف رفتاری کاملاً نامتقارن نشان می‌داد.
 
 ---
 
-## Interview Questions
+## توصیه در سطح مهندس ارشد (Staff-Level) <a id="staff-level-recommendation"></a>
 
-### Q: Why do we see a trend towards "Programming" (DSPy) instead of "Prompting"?
+برای یک سیستم عاملی استاندارد، مدرن و آماده برای محیط تولید:
+- **لایه ارکستراسیون**: فریم‌ورک LangGraph (برای مدیریت دقیق گراف‌ها، وضعیت و حلقه‌ها) یا Microsoft Agent Framework (برای سیستم‌های سازمانی دات‌نت).
+- **کیت Agent SDK**: متناسب با ارائه‌دهنده مدل اصلی: کیت Claude Agent SDK (برای Anthropic)، کیت Agents SDK (برای OpenAI)، کیت ADK (برای Google)، یا Strands (برای AWS). تمامی این موارد از پروتکل MCP برای دسترسی به ابزارها پشتیبانی می‌کنند.
+- **محیط اجرای مدیریت‌شده**: فقط برای عامل‌های برگ (Leaf Agents) که در آن‌ها فشرده‌سازی خودکار، بازیابی از خطا و مدیریت سندباکس ارزش بالاتری نسبت به هزینه‌های وابستگی به ارائه‌دهنده دارد، و فقط در شرایطی که تعهدات اقامت داده و عدم نگهداری اطلاعات (ZDR) برآورده شود.
+- **بهینه‌سازی پرامپت‌ها**: استفاده از DSPy (جهت کامپایل و بهینه‌سازی پرامپت‌ها برای رده‌های مختلف مدل‌ها).
+- **سیستم بازیابی**: ابزار LlamaIndex (برای RAGهای چندمرحله‌ای و ساختاریافته).
+- **مشاهده‌پذیری**: ابزارهای تریسینگ هماهنگ با OpenTelemetry که خروجی استاندارد ارائه دهند (مانند LangSmith، Langfuse، Phoenix).
+- **عامل‌های بین‌سازمانی**: پروتکل A2A جهت برقراری ارتباط میان عامل‌ها در سراسر مرزهای سازمانی.
+- **کدنویسی خودمختار**: ابزارهای Claude Code یا Codex CLI (در محیط ترمینال)، یا Cline (در محیط VS Code) برای وظایف ویرایش فایل.
+- **عامل کدنویسی منبع‌باز**: ابزارهای OpenCode یا OpenHands برای یکپارچه‌سازی در پایپ‌لاین‌های CI یا استقرار در سرورهای داخلی.
 
-**Strong answer:**
-**Industrialization**. Prompt engineering is "Alchemy": it is inconsistent and does not scale. Programming LLMs via Frameworks like DSPy allows us to treat AI as a **Software Engineering discipline**. We can apply CI/CD, unit testing (metrics), and automated optimization. This moves AI from "Nondeterministic Magic" to a **Predictable Component** of a larger distributed system, which is a requirement for any mission-critical production environment.
-
-### Q: If you had to build a system that works across OpenAI, Anthropic, and local open-weight models, how would you architect it?
-
-**Strong answer:**
-I would use **DSPy** for the prompt layer and **LangGraph** for the orchestration layer. DSPy's **Signatures** allow me to decouple the task definition from the model's specific behavior. I would then use a **Universal Model Gateway** (like LiteLLM or an internal proxy) to handle the different API formats. The gateway holds every provider key, so it is security-critical infrastructure: in 2026 LiteLLM alone had an unauthenticated RCE (CVE-2026-37004, CVSS 9.8), an auth bypass (CVE-2026-49468), a default-configuration path from internal user to proxy admin (CVE-2026-114612, CVSS 9.9), and three compromised releases, 1.82.7, 1.82.8 and the October 21 build 1.107.0 (see [Securing the Gateway](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#securing-the-gateway)). Fixes ship as per-line patch releases (1.100.4, 1.101.3, 1.102.2 and 1.103.1 for CVE-2026-114612), so a simple version floor is not enough. I pin an exact version from the advisory's fixed list, verify artifact hashes rather than trusting a tag, set `allow_client_side_credentials=false`, and keep the gateway off the public internet. The gateway must also stop injecting sampling parameters: GPT-6 Astra rejects custom `temperature`, and under Anthropic API version `2026-10-21` every Claude model returns 400 for `temperature`, `top_p` or `top_k`, even at default values. For tool access, I would use **MCP**: it is model-agnostic, so the same MCP servers work regardless of which LLM backend is active. If I need cross-team agent coordination, I would use **A2A** at the boundary layer. This stack ensures that if I need to switch from GPT-6.1 Sol to Claude Sonnet 5.5 for cost or latency reasons, I do not have to rewrite 50 prompts; I re-compile, re-run the eval suite, and update the config.
-
-### Q: With every AI lab shipping its own agent SDK (Claude Agent SDK, OpenAI Agents SDK, Google ADK), how do you avoid vendor lock-in?
-
-**Strong answer:**
-The key is to **separate the orchestration layer from the model layer**. I use a framework-agnostic orchestrator like LangGraph or a thin custom wrapper for the core workflow logic. Model-specific SDKs are useful for prototyping or when you are committed to a single provider, but for production multi-vendor systems, I keep the model interaction behind an abstraction (LiteLLM gateway or DSPy signatures). For tool access, **MCP** provides portability: the same MCP server works with any SDK. For agent coordination, **A2A** provides vendor-neutral agent-to-agent communication. The practical rule: use lab-specific SDKs and managed runtimes at the leaf nodes (individual agent implementations) but keep the orchestration graph, the agent definitions and the eval suite vendor-neutral and in my repo. Lock-in also shows up in lifecycle: the same model now retires on different dates on different clouds, so I track lifecycle per (model, platform) pair, not per model.
-
----
-
-## References
-- Gartner. "Gartner Predicts 40% of Enterprise Apps Will Feature Task-Specific AI Agents by 2026, Up from Less Than 5% in 2025" (press release, Aug 26, 2025): https://www.gartner.com/en/newsroom/press-releases/2025-08-26-gartner-predicts-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026-up-from-less-than-5-percent-in-2025
-- Thoughtworks. Technology Radar (Vol. 34, Apr 2026): https://www.thoughtworks.com/radar
-- Microsoft. "Agent Framework Overview": https://learn.microsoft.com/en-us/agent-framework/overview/
-- Anthropic. "Agent SDK reference: Python": https://code.claude.com/docs/en/agent-sdk/python
-- Google. "Agent Development Kit": https://google.github.io/adk-docs
-- OpenAI. Agents SDK releases: https://github.com/openai/openai-agents-python/releases
-- OpenAI. "Agents API overview" (beta, Sep 2026): https://developers.openai.com/api/docs/guides/agents-api/overview
-- GitHub. "Route and orchestrate models with GitHub Copilot Fusion" (Oct 28, 2026): https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/
-- Vercel. "AI SDK 7" (Jun 2026): https://vercel.com/blog/ai-sdk-7
-- deepset. Haystack 3.0 release notes (Jul 2026): https://github.com/deepset-ai/haystack/releases/tag/v3.0.0
-- Agno 3.0 release notes (Aug 2026): https://github.com/agno-agi/agno/releases/tag/v3.0.0
+**بینش‌های کلیدی سال ۲۰۲۶:**
+۱. ابزارهای عاملی کدنویسی (مانند Claude Code، Codex، Cursor، OpenHands) جایگزین فریم‌ورک‌های ارکستراسیون نیستند. آن‌ها یک **دسته‌بندی نوین** به شمار می‌روند که در سطح فایل‌سیستم عمل می‌کنند؛ یعنی بالاتر از API مدل، اما پایین‌تر از لایه منطق برنامه کاربردی. کلاس `HarnessAgent` در AI SDK 7 حتی فراتر رفته و با این مهارکننده‌ها مانند وابستگی‌های قابل تعویض (Pluggable) رفتار می‌کند.
+۲. لایه پروتکل‌ها به بلوغ رسیده است: **استاندارد MCP برای ارتباط عامل با ابزار** و **استاندارد A2A برای ارتباط عامل با عامل** در حال تبدیل شدن به زیرساخت‌های استاندارد صنعتی هستند، نه ویژگی‌های اختیاری. سیستم خود را به‌گونه‌ای معماری کنید که از هر دو پروتکل پشتیبانی کند.
+۳. این که هر آزمایشگاه SDK و رانتایم مدیریت‌شده خود را ارائه می‌دهد، ریسک **وابستگی به ارائه‌دهنده (Vendor Lock-in)** ایجاد می‌کند. برای مهار این ریسک، از پروتکل MCP برای اتصال ابزارها (قابل حمل میان تمام SDKها)، از پروتکل A2A برای هماهنگی عامل‌ها (خنثی نسبت به ارائه‌دهنده)، و از حفظ تعاریف عامل‌ها به‌صورت کد درون مخزن خود استفاده کنید.
+۴. فریم‌ورک‌ها همگی به سوی ساختارهای رانتایم یکسانی همگرا می‌شوند (رابط‌های مهارکننده، تخلیه خروجی ابزارها، و ابزارهای حالت کد)؛ بنابراین مهارت پایدار مهندس ارشد درک این مکانیزم‌هاست، نه حفظ نام کلاس‌های موجود در کتابخانه‌ها.
 
 ---
 
-*Next: [Navigating Framework Churn](12-navigating-framework-churn.md)*
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
+
+### پرسش: چرا شاهد روند حرکت به سوی «برنامه‌نویسی» (DSPy) به جای «پرامپت‌نویسی دستی» هستیم؟
+
+**پاسخ قوی:**
+پاسخ کوتاه **صنعتی‌سازی (Industrialization)** است. مهندسی پرامپت دستی شبیه به «کیمیاگری» است: غیرقابل پیش‌بینی است، خطای انسانی بالایی دارد و قابلیت مقیاس‌پذیری ندارد. برنامه‌نویسی LLMها از طریق فریم‌ورک‌هایی مانند DSPy به ما امکان می‌دهد با هوش مصنوعی مانند یک **انضباط واقعی مهندسی نرم‌افزار** رفتار کنیم. ما می‌توانیم پایپ‌لاین‌های CI/CD، آزمون‌های واحد مبتنی بر سنجه‌ها، و فرآیندهای بهینه‌سازی خودکار را به کار بگیریم. این تغییر پارادایم، هوش مصنوعی را از یک «جادوی غیرقطعی» به یک **مؤلفه پیش‌بینی‌پذیر و قابل مهندسی** در یک سیستم توزیع‌شده بزرگ‌تر تبدیل می‌کند، که شرط لازم برای هر محیط تولید سازمانی و حیاتی است.
+
+### پرسش: اگر بخواهید سیستمی بسازید که به‌طور همزمان با مدل‌های OpenAI، Anthropic و مدل‌های باز محلی کار کند، معماری آن را چگونه طراحی می‌کنید؟
+
+**پاسخ قوی:**
+من از **DSPy** برای لایه پرامپت‌ها و امضاها، و از **LangGraph** برای لایه ارکستراسیون استفاده می‌کنم. ساختار **Signatures** در DSPy به من اجازه می‌دهد تعریف وظیفه را از رفتار و فرمت خاص یک مدل تفکیک کنم. سپس از یک **درگاه یکپارچه مدل‌ها (Universal Model Gateway)** (مانند LiteLLM یا یک پروکسی امنیتی داخلی) برای مدیریت فرمت‌های مختلف API بهره می‌گیرم. این Gateway کلیدهای تمام ارائه‌دهندگان را نگهداری می‌کند، بنابراین یک زیرساخت فوق‌العاده حساس از منظر امنیتی است: در سال ۲۰۲۶ به‌تنهایی در LiteLLM یک آسیب‌پذیری بحرانی اجرای کد از راه دور بدون احراز هویت (CVE-2026-37004 با نمره CVSS 9.8)، یک دور زدن احراز هویت (CVE-2026-49468)، ارتقای دسترسی کاربر به مدیر پروکسی در پیکربندی پیش‌فرض (CVE-2026-114612 با نمره CVSS 9.9) و سه نسخه نفوذیافته (1.82.7، 1.82.8 و بیلد ۲۱ اکتبر 1.107.0) ثبت شدند (به بخش [امن‌سازی درگاه](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#securing-the-gateway) مراجعه کنید). اصلاحیه‌ها در قالب پچ‌های هر نسخه اصلی عرضه می‌شوند، بنابراین تعیین یک حداقل نسخه ساده کافی نیست؛ من نسخه دقیق را از لیست اصلاحیه‌های امنیتی قفل می‌کنم، هش آرتیفکت را تطبیق می‌دهم، `allow_client_side_credentials=false` را تنظیم می‌کنم و درگاه را از دسترس اینترنت عمومی خارج می‌سازم. درگاه همچنین باید از ارسال پارامترهای سمپلینگ اضافی خودداری کند: مدل GPT-6 Astra پارامتر `temperature` سفارشی را رد می‌کند، و در نسخه API مورخ ۲۰۲۶-۱۰-۲۱ آنتروپیک، تمام مدل‌های Claude در صورت ارسال `temperature`، `top_p` یا `top_k` خطای 400 برمی‌گردانند، حتی اگر مقادیر پیش‌فرض باشند. برای اتصال ابزارها، پروتکل **MCP** را به کار می‌گیرم: این پروتکل مستقل از مدل است، بنابراین سرورهای یکسان ابزارها با هر بک‌اندمدل کار می‌کنند. برای ارتباط میان‌تیمی عامل‌ها نیز از پروتکل **A2A** در لایه مرزی بهره می‌برم. این معماری تضمین می‌کند که اگر روزی بخواهیم به دلایل هزینه یا تأخیر از GPT-6.1 Sol به Claude Sonnet 5.5 مهاجرت کنیم، نیازی به بازنویسی ده‌ها پرامپت نداشته باشیم؛ صرفاً برنامه را مجدداً کامپایل کرده، سوییت ارزیابی را اجرا می‌کنیم و فایل پیکربندی را به‌روزرسانی می‌نماییم.
+
+### پرسش: با توجه به این که هر آزمایشگاه هوش مصنوعی Agent SDK اختصاصی خود را ارائه می‌دهد (Claude Agent SDK، OpenAI Agents SDK، Google ADK)، چگونه از وابستگی به تأمین‌کننده (Vendor Lock-in) جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+راهکار بنیادین، **جداسازی لایه ارکستراسیون از لایه مدل** است. من برای منطق هسته فرآیندها از یک ارکستریتور بی‌طرف نسبت به مدل مانند LangGraph یا یک پوسته سفارشی سبک استفاده می‌کنم. SDKهای وابسته به مدل برای اعتبارسنجی ایده (Prototyping) یا در شرایطی که منحصراً به یک ارائه‌دهنده متعهد هستید مفیدند؛ اما در سیستم‌های چندتأمینی محیط پروداکشن، تعامل با مدل را پشت یک لایه انتزاعی (درگاه LiteLLM یا امضاهای DSPy) قرار می‌دهم. برای دسترسی به ابزارها، استاندارد **MCP** قابلیت حمل کامل فراهم می‌کند، زیرا سرورهای ابزار با تمام SDKها سازگارند. برای ارتباط عامل‌ها نیز استاندارد **A2A** ارتباطات نظیربه‌نظیر خنثی را میسر می‌سازد. قانون عملی این است: از SDKهای اختصاصی آزمایشگاه‌ها و رانتایم‌های مدیریت‌شده فقط در گره‌های برگ (پیاده‌سازی تک‌تک عامل‌ها) استفاده کنید، اما گراف ارکستراسیون، تعاریف عامل‌ها و آزمون‌های ارزیابی (Eval Suite) را کاملاً مستقل و به‌صورت کد در مخزن اختصاصی سازمان خود نگه‌داری نمایید. قفل شدن به تأمین‌کننده در چرخه حیات مدل‌ها نیز آشکار می‌شود: یک مدل مشابه اکنون در تاریخ‌های متفاوتی در کلودهای مختلف بازنشسته می‌شود، بنابراین تاریخ انقضا را به ازای جفت (مدل، پلتفرم) رصد می‌کنم، نه صرفاً بر اساس نام مدل.
+
+---
+
+## منابع <a id="references"></a>
+- مؤسسه Gartner. پیش‌بینی گارتنر مبنی بر تجهیز ۴۰ درصد از برنامه‌های کاربردی سازمانی به عامل‌های تخصصی هوش مصنوعی تا سال ۲۰۲۶ (بیانیه مطبوعاتی، ۲۶ اوت ۲۰۲۵): https://www.gartner.com/en/newsroom/press-releases/2025-08-26-gartner-predicts-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026-up-from-less-than-5-percent-in-2025
+- شرکت Thoughtworks. رادار فناوری (جلد ۳۴، آوریل ۲۰۲۶): https://www.thoughtworks.com/radar
+- مستندات Microsoft. نمای کلی Agent Framework: https://learn.microsoft.com/en-us/agent-framework/overview/
+- مستندات Anthropic. مرجع Agent SDK در زبان پایتون: https://code.claude.com/docs/en/agent-sdk/python
+- مستندات Google. کیت توسعه عاملی Agent Development Kit: https://google.github.io/adk-docs
+- مستندات OpenAI. تاریخچه نسخه‌های انتشار Agents SDK: https://github.com/openai/openai-agents-python/releases
+- مستندات OpenAI. نمای کلی Agents API (نسخه بتا، سپتامبر ۲۰۲۶): https://developers.openai.com/api/docs/guides/agents-api/overview
+- مستندات GitHub. مسیریابی و ارکستراسیون مدل‌ها با GitHub Copilot Fusion (۲۸ اکتبر ۲۰۲۶): https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/
+- شرکت Vercel. معرفی نسخه ۷ از کیت هوش مصنوعی AI SDK (ژوئن ۲۰۲۶): https://vercel.com/blog/ai-sdk-7
+- مستندات deepset. توضیحات انتشار Haystack 3.0 (ژوئیه ۲۰۲۶): https://github.com/deepset-ai/haystack/releases/tag/v3.0.0
+- مستندات Agno. توضیحات انتشار Agno 3.0 (اوت ۲۰۲۶): https://github.com/agno-agi/agno/releases/tag/v3.0.0
+
+---
+
+*مبحث بعدی: [مدیریت تغییرات و ناپایداری فریم‌ورک‌ها](12-navigating-framework-churn.md)*
+
+</div>

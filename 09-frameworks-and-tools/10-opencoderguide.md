@@ -1,25 +1,29 @@
-# OpenCoder: AI Coding Agents Landscape
+<div dir="rtl">
 
-The AI coding agent landscape has exploded and then consolidated. By November 2026 it has three clear shapes: terminal agents backed by labs or large communities (Claude Code, Codex CLI, OpenCode, Antigravity CLI, Kiro CLI), IDE agents owned by companies that also build models (Cursor has been part of SpaceX since August 2026; Cognition bought Windsurf in July 2025 and renamed it Devin Desktop in June 2026), and a split architecture where the vendor runs the control plane while your infrastructure runs the code. This guide covers open-weight coding models, agentic IDEs, open-source agents, and how to choose the right tool for your engineering workflow.
+# پلتفرم OpenCoder: چشم‌انداز عامل‌های هوش مصنوعی کدنویسی
 
-## Table of Contents
+چشم‌انداز عامل‌های هوش مصنوعی کدنویسی ابتدا با رشدی انفجاری روبرو شد و سپس به مرحله یکپارچگی رسید. تا نوامبر ۲۰۲۶، این فضا به سه ساختار مشخص تقسیم شده است: عامل‌های ترمینال تحت پشتیبانی آزمایشگاه‌ها یا جوامع کاربری بزرگ (مانند Claude Code، Codex CLI، OpenCode، Antigravity CLI و Kiro CLI)، محیط‌های توسعه متصل به شرکت‌های سازنده مدل (Cursor از اوت ۲۰۲۶ بخشی از شرکت SpaceX شده است؛ Cognition در ژوئیه ۲۰۲۵ محیط Windsurf را خرید و در ژوئن ۲۰۲۶ آن را به Devin Desktop تغییر نام داد)، و معماری تفکیک‌شده که در آن تأمین‌کننده پلن کنترلی را اجرا می‌کند در حالی که زیرساخت شما کدهای اجرایی را میزبانی می‌نماید. این راهنما مدل‌های کدنویسی با وزن باز، محیط‌های توسعه عاملی، عامل‌های منبع‌باز، و نحوه انتخاب ابزار متناسب با جریان کاری مهندسی شما را پوشش می‌دهد.
 
-- [The AI Coding Landscape (2026)](#the-ai-coding-landscape-2026)
-- [Open-Weight Coding Models](#open-weight-coding-models)
-- [AI-Native IDEs](#ai-native-ides)
-- [Open-Source Coding Agents](#open-source-coding-agents)
-- [Benchmark Deep Dive](#benchmark-deep-dive)
-- [Cost Comparison](#cost-comparison)
-- [Selection Guide](#selection-guide)
-- [Production Architecture](#production-architecture)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [چشم‌انداز هوش مصنوعی کدنویسی (۲۰۲۶)](#the-ai-coding-landscape-2026)
+- [مدل‌های کدنویسی با وزن‌های باز](#open-weight-coding-models)
+- [محیط‌های توسعه مبتنی بر هوش مصنوعی (AI-Native IDEs)](#ai-native-ides)
+- [عامل‌های کدنویسی منبع‌باز](#open-source-coding-agents)
+- [تحلیل عمیق بنچمارک‌ها](#benchmark-deep-dive)
+- [مقایسه هزینه‌ها](#cost-comparison)
+- [راهنمای انتخاب](#selection-guide)
+- [معماری سیستم در محیط پروداکشن](#production-architecture)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## The AI Coding Landscape (2026)
+## چشم‌انداز هوش مصنوعی کدنویسی (۲۰۲۶) <a id="the-ai-coding-landscape-2026"></a>
 
-The coding AI landscape has three distinct layers:
+چشم‌انداز ابزارهای هوش مصنوعی کدنویسی دارای سه لایه متمایز است:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -45,46 +49,50 @@ flowchart TB
     L2 --> L1
 ```
 
-The layers are blurring. IDE vendors train their own models (Cursor's Composer, Cognition's SWE-2, which Cognition says is post-trained from Kimi K3), lab agents ship IDE extensions, and the Vercel AI SDK 7's experimental `HarnessAgent` treats whole coding harnesses as pluggable dependencies.
+</div>
+
+مرزهای این لایه‌ها در حال محو شدن است. سازندگان محیط‌های توسعه مدل‌های اختصاصی خود را آموزش می‌دهند (مدل Composer در Cursor، مدل SWE-2 در Cognition که طبق ادعای سازنده از پس‌آموزش Kimi K3 شکل گرفته است)، عامل‌های آزمایشگاه‌ها افزونه‌های اختصاصی IDE ارائه می‌دهند، و کلاس تجربی `HarnessAgent` در Vercel AI SDK 7 با کل مهارکننده‌های کدنویسی مانند وابستگی‌های قابل تعویض رفتار می‌کند.
 
 ---
 
-## Open-Weight Coding Models
+## مدل‌های کدنویسی با وزن‌های باز <a id="open-weight-coding-models"></a>
 
-These models can be self-hosted, fine-tuned, and deployed without any API dependency. Read the license before the model card: in 2026 several "open" coding-capable models carry commercial gates.
+این مدل‌ها قابلیت میزبانی اختصاصی (Self-hosted)، Fine-tuning و استقرار مستقل بدون وابستگی به APIهای ابری را دارند. با این حال، حتماً مجوز استفاده (License) را پیش از انتخاب مدل مطالعه کنید؛ زیرا در سال ۲۰۲۶ چندین مدل کدنویسی «باز» دارای شروط محدودکننده تجاری هستند.
 
-### The Current Open-Weight Frontier (November 2026)
+### مرز کنونی مدل‌های باز (نوامبر ۲۰۲۶)
 
-| Model | Released | Total / active params | License | Coding-relevant notes |
-|-------|----------|-----------------------|---------|-----------------------|
-| Xiaomi MiMo-V2.6-Pro / -Flash | Sep 21, 2026 | 1.02T / 42B; 309B / 15B | MIT | 1M context; led open models on the Artificial Analysis index before v5.0 |
-| Mistral Large 4 | Open weights Oct 29, 2026 | About 1T / 49B (52B with embeddings) | Mistral Ecosystem Open-Weight License: **any** MaaS business needs a separate commercial license, with no revenue threshold | API $0.70/$2.10 per 1M |
-| Meta Muse Spark Open | Oct 15, 2026 | 816B / 42B | Muse Model License, with a MaaS gate above US$20M revenue | Check the gate before building a hosted coding product on it |
-| Z.ai GLM-5.3 | Weights Aug 28, 2026 | 744B / 40B | MIT, plus a security review for MaaS providers above US$10B revenue in 12 months | API $1.40/$4.40 per 1M; 211/272 on the SWE-Bench Pro v2 private set |
-| Moonshot Kimi K3.1 Pro | Weights Nov 4, 2026 (API Oct 23) | 2.8T / 104B active | Kimi K3.1-Pro License: a custom MIT-like grant, not MIT; separate agreement for a MaaS business above US$20M revenue in 12 months; UI credit above 100M MAU or US$20M monthly revenue | About 1.56 TB of MXFP4 weights, 1M context; 46 on AA Index v5.0.1, the top open-weight score |
-| Moonshot Kimi K3 | July 2026 | 2.8T / 104B active | Custom: a separate agreement for companies that run any MaaS business and whose total revenue (with affiliates) exceeds US$20M over 12 months | 214/272 on SWE-Bench Pro v2 private; base for Cognition SWE-2 and Fireworks Ember-1 |
-| Z.ai GLM-5.3-Flash | Aug 26, 2026 | 320B / 18B | MIT | API $0.15/$0.50 per 1M |
-| DeepSeek V4.1-Flash | Sep 10, 2026; refreshed as V4.1-Flash-1017 (Oct 17), which now serves `deepseek-flash` | 552B backbone; 8B active in prefill, 16B in decode | MIT | Vendor-reported DeepSWE v1.1 74.2 at max effort (original release) |
-| Qwen3.8-Flash-Next | Aug 26, 2026 | 125B / 6B plus a 51B n-gram table | Qwen Community License 1.0 | Any MaaS or AI coding-assistant **business** needs a separate license from Qwen, with no revenue floor; purely internal use is exempt |
-| Qwen3.8-27B | 2026 | 27B dense | Apache 2.0 | Single-GPU class; also the base of Ternary Bonsai 2 27B (1.72 bits per weight, 5.95 GB) |
-| IBM Granite 4.2 | Aug 25, 2026 | 3B / 8B / 30B dense | Apache 2.0 | 128K context (extendable to 512K); vendor-reported SWE-bench Verified 57 for the 30B |
-| MiMo-V2.6-Distill-Qwen-9B | Sep 21, 2026 | 9B | MIT | Vendor-reported 61.1% SWE-bench Verified, 44.6% SWE-bench Pro |
+| مدل | تاریخ انتشار | پارامترهای کل / فعال | نوع مجوز | نکات مرتبط با کدنویسی |
+|---|---|---|---|---|
+| مدل‌های **Xiaomi MiMo-V2.6-Pro / -Flash** | ۲۱ سپتامبر ۲۰۲۶ | ۱.۰۲T / ۴۲B؛ ۳۰۹B / ۱۵B | مجوز MIT | پنجره زمینه ۱M؛ تا قبل از نسخه ۵.۰ در شاخص Artificial Analysis در صدر مدل‌های باز بود |
+| مدل **Mistral Large 4** | انتشار وزن‌ها در ۲۹ اکتبر ۲۰۲۶ | حدود ۱T / ۴۹B (۵۲B با Embedding) | مجوز اکوسیستم منبع‌باز میسترال: **هرگونه** کسب‌وکار ارائه مدل به‌عنوان سرویس (MaaS) نیازمند مجوز تجاری مجزا بدون آستانه درآمدی است | نرخ API برابر ۰.۷۰ / ۲.۱۰ دلار در ۱M |
+| مدل **Meta Muse Spark Open** | ۱۵ اکتبر ۲۰۲۶ | ۸۱۶B / ۴۲B | مجوز مدل Muse، با آستانه MaaS برای درآمد بالای ۲۰ میلیون دلار | قبل از ساخت محصول کدنویسی میزبانی‌شده روی آن، شرایط مجوز را بررسی کنید |
+| مدل **Z.ai GLM-5.3** | انتشار وزن‌ها در ۲۸ اوت ۲۰۲۶ | ۷۴۴B / ۴۰B | مجوز MIT، به‌علاوه بازبینی امنیتی برای ارائه‌دهندگان MaaS با درآمد بالای ۱۰ میلیارد دلار طی ۱۲ ماه | نرخ API برابر ۱.۴۰ / ۴.۴۰ دلار در ۱M؛ امتیاز ۲۱۱ از ۲۷۲ در مجموعه خصوصی SWE-Bench Pro v2 |
+| مدل **Moonshot Kimi K3.1 Pro** | انتشار وزن‌ها در ۴ نوامبر ۲۰۲۶ (نسخه API در ۲۳ اکتبر) | ۲.۸T / ۱۰۴B فعال | مجوز Kimi K3.1-Pro: یک اعطای سفارشی مشابه MIT و نه خود MIT؛ نیازمند توافق‌نامه مجزا برای کسب‌وکارهای MaaS با درآمد بالای ۲۰ میلیون دلار در ۱۲ ماه؛ درج لوگو در UI برای کاربران ماهانه بالای ۱۰۰ میلیون نفر یا درآمد ماهانه بالای ۲۰ میلیون دلار | حدود ۱.۵۶ ترابایت وزن‌های MXFP4، پنجره زمینه ۱M؛ امتیاز ۴۶ در شاخص AA نسخه ۵.۰.۱ که بالاترین امتیاز در میان مدل‌های باز است |
+| مدل **Moonshot Kimi K3** | ژوئیه ۲۰۲۶ | ۲.۸T / ۱۰۴B فعال | مجوز سفارشی: توافق‌نامه مجزا برای ارائه‌دهندگان MaaS با درآمد کل بالای ۲۰ میلیون دلار طی ۱۲ ماه | امتیاز ۲۱۴ از ۲۷۲ در مجموعه خصوصی SWE-Bench Pro v2؛ مدل پایه برای Cognition SWE-2 و Fireworks Ember-1 |
+| مدل **Z.ai GLM-5.3-Flash** | ۲۶ اوت ۲۰۲۶ | ۳۲۰B / ۱۸B | مجوز MIT | نرخ API برابر ۰.۱۵ / ۰.۵۰ دلار در ۱M |
+| مدل **DeepSeek V4.1-Flash** | ۱۰ سپتامبر ۲۰۲۶؛ به‌روزرسانی با نسخه V4.1-Flash-1017 (۱۷ اکتبر) که اکنون سرویس‌دهنده `deepseek-flash` است | ستون فقرات ۵۵۲B؛ در پیش‌پر کردن ۸B و در کدگشایی ۱۶B فعال | مجوز MIT | گزارش ارائه‌دهنده از امتیاز ۷۴.۲ در DeepSWE v1.1 با حداکثر سطح تلاش (در انتشار اولیه) |
+| مدل **Qwen3.8-Flash-Next** | ۲۶ اوت ۲۰۲۶ | ۱۲۵B / ۶B به‌علاوه یک جدول ۵۱B از n-gram | مجوز Qwen Community License 1.0 | هر کسب‌وکار MaaS یا **دستیار کدنویسی تجاری** نیازمند دریافت مجوز مجزا از Qwen بدون هیچ سقف حداقلی برای درآمد است؛ استفاده صرفاً درون‌سازمانی معاف است |
+| مدل **Qwen3.8-27B** | سال ۲۰۲۶ | ۲۷B متراکم (Dense) | مجوز Apache 2.0 | مناسب رده تک کارت گرافیک GPU؛ همچنین پایه مدل Ternary Bonsai 2 27B (با ۱.۷۲ بیت به ازای هر وزن، حجم ۵.۹۵ گیگابایت) |
+| مدل **IBM Granite 4.2** | ۲۵ اوت ۲۰۲۶ | مدل‌های متراکم ۳B / ۸B / ۳۰B | مجوز Apache 2.0 | پنجره زمینه ۱۲۸K (قابل ارتقا تا ۵۱۲K)؛ گزارش ارائه‌دهنده از امتیاز ۵۷ در SWE-bench Verified برای نسخه ۳۰B |
+| مدل **MiMo-V2.6-Distill-Qwen-9B** | ۲۱ سپتامبر ۲۰۲۶ | ۹B | مجوز MIT | گزارش ارائه‌دهنده از کسب ۶۱.۱٪ در SWE-bench Verified و ۴۴.۶٪ در SWE-bench Pro |
 
-**The license trap**: under the Qwen Community License 1.0, a startup building a coding agent on Qwen3.8-Flash-Next needs Alibaba's permission from day one, which is stricter than the license on Qwen's own 2.4T flagship (gate above US$50M revenue). Mistral Large 4 does the same for anyone selling it as a service, at any revenue, and Mistral Medium 3.5's Modified MIT license grants no rights above US$20M monthly revenue (Mistral deprecated Medium 3.5 and Large 3 on October 31; they retire April 30, 2027). Put license review in the model-selection checklist, next to evals.
+**تله مجوزهای بهره‌برداری**: طبق مجوز Qwen Community License 1.0، استارتاپی که یک عامل کدنویسی تجاری را بر پایه Qwen3.8-Flash-Next ایجاد می‌کند از همان روز اول نیازمند مجوز رسمی از شرکت Alibaba است که حتی از مجوز مدل پرچمدار 2.4T خود Qwen سخت‌گیرانه‌تر است. مدل Mistral Large 4 نیز برای هر کسی که آن را به‌عنوان یک سرویس تجاری عرضه کند شرط مشابهی بدون سقف درآمدی دارد. بازبینی مجوزها را در کنار بنچمارک‌ها در چک‌لیست ارزیابی قرار دهید.
 
-**Reading the general-intelligence gap**: on Artificial Analysis Intelligence Index v5.0.1 (November 3, 2026; 60% private or held-out sets, scores not comparable with v4.x), Kimi K3.1 Pro (weights published November 4) scores 46 and the best model AA labels open, DeepSeek V4.1 Flash 1017, scores 33 at max effort, against 59 for Claude Opus 5.5 at max, so the gap is 13 or 26 points depending on whether K3.1 Pro counts as open. Sonnet 5.5 scored 54 on v5.0 (October 27). On Scale's clean SWE-Bench Pro v2 private set, Kimi K3 and GLM-5.3 sit within about 3 to 4 points of Opus 5. Both can be true: open weights are close on well-scoped repository tasks and much further behind on broad, held-out evaluation, so test on your own task mix before assuming either number transfers.
+**ارزیابی شکاف هوش عمومی**: در شاخص Artificial Analysis Intelligence Index v5.0.1 (۳ نوامبر ۲۰۲۶)، مدل Kimi K3.1 Pro امتیاز ۴۶ و برترین مدلی که AA آن را منبع‌باز نامیده، یعنی DeepSeek V4.1 Flash 1017، در بالاترین سطح تلاش امتیاز ۳۳ کسب کرده است، در مقایسه با امتیاز ۵۹ برای Claude Opus 5.5 در بالاترین سطح تلاش؛ بنابراین شکاف میان ۱۳ تا ۲۶ امتیاز است. در سوی دیگر، در ارزیابی خصوصی Scale روی SWE-Bench Pro v2، مدل‌های Kimi K3 و GLM-5.3 تنها ۳ تا ۴ امتیاز با Opus 5 فاصله دارند. هر دو گزاره درست هستند: مدل‌های وزن باز در وظایف متمرکز روی مخزن بسیار به رقبا نزدیک‌اند، اما در ارزیابی‌های جامع و کلی‌تر فاصله بیشتری دارند.
 
-### Older Small Models Still Used for Completions
+### مدل‌های کوچک قدیمی‌تر که همچنان برای تکمیل کد (Completion) استفاده می‌شوند
 
-The 2024-era coder models remain popular for low-latency fill-in-the-middle (FIM) completion on modest hardware, where agentic capability does not matter. The HumanEval+ numbers below are as reported in the Qwen2.5-Coder technical report (arXiv 2409.12186, Tables 5 and 16), except StarCoder2, which comes from its Hugging Face model cards. They are far behind current frontier models on agentic tasks.
+مدل‌های رده ۲۰۲۴ همچنان برای تکمیل کد سریع با روش پر کردن در میان (Fill-In-the-Middle یا FIM) روی سخت‌افزارهای معمولی که نیازی به قابلیت‌های عاملی ندارند، محبوب هستند. امتیازات HumanEval+ در جدول زیر مستخرج از گزارش فنی Qwen2.5-Coder هستند، به جز مدل StarCoder2 که بر اساس کارت مدل Hugging Face آن ثبت شده است. این مدل‌ها در وظایف عاملی بسیار عقب‌تر از پرچمداران فعلی قرار دارند.
 
-| Model | Parameters | Context | HumanEval+ | License |
-|-------|------------|---------|------------|---------|
-| Qwen2.5-Coder-32B-Instruct | 32B | 128K | 87.2% | Apache 2.0 |
-| Qwen2.5-Coder-7B-Instruct | 7B | 128K | 84.1% | Apache 2.0 |
-| Qwen2.5-Coder-1.5B-Instruct | 1.5B | 32K | 66.5% | Apache 2.0 |
-| DeepSeek-Coder-V2-Lite-Instruct | 16B MoE (2.4B active) | 128K | 75.6% | DeepSeek model license |
-| StarCoder2-15B / 7B / 3B | 15B / 7B / 3B | 16K | 37.8% (15B base; 63.4% for StarCoder2-15B-Instruct-v0.1) | BigCode OpenRAIL-M |
+| مدل | تعداد پارامترها | پنجره زمینه | بنچمارک HumanEval+ | نوع مجوز |
+|---|---|---|---|---|
+| مدل Qwen2.5-Coder-32B-Instruct | تعداد ۳۲B | اندازه ۱۲۸K | ۸۷.۲٪ | مجوز Apache 2.0 |
+| مدل Qwen2.5-Coder-7B-Instruct | تعداد ۷B | اندازه ۱۲۸K | ۸۴.۱٪ | مجوز Apache 2.0 |
+| مدل Qwen2.5-Coder-1.5B-Instruct | تعداد ۱.۵B | اندازه ۳۲K | ۶۶.۵٪ | مجوز Apache 2.0 |
+| مدل DeepSeek-Coder-V2-Lite-Instruct | معماری ۱۶B MoE (فعال ۲.۴B) | اندازه ۱۲۸K | ۷۵.۶٪ | مجوز DeepSeek model license |
+| مدل‌های StarCoder2-15B / 7B / 3B | اندازه ۱۵B / ۷B / ۳B | اندازه ۱۶K | ۳۷.۸٪ (مدل پایه ۱۵B؛ ۶۳.۴٪ برای نسخه StarCoder2-15B-Instruct-v0.1) | مجوز BigCode OpenRAIL-M |
+
+<div dir="ltr">
 
 ```python
 # Self-hosted with vLLM (use vLLM >= 0.32.0: earlier releases, 0.30.x included,
@@ -98,7 +106,11 @@ model = LLM(
 response = model.generate("def fibonacci(n: int) -> list[int]:")
 ```
 
-### Open Model Selection Guide
+</div>
+
+### راهنمای انتخاب مدل باز
+
+<div dir="ltr">
 
 ```
 Low-latency completions (< 100ms) on a laptop or single GPU?
@@ -117,113 +129,113 @@ Building a coding-assistant product to sell?
   → Read the license first: Qwen Community License 1.0 requires a separate license
 ```
 
----
-
-## AI-Native IDEs
-
-### Cursor
-
-**Website:** cursor.com | **Base:** VS Code fork | **Pricing:** Pro from $20/mo, Teams and Enterprise plans
-
-Cursor is the leading AI-native IDE, and since August 14 to 15, 2026 it is **part of SpaceX** (reported at about $60B in SpaceX stock). Grok 4.6 and 4.7 launched on Cursor's own blog. The acquisition announcement said nothing about continued access to third-party models or about data-use commitments, and two weeks later the model question got a concrete answer: on Aug 28, 2026 OpenAI told SpaceX it would wind down its contract supplying OpenAI models to Cursor, with a proposed shutoff of **November 12, 2026**, and would not supply future models (GPT-6 Astra included) while Cursor is under SpaceX ownership. The notice covers only OpenAI's models; treat continued access to the others, and data use, as contract questions, not assumptions. Cursor earned AIUC-1 agent certification on Aug 13, 2026.
-
-| Feature | Description |
-|---------|-------------|
-| **Agent** | Multi-file agentic editing; Composer is now the name of Cursor's own coding model |
-| **Tab** | Predictive completions |
-| **Cloud agents** | Run on Cursor's infrastructure or, since Sep 2, 2026, on **Self-hosted Machines** (your own machines or team pools on AWS Lambda, Coder, Cloudflare, Daytona, Modal, Namespace, Vercel or E2B) |
-| **Projects** (beta, Sep 10, 2026) | A coordinator agent plans work and delegates to parallel subagents, up to thousands; Cursor says new Projects users merge 30% more PRs (vendor-reported) |
-| **Rollouts and Security Review** (Sep 23, 2026) | A monitor on every PR that tracks change health per environment as it deploys, and a PR scanner for exploitable bugs (Teams and Enterprise) |
-| **Rules** | Project-level AI instructions in `.cursor/rules`, and `AGENTS.md` |
-| **Model choice** | Anthropic, Google, xAI Grok and Cursor's own models; OpenAI models until the proposed Nov 12, 2026 shutoff (OpenAI says it will not supply GPT-6 Astra or later models) |
-
-**Best for**: Frontend/full-stack developers who want agentic editing within a familiar GUI, and teams that want cloud agents without running the orchestration themselves.
-
-**Limitations**: Closed-source; code goes to Cursor's servers unless you use Privacy Mode and self-hosted machines; ownership by a frontier-model company raises model-neutrality and data-governance questions for some buyers. A forked IDE also means a separate extension marketplace, which is a separate supply chain: on Oct 29, 2026, Cursor's marketplace served a trojanized Claude Code extension that Anthropic did not build ([details](../07-agentic-systems/09-agentic-security-and-sandboxing.md#the-developer-workstation-became-the-target)). Allowlist publishers and pin extension versions.
-
-### Devin Desktop (Cognition, formerly Windsurf)
-
-**Docs:** docs.devin.ai/desktop | **Base:** VS Code fork | **Version:** 3.11.238 (Oct 30, 2026)
-
-Windsurf was built by Codeium, bought by **Cognition**, the maker of Devin, in July 2025, and renamed **Devin Desktop** in v3.0.12 (June 2, 2026). Tutorials and procurement documents that still say "Windsurf" describe the same product line. Cognition raised more than $2B at a $48B valuation (Sep 8, 2026), reports more than $1B in annualized revenue run rate (vendor-reported), and shipped SWE-2, its own flagship coding model, available only inside Devin.
-
-| Feature | Description |
-|---------|-------------|
-| **Agentic editing** | Called Cascade in the Windsurf era; not to be confused with the Cascade workflow in GitHub Copilot Fusion |
-| **Flows** | Shared agent-and-developer sessions where the agent tracks your edits and actions as context; not to be confused with CrewAI Flows |
-| **Model choice** | Multiple vendors' frontier models plus Cognition's own |
-| **One vendor, two loops** | The IDE and the autonomous Devin agent come from the same company |
-
-**Best for**: Teams that want a Cursor-like IDE with model flexibility, and shops already buying Devin that want the IDE and the autonomous agent from one vendor.
-
-### GitHub Copilot (Microsoft/OpenAI)
-
-| Feature | Status (November 2026) |
-|---------|---------------------|
-| Completions | Still the market leader by install base |
-| Coding agent | Assign an issue, get a PR (Copilot Workspace's preview ended in 2025) |
-| Code review approvals | GA Oct 28, 2026: when an admin turns them on, Copilot approvals count toward required approvals (off by default); repository admins choose which paths it may approve; its approval is dismissed on new commits. The same post added a **Max** review effort (public preview) that runs several independent review agents on models from different providers plus an aggregation agent, at more AI credits than Lite or Balanced |
-| Agentic Workflows | GA Oct 28, 2026 on github.com (Free, Team, Enterprise): natural-language Markdown automations (issue triage, CI failure analysis, docs, tests) compile to Actions YAML and run on the Copilot CLI engine or another coding agent, read-only by default, in a sandboxed container behind the Agent Workflow Firewall, with "safe outputs" and a separate threat-detection job before changes apply |
-| Assisted permissions | GA Oct 26, 2026 in Copilot CLI, the Copilot app and VS Code: an LLM auto-approves clearly safe command, file-path and URL requests and asks for the rest; admins can block Allow All while keeping Assisted |
-| Computer use and dynamic workflows | Public preview Oct 1, 2026 in the Copilot CLI and app; workflows are code-defined stages with checkpoints for human review |
-| Copilot Fusion | GA Oct 28, 2026, on all plans. Routes each task across models with Standard, High and Max effort and Single, Cascade (a cheap model drafts, a quality gate escalates) or Critique (cross-family review) workflows, the modes first previewed as HydraFusion (Sep 30) |
-| Local sandboxing | Per-project filesystem, network and credential limits in the Copilot app (public preview, Sep 23, 2026, off by default) |
-| Model | Auto model selection with efficiency, balance and intelligence tiers; OpenAI, Anthropic and Google models available |
-| Enterprise features | IP protection, org policies, code referencing controls |
-
-**Best for**: Enterprise teams already on Microsoft/GitHub ecosystem.
-
-**2026 reality**: Many developers prefer Cursor or Claude Code for agentic work, but Copilot's enterprise controls and GitHub integration keep it dominant in large orgs. Two governance notes: Copilot was unpatched for Plugin4Shell at disclosure (Sep 17, 2026), and from Oct 1, 2026 credit-card and PayPal customers pay upfront for assigned seats. Since Oct 28, GitHub Enterprise Cloud customers working with a GitHub or Microsoft account team can get Copilot included for every licensed user, with Enterprise features and models but no monthly AI credits per seat: usage draws from a pooled enterprise budget, completions and next edit suggestions work without budget while chat, code review and Copilot in the cloud need it, and an exhausted budget never removes access. Non-licensed users can buy Copilot Standalone at $10 per user per month; self-serve customers cannot get the bundle yet. Cost governance for coding agents moves from counting seats to designing budgets.
-
-### Google Antigravity
-
-Antigravity is Google's agentic development platform, an **agent-first workspace** rather than a text editor. Antigravity 2.0 (May 19, 2026) made it a product family: a desktop app for coordinating multiple local agents, the IDE, an **Antigravity CLI** and an SDK.
-
-| Feature | Detail |
-|---------|--------|
-| **Agent Manager** | A dedicated view to launch, watch, and steer multiple async coding agents instead of editing files one at a time |
-| **Planning + artifacts** | Agents produce a plan and reviewable artifacts (diffs, task lists, live browser sessions) before and during execution |
-| **Built-in browser** | Agents can run and visually test the UI they build |
-| **Model optionality** | Gemini models by default, with support for Anthropic Claude and open models |
-| **Enterprise** | Included in eligible Gemini Enterprise Standard and Plus subscriptions since Aug 20, 2026, with sandbox and policy limits on browser and MCP permissions, budget caps, central audit logging, Workforce Identity Federation, and extensions for VS Code, Visual Studio, JetBrains, Zed and Xcode |
-| **API agent** | `antigravity-preview-09-2026` replaced `antigravity-preview-05-2026` on Sep 17 (the May version was scheduled to shut down Oct 5, 2026) with breaking tool changes: PascalCase parameters, line-range edits instead of full rewrites, new `find_by_name` and `grep_search` tools |
-
-Google positions the Antigravity CLI as the successor to Gemini CLI; it replaced Gemini CLI for free, Google AI Pro and Ultra users on June 18, 2026. Gemini CLI is still maintained (v0.66.0, Oct 27, 2026), but its README now scopes it to Gemini Code Assist Standard and Enterprise and Code Assist for GitHub (plus legacy paid API and Vertex keys) and says it is not tuned for the Gemini 4 series, so use the Antigravity CLI for Gemini 4 Argon. Google is also shutting down **Jules**, its asynchronous cloud coding agent: it goes read-only after November 11 and winds down December 31, 2026, so move any Jules workflows to Antigravity or another agent now.
-
-**Best for**: Developers who want to operate at the "task" level (delegate a goal, review the plan and result) rather than the "edit" level, and Google Cloud shops that want one licensed harness across IDE, CLI and SDK.
-
-### Kiro (AWS)
-
-Kiro is AWS's agentic IDE and CLI. **Kiro CLI 3.0.0** (Nov 3, 2026) is a cautionary upgrade: the V3 harness became the default for interactive sessions, for scripts using `--trust-all-tools`, and for new ACP clients (other headless scripts stay on V2); the CLI became a single standalone `kiro-cli` binary; and Classic (V1), the desktop app and inline autocomplete were retired with no standalone replacement, along with the `autocomplete`, `inline`, `translate`, `theme` and `dashboard` commands. V3 adds `/autonomous on`, which runs tasks without per-command approval inside a sandbox, and CLI 2.37.0 (Oct 30) auto-upgrades V2 agent files when V3 starts unless `chat.enableAutoAgentUpgrade` is false. The lesson: an unattended `--trust-all-tools` script silently switched harness on upgrade, so pin both the CLI version and the harness in CI.
+</div>
 
 ---
 
-## Open-Source Coding Agents
+## محیط‌های توسعه مبتنی بر هوش مصنوعی (AI-Native IDEs) <a id="ai-native-ides"></a>
 
-### OpenCode
+### محیط توسعه Cursor
 
-**GitHub:** github.com/anomalyco/opencode | **License:** MIT
+**وب‌سایت:** cursor.com | **پایه اصلی:** انشعاب از VS Code | **قیمت‌گذاری:** نسخه Pro از ۲۰ دلار در ماه، دارای پلن‌های سازمانی و تیمی
 
-The most-starred open-source coding agent (about 224K stars on Nov 2, 2026; about 13.7M npm downloads of `opencode-ai` and 1.6M of `@opencode/cli` across October). A terminal agent with a TUI that works with any provider, including local models, and supports MCP. It is the default answer to "open-source Claude Code with model choice."
+محیط Cursor پیشروترین IDE بومی هوش مصنوعی است و از اواسط اوت ۲۰۲۶ **بخشی از شرکت SpaceX** شده است (طی معامله‌ای با ارزش تخمینی ۶۰ میلیارد دلار از سهام SpaceX). مدل‌های Grok 4.6 و 4.7 در وبلاگ رسمی Cursor معرفی شدند. در ۲۸ اوت ۲۰۲۶، شرکت OpenAI به SpaceX اعلام کرد که قرارداد ارائه مدل‌های خود به Cursor را با ضرب‌الاجل قطع سرویس در **۱۲ نوامبر ۲۰۲۶** خاتمه خواهد داد و مدل‌های بعدی (شامل GPT-6 Astra) را تا زمانی که Cursor متعلق به SpaceX است ارائه نخواهد کرد.
 
-OpenCode now ships **two lines**. V1 (`opencode-ai`, 1.19.5 on Oct 28) is the legacy line; since Oct 18 the README points new installs at V2 (`curl -fsSL https://opencode.ai/v2/install | bash` or `npm i -g @opencode/cli@latest`; 2.2.5 on Oct 30). V2.2.0 (Oct 27) removed the OpenCode GitHub Action ("no longer published. Remove it from your workflows"), made the `@opencode/ai` package root the Promise API with the Effect API moved to `@opencode/ai/effect`, and requires OpenTUI 0.7 for TUI plugins. CI built on the GitHub Action loses its upstream under V2, so migrate to calling the CLI directly.
+| ویژگی | توضیحات |
+|---|---|
+| **عامل اختصاصی (Agent)** | ویرایش عاملی همزمان چند فایل؛ نام Composer اکنون به مدل کدنویسی اختصاصی Cursor اطلاق می‌شود |
+| **تکمیل خودکار با کلید Tab** | پیش‌بینی و تکمیل هوشمند خطوط بعدی کد |
+| **عامل‌های ابری (Cloud Agents)** | اجرا روی زیرساخت سرورهای Cursor یا اجرای سلف‌هاستد روی ماشین‌های سازمان (مانند AWS Lambda، Coder، Cloudflare، Daytona، Modal، Namespace، Vercel یا E2B) |
+| **پروژه‌ها (Projects)** | یک عامل هماهنگ‌کننده کار را برنامه‌ریزی کرده و به صدها زیرعامل موازی تفویض می‌کند؛ طبق اعلام سازنده، کاربران قابلیت Projects حدود ۳۰٪ بیشتر PR ثبت می‌کنند |
+| **استقرار و بازبینی امنیتی** | مانیتورینگ سلامت تغییرات به ازای هر محیط در زمان دیپلوی، و اسکنر امنیتی برای شناسایی باگ‌های قابل سوءاستفاده (در پلن‌های Teams و Enterprise) |
+| **قوانین و دستورالعمل‌ها** | تنظیم دستورالعمل‌های پروژه در مسیر `.cursor/rules`، و پشتیبانی از فایل `AGENTS.md` |
+| **تنوع مدل‌ها** | پشتیبانی از مدل‌های Anthropic، Google، xAI Grok و مدل‌های اختصاصی Cursor؛ مدل‌های OpenAI تا زمان انقضای قرارداد |
 
-### Codex CLI (OpenAI)
+**بهترین کاربرد**: توسعه‌دهندگان فرانت‌اند و فول‌استک که ویرایش عاملی را درون یک رابط گرافیکی آشنا می‌خواهند، و تیم‌هایی که خواهان عامل‌های ابری بدون دغدغه ارکستراسیون دستی هستند.
 
-**GitHub:** github.com/openai/codex | **License:** Apache-2.0
+**محدودیت‌ها**: منبع‌بسته بودن؛ ارسال کدها به سرورهای Cursor مگر با فعال‌سازی Privacy Mode و ماشین‌های سلف‌هاستد؛ و وابستگی به مارکت‌پلیس اختصاصی افزونه‌ها که در ۲۹ اکتبر ۲۰۲۶ منجر به انتشار نسخه‌های تروجان‌شده از افزونه Claude Code گردید.
 
-OpenAI's open-source terminal agent (about 133K stars on Nov 2, 2026; rust-v0.166.0 on Oct 29; about 82.3M npm downloads of `@openai/codex` in October). Key 2026 facts:
+### محیط توسعه Devin Desktop (متعلق به Cognition، نام پیشین Windsurf)
 
-- **Default model**: GPT-6.1 Sol since rust-v0.159.1 (Sep 29), including Amazon Bedrock catalogs. A CLI upgrade swapped the model for everyone who had not pinned one.
-- **DevDay (Sep 29)**: reusable cloud environments, a `/agents` view for parallel tasks, Code Review for GitHub PRs and GitLab MRs, Codex Security Cloud, and an **Ultrafast** tier (launched on GPT-6 Astra; GPT-6.1 Sol Ultrafast reached all API users on Oct 8 at $12/$60 per 1M; OpenAI says up to 8x faster generation in Codex; global processing or US residency only, no EU endpoint).
-- **Security fixes**: GitSpawn in 0.131.0, Plugin4Shell in 0.146.0.
-- **Headless**: `codex exec` for CI.
+**مستندات:** docs.devin.ai/desktop | **پایه اصلی:** انشعاب از VS Code | **نسخه:** 3.11.238 (۳۰ اکتبر ۲۰۲۶)
 
-### OpenHands (formerly OpenDevin)
+محیط Windsurf توسط شرکت Codeium ساخته شد، در ژوئیه ۲۰۲۵ توسط **Cognition** (سازنده عامل Devin) خریداری گردید و در نسخه v3.0.12 (۲ ژوئن ۲۰۲۶) به **Devin Desktop** تغییر نام داد. مستنداتی که هنوز از واژه «Windsurf» استفاده می‌کنند مربوط به همین محصول هستند. شرکت Cognition مدل پرچمدار خود با نام SWE-2 را منحصراً درون Devin عرضه کرده است.
 
-**GitHub:** github.com/OpenHands/OpenHands (moved from `All-Hands-AI/OpenHands`) | **License:** MIT
+| ویژگی | توضیحات |
+|---|---|
+| **ویرایش عاملی (Agentic Editing)** | قابلیتی که در دوران Windsurf با نام Cascade شناخته می‌شد |
+| **جریان‌های کاری مشترک (Flows)** | نشست‌های همزمان عامل و توسعه‌دهنده که در آن عامل اقدامات و ادیت‌های برنامه‌نویس را پایش می‌کند |
+| **تنوع مدل‌ها** | دسترسی به مدل‌های پیشرو آزمایشگاه‌های گوناگون در کنار مدل اختصاصی Cognition |
+| **یکپارچگی دوگانه** | هم محیط توسعه IDE و هم عامل خودمختار Devin از یک شرکت واحد ارائه می‌شوند |
 
-OpenHands has shipped as **Agent Canvas** since v1.24.0 (Sep 25, 2026), and releases roughly weekly (v1.34.0 on Oct 27): a self-hosted control center that runs the open-source OpenHands agent, or any agent that speaks the Agent Client Protocol (Claude Code, Codex, Gemini), against interchangeable backends. Older tutorials that mount the Docker socket into `docker.all-hands.dev/all-hands-ai/openhands` describe the previous architecture.
+**بهترین کاربرد**: تیم‌هایی که یک IDE پیشرفته با آزادی انتخاب مدل می‌خواهند، یا سازمان‌هایی که هم‌اکنون از عامل مستقل Devin استفاده می‌کنند و مایلند IDE یکپارچه با آن داشته باشند.
+
+### سرویس GitHub Copilot (متعلق به Microsoft/OpenAI)
+
+| ویژگی | وضعیت (نوامبر ۲۰۲۶) |
+|---|---|
+| تکمیل کد | همچنان پیشتاز بازار از نظر تعداد کاربران نصب‌شده |
+| عامل کدنویسی | ارجاع دادن ایشو و دریافت خودکار Pull Request |
+| تأییدیه‌های بازبینی کد | عرضه عمومی در ۲۸ اکتبر ۲۰۲۶: در صورت فعال‌سازی مدیر، تأییدهای Copilot جزو تأییدیه‌های الزامی شمرده می‌شوند؛ همچنین حالت بازبینی Max (پیش‌نمایش عمومی) چندین عامل مستقل از تأمین‌کنندگان مختلف را برای بررسی کد اجرا می‌کند |
+| جریان‌های کاری عاملی (Agentic Workflows) | عرضه عمومی در ۲۸ اکتبر ۲۰۲۶ روی گیت‌هاب: اتوماسیون‌های مارک‌داون به اکشن‌های گیت‌هاب کامپایل شده و در کانتینر ایزوله درون فایروال اجرا می‌شوند |
+| مجوزهای کمکی (Assisted Permissions) | مدل LLM به‌صورت خودکار دستورات، مسیرهای فایل و URLهای کاملاً امن را تأیید کرده و برای موارد مشکوک سؤال می‌پرسد |
+| کاربری کامپیوتر و جریان‌های پویا | پیش‌نمایش عمومی از ۱ اکتبر ۲۰۲۶ در ابزار و کلاینت Copilot |
+| قابلیت Copilot Fusion | عرضه عمومی در ۲۸ اکتبر ۲۰۲۶: مسیریابی وظایف میان مدل‌های مختلف با سطوح تلاش Standard، High و Max در قالب جریان‌های Single، Cascade یا Critique |
+| سندباکس محلی | اعمال محدودیت‌های فایل‌سیستم، شبکه و کلیدهای محرمانه درون اپلیکیشن Copilot (پیش‌نمایش عمومی، پیش‌فرض خاموش) |
+| تنوع مدل‌ها | انتخاب خودکار مدل با رده‌های کارایی، تعادل و هوشمندی؛ مدل‌های OpenAI، Anthropic و گوگل |
+| قابلیت‌های سازمانی | حفاظت از مالکیت فکری، سیاست‌های سازمانی، و کنترل ارجاع به کدهای منبع‌باز |
+
+**بهترین کاربرد**: سازمان‌های بزرگ و تیم‌های سازمانی که بر بستر اکوسیستم مایکروسافت و گیت‌هاب فعالیت می‌کنند.
+
+### پلتفرم Google Antigravity
+
+پلتفرم Antigravity بستر توسعه عاملی گوگل است؛ یک **محیط کاری عامل‌محور** به جای یک ویرایشگر متن سنتی. نسخه Antigravity 2.0 (۱۹ مه ۲۰۲۶) این سیستم را به یک خانواده محصول تبدیل کرد: اپلیکیشن دسکتاپ برای هماهنگی چند عامل محلی، محیط IDE، ابزار **Antigravity CLI** و یک کیت SDK جامع.
+
+| ویژگی | جزئیات |
+|---|---|
+| **مدیر عامل‌ها (Agent Manager)** | نمای اختصاصی برای راه‌اندازی، رصد و هدایت همزمان چندین عامل کدنویسی غیرهمزمان به جای ویرایش تک‌تک فایل‌ها |
+| **برنامه‌ریزی و آرتیفکت‌ها** | عامل‌ها پیش از اجرا و در حین کار، یک برنامه کاری و آرتیفکت‌های قابل بازبینی (دیف‌ها، لیست تسک‌ها، نشست‌های زنده مرورگر) تولید می‌کنند |
+| **مرورگر داخلی** | عامل‌ها می‌توانند رابط‌های کاربری ساخته‌شده را مستقیماً درون مرورگر اجرا کرده و تست بصری بگیرند |
+| **انتخاب مدل** | استفاده از مدل‌های Gemini به‌صورت پیش‌فرض، همراه با پشتیبانی از Claude و مدل‌های وزن باز |
+| **قابلیت‌های سازمانی** | ارائه در اشتراک‌های Gemini Enterprise همراه با کنترل‌های سندباکس، سقف بودجه، و لاگ‌های حسابرسی مرکزی |
+| **عامل API** | نسخه پیش‌نمایش جدید با نام `antigravity-preview-09-2026` جایگزین نسخه قبلی شد و ابزارهای جدید و ویرایش محدوده‌ای سطرها را معرفی کرد |
+
+گوگل ابزار Antigravity CLI را به‌عنوان جانشین رسمی Gemini CLI معرفی کرده است؛ این ابزار در ۱۸ ژوئن ۲۰۲۶ جایگزین Gemini CLI برای کاربران نسخه‌های رایگان، Pro و Ultra شد. همچنین گوگل در حال خاموش کردن **Jules** (عامل کدنویسی ابری غیرهمزمان) است و به کاربران توصیه شده کارهای خود را به Antigravity منتقل کنند.
+
+**بهترین کاربرد**: توسعه‌دهندگانی که می‌خواهند به جای سطح «ویرایش کد»، در سطح «تعریف هدف و وظیفه» کار کنند، و سازمان‌های مبتنی بر گوگل کلود.
+
+### ابزار Kiro (متعلق به AWS)
+
+ابزار Kiro محیط توسعه و خط فرمان عاملی شرکت آمازون است. نسخه **Kiro CLI 3.0.0** (۳ نوامبر ۲۰۲۶) مهارکننده نسخه ۳ را به‌صورت پیش‌فرض برای نشست‌های تعاملی و اسکریپت‌های دارای آرگومان `--trust-all-tools` قرار داد. قابلیت V3 دستور `/autonomous on` را اضافه کرده که کارهای درون سندباکس را بدون تأیید نوبتی اجرا می‌کند.
+
+---
+
+## عامل‌های کدنویسی منبع‌باز <a id="open-source-coding-agents"></a>
+
+### ابزار OpenCode
+
+**مخزن گیت‌هاب:** github.com/anomalyco/opencode | **نوع مجوز:** MIT
+
+محبوب‌ترین عامل کدنویسی منبع‌باز با بیش از ۲۲۴ هزار ستاره در گیت‌هاب و حدود ۱۵ میلیون دانلود در ماه اکتبر. این ابزار ترمینال دارای یک رابط متنی (TUI) است که با تمامی ارائه‌دهندگان مدل، از جمله مدل‌های محلی کار می‌کند و از سرورهای MCP پشتیبانی می‌نماید. این ابزار پاسخ استاندارد برای «معادل منبع‌باز Claude Code با آزادی در انتخاب مدل» به شمار می‌رود.
+
+### ابزار Codex CLI (متعلق به OpenAI)
+
+**مخزن گیت‌هاب:** github.com/openai/codex | **نوع مجوز:** Apache-2.0
+
+عامل خط فرمان منبع‌باز شرکت OpenAI (با بیش از ۱۳۳ هزار ستاره در گیت‌هاب؛ نسخه بر پایه راست rust-v0.166.0 در ۲۹ اکتبر؛ بیش از ۸۲ میلیون دانلود ماهانه در npm). نکات کلیدی سال ۲۰۲۶:
+
+- **مدل پیش‌فرض**: مدل GPT-6.1 Sol از نسخه rust-v0.159.1 مدل پیش‌فرض شد.
+- **امکانات جدید**: محیط‌های ابری با قابلیت استفاده مجدد، نمای `/agents` برای وظایف موازی، بازبینی خودکار کد در PRهای گیت‌هاب و GitLab، و رده **Ultrafast** برای تولید بسیار سریع‌تر کد.
+- **اصلاحات امنیتی**: پچ‌های امنیتی آسیب‌پذیری‌های GitSpawn و Plugin4Shell در نسخه‌های اخیر.
+- **اجرای بدون واسط**: استفاده از دستور `codex exec` برای پایپ‌لاین‌های CI.
+
+### پلتفرم OpenHands (نام پیشین OpenDevin)
+
+**مخزن گیت‌هاب:** github.com/OpenHands/OpenHands | **نوع مجوز:** MIT
+
+پلتفرم OpenHands از نسخه v1.24.0 (۲۵ سپتامبر ۲۰۲۶) تحت عنوان **Agent Canvas** عرضه می‌شود: یک مرکز کنترل سلف‌هاستد که عامل منبع‌باز OpenHands یا هر عامل سازگار با پروتکل Agent Client Protocol (مانند Claude Code، Codex، Gemini) را روی بک‌اندهای مختلف اجرا می‌کند.
+
+<div dir="ltr">
 
 ```bash
 # Docker sandbox option from the upstream README (pin the tag you tested)
@@ -240,7 +252,12 @@ docker run -it --rm \
 # injection flag and follow the upstream self-hosting hardening guide.
 ```
 
-**Architecture:**
+</div>
+
+**معماری سیستم:**
+
+<div dir="ltr">
+
 ```
 Agent Canvas (web UI, automations: schedules, webhooks, Slack, GitHub, Linear)
     ↓
@@ -250,17 +267,20 @@ Agent Server (OpenHands SDK)
         a VM, or OpenHands Cloud / Enterprise
 ```
 
-**Key features:**
-- **Any LLM**: LLM profiles cover Claude, GPT, Gemini and open-weight models through OpenAI-compatible endpoints
-- **Swappable execution backends**: The same UI drives agents on a laptop, in per-conversation Docker containers, or on a shared team server
-- **Automations**: Scheduled or webhook-triggered agent runs, which is the CI-integration story
-- **Harness-neutral**: Because it can drive Claude Code or Codex over ACP, it competes as an orchestration layer, not only as an agent
+</div>
 
-### Aider (Legacy)
+**ویژگی‌های شاخص:**
+- **پشتیبانی از هر مدل دلخواه**: پروفایل‌های LLM از Claude، GPT، Gemini و مدل‌های وزن باز پشتیبانی می‌کنند
+- **بک‌اندهای اجرای قابل تعویض**: هدایت عامل‌ها روی سیستم محلی، درون کانتینرهای داکر مجزا، یا روی سرورهای اشتراکی
+- **اتوماسیون‌ها**: اجرای برنامه‌ریزی‌شده یا تریگرشده با وب‌هوک برای ادغام در CI
 
-**GitHub:** github.com/Aider-AI/aider | **License:** Apache 2.0
+### ابزار Aider (پروژه قدیمی)
 
-Aider pioneered the terminal-first, git-native coding agent: it commits changes as it goes, keeps a repository map of files not in context, and separates an architect mode from the editing model. It has **gone quiet**: the last PyPI release is 0.86.2 (Feb 12, 2026) and the last commit was May 22, 2026. An unmaintained harness does not learn newer models' API constraints (recent Claude and GPT-6 models reject custom sampling parameters, for example) or ship security fixes, so prefer OpenCode or Codex CLI for new work.
+**مخزن گیت‌هاب:** github.com/Aider-AI/aider | **نوع مجوز:** Apache 2.0
+
+ابزار Aider پیشگام عامل‌های کدنویسی مبتنی بر ترمینال و سازگار با ساختار گیت بود. با این حال این پروژه اکنون به حالت غیرفعال درآمده است و آخرین نسخه رسمی آن در فوریه ۲۰۲۶ عرضه شد. از آنجا که مهارکننده آن برای محدودیت‌های API مدل‌های جدید (مانند رد کردن پارامترهای سفارشی sampling در Claude و GPT-6) به‌روزرسانی نشده، برای پروژه‌های جدید استفاده از OpenCode یا Codex CLI توصیه می‌شود.
+
+<div dir="ltr">
 
 ```bash
 # 2025-era usage, shown for its git-native workflow; claude-3-7-sonnet-20250219
@@ -272,11 +292,15 @@ aider --model claude-3-7-sonnet-20250219
 > Add JWT authentication to the User model
 ```
 
-### Cline (VS Code Extension)
+</div>
 
-**GitHub:** github.com/cline/cline | **License:** Apache 2.0
+### افزونه Cline (برای VS Code)
 
-Open-source VS Code extension for autonomous coding (v4.1.26, Oct 26, 2026; about 71K stars), with an SDK for embedding it elsewhere:
+**مخزن گیت‌هاب:** github.com/cline/cline | **نوع مجوز:** Apache 2.0
+
+افزونه منبع‌باز VS Code برای کدنویسی عاملی (با بیش از ۷۱ هزار ستاره در گیت‌هاب) همراه با یک SDK برای تعبیه در سایر محیط‌ها:
+
+<div dir="ltr">
 
 ```
 VS Code
@@ -288,78 +312,79 @@ VS Code
         └── MCP servers (any MCP tool)
 ```
 
-**Key differentiators:**
-- **MCP-native**: Full MCP support out of the box
-- **Permission per action**: Shell commands and file edits ask for approval by default, with configurable auto-approve
-- **Model flexibility**: Supports any OpenAI-compatible API endpoint (including local Ollama)
-- **Free**: Open-source, no subscription (you pay for the model API)
+</div>
 
-**Best for**: Developers who want Cursor-like experience for free, with full model flexibility.
+**نقاط تمایز کلیدی:**
+- **پشتیبانی بومی از MCP**: یکپارچگی کامل با ابزارهای استاندارد پروتکل کانتکست مدل
+- **مجوزدهی برای هر اقدام**: درخواست تأیید برای دستورات شل و ویرایش فایل‌ها به‌صورت پیش‌فرض
+- **انعطاف‌پذیری مدل‌ها**: اتصال به هر اندپوینت سازگار با فرمت OpenAI (شامل سرورهای محلی Ollama)
+- **کاملاً رایگان و منبع‌باز**: بدون هزینه اشتراک (صرفاً پرداخت هزینه مصرف API به ارائه‌دهنده)
 
 ---
 
-## Benchmark Deep Dive
+## تحلیل عمیق بنچمارک‌ها <a id="benchmark-deep-dive"></a>
 
-### Current Coding Benchmarks
+### بنچمارک‌های جاری حوزه کدنویسی
 
-SWE-bench Verified stopped separating frontier agents: scores cluster near the ceiling, and a September 2026 audit (arXiv 2609.34262) found that 24% (Opus 4.7) to 73% (Fable 5) of passing SWE-Bench Pro v1.0 runs were unearned, mostly through access to reference solutions in git history. A companion study (arXiv 2609.27891) found performance drops when SWE-bench repositories are rewritten in behavior-preserving ways, a sign of memorized repository cues. Current numbers to cite, always with the effort level and who ran them:
+بنچمارک SWE-bench Verified دیگر قادر به تمایز میان عامل‌های پیشرو نیست؛ نمرات همگی در نزدیکی سقف اشباع شده‌اند و ممیزی‌های رسمی نشان داده‌اند بخش قابل توجهی از موفقیت‌ها ناشی از وجود راه‌حل‌ها در تاریخچه گیت مخازن بوده است. همواره نمرات را همراه با سطح تلاش و مرجع اجراکننده ارزیابی کنید:
 
-| Benchmark | Results | Runner | Why it matters |
-|-----------|---------|--------|----------------|
-| SWE-Bench Pro v2, private set (272 tasks) | Claude Opus 5 222 (81.6%), Kimi K3 214 (78.7%), GLM-5.3 211, Gemini 3.8 Flash 211, Inkling 184 | Scale, Sep 22, 2026; network-locked sandbox, pristine re-grade | Clean measurement; open-weight Kimi K3 and GLM-5.3 are within about 3 to 4 points of Opus 5. The public 642-task split is saturated (Opus 5 99.4%) |
-| Terminal-Bench 4.0 | Claude Opus 5.5 64.85%, Claude Sonnet 5.5 61.82%, GPT-6 Astra and GPT-6.1 Sol tied at 58.18%, Claude Fable 5.1 57.88% (all at max effort) | tbench.ai leaderboard; the Opus 5.5, Sonnet 5.5 and GPT-6.1 Sol entries were added Oct 6 | GPT-6.1 Sol matches Astra for about $634 of run cost against $3.3K. Anthropic's own runs are higher (vendor-reported): Opus 5.5 66.4% (xhigh), Sonnet 5.5 70.6% |
-| DeepSWE v1.1 (113 commissioned tasks) | 74% three-way tie: GPT-6 Astra (xhigh, $4.43/task), Gemini 3.8 Flash (high, $2.36/task), Opus 5 (max, $11.84/task) | DeepSWE leaderboard, Sep 22 | Same pass rate, 5x spread in cost per task |
+| بنچمارک | نتایج | اجراکننده | دلیل اهمیت |
+|---|---|---|---|
+| نسخه SWE-Bench Pro v2 (مجموعه خصوصی ۲۷۲ وظیفه) | مدل Claude Opus 5 امتیاز ۲۲۲ (۸۱.۶٪)، Kimi K3 امتیاز ۲۱۴ (۷۸.۷٪)، GLM-5.3 امتیاز ۲۱۱، Gemini 3.8 Flash امتیاز ۲۱۱ | مؤسسه Scale (۲۲ سپتامبر ۲۰۲۶)، سندباکس بدون شبکه، ارزیابی مجدد دقیق | اندازه‌گیری سالم؛ مدل‌های متن‌باز Kimi K3 و GLM-5.3 تنها ۳ تا ۴ امتیاز با Opus 5 فاصله دارند |
+| بنچمارک Terminal-Bench 4.0 | مدل‌های Claude Opus 5.5 با ۶۴.۸۵٪، Claude Sonnet 5.5 با ۶۱.۸۲٪، GPT-6 Astra و GPT-6.1 Sol هر دو با ۵۸.۱۸٪، و Claude Fable 5.1 با ۵۷.۸۸٪ (همگی در بالاترین سطح تلاش) | جدول رده‌بندی tbench.ai؛ ثبت در ۶ اکتبر | مدل GPT-6.1 Sol با هزینه حدود ۶۳۴ دلار عملکردی معادل Astra با هزینه ۳.۳ هزار دلار ارائه داده است |
+| بنچمارک DeepSWE v1.1 (۱۱۳ وظیفه اختصاصی) | تساوی سه‌گانه در ۷۴٪: مدل‌های GPT-6 Astra (سطح xhigh با ۴.۴۳ دلار به ازای وظیفه)، Gemini 3.8 Flash (سطح high با ۲.۳۶ دلار)، و Opus 5 (سطح max با ۱۱.۸۴ دلار) | جدول رده‌بندی DeepSWE، ۲۲ سپتامبر | درصد موفقیت کاملاً برابر با اختلاف ۵ برابری در هزینه نهایی |
 
 > [!NOTE]
-> Scores are highly sensitive to the backend model, the effort level and the harness. The same model can move several points between Claude Code, Codex, OpenHands and a minimal harness, so evaluate agents on your own repositories with the SWE-Bench Pro v2 discipline: no network except the model endpoint, and re-grade every diff on a clean image.
+> نتایج به‌شدت به مدل پایه، سطح تلاش و مهارکننده اجرایی وابسته‌اند. یک مدل یکسان می‌تواند در Claude Code، Codex، OpenHands یا یک مهارکننده حداقلی چندین امتیاز جابه‌جا شود؛ بنابراین عامل‌ها را با انضباط آزمایشگاهی روی مخازن سازمانی خود ارزیابی کنید.
 
-### Historical: HumanEval+ and LiveCodeBench (2025 snapshot)
+### سوابق تاریخی: HumanEval+ و LiveCodeBench (داده‌های ۲۰۲۵)
 
-Both are retired as frontier signals: HumanEval is saturated, and Artificial Analysis now lists LiveCodeBench among its legacy evaluations. The tables are kept as a record of the 2025 state of the art. The GPT-4o, Qwen and DeepSeek HumanEval+ rows are from the Qwen2.5-Coder technical report; StarCoder2-15B is the base model, from its model card.
+این دو بنچمارک از معیارهای ارزیابی خط مقدم بازنشسته شده‌اند، اما به‌عنوان نقطه مرجع تاریخی حفظ می‌شوند:
 
-| Model | HumanEval+ Score |
-|-------|-----------------|
-| Claude 3.7 Sonnet | 93.6% |
-| GPT-4o (2024-08-06) | 86.0% |
-| Qwen2.5-Coder-32B-Instruct | 87.2% |
-| DeepSeek-Coder-V2-Instruct | 82.3% |
-| StarCoder2-15B | 37.8% |
+| مدل | امتیاز HumanEval+ |
+|---|---|
+| مدل Claude 3.7 Sonnet | ۹۳.۶٪ |
+| مدل GPT-4o (2024-08-06) | ۸۶.۰٪ |
+| مدل Qwen2.5-Coder-32B-Instruct | ۸۷.۲٪ |
+| مدل DeepSeek-Coder-V2-Instruct | ۸۲.۳٪ |
+| مدل StarCoder2-15B | ۳۷.۸٪ |
 
-| Model | LiveCodeBench Score |
-|-------|---------------------|
-| o3 (high) | 68.1% |
-| Claude 3.7 Sonnet | 54.2% |
-| GPT-4.5 | 38.7% |
-| Qwen2.5-Coder-32B | 43.2% |
-| DeepSeek-R1 | 57.0% |
-
----
-
-## Cost Comparison
-
-### Closed API vs. Open Self-Hosted
-
-**Scenario: 1,000 agentic bug-fix tasks/day.** Per task: about 15 model calls, 750K input tokens (mostly re-sent context, 90% served from cache, the uncached 10% billed at the cache-write rate where one exists) and 2.5K output tokens. These are illustrative estimates from list prices, not measurements; quality is the Artificial Analysis Intelligence Index v5.0 (Oct 27, 2026; not comparable with v4.x scores).
-
-| Approach | Cost per task | Monthly (30 days) | AA Index v5.0 | Notes |
-|----------|---------------|-------------------|----------|-------|
-| Claude Sonnet 5.5 (API) | ~$0.28 | ~$8,400 | 54 | Cache read $0.10 per 1M (0.05x) since Oct 7 |
-| Claude Opus 5.5 (API) | ~$0.56 | ~$16,800 | 58 | Every rate is exactly 2x Sonnet's, so 2x on any mix |
-| GPT-6.1 Sol (API) | ~$0.28 | ~$8,400 | 55 | Cache read $0.10 per 1M (0.05x); now level with Sonnet 5.5 on this workload |
-| GPT-6 Astra (API) | ~$1.74 | ~$52,000 | 57 | Cache read $1 per 1M; reserve for the hardest tasks |
-| DeepSeek V4.1-Flash (API, peak list, no cache discount assumed) | ~$0.23 | ~$6,900 | 32 at max (v5.0; 33 on v5.0.1); Kimi K3.1 Pro, open weights since November 4, scores 46 | Off-peak hours are half price; check the provider's cache-hit rate |
-| Self-hosted GLM-5.3-Flash (one 8×H100 node, 24/7) | Depends on utilization | ~$16,900 infra | 28 | $2.93/GPU-hr (Silicon Data H100 index, Nov 1, 2026), before engineering and on-call time |
-
-**Key insights**:
-- For agentic coding, **input dominates** (Anthropic's telemetry puts Claude Code at 324:1 input to output), so the cache-read price and your hit rate move the bill more than the headline input price.
-- Self-hosting only wins at sustained high utilization, and the comparison is now against cheap, cache-friendly APIs, not 2025 list prices. The stronger reasons to self-host are data control, fine-tuning on internal code, and independence from vendor model swaps.
-- Check the license before you build: Qwen3.8-Flash-Next cannot back a commercial coding assistant without a separate license.
+| مدل | امتیاز LiveCodeBench |
+|---|---|
+| مدل o3 (سطح تلاش high) | ۶۸.۱٪ |
+| مدل Claude 3.7 Sonnet | ۵۴.۲٪ |
+| مدل GPT-4.5 | ۳۸.۷٪ |
+| مدل Qwen2.5-Coder-32B | ۴۳.۲٪ |
+| مدل DeepSeek-R1 | ۵۷.۰٪ |
 
 ---
 
-## Selection Guide
+## مقایسه هزینه‌ها <a id="cost-comparison"></a>
 
-### Quick Decision Tree
+### سرویس‌های API بسته در برابر میزبانی باز اختصاصی
+
+**سناریو: ۱٬۰۰۰ وظیفه رفع باگ عاملی در روز.** به ازای هر وظیفه: حدود ۱۵ فراخوانی مدل، ۷۵۰ هزار توکن ورودی (عمدتاً زمینه بازارسالی، با ۹۰٪ کش هیت)، و ۲.۵ هزار توکن خروجی. مقادیر زیر برآوردهای تخمینی طبق قیمت‌های رسمی است؛ کیفیت بر مبنای Artificial Analysis Index v5.0 سنجیده شده است.
+
+| رویکرد | هزینه به ازای هر وظیفه | هزینه ماهانه (۳۰ روز) | شاخص AA Index v5.0 | توضیحات |
+|---|---|---|---|---|
+| مدل Claude Sonnet 5.5 (از طریق API) | حدود ۰.۲۸ دلار | حدود ۸٬۴۰۰ دلار | ۵۴ | هزینه خواندن کش ۰.۱۰ دلار در ۱M از تاریخ ۷ اکتبر |
+| مدل Claude Opus 5.5 (از طریق API) | حدود ۰.۵۶ دلار | حدود ۱۶٬۸۰۰ دلار | ۵۸ | تمامی نرخ‌ها دقیقاً ۲ برابر Sonnet است |
+| مدل GPT-6.1 Sol (از طریق API) | حدود ۰.۲۸ دلار | حدود ۸٬۴۰۰ دلار | ۵۵ | هزینه خواندن کش ۰.۱۰ دلار در ۱M؛ هم‌قیمت با Sonnet 5.5 در این بار کاری |
+| مدل GPT-6 Astra (از طریق API) | حدود ۱.۷۴ دلار | حدود ۵۲٬۰۰۰ دلار | ۵۷ | هزینه خواندن کش ۱ دلار در ۱M؛ توصیه به اختصاص برای پیچیده‌ترین تسک‌ها |
+| مدل DeepSeek V4.1-Flash (از طریق API، اوج مصرف) | حدود ۰.۲۳ دلار | حدود ۶٬۹۰۰ دلار | ۳۲ (در نسخه ۵.۰) | در ساعات کم‌مصرف نصف قیمت محاسبه می‌شود |
+| میزبانی اختصاصی GLM-5.3-Flash (روی یک گره ۸ کارت H100 به‌صورت شبانه‌روزی) | وابسته به میزان اشغال | حدود ۱۶٬۹۰۰ دلار هزینه سرور | ۲۸ | بدون احتساب زمان مهندسی، نگهداری و آن‌کال |
+
+**بینش‌های کلیدی**:
+- در کدنویسی عاملی، **توکن‌های ورودی حاکم بر هزینه‌اند**؛ بنابراین قیمت خواندن کش و نرخ اصابت کش بسیار مؤثرتر از قیمت اعلامی توکن‌های ورودی اولیه هستند.
+- میزبانی محلی (Self-hosting) تنها در شرایطی صرفه اقتصادی دارد که استفاده پایدار و پیوسته در سقف ظرفیت وجود داشته باشد. دلایل اصلی استقرار محلی امروزه بیشتر متمرکز بر حاکمیت داده، فاین‌تیونینگ روی کدهای محرمانه سازمانی، و استقلال از ارائه‌دهندگان ابری است.
+
+---
+
+## راهنمای انتخاب <a id="selection-guide"></a>
+
+### درخت تصمیم‌گیری سریع
+
+<div dir="ltr">
 
 ```
 What is your primary need?
@@ -387,26 +412,30 @@ What is your primary need?
    └─ Managed loop? → OpenAI Agents API or Claude Managed Agents (both still beta; check residency and ZDR)
 ```
 
-### Comparison Matrix
+</div>
 
-| Dimension | Claude Code | Codex CLI | Cursor | OpenCode | OpenHands | Cline |
-|-----------|-------------|-----------|--------|----------|-----------|-------|
-| Autonomy | Full | Full | Full (agent) | Full | Full | Full |
-| Model lock | Claude | OpenAI by default | Any | Any | Any | Any |
-| Open Source | No | Yes | No | Yes | Yes | Yes |
-| CI/Headless | Yes | Yes | Cloud agents | Yes | Yes | Yes (SDK) |
-| GUI | CLI, IDE, desktop | CLI, IDE, cloud | Full IDE | Terminal | Web UI | VS Code |
-| MCP | Yes | Yes | Yes | Yes | Yes | Yes |
-| Self-hosted execution | Yes (self-hosted runner) | Yes | Yes (Self-hosted Machines) | Yes | Yes | Yes |
-| Price | Subscription or API | Subscription or API | From $20/mo | Free + API | Free + API | Free + API |
+### ماتریس مقایسه ابزارها
+
+| ابعاد | ابزار Claude Code | ابزار Codex CLI | محیط Cursor | ابزار OpenCode | پلتفرم OpenHands | افزونه Cline |
+|---|---|---|---|---|---|---|
+| **سطح خودمختاری** | کامل | کامل | کامل (حالت عاملی) | کامل | کامل | کامل |
+| **قفل بودن مدل** | انحصاری Claude | پیش‌فرض OpenAI | پشتیبانی از انواع مدل‌ها | پشتیبانی از انواع مدل‌ها | پشتیبانی از انواع مدل‌ها | پشتیبانی از انواع مدل‌ها |
+| **منبع‌باز بودن** | خیر | بله | خیر | بله | بله | بله |
+| **قابلیت اجرا در CI / بدون واسط** | بله | بله | عامل‌های ابری | بله | بله | بله (از طریق SDK) |
+| **رابط کاربری** | خط فرمان، افزونه IDE، دسکتاپ | خط فرمان، افزونه IDE، ابر | محیط کامل IDE | ترمینال متنی (TUI) | تحت وب | افزونه VS Code |
+| **پشتیبانی از MCP** | بله | بله | بله | بله | بله | بله |
+| **اجرای سلف‌هاستد** | بله (از طریق self-hosted runner) | بله | بله (از طریق Self-hosted Machines) | بله | بله | بله |
+| **مدل هزینه** | اشتراک ماهانه یا API | اشتراک ماهانه یا API | از ۲۰ دلار در ماه | رایگان + هزینه API | رایگان + هزینه API | رایگان + هزینه API |
 
 ---
 
-## Production Architecture
+## معماری سیستم در محیط پروداکشن <a id="production-architecture"></a>
 
-### Enterprise Coding Agent Platform
+### پلتفرم عامل‌های کدنویسی در سطح سازمان
 
-Here's how to build an internal AI coding platform. The 2026 shape is a **split plane**: the agent vendor (or your own orchestrator) runs planning and model calls, while execution, credentials and network egress stay inside your perimeter. Claude Code self-hosted runners, Cursor Self-hosted Machines, OpenAI Agents API self-hosted sandboxes and Copilot's local sandboxing all shipped between August and September 2026.
+در ادامه نحوه ساخت یک پلتفرم داخلی عامل‌های کدنویسی هوش مصنوعی نمایش داده شده است. ساختار استاندارد در سال ۲۰۲۶ مبتنی بر **تفکیک دو صفحه کنترلی و اجرایی (Split Plane)** است: تأمین‌کننده عامل برنامه‌ریزی و فراخوانی مدل‌ها را هدایت می‌کند، در حالی که اجرا، مدیریت اعتبارنامه‌ها و شبکه درون مرز امن سازمان شما باقی می‌ماند.
+
+<div dir="ltr">
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -449,108 +478,120 @@ Here's how to build an internal AI coding platform. The 2026 shape is a **split 
 └────────────────────────────────────────────────────────────┘
 ```
 
-### Key Production Decisions
+</div>
 
-| Decision | Options | Recommendation |
-|----------|---------|----------------|
-| Model for agent | Claude Opus 5.5 / Sonnet 5.5, GPT-6.1 Sol, GPT-6 Astra, open-weight (GLM-5.3, Kimi K3.1 Pro, Kimi K3, MiMo-V2.6) | Pin a model per task class (for example Sonnet 5.5 or GPT-6.1 Sol by default, a frontier model for hard tasks) and re-run your eval set on every release |
-| Task intake | Manual, Jira webhook, GitHub label | GitHub label triggers Actions workflow |
-| Code execution | Local, Docker, microVM, self-hosted runner | Container or microVM inside your perimeter with an egress allowlist |
-| Human review | PR, Slack approval, automated | Required human PR review, never auto-merge; agent approvals do not count toward required reviews |
-| Cost control | Max turns, budgets, model routing, caching | Turn and spend budgets per task, cache hit-rate alerts, cheaper model for simple tasks |
-| Version policy | Float, pin, pin with floor | Pin agent CLI versions with a security floor (Claude Code >= 2.1.292 and Codex >= 0.146.0 cover the GitSpawn and Plugin4Shell fixes, plus Claude Code's October fix for permission bypass on network-path reads) |
+### تصمیمات کلیدی در محیط پروداکشن
+
+| تصمیم | گزینه‌ها | توصیه پیشنهادی |
+|---|---|---|
+| **مدل مناسب برای عامل** | مدل‌های Claude Opus 5.5 / Sonnet 5.5، GPT-6.1 Sol، GPT-6 Astra، مدل‌های باز (GLM-5.3، Kimi K3.1 Pro، Kimi K3، MiMo-V2.6) | قفل کردن یک مدل به ازای هر دسته وظیفه (برای نمونه Sonnet 5.5 یا GPT-6.1 Sol به‌صورت پیش‌فرض، و مدل‌های پیشرو برای وظایف دشوار) و اجرای مجدد آزمون‌های ارزیابی با انتشار هر نسخه جدید |
+| **ورود وظایف (Task Intake)** | دستی، وب‌هوک جیرا، لیبل‌های گیت‌هاب | لیبل گیت‌هاب که ورک‌فلوی Actions را تریگر کند |
+| **اجرای کد** | محلی، داکر، میکرو ماشین مجازی، رانر سلف‌هاستد | کانتینر یا میکرو ماشین مجازی درون محیط امن سازمان همراه با لیست مجاز ترافیک خروجی |
+| **بازبینی انسانی** | پول ریکوئست (PR)، تأیید در اسلک، خودکار | بازبینی انسانی اجباری برای PR، هرگز به‌صورت ادغام خودکار انجام نشود؛ تأییدیه‌های عامل‌ها نباید جایگزین بازبینی‌های الزامی شوند |
+| **کنترل هزینه‌ها** | سقف نوبت‌ها، بودجه، مسیریابی مدل، کشینگ | سقف نوبت و بودجه مالی به ازای هر تسک، هشدارهای نرخ اصابت کش، استفاده از مدل‌های ارزان‌تر برای کارهای ساده |
+| **سیاست مدیریت نسخه‌ها** | شناور، قفل‌شده، قفل‌شده با حداقل مجاز | قفل کردن نسخه‌های CLI عامل‌ها با رعایت کف امنیتی نسخه (برای نمونه Claude Code نسخه 2.1.292 به بالا و Codex نسخه 0.146.0 به بالا که پچ‌های GitSpawn و Plugin4Shell را شامل می‌شوند) |
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-### Q: How do you choose between Claude Code, Cursor, and OpenHands?
+### پرسش: چگونه بین Claude Code، Cursor و OpenHands انتخاب می‌کنید؟
 
-**Strong answer:**
-It depends on three axes:
+**پاسخ قوی:**
+این تصمیم بر اساس سه محور اصلی اتخاذ می‌شود:
+۱. **نیاز به رابط کاربری**: اگر توسعه‌دهندگان نیازمند محیط دیداری و مشاهده تغییرات درون متن کد هستند، Cursor یا Devin Desktop مناسب‌ترین گزینه‌ها هستند. اما اگر وظیفه به‌صورت اسکریپت‌شده، دسته‌ای یا بدون واسط در خطوط لوله CI انجام می‌گیرد (مانند رفع خودکار باگ یا تولید تست)، ابزارهای Claude Code، Codex CLI یا OpenHands انتخاب اول خواهند بود.
+۲. **کنترل و انتخاب مدل**: اگر آزادی کامل در اتصال هر مدلی (یا مدل‌های فاین‌تیون‌شده سازمانی) مد نظر باشد، ابزارهای OpenCode یا OpenHands راه‌حل هستند. اگر تمرکز روی بهترین خروجی خانواده Claude باشد، Claude Code و برای اکوسیستم OpenAI، ابزار Codex CLI برتری دارند.
+۳. **الزامات امنیتی و منبع‌باز بودن**: تیم‌های امنیت سازمانی معمولاً خواستار ابزارهایی هستند که کدهای آن قابل ممیزی باشد؛ در این حالت OpenCode (مجوز MIT)، OpenHands (مجوز MIT) و Codex CLI (مجوز Apache-2.0) اولویت دارند. مالکیت پلتفرم‌ها نیز اکنون بخشی از ارزیابی است: Cursor بخشی از SpaceX است و OpenAI در حال خاتمه دادن به ارائه مدل‌های خود به آن است. بنابراین من قراردادهای سطح دسترسی را بررسی کرده و لایه مسیریابی مدل‌های خودکار را تحت کنترل مستقیم تیم خودمان نگه می‌دارم.
 
-1. **Interface need**: If developers want GUI (see changes in context), use Cursor or Devin Desktop. If the task is scripted/headless (bug fixing, test generation in CI), use Claude Code, Codex CLI or OpenHands.
+برای یک شرکت رو به رشد، ترکیب استاندارد عبارت است از: Cursor برای توسعه روزمره برنامه‌نویسان، Claude Code یا Codex برای کارهای دسته‌ای متصل به ایشوها، و OpenHands یا OpenCode برای خطوط لوله مستقل CI.
 
-2. **Model control**: If you need to use any model (or your own fine-tuned model), use OpenCode or OpenHands. If you're okay with Claude only and want best-in-class results, use Claude Code; Codex CLI is the equivalent for OpenAI shops.
+### پرسش: چرا مدل‌های کدنویسی با وزن‌های باز (Open-Weight) برای شرکت‌ها و سازمان‌های بزرگ اهمیت دارند؟
 
-3. **Open-source and vendor requirements**: Enterprise security teams often require open-source tools they can audit. OpenCode (MIT), OpenHands (MIT) and Codex CLI (Apache-2.0) are the answer. Ownership is now part of the review too: Cursor is part of SpaceX and Devin Desktop (formerly Windsurf) part of Cognition, both of which build their own models. That risk is no longer hypothetical: OpenAI is winding down its model supply to Cursor (proposed shutoff Nov 12, 2026) after the SpaceX deal. I would ask for contractual commitments on third-party model access and data use, and keep model routing for batch and CI work in a layer we control.
+**پاسخ قوی:**
+به سه دلیل بنیادین:
+۱. **حاکمیت و محرمانگی داده‌ها**: اگرچه APIهای تجاری تعهد به عدم آموزش روی داده‌ها و حذف لاگ‌ها ارائه می‌دهند، اما در صنایعی مانند سلامت (HIPAA)، بانکداری و بخش‌های دفاعی، خروج کدهای اختصاصی از شبکه سازمان طبق مقررات ممنوع است. استقرار مدل‌های وزن باز در مراکز داده داخلی این الزام را برطرف می‌سازد.
+۲. **شخصی‌سازی و فاین‌تیونینگ**: مدل‌های باز قابلیت آموزش تخصصی روی فریم‌ورک‌های اختصاصی و پایگاه کدهای داخلی را دارند. با توجه به محدود شدن ابزارهای فاین‌تیونینگ سلف‌سرویس در OpenAI، خطوط لوله مبتنی بر مدل‌های باز بر بستر زیرساخت‌های سرور اختصاصی اهمیت بیشتری یافته‌اند.
+۳. **استقلال و پایداری عملیاتی**: عدم تأثیرپذیری از تغییرات ناگهانی و ناخواسته مدل‌ها توسط ارائه‌دهندگان ابری، و استقلال از جدول زمانی بازنشستگی آن‌ها.
 
-For a typical startup, I'd recommend: Cursor for daily development, Claude Code or Codex for batch tasks (PRs from GitHub issues), and OpenHands or OpenCode for self-hosted CI pipelines.
+شکاف کیفی در تسک‌های مبتنی بر مخزن کد به‌شدت باریک شده است: در آزمون خصوصی Scale روی SWE-Bench Pro v2، مدل‌های Kimi K3 (۷۸.۷٪) و GLM-5.3 (۷۷.۶٪) تنها ۳ تا ۴ درصد با Claude Opus 5 (۸۱.۶٪) فاصله دارند. با این حال، در ارزیابی‌های مفهومی و عمومی گسترده‌تر این شکاف همچنان ملموس است، بنابراین ارزیابی بر اساس بار کاری واقعی سازمان پیش‌نیاز تصمیم‌گیری است.
 
-### Q: Why are open-weight coding models important for enterprise?
+### پرسش: استراتژی تست و آزمون را برای یک عامل کدنویسی هوش مصنوعی در CI چگونه طراحی می‌کنید؟
 
-**Strong answer:**
-Three reasons:
+**پاسخ قوی:**
+من از یک ساختار ارزیابی سه سطحی استفاده می‌کنم:
+۱. **آزمون‌های کارکردی (Functional Tests - خودکار در هر اجرا)**:
 
-1. **Data control**: Enterprise APIs offer no-training terms and zero data retention, but some healthcare (HIPAA), finance (SOX), and government teams still cannot let proprietary code leave the network. An open-weight model on-prem solves this.
+<div dir="ltr">
 
-2. **Customization**: Open weights can be domain-specialized on an internal DSL or codebase. That path matters more now that OpenAI is winding down self-serve fine-tuning (active customers lose new jobs on January 6, 2027); trace-to-fine-tune pipelines such as LangSmith Fine-Tuning target open-weight models on Fireworks or Baseten.
-
-3. **Independence**: No silent model swaps on someone else's release schedule, and no per-platform retirement calendar.
-
-The quality gap has narrowed sharply on repository tasks: on Scale's clean SWE-Bench Pro v2 private set, Kimi K3 (78.7%) and GLM-5.3 (77.6%) sit within about 3 to 4 points of Claude Opus 5 (81.6%). It is still wide on broad held-out evaluation (Kimi K3.1 Pro, whose weights went public November 4, scores 46 on Artificial Analysis Intelligence Index v5.0.1 against 59 for Claude Opus 5.5 at max, and DeepSeek V4.1 Flash 1017, the best model AA labels open, scores 33 at max effort), so I would validate on our own task mix before moving hard work in-house. The cost argument is weaker than it used to be, because cache-heavy agent workloads are cheap on APIs, and the licenses need reading: Qwen3.8-Flash-Next cannot back a commercial coding assistant without a separate license.
-
-### Q: How would you design the testing strategy for an AI coding agent in CI?
-
-**Strong answer:**
-I'd use a three-tier evaluation:
-
-**1. Functional tests** (automated, every run):
 ```
 Agent output → Run pytest → Pass rate metric
 ```
 
-**2. Ground truth comparison** (weekly):
+</div>
+
+۲. **مقایسه با حقیقت زمینه‌ای (Ground Truth - به‌صورت هفتگی)**:
+
+<div dir="ltr">
+
 ```
 Known bug → Agent fix → Compare to expert fix
 Metric: Semantic similarity of diff (not byte-exact)
 ```
 
-**3. Human evaluation** (sample 5% of agent PRs):
+</div>
+
+۳. **ارزیابی انسانی (Human Evaluation - نمونه‌گیری ۵ درصدی از PRها)**:
+
+<div dir="ltr">
+
 ```
 Senior engineer rates: Correctness, Style, Safety, 1-5 scale
 ```
 
-I also track **regression rate**: if an agent fix introduces a new failing test, that's a hard failure. The agent should run the full test suite and only succeed if it improves or maintains the passing rate. And I harden the harness the way SWE-Bench Pro v2 does: the sandbox reaches only the model endpoint, git history that contains the fix is stripped, and every diff is re-graded on a pristine image, because agents that can find the answer will.
+</div>
 
-### Q: GitHub now lets Copilot code review approvals count toward required reviews. Would you turn it on?
+علاوه بر این، **نرخ پسرفت (Regression Rate)** رصد می‌شود: اگر اقدام عامل باعث شکست خوردن تستی شود که پیش‌تر موفق بوده، اجرا متوقف می‌گردد. همچنین محیط تست مانند بنچمارک SWE-Bench Pro v2 ایزوله می‌شود: سندباکس به جز اندپوینت مدل هیچ دسترسی به اینترنت ندارد، تاریخچه گیت منتهی به راه‌حل پاکسازی می‌شود، و دیف نهایی روی یک ایمیج کاملاً خام و پاک ارزیابی می‌گردد تا از کشف متقلبانه پاسخ‌ها توسط عامل جلوگیری شود.
 
-**Strong answer:**
-Only narrowly. The feature (GA since Oct 28, 2026, off by default) lets repository admins choose which paths Copilot may approve, and its approval is dismissed on new commits like a human's. I would allow it for low-risk paths (docs, generated clients, test-only changes) where it removes real review toil, and exclude infrastructure, auth, payments, CI configuration and the agent instruction files themselves. The hard rule is separation of duties: an agent-authored PR must not be approved by an agent alone, because the same blind spots that produced a bug tend to approve it. I would also log every agent approval for audit and sample them for human re-review, and treat any increase in post-merge incidents on approved paths as a signal to narrow the scope.
+### پرسش: گیت‌هاب اکنون به تأییدیه‌های بازبینی کد Copilot اجازه می‌دهد جزو بازبینی‌های الزامی محاسبه شوند. آیا این قابلیت را فعال می‌کنید؟
 
----
-
-## References
-
-- Scale. SWE-Bench Pro v2 (Sep 2026): https://scale.com/leaderboard
-- Terminal-Bench leaderboard: https://www.tbench.ai/
-- arXiv 2609.34262. "Maintaining Benchmarks Against Increasingly Capable Agents: Detection and Remediation of Unearned Passes" (Sep 2026): https://arxiv.org/abs/2609.34262
-- OpenCode: https://github.com/anomalyco/opencode
-- Codex CLI: https://github.com/openai/codex
-- Gemini CLI: https://github.com/google-gemini/gemini-cli
-- Google. "Introducing Google Antigravity CLI": https://antigravity.google/blog/introducing-google-antigravity-cli
-- Cursor. "Joining SpaceX" (Aug 2026): https://cursor.com/blog/joining-spacex
-- OpenAI. "Our decision on Cursor following its acquisition by SpaceX" (Aug 28, 2026): https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex/
-- GitHub. "Copilot code review: merge with confidence with Max and approvals" (Oct 28, 2026): https://github.blog/changelog/2026-10-28-copilot-code-review-merge-with-confidence-with-max-and-approvals
-- GitHub. "GitHub Agentic Workflows generally available" (Oct 28, 2026): https://github.blog/changelog/2026-10-28-github-agentic-workflows-generally-available
-- GitHub. "GitHub Enterprise now includes access to GitHub Copilot" (Oct 28, 2026): https://github.blog/changelog/2026-10-28-github-enterprise-now-includes-access-to-github-copilot
-- OpenCode v2.2.0 release notes (Oct 27, 2026): https://github.com/anomalyco/opencode/releases/tag/v2.2.0
-- Kiro CLI 3.0 changelog (Nov 3, 2026): https://kiro.dev/changelog/cli/3-0/
-- Cognition blog: https://cognition.com/blog
-- Qwen2.5-Coder: https://qwenlm.github.io/blog/qwen2.5-coder/
-- DeepSeek-Coder-V2: https://github.com/deepseek-ai/DeepSeek-Coder-V2
-- StarCoder2: https://huggingface.co/blog/starcoder2
-- OpenHands: https://github.com/OpenHands/OpenHands
-- Aider: https://aider.chat/
-- Cline: https://github.com/cline/cline
-- Cursor: https://cursor.com/
-- Devin Desktop changelog (renamed from Windsurf in v3.0.12, Jun 2, 2026): https://docs.devin.ai/desktop/changelog
-- GitHub. "Route and orchestrate models with GitHub Copilot Fusion" (Oct 28, 2026): https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/
-- Cursor. Claude Code extension security notice (Oct 2026): https://cursor.com/blog/claude-code-extension-security-notice
-- Jules changelog (turndown notice, Oct 29, 2026): https://jules.google/docs/changelog/
-- Google Antigravity: https://developers.googleblog.com/build-with-google-antigravity-our-new-agentic-development-platform/
-- LiveCodeBench: https://livecodebench.github.io/
+**پاسخ قوی:**
+تنها در یک دامنه بسیار محدود و محافظه‌کارانه. این قابلیت به مدیران اجازه می‌دهد مشخص کنند Copilot کدام مسیرهای فایل را می‌تواند تأیید کند. من آن را صرفاً برای مسیرهای کم‌ریسک (مانند اصلاحات مستندات، کلاینت‌های تولیدشده خودکار، یا تغییرات صرفاً در تست‌ها) مجاز می‌دانم تا بار بازبینی تکراری را کاهش دهد؛ اما برای بخش‌های زیرساختی، احراز هویت، درگاه‌های پرداخت، فایل‌های CI و فایل‌های راهنمای خود عامل‌ها آن را مسدود می‌کنم. اصل تخطی‌ناپذیر، **تفکیک وظایف (Separation of Duties)** است: یک Pull Request ایجادشده توسط یک عامل هوش مصنوعی هرگز نباید صرفاً توسط یک عامل هوش مصنوعی دیگر تأیید و ادغام شود؛ زیرا همان نقاط کوری که باگ را تولید کرده‌اند ممکن است منجر به تأیید اشتباه آن نیز بشوند.
 
 ---
 
-*Previous: [Claude Code](09-claude-code.md) | Next: [Framework Selection Guide](08-framework-selection-guide.md)*
+## منابع <a id="references"></a>
+
+- مستندات Scale. بنچمارک کدنویسی SWE-Bench Pro v2 (سپتامبر ۲۰۲۶): https://scale.com/leaderboard
+- جدول رده‌بندی بنچمارک ترمینال Terminal-Bench: https://www.tbench.ai/
+- مقاله arXiv 2609.34262. روش‌های حفظ بنچمارک‌ها در برابر دور زدن عامل‌ها: شناسایی و مقابله با موفقیت‌های غیرواقعی (سپتامبر ۲۰۲۶): https://arxiv.org/abs/2609.34262
+- مخزن پروژه OpenCode: https://github.com/anomalyco/opencode
+- مخزن ابزار Codex CLI: https://github.com/openai/codex
+- مخزن ابزار Gemini CLI: https://github.com/google-gemini/gemini-cli
+- مستندات Google. معرفی پلتفرم Google Antigravity CLI: https://antigravity.google/blog/introducing-google-antigravity-cli
+- مستندات Cursor. پیوستن Cursor به شرکت SpaceX (اوت ۲۰۲۶): https://cursor.com/blog/joining-spacex
+- بیانیه رسمی OpenAI. تصمیم‌گیری پیرامون Cursor پس از تصاحب توسط SpaceX (۲۸ اوت ۲۰۲۶): https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex/
+- مستندات GitHub. بازبینی کد با Copilot: ادغام مطمئن با حالت Max و تأییدیه‌های الزامی (۲۸ اکتبر ۲۰۲۶): https://github.blog/changelog/2026-10-28-copilot-code-review-merge-with-confidence-with-max-and-approvals
+- مستندات GitHub. عرضه عمومی جریان‌های کاری عاملی GitHub Agentic Workflows (۲۸ اکتبر ۲۰۲۶): https://github.blog/changelog/2026-10-28-github-agentic-workflows-generally-available
+- مستندات GitHub. دسترسی سازمان‌های گیت‌هاب به Copilot (۲۸ اکتبر ۲۰۲۶): https://github.blog/changelog/2026-10-28-github-enterprise-now-includes-access-to-github-copilot
+- مستندات OpenCode. یادداشت‌های انتشار نسخه v2.2.0 (۲۷ اکتبر ۲۰۲۶): https://github.com/anomalyco/opencode/releases/tag/v2.2.0
+- مستندات Kiro CLI. تاریخچه تغییرات نسخه ۳.۰ (۳ نوامبر ۲۰۲۶): https://kiro.dev/changelog/cli/3-0/
+- وبلاگ شرکت Cognition: https://cognition.com/blog
+- مستندات Qwen2.5-Coder: https://qwenlm.github.io/blog/qwen2.5-coder/
+- مستندات DeepSeek-Coder-V2: https://github.com/deepseek-ai/DeepSeek-Coder-V2
+- مستندات StarCoder2: https://huggingface.co/blog/starcoder2
+- مخزن پروژه OpenHands: https://github.com/OpenHands/OpenHands
+- وب‌سایت پروژه Aider: https://aider.chat/
+- مخزن افزونه Cline: https://github.com/cline/cline
+- وب‌سایت Cursor: https://cursor.com/
+- مستندات Devin Desktop. تاریخچه تغییرات (تغییر نام از Windsurf در ژوئن ۲۰۲۶): https://docs.devin.ai/desktop/changelog
+- مستندات GitHub. ارکستراسیون و مسیریابی مدل‌ها با GitHub Copilot Fusion (۲۸ اکتبر ۲۰۲۶): https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/
+- مستندات Cursor. اطلاعیه امنیتی افزونه Claude Code (اکتبر ۲۰۲۶): https://cursor.com/blog/claude-code-extension-security-notice
+- مستندات Jules. اطلاعیه پایان کار سرویس (۲۹ اکتبر ۲۰۲۶): https://jules.google/docs/changelog/
+- وبلاگ توسعه‌دهندگان گوگل. ساخت با پلتفرم Google Antigravity: https://developers.googleblog.com/build-with-google-antigravity-our-new-agentic-development-platform/
+- لیدربورد بنچمارک LiveCodeBench: https://livecodebench.github.io/
+
+---
+
+*مبحث قبلی: [ابزار Claude Code](09-claude-code.md) | مبحث بعدی: [راهنمای انتخاب فریم‌ورک](08-framework-selection-guide.md)*
+
+</div>

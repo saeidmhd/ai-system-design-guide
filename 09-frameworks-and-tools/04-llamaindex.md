@@ -1,33 +1,37 @@
-# LlamaIndex
+<div dir="rtl">
 
-While LangChain focuses on "Orchestration," **LlamaIndex** is the master of **Data-Centric AI**. It has evolved from a RAG library into a framework for **Workflows** and **Agentic Data Manipulation**, and the company behind it has since narrowed its commercial focus to document parsing and extraction (see [Strategic Signal](#strategic-signal-the-company-is-betting-on-parsing)).
+# فریم‌ورک LlamaIndex (LlamaIndex)
 
-## Table of Contents
+در حالی که فریم‌ورک LangChain بر «ارکستراسیون» متمرکز است، **LlamaIndex** متخصص اصلی در حوزه **هوش مصنوعی داده‌محور (Data-Centric AI)** محسوب می‌شود. این ابزار از یک کتابخانه RAG به فریم‌ورکی برای **گردش‌های کاری (Workflows)** و **دستکاری ایجنتی داده‌ها (Agentic Data Manipulation)** تکامل یافته است و شرکت توسعه‌دهنده آن از آن زمان تمرکز تجاری خود را بر پارس و استخراج اسناد محدود کرده است (به بخش [سیگنال راهبردی](#strategic-signal-the-company-is-betting-on-parsing) مراجعه کنید).
 
-- [The Data Framework Philosophy](#the-data-framework-philosophy)
-- [LlamaIndex Workflows](#llamaindex-workflows)
-- [Advanced Indexing: Beyond Vector Search](#advanced-indexing)
-- [LlamaCloud and Managed Ingestion](#llamacloud-and-managed-ingestion)
-- [Agents as Tools](#agents-as-tools)
-- [LlamaIndex Workflows: Event-Driven Application Framework](#llamaindex-workflows-event-driven-application-framework)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## جدول محتوا
 
----
-
-## The Data Framework Philosophy
-
-LlamaIndex is built on the belief that **the data is more important than the model**.
-- **The Node**: Every chunk of data is a "Node" with rich metadata (relationships, summaries, and parent-child links).
-- **The Retriever**: LlamaIndex provides the most diverse set of retrievers (Summary, Knowledge Graph, Tree, and Keyword).
+- [فلسفه فریم‌ورک داده‌محور](#the-data-framework-philosophy)
+- [گردش‌های کاری LlamaIndex](#llamaindex-workflows)
+- [نمایه‌سازی پیشرفته: فراتر از جستجوی برداری](#advanced-indexing)
+- [سرویس ابری LlamaCloud و دریافت مدیریت‌شده داده‌ها](#llamacloud-and-managed-ingestion)
+- [عامل‌ها به عنوان ابزار](#agents-as-tools)
+- [گردش‌های کاری LlamaIndex: فریم‌ورک نرم‌افزاری رویدادمحور](#llamaindex-workflows-event-driven-application-framework)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## LlamaIndex Workflows
+## فلسفه فریم‌ورک داده‌محور
 
-In 2024, LlamaIndex introduced **Workflows**, its answer to LangGraph.
-- **Event-Driven Architecture**: Nodes communicate by emitting `Events`.
-- **Concurrency**: Workflows are natively async and handle large-scale parallel data processing better than linear chains.
+فریم‌ورک LlamaIndex بر این باور بنا شده است که **داده‌ها از مدل اهمیت بیشتری دارند**.
+- **گره داده‌ای (The Node)**: هر تکه از داده‌ها (Chunk) یک «Node» است که با فراداده‌های غنی (روابط، خلاصه‌ها و پیوندهای والد-فرزند) همراه شده است.
+- **بازیاب (The Retriever)**: فریم‌ورک LlamaIndex متنوع‌ترین مجموعه بازیاب‌ها را ارائه می‌دهد (بازیاب‌های خلاصه‌محور، گراف دانش، درختی و کلیدواژه‌ای).
+
+---
+
+## گردش‌های کاری LlamaIndex
+
+در سال ۲۰۲۴، فریم‌ورک LlamaIndex قابلیت **Workflows** را به عنوان پاسخ خود به LangGraph معرفی کرد.
+- **معماری رویدادمحور (Event-Driven Architecture)**: گره‌ها از طریق انتشار رویدادها (`Events`) با یکدیگر ارتباط برقرار می‌کنند.
+- **هم‌زمانی (Concurrency)**: گردش‌های کاری به طور بومی غیرهمگام (Async) هستند و پردازش داده‌های موازی در مقیاس بزرگ را بسیار بهتر از زنجیره‌های خطی مدیریت می‌کنند.
+
+<div dir="ltr">
 
 ```python
 # Conceptual Workflow
@@ -38,55 +42,59 @@ class RAGWorkflow(Workflow):
         return RetrievalEvent(results=nodes)
 ```
 
----
-
-## Advanced Indexing
-
-1. **Property Graphs**: Linking vector chunks to graph nodes for RAG.
-2. **Context-Aware Splitters**: Grouping text by "Meaning" rather than "Token count" (using smaller LLMs to find optimal breakpoints).
-3. **Dynamic Pathing**: The retriever decides *which* index to query based on the complexity of the question.
+</div>
 
 ---
 
-## LlamaCloud and Managed Ingestion
+## نمایه‌سازی پیشرفته
 
-For enterprise scale, LlamaIndex focuses on **LlamaCloud**.
-- **Managed Ingestion**: Handling PDF parsing, OCR, and Table extraction as a service.
-- **Parsing as a Model**: Using vision-language models to "understand" layouts instead of rule-based parsers. LlamaParse and the newer LiteParse are the company's parsing products, and the Extract product turns parsed documents into typed records.
-
-### Strategic Signal: The Company Is Betting on Parsing
-
-On September 11, 2026, CEO Jerry Liu added a note to the `llama_index` README (PR #23020) saying the company's primary focus has shifted to LlamaParse, LiteParse and its ParseBench and ExtractBench benchmarks, with the open-source framework still available as an open toolkit. Release cadence matches: `llama-index` 0.14.22 (May 14), 0.14.23 (Jun 24), 0.14.24 (Aug 19) and 0.14.25 (Sep 21, 2026, dominated by a dependency fix for security alerts across integration packages), while `llama-index-workflows` keeps moving (2.26.1 on Oct 21, 2026); core had no release at all in October. The blog output for August and September is almost entirely extraction: ExtractBench (Aug 11), a Turbo extraction tier in beta (Sep 3), LiteParse updates (Sep 22) and Extract v2.5 (Oct 1).
-
-What it means for design: use LlamaIndex where it is strongest (ingestion, parsing, retrieval primitives) and keep it behind your own retrieval interface. Do not make it the general agent runtime for a system you expect to run for years; a slowing open-source cadence means fewer fixes for the integrations you depend on.
+۱. **گراف‌های ویژگی (Property Graphs)**: اتصال تکه‌های برداری به گره‌های گراف برای سیستم‌های RAG.
+۲. **تقسیم‌کننده‌های آگاه از کانتکست (Context-Aware Splitters)**: گروه‌بندی متن بر اساس «مفهوم و معنا» به جای «تعداد Token» (با استفاده از مدل‌های کوچک‌تر LLM برای یافتن نقاط شکست بهینه).
+۳. **مسیریابی پویا (Dynamic Pathing)**: بازیاب بر اساس پیچیدگی پرسش تصمیم می‌گیرد که *کدام* نمایه (Index) را مورد پرس‌وجو قرار دهد.
 
 ---
 
-## Agents as Tools
+## سرویس ابری LlamaCloud و دریافت مدیریت‌شده داده‌ها
 
-LlamaIndex treats agents as **high-level retrievers**.
-- You can "wrap" a complex LlamaIndex query engine as a tool and give it to a LangGraph agent.
-- **Benefit**: The agent gets "Smart Data Access" without needing to know the technical details of the vector DB or Graph schema.
+برای مقیاس‌های سازمانی، LlamaIndex بر پلتفرم **LlamaCloud** تمرکز دارد.
+- **دریافت مدیریت‌شده داده‌ها (Managed Ingestion)**: مدیریت پارس کردن فایل‌های PDF، نویسه‌خوان نوری (OCR) و استخراج جداول به صورت یک سرویس ابری.
+- **پارس کردن به عنوان یک مدل**: استفاده از مدل‌های زبانی-دیداری (VLM) برای «فهمیدن» چیدمان بصری اسناد به جای پارسرهای مبتنی بر قانون. ابزار LlamaParse و محصول جدیدتر LiteParse ابزارهای اختصاصی پارس این شرکت هستند و محصول Extract اسناد پارس‌شده را به رکوردهای داده‌ای نوع‌دار تبدیل می‌کند.
+
+### سیگنال راهبردی: تمرکز شرکت بر پارس اسناد
+
+در ۱۱ سپتامبر ۲۰۲۶، جری لیو (مدیرعامل LlamaIndex) یادداشتی را به README ریپازیتوری `llama_index` اضافه کرد (در PR شماره #23020) مبنی بر اینکه تمرکز اصلی شرکت به LlamaParse، LiteParse و بنچمارک‌های ParseBench و ExtractBench معطوف شده است، در حالی که فریم‌ورک متن‌باز همچنان به عنوان یک جعبه‌ابزار باز در دسترس خواهد بود. چرخه‌ی انتشار نسخه‌ها نیز این رویکرد را تایید می‌کند: نسخه `llama-index` 0.14.22 (۱۴ مه)، 0.14.23 (۲۴ ژوئن)، 0.14.24 (۱۹ اوت) و 0.14.25 (۲۱ سپتامبر ۲۰۲۶، که عمدتاً شامل رفع وابستگی‌ها برای هشدارهای امنیتی در پکیج‌های یکپارچه‌سازی بود)، در حالی که پکیج `llama-index-workflows` پیوسته در حال به‌روزرسانی است (نسخه 2.26.1 در ۲۱ اکتبر ۲۰۲۶)؛ پکیج هسته در ماه اکتبر اصلاً هیچ انتشاری نداشت. خروجی وبلاگ شرکت برای ماه‌های اوت و سپتامبر تقریباً به طور کامل بر استخراج داده متمرکز بوده است: بنچمارک ExtractBench (۱۱ اوت)، نسخه بتای Turbo extraction (۳ سپتامبر)، به‌روزرسانی‌های LiteParse (۲۲ سپتامبر) و عرضه Extract v2.5 (۱ اکتبر).
+
+معنای این سیگنال برای طراحی سیستم: از LlamaIndex در بخش‌هایی استفاده کنید که قوی‌ترین عملکرد را دارد (دریافت داده، پارس، و عناصر اولیه بازیابی) و آن را پشت اینترفیس بازیابی اختصاصی خود نگه دارید. آن را به زمان اجرای عمومی برای ایجنت‌هایی که انتظار دارید سال‌ها فعال باشند تبدیل نکنید؛ کاهش سرعت توسعه متن‌باز به معنای رفع کمتر باگ‌ها برای یکپارچه‌سازی‌هایی است که به آن‌ها وابسته هستید.
 
 ---
 
-## LlamaIndex Workflows: Event-Driven Application Framework
+## عامل‌ها به عنوان ابزار
 
-The pitch in 2024 was "Workflows is our LangGraph." The pitch today is different: Workflows is a general-purpose event-driven framework for any AI application, with RAG as one possible use. Workflows now lives in its own `llama-index-workflows` package, which `llama-index-core` depends on and re-exports as `llama_index.core.workflow`; the docs present it as the primary application surface, with indexes and retrievers as building blocks called from inside steps ([LlamaIndex workflows docs](https://developers.llamaindex.ai/python/framework/understanding/workflows/)). One naming subtlety worth pinning down: the **Workflows** package reached 1.0 in mid-2025 and is now on a 2.x line as a standalone package (`llama-index-workflows` 2.26.1, Oct 21, 2026), while the core `llama-index` framework itself remains on the 0.x line (0.14.25, Sep 21, 2026, still the latest in early November). For how this kind of version churn breaks tutorials and how to survive it, see [Navigating Framework Churn](12-navigating-framework-churn.md).
+فریم‌ورک LlamaIndex با ایجنت‌ها به عنوان **بازیاب‌های سطح بالا (High-Level Retrievers)** رفتار می‌کند.
+- شما می‌توانید یک موتور پرس‌وجوی پیچیده LlamaIndex را به عنوان یک ابزار «کپسوله‌سازی» کنید و آن را در اختیار یک Agent در LangGraph قرار دهید.
+- **مزیت اصلی**: عامل بدون نیاز به آگاهی از جزئیات فنی پایگاه داده برداری یا شمای گراف، به یک «دسترسی هوشمند به داده‌ها» دست می‌یابد.
 
-### What Changed Architecturally
+---
 
-| Dimension | Pre-Workflows LlamaIndex | Workflows-First LlamaIndex |
+## گردش‌های کاری LlamaIndex: فریم‌ورک نرم‌افزاری رویدادمحور
+
+شعار این شرکت در سال ۲۰۲۴ این بود که «Workflows پاسخ ما به LangGraph است.» اما شعار امروزی متفاوت است: Workflows یک فریم‌ورک رویدادمحور عمومی برای هر نوع برنامه هوش مصنوعی است که RAG صرفاً یکی از کاربردهای احتمالی آن محسوب می‌شود. ابزار Workflows اکنون در بسته اختصاصی خود یعنی `llama-index-workflows` زندگی می‌کند که `llama-index-core` به آن وابسته بوده و آن را با نام `llama_index.core.workflow` مجدداً اکسپورت می‌کند؛ مستندات رسمی آن را به عنوان سطح اصلی برنامه معرفی می‌کنند که در آن نمایه‌ها و بازیاب‌ها بلوک‌های ساختمانی هستند که از درون مراحل فراخوانی می‌شوند ([مستندات گردش‌های کاری LlamaIndex](https://developers.llamaindex.ai/python/framework/understanding/workflows/)). یک ظرافت در نام‌گذاری وجود دارد که باید به آن توجه کرد: بسته **Workflows** در اواسط سال ۲۰۲۵ به نسخه ۱.۰ رسید و اکنون روی شاخه 2.x به عنوان یک بسته مستقل قرار دارد (`llama-index-workflows` نسخه 2.26.1، ۲۱ اکتبر ۲۰۲۶)، در حالی که خود هسته اصلی فریم‌ورک `llama-index` همچنان روی شاخه 0.x باقی مانده است (0.14.25، ۲۱ سپتامبر ۲۰۲۶، که در اوایل نوامبر همچنان آخرین نسخه است). برای بررسی اینکه چگونه این تغییرات ناپایدار نسخه‌ها آموزش‌ها را می‌شکند و چگونه از آن جان سالم به در ببرید، به فصل [مدیریت تغییرات ناپایدار فریم‌ورک‌ها](12-navigating-framework-churn.md) مراجعه کنید.
+
+### تغییرات معماری
+
+| بعد مقایسه | نسخه اولیه LlamaIndex (پیش از Workflows) | نسخه متمرکز بر گردش‌کار (Workflows-First) |
 |-----------|--------------------------|-----------------------------------|
-| Primary abstraction | Query engine, chat engine | `Workflow` class with `@step` methods |
-| Control flow | Linear; nested query engines | Steps consume / emit typed `Event` subclasses |
-| State | Implicit in engine instances | Explicit `Context` with serializable state |
-| Concurrency | Cooperative via async query engines | First-class: emit several events, fan out, join |
-| Persistence | None | Context serializes to a dict (`to_dict` / `from_dict`) for resume |
-| Streaming | Per-engine | `ctx.write_event_to_stream()` from any step |
-| Human-in-the-loop | Manual | `InputRequiredEvent` / `HumanResponseEvent` pattern |
+| انتزاع اصلی | موتور پرس‌وجو (Query engine)، موتور چت | کلاس `Workflow` همراه با متدهای `@step` |
+| کنترل جریان | خطی؛ موتورهای پرس‌وجوی تو در تو | مراحل، زیرکلاس‌های نوع‌دار `Event` را مصرف یا منتشر می‌کنند |
+| مدیریت وضعیت | ضمنی درون نمونه‌های موتور | شیء صریح `Context` با وضعیت قابل سریال‌سازی |
+| هم‌زمانی | مشارکتی از طریق موتورهای پرس‌وجوی async | قابلیت درجه‌یک: انتشار چندین رویداد، انشعاب به بیرون (Fan-out)، و الحاق (Join) |
+| ماندگاری | فاقد پشتیبانی | زمینه به یک دیکشنری سریال‌سازی می‌شود (`to_dict` / `from_dict`) برای از سرگیری مجدد |
+| استریمینگ | به ازای هر موتور | متد `ctx.write_event_to_stream()` از درون هر مرحله |
+| انسان در چرخه | پیاده‌سازی دستی | الگوی `InputRequiredEvent` / `HumanResponseEvent` |
 
-### The Event-Driven Mental Model
+### مدل ذهنی رویدادمحور
+
+<div dir="ltr">
 
 ```python
 from llama_index.core.workflow import (
@@ -119,12 +127,16 @@ class GraphRAG(Workflow):
         return StopEvent(result=await self.llm.acomplete(...))
 ```
 
-Two properties fall out of this design:
+</div>
 
-1. The engine dispatches purely on **event type**, so adding a new branch is adding a new `Event` subclass and a step that consumes it. No central router to edit.
-2. **Concurrency is data-driven**: a step that emits three `RetrievedEvent`s automatically fans out three downstream `judge` invocations, and the joining step collects them with `ctx.collect_events`.
+دو ویژگی برجسته از این معماری حاصل می‌شود:
 
-### Workflows vs LangGraph
+۱. موتور اجرا صرفاً بر اساس **نوع رویداد (Event Type)** مسیرها را توزیع می‌کند، بنابراین اضافه کردن یک شاخه جدید صرفاً به معنای تعریف یک زیرکلاس جدید از `Event` و مرحله‌ای است که آن را مصرف می‌کند، بدون نیاز به ویرایش یک مسیریاب مرکزی.
+۲. **هم‌زمانی داده‌محور است**: مرحله‌ای که سه شیء `RetrievedEvent` منتشر می‌کند، به طور خودکار سه فراخوانی پایین‌دستی تابع `judge` را منشعب می‌نماید و مرحله الحاق آن‌ها را با `ctx.collect_events` جمع‌آوری می‌کند.
+
+### مقایسه Workflows با LangGraph
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -136,55 +148,59 @@ flowchart LR
     D --> G[Typed state, time-travel debugging, mature checkpoint store]
 ```
 
-| Dimension | LlamaIndex Workflows (2.x) | LangGraph (1.x) |
+</div>
+
+| بعد مقایسه | فریم‌ورک LlamaIndex Workflows (نسخه 2.x) | فریم‌ورک LangGraph (نسخه 1.x) |
 |-----------|----------------------------|-----------------|
-| Control flow primitive | Event dispatch | Graph nodes and edges, plus a typed reducer state |
-| State model | Free-form `Context` (dict-like) | Pydantic / TypedDict state with reducers |
-| Resume / time travel | Serializable context, basic resume | First-class checkpoints, branch from any node ([LangGraph persistence docs](https://docs.langchain.com/oss/python/langgraph/persistence)) |
-| Native integrations | LlamaParse, LlamaCloud, all LlamaHub loaders | LangSmith eval, all LangChain integrations |
-| Best-fit complexity | Data-shaped: parse, embed, retrieve, refine | Logic-shaped: plan, act, reflect, delegate |
-| Multi-agent helpers | `AgentWorkflow`, function-calling agents ([LlamaIndex AgentWorkflow](https://developers.llamaindex.ai/python/framework/understanding/agent/multi_agent/)) | `create_agent` (LangChain 1.x), supervisor and swarm packages, custom graphs |
-| Streaming UI | `ctx.write_event_to_stream` + AG-UI protocol | `astream_events` v2, AG-UI protocol |
+| المان اولیه کنترل جریان | توزیع رویدادها (Event dispatch) | گره‌ها و یال‌های گراف، به علاوه وضعیت کاهش‌دهنده نوع‌دار |
+| مدل وضعیت | زمینه منعطف `Context` (مشابه دیکشنری) | وضعیت نوع‌دار بر پایه Pydantic / TypedDict همراه با ردیوسرها |
+| از سرگیری / سفر در زمان | زمینه قابل سریال‌سازی، از سرگیری اولیه | چک‌پوینت‌های درجه‌یک، انشعاب از هر گره دلخواه ([مستندات ماندگاری LangGraph](https://docs.langchain.com/oss/python/langgraph/persistence)) |
+| یکپارچه‌سازی‌های بومی | پلتفرم LlamaParse، LlamaCloud، تمامی لودرهای LlamaHub | ارزیابی با LangSmith، تمامی یکپارچه‌سازی‌های LangChain |
+| بهترین تناسب با پیچیدگی | ساختارهای داده‌محور: پارس، امبد، بازیابی و پالایش داده | ساختارهای منطق‌محور: برنامه‌ریزی، اقدام، بازاندیشی و واگذاری وظایف |
+| ابزارهای کمکی چندعاملی | قابلیت `AgentWorkflow`، ایجنت‌های مبتنی بر فراخوانی تابع ([LlamaIndex AgentWorkflow](https://developers.llamaindex.ai/python/framework/understanding/agent/multi_agent/)) | قابلیت `create_agent` (در LangChain 1.x)، بسته‌های سرپرست و Swarm، گراف‌های سفارشی |
+| رابط کاربری استریمینگ | متد `ctx.write_event_to_stream` + پروتکل AG-UI | متد `astream_events` نسخه v2، پروتکل AG-UI |
 
-When you should reach for LlamaIndex Workflows over LangGraph:
+چه زمانی باید از LlamaIndex Workflows به جای LangGraph استفاده کرد:
 
-- The hard part is **data ingestion**, not reasoning. LlamaCloud, LlamaParse, and the property-graph stack are all native, not adapter-bridged ([LlamaCloud overview](https://www.llamaindex.ai/llamacloud)).
-- You want **document-driven parallelism**: parse 1000 PDFs, fan out an embedding step per chunk, join into one index update.
-- You are building inside the **TypeScript** ecosystem on LlamaIndex.TS (check feature coverage against the Python core first; most investment goes to Python and to the hosted parsing products).
+- بخش دشوار پروژه **دریافت داده‌ها (Data Ingestion)** است، نه استدلال ایجنتی. پلتفرم‌های LlamaCloud، LlamaParse و پشته Property Graph همگی به صورت بومی پیاده‌سازی شده‌اند و نیازی به آداپتورهای رابط ندارند ([نمای کلی LlamaCloud](https://www.llamaindex.ai/llamacloud)).
+- به **موازی‌سازی سندمحور** نیاز دارید: پارس ۱۰۰۰ فایل PDF، اجرای موازی مرحله امبدینگ به ازای هر تکه داده، و تجمیع نهایی در یک به‌روزرسانی نمایه.
+- در اکوسیستم **TypeScript** روی LlamaIndex.TS کد می‌زنید (ابتدا پوشش قابلیت‌ها را با هسته پایتون مقایسه کنید؛ بیشتر سرمایه‌گذاری‌ها به پایتون و محصولات پارس میزبانی‌شده اختصاص دارد).
 
-When LangGraph wins:
+چه زمانی LangGraph برتری دارد:
 
-- The hard part is the **agent control loop** itself: many agents, supervisor patterns, durable interrupts, replay.
-- You need **time-travel debugging** out of the box. LlamaIndex resume is good for crash recovery but not for branching from an arbitrary historical state the way LangGraph checkpoints do.
-- You are already on the LangSmith eval stack and want trace-level integration without bridging.
+- بخش دشوار پروژه خود **حلقه کنترل ایجنت** است: عامل‌های متعدد، الگوهای نظارتی، وقفه و از سرگیری پایدار، و بازپخش عملیات.
+- به قابلیت **اشکال‌زدایی سفر در زمان (Time-travel Debugging)** به صورت پیش‌فرض نیاز دارید. مکانیزم Resume در LlamaIndex برای بازیابی پس از خرابی مناسب است، اما برای انشعاب از یک وضعیت تاریخی دلخواه آن‌گونه که در چک‌پوینت‌های LangGraph ممکن است، طراحی نشده است.
+- از قبل روی پشته ارزیابی LangSmith مستقر هستید و خواهان یکپارچگی در سطح Trace بدون واسطه هستید.
 
-### Real-World Posture
+### رویکرد معماری در پروژه‌های واقعی
 
-Plenty of senior architectures run both: LlamaIndex Workflows for the data plane (ingestion, indexing, hybrid retrieval, reranking) wrapped as a tool, and LangGraph for the agent control plane on top. This is the pattern called out in the [AIMultiple framework comparison](https://research.aimultiple.com/agentic-ai-frameworks/) and in LlamaIndex's own [hybrid integration cookbook](https://developers.llamaindex.ai/python/framework/understanding/workflows/).
+بسیاری از معماری‌های پیشرفته سازمانی از هر دو فریم‌ورک به طور همزمان استفاده می‌کنند: LlamaIndex Workflows برای لایه داده (دریافت، نمایه‌سازی، بازیابی ترکیبی و Reranking) که به عنوان یک ابزار بسته‌بندی شده است، و LangGraph برای لایه کنترل ایجنت بر روی آن. این الگویی است که در [مقایسه فریم‌ورک‌های AIMultiple](https://research.aimultiple.com/agentic-ai-frameworks/) و همچنین در [دستورالعمل یکپارچه‌سازی ترکیبی LlamaIndex](https://developers.llamaindex.ai/python/framework/understanding/workflows/) به آن اشاره شده است.
 
-If you only pick one for a new greenfield app, the question reduces to: **is your team going to spend more time on data plumbing or on agent orchestration?** The answer drives the framework.
-
----
-
-## Interview Questions
-
-### Q: LangChain and LlamaIndex now both have "Graph/Workflow" features. How do you choose?
-
-**Strong answer:**
-I choose **LlamaIndex Workflows** for **Data-Intensive** tasks where the main complexity is ingestion, multimodal parsing, and complex retrieval. Its event-driven architecture fits massive parallel data processing. I choose **LangGraph** for **Logic-Intensive** multi-agent systems where the complexity is in the "Reasoning" and "Human-in-the-loop" logic. In many senior architectures, we use **Both**: LlamaIndex for the RAG engine and LangGraph for the overall agentic supervisor. I also weigh vendor direction: LlamaIndex said in September 2026 that its focus is parsing and extraction, so I keep it on the data plane behind my own interface rather than betting the control plane on it.
-
-### Q: What is the "Property Graph" in LlamaIndex and why is it superior to basic Vector RAG?
-
-**Strong answer:**
-A Property Graph combines the **Semantic flexibility** of vectors with the **Structural precision** of a database. In basic RAG, you might find a chunk about "Project Alpha," but you don't know who owns it. In a Property Graph, the vector chunk is a node linked to a `User` node and a `Timeline` node. This allows for **Global Reasoning** (e.g., "Find all documents written by Tom in the last month about Project Alpha"). Basic RAG would likely miss many related nodes because they don't contain the exact keyword "Alpha."
+اگر برای یک برنامه جدید و صفرکیلومتر صرفاً باید یکی از آن‌ها را انتخاب کنید، سوال اصلی این است: **آیا تیم شما زمان بیشتری را صرف مهندسی داده می‌کند یا ارکستراسیون ایجنت‌ها؟** پاسخ به این سوال فریم‌ورک برنده را تعیین می‌کند.
 
 ---
 
-## References
-- LlamaIndex. "Announcing Workflows 1.0: A Lightweight Framework for Agentic systems" (Jun 30, 2025): https://www.llamaindex.ai/blog/announcing-workflows-1-0-a-lightweight-framework-for-agentic-systems
-- `llama_index` README focus note (PR #23020, Sep 11, 2026): https://github.com/run-llama/llama_index
-- LlamaIndex. Integrations directory (LlamaHub has moved here): https://developers.llamaindex.ai/python/framework/community/integrations
+## پرسش‌های مصاحبه
+
+### پرسش: اکنون هر دو فریم‌ورک LangChain و LlamaIndex دارای قابلیت‌های «گراف / گردش کار» هستند. چگونه میان آن‌ها انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+من **LlamaIndex Workflows** را برای وظایف **داده‌محور (Data-Intensive)** انتخاب می‌کنم، در جایی که پیچیدگی اصلی در فرآیند دریافت، پارس چندوجهی و بازیابی پیچیده داده‌ها است. معماری رویدادمحور آن کاملاً با پردازش داده‌های موازی در مقیاس عظیم همخوانی دارد. در مقابل، **LangGraph** را برای سیستم‌های چندعاملی **منطق‌محور (Logic-Intensive)** برمی‌گزینم، جایی که پیچیدگی در منطق «استدلال» و «انسان در چرخه» قرار دارد. در بسیاری از معماری‌های سطح بالا از **ترکیب هر دو** استفاده می‌کنیم: LlamaIndex برای موتور RAG و LangGraph برای سرپرست ایجنتی کل سیستم. من همچنین به جهت‌گیری تجاری شرکت توسعه‌دهنده وزن می‌دهم: LlamaIndex در سپتامبر ۲۰۲۶ اعلام کرد که تمرکز اصلی‌اش بر پارس و استخراج است، بنابراین من آن را در لایه داده و پشت اینترفیس اختصاصی خودم نگه می‌دارم، نه اینکه لایه کنترل کل سیستم را به آن وابسته سازم.
+
+### پرسش: مفهوم «Property Graph» در LlamaIndex چیست و چرا نسبت به معماری RAG برداری پایه برتری دارد؟
+
+**پاسخ قوی:**
+یک Property Graph انعطاف‌پذیری **معنایی بردارها** را با دقت **ساختاری پایگاه‌های داده** ترکیب می‌کند. در معماری پایه RAG، ممکن است تکه متنی درباره «پروژه آلفا» پیدا کنید، اما نمی‌دانید مالک آن چه کسی است. در یک Property Graph، تکه برداری گره‌ای است که به یک گره `User` و یک گره `Timeline` متصل شده است. این ساختار امکان **استدلال سراسری (Global Reasoning)** را فراهم می‌سازد (مثلاً: «همه اسناد نوشته‌شده توسط تام در ماه گذشته درباره پروژه آلفا را پیدا کن»). در حالی که RAG پایه بسیاری از این گره‌های مرتبط را صرفاً به این دلیل که کلمه کلیدی دقیق «آلفا» در آن‌ها وجود ندارد، از دست می‌دهد.
 
 ---
 
-*Next: [DSPy: Programming Language Models](05-dspy.md)*
+## منابع
+- وبلاگ رسمی LlamaIndex با عنوان «معرفی Workflows 1.0: فریم‌ورکی سبک برای سیستم‌های ایجنتی» (۳۰ ژوئن ۲۰۲۵): https://www.llamaindex.ai/blog/announcing-workflows-1-0-a-lightweight-framework-for-agentic-systems
+- یادداشت تمرکز در README ریپازیتوری `llama_index` (درخواست پول‌ریکوئست #23020، ۱۱ سپتامبر ۲۰۲۶): https://github.com/run-llama/llama_index
+- فهرست یکپارچه‌سازی‌های LlamaIndex (مخزن LlamaHub به این آدرس منتقل شده است): https://developers.llamaindex.ai/python/framework/community/integrations
+
+---
+
+*بخش بعدی: [DSPy: برنامه‌نویسی مدل‌های زبانی](05-dspy.md)*
+
+</div>

@@ -1,56 +1,59 @@
-# Pydantic AI and Mastra: Typed Agent Frameworks (2026)
+<div dir="rtl">
 
-The agent framework debate has stopped being "LangGraph or LlamaIndex." Two newer entrants now own meaningful production share for teams that prioritize type safety over breadth: **Pydantic AI** in the Python world (about 5.4M PyPI downloads in the 30 days to Nov 1, 2026) and **Mastra** in the TypeScript world (about 8.2M npm downloads of `@mastra/core` in October 2026). Both reject the "string in, string out" surface that older frameworks accepted, and both bet that a fully typed agent is easier to test, evaluate, and operate than a clever-but-untyped one.
+# فریم‌ورک‌های Pydantic AI و Mastra: فریم‌ورک‌های عاملی مبتنی بر سیستم نوع‌ها (۲۰۲۶)
 
-## Table of Contents
+بحث و مناظره پیرامون فریم‌ورک‌های عاملی دیگر محدود به «LangGraph یا LlamaIndex» نیست. اکنون دو بازیگر جدید سهم قابل توجهی از محیط‌های عملیاتی را برای تیم‌هایی که ایمنی نوع‌ها (Type Safety) را بر گستردگی ابزارها ترجیح می‌دهند به خود اختصاص داده‌اند: **Pydantic AI** در دنیای پایتون (با حدود ۵.۴ میلیون دانلود ماهانه در PyPI تا نوامبر ۲۰۲۶) و **Mastra** در دنیای تایپ‌اسکریپت (با حدود ۸.۲ میلیون دانلود ماهانه پکیج `@mastra/core` در npm طی اکتبر ۲۰۲۶). هر دوی این فریم‌ورک‌ها پارادایم سنتی «ورودی رشته، خروجی رشته» را که فریم‌ورک‌های قدیمی‌تر پذیرفته بودند رد می‌کنند، و هر دو بر این باورند که تست، ارزیابی و نگهداری یک عامل کاملاً تایپ‌شده بسیار ساده‌تر و قابل‌اطمینان‌تر از یک عامل هوشمند اما بدون تایپ مشخص است.
 
-- [What These Frameworks Are](#what-these-frameworks-are)
-- [Pydantic AI: Typed Agents in Python](#pydantic-ai-typed-agents-in-python)
-- [Mastra: TypeScript-First Agents](#mastra-typescript-first-agents)
-- [Comparison with LangGraph](#comparison-with-langgraph)
-- [Choosing a Framework](#choosing-a-framework)
-- [Production References](#production-references)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## What These Frameworks Are
-
-Both Pydantic AI and Mastra grew out of frustration with framework lock-in and untyped prompt-stitching. They focus on the same set of ideas:
-
-- The agent loop is **defined by code**, not by a YAML / JSON graph.
-- Tool calls, structured outputs, and human-in-the-loop checkpoints are all **typed at the function signature**.
-- Provider portability is a hard requirement: swap Anthropic for OpenAI for Google by changing one line.
-- Evals, tracing, and deployment are first-class, not bolted on.
-
-The differences are mostly stack-shaped: one targets Python services that already use Pydantic for HTTP validation; the other targets Next.js / Node teams that want a Vercel-style developer experience.
+- [ماهیت این فریم‌ورک‌ها چیست](#what-these-frameworks-are)
+- [فریم‌ورک Pydantic AI: عامل‌های تایپ‌شده در پایتون](#pydantic-ai-typed-agents-in-python)
+- [فریم‌ورک Mastra: عامل‌های بومی تایپ‌اسکریپت](#mastra-typescript-first-agents)
+- [مقایسه با LangGraph](#comparison-with-langgraph)
+- [نحوه انتخاب فریم‌ورک مناسب](#choosing-a-framework)
+- [مراجع و نمونه‌های عملیاتی در محیط تولید](#production-references)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Pydantic AI: Typed Agents in Python
+## ماهیت این فریم‌ورک‌ها چیست <a id="what-these-frameworks-are"></a>
 
-### Current State
+هر دو فریم‌ورک Pydantic AI و Mastra از دل نارضایتی نسبت به وابستگی به فریم‌ورک‌ها (Lock-in) و چسباندن پرامپت‌های بدون تایپ شکل گرفتند. آن‌ها بر مجموعه اصول یکسانی تمرکز دارند:
 
-[Pydantic AI](https://ai.pydantic.dev/) shipped v1.0 in September 2025 and **v2.0.0 stable on June 23, 2026** after seven betas (the v2 beta forked from v1.100.0); it reached **2.66.0 on Nov 4, 2026**, while 1.x patch releases continue (1.107.10, same day) ([PyPI release history](https://pypi.org/project/pydantic-ai/#history)). Treat 2.66.0 / 1.107.10 as the floor: they fix two high advisories, GHSA-m5vj-8mcw-82qx (the `web_fetch_tool` local fallback re-indented JSON on the event loop before applying the content limit, so a nested document within the download limit could expand hundreds of times and block the loop) and GHSA-mfx5-pc32-32m8 (the `private_key` pattern in Pydantic AI Harness secret redaction backtracked exponentially; fixed in `pydantic-ai-harness` 0.66.0), plus medium issues including an SSRF cloud-metadata blocklist that missed Tencent Cloud's 169.254.0.23. A separate advisory the same day, GHSA-mgmv-r532-pg36 (fixed in 2.60.0), let a credential in an MCP server URL path reach chat frontends through MCP Apps events, so put MCP credentials in headers, never in URLs. In-process fetch and redaction helpers are attack surface like any other tool. Minor releases land several times a week and can change behavior: 2.62.0 (Oct 27) prefixes hosted MCP capabilities' tool names with the service by default (configurable with `tool_prefix`), which breaks allowlists and evals keyed on the old names. The library is built by the team behind Pydantic itself, which also runs [Pydantic Logfire](https://pydantic.dev/logfire). It is open source under MIT.
+- حلقه عاملیت **توسط کدهای برنامه‌نویسی تعریف می‌شود**، نه توسط گراف‌های تعریف‌شده در فایلهای YAML یا JSON.
+- فراخوانی ابزارها، خروجی‌های ساختاریافته و نقاط توقف برای بازخورد انسانی، همگی **در امضای توابع دارای تایپ دقیق هستند**.
+- قابلیت حمل میان تأمین‌کنندگان یک الزام اساسی است: جابه‌جایی میان Anthropic، OpenAI یا Google تنها با تغییر یک خط کد انجام می‌پذیرد.
+- آزمون‌های ارزیابی (Evals)، ردگیری (Tracing) و استقرار، بخش‌های درجه‌یک و درونی فریم‌ورک هستند و نه ویژگی‌هایی که بعداً اضافه شده باشند.
 
-V2 is **harness-first**: a *capability* is a composable unit that bundles tools, lifecycle hooks, instructions and model settings, and a first-party Pydantic AI Harness library supplies more of them, including `StepPersistence` for save and resume. Breaking and behavior changes to check when upgrading from 1.x:
+تفاوت‌ها بیشتر به پشته نرم‌افزاری تیم‌ها بازمی‌گردد: یکی برای سرویس‌های پایتونی طراحی شده که پیشاپیش از Pydantic برای اعتبارسنجی HTTP استفاده می‌کنند؛ و دیگری تیم‌های اکوسیستم Next.js و Node را هدف قرار داده که به دنبال تجربه توسعه شبیه به Vercel هستند.
 
-- `openai:` model strings now use the **Responses API**; use `openai-chat:` to stay on Chat Completions.
-- `end_strategy` defaults to `'graceful'`, and a bare install ships fewer provider extras.
-- `builtin_tools` is renamed `native_tools`, and the `grok:` prefix becomes `xai:`.
-- The Outlines integration and the FastMCP back-compat shim are removed, the `vertexai` extra is gone (Vertex AI comes through the `google` extra), and A2A support moved upstream to the `fasta2a` package.
-- Default instrumentation is v5, with `gen_ai.aggregated_usage` attributes, so dashboards built on older attribute names need updating.
+---
 
-Key surface area:
+## فریم‌ورک Pydantic AI: عامل‌های تایپ‌شده در پایتون <a id="pydantic-ai-typed-agents-in-python"></a>
 
-- `Agent` class parameterized by an output type and a list of typed tools.
-- Provider adapters for Anthropic, OpenAI, Google, xAI, Mistral, Groq, Cohere, Ollama, and any OpenAI-compatible endpoint.
-- Native OpenTelemetry tracing, exported either to Logfire or any OTLP collector.
-- `pydantic_evals` for declarative eval suites with LLM-judge and code-graded scorers.
-- A `Graph` API for explicit state machines when the simple `Agent` loop is not enough.
+### وضعیت کنونی
 
-### Why Teams Pick It
+کتابخانه [Pydantic AI](https://ai.pydantic.dev/) نسخه ۱.۰ خود را در سپتامبر ۲۰۲۵ و **نسخه پایدار v2.0.0 را در ۲۳ ژوئن ۲۰۲۶** عرضه کرد؛ و در تاریخ **۴ نوامبر ۲۰۲۶ به نسخه 2.66.0 رسید**، در حالی که انتشارات پچ سری 1.x نیز همچنان ادامه دارد ([تاریخچه انتشارات PyPI](https://pypi.org/project/pydantic-ai/#history)). نسخه‌های 2.66.0 و 1.107.10 را به‌عنوان حداقل نسخه در نظر بگیرید: آن‌ها دو آسیب‌پذیری مهم را برطرف کرده‌اند، از جمله GHSA-m5vj-8mcw-82qx (که در آن ابزار `web_fetch_tool` قبل از اعمال محدودیت محتوا، JSON را در حلقه رویداد بازنویسی می‌کرد و یک سند تودرتو می‌توانست حلقه را مسدود کند) و GHSA-mfx5-pc32-32m8 (مشکل بازگشت نمایی در پترن‌های ماسک کردن کلیدهای خصوصی)، به‌همراه رفع خطای SSRF در لیست مسدودسازی آدرس‌های متادیتای کلود. نسخه 2.60.0 نیز نشت اعتبارنامه در مسیر سرور MCP به فرانت‌اند چت را اصلاح کرد؛ بنابراین اعتبارنامه‌های MCP را در هدرها قرار دهید و هرگز در آدرس URL نگذارید. این کتابخانه توسط سازندگان Pydantic توسعه یافته که پلتفرم [Pydantic Logfire](https://pydantic.dev/logfire) را نیز مدیریت می‌کنند و دارای مجوز متن‌باز MIT است.
+
+نسخه ۲ دارای معماری **مبتنی بر مهارکننده (Harness-first)** است: یک *قابلیت (Capability)* یک واحد ترکیب‌پذیر است که ابزارها، هوک‌های چرخه حیات، دستورالعمل‌ها و تنظیمات مدل را یکپارچه می‌کند، و کتابخانه رسمی Pydantic AI Harness موارد بیشتری مانند `StepPersistence` را برای ذخیره و ازسرگیری ارائه می‌دهد. تغییرات شکننده و رفتاری مهم هنگام ارتقا از نسخه ۱:
+
+- رشته‌های اتصال `openai:` اکنون از **Responses API** استفاده می‌کنند؛ برای ماندن در حالت Chat Completions باید از `openai-chat:` استفاده کنید.
+- مقدار پیش‌فرض `end_strategy` به `'graceful'` تغییر یافته و بسته خام اولیه افزونه‌های ارائه‌دهنده کمتری را به‌صورت پیش‌فرض نصب می‌کند.
+- ویژگی `builtin_tools` به `native_tools` تغییر نام داده و پیشوند `grok:` به `xai:` تبدیل شده است.
+- یکپارچه‌سازی با Outlines و شیم سازگاری FastMCP حذف شده‌اند، و پشتیبانی از پروتکل A2A به بسته `fasta2a` منتقل شده است.
+- ابزار دقیق‌سازی پیش‌فرض اکنون نسخه ۵ با ویژگی‌های `gen_ai.aggregated_usage` است؛ بنابراین داشبوردهای مبتنی بر نام‌های قبلی نیازمند به‌روزرسانی هستند.
+
+بخش‌های اصلی سطح دسترسی:
+- کلاس `Agent` دارای پارامتر نوع خروجی و لیستی از ابزارهای دارای تایپ.
+- آداپتورهای تأمین‌کننده برای Anthropic، OpenAI، Google، xAI، Mistral، Groq، Cohere، Ollama و هر اندپوینت سازگار با فرمت OpenAI.
+- ردگیری بومی OpenTelemetry و ارسال به Logfire یا هر جمع‌آوری‌کننده OTLP.
+- ابزار `pydantic_evals` برای طراحی مجموعه‌های ارزیابی اعلانی همراه با داوری LLM و نمره‌دهی مبتنی بر کد.
+- رابط `Graph` API برای طراحی ماشین‌های حالت صریح در شرایطی که حلقه ساده Agent پاسخگو نیست.
+
+### چرا تیم‌ها این فریم‌ورک را انتخاب می‌کنند
+
+<div dir="ltr">
 
 ```python
 from dataclasses import dataclass
@@ -82,48 +85,51 @@ result = await agent.run("Refund order 1234", deps=Deps(orders=db))
 assert isinstance(result.output, RefundDecision)
 ```
 
-Three properties make this attractive in production:
+</div>
 
-1. **The return type is enforced.** `result.output` is a `RefundDecision` or the call fails. There is no silent string drift.
-2. **Tools are functions, not dicts.** A schema is generated from the Python signature and docstring at registration time, so you cannot accidentally drift the LLM-facing schema from the implementation.
-3. **Dependency injection is explicit.** `ctx.deps` is a typed container, which makes the agent trivial to unit-test with mocks.
+سه ویژگی ساختاری این فریم‌ورک را در محیط پروداکشن جذاب می‌سازد:
 
-The [Pydantic AI evals docs](https://ai.pydantic.dev/evals/) describe a typical loop where the same Pydantic model used for the production schema is used for both the LLM output type and the eval scorer's `expected_output`.
+۱. **نوع خروجی تضمین‌شده است.** شیء `result.output` قطعاً از نوع `RefundDecision` است یا اینکه کل فراخوانی با خطا متوقف می‌شود. هیچ تغییر ساختار ناخواسته در قالب رشته رخ نمی‌دهد.
+۲. **ابزارها تابع هستند، نه دیکشنری‌های بی‌ساختار.** اسکیما مستقیماً از امضای پایتونی و داک‌استرینگ تابع در زمان ثبت تولید می‌شود؛ بنابراین ناسازگاری میان اسکیمای مدل و کدهای اجرایی ممکن نیست.
+۳. **تزریق وابستگی‌ها (Dependency Injection) کاملاً صریح است.** شیء `ctx.deps` یک ظرف داده دارای نوع است که آزمون واحد (Unit Test) را با داده‌های ساختگی (Mock) فوق‌العاده ساده می‌سازد.
 
-**Structured output on the newest models**: Claude Fable 5.1, Opus 5.5 and Sonnet 5.5 reject forced tool choice, and GPT-6 Astra needs the Responses API for tools. Any framework output mode built on a forced tool call has to adapt, so after a model upgrade, check which output mode your version uses. Pydantic AI 2.52.0 marks those Claude models with `supports_forced_tool_choice=False`: the forcing it infers for an output tool (as in the sample above) falls back to `auto`, while an explicit `tool_choice='required'` raises a `UserError`. Pydantic AI's `NativeOutput` marker requests the provider's native JSON-schema output instead of a tool call.
+مستندات ارزیابی Pydantic AI روندی را نشان می‌دهد که در آن همان مدل Pydantic که در ساختار عملیاتی پروداکشن به کار رفته، هم برای نوع خروجی LLM و هم به‌عنوان `expected_output` در سنجه‌های ارزیابی استفاده می‌شود.
 
-### When Pydantic AI Is the Right Choice
+**خروجی‌های ساختاریافته در مدل‌های جدید**: مدل‌های Claude Fable 5.1، Opus 5.5 و Sonnet 5.5 انتخاب اجباری ابزار (Forced Tool Choice) را رد می‌کنند، و مدل GPT-6 Astra برای ابزارها نیازمند Responses API است. هر فریم‌ورکی که استخراج خروجی ساختاریافته را بر پایه فراخوانی اجباری ابزار بنا کرده باشد باید این رفتار را تطبیق دهد. نسخه Pydantic AI 2.52.0 این مدل‌های Claude را با ویژگی `supports_forced_tool_choice=False` علامت‌گذاری کرده است: اجبار خروجی در این مدل‌ها به‌طور خودکار به `auto` تبدیل می‌شود در حالی که مقدار صریح `tool_choice='required'` خطای کاربر تولید می‌کند. شناسه `NativeOutput` در Pydantic AI مستقیماً خروجی بومی JSON-schema ارائه‌دهنده را درخواست می‌کند.
 
-- The service is **Python** and already uses Pydantic for HTTP validation (FastAPI is the canonical case).
-- You want **strict schemas** end to end: HTTP boundary, LLM tool call, LLM output, database row.
-- You want **provider portability** without writing your own adapter layer.
-- You are happy to write the agent loop as imperative Python rather than as a graph definition.
+### چه زمانی Pydantic AI انتخابی ایده‌آل است
 
-### When It Is Not
+- سرویس شما مبتنی بر **پایتون** است و هم‌اکنون از Pydantic برای اعتبارسنجی HTTP بهره می‌برد (معماری‌های FastAPI نمونه استاندارد هستند).
+- به دنبال **اسکیماهای دقیق و سخت‌گیرانه** در تمام طول مسیر هستید: لایه ورودی HTTP، فراخوانی ابزار مدل، خروجی مدل، و ردیف پایگاه داده.
+- خواهان **قابلیت حمل میان ارائه‌دهندگان مدل** بدون نیاز به توسعه لایه‌های واسط سفارشی هستید.
+- ترجیح می‌دهید حلقه عاملیت را به‌صورت کدهای متداول و شفاف پایتون بنویسید تا گراف‌های پیچیده تعریفی.
 
-- You want a **declarative graph** for multi-agent coordination with supervisor patterns. The `Graph` API exists but is more bare-bones than LangGraph. (For a long-running single agent, v2's `StepPersistence` narrows the gap.)
-- You want **time-travel debugging** with branch-from-any-node semantics.
-- You need the breadth of the LangChain integration ecosystem (vector stores, document loaders, etc).
+### چه زمانی مناسب نیست
+
+- نیازمند یک **گراف اعلانی پیچیده** برای هماهنگی چندعاملی با الگوهای سرپرست (Supervisor) هستید. اگرچه قابلیت `Graph` وجود دارد، اما بسیار ساده‌تر از LangGraph است.
+- نیازمند **خطایابی در طول زمان (Time-travel Debugging)** با قابلیت ایجاد شاخه از هر گره گراف هستید.
+- نیازمند تنوع گسترده ابزارهای آماده در اکوسیستم LangChain (اتصال‌دهنده‌های پایگاه‌های برداری، بارگذارهای اسناد و غیره) هستید.
 
 ---
 
-## Mastra: TypeScript-First Agents
+## فریم‌ورک Mastra: عامل‌های بومی تایپ‌اسکریپت <a id="mastra-typescript-first-agents"></a>
 
-### Current State
+### وضعیت کنونی
 
-[Mastra](https://mastra.ai/) was founded by the team behind Gatsby (graduated YC W25), announced a **$13M seed** from Y Combinator, Paul Graham, Gradient and 120+ other investors on October 8, 2025 ([Mastra announcement](https://mastra.ai/blog/seed-round)), and **shipped v1.0 on January 20, 2026**. `@mastra/core` reached **1.81.0 on Oct 30, 2026**, with about **29.3K GitHub stars** and about **8.2M npm downloads** in October 2026 ([mastra-ai/mastra](https://github.com/mastra-ai/mastra)).
+فریم‌ورک [Mastra](https://mastra.ai/) توسط تیم توسعه‌دهنده Gatsby بنیان‌گذاری شد، در اکتبر ۲۰۲۵ جذب سرمایه بذری ۱۳ میلیون دلاری خود را اعلام کرد و **نسخه ۱.۰ آن در ۲۰ ژانویه ۲۰۲۶ منتشر شد**. بسته `@mastra/core` در **۳۰ اکتبر ۲۰۲۶ به نسخه 1.81.0 رسید**، با بیش از **۲۹.۳ هزار ستاره در گیت‌هاب** و حدود **۸.۲ میلیون دانلود ماهانه در npm** طی اکتبر ۲۰۲۶ ([مخزن mastra-ai/mastra](https://github.com/mastra-ai/mastra)).
 
-**License**: Mastra moved from Elastic License v2 to **Apache 2.0** on July 9, 2025. Everything outside `ee/` directories is Apache 2.0; code in `ee/` directories is under the source-available Mastra Enterprise Edition License. Check which packages you import before embedding Mastra in a commercial product.
+**شرایط مجوز**: فریم‌ورک Mastra در ژوئیه ۲۰۲۵ مجوز خود را به **Apache 2.0** تغییر داد. تمامی کدهای خارج از پوشه‌های `ee/` تحت مجوز Apache 2.0 هستند؛ کدهای درون دایرکتوری‌های `ee/` تحت مجوز تجاری سازمانی Mastra قرار دارند. پیش از استفاده تجاری بسته‌های واردشده را بررسی کنید.
 
-Key surface area:
+امکانات کلیدی:
+- ساختارهای بنیادین `Agent`، `Workflow` و `Tool` با استنتاج کامل نوع‌ها در تایپ‌اسکریپت.
+- یک **سرور توسعه محلی داخلی** (`mastra dev`) همراه با محیط رابط کاربری Playground، اجرای آزمون‌های ارزیابی، و بازبین ردگیری‌ها.
+- یکپارچگی عمیق با **AI SDK** شرکت Vercel برای استریمینگ داده‌ها، فراخوانی‌های چندمرحله‌ای ابزارها، و تعویض ارائه‌دهنده.
+- حافظه داخلی و سیستم RAG مجهز به آداپتورهای `libsql` و `pgvector`.
+- استقرار تک‌دستوری روی **Mastra Cloud**، Vercel، Cloudflare Workers یا سرورهای Node.
 
-- `Agent`, `Workflow`, and `Tool` primitives, all defined as TypeScript with full inference.
-- A built-in **local dev server** (`mastra dev`) with a playground UI, eval runner, and trace viewer.
-- Tight integration with the **AI SDK** from Vercel for streaming, multi-step tool calls, and provider switching.
-- Out-of-the-box memory and RAG with `libsql` / `pgvector` adapters.
-- One-command deploy to **Mastra Cloud**, Vercel, Cloudflare Workers, or a Node server.
+### چرا تیم‌ها این فریم‌ورک را انتخاب می‌کنند
 
-### Why Teams Pick It
+<div dir="ltr">
 
 ```typescript
 import { Agent } from "@mastra/core/agent";
@@ -147,45 +153,47 @@ export const refundAgent = new Agent({
 });
 ```
 
-Three properties make this attractive:
+</div>
 
-1. **Inferred types end to end.** The Zod schemas drive the tool's runtime validation, the LLM-facing JSON Schema, and the TypeScript type of the input that `execute` receives. One source of truth. (Mastra 1.x passes the validated input as the first argument; 0.x tutorials destructure `{ context }` instead, a common copy-paste break.)
-2. **`mastra dev` is the killer feature.** It boots a local UI that lets you call any agent, replay any trace, run any eval, and inspect any tool input/output without writing a frontend.
-3. **First-class workflows.** `createWorkflow` defines a typed graph of steps (each a Mastra tool or agent), with branching, suspend / resume, and human-in-the-loop, all type-checked.
+سه قابلیت محوری این فریم‌ورک را متمایز می‌سازد:
 
-The [Generative.inc Mastra guide](https://generative.inc/blog/mastra-typescript-agent-framework) walks through how teams replace Python orchestration with Mastra entirely when the rest of the stack is already TypeScript.
+۱. **استنتاج کامل نوع‌ها در سراسر سیستم.** اسکیماهای Zod به‌طور همزمان اعتبارسنجی زمان اجرای ابزار، اسکیمای JSON ارائه‌شده به مدل، و تایپ متغیر ورودی تابع `execute` را تعیین می‌کنند؛ یک منبع واحد برای حقیقت داده‌ها.
+۲. **محیط توسعه `mastra dev` قابلیتی شگفت‌انگیز است.** این دستور یک رابط کاربری محلی را اجرا می‌کند که به شما امکان می‌دهد هر عاملی را فراخوانی کنید، ردپای تریس‌ها را بازپخش نمایید، آزمون‌های ارزیابی را اجرا کنید و ورودی و خروجی ابزارها را بدون نیاز به نوشتن فرانت‌اند مانیتور نمایید.
+۳. **جریان‌های کاری تراز اول.** متد `createWorkflow` یک گراف دارای نوع از مراحل کاری (هر مرحله یک ابزار یا عامل Mastra) ایجاد می‌کند که از انشعاب، تعلیق / ازسرگیری، و بازخورد انسانی همراه با اعتبارسنجی نوع‌ها پشتیبانی می‌کند.
 
-### When Mastra Is the Right Choice
+### چه زمانی Mastra انتخابی ایده‌آل است
 
-- The team is **TypeScript-first** and the rest of the app is Next.js / Node / Bun / Cloudflare Workers.
-- You want **Vercel-style DX**: a single CLI, a local playground, opinionated deployment.
-- Streaming UI matters and you want to lean on the AI SDK's `useChat` and `streamText` primitives.
-- You want **suspend / resume workflows** with human approval steps wired in by default.
+- تیم مهندسی شما **تایپ‌اسکریپت‌محور** است و سایر بخش‌های برنامه روی Next.js، Node، Bun یا Cloudflare Workers توسعه یافته است.
+- به دنبال **تجربه توسعه سطح بالا مشابه Vercel** هستید: یک CLI واحد، رابط Playground محلی، و ابزارهای استقرار منسجم.
+- رابط‌های کاربری استریم‌شده اهمیت بالایی دارند و مایلید از هوک‌های `useChat` و `streamText` در Vercel AI SDK بهره بگیرید.
+- نیازمند **جریان‌های کاری تعلیق و ازسرگیری** همراه با مراحل تأیید انسانی تعبیه‌شده به‌صورت پیش‌فرض هستید.
 
-### When It Is Not
+### چه زمانی مناسب نیست
 
-- You need a **large library of prebuilt agents** or community integrations. The ecosystem is small compared to LangChain.
-- Your team and most of your AI tooling is **Python**. Bridging TS to Python services across an HTTP layer is fine but adds latency.
-- You need **academic-style** custom inference behavior (custom decoding, etc). Stay in Python.
+- نیازمند **کتابخانه بزرگی از عامل‌های آماده** یا اتصالات متنوع جامعه کاربری هستید (اکوسیستم آن نسبت به LangChain کوچک‌تر است).
+- تیم و بخش عمده زیرساخت‌های هوش مصنوعی شما مبتنی بر **پایتون** است. برقراری ارتباط میان پایتون و تایپ‌اسکریپت روی لایه HTTP شدنی است اما به تأخیر سیستم می‌افزاید.
+- نیازمند رفتارهای استنتاج سفارشی در سطح مقالات دانشگاهی (مانند متدهای رمزگشایی اختصاصی) هستید. در این صورت در اکوسیستم پایتون بمانید.
 
 ---
 
-## Comparison with LangGraph
+## مقایسه با LangGraph <a id="comparison-with-langgraph"></a>
 
-| Dimension | Pydantic AI 2.x | Mastra 1.x | LangGraph 1.x |
-|-----------|-------------------|---------------------|----------------|
-| Language | Python | TypeScript | Python and TypeScript |
-| License | MIT | Apache 2.0 (`ee/` directories source-available) | MIT |
-| Primary unit | Typed `Agent` with `output_type`, composed from capabilities | Typed `Agent` and `Workflow` | Graph of nodes over typed state |
-| Schema source | Pydantic v2 | Zod | JSON Schema (Pydantic, Zod, Valibot, ArkType) |
-| Provider neutrality | Built-in adapters | Through Vercel AI SDK | Through LangChain partner packages |
-| Multi-agent | Manual or `Graph` API | `Workflow` + agent-as-tool | `create_supervisor`, swarm, custom graphs |
-| State persistence | `pydantic_graph` checkpoints; Harness `StepPersistence` (v2) | Workflow snapshot + storage adapters | First-class checkpoint stores (Postgres, Redis, SQLite, in-memory) |
-| Time-travel debugging | No | Replay in local playground | Yes, branch from any checkpoint |
-| Eval framework | `pydantic_evals` | Mastra evals (built-in) | LangSmith or external |
-| Tracing | OTLP / Logfire | OTLP / Mastra Cloud | LangSmith or OTLP |
-| Coupling | None to LangChain | None to LangChain | Tight to LangChain ecosystem |
-| Ecosystem size | Small but growing | Small but growing | Large (LangChain integrations) |
+| بعد مقایسه | فریم‌ورک Pydantic AI 2.x | فریم‌ورک Mastra 1.x | فریم‌ورک LangGraph 1.x |
+|---|---|---|---|
+| **زبان برنامه‌نویسی** | زبان Python | زبان TypeScript | هر دو زبان Python و TypeScript |
+| **نوع مجوز** | مجوز MIT | مجوز Apache 2.0 (دایرکتوری‌های `ee/` دارای سورس در دسترس) | مجوز MIT |
+| **واحد اصلی** | کلاس تایپ‌شده `Agent` همراه با `output_type`، ترکیب‌شده از قابلیت‌ها | ساختارهای تایپ‌شده `Agent` و `Workflow` | گراف گره‌ها بر روی وضعیت تایپ‌شده |
+| **منبع اسکیما** | کتابخانه Pydantic v2 | کتابخانه Zod | استاندارد JSON Schema (پشتیبانی از Pydantic، Zod، Valibot، ArkType) |
+| **استقلال از ارائه‌دهنده** | آداپتورهای داخلی | از طریق Vercel AI SDK | از طریق بسته‌های همکار LangChain |
+| **سیستم چندعاملی** | دستی یا از طریق `Graph` API | ترکیب `Workflow` و استفاده از عامل به‌عنوان ابزار | توابع `create_supervisor`، ساختار Swarm، گراف‌های سفارشی |
+| **پایداری وضعیت** | چک‌پوینت‌های `pydantic_graph`؛ قابلیت `StepPersistence` در مهارکننده | اسنپ‌شات ورک‌فلو + آداپتورهای ذخیره‌سازی | مخازن چک‌پوینت تراز اول (Postgres، Redis، SQLite، حافظه) |
+| **خطایابی Time-Travel** | خیر | بازپخش (Replay) در محیط آزمایشی محلی | بله، امکان انشعاب از هر چک‌پوینت دلخواه |
+| **فریم‌ورک ارزیابی** | ابزار `pydantic_evals` | ارزیابی‌های داخلی Mastra | پلتفرم LangSmith یا ابزارهای خارجی |
+| **پایش و ردگیری** | پروتکل OTLP / سرویس Logfire | پروتکل OTLP / پلتفرم Mastra Cloud | سرویس LangSmith یا پروتکل OTLP |
+| **میزان وابستگی** | بدون وابستگی به LangChain | بدون وابستگی به LangChain | وابستگی شدید به اکوسیستم LangChain |
+| **وسعت اکوسیستم** | کوچک اما رو به رشد | کوچک اما رو به رشد | بسیار وسیع (یکپارچه‌سازی‌های LangChain) |
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -207,74 +215,78 @@ flowchart TD
     F --> M[Mature checkpoints, supervisor patterns, broad ecosystem]
 ```
 
----
-
-## Choosing a Framework
-
-Three decision drivers, in order of weight:
-
-1. **Language of the existing service.** Pydantic AI and LangGraph (Python) for Python services. Mastra and LangGraph TS for TypeScript services. Crossing the boundary is almost always a worse trade than picking the right side.
-2. **Shape of the complexity.** If the agent is essentially "LLM + a few tools + strict output type," Pydantic AI or Mastra is enough and cheaper to operate. If you have many cooperating agents with branching, retries, and approvals, LangGraph's graph + checkpoint model pulls ahead.
-3. **Ecosystem coupling.** LangGraph buys you LangChain integrations, LangSmith eval, and the rest of that surface. Pydantic AI and Mastra buy you cleaner type guarantees and faster cold paths but you wire your own integrations.
-
-A useful heuristic: if the longest thing on the page is the tool list, pick Pydantic AI or Mastra. If the longest thing on the page is the state machine, pick LangGraph.
+</div>
 
 ---
 
-## Production References
+## نحوه انتخاب فریم‌ورک مناسب <a id="choosing-a-framework"></a>
 
-Adoption signals as of early November 2026, plus public case studies:
+سه عامل تصمیم‌گیری اصلی به ترتیب اهمیت:
 
-- **Pydantic AI**
-  - About 5.4M PyPI downloads in the 30 days to Nov 1, 2026, roughly on par with DSPy and about twice CrewAI's count (download counts are inflated by CI and transitive installs; read them as relative signals).
-  - The common adoption path is FastAPI shops, because the same Pydantic model serves the HTTP boundary and the LLM output type.
-- **Mastra**
-  - About 8.2M npm downloads of `@mastra/core` in October 2026, now ahead of `@openai/agents` (7.5M) and well behind the Vercel AI SDK itself (`ai`, 115.4M), which Mastra builds on.
-- **LangGraph** (for reference)
-  - [LinkedIn's SQL Bot](https://www.linkedin.com/blog/engineering/ai/practical-text-to-sql-for-data-analytics), [Uber's coding assistants](https://www.uber.com/en-IN/blog/genie-uber-genai-on-call-copilot/), [Klarna](https://www.klarna.com/), [Elastic](https://www.elastic.co/) AI Assistant, [Replit](https://replit.com/), and dozens more on the [LangChain customer page](https://www.langchain.com/built-with-langgraph).
+۱. **زبان توسعه سرویس موجود.** برای سرویس‌های پایتونی از Pydantic AI یا LangGraph پایتون استفاده کنید. برای سرویس‌های تایپ‌اسکریپت از Mastra یا LangGraph TS بهره ببرید. عبور از مرز زبان‌ها معمولاً هزینه‌ای بیشتر از انتخاب ابزار بومی همان زبان دارد.
+۲. **ساختار پیچیدگی سیستم.** اگر ماهیت عامل اساساً «یک LLM + چند ابزار + ساختار خروجی مشخص» است، Pydantic AI یا Mastra کاملاً کافی بوده و نگهداری آن‌ها کم‌هزینه‌تر است. اگر با چندین عامل همکار، انشعاب‌های پیچیده، تلاش‌های مجدد و فرآیندهای تأیید چندمرحله‌ای سروکار دارید، ساختار گراف و چک‌پوینت‌های LangGraph برتری می‌یابد.
+۳. **میزان وابستگی به اکوسیستم.** فریم‌ورک LangGraph امکانات یکپارچه‌سازی با LangChain، ارزیابی در LangSmith و اکوسیستم آن را فراهم می‌آورد. در مقابل، Pydantic AI و Mastra تضمین‌های نوع تمیزتر و راه‌اندازی اولیه سریع‌تری ارائه می‌دهند اما اتصالات جانبی را باید خودتان پیاده‌سازی کنید.
+
+یک قاعده سرانگشتی کاربردی: اگر طولانی‌ترین بخش کد شما لیست ابزارهاست، از Pydantic AI یا Mastra استفاده کنید. اما اگر طولانی‌ترین بخش کد ماشین حالت و منطق گردش کار است، به سراغ LangGraph بروید.
 
 ---
 
-## Interview Questions
+## مراجع و نمونه‌های عملیاتی در محیط تولید <a id="production-references"></a>
 
-### Q: When would you choose Pydantic AI over LangGraph for a Python service?
+شاخص‌های پذیرش در صنعت و موارد مطالعاتی تا اوایل نوامبر ۲۰۲۶:
 
-**Strong answer:**
-I would choose Pydantic AI when the agent is essentially one LLM with a typed output and a few tools, and the rest of the service is already Pydantic-shaped (FastAPI, SQLModel, etc.). The win is that the same Pydantic model defines the HTTP response, the LLM output, and the eval scorer's expected shape, so there is no schema drift. LangGraph is worth the heavier surface when I need a real multi-agent graph with checkpoint-based time travel, supervisor patterns, or the LangChain integration ecosystem. The deciding question I ask is whether the most complicated part of the design is the tool list or the state machine. Tool list, Pydantic AI. State machine, LangGraph.
-
-### Q: Is Mastra a Vercel AI SDK replacement?
-
-**Strong answer:**
-No, though the overlap has grown. Mastra builds on top of the Vercel AI SDK for the actual provider calls and streaming. The AI SDK itself now has agents: AI SDK 6 added `ToolLoopAgent` and tool approvals, and AI SDK 7 (Jun 25, 2026) added a durable `WorkflowAgent` that survives restarts, deploys and delayed approvals, plus an experimental `HarnessAgent` that runs Claude Code or Codex behind one API. What Mastra still adds is **memory**, **RAG**, **evals**, typed **workflows** with suspend / resume, and the **`mastra dev` playground**. If you need a durable tool loop in a Next.js app, the AI SDK alone is now enough. If you want those batteries and a local playground without writing them yourself, Mastra is the layer that adds them.
-
-### Q: Pydantic AI 2.0 changed what the `openai:` model prefix means. Why should a staff engineer care about a one-line default like that?
-
-**Strong answer:**
-Because nothing in my code changed and the wire protocol did. In v2, `openai:gpt-6.1-sol` goes through the Responses API instead of Chat Completions (`openai-chat:` keeps the old path). That can change tool-call formatting, how reasoning items and caching behave, which parameters are accepted, and what my traces record, and v2 also moved default instrumentation to new `gen_ai` attributes, so dashboards can silently go blank. It is the same class of break as an SDK changing its default model. The defense is the same too: pin the framework version, run the eval suite and a trace-shape check on every upgrade, and set behavior-defining options explicitly instead of inheriting defaults.
-
-### Q: What does "typed agent framework" actually buy you in production?
-
-**Strong answer:**
-Three things. First, **fewer bad inputs leak through**. The LLM-facing schema is derived from the same Pydantic / Zod definition that validates the runtime payload, so if the LLM hallucinates a field, the parse step rejects it before any downstream code runs. Second, **clean unit tests**. A typed tool is just a function with a Pydantic / Zod boundary, so I can test it without any LLM in the loop. Third, **schema-aware evals**. The eval framework can compare two typed objects field by field rather than diffing strings, which catches subtle regressions like a field becoming optional or an enum gaining a new value.
+- **فریم‌ورک Pydantic AI**
+  - حدود ۵.۴ میلیون دانلود در PyPI در بازه ۳۰ روزه منتهی به اول نوامبر ۲۰۲۶، تقریباً هم‌رده با DSPy و حدود دو برابر آمار دانلود CrewAI (آمارهای دانلود تحت تأثیر CI افزایش دارند و شاخصی نسبی هستند).
+  - مسیر متداول پذیرش در شرکت‌های مبتنی بر FastAPI است، زیرا همان مدل‌های Pydantic به‌طور همزمان لایه مرزی HTTP و نوع خروجی مدل را مدیریت می‌کنند.
+- **فریم‌ورک Mastra**
+  - حدود ۸.۲ میلیون دانلود ماهانه پکیج `@mastra/core` در npm طی اکتبر ۲۰۲۶، بالاتر از کیت تایپ‌اسکریپت `@openai/agents` (با ۷.۵ میلیون) و پشت سر پکیج `ai` متعلق به Vercel AI SDK (با ۱۱۵.۴ میلیون) که Mastra بر پایه آن توسعه یافته است.
+- **فریم‌ورک LangGraph** (جهت مقایسه و ارجاع)
+  - ربات SQL لینکدین، دستیارهای کدنویسی اوبر، شرکت‌های کلارنا، الاستیک، ریپلیت و ده‌ها شرکت بزرگ دیگر بر بستر LangGraph مستقر هستند.
 
 ---
 
-## References
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-- Pydantic AI v2.0.0 release notes (Jun 23, 2026): https://github.com/pydantic/pydantic-ai/releases/tag/v2.0.0
-- Pydantic AI documentation: https://ai.pydantic.dev/
-- Pydantic AI evals: https://ai.pydantic.dev/evals/
-- Mastra repository: https://github.com/mastra-ai/mastra
-- Mastra blog, license change from ELv2 to Apache 2.0 (Jul 2025): https://mastra.ai/blog/apache-license
-- Mastra documentation: https://mastra.ai/
-- Mastra. "Announcing our $13m seed round from YC, pg, Gradient, Amjad, Guillermo, Balaji, and 120+ others" (Oct 8, 2025): https://mastra.ai/blog/seed-round
-- Generative.inc Mastra guide: https://generative.inc/blog/mastra-typescript-agent-framework
-- LangGraph 1.x docs: https://docs.langchain.com/oss/python/langgraph/
-- LangChain "Built with LangGraph" customer list: https://www.langchain.com/built-with-langgraph
-- Vercel AI SDK: https://ai-sdk.dev/
-- Vercel. "AI SDK 7" (Jun 2026): https://vercel.com/blog/ai-sdk-7
-- AIMultiple "Agentic AI frameworks compared" (2026): https://research.aimultiple.com/agentic-ai-frameworks/
+### پرسش: چه زمانی Pydantic AI را به جای LangGraph برای یک سرویس پایتونی انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+زمانی Pydantic AI را انتخاب می‌کنم که ماهیت عامل اساساً یک مدل منفرد با خروجی دارای ساختار مشخص و چند ابزار باشد، و سایر بخش‌های سرویس بر پایه Pydantic شکل گرفته باشند (مانند FastAPI یا SQLModel). مزیت بزرگ این است که یک کلاس Pydantic واحد پاسخ HTTP، ساختار خروجی مدل، و سنجه ارزیابی را تعریف می‌کند و هیچ ناهمخوانی اسکیمایی به وجود نمی‌آید. در سوی دیگر، زمانی به سراغ LangGraph می‌روم که به یک گراف چندعاملی واقعی همراه با امکان بازگشت به گذشته از روی چک‌پوینت‌ها (Time Travel)، الگوهای نظارتی (Supervisor)، یا اتصالات گسترده اکوسیستم LangChain نیاز داشته باشم. سؤال کلیدی من این است: آیا پیچیده‌ترین بخش طراحی سیستم لیست ابزارهاست یا ماشین حالت؟ اگر لیست ابزارها باشد Pydantic AI، و اگر ماشین حالت باشد LangGraph.
+
+### پرسش: آیا Mastra جایگزینی برای Vercel AI SDK است؟
+
+**پاسخ قوی:**
+خیر، هرچند هم‌پوشانی آن‌ها افزایش یافته است. فریم‌ورک Mastra برای فراخوانی‌های ارائه‌دهندگان و استریم داده‌ها مستقیماً بر روی Vercel AI SDK بنا شده است. کیت AI SDK نیز قابلیت‌های عاملی اضافه کرده است (نسخه ۶ ابزار `ToolLoopAgent` را افزود و نسخه ۷ ابزار بادوام `WorkflowAgent` و مهارکننده آزمایشی `HarnessAgent` را معرفی کرد). با این حال، آنچه Mastra اضافه می‌کند **مدیریت حافظه**، **قابلیت RAG**، **آزمون‌های ارزیابی داخلی**، **جریان‌های کاری تایپ‌شده** با تعلیق و ازسرگیری، و محیط آزمایشی **`mastra dev`** است. اگر صرفاً به یک حلقه اجرای ابزار پایدار در یک برنامه Next.js نیاز داشته باشید، AI SDK به‌تنهایی کافی است. اما اگر این ابزارهای جانبی و رابط آزمایشی محلی را بدون نیاز به کدنویسی اختصاصی بخواهید، Mastra لایه‌ای است که آن‌ها را فراهم می‌کند.
+
+### پرسش: نسخه 2.0 فریم‌ورک Pydantic AI مفهوم پیشوند مدل openai: را تغییر داد. چرا یک مهندس ارشد باید به تغییر پیش‌فرض تک‌خطی مانند این اهمیت دهد؟
+
+**پاسخ قوی:**
+زیرا بدون تغییر حتی یک خط از کدهای ما، پروتکل ارتباطی روی شبکه دگرگون شد. در نسخه ۲، پیشوند `openai:gpt-6.1-sol` به جای مسیر Chat Completions از مسیر جدید Responses API عبور می‌کند (برای حفظ مسیر قبلی باید از `openai-chat:` استفاده کرد). این تغییر می‌تواند فرمت فراخوانی ابزارها، نحوه رفتار توکن‌های استدلال و کشینگ، پارامترهای مجاز، و لاگ‌های تریس را کاملاً تغییر دهد؛ علاوه بر این، در نسخه ۲ نام اتریبیوت‌های تله‌متری به استانداردهای جدید `gen_ai` تغییر یافت که می‌توانست داشبوردهای مانیتورینگ را بی‌صدا از کار بیندازد. این اتفاق در همان رده تغییر مدل پیش‌فرض در SDKها قرار می‌گیرد. راهکار دفاعی نیز یکسان است: قفل کردن دقیق نسخه فریم‌ورک، اجرای سوییت ارزیابی و بررسی شکل تریس‌ها در هر ارتقا، و مشخص کردن صریح گزینه‌های تعیین‌کننده رفتار سیستم به جای تکیه بر مقادیر پیش‌فرض.
+
+### پرسش: یک «فریم‌ورک عاملی تایپ‌شده» در محیط تولید عملاً چه دستاوردی به همراه دارد؟
+
+**پاسخ قوی:**
+سه مزیت محوری در پروداکشن به دست می‌آید: نخست، **جلوگیری از ورود داده‌های مخرب یا نامعتبر به عمق سیستم**. اسکیمای ارائه‌شده به مدل از همان تعاریف Pydantic یا Zod استخراج می‌شود که در زمان اجرا داده‌ها را اعتبارسنجی می‌کنند؛ بنابراین اگر مدل یک فیلد توهم‌آمیز بسازد، مرحله پارس کردن پیش از آنکه کد بعدی اجرا شود آن را رد می‌کند. دوم، **آزمون‌های واحد (Unit Test) شفاف و ایزوله**. یک ابزار دارای تایپ صرفاً تابعی با ورودی و خروجی مشخص است که تست آن بدون نیاز به فراخوانی مدل ممکن است. سوم، **ارزیابی‌های آگاه از ساختار (Schema-aware Evals)**. سیستم ارزیابی می‌تواند دو شیء داده‌ای را فیلد به فیلد مقایسه کند به جای آنکه خروجی‌های متنی را با هم بسنجد؛ این کار تغییرات پس‌رونده ظریف مانند اختیاری شدن یک فیلد ضروری یا اضافه شدن مقادیر ناشناخته به یک Enum را بلافاصله شناسایی می‌نماید.
 
 ---
 
-*Next: See the [Framework Selection Guide](08-framework-selection-guide.md) for cross-framework selection criteria.*
+## منابع <a id="references"></a>
+
+- مستندات انتشار نسخه v2.0.0 در Pydantic AI (ژوئن ۲۰۲۶): https://github.com/pydantic/pydantic-ai/releases/tag/v2.0.0
+- مستندات رسمی Pydantic AI: https://ai.pydantic.dev/
+- مستندات ارزیابی‌ها در Pydantic AI: https://ai.pydantic.dev/evals/
+- مخزن رسمی فریم‌ورک Mastra: https://github.com/mastra-ai/mastra
+- وبلاگ Mastra، تغییر مجوز از ELv2 به Apache 2.0 (ژوئیه ۲۰۲۵): https://mastra.ai/blog/apache-license
+- مستندات رسمی Mastra: https://mastra.ai/
+- مستندات سرمایه‌گذاری Mastra (اکتبر ۲۰۲۵): https://mastra.ai/blog/seed-round
+- راهنمای فریم‌ورک Mastra در Generative.inc: https://generative.inc/blog/mastra-typescript-agent-framework
+- مستندات LangGraph 1.x: https://docs.langchain.com/oss/python/langgraph/
+- فهرست مشتریان LangGraph در وب‌سایت LangChain: https://www.langchain.com/built-with-langgraph
+- وب‌سایت رسمی Vercel AI SDK: https://ai-sdk.dev/
+- مستندات معرفی Vercel AI SDK 7 (ژوئن ۲۰۲۶): https://vercel.com/blog/ai-sdk-7
+- گزارش مقایسه‌ای فریم‌ورک‌های عاملی هوش مصنوعی در AIMultiple (سال ۲۰۲۶): https://research.aimultiple.com/agentic-ai-frameworks/
+
+---
+
+*مبحث بعدی: برای مشاهده معیارهای تصمیم‌گیری جامع به [راهنمای انتخاب فریم‌ورک](08-framework-selection-guide.md) مراجعه کنید.*
+
+</div>

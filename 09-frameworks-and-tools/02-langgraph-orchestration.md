@@ -1,100 +1,110 @@
-# LangGraph Orchestration
+<div dir="rtl">
 
-LangGraph is the **de facto standard** for building stateful, multi-agent systems. It reached v1.0 in October 2025 and is at 1.2.20 (Nov 5, 2026, after seven patch releases in October); LangGraph 0.4 stays in maintenance mode until December 2026. Unlike simple chains, LangGraph allows for **Cycles**, **State Persistence**, and **Human-in-the-Loop** interventions.
+# ارکستراسیون با LangGraph (LangGraph Orchestration)
 
-Adoption depends on which number you read. On GitHub stars CrewAI still leads (about 60.4K versus 44.3K for `langchain-ai/langgraph` on Nov 2, 2026). On downloads LangGraph leads by an order of magnitude: about 44.8M PyPI downloads in the 30 days to Nov 1 versus about 2.4M for `crewai`, plus about 14.0M npm downloads of `@langchain/langgraph` in October. Stars measure attention; downloads measure dependency, inflated by CI and transitive installs. Quote the metric that matches the claim you are making.
+فریم‌ورک LangGraph **استاندارد دو فاکتوی (De facto standard)** صنعت برای ساخت سیستم‌های چندعاملی باحالت (Stateful Multi-agent Systems) به شمار می‌رود. این فریم‌ورک در اکتبر ۲۰۲۵ به نسخه ۱.۰ رسید و در حال حاضر در نسخه 1.2.20 (۵ نوامبر ۲۰۲۶، پس از هفت وصله اصلاحی در ماه اکتبر) قرار دارد؛ نسخه LangGraph 0.4 تا دسامبر ۲۰۲۶ در حالت نگهداری و پشتیبانی باقی می‌ماند. بر خلاف زنجیره‌های ساده، LangGraph امکان استفاده از **چرخه‌ها (Cycles)**، **ماندگاری وضعیت (State Persistence)** و **مداخلات انسانی در چرخه (Human-in-the-Loop)** را فراهم می‌کند.
 
-## Table of Contents
+میزان پذیرش و محبوبیت این ابزار بستگی به این دارد که چه آماری را ملاک قرار دهید. در تعداد ستاره‌های گیت‌هاب، فریم‌ورک CrewAI همچنان پیشتاز است (حدود ۶۰.۴ هزار ستاره در برابر ۴۴.۳ هزار ستاره برای `langchain-ai/langgraph` تا تاریخ ۲ نوامبر ۲۰۲۶). اما در آمار دانلود، LangGraph با اختلافی معادل یک مرتبه بزرگی برتر است: حدود ۴۴.۸ میلیون دانلود از مخزن PyPI در بازه ۳۰ روزه منتهی به ۱ نوامبر در مقایسه با حدود ۲.۴ میلیون دانلود برای `crewai`، به علاوه حدود ۱۴.۰ میلیون دانلود npm از پکیج `@langchain/langgraph` در ماه اکتبر. تعداد ستاره‌ها میزان توجه جامعه را نشان می‌دهد، اما حجم دانلود نمایانگر وابستگی واقعی پروژه‌ها است که البته با تست‌های CI و نصب‌های واسطه‌ای نیز تقویت می‌شود. هنگام بحث در این خصوص، معیاری را نقل کنید که با ادعای فنی شما مطابقت داشته باشد.
 
-- [The Graph Philosophy](#the-graph-philosophy)
-- [Cyclic vs. Acyclic Workflows](#cyclic-vs-acyclic)
-- [State Management in LangGraph](#state-management)
-- [Persistence and Checkpointing](#persistence-and-checkpointing)
-- [Multi-Agent Orchestration Patterns](#multi-agent-patterns)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## جدول محتوا
 
----
-
-## The Graph Philosophy
-
-In 2023, agents were "Black Boxes."
-Today, agents are **Graphs**.
-A graph consists of:
-- **Nodes**: Python functions (The LLM, a tool, or data processing).
-- **Edges**: Paths between nodes.
-- **Conditional Edges**: Logic that determines the path based on the **State**.
+- [فلسفه طراحی مبتنی بر گراف](#the-graph-philosophy)
+- [گردش‌های کاری چرخه‌ای در برابر غیرچرخه‌ای](#cyclic-vs-acyclic)
+- [مدیریت وضعیت در LangGraph](#state-management)
+- [ماندگاری و ذخیره‌سازی وضعیت (Checkpointing)](#persistence-and-checkpointing)
+- [الگوهای ارکستراسیون چندعاملی](#multi-agent-patterns)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Cyclic vs. Acyclic
+## فلسفه طراحی مبتنی بر گراف
 
-Standard LangChain is **Acyclic** (Sequential).
-LangGraph is **Cyclic**.
-- **The Power of the Loop**: An agent can try a tool, see the error, and **cycle back** to the "Thinking" node to try again. This is the foundation of the **ReAct** pattern.
+در سال ۲۰۲۳، سیستم‌های Agent مانند «جعبه‌های سیاه (Black Boxes)» بودند.
+امروزه، سیستم‌های Agent به عنوان **گراف‌ها (Graphs)** مدل‌سازی می‌شوند.
+یک گراف متشکل از اجزای زیر است:
+- **گره‌ها (Nodes)**: توابع پایتون (مدل LLM، یک ابزار، یا فرآیند پردازش داده).
+- **یال‌ها (Edges)**: مسیرهای اتصال‌دهنده بین گره‌ها.
+- **یال‌های شرطی (Conditional Edges)**: منطقی که مسیر بعدی را بر اساس **وضعیت (State)** جاری تعیین می‌کند.
 
 ---
 
-## State Management
+## گردش‌های کاری چرخه‌ای در برابر غیرچرخه‌ای
 
-The **State Schema** is the "Mind" of the graph.
+فریم‌ورک استاندارد LangChain به صورت **غیرچرخه‌ای (Acyclic)** (توالی متوالی) عمل می‌کند.
+فریم‌ورک LangGraph دارای ساختار **چرخه‌ای (Cyclic)** است.
+- **قدرت حلقه تکرار (Loop)**: یک Agent می‌تواند یک ابزار را اجرا کند، خطای آن را مشاهده نماید و مجدداً برای تفکر و تلاش مجدد به گره «Thinking» **چرخش معکوس** داشته باشد. این قابلیت شالوده اصلی الگوی **ReAct** را تشکیل می‌دهد.
+
+---
+
+## مدیریت وضعیت
+
+ساختار **شمای وضعیت (State Schema)** در واقع «ذهن» گراف محسوب می‌شود.
+
+<div dir="ltr">
+
 ```python
 class GraphState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     plan: list[str]
     is_secure: bool
 ```
-**Nuance**: Using `Annotated` with `add_messages` allows the graph to **Append** to history rather than overwriting it, preserving the full reasoning trajectory.
+
+</div>
+
+**نکته ظریف فنی**: استفاده از `Annotated` همراه با تابع `add_messages` به گراف این امکان را می‌دهد که به جای بازنویسی تاریخچه، پیام‌ها را به انتهای تاریخچه **الحاق (Append)** کند و مسیر کامل استدلال را حفظ نماید.
 
 ---
 
-## Persistence and Checkpointing
+## ماندگاری و ذخیره‌سازی وضعیت (Checkpointing)
 
-Current LangGraph uses **Thread-based Persistence**.
-- **The Concept**: Every session has a `thread_id`, and a checkpointer (Postgres, SQLite, Redis, or in-memory for tests) saves state after every super-step.
-- **The Win**: If a user comes back after 2 days, the agent remembers the exact point it was at in a multi-step workflow.
-- **Interrupts**: `interrupt()` pauses a node for human approval and resumes from the checkpoint, which is how durable human-in-the-loop works without a polling loop.
-- **Time-Travel**: Developers can "re-run" a specific thread from a previous state to debug a failure.
-- **Checkpoint storage is a tuning knob, and defaults move**: LangGraph 1.2.18 (Oct 26, 2026) changed `DeltaChannel` to write a full snapshot every 100 updates instead of every 1,000, which makes reads on long threads faster and grows storage (`snapshot_frequency=1000` restores the old behavior). Watch checkpoint-store size after upgrades, not just latency.
-- **Resume answers can be stale**: LangGraph 1.2.20 (Nov 5, 2026) adds an opt-in strict resume mode (set through a private configurable key) that raises `UnknownInterruptError` when a resume answer is stale or ambiguous, instead of applying it to whichever interrupt is pending.
-- **Store namespaces are a tenant boundary, so treat them like one**: CVE-2026-115883 (GHSA-6hmw-9432-67qq, CVSS v4 6.0, October 21, 2026) showed the Postgres and SQLite stores joining namespace labels with ".", so `("tenant.bob",)` resolved to the same namespace as `("tenant", "bob")`. `put` rejected dotted labels, but `get`, `search`, `delete`, `list_namespaces`, their async forms, and batch operations did not, so a caller who controlled a label could read, overwrite, or delete another tenant's items. Fixed in `langgraph-checkpoint-postgres` 3.1.3 and `langgraph-checkpoint-sqlite` 3.1.2 (both require `langgraph-checkpoint` 4.3.0) and in Agent Server 0.15.5 and 0.16.2; new LangSmith Cloud deployments include the fix, but existing deployments get it only on their next revision, so redeploy. `InMemoryStore` is unaffected. Derive the tenant segment from the authenticated identity, never from a user-supplied label, and keep row-level security underneath.
+نسخه فعلی LangGraph از **ماندگاری مبتنی بر رشته گفتگو (Thread-based Persistence)** استفاده می‌کند.
+- **مفهوم اصلی**: هر نشست دارای یک شناسه `thread_id` است، و یک Checkpointer (مبتنی بر Postgres، SQLite، Redis، یا حافظه محلی InMemory برای آزمون‌ها) وضعیت را پس از هر گام کلان (Super-step) ذخیره می‌کند.
+- **مزیت اصلی**: اگر کاربر پس از ۲ روز بازگردد، Agent نقطه دقیق توقف خود در یک گردش کار چندمرحله‌ای را به خاطر می‌آورد.
+- **وقفه‌ها (Interrupts)**: تابع `interrupt()` اجرای یک گره را برای دریافت تایید انسانی متوقف می‌کند و فرآیند را از همان چک‌پوینت از سر می‌گیرد؛ این سازوکار نشان می‌دهد که قابلیت تعامل با انسان (Human-in-the-Loop) پایدار بدون نیاز به حلقه‌های مبتنی بر Polling چگونه کار می‌کند.
+- **سفر در زمان (Time-Travel)**: توسعه‌دهندگان می‌توانند یک رشته مشخص را از یک وضعیت قبلی مجدداً اجرا کنند تا علت بروز خطا را دیباگ و ریشه‌یابی نمایند.
+- **ذخیره‌سازی چک‌پوینت یک پیچ تنظیم است و پیش‌فرض‌ها تغییر می‌کنند**: نسخه `langgraph` 1.2.18 (۲۶ اکتبر ۲۰۲۶) رفتار `DeltaChannel` را تغییر داد تا به جای هر ۱,۰۰۰ به‌روزرسانی، در هر ۱۰۰ به‌روزرسانی یک اسنپ‌شات کامل بنویسد؛ این کار خواندن رشته‌های طولانی را سریع‌تر می‌کند اما فضای ذخیره‌سازی را افزایش می‌دهد (تنظیم `snapshot_frequency=1000` رفتار قبلی را بازمی‌گرداند). پس از ارتقای نسخه‌ها، حجم ذخیره‌ساز چک‌پوینت را علاوه بر تاخیر زیر نظر داشته باشید.
+- **پاسخ‌های ادامه‌یافته (Resume) ممکن است منقضی یا بیات باشند**: نسخه `langgraph` 1.2.20 (۵ نوامبر ۲۰۲۶) یک حالت اختیاری Resume سخت‌گیرانه (از طریق یک کلید پیکربندی خصوصی) اضافه کرده است که در صورت بیات یا مبهم بودن پاسخ ادامه، خطای `UnknownInterruptError` صادر می‌کند، به جای آنکه آن را به هر وقفه‌ای که در انتظار است اعمال نماید.
+- **فضاهای نام (Store Namespaces) یک مرز چندمستاجری (Multi-tenant) هستند، بنابراین با آن‌ها مانند یک مرز امنیتی رفتار کنید**: آسیب‌پذیری CVE-2026-115883 (هشدار GHSA-6hmw-9432-67qq با امتیاز CVSS v4 6.0 در ۲۱ اکتبر ۲۰۲۶) نشان داد که ذخیره‌سازهای Postgres و SQLite برچسب‌های فضای نام را با نقطه "." ترکیب می‌کردند، به طوری که `("tenant.bob",)` به همان فضای نام `("tenant", "bob")` نگاشت می‌شد. متد `put` برچسب‌های نقطه‌دار را رد می‌کرد، اما متدهای `get`، `search`، `delete`، `list_namespaces`، نسخه‌های async آن‌ها و عملیات دسته‌ای این کار را نمی‌کردند؛ در نتیجه کاربری که یک برچسب را کنترل می‌کرد می‌توانست آیتم‌های مستاجر دیگر را بخواند، بازنویسی کند یا حذف نماید. این نقص در `langgraph-checkpoint-postgres` 3.1.3 و `langgraph-checkpoint-sqlite` 3.1.2 (که هر دو به `langgraph-checkpoint` 4.3.0 نیاز دارند) و در Agent Server نسخه‌های 0.15.5 و 0.16.2 برطرف شده است؛ دیپلوی‌های جدید LangSmith Cloud این اصلاح را دارند، اما استقرارهای موجود تنها با ویرایش بعدی آن را دریافت می‌کنند، بنابراین باید مجدداً مستقر شوند. کلاس `InMemoryStore` از این مشکل تاثیر نپذیرفته است. همیشه بخش Tenant را از هویت احراز هویت‌شده استخراج کنید، نه از برچسب ارائه‌شده توسط کاربر، و امنیت در سطح سطر (Row-Level Security) را در پایگاه داده حفظ نمایید.
 
-The moat has narrowed. CrewAI added checkpointing in 1.14 (Apr 2026), Microsoft Agent Framework ships workflow checkpointing, and Google ADK 2.0 added graph workflows with pause and resume. LangGraph's remaining edge is maturity: branch-from-any-checkpoint debugging and the LangSmith trace integration.
+مزیت رقابتی فریم‌ورک‌ها فشرده‌تر شده است. پلتفرم CrewAI قابلیت ذخیره‌سازی چک‌پوینت را در نسخه 1.14 (آوریل ۲۰۲۶) اضافه کرد، Microsoft Agent Framework همراه با ذخیره‌سازی گردش کار عرضه می‌شود و Google ADK 2.0 نیز گردش‌های کاری گرافی همراه با مکث و ادامه را ارائه می‌دهد. برتری باقی‌مانده LangGraph در بلوغ آن است: امکان اشکال‌زدایی با انشعاب از هر چک‌پوینت (Branch-from-any-checkpoint) و یکپارچگی عمیق با ردگیری LangSmith.
 
 ---
 
-## Multi-Agent Patterns
+## الگوهای ارکستراسیون چندعاملی
 
-| Pattern | Description | Case Study |
+| الگوی طراحی | شرح و نحوه کارکرد | مطالعه موردی (Case Study) |
 |---------|-------------|------------|
-| **Supervisor** | One "Manager" directs specialized workers. | Research Team |
-| **Peer-to-Peer**| Agents hand off tasks to each other directly. | Customer Support |
-| **Hierarchical**| Graphs within Graphs (Nested graphs). | Enterprise Engineering |
+| **الگوی سرپرست (Supervisor)** | یک «مدیر» وظایف کارگزاران متخصص را هدایت و هماهنگ می‌کند. | تیم پژوهشی (Research Team) |
+| **الگوی همتا به همتا (Peer-to-Peer)** | عامل‌ها وظایف را مستقیماً به یکدیگر واگذار می‌کنند (Handoff). | پشتیبانی مشتریان (Customer Support) |
+| **الگوی سلسه‌مراتبی (Hierarchical)** | گراف‌های تو در تو (گراف‌های فرعی درون گراف‌های بزرگ‌تر). | مهندسی سازمانی (Enterprise Engineering) |
 
-Tool access in these patterns increasingly comes through MCP: since `langchain` 1.4.0 (Sep 3, 2026) the MCP adapter is part of the core `langchain` package, so a LangGraph node can mount MCP servers without a separate adapter dependency.
-
----
-
-## Interview Questions
-
-### Q: Why use LangGraph instead of a managed agent runtime such as the OpenAI Agents API or Claude Managed Agents?
-
-**Strong answer:**
-**Control and Portability versus operational offload.** The question used to be framed against OpenAI's Assistants API, which shut down on August 26, 2026 and forced every Threads-based app to rebuild on Responses plus Conversations. That is the first point: vendor-managed state can disappear on the vendor's schedule. The managed runtimes that replaced it are much better (the OpenAI Agents API, public beta Sep 10, 2026, runs the Codex harness with durable sessions, compaction and recovery; Claude Managed Agents adds session budgets, a server-evaluated permission policy and `ant apply` agents-as-code), and they remove real work. But the loop runs on their side. LangGraph is a **White Box framework**: I can use any model (OpenAI, Claude, open-weight models), control exactly when a tool is called, inject validation between steps, and run it on-prem. For regulated workloads the deciding facts are concrete: the Agents API beta is US-residency only with no Zero Data Retention. My default is LangGraph (or a thin custom loop) for the core workflow, with managed runtimes for leaf agents where their compaction and sandboxing save more than the lock-in costs.
-
-### Q: How do you handle "State Overload" in a graph with 20+ nodes?
-
-**Strong answer:**
-We use **State Narrowing**. Instead of passing the entire global state to every node, we define specialized sub-states for sub-graphs. We also use `trim_messages` (or a summarization node) to prune the message history before it hits the LLM, ensuring we don't waste tokens while keeping the "Truth" preserved in the persistence layer. Large tool results go to a store with a pointer left in state, the same tool-result offloading pattern Haystack 3.0 and Agno 3.0 now ship as built-ins.
+دسترسی به ابزارها در این الگوها به شکل فزاینده‌ای از طریق پروتکل MCP صورت می‌گیرد: از زمان انتشار نسخه `langchain` 1.4.0 (۳ سپتامبر ۲۰۲۶)، آداپتور MCP به بخشی از پکیج اصلی `langchain` تبدیل شده است؛ بنابراین یک گره LangGraph می‌تواند بدون وابستگی به یک آداپتور جداگانه، سرورهای MCP را متصل نماید.
 
 ---
 
-## References
-- LangChain. "LangGraph: Multi-Agent Workflows" (Jan 2024): https://www.langchain.com/blog/langgraph-multi-agent-workflows
-- LangGraph persistence docs: https://docs.langchain.com/oss/python/langgraph/persistence
-- LangChain release policy: https://docs.langchain.com/oss/python/release-policy
-- Anthropic. "Building Effective AI Agents" (Dec 2024; workflows vs agents, orchestrator-workers, evaluator-optimizer): https://www.anthropic.com/engineering/building-effective-agents
+## پرسش‌های مصاحبه
+
+### پرسش: چرا باید از LangGraph به جای محیط‌های اجرای ایجنتی مدیریت‌شده مانند OpenAI Agents API یا Claude Managed Agents استفاده کرد؟
+
+**پاسخ قوی:**
+پاسخ در مقایسه **کنترل و قابلیت حمل (Portability) در برابر برون‌سپاری عملیاتی** نهفته است. در گذشته این سوال در برابر Assistants API شرکت OpenAI مطرح می‌شد که در ۲۶ اوت ۲۰۲۶ خاموش شد و تمامی برنامه‌های مبتنی بر Threads را مجبور به بازنویسی بر پایه Responses و Conversations کرد. این نخستین نکته است: وضعیت مدیریت‌شده توسط ارائه‌دهنده ابری می‌تواند طبق برنامه زمان‌بندی همان شرکت ناپدید یا متوقف شود. محیط‌های زمان اجرای مدیریت‌شده‌ای که جایگزین آن شدند بسیار بهتر هستند (نسخه آزمایشی OpenAI Agents API در ۱۰ سپتامبر ۲۰۲۶، بستر اجرای Codex را همراه با نشست‌های پایدار، متراکم‌سازی و بازیابی ارائه می‌دهد؛ پلتفرم Claude Managed Agents نیز بودجه‌بندی نشست، سیاست‌های مجوز ارزیابی‌شده در سرور و تعریف عامل‌ها با کد را از طریق `ant apply` فراهم می‌سازد)، و این ابزارها بار کاری قابل توجهی را از دوش تیم‌ها برمی‌دارند. اما حلقه استدلال و اجرا در سمت سرورهای آن‌ها اجرا می‌شود. در مقابل، فریم‌ورک LangGraph یک **فریم‌ورک جعبه‌سفید (White Box Framework)** است: من می‌توانم از هر مدلی (OpenAI، Claude، مدل‌های وزن‌باز) استفاده کنم، زمان دقیق فراخوانی ابزارها را تحت کنترل داشته باشم، اعتبارسنجی را بین مراحل تزریق کنم و آن را در زیرساخت محلی (On-premise) اجرا نمایم. برای بارهای کاری تحت نظارت قانونی، فاکتورهای تعیین‌کننده کاملاً ملموس هستند: به عنوان مثال نسخه بتای Agents API صرفاً در قلمرو داده‌ای ایالات متحده (US-residency) و بدون تضمین Zero Data Retention عرضه می‌شود. انتخاب پیش‌فرض من استفاده از LangGraph (یا یک حلقه سفارشی سبک) برای گردش کار اصلی و استفاده از زمان‌های اجرای مدیریت‌شده برای عامل‌های فرعی (Leaf Agents) است، در شرایطی که قابلیت‌های متراکم‌سازی و ایزوله‌سازی سندباکس آن‌ها بیش از هزینه‌های وابستگی به فروشنده (Vendor Lock-in) ارزش داشته باشد.
+
+### پرسش: چگونه مشکل «سربار بیش از حد وضعیت (State Overload)» را در گرافی با بیش از ۲۰ گره مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+ما از استراتژی **محدودسازی وضعیت (State Narrowing)** استفاده می‌کنیم. به جای انتقال کل وضعیت سراسری به تک‌تک گره‌ها، وضعیت‌های فرعی و تخصصی برای زیرگراف‌ها تعریف می‌نماییم. ما همچنین از `trim_messages` (یا یک گره خلاصه‌سازی) برای هرس کردن تاریخچه پیام‌ها قبل از ارسال به LLM بهره می‌گیریم تا ضمن جلوگیری از اتلاف Tokenها، حقیقت پایدار تاریخچه در لایه ماندگاری حفظ شود. نتایج حجیم ابزارها نیز به یک مخزن ذخیره‌سازی فرستاده شده و تنها یک اشاره‌گر (Pointer) در وضعیت باقی می‌ماند؛ همان الگوی تخلیه نتایج ابزار (Tool-result offloading) که فریم‌ورک‌های Haystack 3.0 و Agno 3.0 اکنون به صورت قابلیت‌های داخلی ارائه می‌دهند.
 
 ---
 
-*Next: [LangSmith Observability](03-langsmith-observability.md)*
+## منابع
+- وبلاگ رسمی LangChain با عنوان «LangGraph: گردش‌های کاری چندعاملی» (ژانویه ۲۰۲۴): https://www.langchain.com/blog/langgraph-multi-agent-workflows
+- مستندات ماندگاری در LangGraph: https://docs.langchain.com/oss/python/langgraph/persistence
+- خط‌مشی انتشار نسخه‌های LangChain: https://docs.langchain.com/oss/python/release-policy
+- مقاله مهندسی Anthropic با عنوان «ساخت ایجنت‌های هوش مصنوعی کارآمد» (دسامبر ۲۰۲۴؛ گردش‌های کاری در برابر ایجنت‌ها، الگوهای ارکستراتور-کارگزار و ارزیاب-بهینه‌ساز): https://www.anthropic.com/engineering/building-effective-agents
+
+---
+
+*بخش بعدی: [مشاهده‌پذیری با LangSmith](03-langsmith-observability.md)*
+
+</div>

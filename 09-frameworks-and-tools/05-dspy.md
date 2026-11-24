@@ -1,34 +1,39 @@
-# DSPy: Programming Language Models
+<div dir="rtl">
 
-**DSPy** has become the industry reference for treating prompts as optimizable parameters. It represents a paradigm shift from "Prompt Engineering" (trial and error) to **Prompt Compilation** (automated optimization). Published results show large gains over hand-tuned prompts on some tasks, but the lift depends entirely on your metric and data, so measure it on your own eval set before promising a number.
+# فریم‌ورک DSPy: برنامه‌نویسی مدل‌های زبانی (DSPy: Programming Language Models)
 
-The 2026 story is a second shift, from optimizing **prompts** to optimizing **program structure**: GEPA (reflective prompt evolution, DSPy 3.0) made optimization trace-driven, and Flex (DSPy 3.3.0, Aug 3, 2026) uses it to search over how modules are composed, not only over instruction text. Current release: DSPy 3.4.1 (Oct 12, 2026).
+فریم‌ورک **DSPy** به مرجع استاندارد صنعت برای تلقی کردن Promptها به عنوان پارامترهای قابل بهینه‌سازی تبدیل شده است. این فریم‌ورک نشان‌دهنده یک تغییر پارادایم اساسی از «مهندسی Prompt» (آزمون و خطای دستی) به **کامپایل Prompt (یا Prompt Compilation - بهینه‌سازی خودکار)** است. نتایج منتشرشده بهبودهای چشمگیری را نسبت به دستورهای بهینه‌سازی‌شده دستی در برخی وظایف نشان می‌دهند، اما میزان این بهبود کاملاً به معیار ارزیابی (Metric) و داده‌های شما بستگی دارد؛ بنابراین قبل از دادن هرگونه قول یا تعهد در مورد اعداد، آن را روی مجموعه ارزیابی اختصاصی خود اندازه‌گیری کنید.
 
-## Table of Contents
+روایت سال ۲۰۲۶ نمایانگر یک تغییر جهت دوم است: از بهینه‌سازی **Promptها** به سمت بهینه‌سازی **ساختار برنامه (Program Structure)**. روش GEPA (تکامل بازتابی Promptها در DSPy 3.0) بهینه‌سازی را مبتنی بر ردگیری (Trace-driven) کرد، و روش Flex (در نسخه DSPy 3.3.0، ۳ اوت ۲۰۲۶) از آن برای جستجو در نحوه ترکیب ماژول‌ها استفاده می‌کند، نه صرفاً تغییر متن دستورالعمل‌ها. نسخه جاری: DSPy 3.4.1 (۱۲ اکتبر ۲۰۲۶).
 
-- [The Programming Paradigm](#the-programming-paradigm)
-- [Signatures: Describing the Task](#signatures-describing-the-task)
-- [Optimizers: MIPROv2, GEPA, and Flex](#optimizers-miprov2-gepa-and-flex)
-- [Output Constraints: Refine and BestOfN](#output-constraints-refine-and-bestofn)
-- [Managing Model Drift](#managing-model-drift)
-- [DSPy 3.3 and 3.4 Changes](#dspy-33-and-34-changes)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## جدول محتوا
 
----
-
-## The Programming Paradigm
-
-DSPy treats an LLM application like a **Neural Network**.
-- **The Module**: A reusable block of logic (e.g., `ChainOfThought`).
-- **The Signature**: A declarative specification of what the module does (Input -> Output).
-- **The Optimizer**: A process that finds the best "Weights" (Prompts) for the module based on a metric.
+- [پارادایم برنامه‌نویسی](#the-programming-paradigm)
+- [امضاها (Signatures): توصیف وظیفه](#signatures-describing-the-task)
+- [بهینه‌سازها: MIPROv2، GEPA و Flex](#optimizers-miprov2-gepa-and-flex)
+- [محدودیت‌های خروجی: Refine و BestOfN](#output-constraints-refine-and-bestofn)
+- [مدیریت تغییر رفتار مدل (Model Drift)](#managing-model-drift)
+- [تغییرات نسخه‌های DSPy 3.3 و 3.4](#dspy-33-and-34-changes)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Signatures: Describing the Task
+## پارادایم برنامه‌نویسی
 
-Instead of writing a 100-line prompt, you write a **Signature**:
+فریم‌ورک DSPy با برنامه‌های کاربردی LLM مانند یک **شبکه عصبی (Neural Network)** رفتار می‌کند.
+- **ماژول (The Module)**: یک بلوک قابل استفاده مجدد از منطق برنامه (مانند `ChainOfThought`).
+- **امضا (The Signature)**: یک مشخصات اعلانی (Declarative) از کاری که ماژول انجام می‌دهد (ورودی -> خروجی).
+- **بهینه‌ساز (The Optimizer)**: فرآیندی که بر اساس یک معیار ارزیابی، بهترین «وزن‌ها» (دستورهای Prompt) را برای ماژول پیدا می‌کند.
+
+---
+
+## امضاها (Signatures): توصیف وظیفه
+
+به جای نوشتن یک Prompt طولانی ۱۰۰ خطی، شما یک **Signature** تعریف می‌کنید:
+
+<div dir="ltr">
+
 ```python
 class ResearchAssistant(dspy.Signature):
     """Answer the question by synthesizing the provided web context."""
@@ -36,32 +41,37 @@ class ResearchAssistant(dspy.Signature):
     question = dspy.InputField()
     answer = dspy.OutputField(desc="A technical summary with citations")
 ```
-**Winning Nuance**: Signatures are **Model-Agnostic**. You can compile them for Claude Opus 5.5, Claude Sonnet 5.5, GPT-6.1 Sol, Gemini 3.8 Flash, or an open-weight model such as Qwen3.8-27B without changing a single line of program code. What changes per model is the compiled artifact (instructions and demos), which is why each model tier gets its own compile run.
+
+</div>
+
+**نکته ظریف و تعیین‌کننده**: امضاها **مستقل از مدل (Model-Agnostic)** هستند. شما می‌توانید آن‌ها را برای Claude Opus 5.5، Claude Sonnet 5.5، GPT-6.1 Sol، Gemini 3.8 Flash یا یک مدل با وزن‌های باز مانند Qwen3.8-27B بدون تغییر حتی یک خط از کد برنامه کامپایل کنید. آنچه به ازای هر مدل تغییر می‌کند، آرتیفکت کامپایل‌شده (دستورالعمل‌ها و نمونه‌ها یا دموها) است؛ به همین دلیل است که هر رده از مدل‌ها اجرای کامپایل اختصاصی خود را دریافت می‌کند.
 
 ---
 
-## Optimizers: MIPROv2, GEPA, and Flex
+## بهینه‌سازها: MIPROv2، GEPA و Flex
 
-**MIPROv2 (Multi-stage Instruction PRoposal Optimizer)** is the long-standing workhorse.
-1. **Instruction Proposal**: An "Assistant Model" proposes 10-20 different ways to write the system prompt for the task.
-2. **Bayesian Optimization**: DSPy runs the proposed prompts against a small training set and scores them using a metric.
-3. **Selection**: It picks the prompt that maximizes your metric (e.g., Factuality score).
+الگوریتم **MIPROv2 (بهینه‌ساز چندمرحله‌ای پیشنهاد دستورالعمل)** اسب بارکش قدیمی و باسابقه این فریم‌ورک است.
+۱. **پیشنهاد دستورالعمل (Instruction Proposal)**: یک «مدل دستیار (Assistant Model)» تعداد ۱۰ تا ۲۰ روش مختلف برای نگارش System Prompt برای وظیفه مربوطه پیشنهاد می‌دهد.
+۲. **بهینه‌سازی بیزی (Bayesian Optimization)**: فریم‌ورک DSPy دستورهای پیشنهادی را روی یک مجموعه داده آموزشی کوچک اجرا کرده و آن‌ها را با استفاده از یک متریک امتیازدهی می‌کند.
+۳. **انتخاب نهایی (Selection)**: دستوری را انتخاب می‌کند که متریک شما (مانند امتیاز واقعیت‌پذیری یا Factuality) را به حداکثر می‌رساند.
 
-**GEPA** (reflective prompt evolution, `dspy.GEPA`, added in DSPy 3.0) replaces score-only search with reflection: an LLM reads execution traces and metric feedback, proposes targeted instruction edits, and keeps a Pareto frontier of candidates that win on different examples. It can use textual feedback, not just a scalar score, and its authors report beating both RL fine-tuning (GRPO) and MIPROv2 on their tasks with far fewer rollouts than RL needs.
+روش **GEPA** (تکامل بازتابی دستورها، `dspy.GEPA`، اضافه‌شده در DSPy 3.0) جستجوی مبتنی بر صرفاً امتیاز عددی را با بازاندیشی و تامل (Reflection) جایگزین می‌کند: یک مدل LLM ردپاهای اجرا (Traces) و بازخورد متریک را می‌خواند، ویرایش‌های هدفمندی را برای دستورالعمل پیشنهاد می‌دهد و یک جبهه پارتو (Pareto Frontier) از گزینه‌هایی را نگه می‌دارد که در مثال‌های مختلف برنده می‌شوند. این روش می‌تواند از بازخورد متنی استفاده کند، نه صرفاً یک امتیاز اسکالر، و نویسندگان آن گزارش داده‌اند که در وظایف خود هم Fine-tuning با یادگیری تقویتی (GRPO) و هم MIPROv2 را با تعداد Rollout بسیار کمتری نسبت به RL شکست داده‌اند.
 
-**Flex** (DSPy 3.3.0, Aug 3, 2026) uses GEPA to optimize **program structure**: which modules exist and how they connect, not only what each prompt says. **ReAnchor** (3.4.0, Sep 25, 2026) calibrates decision thresholds, score cuts and choice weights against a program metric.
+روش **Flex** (در DSPy 3.3.0، ۳ اوت ۲۰۲۶) از GEPA برای بهینه‌سازی **ساختار برنامه** استفاده می‌کند: اینکه چه ماژول‌هایی وجود داشته باشند و چگونه به هم متصل شوند، نه فقط متنی که هر Prompt بیان می‌کند. روش **ReAnchor** (در نسخه 3.4.0، ۲۵ سپتامبر ۲۰۲۶) آستانه‌های تصمیم‌گیری، برش‌های امتیاز و وزن‌های انتخاب را در برابر متریک برنامه کالیبره می‌کند.
 
-| Optimizer | Searches over | Reach for it when |
+| بهینه‌ساز | فضای جستجو | زمان مناسب برای استفاده |
 |---|---|---|
-| MIPROv2 | Instructions and few-shot demos | A fixed pipeline needs better prompts and you have a few hundred labeled examples |
-| GEPA | Instructions, guided by trace reflection and textual feedback | Rollouts are expensive, or your metric can explain why an output failed |
-| Flex | Program structure, via GEPA | You suspect the decomposition itself is wrong (missing verify step, wrong module boundaries) |
+| بهینه‌ساز MIPROv2 | دستورالعمل‌ها و نمونه‌های معدود (Few-shot demos) | زمانی که یک پایپ‌لاین ثابت به دستورهای بهتری نیاز دارد و چند صد نمونه برچسب‌گذاری‌شده در اختیار دارید |
+| بهینه‌ساز GEPA | دستورالعمل‌ها، با هدایت بازاندیشی در Trace و بازخورد متنی | زمانی که اجرای نمونه‌ها (Rollouts) پرهزینه است، یا متریک شما می‌تواند دلیل شکست یک خروجی را توضیح دهد |
+| بهینه‌ساز Flex | ساختار برنامه، از طریق GEPA | زمانی که مشکوک هستید خود ساختار تجزیه مسئله اشتباه است (مثلاً مرحله اعتبارسنجی مفقود شده یا مرزهای ماژول نادرست است) |
 
 ---
 
-## Output Constraints: Refine and BestOfN
+## محدودیت‌های خروجی: Refine و BestOfN
 
-Older tutorials teach `dspy.Assert` and `dspy.Suggest`. They were deprecated in DSPy 2.6 and are gone in 3.x; code that uses them fails on a current install. The replacements take a **reward function** instead of a boolean assertion:
+آموزش‌های قدیمی‌تر کلاس‌های `dspy.Assert` و `dspy.Suggest` را آموزش می‌دهند. این متدها در DSPy 2.6 منسوخ شدند و در نسخه 3.x کاملاً حذف شده‌اند؛ کدهایی که از آن‌ها استفاده کنند در نصب‌های جاری دچار خطا می‌شوند. جایگزین‌های جدید به جای ادعای بولین (Boolean Assertion)، یک **تابع پاداش (Reward Function)** دریافت می‌کنند:
+
+<div dir="ltr">
 
 ```python
 import dspy
@@ -78,61 +88,65 @@ refined = dspy.Refine(module=qa, N=3, reward_fn=under_50_words, threshold=1.0)
 best = dspy.BestOfN(module=qa, N=3, reward_fn=under_50_words, threshold=1.0)
 ```
 
-- `dspy.Refine` feeds the failed attempt back as a hint, which suits soft constraints such as length or format.
-- `dspy.BestOfN` samples independently and keeps the highest reward, which suits noisy tasks.
-- **Hard constraints** ("must not contain PII") should not rely on retries at all. Put a deterministic validator after the module and fail closed; a reward function makes compliance likely, not guaranteed.
+</div>
+
+- متد `dspy.Refine` تلاش ناموفق را به عنوان یک سرنخ بازخورد می‌دهد، که برای محدودیت‌های نرم (Soft constraints) مانند طول متن یا فرمت مناسب است.
+- متد `dspy.BestOfN` به طور مستقل نمونه‌برداری می‌کند و موردی را که بالاترین پاداش را دارد نگه می‌دارد، که برای وظایف پرنویز مناسب است.
+- **محدودیت‌های سخت (Hard Constraints)** (مانند «نباید حاوی اطلاعات هویتی PII باشد») به هیچ وجه نباید به تلاش‌های مجدد تکیه کنند. یک اعتبارسنج قطعی (Deterministic Validator) بعد از ماژول قرار دهید و در صورت نقض بلافاصله جریان را قطع کنید (Fail Closed)؛ یک تابع پاداش تنها احتمال انطباق را بالا می‌برد، اما آن را تضمین نمی‌کند.
 
 ---
 
-## Managing Model Drift
+## مدیریت تغییر رفتار مدل (Model Drift)
 
-When OpenAI or Anthropic releases a new model, hand-crafted prompts often break. In September 2026 alone, Anthropic shipped Fable 5.1, Opus 5.5 and Sonnet 5.5 and OpenAI shipped GPT-6 Astra, GPT-6 Sol and Luna, and GPT-6.1 Sol.
-- **The DSPy answer**: **Re-compile**. The optimizer finds new instructions and demos for the new model against the same metric, which turns a model migration into a measured job rather than a rewrite.
-- **The catch**: re-compilation is only as good as the eval set and metric behind it, and it costs real model calls. Budget it per model swap, and gate the swap on the compiled program beating the old one.
+هنگامی که OpenAI یا Anthropic مدل جدیدی را عرضه می‌کنند، Promptهای دست‌ساز اغلب دچار افت کیفیت یا شکست می‌شوند. تنها در سپتامبر ۲۰۲۶، شرکت Anthropic مدل‌های Fable 5.1، Opus 5.5 و Sonnet 5.5 را عرضه کرد و OpenAI مدل‌های GPT-6 Astra، GPT-6 Sol و Luna، و GPT-6.1 Sol را روانه بازار نمود.
+- **پاسخ فریم‌ورک DSPy**: **کامپایل مجدد (Re-compile)**. بهینه‌ساز دستورالعمل‌ها و دموهای جدیدی را برای مدل جدید در برابر همان متریک پیدا می‌کند، که فرآیند مهاجرت مدل را به جای بازنویسی کامل، به یک کار اندازه‌گیری‌شده و مهندسی تبدیل می‌نماید.
+- **نکته منفی**: کامپایل مجدد تنها به اندازه مجموعه ارزیابی و متریک پشتیبان آن خوب عمل می‌کند و هزینه فراخوانی‌های واقعی مدل را در بر دارد. برای هر تعویض مدل بودجه‌بندی کنید و جایگزینی مدل را مشروط به این کنید که برنامه کامپایل‌شده جدید مدل قبلی را شکست دهد.
 
 ---
 
-## DSPy 3.3 and 3.4 Changes
+## تغییرات نسخه‌های DSPy 3.3 و 3.4
 
-DSPy churns like every other framework, so pin it:
+پکیج DSPy نیز مانند هر فریم‌ورک دیگری دارای تغییرات پیوسته است، بنابراین نسخه آن را قفل (Pin) کنید:
 
-| Release | Date | What changed |
+| نسخه انتشار | تاریخ | تغییرات کلیدی |
 |---|---|---|
-| 3.3.0 | Aug 3, 2026 | Flex structure optimization; **ReActV2** with native tool calling; start of a typed, provider-neutral LM boundary; NumPy optional |
-| 3.3.1 | Aug 21, 2026 | GEPA 0.1.4; hardened `PythonInterpreter`; MCP Python SDK v2 compatibility |
-| 3.4.0 | Sep 25, 2026 | Native LM engines with custom HTTP providers. **Breaking**: the experimental 3.3 typed LM API is removed. Also async ReActV2, `LocalInterpreter` (persistent CPython for trusted code, used with RLM and Flex), ReAnchor, and experimental typed decision outputs (`Noul`, `Choice`, `Score`) that integrate TypeSafe's Jev decision model |
-| 3.4.1 | Oct 12, 2026 | GEPA's structured `InstructionProposer` becomes the default instruction proposer, so **optimization results can differ from 3.4.0 even with the same seed**; `dspy.RLM` can build DSPy sub-agents from inside its REPL; Python 3.15 support; fixes a 3.4.0 import crash |
+| نسخه 3.3.0 | ۳ اوت ۲۰۲۶ | بهینه‌سازی ساختار Flex؛ ماژول **ReActV2** همراه با فراخوانی بومی ابزار؛ آغاز مرز زبانی تایپ‌شده و بی‌طرف نسبت به ارائه‌دهنده؛ اختیاری شدن NumPy |
+| نسخه 3.3.1 | ۲۱ اوت ۲۰۲۶ | نسخه GEPA 0.1.4؛ ایمن‌سازی `PythonInterpreter`؛ سازگاری با نسخه دوم SDK پایتون پروتکل MCP |
+| نسخه 3.4.0 | ۲۵ سپتامبر ۲۰۲۶ | موتورهای بومی LM با ارائه‌دهندگان HTTP سفارشی. **تغییر شکننده**: API آزمایشی و نوع‌دار LM در نسخه 3.3 حذف شد. همچنین افزودن ReActV2 ناهمگام، `LocalInterpreter` (محیط CPython پایدار برای کدهای مطمئن، استفاده‌شده با RLM و Flex)، ReAnchor، و خروجی‌های تصمیم‌گیری نوع‌دار آزمایشی (`Noul`، `Choice`، `Score`) که با مدل تصمیم‌گیری Jev شرکت TypeSafe یکپارچه می‌شوند |
+| نسخه 3.4.1 | ۱۲ اکتبر ۲۰۲۶ | ماژول ساختاریافته `InstructionProposer` در GEPA به پیشنهاددهنده پیش‌فرض دستورالعمل تبدیل شد، بنابراین **نتایج بهینه‌سازی می‌تواند حتی با وجود Seed یکسان با نسخه 3.4.0 تفاوت داشته باشد**؛ ماژول `dspy.RLM` می‌تواند زیرعامل‌های DSPy را از داخل REPL خود بسازد؛ پشتیبانی از Python 3.15؛ رفع کرش هنگام ایمپورت در نسخه 3.4.0 |
 
-Two deprecations to plan for: OpenAI-style `messages=` calls now warn and are slated for removal in 3.5, and custom `BaseLM.forward` integrations run with deprecation warnings until 3.5.
-
----
-
-## Interview Questions
-
-### Q: Why is DSPy considered "Anti-Prompt Engineering"?
-
-**Strong answer:**
-Because it replaces the **Manual trial-and-error loop** with an **Optimization Loop**. In prompt engineering, the human is the optimizer. In DSPy, the human is the **Teacher**. You define the *Goal* (Signature) and the *Evaluation* (Metric), and you provide a few *Examples*. The framework then uses mathematical optimization (like Bayesian search) to find the tokens that statistically perform the best. This makes the system far more **Portable** and **Scalable** than a library of hardcoded strings.
-
-### Q: What is the biggest drawback of using DSPy in a production environment?
-
-**Strong answer:**
-**Compilation Latency and Cost**. To compile a complex DSPy pipeline, you might need to run 100-500 LLM calls to test different prompt variations, and you repeat that for every model you target. This is a significant upfront cost. However, for a Staff-level engineer, this is a **Tradeoff**: You pay more in development/compilation time to gain **measured reliability** and lower **Run-time Failure Rates** against a metric you control. Nothing about it is guaranteed: the compiled program is only as good as the eval set. Another challenge is the learning curve; it requires thinking like an ML researcher rather than a traditional developer. A third is framework churn: 3.4 removed an experimental API that 3.3 had introduced less than eight weeks earlier, and the 3.4.1 patch changed GEPA's default proposer so the same seed no longer reproduces 3.4.0 results. Pin the version, record it with every compiled artifact, and re-run the eval suite on upgrades.
-
-### Q: When would you use GEPA or Flex instead of MIPROv2?
-
-**Strong answer:**
-MIPROv2 searches over instructions and demos for a fixed pipeline, and it needs enough rollouts to make Bayesian search work. GEPA reflects on traces and textual feedback, so it fits when each rollout is expensive (long agent runs) or when my metric can say *why* an output failed. Flex goes one level up and changes the program structure through GEPA, which I would try when error analysis says the decomposition is wrong, for example a missing verification step, rather than the wording. In every case the deciding input is the metric: a weak metric lets any optimizer overfit, so I keep a held-out set the optimizer never sees.
+دو مورد منسوخ‌سازی که باید برای آن‌ها برنامه‌ریزی کنید: فراخوانی‌های سبک OpenAI با `messages=` اکنون هشدار صادر می‌کنند و برای حذف در نسخه 3.5 برنامه‌ریزی شده‌اند، و یکپارچه‌سازی‌های سفارشی `BaseLM.forward` نیز تا نسخه 3.5 همراه با هشدارهای منسوخ‌سازی اجرا خواهند شد.
 
 ---
 
-## References
-- Khattab et al. "DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines" (arXiv 2310.03714, Oct 2023): https://arxiv.org/abs/2310.03714
-- Opsahl-Ong et al. "Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs" (arXiv 2406.11695, Jun 2024; the MIPRO paper): https://arxiv.org/abs/2406.11695
-- Agrawal et al. "GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning" (arXiv 2507.19457, Jul 2025): https://arxiv.org/abs/2507.19457
-- DSPy release notes (3.4.0, Sep 25, 2026; 3.4.1, Oct 12, 2026): https://github.com/stanfordnlp/dspy/releases
-- DSPy. "Output Refinement: BestOfN and Refine": https://dspy.ai/tutorials/output_refinement/best-of-n-and-refine/
+## پرسش‌های مصاحبه
+
+### پرسش: چرا DSPy به عنوان جنبش «ضد مهندسی پرامپت (Anti-Prompt Engineering)» در نظر گرفته می‌شود؟
+
+**پاسخ قوی:**
+زیرا این ابزار **حلقه آزمون و خطای دستی** را با یک **حلقه بهینه‌سازی خودکار** جایگزین می‌کند. در مهندسی سنتی Prompt، انسان نقش بهینه‌ساز را ایفا می‌کند. اما در DSPy، انسان در نقش **آموزگار (Teacher)** قرار می‌گیرد. شما *هدف* (Signature) و *معیار ارزیابی* (Metric) را تعریف می‌کنید و چند *مثال* ارائه می‌دهید. سپس فریم‌ورک از بهینه‌سازی ریاضی (مانند جستجوی بیزی) استفاده می‌کند تا Tokenهایی را بیابد که از نظر آماری بهترین عملکرد را دارند. این رویکرد سیستم را بسیار **قابل حمل‌تر (Portable)** و **مقیاس‌پذیرتر** از مجموعه‌ای از رشته‌های متنی هاردکدشده می‌سازد.
+
+### پرسش: بزرگ‌ترین نقطه ضعف استفاده از DSPy در یک محیط عملیاتی (Production) چیست؟
+
+**پاسخ قوی:**
+**تاخیر و هزینه کامپایل (Compilation Latency and Cost)**. برای کامپایل یک پایپ‌لاین پیچیده در DSPy، ممکن است لازم باشد ۱۰۰ تا ۵۰۰ فراخوانی LLM برای آزمودن تغییرات مختلف Prompt اجرا کنید و این کار را برای هر مدلی که هدف قرار می‌دهید تکرار نمایید. این یک هزینه اولیه چشمگیر است. با این حال، برای یک مهندس در سطح Staff، این یک **موازنه (Tradeoff)** محسوب می‌شود: شما در زمان توسعه و کامپایل هزینه بیشتری می‌پردازید تا به **قابلیت اطمینان سنجیده‌شده** و **نرخ‌های شکست پایین‌تر در زمان اجرا** در برابر معیاری که خودتان کنترل می‌کنید دست یابید. البته هیچ چیز در این فرآیند تضمین‌شده نیست: برنامه کامپایل‌شده صرفاً به اندازه دیتاست ارزیابی پشت آن اعتبار دارد. چالش دیگر منحنی یادگیری است؛ این ابزار نیازمند تفکر مانند یک محقق یادگیری ماشین است تا یک توسعه‌دهنده سنتی. چالش سوم ناپایداری فریم‌ورک است: نسخه 3.4 یک API آزمایشی را که نسخه 3.3 کمتر از هشت هفته قبل معرفی کرده بود حذف کرد و وصله 3.4.1 پیشنهاددهنده پیش‌فرض GEPA را تغییر داد به طوری که همان Seed قبلی دیگر نتایج 3.4.0 را بازتولید نمی‌کند. نسخه را قفل کنید، آن را با هر آرتیفکت کامپایل‌شده ذخیره نمایید و مجموعه ارزیابی را هنگام ارتقاها مجدداً اجرا کنید.
+
+### پرسش: در چه شرایطی از GEPA یا Flex به جای MIPROv2 استفاده می‌کنید؟
+
+**پاسخ قوی:**
+الگوریتم MIPROv2 روی دستورالعمل‌ها و دموها برای یک پایپ‌لاین ثابت جستجو می‌کند و به تعداد کافی Rollout برای عملکرد موثر جستجوی بیزی نیاز دارد. روش GEPA بر روی ردپاهای اجرا (Traces) و بازخورد متنی تامل و بازاندیشی می‌کند، بنابراین زمانی مناسب است که هر بار اجرای آزمایشی گران تمام شود (مانند اجراهای طولانی Agentها) یا زمانی که متریک من بتواند بگوید *چرا* یک خروجی شکست خورده است. ابزار Flex یک سطح فراتر می‌رود و ساختار برنامه را از طریق GEPA تغییر می‌دهد؛ روشی که من زمانی آن را امتحان می‌کنم که تحلیل خطا نشان دهد اصل ساختار تجزیه مسئله اشتباه است (مثلاً یک مرحله اعتبارسنجی جا افتاده است)، نه نحوه بیان کلمات. در تمام این سناریوها، ورودی تعیین‌کننده خود متریک است: یک متریک ضعیف باعث بیش‌برازش (Overfitting) هر بهینه‌سازی می‌شود، به همین دلیل من همواره یک مجموعه نگهداشته‌شده (Held-out Set) را که بهینه‌ساز هرگز آن را نمی‌بیند حفظ می‌کنم.
 
 ---
 
-*Next: [Semantic Kernel: Enterprise AI](06-semantic-kernel.md)*
+## منابع
+- مقاله Khattab و همکاران با عنوان «DSPy: کامپایل فراخوانی‌های اعلانی مدل‌های زبانی به پایپ‌لاین‌های خودبهبودبخش» (arXiv 2310.03714، اکتبر ۲۰۲۳): https://arxiv.org/abs/2310.03714
+- مقاله Opsahl-Ong و همکاران با عنوان «بهینه‌سازی دستورالعمل‌ها و دموها برای برنامه‌های چندمرحله‌ای مدل‌های زبانی» (arXiv 2406.11695، ژوئن ۲۰۲۴؛ مقاله MIPRO): https://arxiv.org/abs/2406.11695
+- مقاله Agrawal و همکاران با عنوان «GEPA: تکامل بازتابی دستورها می‌تواند عملکرد بهتری نسبت به یادگیری تقویتی داشته باشد» (arXiv 2507.19457، ژوئیه ۲۰۲۵): https://arxiv.org/abs/2507.19457
+- یادداشت‌های انتشار DSPy (نسخه 3.4.0 در ۲۵ سپتامبر ۲۰۲۶؛ نسخه 3.4.1 در ۱۲ اکتبر ۲۰۲۶): https://github.com/stanfordnlp/dspy/releases
+- مستندات آموزشی DSPy با عنوان «پالایش خروجی: BestOfN و Refine»: https://dspy.ai/tutorials/output_refinement/best-of-n-and-refine/
+
+---
+
+*بخش بعدی: [Semantic Kernel: هوش مصنوعی سازمانی](06-semantic-kernel.md)*
+
+</div>

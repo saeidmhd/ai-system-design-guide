@@ -1,74 +1,78 @@
-# Semantic Kernel
+<div dir="rtl">
 
-**Semantic Kernel (SK)** is Microsoft's engine for enterprise-grade AI orchestration and the framework most existing **Azure/Microsoft** and **C#/.NET** AI code is written against. Its forward momentum has moved to the **Microsoft Agent Framework (MAF)**, the successor to AutoGen and SK built by the same teams. MAF 1.0 went GA for .NET and Python on April 2, 2026, with long-term support, and ships roughly weekly (Python 1.24.0 and .NET 1.27.0 on Oct 30, 2026). SK still ships (Python `semantic-kernel` 1.46.0 on Oct 28, .NET 1.81.0 on Oct 6, 2026) and Microsoft publishes a migration guide from SK to MAF.
+# فریم‌ورک Semantic Kernel (Semantic Kernel)
 
-**The practical rule**: maintain existing SK code, start new agent work on MAF. The concepts below (kernel functions, plugins, connectors, function calling) carry straight over.
+فریم‌ورک **Semantic Kernel (SK)** موتور مایکروسافت برای ارکستراسیون هوش مصنوعی در سطح سازمانی (Enterprise-grade) است و فریم‌ورکی است که اکثر کدهای فعلی هوش مصنوعی در اکوسیستم‌های **Azure/Microsoft** و **C#/.NET** بر پایه آن نوشته شده‌اند. شتاب و پیشرفت رو به جلو در حال حاضر به سمت **Microsoft Agent Framework (MAF)** منتقل شده است، جانشین دو فریم‌ورک AutoGen و SK که توسط همان تیم‌ها توسعه داده شده است. نسخه MAF 1.0 در ۲ آوریل ۲۰۲۶ همراه با پشتیبانی بلندمدت (LTS) برای زبان‌های دات‌نت و پایتون به عرضه عمومی (GA) رسید و به‌روزرسانی‌های آن تقریباً به صورت هفتگی منتشر می‌شود (نسخه پایتون 1.24.0 و دات‌نت 1.27.0 در ۳۰ اکتبر ۲۰۲۶). فریم‌ورک SK همچنان به‌روزرسانی می‌شود (نسخه پایتون `semantic-kernel` 1.46.0 در ۲۸ اکتبر و دات‌نت 1.81.0 در ۶ اکتبر ۲۰۲۶) و مایکروسافت یک راهنمای رسمی برای مهاجرت از SK به MAF منتشر کرده است.
 
-## Table of Contents
+**قاعده عملی و کاربردی**: کدهای موجود مبتنی بر SK را حفظ و نگهداری کنید، اما پروژه‌های جدید توسعه Agent را روی MAF آغاز نمایید. مفاهیمی که در ادامه تشریح می‌شوند (توابع کرنل، پلاگین‌ها، کانکتورها و فراخوانی توابع) مستقیماً به فریم‌ورک جدید منتقل می‌شوند.
 
-- [Enterprise DNA](#enterprise-dna)
-- [Plugins and Function Calling (Planners Are Gone)](#plugins-and-function-calling)
-- [Memory and Connectors](#memory-and-connectors)
-- [Multi-Language Support (C# vs. Python)](#multi-language-support)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## جدول محتوا
 
----
-
-## Enterprise DNA
-
-While LangChain is favored by startups, Semantic Kernel is favored by **Banks and Fortune 500s**.
-- **Dependency Injection**: SK follows standard enterprise design patterns.
-- **Strong Typing**: First-class support for C# types makes it highly reliable in large-scale mission-critical systems.
-- **Security**: Deep integration with Azure Active Directory (Microsoft Entra ID) and Managed Identities.
+- [دی‌ان‌ای سازمانی (Enterprise DNA)](#enterprise-dna)
+- [پلاگین‌ها و فراخوانی تابع (حذف برنامه‌ریزها)](#plugins-and-function-calling)
+- [حافظه و کانکتورها](#memory-and-connectors)
+- [پشتیبانی چندزبانه (C# در برابر پایتون)](#multi-language-support)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Plugins and Function Calling
+## دی‌ان‌ای سازمانی (Enterprise DNA)
 
-1. **Kernel Functions**: The basic unit of logic (Native code or LLM prompts).
-2. **Plugins**: A collection of functions (e.g., a "GitHub Plugin" or an "SQL Plugin").
-3. **Planning is native function calling**: The Stepwise and Handlebars planners have been **deprecated and removed** from SK in Python, .NET and Java (Microsoft Learn, updated May 26, 2026). Automatic function calling (`FunctionChoiceBehavior.Auto()`) is the planning mechanism: the model picks the next function, the kernel invokes it, and the loop repeats. Microsoft publishes a Stepwise Planner migration guide.
-
-This is the framework-churn story in miniature. Prompt-based planners existed because early models could not call tools reliably; once native tool calling arrived, the abstraction became overhead and was deleted. Long-running, multi-day processes belong in MAF workflows with checkpointing, not in a planner.
-
----
-
-## Memory and Connectors
-
-Semantic Kernel uses **Connectors** to abstract away the underlying infrastructure.
-- **Universal Connectors**: One interface for Azure OpenAI, OpenAI, Mistral, and local ONNX models.
-- **Vector Store Abstraction**: Switch between Azure AI Search, Pinecone, and Qdrant without changing the core business logic. On .NET, MAF builds on the same `Microsoft.Extensions.AI` chat-client abstractions, which shortens the migration.
+در حالی که استارتاپ‌ها فریم‌ورک LangChain را ترجیح می‌دهند، Semantic Kernel انتخاب محبوب **بانک‌ها و شرکت‌های لیست Fortune 500** است.
+- **تزریق وابستگی (Dependency Injection)**: فریم‌ورک SK کاملاً از الگوهای طراحی استاندارد سازمانی پیروی می‌کند.
+- **سیستم نوع‌بندی قوی (Strong Typing)**: پشتیبانی درجه‌یک از تایپ‌های #C، آن را در سیستم‌های بزرگ و ماموریت‌محور (Mission-critical) بسیار قابل اعتماد می‌سازد.
+- **امنیت (Security)**: یکپارچگی عمیق با Azure Active Directory (یا Microsoft Entra ID) و هویت‌های مدیریت‌شده (Managed Identities).
 
 ---
 
-## Multi-Language Support
+## پلاگین‌ها و فراخوانی تابع (حذف برنامه‌ریزها)
 
-SK is one of the few major frameworks that treats C# and Python as equals (Java is supported too, with a smaller surface). MAF keeps that promise for .NET and Python and adds Go in public preview.
-- **The Pattern**: Develop and prototype in Python; deploy the core orchestration in C# for performance and type-safety.
-- **Logic Sharing**: Shared prompt templates (.yaml) that work across both languages.
+۱. **توابع کرنل (Kernel Functions)**: واحد پایه منطق برنامه (شامل کدهای محلی یا پرامپت‌های LLM).
+۲. **پلاگین‌ها (Plugins)**: مجموعه‌ای از توابع مرتبط (به عنوان مثال یک «GitHub Plugin» یا یک «SQL Plugin»).
+۳. **برنامه‌ریزی، همان فراخوانی بومی توابع است**: برنامه‌ریزهای Stepwise و Handlebars در پیاده‌سازی‌های پایتون، دات‌نت و جاوا **منسوخ و به طور کامل حذف شده‌اند** (مستندات Microsoft Learn، به‌روزشده در ۲۶ مه ۲۰۲۶). فراخوانی خودکار توابع (`FunctionChoiceBehavior.Auto()`) اکنون سازوکار اصلی برنامه‌ریزی است: مدل تابع بعدی را انتخاب می‌کند، کرنل آن را اجرا می‌نماید و این چرخه تکرار می‌شود. مایکروسافت یک راهنمای مهاجرت برای برنامه‌ریز Stepwise منتشر کرده است.
 
----
-
-## Interview Questions
-
-### Q: Why would a Staff Engineer choose Semantic Kernel over LangChain?
-
-**Strong answer:**
-**Architectural Alignment**. If an organization is already built on the .NET/Azure stack, the Microsoft stack fits into their existing CI/CD, monitoring (App Insights), and security (Entra ID) pipelines. LangChain often feels like an "external" piece of tech. Furthermore, the **Strong Typing** and **Dependency Injection** patterns prevent the "spaghetti code" that often plagues large LangChain projects. For an enterprise handling sensitive financial data, the **Native Azure integration** for security and auditing is the deciding factor. In late 2026 I would phrase the choice as **Microsoft Agent Framework versus LangGraph** for new work: MAF is GA with long-term support and has absorbed SK's enterprise features, so I keep SK for existing code and plan its migration rather than starting new projects on it.
-
-### Q: What is the "Function Calling" abstraction in Semantic Kernel?
-
-**Strong answer:**
-SK uses a **Plugin-based model**. Every function (native C# or LLM-based) is registered with the Kernel, and its schema is advertised to the model as a tool. When the model emits a tool call, the Kernel looks up the function in the Plugin registry, validates the parameters, runs any **filters** (for approval, logging or redaction), and executes it. With `FunctionChoiceBehavior.Auto()` the kernel loops until the model stops calling tools, which is why SK's old planners were removed: native function calling does the planning. The governance hooks are the filters, so that is where I put human approval for sensitive functions and audit logging.
+این نمونه‌ای مینیاتوری از داستان تغییرات مداوم فریم‌ورک‌ها است. برنامه‌ریزهای مبتنی بر Prompt صرفاً به این دلیل وجود داشتند که مدل‌های اولیه نمی‌توانستند ابزارها را با قابلیت اطمینان فراخوانی کنند؛ هنگامی که قابلیت فراخوانی بومی ابزارها به مدل‌ها اضافه شد، آن لایه انتزاعی به یک سربار اضافه تبدیل و حذف گردید. فرآیندهای طولانی‌مدت و چندروزه متعلق به گردش‌های کاری MAF همراه با قابلیت Checkpointing هستند، نه یک برنامه‌ریز قدیمی درون فریم‌ورک.
 
 ---
 
-## References
-- Microsoft Learn. "Introduction to Semantic Kernel": https://learn.microsoft.com/en-us/semantic-kernel/overview/
-- Microsoft Learn. "Planning" (planners deprecated and removed; function calling): https://learn.microsoft.com/en-us/semantic-kernel/concepts/planning
-- Microsoft. "Microsoft Agent Framework Version 1.0" (Apr 2026): https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-version-1-0/
+## حافظه و کانکتورها
+
+فریم‌ورک Semantic Kernel از **کانکتورها (Connectors)** برای انتزاع و جداسازی زیرساخت زیرین استفاده می‌کند.
+- **کانکتورهای سراسری (Universal Connectors)**: یک اینترفیس واحد برای Azure OpenAI، OpenAI، Mistral و مدل‌های محلی ONNX.
+- **انتزاع پایگاه داده برداری (Vector Store Abstraction)**: امکان جابجایی میان Azure AI Search، Pinecone و Qdrant بدون نیاز به تغییر منطق اصلی کسب‌وکار. در اکوسیستم دات‌نت، MAF بر پایه همان انتزاع‌های کلاینت چت `Microsoft.Extensions.AI` بنا شده که فرآیند مهاجرت را بسیار کوتاه‌تر می‌کند.
 
 ---
 
-*Next: [Microsoft Agent Framework, CrewAI, and Agent SDKs](07-autogen-crewai.md)*
+## پشتیبانی چندزبانه (C# در برابر پایتون)
+
+فریم‌ورک SK یکی از معدود فریم‌ورک‌های اصلی است که با #C و پایتون به عنوان دو شهروند هم‌رده رفتار می‌کند (زبان جاوا نیز با سطحی کوچک‌تر پشتیبانی می‌شود). فریم‌ورک MAF این تعهد را برای دات‌نت و پایتون حفظ کرده و زبان Go را نیز در پیش‌نمایش عمومی اضافه نموده است.
+- **الگوی پیشنهادی**: توسعه و ساخت پیش‌نمونه در پایتون؛ استقرار ارکستراسیون هسته اصلی در #C برای بهره‌مندی از کارایی بالا و ایمنی نوع داده‌ها.
+- **اشتراک‌گذاری منطق**: قالب‌های مشترک پرامپت (فرمت .yaml) که در هر دو زبان کار می‌کنند.
+
+---
+
+## پرسش‌های مصاحبه
+
+### پرسش: چرا یک مهندس در سطح Staff ممکن است Semantic Kernel را به LangChain ترجیح دهد؟
+
+**پاسخ قوی:**
+**انطباق معماری (Architectural Alignment)**. اگر سازمانی از قبل بر پایه پشته .NET/Azure بنا شده باشد، پشته مایکروسافت به صورت طبیعی در خطوط CI/CD، مانیتورینگ (Application Insights) و امنیت (Entra ID) موجود آن‌ها جا می‌گیرد. در مقابل، LangChain اغلب حس یک فناوری «وصله‌شده و خارجی» را القا می‌کند. علاوه بر این، الگوهای **نوع‌بندی قوی** و **تزریق وابستگی** از بروز «کدهای اسپاگتی» که معمولاً پروژه‌های بزرگ LangChain را درگیر می‌کند جلوگیری می‌نمایند. برای سازمانی که با داده‌های حساس مالی سر و کار دارد، **یکپارچگی بومی Azure** برای امنیت و ممیزی عامل تعیین‌کننده است. در اواخر سال ۲۰۲۶، من برای پروژه‌های جدید این انتخاب را بین **Microsoft Agent Framework در برابر LangGraph** صورت‌بندی می‌کنم: MAF به عرضه عمومی همراه با LTS رسیده و ویژگی‌های سازمانی SK را جذب کرده است؛ بنابراین من SK را برای کدهای موجود حفظ کرده و برای مهاجرت آن برنامه‌ریزی می‌کنم، به جای اینکه پروژه‌های جدید را روی آن آغاز نمایم.
+
+### پرسش: انتزاع «فراخوانی تابع (Function Calling)» در Semantic Kernel چگونه کار می‌کند؟
+
+**پاسخ قوی:**
+فریم‌ورک SK از یک **مدل مبتنی بر پلاگین** استفاده می‌کند. هر تابع (کد بومی #C یا مبتنی بر پرامپت LLM) در Kernel ثبت می‌شود و شمای آن به عنوان یک ابزار به مدل اعلان می‌گردد. هنگامی که مدل یک درخواست فراخوانی ابزار صادر می‌کند، Kernel تابع مربوطه را در رجیستری پلاگین پیدا کرده، پارامترها را اعتبارسنجی می‌نماید، هرگونه **فیلتر (Filter)** را (برای تایید، لاگ‌گیری یا پنهان‌سازی اطلاعات) اجرا می‌کند و در نهایت آن را اجرا می‌نماید. با تنظیم `FunctionChoiceBehavior.Auto()`، کرنل تا زمانی که مدل فراخوانی ابزارها را متوقف کند در حلقه باقی می‌ماند، که دلیل حذف برنامه‌ریزهای قدیمی SK نیز همین است: فراخوانی بومی توابع خودش عمل برنامه‌ریزی را انجام می‌دهد. نقاط اعمال نظارت سازمانی همان فیلترها هستند، بنابراین این همان جایی است که من تاییدیه انسانی را برای توابع حساس و لاگ‌گیری حسابرسی قرار می‌دهم.
+
+---
+
+## منابع
+- مستندات رسمی Microsoft Learn با عنوان «مقدمه‌ای بر Semantic Kernel»: https://learn.microsoft.com/en-us/semantic-kernel/overview/
+- مستندات Microsoft Learn برای «برنامه‌ریزی» (منسوخ شدن و حذف برنامه‌ریزها؛ فراخوانی توابع): https://learn.microsoft.com/en-us/semantic-kernel/concepts/planning
+- وبلاگ رسمی مایکروسافت با عنوان «نسخه ۱.۰ پلتفرم Microsoft Agent Framework» (آوریل ۲۰۲۶): https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-version-1-0/
+
+---
+
+*بخش بعدی: [Microsoft Agent Framework، CrewAI و اس‌دی‌کی‌های Agent](07-autogen-crewai.md)*
+
+</div>
