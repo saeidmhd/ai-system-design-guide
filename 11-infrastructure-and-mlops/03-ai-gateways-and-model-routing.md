@@ -1,80 +1,84 @@
-# AI Gateways and Model Routing
+<div dir="rtl">
 
-The case for a routing layer is now empirical, not aspirational. Per Datadog's 2026 State of AI Engineering, **69% of companies run three or more models in production**, and **rate-limit / capacity errors are the single largest production failure mode** (about 5% of requests fail, and roughly 60% of those failures are capacity-driven). Datadog's own framing: operational complexity, not model intelligence, is now the primary barrier to reliable AI at scale.
+# درگاه‌های هوش مصنوعی و هدایت مدل (AI Gateways and Model Routing)
 
-Once you depend on multiple models and your traffic is non-trivial, a single provider becomes a single point of failure, and rate limits, not model quality, are what page you at 2am. An **AI gateway** is the standard mitigation. This chapter covers what it does, how routing and fallback work, the 2026 tool landscape, and when you actually need one.
+دلیل استفاده از یک لایه هدایت و مسیریابی (Routing Layer) اکنون تجربی و اثبات‌شده است، نه صرفاً یک آرمان تئوریک. طبق گزارش سال ۲۰۲۶ شرکت Datadog درباره وضعیت مهندسی هوش مصنوعی (State of AI Engineering)، **۶۹٪ شرکت‌ها سه مدل یا بیشتر را در محیط پروداکشن اجرا می‌کنند**، و **خطاهای محدودیت نرخ (Rate-limit) یا کمبود ظرفیت، بزرگ‌ترین حالت شکست منفرد در پروداکشن هستند** (حدود ۵٪ از درخواست‌ها با شکست مواجه می‌شوند و تقریباً ۶۰٪ از این شکست‌ها ناشی از کمبود ظرفیت است). دیدگاه خود Datadog این است: پیچیدگی عملیاتی، و نه هوش مدل، اکنون مانع اصلی برای دستیابی به هوش مصنوعی مطمئن در مقیاس بالا محسوب می‌شود.
 
-## Table of Contents
+به محض اینکه به چندین مدل وابسته شوید و حجم ترافیک شما غیرجزئی باشد، هر ارائه‌دهنده منفرد (Single provider) به یک نقطه شکست منفرد (SPOF) تبدیل می‌شود؛ و محدودیت‌های نرخ (Rate limits)، نه کیفیت مدل، مواردی هستند که ساعت ۲ بامداد شما را بیدار و احضار (Page) می‌کنند. یک **درگاه هوش مصنوعی (AI Gateway)** ابزار استاندارد برای کاهش این ریسک است. این فصل به بررسی وظایف آن، نحوه عملکرد مسیریابی و بازگشت اضطراری (Fallback)، چشم‌انداز ابزارهای سال ۲۰۲۶، و زمان نیاز واقعی شما به آن می‌پردازد.
 
-- [What an AI Gateway Is](#what-an-ai-gateway-is)
-- [Routing Strategies](#routing-strategies)
-- [Fallback and Reliability](#fallback-and-reliability)
-- [The 2026 Tool Landscape](#the-2026-tool-landscape)
-- [Architecture Patterns](#architecture-patterns)
-- [Securing the Gateway](#securing-the-gateway)
-- [Do You Need a Gateway Yet?](#do-you-need-a-gateway-yet)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## What an AI Gateway Is
-
-An AI gateway (also LLM gateway, LLM proxy, or LLM router) is a **control plane between your applications and model providers**, exposing one consistent (almost always OpenAI-compatible) API and centralizing the cross-cutting concerns that would otherwise be smeared across every service.
-
-| Job | What it does |
-|-----|--------------|
-| Unified API | One OpenAI-shaped interface across providers; no per-provider glue |
-| Model routing | Picks which model/deployment serves each request |
-| Fallback chains | On a retryable failure, tries the next provider/model in an ordered list |
-| Load balancing | Spreads traffic across keys, regions, deployments, providers |
-| Retries with backoff | Exponential backoff plus jitter, honoring `Retry-After` |
-| Rate-limit handling | Detects 429s, cools down throttled deployments, reroutes |
-| Virtual keys + budgets | Per-key/team keys with dollar budgets and hard caps |
-| Spend tracking | Token- and dollar-level attribution per key/team/model |
-| Observability | Centralized traces: who called, what was tried, why it failed, what won |
-| Caching | Exact-match and semantic caching to cut cost and latency |
-| Guardrails / PII | Prompt/response filtering and redaction at the choke point |
-
-The mental model: a gateway converts an `N providers x M concerns` glue problem in application code into a single policy-enforced choke point. The cost is one extra network hop and a component you must keep highly available, which is the central tension below.
+- [درگاه هوش مصنوعی چیست](#درگاه-هوش-مصنوعی-چیست-what-an-ai-gateway-is)
+- [استراتژی‌های هدایت و مسیریابی (Routing Strategies)](#استراتژیهای-هدایت-و-مسیریابی-routing-strategies)
+- [بازگشت اضطراری و پایایی (Fallback and Reliability)](#بازگشت-اضطراری-و-پایایی-fallback-and-reliability)
+- [چشم‌انداز ابزارهای ۲۰۲۶ (The 2026 Tool Landscape)](#چشمانداز-ابزارهای-۲۰۲۶-the-2026-tool-landscape)
+- [الگوهای معماری (Architecture Patterns)](#الگوهای-معماری-architecture-patterns)
+- [امن‌سازی درگاه (Securing the Gateway)](#امنسازی-درگاه-securing-the-gateway)
+- [آیا در حال حاضر به یک درگاه نیاز دارید؟](#آیا-در-حال-حاضر-به-یک-درگاه-نیاز-دارید-do-you-need-a-gateway-yet)
+- [پرسش‌های مصاحبه (Interview Questions)](#پرسشهای-مصاحبه-interview-questions)
+- [مراجع (References)](#مراجع-references)
 
 ---
 
-## Routing Strategies
+## درگاه هوش مصنوعی چیست (What an AI Gateway Is)
 
-Routing strategies form a ladder of increasing complexity and overhead. As a rough sense of scale (vendor/practitioner figures, order-of-magnitude only): rule-based routing adds under ~1ms, embedding/semantic routing ~5ms, and heavier ML classifiers or an LLM-as-router ~50-100ms, all against typical model latencies of 500-2000ms.
+یک درگاه هوش مصنوعی یا AI Gateway (که به آن LLM gateway، LLM proxy یا LLM router نیز گفته می‌شود) یک **صفحه کنترل (Control Plane) بین برنامه‌های کاربردی شما و ارائه‌دهندگان مدل** است که یک API سازگار و یکپارچه (تقریباً همیشه سازگار با فرمت OpenAI) را در معرض استفاده قرار می‌دهد و دغدغه‌های فراگیر و مشترکی را متمرکز می‌کند که در غیر این صورت در سراسر تمام سرویس‌ها پخش می‌شدند.
 
-| Strategy | Decides by | Best for | Overhead | Failure modes |
-|----------|-----------|----------|----------|---------------|
-| Static / manual | Hard-coded model per route | Simple, predictable workloads | ~0ms | Brittle; no adaptation to outages or price changes |
-| Task-based | Task type maps to a model | Known task taxonomy | <1ms | Misclassification; taxonomy goes stale |
-| Cost-based | Cheapest model meeting constraints | Cost ceilings, batch work | <1ms | Can starve quality; cheapest may rate-limit |
-| Latency-based | Lowest observed/expected latency | Real-time UX | ~1-5ms | Herding onto one fast endpoint; cold-start skew |
-| Capability-based | Required capability (long context, vision, tools) | Heterogeneous needs | 1-5ms | Over-provisioning to the "best" model |
-| Semantic | Embed the request, match to a route | Intent dispatch, mixed difficulty | ~5-50ms | Embedding drift; ambiguous tail; threshold tuning |
-| LLM-as-router | A small LLM classifies and picks | The ambiguous tail embeddings miss | ~50-100ms | Adds an LLM call with its own cost and failure surface |
-| Cascade | Cheap model first, escalate on low confidence | Cost-quality at scale | Sequential | Double-spend on escalated queries; noisy confidence |
-| KV-cache-aware (self-hosted) | Which replica already holds the prompt's prefix in KV cache | Self-hosted fleets with shared prefixes and multi-turn agents | Low | Hot-spotting on popular prefixes; stale cache index |
+| وظیفه (Job) | عملکرد آن (What it does) |
+|---|---|
+| رابط یکپارچه (Unified API) | ارائه یک اینترفیس سازگار با مدل OpenAI در میان ارائه‌دهندگان مختلف؛ بدون نیاز به چسب‌های کدنویسی مجزا برای هر ارائه‌دهنده |
+| هدایت مدل (Model routing) | انتخاب اینکه کدام مدل/استقرار (Deployment) به هر درخواست پاسخ دهد |
+| زنجیره‌های بازگشت (Fallback chains) | در صورت بروز خطای قابل تکرار (Retryable)، تلاش مجدد با ارائه‌دهنده/مدل بعدی در یک لیست اولویت‌بندی‌شده |
+| توزیع بار (Load balancing) | پخش ترافیک روی کلیدها (Keys)، مناطق (Regions)، استقرارها، و ارائه‌دهندگان مختلف |
+| تلاش مجدد همراه با عقب‌نشینی (Retries with backoff) | عقب‌نشینی نمایی (Exponential backoff) به همراه نوسان تصادفی (Jitter)، با رعایت هدر `Retry-After` |
+| مدیریت محدودیت نرخ (Rate-limit handling) | تشخیص خطاهای 429، دوره استراحت (Cooldown) برای استقرارهای مسدودشده، و هدایت مجدد ترافیک |
+| کلیدهای مجازی و بودجه‌ها (Virtual keys + budgets) | کلیدهای مجزا به ازای هر تیم یا کلید با بودجه دلاری و سقف‌های سخت‌گیرانه (Hard caps) |
+| ردیابی هزینه (Spend tracking) | انتساب هزینه‌ها در سطح توکن و دلار به ازای هر کلید، تیم، یا مدل |
+| پایش‌پذیری و مشاهده‌پذیری (Observability) | ردگیری‌های متمرکز (Centralized traces): چه کسی فراخوانی کرد، چه مواردی امتحان شد، چرا شکست خورد، و کدام مدل برنده شد |
+| کش‌سازی (Caching) | کش‌سازی تطابق دقیق (Exact-match) و معنایی (Semantic) جهت کاهش هزینه و تاخیر |
+| حصارهای ایمنی / داده‌های حساس (Guardrails / PII) | فیلتر کردن و پالایش/سانسور (Redaction) پرامپت‌ها و پاسخ‌ها در نقطه گلوگاه ورودی |
 
-Three notes that matter in practice. **Semantic routing** picks a route by embedding similarity without calling an LLM; a common production pattern is a two-stage hybrid that handles the confident majority semantically and sends the ambiguous tail to an LLM-as-router (vLLM Semantic Router, at v0.4.0 since September 27, 2026, is an open-source implementation). Decision models are the newer middle rung: they return a typed answer (predicate, choice or score) with probabilities instead of text, either hosted (OpenAI's Decisions API, which bills input only) or on open models through vLLM and SGLang; [Research Radar theme 16](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities) covers the details. Calibrate thresholds on your own traffic, because early papers report underconfident probabilities and models that read the state correctly yet still pick the wrong action.
-
-**Cascades** are the highest-leverage cost play: RouteLLM (UC Berkeley / LMSYS, ICLR 2025) reported reaching ~95% of a frontier model's quality while routing only a fraction of calls to it, with cost reductions in the 45-85% range. Read that range as a benchmark-specific ceiling, not a guarantee; the escalation rate is the live cost variable, and a cascade that escalates most traffic saves little. The tier gaps are wide, and an escalated request pays for every call it touched. OpenAI's three-tier ladder is back since GPT-6.1 Terra (October 26, $1/$5): Luna ($0.10/$0.50) to Terra is 10x and Luna to Sol ($2/$10) is 20x, so a Luna-to-Sol escalation costs about 21x a Luna-only request, while an intermediate Terra step can catch the medium-difficulty traffic for half of Sol's price. Cascades are now a shipping product pattern too: GitHub Copilot Fusion (GA October 28, 2026) routes across models with Single, Cascade and Critique workflows at Standard, High or Max effort.
-
-**KV-cache-aware routing** moves the decision below the provider layer for self-hosted fleets: the Kubernetes Gateway API Inference Extension's endpoint picker (moved into the llm-d project in August 2026) and NVIDIA Dynamo's router send each request to the replica whose cache already holds its prefix, and Google reports under 1% routing overhead for its multi-cluster GKE Inference Gateway.
-
-Routing and fallback compose: route for cost/quality/latency on the happy path, fall back across providers for reliability on the unhappy path. A cascade is essentially quality-driven routing with reliability fallback built in.
+مدل ذهنی: یک درگاه، مسئله اتصال و چسب کدنویسی `N ارائه‌دهنده × M دغدغه` را در کد برنامه به یک نقطه گلوگاه واحد با اعمال سیاست‌ها تبدیل می‌کند. هزینه آن، یک پرش شبکه (Network hop) اضافی و مؤلفه‌ای است که باید دسترسی‌پذیری بالای (High Availability) آن را حفظ کنید، که تنش اصلی در ادامه خواهد بود.
 
 ---
 
-## Fallback and Reliability
+## استراتژی‌های هدایت و مسیریابی (Routing Strategies)
 
-This is the section that answers the Datadog data directly: rate limits cause most production failures, and fallback machinery is the antidote.
+استراتژی‌های هدایت و مسیریابی، نردبانی از پیچیدگی و بار محاسباتی (Overhead) فزاینده را تشکیل می‌دهند. به عنوان یک دیدگاه تقریبی از مقیاس (آمارهای ارائه‌دهندگان و متخصصان، صرفاً در حد مرتبه بزرگی): هدایت مبتنی بر قانون (Rule-based) کمتر از ۱ میلی‌ثانیه، هدایت مبتنی بر امبدینگ/معنایی حدود ۵ میلی‌ثانیه، و طبقه‌بندهای سنگین‌تر ML یا روش LLM-as-router حدود ۵۰ تا ۱۰۰ میلی‌ثانیه اضافه می‌کنند؛ همه این‌ها در برابر تاخیر معمول ۵۰۰ تا ۲۰۰۰ میلی‌ثانیه‌ای خود مدل قرار دارند.
 
-**Fallback chains** retry a request against the next provider/model whenever the primary returns a *retryable* failure (429 rate limit, 5xx, timeout, model-not-found). Retry 429 and 5xx-class errors only after classifying them; never retry 400-class client errors, which just waste quota.
+| استراتژی (Strategy) | مبنای تصمیم‌گیری | بهترین کاربرد | سربار (Overhead) | حالت‌های شکست (Failure modes) |
+|---|---|---|---|---|
+| حالت ایستا / دستی (Static / manual) | مدل کدنویسی‌شده به‌صورت سخت (Hard-coded) به ازای هر مسیر | بارهای کاری ساده و قابل پیش‌بینی | حدود ۰ میلی‌ثانیه | شکننده؛ عدم انطباق با قطعی‌ها یا تغییرات قیمت |
+| مبتنی بر تسک (Task-based) | نگاشت نوع تسک به یک مدل | آرایه‌شناسی (Taxonomy) مشخص از تسک‌ها | کمتر از ۱ میلی‌ثانیه | اشتباه در طبقه‌بندی؛ قدیمی و منسوخ شدن آرایه‌شناسی تسک‌ها |
+| مبتنی بر هزینه (Cost-based) | ارزان‌ترین مدلی که شروط را برآورده کند | سقف‌های هزینه، کارهای دسته‌ای (Batch) | کمتر از ۱ میلی‌ثانیه | می‌تواند باعث افت کیفیت شود؛ مدل ارزان‌تر ممکن است با محدودیت نرخ مواجه شود |
+| مبتنی بر تاخیر (Latency-based) | کمترین تاخیر مشاهده‌شده یا مورد انتظار | تجربه کاربری بی‌درنگ (Real-time UX) | حدود ۱ تا ۵ میلی‌ثانیه | هجوم ترافیک به سمت یک اندپوینت سریع؛ چولگی ناشی از راه‌اندازی اولیه (Cold-start skew) |
+| مبتنی بر قابلیت (Capability-based) | قابلیت مورد نیاز (کانتکست طولانی، بینایی، ابزارها) | نیازهای ناهمگن و متنوع | ۱ تا ۵ میلی‌ثانیه | تخصیص بیش از حد منابع (Over-provisioning) به مدل «بهترین» |
+| معنایی (Semantic) | امبد کردن درخواست، تطبیق با یک مسیر | تفکیک قصد (Intent dispatch)، دشواری مختلط | حدود ۵ تا ۵۰ میلی‌ثانیه | انحراف امبدینگ (Embedding drift)؛ حالت‌های مبهم دنباله توزیع؛ نیاز به تنظیم دقیق آستانه |
+| مدل LLM به عنوان روتِر (LLM-as-router) | یک مدل LLM کوچک درخواست را طبقه‌بندی و انتخاب می‌کند | موارد مبهمی که روش امبدینگ از دست می‌دهد | حدود ۵۰ تا ۱۰۰ میلی‌ثانیه | اضافه شدن یک فراخوانی LLM با هزینه و سطح خطای مختص به خود |
+| آبشاری (Cascade) | اول مدل ارزان، ارتقا به مدل قوی‌تر در صورت اعتماد پایین | تعادل هزینه و کیفیت در مقیاس بالا | ترتیبی (Sequential) | هزینه مضاعف روی کوئری‌های ارتقایافته؛ امتیاز اعتماد پر از نویز |
+| آگاه از کش KV-cache (در میزبانی شخصی) | کدام نسخه همتاسازی‌شده قبلاً پیشوند پرامپت را در کش KV نگه داشته است | ناوگان‌های خودمیزبان با پیشوندهای مشترک و ایجنت‌های چندمرحله‌ای | کم | ایجاد نقاط داغ (Hot-spotting) روی پیشوندهای محبوب؛ اندیس کش منسوخ |
 
-**Retries done right** follow three rules: exponential backoff (wait longer each failure), jitter (randomize the wait so clients do not retry in lockstep and create a thundering herd that worsens the outage), and honor `Retry-After` (OpenAI and Anthropic send it on ordinary rate-limit 429s; use `max(retry_after, computed_backoff)`). Ignoring `Retry-After` is the most common backoff bug.
+سه نکته که در عمل اهمیت دارند. **هدایت معنایی (Semantic routing)** یک مسیر را بر اساس شباهت امبدینگ و بدون فراخوانی LLM انتخاب می‌کند؛ یک الگوی رایج پروداکشن، یک ساختار ترکیبی دو مرحله‌ای است که اکثریت قاطع درخواست‌ها را به‌صورت معنایی مدیریت می‌کند و موارد مبهم انتهای توزیع (Ambiguous tail) را به یک LLM-as-router می‌فرستد (ابزار vLLM Semantic Router، در نسخه v0.4.0 از ۲۷ سپتامبر ۲۰۲۶، یک پیاده‌سازی متن‌باز در این زمینه است). مدل‌های تصمیم‌گیری (Decision models) پله جدیدتری در این میان هستند: آنها به جای متن، یک پاسخ تایپ‌شده (گزاره منطقی، انتخاب یا امتیاز) را به همراه احتمال بازمی‌گردانند، چه به‌صورت میزبانی‌شده (Decisions API شرکت OpenAI که فقط برای ورودی صورت‌حساب صادر می‌کند) یا روی مدل‌های باز از طریق vLLM و SGLang؛ [تم ۱۶ در Research Radar](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities) جزئیات را پوشش می‌دهد. آستانه‌ها را بر روی ترافیک واقعی خود کالیبره کنید، زیرا مقالات اولیه از احتمالات با اعتماد بیش از حد پایین (Underconfident) و مدل‌هایی گزارش داده‌اند که وضعیت را به‌درستی می‌خوانند اما همچنان اکشن اشتباه را انتخاب می‌کنند.
 
-**Branch on the error code, not just the status.** Not every 429 means "try again soon." Since September 2, 2026, OpenAI returns 429 with code `slow_down` when traffic ramps too fast (ramp gradually and honor `Retry-After`) and 503 on temporary model overload. Anthropic's monthly spend cap returns 429 with `error_code: enforced_spend_limit_reached` and no `retry-after`: no retry succeeds before the 1st of the next month, so fail over and page the owner. And on Claude Fable 5.1, Fable 5, Opus 5.5, Opus 5 and Sonnet 5.5, a safety-classifier refusal arrives as HTTP 200 with `stop_reason: "refusal"` and a `stop_details` category. Treat it as a routing signal rather than a success; Anthropic's beta server-side `fallbacks: "default"` retries on the model it recommends for that category (Fable 5.1's permitted targets are Claude Opus 4.8 and Opus 5).
+روش‌های **آبشاری (Cascades)** پربازده‌ترین راهکار برای کاهش هزینه هستند: ابزار RouteLLM (توسعه‌یافته توسط UC Berkeley / LMSYS، کنفرانس ICLR 2025) گزارش داد که با هدایت تنها کسری از فراخوانی‌ها به یک مدل پیشرو، به حدود ۹۵٪ کیفیت آن مدل دست یافته و کاهش هزینه‌ای در بازه ۴۵ تا ۸۵ درصد را ثبت کرده است. این بازه را به عنوان سقف ویژه بنچمارک در نظر بگیرید، نه یک تضمین قطعی؛ نرخ ارتقا (Escalation rate) متغیر زنده هزینه است و آبشاری که بیشتر ترافیک را ارتقا دهد، صرفه‌جویی کمی خواهد داشت. شکاف بین سطوح قیمتی عمیق است و درخواست ارتقایافته هزینه تمام فراخوانی‌هایی را که لمس کرده است پرداخت می‌کند. نردبان سه سطحی OpenAI از زمان عرضه GPT-6.1 Terra (در ۲۶ اکتبر، ۱ دلار ورودی / ۵ دلار خروجی) بازگشته است: نسبت Luna (با ۰.۱۰ / ۰.۵۰ دلار) به Terra برابر ۱۰ برابر است و نسبت Luna به Sol (با ۲ / ۱۰ دلار) برابر ۲۰ برابر است؛ بنابراین ارتقای Luna به Sol حدود ۲۱ برابر یک درخواست فقط-Luna هزینه دارد، در حالی که یک گام میانی با Terra می‌تواند ترافیک با دشواری متوسط را با نصف قیمت Sol پاسخ دهد. فرآیندهای آبشاری اکنون به یک الگوی محصول واقعی نیز تبدیل شده‌اند: ویژگی GitHub Copilot Fusion (عرضه عمومی GA در ۲۸ اکتبر ۲۰۲۶) با گردش‌کارهای Single ،Cascade و Critique در سطوح تلاش Standard ،High یا Max ترافیک را بین مدل‌ها هدایت می‌کند.
+
+هدایت **آگاه از کش KV (KV-cache-aware routing)** تصمیم‌گیری را برای ناوگان‌های خودمیزبان به لایه پایین‌تر از ارائه‌دهنده منتقل می‌کند: انتخاب‌کننده اندپوینت در Kubernetes Gateway API Inference Extension (که در آگوست ۲۰۲۶ به پروژه llm-d منتقل شد) و روتِر NVIDIA Dynamo هر درخواست را به نسخه‌ای می‌فرستند که کش آن از قبل پیشوند پرامپت را نگه‌داری می‌کند، و گوگل برای GKE Inference Gateway چندکلاستره خود، سربار روتینگ زیر ۱٪ را گزارش کرده است.
+
+هدایت و بازگشت اضطراری با هم ترکیب می‌شوند: در مسیر موفق (Happy path) بر اساس هزینه/کیفیت/تاخیر هدایت کنید، و در مسیر ناموفق (Unhappy path) برای اطمینان‌پذیری به ارائه‌دهندگان دیگر بازگردید (Fallback). یک سیستم آبشاری اساساً یک هدایت مبتنی بر کیفیت است که قابلیت بازگشت اضطراری اطمینان‌بخش در آن تعبیه شده است.
+
+---
+
+## بازگشت اضطراری و پایایی (Fallback and Reliability)
+
+این بخش مستقیماً به داده‌های گزارش Datadog پاسخ می‌دهد: محدودیت‌های نرخ عامل بیشتر شکست‌های محیط پروداکشن هستند، و سازوکار بازگشت اضطراری پادزهر آن است.
+
+**زنجیره‌های بازگشت (Fallback chains)** هر زمان که ارائه‌دهنده اصلی دچار یک شکست *قابل تکرار (Retryable)* شود (خطای محدودیت نرخ 429، خطای 5xx، انقضای تایم‌اوت، یا عدم یافتن مدل)، درخواست را بر روی ارائه‌دهنده/مدل بعدی مجدداً امتحان می‌کنند. خطاهای کلاس 429 و 5xx را فقط پس از طبقه‌بندی دقیق آنها مجدداً امتحان کنید؛ هرگز خطاهای سمت کلاینت کلاس 400 را دوباره امتحان نکنید، زیرا این کار فقط سهمیه (Quota) را هدر می‌دهد.
+
+**تلاش‌های مجدد اصولی (Retries done right)** از سه قانون پیروی می‌کنند: عقب‌نشینی نمایی (Exponential backoff - در هر شکست زمان بیشتری صبر کنید)، نوسان تصادفی (Jitter - زمان انتظار را تصادفی کنید تا کلاینت‌ها همزمان امتحان نکنند و ازدحام ناگهانی Thundering herd ایجاد نشود که قطعی را وخیم‌تر کند)، و رعایت هدر `Retry-After` (ارائه‌دهندگان OpenAI و Anthropic آن را روی خطاهای معمولی 429 ارسال می‌کنند؛ از رابطه `max(retry_after, computed_backoff)` استفاده کنید). نادیده گرفتن `Retry-After` رایج‌ترین باگ در پیاده‌سازی عقب‌نشینی است.
+
+**انشعاب بر اساس کد خطا، نه صرفاً کد وضعیت (Status):** هر خطای 429 به معنای «کمی بعد دوباره تلاش کنید» نیست. از ۲ سپتامبر ۲۰۲۶، شرکت OpenAI خطای 429 را با کد `slow_down` در زمان‌هایی که ترافیک بسیار سریع اوج می‌گیرد بازمی‌گرداند (به‌آرامی ترافیک را بالا ببرید و به `Retry-After` احترام بگذارید) و خطای 503 را در اضافه بار موقت مدل صادر می‌کند. سقف هزینه ماهانه در Anthropic خطای 429 را با کد `error_code: enforced_spend_limit_reached` و بدون هدر `retry-after` برمی‌گرداند: هیچ تلاش مجددی قبل از روز اول ماه بعد موفق نخواهد شد، بنابراین باید فوراً به ارائه‌دهنده دیگر منتقل شوید (Failover) و مسئول مربوطه را پیج (Page) کنید. همچنین در مدل‌های Claude Fable 5.1، Fable 5، Opus 5.5، Opus 5 و Sonnet 5.5، رد درخواست توسط طبقه‌بند ایمنی به عنوان پاسخ HTTP 200 همراه با `stop_reason: "refusal"` و یک دسته‌بندی در `stop_details` می‌آید. با این پاسخ به جای یک موفقیت، مانند یک سیگنال هدایت و روتینگ برخورد کنید؛ قابلیت بتای سمت سرور Anthropic به نام `fallbacks: "default"` روی مدلی که برای آن دسته توصیه می‌کند تلاش مجدد انجام می‌دهد (مقاصد مجاز Fable 5.1 شامل Claude Opus 4.8 و Opus 5 هستند).
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -87,134 +91,137 @@ flowchart TD
     B -->|Other 400-class| H[Do not retry: fix the request]
 ```
 
-**Fail over across vendors, not just models.** Outages take out a vendor's whole surface at once. OpenAI's September 29, 2026 incident degraded the API (including the Agents API), ChatGPT and Codex for about 5 hours 20 minutes, and Anthropic's status feed records at least 12 major or critical incidents between August 16 and September 29, 2026. A chain that only steps to a sibling model on the same provider does not survive that.
+</div>
 
-**Streaming failover has a window.** You can fail over cleanly only before the first token. Envoy AI Gateway 1.1 (August 21, 2026) added `streamIdleTimeout`, which moves to the next backend if no token arrives in time. After tokens have streamed, the choice is to replay from scratch (duplicate output the client must discard) or surface the error.
+**تغییر مسیر اضطراری (Failover) میان ارائه‌دهندگان مختلف، نه فقط میان مدل‌ها:** قطعی‌ها معمولاً تمام سطح خدمات یک ارائه‌دهنده را به‌طور همزمان از کار می‌اندازند. حادثه ۲۹ سپتامبر ۲۰۲۶ شرکت OpenAI، کل API (از جمله Agents API)، ChatGPT و Codex را به مدت حدود ۵ ساعت و ۲۰ دقیقه دچار اختلال کرد، و فید وضعیت Anthropic حداقل ۱۲ حادثه بزرگ یا بحرانی را بین ۱۶ آگوست تا ۲۹ سپتامبر ۲۰۲۶ ثبت کرده است. زنجیره‌ای که فقط به یک مدل هم‌خانواده در همان ارائه‌دهنده سوئیچ کند، از چنین حوادثی جان سالم به در نخواهد برد.
 
-**Conversation state does not always transfer.** Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5 bind thinking blocks to the model and the conversation: blocks the fallback model cannot read are dropped silently, and on accounts created on or after August 31, 2026, a changed prefix before a thinking block returns 400. Sonnet 5.5 and Haiku 5.5 blocks are also bound to the producing account. A gateway that moves a multi-turn agent to another model or account mid-conversation, or rewrites history to inject reminders, loses reasoning or hard-fails. Fail over at turn boundaries, keep conversations append-only, and evaluate the fallback path as a first-class configuration. Fable 5.1, Opus 5.5 and Sonnet 5.5 reject forced `tool_choice` (`any` or `tool`) with a 400 (Haiku 5.5 accepts it but then skips thinking), and under Anthropic API version `2026-10-21`, which the new SDK majors (Python 2.0.0, TypeScript 1.0.0, Go 2.0.0) send by default, any `temperature`, `top_p` or `top_k` returns 400 on every Claude model, even at default values. A gateway that translates requests between providers must strip these per target rather than pass them through.
+**تغییر مسیر در جریان استریمینگ (Streaming failover) پنجره زمانی محدودی دارد:** شما فقط پیش از ارسال اولین توکن می‌توانید تغییر مسیر تمیزی داشته باشید. گیت‌وی Envoy AI Gateway 1.1 (در ۲۱ آگوست ۲۰۲۶) پارامتر `streamIdleTimeout` را اضافه کرد که اگر هیچ توکنی به موقع نرسد، به بک‌اند بعدی سوئیچ می‌کند. پس از اینکه استریم توکن‌ها آغاز شد، چاره کار یا بازپخش از ابتدا است (تولید خروجی تکراری که کلاینت باید آن را دور بیندازد) یا نمایش صریح خطا به کاربر.
 
-**Lifecycle diverges per platform.** Claude Opus 4.1 retired on the Claude API on August 5, 2026 but runs on Bedrock until January 8, 2027 (at higher extended-access prices from October 8); Grok 4 was retired from the xAI API on May 15, and the `grok-4` slug now silently resolves to `grok-4.3` and bills at its rates, yet Azure Foundry still lists Grok 4 as GA. Key the gateway's model registry on (model, platform), or a multi-cloud fallback can land on a model that is retired, repriced, or a different version. The model behind a fixed ID can change too: OpenAI fixed an image-encoding bug in `gpt-6-sol` and `gpt-6-luna` on September 25, 2026 without changing either ID, and since October 8 Google routes `gemini-3.7-flash` requests to `gemini-3.8-flash`. Log the model ID each response reports and alert when it changes, which catches alias rerouting, and rerun evals on a schedule against the IDs you route to, which catches same-ID changes.
+**وضعیت مکالمه (Conversation state) همیشه قابل انتقال نیست:** مدل‌های Claude Fable 5.1، Opus 5.5، Sonnet 5.5 و Haiku 5.5 بلوک‌های تفکر (Thinking blocks) را به مدل و مکالمه مقید می‌کنند: بلوک‌هایی که مدل جایگزین نمی‌تواند بخواند، بدون هیچ هشداری حذف می‌شوند؛ و در حساب‌هایی که در ۳۱ آگوست ۲۰۲۶ یا پس از آن ایجاد شده‌اند، تغییر در پیشوند قبل از یک بلوک تفکر منجر به خطای 400 می‌شود. بلوک‌های Sonnet 5.5 و Haiku 5.5 همچنین به حساب تولیدکننده وابسته هستند. درگاهی که یک ایجنت چندمرحله‌ای را در میانه مکالمه به مدل یا حسابی دیگر منتقل کند، یا تاریخچه را برای تزریق یادآوری‌ها بازنویسی نماید، استدلال را از دست می‌دهد یا با خطای سخت (Hard-fail) متوقف می‌شود. فرآیند Failover را در مرز نوبت‌های مکالمه (Turn boundaries) انجام دهید، تاریخچه مکالمات را فقط-افزودنی (Append-only) نگه دارید، و مسیر بازگشت اضطراری را به عنوان یک پیکربندی درجه یک ارزیابی کنید. مدل‌های Fable 5.1، Opus 5.5 و Sonnet 5.5 انتخاب اجباری ابزار (`tool_choice` با مقادیر `any` یا `tool`) را با خطای 400 رد می‌کنند (مدل Haiku 5.5 آن را می‌پذیرد اما از تفکر صرف‌نظر می‌کند)، و تحت نسخه `2026-10-21` از API شرکت Anthropic، که نسخه‌های اصلی جدید SDK (پایتون 2.0.0، تایپ‌اسکریپت 1.0.0، Go 2.0.0) به‌طور پیش‌فرض ارسال می‌کنند، هرگونه مقدار `temperature`، `top_p` یا `top_k` روی تمام مدل‌های Claude با خطای 400 مواجه می‌شود، حتی اگر روی مقادیر پیش‌فرض باشند. درگاهی که درخواست‌ها را بین ارائه‌دهندگان مختلف ترجمه می‌کند، باید این پارامترها را به تفکیک مقصد حذف کند نه اینکه عیناً عبور دهد.
 
-**Circuit breakers** track endpoint health globally and open when the failure rate crosses a threshold, so you stop hammering a dead or throttled provider on every request. Pair with cooldowns that park a failing deployment for a fixed window before auto-recovery.
+**چرخه حیات مدل‌ها در پلتفرم‌های مختلف متفاوت است:** مدل Claude Opus 4.1 در تاریخ ۵ آگوست ۲۰۲۶ از Claude API بازنشسته شد، اما تا ۸ ژانویه ۲۰۲۷ روی پلتفرم Bedrock اجرا می‌شود (با قیمت‌های بالاتر دسترسی تمدیدشده از ۸ اکتبر)؛ مدل Grok 4 در ۱۵ مه از xAI API بازنشسته شد و شناسه اسلاگ `grok-4` اکنون به‌طور بی‌صدا به `grok-4.3` نگاشت شده و با نرخ‌های آن صورت‌حساب صادر می‌کند، اما پلتفرم Azure Foundry همچنان Grok 4 را در وضعیت GA فهرست می‌کند. رجیستری مدل درگاه را بر اساس زوج `(model, platform)` کلیدگذاری کنید، در غیر این صورت بازگشت چندابری ممکن است روی مدلی بیفتد که بازنشسته شده، قیمت آن تغییر کرده یا نسخه متفاوتی است. مدل پشت یک شناسه ثابت نیز می‌تواند تغییر کند: شرکت OpenAI یک باگ انکودینگ تصویر در `gpt-6-sol` و `gpt-6-luna` را در ۲۵ سپتامبر ۲۰۲۶ بدون تغییر شناسه آنها برطرف کرد، و گوگل از ۸ اکتبر درخواست‌های `gemini-3.7-flash` را به `gemini-3.8-flash` هدایت می‌کند. شناسه مدلی را که هر پاسخ گزارش می‌دهد لاگ کنید و در صورت تغییر آن هشدار دهید (که تغییر مسیر نام مستعار را کشف می‌کند)، و ارزیابی‌ها (Evals) را بر اساس یک زمان‌بندی منظم در برابر شناسه‌هایی که به آنها هدایت می‌کنید اجرا کنید تا تغییرات پشت شناسه‌های ثابت شناسایی شوند.
 
-**Load balancing** across multiple keys, regions, and providers multiplies your effective rate-limit headroom, which is the most direct structural fix for capacity failures.
+**قطع‌کننده‌های مدار (Circuit breakers)** وضعیت سلامت اندپوینت را به‌طور سراسری رصد می‌کنند و هنگامی که نرخ شکست از یک آستانه عبور می‌کند باز می‌شوند، تا از ارسال مداوم درخواست به یک ارائه‌دهنده از کار افتاده یا دارای گلوگاه جلوگیری کنند. این قابلیت را با دوره‌های خنک‌سازی (Cooldowns) ترکیب کنید که یک استقرار ناموفق را برای یک بازه زمانی مشخص پارک کرده و سپس خودکار بازیابی می‌کنند.
 
-The caution to internalize: **blind retries amplify outages** by adding load during a failure. Backoff, jitter, circuit breakers, error-code classification, and `Retry-After` are what separate a gateway that fixes rate limits from one that worsens them. See [Reliability Patterns](../13-reliability-and-safety/03-reliability-patterns.md).
+**توزیع بار (Load balancing)** میان چندین کلید، منطقه جغرافیایی، و ارائه‌دهنده، سقف موثر محدودیت نرخ شما را چند برابر می‌کند که مستقیم‌ترین راهکار ساختاری برای خطاهای ناشی از کمبود ظرفیت است.
 
----
-
-## The 2026 Tool Landscape
-
-Treat versions and exact feature claims as point-in-time, and note that several comparison figures below come from vendor marketing.
-
-- **LiteLLM** (open-source, self-hosted proxy plus SDK) is the de-facto standard: 100+ providers behind an OpenAI-format API, routing strategies (latency, usage, cost, least-busy), ordered fallbacks, virtual keys with dollar budgets, and native OpenTelemetry. The common critique is that YAML config strains at enterprise-governance scale. Its popularity also makes it a prime target; see [Securing the Gateway](#securing-the-gateway).
-- **OpenRouter** (managed aggregator) gives the fastest breadth and zero ops across 400+ models, with pass-through provider pricing (a documented BYOK fee applies). Stripe agreed to acquire it (announced August 19, 2026; OpenRouter says routing stays provider-neutral). It added US in-region routing (us.openrouter.ai, September 9) alongside EU routing for Business and Enterprise plans, a Batch API at generally 50% off on 70+ models (September 22), and an Auto Router that routes on the last 7 days of marketplace spend. The tradeoffs are an external hop, data leaving your perimeter, and now a payments company in your vendor-risk review.
-- **Portkey** (managed, with a self-host tier) positions as a full control plane: routing, fallbacks, token-level observability, semantic caching, and guardrails.
-- **Cloudflare AI Gateway** (managed, edge) is strong on observability and caching, and is catching up on routing: on November 4, 2026 it added model aliases, a per-gateway named pool of models called by one name with ordered fallback or smart routing, so the models behind an alias change without a redeploy. Budget enforcement is still lighter than LiteLLM's. Since November 3, new gateways created through the API have authentication on by default (it cannot be turned off once enabled), but existing unauthenticated gateways keep their setting, so audit older ones. Cloudflare's managed retrieval service, AI Search, went GA on October 1, 2026, one sign that gateways are absorbing retrieval and grounding.
-- **Langfuse AI Gateway** (public beta since November 4, 2026) is an observability platform absorbing the gateway layer: apps send native OpenAI (Responses, Chat Completions) and Anthropic Messages requests to Langfuse, which forwards them with provider credentials stored in Langfuse and records each call as a traced generation. Teams issue gateway keys with per-key model allowlists, expiry, revocation and spend tracking; there is no API translation and only OpenAI and Anthropic are supported in beta. The tradeoff is simpler cost attribution against concentrating key custody and every prompt in your tracing vendor, the same blast-radius concern as LiteLLM below.
-- **Kong AI Gateway** (API-management platform) brings LLM routing (including semantic), retry/fallback, semantic caching, and a PII sanitizer into a mature gateway; best when you already run Kong.
-- **Envoy AI Gateway** (open-source, Kubernetes-native) reached a stable 1.x API (v1.0.0 on June 23, v1.1.0 on August 21, 2026): token counting across providers, per-request upstream credentials (`credentialOverride`), stream-idle failover before the first token, MCP routing with default-deny backend selection, and OpenTelemetry GenAI semantic conventions. It joined the Agentic AI Foundation in September 2026 under the name Agent Router, next to agentgateway, which proxies agent (MCP and A2A) traffic.
-- **Kubernetes inference gateways** for self-hosted models: the Gateway API Inference Extension plus llm-d (KV-cache-aware and latency-predictive endpoint picking) and NVIDIA Dynamo's router. These pick a replica, not a provider, and sit under a provider-level gateway.
-- **Cloud-native** routers (AWS Bedrock intelligent prompt routing, Google Vertex) integrate tightly with their clouds; strict per-account rate limits still make a multi-provider layer useful.
-
-**Self-hosted vs managed**, the core tradeoffs: self-hosted (LiteLLM, Kong, Envoy) keeps data in your perimeter, gives full control, and is required for strict compliance, but *you* must make the proxy highly available or it becomes the single point of failure. Managed (OpenRouter, Portkey, Cloudflare) is near-zero ops and fast to adopt, but data transits a third party and you inherit their availability as a hard dependency.
+نکته هشداری که باید درونی شود: **تلاش‌های مجدد کورکورانه قطعی‌ها را تشدید می‌کنند** زیرا در حین بروز خطا، بار مضاعف وارد می‌سازند. عقب‌نشینی، نوسان تصادفی (Jitter)، مدارشکن‌ها، طبقه‌بندی کدهای خطا، و هدر `Retry-After` مواردی هستند که یک درگاه برطرف‌کننده محدودیت نرخ را از درگاهی که اوضاع را بدتر می‌کند متمایز می‌سازند. بخش [الگوهای پایایی](../13-reliability-and-safety/03-reliability-patterns.md) را ببینید.
 
 ---
 
-## Architecture Patterns
+## چشم‌انداز ابزارهای ۲۰۲۶ (The 2026 Tool Landscape)
 
-- **Where it sits:** between application services and providers, as a horizontally scaled service or sidecar. All LLM traffic flows through it, so it inherits the reliability requirements of any critical-path infrastructure.
-- **The network-hop tax:** the gateway adds one hop. Mitigate by co-locating it with your app (same region/VPC/cluster) so the hop is sub-millisecond, keeping the proxy thin, and caching aggressively so hits skip the provider entirely. The hop is modest against 500-2000ms model latency, but real under load.
-- **Do not let the gateway become the SPOF:** this is the central architectural risk. Run multiple stateless replicas behind a load balancer, externalize shared state (Redis for rate-limit and usage counters, a database for keys and spend), and health-check the replicas. A gateway that centralizes everything but runs as one instance has simply *moved* your single point of failure.
-- **Multi-region:** deploy replicas per region, route region-locally, and use cross-region/cross-provider fallback so a regional outage fails over elsewhere.
-- **Residency routing:** in-region processing is now selectable per request or per endpoint (Anthropic's `inference_geo`, OpenAI's residency endpoints and `us.`/`eu.` regional API domains, Bedrock and Google Cloud regional endpoints, us. and eu.openrouter.ai), and residency typically carries about a 10% price premium (OpenRouter states no surcharge). The gateway is the right place to pin residency per tenant, so only residency-bound traffic pays the premium, and to make sure a fallback chain never leaves the required geography. Residency granularity differs by platform: on Claude Models on Google Cloud (Google managed), regional endpoints serve only Claude Sonnet 4.6 and earlier, so Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 must use the global endpoint or the `us` or `eu` multi-region endpoints, which cost 10% more than global for Sonnet 4.5 and later, and provisioned throughput needs a regional endpoint.
-- **Enforce the smallest request limit in the chain:** on October 28, 2026 Anthropic raised the first-party Messages and Token Counting request limit from 32 MB to 128 MB, while Google's Agent Platform still caps Claude payloads at 30 MB. A large PDF that works on the primary can fail on the fallback, so check size against the strictest backend before routing.
-- **Caching and observability:** exact-match for identical prompts, semantic caching for near-duplicates, and OpenTelemetry spans carrying user/key, models attempted, failure reasons, the winning fallback, per-step latency, and exact cost. This is what makes the rate-limit failure mode visible instead of mysterious. See [Observability](../14-evaluation-and-observability/02-observability.md).
+نسخه‌ها و ادعاهای دقیق مربوط به ویژگی‌ها را مقطعی در نظر بگیرید، و توجه داشته باشید که برخی از ارقام مقایسه‌ای زیر برگرفته از بازاریابی ارائه‌دهندگان است.
 
----
+- ابزار **LiteLLM** (پراکسی متن‌باز و خودمیزبان به همراه SDK) استاندارد دوفاکتو است: بیش از ۱۰۰ ارائه‌دهنده پشت یک API با فرمت OpenAI، استراتژی‌های هدایت (تاخیر، مصرف، هزینه، کمترین مشغولیت)، بازگشت‌های اولویت‌بندی‌شده، کلیدهای مجازی با بودجه دلاری، و پشتیبانی درونی از OpenTelemetry. انتقاد رایج این است که پیکربندی YAML در مقیاس حاکمیت سازمانی دچار چالش می‌شود. محبوبیت بالای آن همچنین آن را به یک هدف اصلی تبدیل کرده است؛ بخش [امن‌سازی درگاه](#امنسازی-درگاه-securing-the-gateway) را ببینید.
+- سرویس **OpenRouter** (تجمیع‌کننده مدیریت‌شده) سریع‌ترین گستره و بدون نیاز به عملیات (Zero-ops) را در بیش از ۴۰۰ مدل فراهم می‌کند و قیمت‌گذاری مستقیم ارائه‌دهنده را بدون حاشیه سود اعمال می‌نماید (کارمزد مستندشده BYOK اعمال می‌شود). شرکت Stripe با خرید آن موافقت کرد (اعلام‌شده در ۱۹ آگوست ۲۰۲۶؛ OpenRouter اعلام کرده روتینگ همچنان بی‌طرف خواهد ماند). این سرویس مسیریابی منطقه‌ای داخل آمریکا (us.openrouter.ai در ۹ سپتامبر) را در کنار مسیریابی اروپایی (EU) برای پلن‌های Business و Enterprise اضافه کرد، یک Batch API با تخفیف کلی ۵۰٪ روی بیش از ۷۰ مدل ارائه داد (۲۲ سپتامبر)، و قابلیت Auto Router را معرفی کرد که بر اساس هزینه ۷ روز گذشته بازار هدایت می‌کند. مصالحه‌ها شامل یک هاپ خارجی، خروج داده‌ها از محیط امن شما، و ورود یک شرکت پرداخت به ارزیابی ریسک ارائه‌دهندگان شما هستند.
+- پلتفرم **Portkey** (مدیریت‌شده، با سطح خودمیزبانی) خود را به عنوان یک صفحه کنترل کامل معرفی می‌کند: هدایت، بازگشت اضطراری، پایش‌پذیری در سطح توکن، کش معنایی، و گاردریل‌ها.
+- درگاه **Cloudflare AI Gateway** (مدیریت‌شده در لبه / Edge) در پایش‌پذیری و کش‌سازی قدرتمند است و در زمینه هدایت نیز در حال ارتقا است: در ۴ نوامبر ۲۰۲۶ نام‌های مستعار مدل (Model aliases) را اضافه کرد، یک استخر نام‌گذاری‌شده از مدل‌ها به ازای هر درگاه که با یک نام واحد فراخوانی می‌شوند و از بازگشت ترتیبی یا هدایت هوشمند استفاده می‌کنند، بنابراین مدل‌های پشت یک نام مستعار بدون نیاز به استقرار مجدد تغییر می‌کنند. اعمال بودجه هنوز سبک‌تر از LiteLLM است. از ۳ نوامبر، درگاه‌های جدید ایجادشده از طریق API احراز هویت را به‌طور پیش‌فرض فعال دارند (که پس از فعال‌سازی خاموش نمی‌شود)، اما درگاه‌های بدون احراز هویت قدیمی تنظیمات خود را حفظ می‌کنند، بنابراین درگاه‌های قدیمی‌تر را ممیزی کنید. سرویس بازیابی مدیریت‌شده Cloudflare به نام AI Search در اول اکتبر ۲۰۲۶ به مرحله GA رسید، که نشانه‌ای از جذب قابلیت‌های بازیابی و پایه‌گذاری (Grounding) توسط درگاه‌ها است.
+- درگاه **Langfuse AI Gateway** (نسخه بتای عمومی از ۴ نوامبر ۲۰۲۶) یک پلتفرم پایش‌پذیری است که لایه درگاه را درون خود ادغام می‌کند: برنامه‌ها درخواست‌های بومی OpenAI (بخش‌های Responses و Chat Completions) و Anthropic Messages را به Langfuse ارسال می‌کنند، که آن را با اعتبارات ذخیره‌شده ارائه‌دهنده در Langfuse به جلو هدایت کرده و هر فراخوانی را به عنوان یک لاگ ردیابی‌شده ثبت می‌کند. تیم‌ها کلیدهای درگاه را با لیست‌های مجاز مدل به ازای هر کلید، انقضا، ابطال و ردیابی هزینه صادر می‌کنند؛ هیچ ترجمه API وجود ندارد و در نسخه بتا فقط OpenAI و Anthropic پشتیبانی می‌شوند. مصالحه در اینجا، تخصیص ساده‌تر هزینه در برابر تمرکز امانت‌داری کلیدها و تمام پرامپت‌ها در سیستم پایش‌پذیری شما است، که همان نگرانی شعاع تخریب (Blast-radius) مربوط به LiteLLM در ادامه را ایجاد می‌کند.
+- ابزار **Kong AI Gateway** (پلتفرم مدیریت API) قابلیت‌های هدایت LLM (شامل هدایت معنایی)، تلاش مجدد/بازگشت، کش معنایی، و پاک‌سازی داده‌های حساس (PII sanitizer) را به یک درگاه بالغ می‌آورد؛ بهترین انتخاب برای زمانی است که از قبل Kong را اجرا می‌کنید.
+- درگاه **Envoy AI Gateway** (متن‌باز و بومی کوبرنتیز) به یک API پایدار نسخه 1.x دست یافت (نسخه v1.0.0 در ۲۳ ژوئن، نسخه v1.1.0 در ۲۱ آگوست ۲۰۲۶): شمارش توکن در میان ارائه‌دهندگان، اعتبارات بالادستی به ازای هر درخواست (`credentialOverride`)، بازگشت در وضعیت بی‌کاری استریم قبل از اولین توکن، هدایت MCP با انتخاب بک‌اند پیش‌فرض-ممنوع (Default-deny)، و قراردادهای معنایی GenAI در OpenTelemetry. این پروژه در سپتامبر ۲۰۲۶ با نام Agent Router به بنیاد Agentic AI Foundation ملحق شد، در کنار agentgateway که ترافیک ایجنت‌ها (MCP و A2A) را پروکسی می‌کند.
+- درگاه‌های استنتاج کوبرنتیز (**Kubernetes inference gateways**) برای مدل‌های خودمیزبان: افزونه Gateway API Inference Extension به همراه llm-d (انتخاب اندپوینت آگاه از کش KV و پیش‌بینی‌کننده تاخیر) و روتِر NVIDIA Dynamo. این ابزارها به جای انتخاب ارائه‌دهنده، یک همتاساز (Replica) را انتخاب می‌کنند و در زیر یک درگاه در سطح ارائه‌دهنده قرار می‌گیرند.
+- روتِرهای بومی ابری (**Cloud-native routers**) (مانند روتینگ هوشمند پرامپت AWS Bedrock و Google Vertex) ارتباط تنگاتنگی با ابرهای خود دارند؛ اما محدودیت‌های سخت‌گیرانه نرخ به ازای هر حساب همچنان استفاده از یک لایه چندارائه‌دهنده‌ای را سودمند می‌سازد.
 
-## Securing the Gateway
-
-A gateway concentrates every provider key, every prompt and every response in one process, which makes it the highest-value target in the AI stack. LiteLLM's 2026 advisories and incidents show the pattern:
-
-| Advisory | What happened | Fixed in |
-|----------|---------------|----------|
-| CVE-2026-37004 (critical, CVSS 9.8) | Unauthenticated template injection in the `/prompts/test` endpoint allowed OS command execution | 1.83.7 |
-| CVE-2026-49468 (critical) | Host-header authentication bypass | 1.84.0 |
-| CVE-2026-84377 (medium, CVSS 6.5) | Any authenticated proxy user could point `api_base`, `base_url`, `model_list` or fallbacks at their own host, so the proxy sent the operator's stored provider keys there (plus SSRF) | Per-line patches 1.88.6 through 1.96.2; workaround `general_settings.allow_client_side_credentials=false` |
-| GHSA-92x9-889m-jgmw | Compromised litellm 1.82.7, 1.82.8 and 1.107.0 releases on PyPI (1.107.0 is the October 21 build below, added to the advisory October 29) | Never install those versions; pin by hash |
-| CVE-2026-114612 (critical, CVSS 9.9) | One key both sealed secrets at rest and minted session tokens, so an internal user could get a forged admin credential encrypted by the proxy and replay it as a bearer token; exploitable in the default configuration from 1.91.0 | 1.100.4, 1.101.3, 1.102.2, 1.103.1 |
-| GHSA-w4c7-34wj-hqm8 (critical, CVSS 10.0, Enterprise-licensed proxies only) | An unauthenticated request could make the proxy read a local file, such as its process environment holding the master key, and send it to an attacker-chosen URL | 1.103.10, 1.104.8, 1.105.6, 1.106.5; egress allowlisting blocks the exfiltration step |
-| October 21 supply-chain compromise | An internal admin key committed to a public repo on May 27 and never revoked led, on October 10, to a GitHub org owner's token and stolen CI secrets; on October 21 seven malicious PyPI wheels (litellm 1.107.0) and Docker Hub and GHCR images went out from a lookalike fork for about two hours, harvesting cloud credentials, provider keys, master and virtual keys, and environment secrets | Rotate every secret on any host that pulled those builds; pin packages by hash and images by digest |
-
-| Cosign key exposure (follow-up to October 21) | LiteLLM says the private half of its previous image-signing key was likely exposed, so the poisoned 1.107.0 images carry a valid old-key signature and a passing `cosign verify` does not prove they are safe. It rotated the key on October 23 (first new-key releases 1.103.8, 1.104.6, 1.105.4 and 1.106.3 on October 24) and published the new key's SHA-256 fingerprint on October 30 | Trust old-key signatures only on images published before October 21, check digests against the compromised-build list, and re-pin cosign scripts and admission policies (Kyverno, Sigstore policy-controller, Connaisseur) to the new key |
-
-Taken together, every proxy needs 1.100.4, 1.101.3, 1.102.2, 1.103.1 or later on its line, and an Enterprise-licensed proxy needs 1.103.10, 1.104.8, 1.105.6 or 1.106.5. "Later" never means 1.107.0, which is the poisoned build: skip the 1.107 line and take 1.108.0 (November 4), unless you are already on a legitimate post-incident 1.107 RC such as 1.107.0rc3. The lesson for interviews: a signature check is only as good as key custody, and after CI-secret theft a green verify on the poisoned build is the expected result.
-
-The design rules that follow:
-
-- **Never let a caller choose where credentials go.** Allowlist upstream hosts and strip client-supplied routing parameters (`api_base`, fallbacks) at the edge. It is the same issuer-binding rule as the MCP OAuth mix-up fix in [Access Control](../12-security-and-access/02-access-control.md#agent-and-tool-authorization).
-- **Keep long-lived secrets out of the proxy where you can.** Inject per-request credentials from a vault (Envoy's `credentialOverride`), use workload identity instead of static provider keys (OpenAI made mTLS and X.509 workload identity federation GA on August 29, 2026), and give the remaining keys short lifetimes (OpenAI added key expiration on September 10).
-- **Treat the gateway as supply chain.** Pin versions and hashes, pin container images by digest, install from a mirrored index with a short quarantine before new releases are admitted, subscribe to its advisories, and never expose admin or test endpoints to the internet. The October compromise started with a leaked key nobody revoked for more than four months, so the vendor's hygiene is part of your threat model too.
-- **Allowlist egress.** A gateway needs to reach a known set of provider hosts and nothing else. With egress allowlisted, a file-read bug like GHSA-w4c7-34wj-hqm8 cannot ship the master key out, and a trojanized build cannot phone home.
-- **Assume it will be breached and limit the blast radius:** separate gateway deployments per trust zone, provider keys scoped per gateway, and spend caps per key so a stolen credential has a ceiling. Per-key quotas are a security control, not only FinOps: Google Threat Intelligence and Mandiant reported on November 3, 2026 that LLMjacking incidents they handled ran up more than $100,000 in fraudulent charges in a single day, mostly via stolen cloud identity tokens (see [Access Control](../12-security-and-access/02-access-control.md)).
-- **Attribute every request to an end customer.** On October 20, 2026 Anthropic launched user profiles: a platform registers each end customer (`POST /v1/user_profiles`) and sends the returned ID in the `anthropic-user-profile-id` header (a body field on Claude in Amazon Bedrock), so a safety restriction or ban can land on one customer instead of the whole organization. Anthropic's docs warn that without a profile one end customer can trigger an enforcement action for your whole organization. The gateway is the natural place to attach the tenant's profile ID and to alert on the organization webhooks (beta, on request) that report restrictions opening or ending.
+**خودمیزبان در برابر مدیریت‌شده (Self-hosted vs managed)**، مصالحه‌های اصلی: حالت خودمیزبان (LiteLLM، Kong، Envoy) داده‌ها را درون مرز امنیتی شما نگه می‌دارد، کنترل کامل می‌دهد، و برای انطباق سخت‌گیرانه الزامی است؛ اما *شما* باید پراکسی را با دسترسی‌پذیری بالا (HA) نگه‌داری کنید، وگرنه خود آن به نقطه شکست منفرد (SPOF) تبدیل می‌شود. حالت مدیریت‌شده (OpenRouter، Portkey، Cloudflare) تقریباً بدون نیاز به عملیات بوده و پیاده‌سازی سریعی دارد، اما داده‌ها از یک شخص ثالث عبور می‌کنند و شما دسترسی‌پذیری آنها را به عنوان یک وابستگی سخت به ارث می‌برید.
 
 ---
 
-## Do You Need a Gateway Yet?
+## الگوهای معماری (Architecture Patterns)
 
-**Probably not** (use a thin in-app abstraction) when you have a single provider, a prototype, or one or two providers behind a small wrapper that still fits in your head. Direct SDK calls are simpler with fewer moving parts. This is the same thin-layer idea argued in [Navigating Framework Churn](../09-frameworks-and-tools/12-navigating-framework-churn.md).
-
-**You do** when several of these hold: 3+ models or multiple providers (the 69% majority); multiple teams sharing model access who need virtual keys, budgets, and spend attribution; rate-limit errors actually hitting you; scattered retry/fallback/key-management logic already in your codebase (the smell that adoption stops being premature); or you cannot answer "which provider served this request?" or "what did each team spend?" without a side project.
-
-**Build vs buy:** a thin in-app abstraction is best at 1-2 providers; self-hosting an open-source gateway (LiteLLM first) is best when you need data residency or deep control and have platform-team bandwidth; buying managed is best when you want the capabilities without owning the infra and can accept the external dependency.
-
-**Rollout** in order: start in shadow/observe mode, move non-critical workloads first, add virtual keys and budgets to get attribution before enforcement, add fallback chains targeting your worst rate-limit offenders, then layer in caching and routing once reliability is solid, and make the gateway highly available before it becomes load-bearing.
-
----
-
-## Interview Questions
-
-### Q: Rate-limit errors are your top production failure. How does a gateway help, and how could it make things worse?
-
-**Strong answer:**
-A gateway helps by load-balancing across multiple keys, regions, and providers (which multiplies rate-limit headroom) and by failing over to an alternate provider on a 429 through an ordered fallback chain, so a single provider's throttling stops being a hard outage. It also makes the failure visible: centralized traces show which provider was tried and why it failed. It makes things worse if retries are naive: blind, immediate retries add load during the exact moment the provider is overloaded, a thundering herd that deepens the outage. The fixes are exponential backoff with jitter, honoring the provider's `Retry-After` header, and a circuit breaker that stops hammering a dead endpoint globally rather than retrying per request. I would also classify by error code, not status: OpenAI's `slow_down` 429 means ramp more gently, while Anthropic's spend-cap 429 will not clear until next month and should trigger failover and a page, not retries. Fallbacks should cross vendors, since a provider outage usually takes down every model it serves. And the gateway itself must be highly available with externalized state, or it just relocates the single point of failure.
-
-### Q: When is a full gateway overkill, and what would you do instead?
-
-**Strong answer:**
-For a single provider or a prototype, a gateway is overkill; it adds a network hop and an HA burden for capabilities you do not need yet. I would use a thin in-app abstraction: depend on the provider SDK behind a small interface of my own, with a basic fallback chain and backoff. I would adopt a real gateway once I cross into multiple providers, multiple teams needing budgets and spend attribution, or recurring rate-limit pain, which is roughly when retry and key-management logic starts getting copy-pasted across services. Even then I would roll it out in shadow mode first and make it highly available before it became load-bearing.
-
-### Q: Your gateway holds every provider key. How do you secure it?
-
-**Strong answer:**
-I treat it as the crown-jewel service, because one bug exposes every key at once; LiteLLM had an unauthenticated RCE (CVE-2026-37004, CVSS 9.8), a flaw that let any authenticated user redirect calls, with the operator's stored keys, to their own host (CVE-2026-84377), and in October a master-key leak on Enterprise proxies (CVSS 10.0). First, callers never choose destinations: I allowlist upstream hosts, strip `api_base`-style parameters at the edge, and allowlist egress so even a file-read bug cannot send secrets anywhere. Second, I minimize standing secrets: workload identity or mTLS to providers where supported, vault-injected per-request credentials elsewhere, short key lifetimes, and a separate key and spend cap per gateway deployment so a leak has a ceiling. Third, supply chain: packages pinned by hash and images by digest from a mirrored registry (LiteLLM's PyPI releases were trojanized twice in 2026, the second time with its container images, from stolen CI secrets), advisory tracking with a patch SLA, admin endpoints on a private network, and signing keys treated as secrets that rotate after any CI compromise, because LiteLLM's poisoned images verified against its old key. Finally, I log every upstream destination and alert on any host outside the allowlist, which is how a redirect attack would show up.
-
-### Q: How do you fail over a long-running agent conversation to another provider?
-
-**Strong answer:**
-Carefully, because agent state is not portable the way a single request is. I fail over at turn boundaries, not mid-stream: before the first token, a stream-idle timeout can move to the next backend cleanly, but after tokens flow I either replay from scratch or surface the error. Reasoning state is model-bound on the newest Claude models: thinking blocks another model cannot read are dropped, and a changed prefix can return a 400 on newer accounts, so the fallback model gets the visible transcript and tool results, not the hidden reasoning, and I keep the conversation append-only. Request shapes differ too (the newest Claude models reject forced `tool_choice`), so the gateway translates per target rather than passing parameters through. I evaluate the fallback path as its own configuration, cross vendors so a single outage cannot take out both legs, and keep the model registry keyed by model and platform so failover never lands on a retired or repriced deployment.
+- **محل قرارگیری درگاه:** بین سرویس‌های برنامه کاربردی و ارائه‌دهندگان، به عنوان یک سرویس با مقیاس‌پذیری افقی یا یک سایدکار (Sidecar). تمام ترافیک LLM از آن عبور می‌کند، بنابراین الزامات پایایی هر زیرساخت در مسیر حیاتی (Critical path) را به ارث می‌برد.
+- **هزینه پرش شبکه (Network-hop tax):** درگاه یک پرش اضافه می‌کند. با هم‌مکانی (Co-locating) آن با برنامه خود (همان منطقه/VPC/کلاستر) به گونه‌ای که پرش زیر یک میلی‌ثانیه باشد، نازک نگه داشتن لایه پراکسی، و کش‌سازی تهاجمی به طوری که موارد اصابت (Hits) ارائه‌دهنده را کاملاً دور بزنند، این هزینه را کاهش دهید. این پرش در برابر تاخیر ۵۰۰ تا ۲۰۰۰ میلی‌ثانیه‌ای مدل ناچیز است، اما زیر بار سنگین واقعی خواهد بود.
+- **اجازه ندهید درگاه به یک SPOF تبدیل شود:** این ریسک اصلی معماری است. چندین نسخه همتاسازی‌شده بدون حالت (Stateless replicas) را پشت یک لودبالانسر اجرا کنید، وضعیت مشترک را به بیرون منتقل کنید (Redis برای محدودیت نرخ و شمارنده‌های مصرف، یک دیتابیس برای کلیدها و هزینه‌ها)، و سلامت نسخه‌ها را پایش (Health-check) کنید. درگاهی که همه‌چیز را متمرکز می‌کند اما به صورت یک نمونه واحد اجرا می‌شود، صرفاً نقطه شکست منفرد شما را *جابه‌جا کرده است*.
+- **رویکرد چندمنطقه‌ای (Multi-region):** نسخه‌ها را در هر منطقه مستقر کنید، هدایت را به‌صورت محلی در همان منطقه انجام دهید، و از بازگشت بین‌منطقه‌ای/بین‌ارائه‌دهنده‌ای استفاده کنید تا قطعی در یک منطقه به جای دیگری هدایت شود.
+- **هدایت اقامتگاه داده (Residency routing):** پردازش درون‌منطقه‌ای اکنون به ازای هر درخواست یا اندپوینت قابل انتخاب است (`inference_geo` در Anthropic، اندپوینت‌های اقامتگاهی OpenAI و دامنه‌های منطقه‌ای `us.` / `eu.`، اندپوینت‌های منطقه‌ای Bedrock و Google Cloud، و همچنین us.openrouter.ai و eu.openrouter.ai)، و اقامتگاه داده معمولاً حدود ۱۰٪ هزینه اضافه دارد (OpenRouter هزینه اضافی دریافت نمی‌کند). درگاه جای مناسبی است تا اقامتگاه داده را به ازای هر مستاجر (Tenant) تثبیت کنید، به گونه‌ای که فقط ترافیک مقید به اقامتگاه داده هزینه اضافی را بپردازد، و اطمینان حاصل کنید که زنجیره بازگشت هرگز جغرافیای الزامی را ترک نمی‌کند. ریزدانگی اقامتگاه بر اساس پلتفرم متفاوت است: در مدل‌های Claude روی Google Cloud (مدیریت‌شده توسط گوگل)، اندپوینت‌های منطقه‌ای فقط مدل Claude Sonnet 4.6 و قبل از آن را ارائه می‌دهند، بنابراین مدل‌های Opus 5.5، Sonnet 5.5، Haiku 5.5 و Fable 5.1 باید از اندپوینت سراسری یا اندپوینت‌های چندمنطقه‌ای `us` یا `eu` استفاده کنند که برای Sonnet 4.5 و بعد از آن ۱۰٪ گران‌تر از سراسری است، و توان عملیاتی رزروشده (Provisioned throughput) به اندپوینت منطقه‌ای نیاز دارد.
+- **اعمال کوچک‌ترین سقف اندازه درخواست در زنجیره:** در ۲۸ اکتبر ۲۰۲۶ شرکت Anthropic سقف اندازه درخواست فرست‌پارتی برای Messages و Token Counting را از ۳۲ مگابایت به ۱۲۸ مگابایت افزایش داد، در حالی که Agent Platform شرکت گوگل همچنان حجم پیام‌های Claude را به ۳۰ مگابایت محدود می‌کند. یک PDF حجیم که روی ارائه‌دهنده اصلی کار می‌کند ممکن است در بازگشت اضطراری شکست بخورد، بنابراین اندازه را قبل از هدایت با سخت‌گیرانه‌ترین بک‌اند چک کنید.
+- **کش‌سازی و پایش‌پذیری:** تطابق دقیق برای پرامپت‌های یکسان، کش معنایی برای پرامپت‌های بسیار نزدیک، و اسپن‌های OpenTelemetry حاوی کاربر/کلید، مدل‌های آزمایش‌شده، دلایل شکست، بازگشت اضطراری برنده، تاخیر هر مرحله، و هزینه دقیق. این اطلاعات همان چیزی است که حالت شکست ناشی از محدودیت نرخ را به جای یک موضوع مبهم، کاملاً شفاف و مشهود می‌سازد. بخش [مشاهده‌پذیری و پایش‌پذیری](../14-evaluation-and-observability/02-observability.md) را ببینید.
 
 ---
 
-## References
+## امن‌سازی درگاه (Securing the Gateway)
 
-- Datadog, [State of AI Engineering 2026](https://www.datadoghq.com/state-of-ai-engineering/) and the [press release](https://www.datadoghq.com/about/latest-news/press-releases/datadog-state-of-ai-engineering-report-2026/)
-- [LiteLLM routing docs](https://docs.litellm.ai/docs/routing) and [load balancing](https://docs.litellm.ai/docs/proxy/load_balancing)
-- RouteLLM, [LMSYS blog](https://www.lmsys.org/blog/2024-07-01-routellm/) and [GitHub](https://github.com/lm-sys/routellm)
-- [Envoy AI Gateway v1.1.0 release notes](https://github.com/envoyproxy/ai-gateway/releases/tag/v1.1.0)
-- [Kong AI Gateway docs](https://developer.konghq.com/ai-gateway/)
-- [OpenRouter BYOK docs](https://openrouter.ai/docs/guides/overview/auth/byok) and [OpenRouter joining Stripe](https://openrouter.ai/blog/announcements/openrouter-is-joining-stripe/)
-- LiteLLM advisories [GHSA-6wvf-77m9-58rm](https://github.com/advisories/GHSA-6wvf-77m9-58rm) (CVE-2026-37004), [GHSA-3cv6-jpf6-8222](https://github.com/advisories/GHSA-3cv6-jpf6-8222) (CVE-2026-84377), [GHSA-7hp6-4w63-5g45](https://github.com/BerriAI/litellm/security/advisories/GHSA-7hp6-4w63-5g45) (CVE-2026-114612) and [GHSA-w4c7-34wj-hqm8](https://github.com/BerriAI/litellm/security/advisories/GHSA-w4c7-34wj-hqm8); [October 21 incident report](https://docs.litellm.ai/blog/security-incident-oct-21-2026)
-- OpenAI, [Decisions API guide](https://developers.openai.com/api/docs/guides/decisions)
-- [Gateway API Inference Extension v1.6.0](https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/tag/v1.6.0)
-- Anthropic, [refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback) and [rate limits](https://platform.claude.com/docs/en/api/rate-limits)
-- OpenAI, [API changelog](https://developers.openai.com/api/docs/changelog)
-- Anthropic, [user profiles](https://platform.claude.com/docs/en/manage-claude/user-profiles) and [Claude Models on Google Cloud (Google managed)](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed)
-- Cloudflare, [AI Gateway changelog](https://developers.cloudflare.com/changelog/?product=ai-gateway); Langfuse, [AI Gateway public beta](https://langfuse.com/changelog/2026-11-04-ai-gateway-public-beta) (November 4, 2026)
-- Google Threat Intelligence Group, [LLMjacking: monetizing compromised cloud models](https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models) (November 3, 2026)
+یک درگاه تمام کلیدهای ارائه‌دهندگان، تمام پرامپت‌ها و تمام پاسخ‌ها را در یک فرآیند متمرکز می‌کند، که آن را به باارزش‌ترین هدف در پشته هوش مصنوعی تبدیل می‌سازد. هشدارهای امنیتی و حوادث سال ۲۰۲۶ مربوط به LiteLLM این الگو را به وضوح نشان می‌دهند:
+
+| اطلاعیه امنیتی (Advisory) | چه اتفاقی افتاد | اصلاح‌شده در |
+|---|---|---|
+| شناسه CVE-2026-37004 (بحرانی، CVSS 9.8) | تزریق قالب احرازهویت‌نشده در اندپوینت `/prompts/test` امکان اجرای دستورات سیستم‌عامل را فراهم می‌کرد | نسخه 1.83.7 |
+| شناسه CVE-2026-49468 (بحرانی) | دور زدن احراز هویت از طریق هدر Host | نسخه 1.84.0 |
+| شناسه CVE-2026-84377 (متوسط، CVSS 6.5) | هر کاربر احرازهویت‌شده پراکسی می‌توانست پارامترهای `api_base`، `base_url`، `model_list` یا زنجیره بازگشت را به هاست خود هدایت کند، تا پراکسی کلیدهای ذخیره‌شده ارائه‌دهنده را به آنجا بفرستد (به همراه آسیب‌پذیری SSRF) | پچ‌های تفکیک‌شده 1.88.6 تا 1.96.2؛ راهکار موقت: `general_settings.allow_client_side_credentials=false` |
+| شناسه امنیتی GHSA-92x9-889m-jgmw | نسخه‌های آلوده litellm 1.82.7، 1.82.8 و 1.107.0 روی PyPI (نسخه 1.107.0 همان بیلد ۲۱ اکتبر در ادامه است که در ۲۹ اکتبر به اطلاعیه افزوده شد) | هرگز این نسخه‌ها را نصب نکنید؛ نسخه‌ها را بر اساس هش تثبیت کنید |
+| شناسه CVE-2026-114612 (بحرانی، CVSS 9.9) | یک کلید واحد هم اسرار در حالت سکون (At rest) را رمزگذاری می‌کرد و هم توکن‌های نشست را تولید می‌کرد؛ بنابراین یک کاربر داخلی می‌توانست یک اعتبار ادمین جعلی رمزگذاری‌شده توسط پراکسی بسازد و آن را به عنوان توکن Bearer بازپخش کند؛ قابل اکسپلویت در پیکربندی پیش‌فرض از نسخه 1.91.0 | نسخه‌های 1.100.4، 1.101.3، 1.102.2، 1.103.1 |
+| شناسه امنیتی GHSA-w4c7-34wj-hqm8 (بحرانی، CVSS 10.0، فقط پراکسی‌های با لایسنس سازمانی) | یک درخواست احرازهویت‌نشده می‌توانست پراکسی را وادار کند یک فایل محلی مانند متغیرهای محیطی فرآیند حاوی کلید اصلی (Master key) را بخواند و آن را به URL انتخابی مهاجم بفرستد | نسخه‌های 1.103.10، 1.104.8، 1.105.6، 1.106.5؛ تعریف لیست مجاز خروجی (Egress allowlisting) مرحله سرقت را مسدود می‌کند |
+| نفوذ زنجیره تامین ۲۱ اکتبر (October 21 supply-chain compromise) | یک کلید ادمین داخلی که در ۲۷ مه در یک مخزن عمومی ثبت شده بود و هرگز ابطال نشد، در ۱۰ اکتبر منجر به دستیابی به توکن مالک سازمان گیت‌هاب و سرقت اسرار CI شد؛ در ۲۱ اکتبر هفت پکیج ویل مخرب در PyPI (نسخه litellm 1.107.0) و ایمیج‌های Docker Hub و GHCR از طریق یک فورک مشابه به مدت حدود دو ساعت منتشر شدند که اعتبارات ابری، کلیدهای ارائه‌دهندگان، کلیدهای اصلی و مجازی، و اسرار محیطی را جمع‌آوری می‌کردند | تعویض (Rotate) تمام اسرار در هر هاستی که این بیلدها را دریافت کرده است؛ تثبیت پکیج‌ها با هش و ایمیج‌ها با دایجست (Digest) |
+| افشای کلید Cosign (پیگیری رویداد ۲۱ اکتبر) | پروژه LiteLLM اعلام کرد بخش خصوصی کلید قبلی امضای ایمیج احتمالاً افشا شده است، بنابراین ایمیج‌های مسموم نسخه 1.107.0 امضای معتبر کلید قدیمی را دارند و دستور موفقیت‌آمیز `cosign verify` امن بودن آنها را اثبات نمی‌کند. این پروژه کلید را در ۲۳ اکتبر تعویض کرد (اولین نسخه‌های با کلید جدید: 1.103.8، 1.104.6، 1.105.4 و 1.106.3 در ۲۴ اکتبر) و اثرانگشت SHA-256 کلید جدید را در ۳۰ اکتبر منتشر کرد | به امضاهای کلید قدیمی فقط روی ایمیج‌های منتشرشده قبل از ۲۱ اکتبر اعتماد کنید، دایجست‌ها را در برابر فهرست بیلدهای آلوده بررسی کنید، و اسکریپت‌های cosign و سیاست‌های پذیرش کوبرنتیز (Kyverno، کنترلر سیاست Sigstore، Connaisseur) را با کلید جدید بازنویسی کنید |
+
+در مجموع، هر پراکسی در خط نسخه خود به نسخه‌های 1.100.4، 1.101.3، 1.102.2، 1.103.1 یا بالاتر نیاز دارد، و یک پراکسی با لایسنس سازمانی به 1.103.10، 1.104.8، 1.105.6 یا 1.106.5 نیازمند است. منظور از «بالاتر» هرگز نسخه 1.107.0 نیست که بیلد آلوده است: از خط 1.107 صرف‌نظر کنید و نسخه 1.108.0 (۴ نوامبر) را دریافت کنید، مگر اینکه از قبل روی یک نسخه پیش‌انتشار قانونی پس از حادثه مانند 1.107.0rc3 باشید. درس مهم برای مصاحبه‌ها: بررسی امضا تنها به اندازه امانت‌داری و حفاظت از کلید معتبر است، و پس از سرقت اسرار CI، خروجی تایید سبز برای یک بیلد آلوده نتیجه‌ای کاملاً طبیعی و مورد انتظار است.
+
+قواعد طراحی برگرفته از این تجربیات:
+
+- **هرگز به فراخواننده اجازه ندهید مقصد ارسال اعتبارات را انتخاب کند:** هاست‌های بالادستی را در لیست سفید (Allowlist) قرار دهید و پارامترهای هدایت ارائه‌شده توسط کلاینت (`api_base` و زنجیره‌های بازگشت) را در لبه سیستم حذف کنید. این همان قاعده پیوند صادرکننده (Issuer-binding) است که در رفع اشتباه پروتکل OAuth برای MCP در بخش [کنترل دسترسی](../12-security-and-access/02-access-control.md#agent-and-tool-authorization) ذکر شد.
+- **اسرار طولانی‌مدت را تا حد امکان از پراکسی دور نگه دارید:** اعتبارات را به ازای هر درخواست از طریق یک والت (Vault) تزریق کنید (مانند `credentialOverride` در Envoy)، به جای کلیدهای استاتیک ارائه‌دهنده از هویت بار کاری (Workload identity) استفاده کنید (شرکت OpenAI قابلیت فدراسیون هویت بار کاری با mTLS و X.509 را در ۲۹ آگوست ۲۰۲۶ به مرحله GA رساند)، و برای کلیدهای باقیمانده طول عمر کوتاه تعیین کنید (OpenAI قابلیت انقضای کلید را در ۱۰ سپتامبر اضافه کرد).
+- **با درگاه به عنوان بخشی از زنجیره تامین رفتار کنید:** نسخه‌ها و هش‌ها را تثبیت کنید، ایمیج‌های کانتینر را بر اساس دایجست قفل کنید، از یک مخزن آینه‌ای با دوره قرنطینه کوتاه قبل از تایید انتشارهای جدید نصب را انجام دهید، اطلاعیه‌های امنیتی آن را دنبال کنید، و هرگز اندپوینت‌های مدیریت یا تست را در معرض اینترنت قرار ندهید. حادثه ماه اکتبر با یک کلید نشت‌کرده آغاز شد که هیچ‌کس برای بیش از چهار ماه آن را باطل نکرده بود؛ بنابراین انضباط ارائه‌دهنده نیز بخشی از مدل تهدید شما است.
+- **ترافیک خروجی (Egress) را در لیست مجاز قرار دهید:** یک درگاه تنها باید به مجموعه‌ای مشخص از هاست‌های ارائه‌دهنده دسترسی داشته باشد و نه هیچ جای دیگر. با تعریف لیست مجاز برای ترافیک خروجی، یک باگ خواندن فایل مانند GHSA-w4c7-34wj-hqm8 نمی‌تواند کلید اصلی را به خارج بفرستد، و یک بیلد دستکاری‌شده تروجان نمی‌تواند با سرور کنترل خود ارتباط برقرار کند.
+- **فرض را بر وقوع نفوذ بگذارید و شعاع تخریب (Blast radius) را محدود کنید:** تفکیک استقرار درگاه‌ها بر اساس مناطق اعتماد، تخصیص کلیدهای ارائه‌دهنده به ازای هر درگاه، و تعیین سقف هزینه به ازای هر کلید تا نشت یک اعتبار دارای سقف خسارت باشد. سهمیه‌های به ازای هر کلید یک ابزار کنترلی امنیتی هستند، نه فقط FinOps: تیم اطلاعات تهدیدات گوگل (Google Threat Intelligence) و Mandiant در ۳ نوامبر ۲۰۲۶ گزارش دادند حوادث سرقت منابع LLMjacking که آنها مدیریت کردند در یک روز بیش از ۱۰۰,۰۰۰ دلار هزینه جعلی ایجاد کرده بود که عمدتاً از طریق توکن‌های هویت ابری سرقت‌شده رخ داده بود (بخش [کنترل دسترسی](../12-security-and-access/02-access-control.md) را ببینید).
+- **هر درخواست را به یک مشتری نهایی منتسب کنید:** در ۲۰ اکتبر ۲۰۲۶ شرکت Anthropic قابلیت پروفایل‌های کاربری (User profiles) را راه‌اندازی کرد: پلتفرم هر مشتری نهایی را ثبت می‌کند (`POST /v1/user_profiles`) و شناسه دریافتی را در هدر `anthropic-user-profile-id` (یک فیلد بدنه در Claude روی Amazon Bedrock) ارسال می‌نماید، بنابراین محدودیت امنیتی یا مسدودسازی می‌تواند به جای کل سازمان، روی یک مشتری خاص اعمال شود. مستندات Anthropic هشدار می‌دهد که بدون پروفایل، یک مشتری نهایی می‌تواند موجب اعمال جریمه و محدودیت برای کل سازمان شما شود. درگاه طبیعی‌ترین مکان برای الصاق شناسه پروفایل مستاجر و هشدار روی وبهوک‌های سازمانی است که شروع یا پایان محدودیت‌ها را گزارش می‌دهند.
 
 ---
 
-*Previous: [CI/CD for LLM Applications](02-cicd.md) · Next: [FinOps and Token Economics](04-finops-and-token-economics.md)*
+## آیا در حال حاضر به یک درگاه نیاز دارید؟ (Do You Need a Gateway Yet?)
+
+**احتمالاً خیر** (از یک انتزاع نازک درون‌برنامه‌ای استفاده کنید) زمانی که یک ارائه‌دهنده واحد، یک نمونه اولیه (Prototype)، یا یک تا دو ارائه‌دهنده پشت یک پوشش‌دهنده (Wrapper) کوچک دارید که کاملاً در ذهن شما قابل مدیریت است. فراخوانی‌های مستقیم SDK با قطعات متحرک کمتر، ساده‌تر هستند. این همان ایده لایه نازک است که در فصل [مدیریت تغییرات مداوم فریم‌ورک‌ها](../09-frameworks-and-tools/12-navigating-framework-churn.md) مطرح شد.
+
+**شما نیاز دارید** هنگامی که چندین مورد از این شرایط برقرار باشد: وجود ۳ مدل یا بیشتر یا چند ارائه‌دهنده (اکثریت ۶۹ درصدی)؛ وجود چندین تیم با دسترسی اشتراکی به مدل که به کلیدهای مجازی، بودجه‌بندی و انتساب هزینه نیاز دارند؛ وقوع واقعی خطاهای محدودیت نرخ؛ وجود منطق پراکنده تلاش مجدد/بازگشت/مدیریت کلید در کدبیس شما (نشانه‌ای که پیاده‌سازی دیگر زودهنگام نیست)؛ یا زمانی که نمی‌توانید بدون یک پروژه جانبی به سوالات «کدام ارائه‌دهنده به این درخواست پاسخ داد؟» یا «هر تیم چقدر هزینه کرده است؟» پاسخ دهید.
+
+**ساخت در برابر خرید (Build vs buy):** انتزاع نازک درون‌برنامه‌ای برای ۱ تا ۲ ارائه‌دهنده بهترین است؛ خودمیزبانی یک درگاه متن‌باز (در وهله اول LiteLLM) زمانی بهترین است که به اقامتگاه داده یا کنترل عمیق نیاز دارید و تیم پلتفرم شما پهنای باند کافی دارد؛ خرید راه‌حل مدیریت‌شده زمانی بهترین است که قابلیت‌ها را بدون دردسر نگه‌داری زیرساخت می‌خواهید و وابستگی به شخص ثالث برای شما قابل قبول است.
+
+**مراحل پیاده‌سازی و استقرار (Rollout) به ترتیب:** کار را در حالت سایه/مشاهده (Shadow/observe mode) آغاز کنید، ابتدا بارهای کاری غیرحیاتی را منتقل نمایید، کلیدهای مجازی و بودجه‌ها را اضافه کنید تا قبل از اعمال اجباری، انتساب هزینه محقق شود، زنجیره‌های بازگشت اضطراری را برای بدترین مقصران محدودیت نرخ اضافه کنید، سپس با تثبیت پایایی لایه‌های کش و هدایت را بیفزایید، و پیش از آنکه درگاه بار ترافیکی حیاتی را به دوش بکشد، دسترسی‌پذیری بالای آن را تضمین کنید.
+
+---
+
+## پرسش‌های مصاحبه (Interview Questions)
+
+### پرسش: خطاهای محدودیت نرخ (Rate-limit) مهم‌ترین عامل شکست در پروداکشن شما هستند. یک درگاه چگونه کمک می‌کند و چگونه ممکن است اوضاع را بدتر کند؟
+
+**پاسخ قوی:**
+یک درگاه با توزیع بار میان چندین کلید، منطقه جغرافیایی و ارائه‌دهنده (که ظرفیت مجاز محدودیت نرخ را چند برابر می‌کند) و با انتقال ترافیک به یک ارائه‌دهنده جایگزین در زمان وقوع خطای 429 از طریق زنجیره بازگشت اولویت‌بندی‌شده کمک می‌کند، به طوری که گلوگاه یک ارائه‌دهنده منفرد تبدیل به قطعی کامل سیستم نشود. همچنین این شکست را شفاف و مشهود می‌سازد: ردیابی‌های متمرکز نشان می‌دهند کدام ارائه‌دهنده امتحان شد و چرا شکست خورد. اما اگر تلاش‌های مجدد خام‌دستانه باشند اوضاع را بدتر می‌کند: تلاش‌های مجدد کورکورانه و آنی دقیقاً در همان لحظه‌ای که ارائه‌دهنده دچار بار اضافه است بار بیشتری تزریق می‌کنند، که یک ازدحام ناگهانی (Thundering herd) ایجاد کرده و قطعی را عمیق‌تر می‌سازد. راهکارها عبارتند از: عقب‌نشینی نمایی همراه با نوسان تصادفی (Jitter)، رعایت هدر `Retry-After` ارائه‌دهنده، و یک قطع‌کننده مدار (Circuit breaker) که کوبیدن مداوم به یک اندپوینت غیرفعال را به‌طور سراسری متوقف می‌کند نه اینکه به ازای هر درخواست دوباره تکرار نماید. من همچنین خطاها را بر اساس کد خطا طبقه‌بندی می‌کنم نه فقط کد وضعیت HTTP: خطای 429 با کد `slow_down` در OpenAI به معنای شیب ملایم‌تر ارسال ترافیک است، در حالی که خطای 429 سقف هزینه در Anthropic تا ماه آینده برطرف نخواهد شد و باید به جای تلاش مجدد، موجب انتقال فوری (Failover) و هشدار به اپراتور شود. زنجیره‌های بازگشت باید بین ارائه‌دهندگان مختلف باشند، زیرا قطعی یک ارائه‌دهنده معمولاً تمام مدل‌های آن را از کار می‌اندازد. و خود درگاه نیز باید با وضعیت برون‌سپاری‌شده دارای دسترسی‌پذیری بالا (HA) باشد، وگرنه صرفاً نقطه شکست منفرد را جابه‌جا کرده است.
+
+### پرسش: چه زمانی راه‌اندازی یک درگاه کامل زیاده‌روی (Overkill) است، و به جای آن چه کاری انجام می‌دهید؟
+
+**پاسخ قوی:**
+برای یک ارائه‌دهنده منفرد یا یک پروتوتایپ، درگاه یک بار اضافی است؛ این کار یک پرش شبکه و مسئولیت حفظ HA را برای قابلیت‌هایی اضافه می‌کند که هنوز به آنها نیازی ندارید. من از یک انتزاع نازک درون‌برنامه‌ای استفاده می‌کنم: وابستگی به SDK ارائه‌دهنده در پشت یک اینترفیس کوچک اختصاصی، همراه با یک زنجیره بازگشت پایه و الگوریتم عقب‌نشینی. زمانی به سراغ یک درگاه واقعی می‌روم که وارد فضای چند ارائه‌دهنده‌ای شوم، چندین تیم نیازمند بودجه و انتساب هزینه باشند، یا دردسرهای مکرر محدودیت نرخ پیش بیاید، که تقریباً همان زمانی است که منطق تلاش مجدد و مدیریت کلیدها در سراسر سرویس‌ها کپی-پیست می‌شود. حتی در آن زمان نیز ابتدا آن را در حالت سایه (Shadow mode) مستقر می‌کنم و پیش از واگذاری بار کاری اصلی، از دسترسی‌پذیری بالای آن مطمئن می‌شوم.
+
+### پرسش: درگاه شما تمام کلیدهای ارائه‌دهندگان را در خود دارد. چگونه آن را امن می‌کنید؟
+
+**پاسخ قوی:**
+من با آن مانند سرویس جواهر تاج و حیاتی‌ترین بخش برخورد می‌کنم، زیرا یک باگ می‌تواند تمام کلیدها را همزمان افشا کند؛ پروژه LiteLLM یک آسیب‌پذیری بحرانی RCE بدون احراز هویت (CVE-2026-37004 با CVSS 9.8)، نقصی که به هر کاربر احرازهویت‌شده امکان می‌داد فراخوانی‌ها را همراه با کلیدهای ذخیره‌شده اپراتور به هاست خود هدایت کند (CVE-2026-84377)، و در اکتبر نشت کلید اصلی در پراکسی‌های Enterprise (با CVSS 10.0) داشت. نخست، فراخوانندگان هرگز مقاصد ارسال اعتبارات را انتخاب نمی‌کنند: من هاست‌های بالادستی را در لیست مجاز قرار می‌دهم، پارامترهای مدل `api_base` را در لبه سیستم حذف می‌کنم، و ترافیک خروجی را محدود می‌کنم تا حتی یک باگ خواندن فایل نتواند اسرار را به خارج بفرستد. دوم، نگه‌داری اسرار دائمی را به حداقل می‌رسانم: هویت بار کاری (Workload identity) یا mTLS به ارائه‌دهندگان در صورت پشتیبانی، تزریق اعتبارات به ازای هر درخواست از طریق یک والت، طول عمر کوتاه برای کلیدها، و کلید و سقف بودجه مجزا به ازای هر استقرار درگاه تا در صورت نشت، خسارت محدود باشد. سوم، امنیت زنجیره تامین: پکیج‌ها با هش و ایمیج‌ها با دایجست از یک رجیستری آینه‌ای قفل می‌شوند (انتشارهای PyPI برای LiteLLM در سال ۲۰۲۶ دو بار دستکاری شدند که بار دوم همراه با ایمیج‌های کانتینری و ناشی از سرقت اسرار CI بود)، پیگیری اطلاعیه‌ها با تعهد زمانی مشخص (SLA) برای اعمال پچ، قرار دادن اندپوینت‌های مدیریت در شبکه خصوصی، و تلقی کلیدهای امضا به عنوان اسراری که پس از هر نفوذ CI تعویض می‌شوند، زیرا ایمیج‌های آلوده LiteLLM با کلید قبلی آن تایید می‌شدند. در نهایت، تمام مقاصد بالادستی را لاگ می‌کنم و روی هر هاستی خارج از لیست مجاز هشدار می‌دهم، که نحوه شناسایی حملات تغییر مسیر است.
+
+### پرسش: چگونه تغییر مسیر اضطراری (Failover) یک مکالمه طولانی ایجنت را به ارائه‌دهنده‌ای دیگر انجام می‌دهید؟
+
+**پاسخ قوی:**
+با دقت و احتیاط بسیار، زیرا وضعیت یک ایجنت برخلاف یک درخواست ساده قابل حمل نیست. من فرآیند تغییر مسیر را در مرز نوبت‌های مکالمه (Turn boundaries) انجام می‌دهم، نه در حین استریم: قبل از اولین توکن، انقضای زمان بی‌کاری استریم (Stream-idle timeout) می‌تواند به بک‌اند بعدی برود، اما پس از شروع ارسال توکن‌ها، یا باید از ابتدا بازپخش کنم یا خطا را نمایش دهم. وضعیت استدلال در جدیدترین مدل‌های Claude مقید به مدل است: بلوک‌های تفکری که مدل دیگر نمی‌تواند بخواند حذف می‌شوند، و تغییر پیشوند می‌تواند در حساب‌های جدیدتر خطای 400 بدهد؛ بنابراین مدل جایگزین تاریخچه قابل مشاهده و نتایج ابزارها را دریافت می‌کند نه استدلال‌های مخفی را، و مکالمه را به‌صورت فقط-افزودنی نگه می‌دارم. ساختار درخواست‌ها نیز متفاوت است (جدیدترین مدل‌های Claude پارامتر اجباری `tool_choice` را رد می‌کنند)، بنابراین درگاه باید به ازای هر مقصد پارامترها را تبدیل و تنظیم کند نه اینکه صرفاً آنها را پاس بدهد. من مسیر بازگشت را به عنوان پیکربندی مستقل خود ارزیابی می‌کنم، تغییر مسیر را میان ارائه‌دهندگان مختلف تنظیم می‌کنم تا یک قطعی واحد هر دو مسیر را از بین نبرد، و رجیستری مدل‌ها را بر اساس زوج مدل و پلتفرم کلیدگذاری می‌کنم تا تغییر مسیر هرگز روی استقرارهای بازنشسته یا دارای تغییر قیمت نیفتد.
+
+---
+
+## مراجع (References)
+
+- شرکت Datadog، [گزارش State of AI Engineering 2026](https://www.datadoghq.com/state-of-ai-engineering/) و [بیانیه مطبوعاتی](https://www.datadoghq.com/about/latest-news/press-releases/datadog-state-of-ai-engineering-report-2026/)
+- مستندات [مسیریابی در LiteLLM](https://docs.litellm.ai/docs/routing) و [توزیع بار](https://docs.litellm.ai/docs/proxy/load_balancing)
+- پروژه RouteLLM، [بلاگ LMSYS](https://www.lmsys.org/blog/2024-07-01-routellm/) و [گیت‌هاب](https://github.com/lm-sys/routellm)
+- یادداشت انتشار [Envoy AI Gateway v1.1.0](https://github.com/envoyproxy/ai-gateway/releases/tag/v1.1.0)
+- مستندات [Kong AI Gateway](https://developer.konghq.com/ai-gateway/)
+- مستندات [OpenRouter BYOK](https://openrouter.ai/docs/guides/overview/auth/byok) و [پیوستن OpenRouter به Stripe](https://openrouter.ai/blog/announcements/openrouter-is-joining-stripe/)
+- اطلاعیه‌های امنیتی LiteLLM شامل [GHSA-6wvf-77m9-58rm](https://github.com/advisories/GHSA-6wvf-77m9-58rm) (شناسه CVE-2026-37004)، [GHSA-3cv6-jpf6-8222](https://github.com/advisories/GHSA-3cv6-jpf6-8222) (شناسه CVE-2026-84377)، [GHSA-7hp6-4w63-5g45](https://github.com/BerriAI/litellm/security/advisories/GHSA-7hp6-4w63-5g45) (شناسه CVE-2026-114612) و [GHSA-w4c7-34wj-hqm8](https://github.com/BerriAI/litellm/security/advisories/GHSA-w4c7-34wj-hqm8)؛ [گزارش حادثه ۲۱ اکتبر](https://docs.litellm.ai/blog/security-incident-oct-21-2026)
+- شرکت OpenAI، [راهنمای Decisions API](https://developers.openai.com/api/docs/guides/decisions)
+- یادداشت انتشار [Gateway API Inference Extension v1.6.0](https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/tag/v1.6.0)
+- شرکت Anthropic، مستندات [امتناع‌ها و بازگشت اضطراری (Refusals and fallback)](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback) و [محدودیت‌های نرخ](https://platform.claude.com/docs/en/api/rate-limits)
+- شرکت OpenAI، [گزارش تغییرات API (Changelog)](https://developers.openai.com/api/docs/changelog)
+- شرکت Anthropic، مستندات [پروفایل‌های کاربری (User profiles)](https://platform.claude.com/docs/en/manage-claude/user-profiles) و [مدل‌های Claude در Google Cloud (مدیریت‌شده توسط گوگل)](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed)
+- شرکت Cloudflare، [گزارش تغییرات AI Gateway](https://developers.cloudflare.com/changelog/?product=ai-gateway)؛ پلتفرم Langfuse، [بتای عمومی AI Gateway](https://langfuse.com/changelog/2026-11-04-ai-gateway-public-beta) (۴ نوامبر ۲۰۲۶)
+- گروه هوش تهدیدات گوگل (Google Threat Intelligence Group)، [مطلب LLMjacking: کسب درآمد از مدل‌های ابری به خطر افتاده](https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models) (۳ نوامبر ۲۰۲۶)
+
+---
+
+*قبلی: [CI/CD برای کاربردهای LLM](02-cicd.md) · بعدی: [FinOps و اقتصاد توکن](04-finops-and-token-economics.md)*
+
+</div>

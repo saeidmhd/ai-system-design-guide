@@ -1,56 +1,60 @@
-# CI/CD for LLM Applications
+<div dir="rtl">
 
-Deploying LLM applications requires adapting traditional CI/CD practices for AI-specific concerns like model evaluation, prompt testing, and quality gates.
+# خطوط لوله CI/CD برای برنامه‌های مبتنی بر LLM
 
-## Table of Contents
+استقرار برنامه‌های کاربردی LLM نیازمند تطبیق شیوه‌های سنتی CI/CD با دغدغه‌های ویژه هوش مصنوعی، مانند ارزیابی مدل، آزمون پرامپت و دروازه‌های کنترل کیفیت است.
 
-- [LLM CI/CD Challenges](#llm-cicd-challenges)
-- [Pipeline Architecture](#pipeline-architecture)
-- [Testing Stages](#testing-stages)
-- [Quality Gates](#quality-gates)
-- [Deployment Strategies](#deployment-strategies)
-- [Rollback Procedures](#rollback-procedures)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## LLM CI/CD Challenges
-
-### What Makes LLM Deployments Different
-
-| Traditional CI/CD | LLM CI/CD |
-|-------------------|-----------|
-| Binary tests (pass/fail) | Probabilistic evaluation |
-| Fast tests | Slow, expensive evaluations |
-| Deterministic outputs | Non-deterministic outputs |
-| Code changes only | Prompt + model + data changes |
-| Version control obvious | Prompt versioning complex |
-
-### Change Types
-
-| Change Type | Risk | Testing Required |
-|-------------|------|------------------|
-| Prompt text | Medium | Regression + quality eval |
-| System prompt | High | Full evaluation suite |
-| Model version (including forced migrations) | High | Comprehensive benchmark + API contract tests |
-| RAG index | Medium | Retrieval + quality eval |
-| Parameters (effort, thinking, max tokens) | Medium | Quality and cost sampling |
-| Provider-side change under the same model ID | Medium-High | Scheduled evals against production model IDs |
-| SDK or framework major version | Medium | Contract tests on the request actually sent |
-| Agent, editor or VCS config in the repo | High | Security review; treat as executable code |
-
-The last four rows are the ones 2026 made non-optional. Agent and VCS config gets its own gate in [Stage 5](#stage-5-supply-chain-and-agent-config-gates); the other three:
-
-- **Sampling parameters are gone on Claude.** Under Anthropic API version `2026-10-21` (October 21, 2026), any `temperature`, `top_p` or `top_k` returns 400 on every Claude model, even at the default value; before that the 400 applied to non-default values on Claude 4.7 and later models, and Python SDK 1.0 (August 20, 2026) had already removed the parameters from the Messages methods. Google deprecated them in the Gemini API on July 21, and GPT-6 Astra rejects custom temperature, `top_p` and logprobs. "Set temperature to 0 for reproducible CI" no longer works; reasoning effort is the main knob, and its defaults change between versions (Claude Opus 5.5 defaults to `medium`, Opus 5 to `high`). Assert on structured fields and semantic checks, not exact strings.
-- **The model can change under a fixed ID.** OpenAI fixed an image-encoding bug in `gpt-6-sol` and `gpt-6-luna` on September 25, 2026 without changing the IDs, so image evals run before that date no longer describe what those endpoints do. Coding-agent CLIs also swap default models in point releases (Codex CLI moved to GPT-6.1 Sol in rust-v0.159.1; Claude Code moved to Opus 5.5 in 2.1.280), and other defaults that pipelines depend on: since Claude Code 2.1.302 (October 16), `claude -p` and Agent SDK sessions with no permission mode set start in `default` mode on third-party providers, with telemetry off, or on a fresh install, so CI jobs should set the mode explicitly. Run the eval suite on a schedule against the exact IDs production uses, not only on your own commits.
-- **SDK majors break test harnesses silently.** The Anthropic SDK 1.0 and OpenAI SDK 3.0 (August 12) moved to `httpx2`. Per Anthropic's migration guide, OpenTelemetry instrumentation, `respx` and `vcrpy` can miss calls unless you call `httpx2.alias_httpx()`, so recorded-response tests may hit the live API or trace nothing while still passing. The next Anthropic majors (Python 2.0.0, TypeScript 1.0.0, Go 2.0.0 and others, October 21) send API version `2026-10-21` by default, so a dependency bump alone turns any leftover sampling parameter into a 400, and they are relicensed from MIT to Apache 2.0, which your license scanner should flag for review rather than block.
+- [چالش‌های CI/CD در سیستم‌های LLM](#llm-cicd-challenges)
+- [معماری خط لوله (Pipeline Architecture)](#pipeline-architecture)
+- [مراحل آزمون و تست](#testing-stages)
+- [دروازه‌های کیفیت (Quality Gates)](#quality-gates)
+- [استراتژی‌های استقرار](#deployment-strategies)
+- [رویه و فرآیند بازگشت (Rollback)](#rollback-procedures)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Pipeline Architecture
+## چالش‌های CI/CD در سیستم‌های LLM <a id="llm-cicd-challenges"></a>
 
-### Full Pipeline
+### چه عواملی استقرارهای LLM را متمایز می‌سازد
+
+| فرآیند سنتی CI/CD | فرآیند CI/CD در مدل‌های LLM |
+|---|---|
+| تست‌های دودویی (قبول / رد قطعی) | ارزیابی‌های احتمالی و آماری |
+| تست‌های سریع و کم‌هزینه | ارزیابی‌های کند، محاسباتی و پرهزینه |
+| خروجی‌های قطعی (Deterministic) | خروجی‌های غیرقطعی و متغیر |
+| صرفاً تغییرات کدهای نرم‌افزاری | تغییرات همزمان در پرامپت + مدل + داده‌ها |
+| مدیریت نسخه ساده و سرراست | نسخه‌بندی پیچیده پرامپت‌ها و وابستگی‌ها |
+
+### انواع تغییرات در سیستم
+
+| نوع تغییر | سطح ریسک | آزمون‌های الزامی |
+|---|---|---|
+| متن پرامپت | متوسط | ارزیابی رگرسیون + سنجش کیفیت |
+| پرامپت سیستمی | بالا | اجرای کامل سوییت ارزیابی |
+| نسخه مدل (شامل مهاجرت‌های اجباری) | بالا | بنچمارک جامع + تست‌های قرارداد API |
+| ایندکس RAG | متوسط | ارزیابی بازیابی + سنجش کیفیت |
+| پارامترها (میزان تلاش، تفکر، حداکثر توکن) | متوسط | نمونه‌گیری از کیفیت و هزینه‌ها |
+| تغییر سمت ارائه‌دهنده با همان شناسه مدل | متوسط تا بالا | ارزیابی‌های دوره‌ای زمان‌بندی‌شده روی شناسه‌های پروداکشن |
+| نسخه اصلی (Major) در SDK یا فریم‌ورک | متوسط | تست‌های قرارداد روی درخواستی که واقعاً ارسال می‌شود |
+| پیکربندی Agent، ادیتور یا VCS در مخزن | بالا | بازبینی امنیتی؛ رفتار مشابه کد اجرایی |
+
+چهار ردیف آخر مواردی هستند که در سال ۲۰۲۶ تبدیل به الزاماتی گریزناپذیر شدند. تنظیمات Agent و VCS در [مرحله ۵](#stage-5-supply-chain-and-agent-config-gates) بررسی شده‌اند؛ سه مورد دیگر عبارتند از:
+
+- **پارامترهای سمپلینگ در مدل‌های Claude حذف شده‌اند.** طبق نسخه API مورخ `2026-10-21` شرکت Anthropic، ارسال هر یک از پارامترهای `temperature`، `top_p` یا `top_k` در تمام مدل‌های Claude خطای 400 برمی‌گرداند، حتی اگر مقادیر پیش‌فرض باشند؛ گوگل نیز این موارد را در ۲۱ ژوئیه در API جمینای منسوخ کرد و مدل GPT-6 Astra نیز دمای سفارشی را رد می‌کند. استراتژی قدیمی «تنظیم دما روی ۰ برای تست‌های تکرارپذیر CI» دیگر کارایی ندارد؛ درجه تلاش استدلال اهرم اصلی است و پیش‌فرض‌های آن میان نسخه‌ها متغیر است (مثلاً Opus 5.5 پیش‌فرض `medium` دارد). اعتبارسنجی‌ها باید بر روی فیلدهای ساختاریافته و بررسی‌های معنایی متمرکز شوند، نه تطابق عینی رشته‌ها.
+- **رفتار مدل با شناسه ثابت ممکن است تغییر کند.** شرکت OpenAI در ۲۵ سپتامبر ۲۰۲۶ یک باگ انکودینگ تصویر را در `gpt-6-sol` و `gpt-6-luna` بدون تغییر شناسه مدل برطرف کرد؛ بنابراین ارزیابی‌های تصویری قبلی دیگر توصیف‌کننده رفتار اندپوینت نبودند. ابزارهای خط فرمان عاملی نیز مدل‌های پیش‌فرض را در آپدیت‌های جزئی تغییر می‌دهند (سوئیچ Codex CLI به GPT-6.1 Sol و Claude Code به Opus 5.5). همچنین از نسخه Claude Code 2.1.302، نشست‌های بدون واسط بدون تعیین صریح سطح دسترسی، در حالت پیش‌فرض `default` اجرا می‌شوند؛ بنابراین در CI باید سطح مجوز را صریح مشخص کرد. سوییت‌های ارزیابی را طبق زمان‌بندی منظم روی شناسه‌های دقیق پروداکشن اجرا کنید، نه صرفاً در زمان کامیت کدها.
+- **نسخه‌های اصلی SDK به صورت نامحسوس بستر آزمون را دچار اختلال می‌کنند.** کیت‌های رسمی Anthropic SDK 1.0 و OpenAI SDK 3.0 هر دو به کتابخانه `httpx2` مهاجرت کردند. در نتیجه ابزارهای OpenTelemetry، کتابخانه‌های ماک مانند `respx` و `vcrpy` ممکن است فراخوانی‌ها را نادیده بگیرند مگر آنکه متد `httpx2.alias_httpx()` فراخوانی شود؛ بنابراین تست‌ها ممکن است همچنان پاس شوند در حالی که عملاً ترافیک واقعی به سرور ارسال کرده یا تله‌متری ثبت نکرده‌اند. همچنین نسخه‌های اصلی جدید Anthropic به مجوز Apache 2.0 تغییر یافته‌اند که باید در اسکنرهای لایسنس بازبینی شود.
+
+---
+
+## معماری خط لوله (Pipeline Architecture) <a id="pipeline-architecture"></a>
+
+### خط لوله کامل
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -105,11 +109,15 @@ The last four rows are the ones 2026 made non-optional. Agent and VCS config get
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+</div>
+
 ---
 
-## Testing Stages
+## مراحل آزمون و تست <a id="testing-stages"></a>
 
-### Stage 1: Static Validation
+### مرحله ۱: اعتبارسنجی ایستا (Static Validation)
+
+<div dir="ltr">
 
 ```python
 class PromptValidator:
@@ -139,7 +147,11 @@ class PromptValidator:
         )
 ```
 
-### Stage 2: Unit Tests
+</div>
+
+### مرحله ۲: آزمون‌های واحد (Unit Tests)
+
+<div dir="ltr">
 
 ```python
 class PromptUnitTests:
@@ -167,7 +179,11 @@ class PromptUnitTests:
             parser.parse(invalid_output)
 ```
 
-### Stage 3: Golden Set Tests
+</div>
+
+### مرحله ۳: آزمون‌های مجموعه طلایی (Golden Set Tests)
+
+<div dir="ltr">
 
 ```python
 class GoldenSetRunner:
@@ -209,7 +225,11 @@ class GoldenSetRunner:
         )
 ```
 
-### Stage 4: LLM Evaluation
+</div>
+
+### مرحله ۴: ارزیابی با مدل زبان بزرگ (LLM Evaluation)
+
+<div dir="ltr">
 
 ```python
 class LLMEvaluationStage:
@@ -245,28 +265,32 @@ class LLMEvaluationStage:
         )
 ```
 
-Keep the eval harness portable. Hosted eval products churn like everything else: OpenAI Evals was scheduled to go read-only on October 31, 2026 and shuts down on November 30, with OpenAI pointing users to Promptfoo, which is now part of OpenAI and remains MIT-licensed. Store datasets, graders and thresholds in your repo in a tool-neutral format so the gate survives a vendor change. For a worked example of the full gate, see the [eval-gated CI/CD case study](../16-case-studies/18-eval-gated-cicd.md).
+</div>
 
-### Stage 5: Supply-Chain and Agent-Config Gates
+مجموعه ابزار ارزیابی را مستقل و قابل حمل نگه دارید. سرویس‌های ارزیابی میزبانی‌شده نیز دستخوش تغییر می‌شوند: پلتفرم OpenAI Evals در ۳۰ نوامبر ۲۰۲۶ خاموش می‌شود و کاربران به ابزار Promptfoo هدایت شده‌اند که تحت نظارت OpenAI و با مجوز MIT به کار خود ادامه می‌دهد. دیتاست‌ها، سنجه‌ها و آستانه‌های قبولی را در فرمت‌های مستقل از ابزار درون مخزن اختصاصی خود ذخیره کنید تا این دروازه با تغییر سرویس‌ها پایدار بماند. نمونه کامل این ساختار در [مطالعه موردی CI/CD مبتنی بر ارزیابی](../16-case-studies/18-eval-gated-cicd.md) آمده است.
 
-AI repositories now carry executable configuration that ordinary code review skims past, and attackers target it deliberately:
+### مرحله ۵: دروازه‌های امنیتی زنجیره تأمین و پیکربندی عاملی <a id="stage-5-supply-chain-and-agent-config-gates"></a>
 
-| Surface | 2026 incident | Gate |
-|---------|---------------|------|
-| Agent and editor auto-run config (`.claude/settings.json` hooks, `.vscode/tasks.json` folder-open tasks) | Mini Shai-Hulud used these hooks by April 30; the ChainDrop npm worm (August 4) reused them across 444 packages and 2,212 versions (StepSecurity) and harvested OpenAI, Anthropic, Cursor, Codex and Gemini tokens | CODEOWNERS review on these paths; fail CI when a new hook or auto-run task appears |
-| Repository `.git/config` (`core.fsmonitor`, `core.hooksPath`, filters) | GitSpawn (Manifold, September 2): seven CLI coding agents ran attacker commands outside their sandboxes on background git calls | Run agent-initiated git with `-c core.fsmonitor=false`; never trust a `.git` directory that arrived outside a clone |
-| SHA-pinned agent plugins | Plugin4Shell (AIR Security, September 17): a branch named like the pinned SHA swapped approved code; fixed in Claude Code 2.1.179 and Codex 0.146.0 | Verify the checked-out tree matches the pin after checkout |
-| Dependencies with silent upstream fixes | Hacktron (disclosed September 13): in late July, Claude Opus 5 turned a libheif overflow, fixed upstream without a CVE, into a working exploit in about 3 hours; chained with an SSO misconfiguration it gave RCE on OpenAI's community forum | Patch on upstream fixes, not CVE announcements; rebuild base images on a schedule |
+مخازن پروژه‌های هوش مصنوعی امروزه حاوی پیکربندی‌های اجرایی هستند که بازبینی‌های کد سنتی معمولاً به‌سادگی از کنار آن‌ها عبور می‌کنند، در حالی که مهاجمان دقیقاً آن‌ها را هدف می‌گیرند:
 
-The exploit window is now measured in hours. Google moved Chrome from 4-week to 2-week releases on September 8, 2026, citing AI-driven patch volume. The CI implication: dependency and base-image freshness becomes a gate with an SLA, and agent configuration gets the same review as code because it is code.
+| بخش تحت تأثیر | حادثه در سال ۲۰۲۶ | دروازه کنترلی (Gate) |
+|---|---|---|
+| پیکربندی اجرای خودکار در Agent و ادیتور (هوک‌های `.claude/settings.json`، تسک‌های باز کردن فولدر در `.vscode/tasks.json`) | بدافزار Mini Shai-Hulud از این هوک‌ها بهره برد؛ کرم نرم‌افزاری ChainDrop در npm (۴ اوت) از آن‌ها در ۴۴۴ پکیج برای سرقت توکن‌های OpenAI، Anthropic، Cursor و Codex استفاده کرد | بازبینی از طریق CODEOWNERS روی این مسیرها؛ شکست بیلد CI در صورت مشاهده تسک یا هوک جدید |
+| فایل `.git/config` مخزن (گزینه‌های `core.fsmonitor`، `core.hooksPath`، فیلترها) | آسیب‌پذیری GitSpawn (مؤسسه Manifold، ۲ سپتامبر): هفت عامل کدنویسی CLI دستورات مهاجم را در فرآیندهای پس‌زمینه گیت اجرا کردند | اجرای گیت آغازشده توسط عامل با پرچم `-c core.fsmonitor=false`؛ عدم اعتماد به پوشه `.git` دریافتی خارج از کلون |
+| پلاگین‌های قفل‌شده با هش SHA در عامل‌ها | آسیب‌پذیری Plugin4Shell (مؤسسه AIR Security، ۱۷ سپتامبر): ساخت شاخه‌ای همنام با هش SHA کد تأییدشده را جابه‌جا کرد؛ در نسخه Claude Code 2.1.179 و Codex 0.146.0 برطرف شد | بررسی مطابقت درخت کد واکشی‌شده با هش قفل‌شده پس از مرحله Checkout |
+| وابستگی‌های دارای اصلاحیه بی‌صدا در بالادست | حادثه Hacktron (افشا در ۱۳ سپتامبر): در اواخر ژوئیه، مدل Claude Opus 5 یک خطای سرریز libheif را که بدون CVE اصلاح شده بود ظرف ۳ ساعت به یک اکسپلویت کاربردی تبدیل کرد | اعمال پچ بر مبنای اصلاحیه‌های بالادست نه صرفاً اعلامیه‌های CVE؛ بازسازی دوره‌ای ایمیج‌های پایه |
 
-Decide deliberately who may approve those paths. Since October 28, 2026, Copilot code review approvals are generally available: when an admin turns them on (they are off by default), a Copilot approval counts toward required reviews, repository admins choose which file paths Copilot may approve, and pushing new commits dismisses the approval. AI review is a useful extra gate, but exclude agent config, CI workflows and dependency manifests from AI approval and keep a human CODEOWNER required there, since those are exactly the files an injected or compromised agent would want to change. The [agentic security chapter](../07-agentic-systems/09-agentic-security-and-sandboxing.md) covers the runtime side.
+پنجره زمانی سوءاستفاده اکنون به چند ساعت تقلیل یافته است. پیامد این موضوع برای CI: بررسی تازگی وابستگی‌ها و ایمیج‌های پایه به یک دروازه الزامی با مهلت مشخص تبدیل می‌شود، و فایل‌های پیکربندی عامل‌ها باید مانند کد اجرایی بازبینی شوند.
+
+همچنین تعیین کنید چه کسانی مجاز به تأیید این مسیرها هستند. از ۲۸ اکتبر ۲۰۲۶ تأییدیه‌های بازبینی کد با Copilot به عرضه عمومی رسیده است؛ با این حال، فایل‌های پیکربندی Agent، گردش‌کارهای CI و مانیفست‌های وابستگی را از تأیید خودکار هوش مصنوعی مستثنی کرده و تأیید انسانی از طریق CODEOWNER را برای آن‌ها الزامی سازید، زیرا این فایل‌ها دقیقاً اهدافی هستند که یک عامل نفوذیافته مایل به دستکاری آن‌هاست. جزئیات بیشتر در فصل [امنیت و ایزوله‌سازی عامل‌ها](../07-agentic-systems/09-agentic-security-and-sandboxing.md) ارائه شده است.
 
 ---
 
-## Quality Gates
+## دروازه‌های کیفیت (Quality Gates) <a id="quality-gates"></a>
 
-### Gate Configuration
+### پیکربندی دروازه ارزیابی
+
+<div dir="ltr">
 
 ```python
 class QualityGate:
@@ -314,11 +338,15 @@ QUALITY_THRESHOLDS = {
 }
 ```
 
+</div>
+
 ---
 
-## Deployment Strategies
+## استراتژی‌های استقرار <a id="deployment-strategies"></a>
 
-### Canary Deployment
+### استقرار قناری (Canary Deployment)
+
+<div dir="ltr">
 
 ```python
 class CanaryDeployer:
@@ -356,7 +384,11 @@ class CanaryDeployer:
         await self.router.promote_canary(new_version)
 ```
 
-### Shadow Deployment
+</div>
+
+### استقرار سایه (Shadow Deployment)
+
+<div dir="ltr">
 
 ```python
 class ShadowDeployer:
@@ -381,24 +413,27 @@ class ShadowDeployer:
         return await self.generate_comparison_report(new_version)
 ```
 
-### Model Migrations Are Deploys
+</div>
 
-Model changes now arrive on the vendor's calendar, not yours. Claude Sonnet 4.5 retires on November 30, 2026 on the Claude API and Foundry (Anthropic points to Sonnet 5.5) but runs on Bedrock until its April 8, 2027 end of life (Legacy since October 8); OpenAI retires the `gpt-5-2025-08-07` and `o3-2025-04-16` snapshots on December 11, and the GPT-4o, GPT-4o mini, GPT-4.1 and GPT-4.1 mini snapshots, with fine-tunes of them, on January 14, 2027. Anthropic gives 60 days' notice. OpenAI states 6 months for GA models, 3 for specialized variants and as little as 2 weeks for previews, yet it gave those GA GPT-4o and GPT-4.1 snapshots about 3 months (notice on October 14) and retired `gpt-5.4-cyber` on October 1 after only 20 days, so plan for less than the stated minimum.
+### مهاجرت میان مدل‌ها همان فرآیند استقرار است
 
-The newest models also change the API contract, so a migration can fail on request shape before quality is even measured:
+تغییرات مدل‌ها اکنون بر اساس تقویم تأمین‌کننده اعمال می‌شوند نه زمان‌بندی داخلی شما. مدل Claude Sonnet 4.5 در ۳۰ نوامبر ۲۰۲۶ در API مستقیم کلود بازنشسته می‌شود در حالی که در Bedrock تا آوریل ۲۰۲۷ فعال است؛ اوپن‌ای‌آی اسنپ‌شات‌های قدیمی را در دسامبر ۲۰۲۶ و اسنپ‌شات‌های GPT-4o و مدل‌های فاین‌تیون آن‌ها را در ژانویه ۲۰۲۷ خاموش می‌کند. بر حداقل مهلت‌های رسمی تکیه نکنید، زیرا سوابق نشان داده گاهی مهلت‌ها به مراتب کوتاه‌تر هستند.
 
-- Claude Fable 5.1, Opus 5.5 and Sonnet 5.5 return 400 on `tool_choice` of `any` or `tool`; use `auto` with strict tools or structured outputs.
-- Opus 5.5 thinking cannot be disabled, and on Sonnet 5.5 `thinking: {"type": "disabled"}` returns 400 (the lowest setting is `between_tools`).
-- Thinking blocks are bound to the model and conversation: blocks another model cannot read are dropped silently, and editing history before a thinking block returns 400 on accounts created on or after August 31, 2026. Replaying a transcript recorded on the old model is not a valid test of the new one.
-- GPT-6 Astra drops temperature, `top_p` and logprobs and needs the Responses API for tools.
+مدل‌های جدید قرارداد ارتباطی API را نیز دستخوش تغییر می‌کنند؛ بنابراین یک مهاجرت ممکن است پیش از سنجش کیفیت، در همان لایه فرمت درخواست با شکست مواجه شود:
+- مدل‌های Claude Fable 5.1، Opus 5.5 و Sonnet 5.5 در صورت ارسال `tool_choice` از نوع `any` یا `tool` خطای 400 برمی‌گردانند؛ باید از `auto` همراه با خروجی‌های ساختاریافته استفاده شود.
+- بخش تفکر (Thinking) در Opus 5.5 قابل غیرفعال‌سازی نیست، و در Sonnet 5.5 ارسال `thinking: {"type": "disabled"}` خطای 400 تولید می‌کند.
+- بلوک‌های تفکر به مدل و زمینه مکالمه گره خورده‌اند: بلوک‌هایی که مدل دیگر قادر به خواندن آن‌ها نباشد بی‌صدا حذف می‌شوند، و ویرایش تاریخچه قبل از یک بلوک تفکر در حساب‌های جدید خطای 400 ایجاد می‌کند؛ بنابراین بازپخش متن مکالمات مدل قدیمی تست معتبری برای مدل جدید نیست.
+- مدل GPT-6 Astra پارامترهای دما و لاگ‌پراپ را حذف کرده و برای ابزارها نیازمند Responses API است.
 
-Treat a model bump exactly like a code deploy: run the full eval suite on the new ID, contract-test the request your client actually sends, shadow it on production traffic, then canary with the same rollback triggers as any release. Keep the outgoing model as the rollback target until its retirement date, and put that date in the deploy calendar.
+با ارتقای مدل دقیقاً مانند استقرار یک کد جدید رفتار کنید: سوییت ارزیابی را اجرا کنید، ساختار درخواست کلاینت را تست نمایید، آن را با ترافیک سایه بسنجید و سپس با استراتژی قناری و معیارهای رول‌بک مستقر سازید. مدل قبلی را تا زمان خاموشی رسمی به‌عنوان مقصد رول‌بک فعال نگه دارید.
 
 ---
 
-## Rollback Procedures
+## رویه و فرآیند بازگشت (Rollback) <a id="rollback-procedures"></a>
 
-### Automated Rollback
+### بازگشت خودکار به نسخه قبل (Automated Rollback)
+
+<div dir="ltr">
 
 ```python
 class AutoRollback:
@@ -432,80 +467,81 @@ class AutoRollback:
         await self.alert(f"Auto-rollback from {version}: {reason}")
 ```
 
----
-
-## Interview Questions
-
-### Q: How do you test prompt changes before production?
-
-**Strong answer:**
-
-"I use a multi-stage testing pipeline:
-
-**Stage 1: Static validation.** Syntax check, token limits, template errors. Fast and cheap.
-
-**Stage 2: Unit tests.** Template rendering, output parsing, deterministic behavior. Still fast.
-
-**Stage 3: Golden set tests.** Known input/output pairs that must pass. Catches obvious regressions.
-
-**Stage 4: LLM evaluation.** Sampled evaluation using LLM-as-judge. Measures quality dimensions (relevance, accuracy). More expensive but catches subtle issues.
-
-**Quality gates:** All stages must pass thresholds. Golden set > 95% pass rate, quality scores > 4.0/5.0.
-
-**Deployment:** Canary at 5% traffic, bake for 30 minutes, monitor metrics, gradually increase.
-
-The key insight is that LLM outputs are non-deterministic, so testing must be statistical. I cannot guarantee 100% correctness, but I can ensure quality stays within acceptable bounds."
-
-### Q: What triggers should cause automatic rollback?
-
-**Strong answer:**
-
-"I configure multiple rollback triggers:
-
-**Error rate:** If errors exceed 5% for 5 consecutive minutes, rollback. This catches outright failures.
-
-**Latency:** If P99 latency exceeds SLA (e.g., 10s) for 10 minutes, rollback. This catches performance regressions.
-
-**Quality score:** If sampled quality score drops below 3.5/5.0, rollback. This catches subtle quality degradation.
-
-**User signals:** If negative feedback rate spikes 2x baseline, investigate and potentially rollback.
-
-**Implementation:**
-- Prometheus alerts trigger rollback script
-- Automatic notification to team
-- Rollback to last known good version
-- Block further deploys until investigated
-
-The key is fast detection and action. A bad prompt in production for 10 minutes is acceptable. For 10 hours is not."
-
-### Q: Your provider is retiring the model your product runs on in 60 days. How do you migrate safely?
-
-**Strong answer:**
-
-"I treat it as a planned deploy with a hard deadline, in four steps.
-
-**1. Contract first.** Before measuring quality, I check that the request still works. Fable 5.1, Opus 5.5 and Sonnet 5.5 reject forced `tool_choice` (Haiku 5.5 accepts it but skips thinking), Sonnet 5.5 rejects `thinking: disabled`, and GPT-6 Astra rejects temperature. I run contract tests on the exact request my client sends and fix the shape (strict tools or structured outputs instead of forced tool calls, effort instead of temperature).
-
-**2. Eval on the new ID.** Full golden set plus sampled LLM-judge evals, with cost and latency recorded, because default effort and thinking behavior differ between versions and change the bill as much as the quality. I do not reuse transcripts generated by the old model as multi-turn fixtures, since newer Claude models drop or reject thinking blocks from other models.
-
-**3. Shadow, then canary.** Shadow real traffic for divergence, then canary with the usual rollback triggers. The old model stays the rollback target until the retirement date.
-
-**4. Fix the process.** Retirement dates go into a registry keyed by model and platform, because the same model retires months apart on different clouds, and scheduled evals run against production model IDs so a silent provider-side change gets caught too.
-
-Sixty days is enough if the pipeline exists. It is not enough if the eval suite has to be built during the migration."
+</div>
 
 ---
 
-## References
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-- ML Ops: https://ml-ops.org/
-- LangSmith: https://docs.smith.langchain.com/
-- Promptfoo: https://www.promptfoo.dev/
-- OpenAI deprecations: https://developers.openai.com/api/docs/deprecations
-- Anthropic model deprecations: https://platform.claude.com/docs/en/about-claude/model-deprecations
-- StepSecurity, ChainDrop npm worm: https://www.stepsecurity.io/blog/chaindrop-npm-worm
-- AIR Security, Plugin4Shell: https://www.air.security/blog-posts/plugin4shell
+### پرسش: چگونه تغییرات پرامپت را پیش از استقرار در پروداکشن آزمایش می‌کنید؟
+
+**پاسخ قوی:**
+من از یک پایپ‌لاین آزمون چندمرحله‌ای استفاده می‌کنم:
+
+**مرحله ۱: اعتبارسنجی ایستا.** بررسی نحو، سقف توکن‌ها و خطاهای قالب‌بندی. سریع و ارزان است.
+
+**مرحله ۲: آزمون‌های واحد.** رندر قالب، پارس خروجی و رفتار قطعی توابع واسط.
+
+**مرحله ۳: آزمون‌های مجموعه طلایی (Golden Set).** جفت‌های ورودی/خروجی مشخص که سیستم باید حتماً پاس کند تا پسرفت‌های آشکار شناسایی شوند.
+
+**مرحله ۴: ارزیابی با مدل زبان بزرگ (LLM-as-judge).** ارزیابی نمونه‌برداری‌شده برای سنجش ابعاد کیفی (ارتباط با موضوع، دقت، مفید بودن). پرهزینه‌تر است اما خطاهای ظریف را شناسایی می‌کند.
+
+**دروازه‌های کیفیت:** تمامی مراحل باید از آستانه‌های تعیین‌شده عبور کنند (بیش از ۹۵٪ قبولی در مجموعه طلایی، نمره کیفیت بالای ۴.۰ از ۵.۰).
+
+**استقرار:** استقرار قناری با ۵٪ ترافیک، دوره نظارت ۳۰ دقیقه‌ای، بررسی سنجه‌ها و افزایش تدریجی سهم ترافیک.
+
+نکته بنیادین این است که خروجی‌های LLM غیرقطعی هستند، بنابراین آزمون‌ها باید ماهیت آماری داشته باشند. ما نمی‌توانیم درستی ۱۰۰ درصدی را تضمین کنیم، اما تضمین می‌کنیم که کیفیت درون مرزهای مجاز باقی بماند.
+
+### پرسش: چه محرک‌هایی باید باعث برگشت خودکار (Rollback) شوند؟
+
+**پاسخ قوی:**
+من چند محرک اصلی برای رول‌بک خودکار تنظیم می‌کنم:
+
+**نرخ خطا:** اگر خطاها به مدت ۵ دقیقه متوالی از ۵٪ عبور کنند، رول‌بک اجرا می‌شود تا خرابی‌های سیستمی مهار شوند.
+
+**میزان تأخیر:** اگر تأخیر صدک ۹۹ بیش از ۱۰ دقیقه از سقف تعهد خدمت (مثلاً ۱۰ ثانیه) تجاوز کند، بازگشت به نسخه قبل انجام می‌شود.
+
+**امتیاز کیفی:** اگر نمره کیفی نمونه‌گیری‌شده به زیر ۳.۵ از ۵ افت کند، رول‌بک فعال می‌گردد تا از افت کیفی خاموش جلوگیری شود.
+
+**سیگنال‌های کاربران:** اگر بازخوردهای منفی کاربران به ۲ برابر میانگین مبنا برسد، بررسی فوری و احتمال رول‌بک آغاز می‌شود.
+
+**پیاده‌سازی:**
+- هشدارهای Prometheus اسکریپت رول‌بک را تریگر می‌کنند
+- اعلان خودکار به تیم مهندسی ارسال می‌شود
+- بازگشت فوری به آخرین نسخه سالم شناخته‌شده صورت می‌گیرد
+- استقرارهای بعدی تا زمان تکمیل بررسی مسدود می‌شوند
+
+نکته کلیدی، سرعت در شناسایی و اقدام است. وجود یک پرامپت معیوب در پروداکشن به مدت ۱۰ دقیقه قابل اغماض است، اما ۱۰ ساعت غیرقابل پذیرش است.
+
+### پرسش: ارائه‌دهنده شما مدلی را که محصولتان بر پایه آن اجرا می‌شود ظرف ۶۰ روز بازنشسته می‌کند. چگونه با اطمینان مهاجرت می‌کنید؟
+
+**پاسخ قوی:**
+من با این موضوع مانند یک استقرار از پیش برنامه‌ریزی‌شده با ضرب‌الاجل قطعی برخورد می‌کنم و آن را در چهار گام اجرا می‌نمایم:
+
+**۱. بررسی قرارداد ارتباطی API در وهله نخست.** پیش از سنجش کیفیت، بررسی می‌کنم که درخواست‌ها همچنان معتبر باشند. مدل‌های جدید ممکن است ارسال اجباری ابزارها را رد کنند، غیرفعال‌سازی تفکر را نپذیرند، یا ارسال پارامترهای دما را با خطای 400 پاسخ دهند. من تست‌های قرارداد را روی ساختار واقعی درخواست کلاینت اجرا کرده و شکل آن را اصلاح می‌کنم.
+
+**۲. ارزیابی جامع روی شناسه مدل جدید.** اجرای کامل مجموعه طلایی به‌همراه ارزیابی‌های نمونه‌برداری‌شده LLM، همراه با ثبت دقیق هزینه و تأخیر؛ زیرا تغییر رفتار پیش‌فرض تفکر می‌تواند صورت‌حساب را دگرگون کند. مکالمات ضبط‌شده روی مدل قبلی را بازپخش نمی‌کنم، زیرا مدل‌های جدید بلوک‌های تفکر مدل‌های دیگر را نمی‌پذیرند.
+
+**۳. استقرار سایه و سپس قناری.** اجرای ترافیک واقعی به‌صورت سایه برای سنجش واگرایی نتایج، و سپس استقرار قناری با همان محرک‌های استاندارد رول‌بک. مدل قدیمی تا زمان خاموشی قطعی به‌عنوان مقصد بازگشت حفظ می‌شود.
+
+**۴. اصلاح و استانداردسازی فرآیند.** ثبت تاریخ‌های بازنشستگی در یک رجیستری مرکزی به تفکیک جفت (مدل، پلتفرم)، و اجرای دوره‌ای آزمون‌های ارزیابی روی شناسه‌های پروداکشن تا تغییرات بی‌صدای ارائه‌دهنده نیز کشف شوند.
+
+مهلت ۶۰ روزه کاملاً کافی است اگر پایپ‌لاین ارزیابی از قبل وجود داشته باشد؛ اما اگر قرار باشد سوییت ارزیابی در حین مهاجرت ساخته شود، زمان ناکافی خواهد بود.
 
 ---
 
-*Previous: [LLM Infrastructure](01-llm-infrastructure.md) · Next: [AI Gateways and Model Routing](03-ai-gateways-and-model-routing.md)*
+## منابع <a id="references"></a>
+
+- اصول و الگوهای MLOps: https://ml-ops.org/
+- مستندات پلتفرم LangSmith: https://docs.smith.langchain.com/
+- مستندات ابزار ارزیابی Promptfoo: https://www.promptfoo.dev/
+- مستندات بازنشستگی‌های OpenAI: https://developers.openai.com/api/docs/deprecations
+- مستندات تقویم بازنشستگی مدل‌های Anthropic: https://platform.claude.com/docs/en/about-claude/model-deprecations
+- تحلیل StepSecurity پیرامون کرم نرم‌افزاری ChainDrop در npm: https://www.stepsecurity.io/blog/chaindrop-npm-worm
+- تحلیل مؤسسه AIR Security پیرامون آسیب‌پذیری Plugin4Shell: https://www.air.security/blog-posts/plugin4shell
+
+---
+
+*مبحث قبلی: [زیرساخت‌های مدل‌های بزرگ زبانی](01-llm-infrastructure.md) · مبحث بعدی: [درگاه‌های هوش مصنوعی و مسیریابی مدل‌ها](03-ai-gateways-and-model-routing.md)*
+
+</div>

@@ -1,37 +1,41 @@
-# LLM Infrastructure
+<div dir="rtl">
 
-Building production LLM systems requires understanding deployment options, scaling patterns, and operational concerns. This chapter covers the infrastructure layer.
+# زیرساخت‌های مدل‌های بزرگ زبانی (LLM Infrastructure)
 
-## Table of Contents
+توسعه و ساخت سیستم‌های عملیاتی مبتنی بر LLM نیازمند درک عمیق گزینه‌های استقرار، الگوهای مقیاس‌پذیری و الزامات پایش و بهره‌برداری است. این فصل به بررسی جامع لایه زیرساخت اختصاص دارد.
 
-- [Deployment Options](#deployment-options)
-- [Serving Architecture](#serving-architecture)
-- [Scaling Patterns](#scaling-patterns)
-- [Cost Management](#cost-management)
-- [Monitoring and Alerting](#monitoring-and-alerting)
-- [Disaster Recovery](#disaster-recovery)
-- [AI Accelerator Landscape](#ai-accelerator-landscape)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [گزینه‌های استقرار](#deployment-options)
+- [معماری سرویس‌دهی (Serving)](#serving-architecture)
+- [الگوهای مقیاس‌پذیری](#scaling-patterns)
+- [مدیریت هزینه‌ها](#cost-management)
+- [پایش و سیستم‌های هشدار](#monitoring-and-alerting)
+- [بازیابی پس از فاجعه (Disaster Recovery)](#disaster-recovery)
+- [چشم‌انداز شتاب‌دهنده‌های سخت‌افزاری هوش مصنوعی](#ai-accelerator-landscape)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Deployment Options
+## گزینه‌های استقرار <a id="deployment-options"></a>
 
-### API vs Self-Hosted
+### ارائه‌دهندگان API در برابر میزبانی اختصاصی (Self-Hosted)
 
-| Factor | API Providers | Self-Hosted |
-|--------|---------------|-------------|
-| Setup time | Minutes | Days to weeks |
-| Operational burden | None | Significant |
-| Cost at low volume | Lower | Higher (fixed costs) |
-| Cost at high volume | Higher | Lower (scale economics) |
-| Latency control | Limited | Full control |
-| Data privacy | Data leaves your infra | Data stays local |
-| Model selection | Provider's models | Any open model |
-| Customization | Fine-tuning via API | Full control |
+| معیار | ارائه‌دهندگان API | میزبانی اختصاصی (سلف‌هاستد) |
+|---|---|---|
+| زمان راه‌اندازی | چند دقیقه | چند روز تا چند هفته |
+| بار عملیاتی و نگهداری | صفر | قابل توجه |
+| هزینه در حجم پایین | پایین‌تر | بالاتر (هزینه‌های ثابت سرور) |
+| هزینه در حجم بالا | بالاتر | پایین‌تر (مزیت صرفه به مقیاس) |
+| کنترل بر میزان تأخیر | محدود | کنترل کامل |
+| حریم خصوصی داده‌ها | داده‌ها از زیرساخت شما خارج می‌شوند | داده‌ها درون شبکه محلی باقی می‌مانند |
+| تنوع مدل‌ها | مدل‌های ارائه‌شده توسط تأمین‌کننده | هر مدل متن‌باز یا وزن باز دلخواه |
+| شخصی‌سازی | فرآیند Fine-tuning محدود به API | کنترل کامل بر تمام لایه‌ها و وزن‌ها |
 
-### When to Use API Providers
+### چه زمانی باید از ارائه‌دهندگان API استفاده کرد
+
+<div dir="ltr">
 
 ```python
 # Decision framework
@@ -56,27 +60,31 @@ def should_use_api(requirements: dict) -> bool:
     return True
 ```
 
-### Self-Hosting Options
+</div>
 
-| Option | Complexity | Performance | Use Case |
-|--------|------------|-------------|----------|
-| vLLM | Medium | Excellent | Default open-source production engine |
-| SGLang | Medium | Excellent | Prefix-heavy and agentic traffic (radix cache), structured output |
-| TensorRT-LLM | Medium-High | Best (NVIDIA) | Peak NVIDIA throughput; the PyTorch backend has been the default since 1.0, so no per-model engine build |
-| NVIDIA Dynamo / llm-d | High | Fleet-level | Orchestration above the engines: KV-aware routing, disaggregated prefill and decode |
-| TGI (Hugging Face) | Medium | Very good | In maintenance mode (repository archived March 2026); Hugging Face now recommends vLLM or SGLang for new deployments |
-| Ollama | Low | Good | Development, small scale |
-| llama.cpp | Low | Good | CPU inference, edge |
+### گزینه‌های میزبانی اختصاصی (سلف‌هاستد)
 
-**Pin and patch the engine.** Serving engines are now a CVE-dense dependency. vLLM published 20+ advisories between August 11 and September 28, 2026, including a model-load RCE that ran a malicious repo's processor code even with `trust_remote_code=False` (CVE-2026-90553) and a single unauthenticated request that kills the engine for every tenant (CVE-2026-93592), both fixed in 0.28.0, and October added another batch, including image decoding that could reach Ghostscript (CVE-2026-115915). Baseline on vLLM 0.32.0 or later, after checking its breaking defaults (CORS closed by default, Python 3.11, `max_tokens` as an upper bound), and on 0.33.0 (November 2) for any host that loads third-party repositories, since it fixes a crafted-repo directory read (GHSA-qrj2-j723-m6w8); 0.33.0 ships CUDA 13.0-only builds, so older fleets need driver 580 or newer first. SGLang has critical advisories with no patched version recorded, including two from October (CVE-2026-111391 and CVE-2026-93034), and the current v0.5.23 (November 2) fixes neither, so run 0.5.23, set its new `SGLANG_ZMQ_ALLOWED_PEERS` allowlist, leave `DUMPER_SERVER_PORT` unset, and keep its ZMQ, dist-init and debug endpoints inside the pod. Ollama belongs on developer machines only, on 0.35.0 or later, which fixes the `/api/pull` path traversal (CVE-2026-103663) that can end in root code execution; never expose that endpoint either way. Version and feature detail lives in [Serving Infrastructure](../04-inference-optimization/06-serving-infrastructure.md); the security view is in [LLM Security](../12-security-and-access/01-llm-security.md#securing-the-ai-stack-itself).
+| گزینه | پیچیدگی | عملکرد | کاربرد |
+|---|---|---|---|
+| موتور vLLM | متوسط | فوق‌العاده | موتور متن‌باز پیش‌فرض برای محیط‌های عملیاتی |
+| موتور SGLang | متوسط | فوق‌العاده | ترافیک‌های با پیشوند سنگین و پردازش‌های عاملی (کش رادیکس)، خروجی ساختاریافته |
+| موتور TensorRT-LLM | متوسط تا بالا | بهترین (انویدیا) | اوج توان عملیاتی انویدیا؛ بک‌اند PyTorch از نسخه ۱.۰ به بعد پیش‌فرض بوده است و نیازی به بیلد جداگانه ندارد |
+| پلتفرم‌های NVIDIA Dynamo / llm-d | بالا | در سطح ناوگان سرورها | ارکستراسیون در لایه بالاتر از موتورها: مسیریابی آگاه از KV، تفکیک پیش‌پر کردن (Prefill) و کدگشایی (Decode) |
+| موتور TGI (متعلق به Hugging Face) | متوسط | بسیار خوب | در حالت نگهداری (مخزن در مارس ۲۰۲۶ بایگانی شد)؛ هاگینگ‌فیس اکنون vLLM یا SGLang را برای استقرارهای جدید توصیه می‌کند |
+| ابزار Ollama | کم | خوب | محیط توسعه، مقیاس کوچک |
+| کتابخانه llama.cpp | کم | خوب | استنتاج روی پردازنده CPU، دستگاه‌های لبه (Edge) |
 
-**Mirror the weights you serve.** Most open-weight pipelines pull checkpoints from Hugging Face, which NVIDIA confirmed on September 3, 2026 it is acquiring for $12.93B (no closing date disclosed). Regardless of how that deal closes, serving from a mirrored, reviewed internal registry removes a supply-chain and availability dependency and is the control that blunts malicious-repo attacks like CVE-2026-90553.
+**قفل کردن و پچ کردن موتورهای استنتاج.** موتورهای سرویس‌دهی امروزه به وابستگی‌هایی پر از آسیب‌پذیری‌های امنیتی (CVE) تبدیل شده‌اند. فریم‌ورک vLLM بین ۱۱ اوت تا ۲۸ سپتامبر ۲۰۲۶ بیش از ۲۰ هشدار امنیتی منتشر کرد، از جمله آسیب‌پذیری اجرای کد از راه دور هنگام بارگذاری مدل (CVE-2026-90553 که حتی با `trust_remote_code=False` کدهای مخرب را اجرا می‌کرد) و خطایی که با یک درخواست بدون احراز هویت کل موتور را از کار می‌انداخت (CVE-2026-93592) که هر دو در نسخه 0.28.0 برطرف شدند؛ ماه اکتبر نیز آسیب‌پذیری‌های دیگری مانند دسترسی به Ghostscript در دیکود تصویر را به همراه داشت. حداقل نسخه پایه برای vLLM نسخه 0.32.0 یا بالاتر است (با در نظر گرفتن مسدود بودن پیش‌فرض CORS و پایتون ۳.۱۱)؛ و نسخه 0.33.0 (۲ نوامبر) برای هر میزبانی که مدل‌های متفرقه را بارگذاری می‌کند ضروری است. موتور SGLang نیز دارای آسیب‌پذیری‌های بحرانی مانند CVE-2026-111391 و CVE-2026-93034 است؛ بنابراین هنگام اجرای نسخه v0.5.23 باید لیست مجاز `SGLANG_ZMQ_ALLOWED_PEERS` را تنظیم کنید و اندپوینت‌های دیباگ و ZMQ را درون محیط ایزوله پاد نگه دارید. ابزار Ollama نیز صرفاً برای سیستم‌های محلی توسعه‌دهندگان در نسخه 0.35.0 به بالا مناسب است تا از پیمایش مسیر `/api/pull` جلوگیری شود. جزئیات بیشتر در [زیرساخت سرویس‌دهی](../04-inference-optimization/06-serving-infrastructure.md) و [امنیت LLM](../12-security-and-access/01-llm-security.md#securing-the-ai-stack-itself) ارائه شده است.
+
+**ثبت و ذخیره محلی وزن‌ها (Mirroring).** اکثر خطوط لوله استقرار مدل‌های وزن باز، چک‌پوینت‌ها را مستقیماً از Hugging Face بارگیری می‌کنند؛ شرکتی که انویدیا در ۳ سپتامبر ۲۰۲۶ توافق خرید آن به مبلغ ۱۲.۹۳ میلیارد دلار را تأیید کرد. صرف‌نظر از سرانجام این معامله، سرویس‌دهی از یک رجیستری داخلیِ ممیزی‌شده، وابستگی به زنجیره تأمین خارجی را حذف می‌کند و سد دفاعی محکمی در برابر حملات مخازن آلوده است.
 
 ---
 
-## Serving Architecture
+## معماری سرویس‌دهی (Serving Architecture) <a id="serving-architecture"></a>
 
-### Single Model Serving
+### سرویس‌دهی تک‌مدلی (Single Model Serving)
+
+<div dir="ltr">
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -89,7 +97,11 @@ def should_use_api(requirements: dict) -> bool:
                     └─────────────┘
 ```
 
-### Multi-Model Serving
+</div>
+
+### سرویس‌دهی چندمدلی (Multi-Model Serving)
+
+<div dir="ltr">
 
 ```
                     ┌────────────────────────────────┐
@@ -105,7 +117,11 @@ def should_use_api(requirements: dict) -> bool:
     └───────────────┘       └───────────────┘       └───────────────┘
 ```
 
-### Model Router Pattern
+</div>
+
+### الگوی مسیریاب مدل (Model Router Pattern)
+
+<div dir="ltr">
 
 ```python
 class ModelRouter:
@@ -149,11 +165,15 @@ class ModelRouter:
         raise ServiceUnavailableError("All models unavailable")
 ```
 
+</div>
+
 ---
 
-## Scaling Patterns
+## الگوهای مقیاس‌پذیری <a id="scaling-patterns"></a>
 
-### Horizontal Scaling
+### مقیاس‌پذیری افقی (Horizontal Scaling)
+
+<div dir="ltr">
 
 ```python
 # Kubernetes HPA config for LLM service
@@ -186,24 +206,28 @@ spec:
 """
 ```
 
-CPU utilization is a fine signal for a stateless API proxy and a poor one for GPU serving pods, where CPU sits idle while the GPU saturates. Scale GPU pods on queue depth, KV-cache utilization, or TTFT against the SLO, and let the engine shed load instead of queuing without bound: vLLM 0.29 added `--max-num-queued-reqs` and `--max-num-queued-tokens` admission control for exactly this.
+</div>
 
-**Cold start limits how fast you can scale.** A GPU pod that spends minutes loading weights cannot absorb a spike, however good the scaling signal. Engines now attack load time directly: vLLM 0.30 added Fast Start (`--load-format ipc_cache`), a per-GPU daemon that keeps post-quantized, tensor-parallel-sharded weights resident and maps them into a restarted engine over CUDA IPC. Managed agent runtimes use snapshots: AWS's AgentCore Runtime V2 (announced September 18, 2026) restores each instance from a snapshot of an initialized agent, with P75 cold starts of about 2 s against roughly 5.4 s to 30 s on the original runtime (vendor-reported), billed at a higher rate on far fewer GB-hours. Measure time-to-ready, not time-to-schedule, and keep enough warm capacity to cover the gap.
+میزان استفاده از CPU برای یک پروکسی بدون حالت (Stateless API Proxy) سیگنال مناسبی است؛ اما برای پادهای سرویس‌دهنده GPU معیار بسیار ضعیفی است، زیرا CPU ممکن است بیکار باشد در حالی که حافظه و محاسبات GPU کاملاً اشباع شده است. پادهای GPU را بر اساس عمق صف درخواست‌ها، درصد اشغال کش KV، یا نسبت زمان رسیدن به اولین توکن (TTFT) نسبت به تعهدات سطح خدمت (SLO) مقیاس‌دهی کنید. همچنین به موتور اجازه دهید به جای صف‌بندی نامحدود بار اضافی را رد کند؛ در همین راستا، فریم‌ورک vLLM 0.29 پرچم‌های `--max-num-queued-reqs` و `--max-num-queued-tokens` را برای کنترل پذیرش بار معرفی کرد.
 
-### GPU Scaling for Self-Hosted
+**شروع سرد (Cold Start) سرعت مقیاس‌پذیری را محدود می‌کند.** پاد GPU که دقایقی را صرف بارگذاری وزن‌ها می‌کند نمی‌تواند جهش‌های ناگهانی ترافیک را مهار کند. موتورهای استنتاج اکنون مستقیماً زمان بارگذاری را هدف گرفته‌اند: نسخه vLLM 0.30 قابلیت شروع سریع Fast Start (`--load-format ipc_cache`) را اضافه کرد که وزن‌های پساکوانتایز شده را در حافظه نگه داشته و با CUDA IPC به موتور جدید متصل می‌کند. محیط‌های مدیریت‌شده از اسنپ‌شات‌ها بهره می‌برند: سرویس AWS AgentCore Runtime V2 نمونه‌ها را از اسنپ‌شات عامل اولیه بازیابی می‌کند و زمان شروع سرد صدک ۷۵ را از ۵.۴ تا ۳۰ ثانیه به حدود ۲ ثانیه رسانده است. همواره زمان تا آماده‌به‌کار شدن واقعی (Time-to-ready) را بسنجید و ظرفیت گرم کافی برای پوشش فاصله مقیاس‌دهی حفظ کنید.
 
-| Scale | GPUs | Suggested Setup |
-|-------|------|-----------------|
-| Dev/Test | 1 | Single L4 or L40S |
-| Small prod | 2-4 | H100 or H200 with tensor parallel |
-| Medium prod | 4-8 | 8x H200 or B200 with tensor parallel |
-| Large prod | 8+ | Multi-node, or rack-scale NVL72 (GB300, Vera Rubin) for large MoE models |
+### مقیاس‌دهی سخت‌افزار GPU در میزبانی اختصاصی
 
-Size by memory, not FLOPS: weights plus KV cache at your target concurrency and context length decide the GPU count, and MoE models need every expert resident.
+| مقیاس | پردازنده‌های GPU | پیکربندی پیشنهادی |
+|---|---|---|
+| محیط توسعه/تست | ۱ | یک کارت منفرد L4 یا L40S |
+| محیط عملیاتی کوچک | ۲ تا ۴ | کارت‌های H100 یا H200 همراه با موازی‌سازی تانسوری |
+| محیط عملیاتی متوسط | ۴ تا ۸ | تعداد ۸ کارت H200 یا B200 با موازی‌سازی تانسوری |
+| محیط عملیاتی بزرگ | ۸ به بالا | چند گره‌ای، یا رک‌های مقیاس بزرگ NVL72 (شامل GB300 یا Vera Rubin) برای مدل‌های عظیم MoE |
 
-### Queue-Based Architecture
+محاسبه ظرفیت را بر مبنای حافظه انجام دهید نه فقط محاسبات خام (FLOPS): حجم وزن‌ها به‌علاوه کش KV در سطح همروندی و طول زمینه مورد نظر شما، تعداد کارت‌های گرافیکی لازم را مشخص می‌کند؛ ضمن اینکه مدل‌های MoE نیازمند اقامت کامل تمامی کارشناسان (Experts) در حافظه هستند.
 
-For high-throughput async workloads:
+### معماری مبتنی بر صف (Queue-Based Architecture)
+
+برای بارهای کاری ناهمگام با توان عملیاتی بالا:
+
+<div dir="ltr">
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -218,6 +242,10 @@ For high-throughput async workloads:
                                         │  Store      │
                                         └─────────────┘
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class AsyncLLMProcessor:
@@ -247,11 +275,15 @@ class AsyncLLMProcessor:
                 await self.results.store_error(job["id"], str(e))
 ```
 
+</div>
+
 ---
 
-## Cost Management
+## مدیریت هزینه‌ها <a id="cost-management"></a>
 
-### Cost Tracking
+### ردیابی و محاسبه هزینه‌ها
+
+<div dir="ltr">
 
 ```python
 class CostTracker:
@@ -337,20 +369,24 @@ class CostTracker:
         return cost
 ```
 
-### Cost Optimization Strategies
+</div>
 
-| Strategy | Savings | Implementation |
-|----------|---------|----------------|
-| Model routing | 50-80% | Route simple queries to cheap models |
-| Prompt caching | 75-98% on the cached prefix (90% on most models) | Stable prefix; provider cache reads cost 0.1x input on most models, from about 0.02x (DeepSeek V4.1-Flash) to 0.25x (xAI Grok 4.7) |
-| Response caching | 30-70% on repeat-heavy traffic | Exact-match and semantic caches |
-| Prompt optimization | 10-30% | Shorter prompts, structured output |
-| Batch and Flex tiers | 50% | Batch endpoints or a Flex tier for async work |
-| Self-hosting | Variable | At scale, can be cheaper; GPU rental prices rose in 2026 |
+### استراتژی‌های بهینه‌سازی هزینه
 
-The pricing structure behind these levers (cache write premiums, long-context cliffs, service tiers, residency surcharges) is covered in [FinOps and Token Economics](04-finops-and-token-economics.md).
+| استراتژی | میزان صرفه‌جویی | نحوه پیاده‌سازی |
+|---|---|---|
+| مسیریابی مدل‌ها (Model routing) | ۵۰ تا ۸۰ درصد | هدایت کوئری‌های ساده به مدل‌های ارزان‌تر |
+| کش کردن پرامپت‌ها (Prompt caching) | ۷۵ تا ۹۸ درصد روی پیشوند کش‌شده (۹۰ درصد در اکثر مدل‌ها) | استفاده از پیشوند ثابت؛ هزینه خواندن کش در اکثر مدل‌ها 0.1x ورودی است، از حدود 0.02x در DeepSeek تا 0.25x در Grok |
+| کش کردن پاسخ‌ها (Response caching) | ۳۰ تا ۷۰ درصد روی ترافیک‌های پر از تکرار | کش‌های تطابق دقیق و کش‌های معنایی |
+| بهینه‌سازی پرامپت‌ها (Prompt optimization) | ۱۰ تا ۳۰ درصد | پرامپت‌های کوتاه‌تر، خروجی‌های ساختاریافته |
+| رده‌های Batch و Flex | ۵۰ درصد | استفاده از اندپوینت‌های دسته‌ای (Batch) یا رده Flex برای پردازش‌های ناهمگام |
+| میزبانی اختصاصی (Self-hosting) | متغیر | در مقیاس‌های بالا می‌تواند ارزان‌تر باشد؛ هرچند هزینه اجاره GPU در سال ۲۰۲۶ افزایش یافته است |
 
-### Budget Alerts
+جزئیات کامل ساختار قیمت‌گذاری، جریمه‌های پرامپت‌های بسیار طولانی، و ضرایب مربوطه در فصل [FinOps و اقتصاد توکن](04-finops-and-token-economics.md) بررسی شده است.
+
+### هشدارهای بودجه و سقف هزینه
+
+<div dir="ltr">
 
 ```python
 class BudgetManager:
@@ -376,13 +412,17 @@ class BudgetManager:
         )
 ```
 
-Keep your own budgets well below provider-side caps, which fail closed for the whole organization. Anthropic's usage tiers carry hard monthly spend caps, and hitting one returns HTTP 429 with `enforced_spend_limit_reached` and no `retry-after` until the 1st of the next month (UTC). Your alert should fire long before a provider cutoff takes down every feature at once.
+</div>
+
+بودجه‌های داخلی سازمان خود را همواره به مراتب پایین‌تر از سقف‌های سخت‌گیرانه ارائه‌دهندگان تنظیم کنید؛ زیرا رسیدن به سقف ارائه‌دهنده سرویس کل سازمان را قطع می‌کند (Fail closed). برای نمونه در پلتفرم انتروپیک، رسیدن به سقف ماهانه خطای HTTP 429 با کد `enforced_spend_limit_reached` تولید می‌کند که تا اول ماه میلادی بعد برطرف نمی‌شود؛ بنابراین سیستم هشدار داخلی شما باید بسیار زودتر فعال شود.
 
 ---
 
-## Monitoring and Alerting
+## پایش و سیستم‌های هشدار <a id="monitoring-and-alerting"></a>
 
-### Key Metrics
+### سنجه‌های کلیدی
+
+<div dir="ltr">
 
 ```python
 LLM_METRICS = {
@@ -417,7 +457,11 @@ LLM_METRICS = {
 }
 ```
 
-### Alert Configuration
+</div>
+
+### پیکربندی هشدارها
+
+<div dir="ltr">
 
 ```yaml
 alerts:
@@ -452,13 +496,17 @@ alerts:
     severity: critical
 ```
 
-The last alert is the one teams skip. An engine's `/health` endpoint proves the HTTP process is alive, not that it generates: a vLLM advisory fixed in 0.31.0 (GHSA-4xqp-c3mv-qff7) let one request kill the engine's input thread while `/health` kept returning 200 and every generation hung. Run a synthetic few-token generation against each replica on a short interval with a hard timeout, wire it to readiness so the load balancer drains a hung replica, and restart on repeated failure.
+</div>
+
+آخرین هشدار موردی است که بسیاری از تیم‌ها از آن غفلت می‌کنند. اندپوینت `/health` یک موتور صرفاً نشان می‌دهد که پروسس وب زنده است، اما اثبات نمی‌کند که موتور توانایی تولید توکن دارد. یک باگ شناخته‌شده vLLM که در نسخه 0.31.0 برطرف شد، نشان داد که یک درخواست می‌تواند ترد پردازش ورودی را متوقف کند در حالی که اندپوینت سلامت همچنان کد 200 برمی‌گرداند اما تمام درخواست‌های تولید توکن هنگ می‌کردند. بنابراین یک پروب تولید ساختگی چندتوکنی را به فواصل کوتاه اجرا کنید تا از آماده بودن واقعی هر رپلیکا مطمئن شوید.
 
 ---
 
-## Disaster Recovery
+## بازیابی پس از فاجعه (Disaster Recovery) <a id="disaster-recovery"></a>
 
-### Multi-Provider Failover
+### تغییر مسیر خودکار میان چند ارائه‌دهنده (Multi-Provider Failover)
+
+<div dir="ltr">
 
 ```python
 class MultiProviderClient:
@@ -492,21 +540,25 @@ class MultiProviderClient:
         raise AllProvidersUnavailable("All LLM providers failed")
 ```
 
-The failover target has to be a different vendor, because outages take out a vendor's whole surface at once. OpenAI's September 29, 2026 incident degraded the API (including the Agents API), ChatGPT and Codex for about 5 hours 20 minutes, and Anthropic's status feed records at least 12 major or critical incidents between August 16 and September 29, 2026. Error classification, streaming failover and conversation-state pitfalls are covered in [AI Gateways and Model Routing](03-ai-gateways-and-model-routing.md#fallback-and-reliability).
+</div>
 
-### Model Lifecycle Is a DR Concern
+مقصد بازگشتی (Failover Target) حتماً باید یک شرکت تأمین‌کننده دیگر باشد، زیرا حوادث قطعی معمولاً کل سرویس‌های یک ارائه‌دهنده را به‌صورت همزمان متوقف می‌سازند. حادثه ۲۹ سپتامبر ۲۰۲۶ شرکت OpenAI همزمان API، ChatGPT و Codex را به مدت ۵ ساعت و ۲۰ دقیقه دچار اختلال کرد، و وضعیت انتروپیک نیز حداقل ۱۲ حادثه بحرانی را بین اوت و سپتامبر ۲۰۲۶ ثبت نموده است. مباحث مربوط به جریان استریمینگ و وضعیت گفتگو در [درگاه‌های هوش مصنوعی و مسیریابی مدل‌ها](03-ai-gateways-and-model-routing.md#fallback-and-reliability) آمده است.
 
-A model that disappears on schedule is an outage you can see coming, and the calendar is now dense and inconsistent across platforms:
+### چرخه حیات مدل‌ها یک دغدغه DR است
 
-| Risk | 2026 example | Control |
-|------|--------------|---------|
-| Same model, different retirement dates per platform | Claude Sonnet 4.5 retires on the Claude API and Foundry on November 30, 2026, while Bedrock moved it to Legacy on October 8 with end of life on April 8, 2027; Claude Opus 4.1 retired on the Claude API on August 5 but runs on Bedrock until January 8, 2027, at higher extended-access prices from October 8. The same Gemini IDs differ too: Vertex AI retires `gemini-3.6-flash` on November 19, 2026 and `gemini-3.7-flash` on January 28, 2027 (replacement `gemini-3.8-flash`, no routing described), while `gemini-3.5-flash` stays on Vertex until "May 19, 2027 or later" | Key the model registry on (model, platform), not model alone |
-| Idle standby loses access | Bedrock models in Legacy block new customers, and existing customers may lose access after 15 days of inactivity | Exercise DR and seasonal models on a schedule, not only during an incident |
-| Short notice windows | Bedrock models launched from September 7, 2026 get a Legacy notice of 6 months or 45 days; Anthropic gives 60 days; OpenAI states 6 months for GA models, yet its October 14 notice gave GPT-4o, GPT-4o mini, GPT-4.1 and GPT-4.1 mini snapshots, and fine-tunes of them, about 3 months (shutdown January 14, 2027), and it retired `gpt-5.4-cyber` on October 1 with 20 days' notice | Track notice class per model; do not plan on the stated minimum; keep a qualified fallback ready |
-| Open-weight hosts drop models | Groq retired Llama 3.3 70B and Llama 3.1 8B for free and developer tiers on August 16 with 60 days' notice | Route open-weight models across at least two hosts |
-| Alias rerouting | Since October 8, Google routes `gemini-3.7-flash` requests to `gemini-3.8-flash` and `gemini-3.5-flash` requests to `gemini-3.6-flash`, so the string keeps working while the model behind it changes; DeepSeek announced and then reversed a `deepseek-v4-pro` reroute in September | Pin dated snapshots; alert when a response's model ID changes |
+مدلی که طبق برنامه قبلی خاموش می‌شود در واقع قطعی قابل پیش‌بینی است، و امروزه تقویم بازنشستگی در پلتفرم‌های ابری مختلف بسیار متناقض و فشرده است:
 
-### Graceful Degradation
+| ریسک | نمونه در سال ۲۰۲۶ | سازوکار کنترلی |
+|---|---|---|
+| یک مدل مشابه با تاریخ‌های بازنشستگی متفاوت در پلتفرم‌های مختلف | مدل Claude Sonnet 4.5 در Claude API و فاندری در ۳۰ نوامبر ۲۰۲۶ بازنشسته می‌شود در حالی که در Bedrock تا ۸ آوریل ۲۰۲۷ فعال است؛ مدل Opus 4.1 در ۵ اوت در Claude API بازنشسته شد اما در Bedrock تا ژانویه ۲۰۲۷ با نرخ بالاتر فعال است. مدل‌های Gemini نیز در Vertex AI تاریخ‌های بازنشستگی متفاوتی نسبت به API مستقیم دارند | کلید رجیستری مدل را بر اساس جفت (مدل، پلتفرم) تنظیم کنید نه صرفاً نام مدل |
+| از دست رفتن دسترسی در حالت آماده‌به‌کار (Idle) | مدل‌های Bedrock در وضعیت Legacy مشتریان جدید را مسدود می‌کنند، و کاربران فعلی پس از ۱۵ روز بی‌تحرکی ممکن است دسترسی خود را از دست بدهند | مدل‌های فصلی و DR را طبق برنامه زمانی تست و فعال کنید، نه فقط در زمان حادثه |
+| مهلت‌های زمانی کوتاه برای اطلاع‌رسانی | مدل‌های Bedrock که از ۷ سپتامبر ۲۰۲۶ عرضه شدند اطلاعیه Legacy شش ماهه یا ۴۵ روزه دارند؛ انتروپیک ۶۰ روز مهلت می‌دهد؛ و اوپن‌ای‌آی اسنپ‌شات‌های GPT-4o و مدل‌های فاین‌تیون آن‌ها را با اطلاعیه ۳ ماهه خاموش کرد | کلاس اطلاع‌رسانی را به ازای هر مدل رصد کنید؛ بر حداقل زمان اعلامی تکیه نکنید؛ یک مدل جایگزین آماده داشته باشید |
+| حذف مدل‌ها توسط هاست‌های مدل‌های متن‌باز | شرکت Groq مدل‌های Llama 3.3 70B و Llama 3.1 8B را برای پلن‌های رایگان در ۱۶ اوت بازنشسته کرد | مدل‌های وزن باز را روی حداقل دو ارائه‌دهنده میزبانی مختلف توزیع و مسیریابی کنید |
+| تغییر مسیر بی‌صدای نام‌های مستعار (Alias rerouting) | از ۸ اکتبر گوگل درخواست‌های `gemini-3.7-flash` را به `gemini-3.8-flash` هدایت می‌کند، بنابراین رشته نام ثابت می‌ماند اما مدل عوض می‌شود | اسنپ‌شات‌های دارای تاریخ دقیق را قفل کنید؛ در صورت تغییر شناسه مدل هشدار صادر نمایید |
+
+### افت تدریجی و عملکرد در شرایط بحران (Graceful Degradation)
+
+<div dir="ltr">
 
 ```python
 class GracefulDegradation:
@@ -538,41 +590,41 @@ class GracefulDegradation:
         )
 ```
 
+</div>
+
 ---
 
-## AI Accelerator Landscape
+## چشم‌انداز شتاب‌دهنده‌های سخت‌افزاری هوش مصنوعی <a id="ai-accelerator-landscape"></a>
 
-The hardware picture moved faster in 2026 than at any earlier point in the AI build-out. The capacity announcements add up to **over a trillion dollars in committed cloud spend**, the supply chain is no longer single-vendor, the largest buyers are building inference-specific silicon, and the binding constraints by October are memory and power rather than chip designs. This section is the snapshot a senior architect should carry into capacity-planning conversations; the dates matter, because this market reprices every quarter.
+فضای سخت‌افزار در سال ۲۰۲۶ با شتابی بی‌سابقه متحول شد. تعهدات ظرفیت پردازشی در قراردادهای ابری از مرز **یک تریلیون دلار** فراتر رفت، زنجیره تأمین از انحصار یک شرکت خارج شد، بزرگ‌ترین بازیگران در حال ساخت تراشه‌های اختصاصی استنتاج هستند، و گلوگاه اصلی تا ماه اکتبر به جای طراحی تراشه‌ها به محدودیت حافظه و تأمین انرژی برق منتقل شده است. این بخش تصویری دقیق برای معماران سیستم در جلسات برنامه‌ریزی ظرفیت ارائه می‌دهد.
 
-### NVIDIA: Vera Rubin NVL72 and Blackwell Ultra
+### شرکت انویدیا: پلتفرم‌های Vera Rubin NVL72 و Blackwell Ultra
 
-**Vera Rubin NVL72** is the new flagship. NVIDIA announced the full-production ramp on May 31, 2026, by its August 26 earnings report Rubin racks were running at CoreWeave, Google Cloud, Microsoft Azure, OCI and Nebius ([NVIDIA Vera Rubin NVL72](https://www.nvidia.com/en-us/data-center/vera-rubin-nvl72/)), and on October 27 Oracle Cloud Infrastructure made Vera Rubin NVL72 and Vera CPU instances generally available ([NVIDIA and Oracle](https://nvidianews.nvidia.com/news/nvidia-and-oracle-expand-nvidia-vera-rubin-to-multi-gigawatt-scale-and-bring-nvidia-vera-cpu-to-oracle-cloud-infrastructure)). The **B300** ("Blackwell Ultra") was announced in March 2025 with partner systems from the second half of 2025 ([NVIDIA newsroom announcement](https://nvidianews.nvidia.com/news/nvidia-blackwell-ultra-ai-factory-platform-paves-way-for-age-of-ai-reasoning)), and NVIDIA called it its leading architecture across all customer categories by the quarter ended October 26, 2025 ([Q3 FY2026 CFO commentary](https://s201.q4cdn.com/141608511/files/doc_financials/2026/Q326/Q3FY26-CFO-Commentary.pdf)). It is now the volume workhorse.
+رک **Vera Rubin NVL72** پرچمدار نوین انویدیا است. انویدیا تولید کامل آن را در ۳۱ مه ۲۰۲۶ اعلام کرد و در گزارش مالی ۲۶ اوت رک‌های روبین در کلودهای CoreWeave، Google Cloud، Azure، OCI و Nebius مستقر شدند؛ در ۲۷ اکتبر نیز اوراکل کلود دسترسی عمومی به نمونه‌های Vera Rubin NVL72 را برقرار کرد. تراشه **B300** (معروف به Blackwell Ultra) که در مارس ۲۰۲۵ معرفی شد، تا سه‌ماهه منتهی به اکتبر ۲۰۲۵ به پرفروش‌ترین معماری انویدیا تبدیل شد و اکنون ستون فقرات اصلی استقرارهای انبوه به شمار می‌رود.
 
-| Spec | Vera Rubin NVL72 | B300 / GB300 NVL72 |
-|------|------------------|---------------------|
-| HBM per GPU | 288 GB HBM4 at 19.2 TB/s | 288 GB HBM3e at ~8 TB/s |
-| Rack | 72 Rubin GPUs + 36 Vera CPUs | 72 Blackwell Ultra GPUs + 36 Grace CPUs |
-| Total HBM per rack | 20.7 TB at ~1,400 TB/s | ~20 TB at up to 576 TB/s |
-| Aggregate NVLink bandwidth per rack | 216 TB/s | ~130 TB/s |
-| Peak FP4 per rack | 3,600 PFLOPS NVFP4 inference (50 per GPU) | 1,440 PFLOPS sparse, 1,080 dense (~15 per GPU dense) |
-| Status | Full-production ramp since May 31, 2026; generally available on OCI since October 27, 2026 | Shipping since H2 2025; NVIDIA's leading architecture by its October 2025 quarter |
+| مشخصه | رک Vera Rubin NVL72 | رک B300 / GB300 NVL72 |
+|---|---|---|
+| حافظه HBM به ازای هر GPU | مقدار ۲۸۸ گیگابایت HBM4 با پهنای باند ۱۹.۲ ترابایت بر ثانیه | مقدار ۲۸۸ گیگابایت HBM3e با پهنای باند حدود ۸ ترابایت بر ثانیه |
+| ساختار رک | تعداد ۷۲ پردازنده گرافیکی Rubin به‌همراه ۳۶ پردازنده مرکزی Vera | تعداد ۷۲ پردازنده گرافیکی Blackwell Ultra به‌همراه ۳۶ پردازنده مرکزی Grace |
+| کل حافظه HBM در هر رک | مقدار ۲۰.۷ ترابایت با پهنای باند حدود ۱٬۴۰۰ ترابایت بر ثانیه | حدود ۲۰ ترابایت با پهنای باند تا ۵۷۶ ترابایت بر ثانیه |
+| پهنای باند تجمیعی NVLink در هر رک | مقدار ۲۱۶ ترابایت بر ثانیه | حدود ۱۳۰ ترابایت بر ثانیه |
+| اوج توان پردازش FP4 در هر رک | مقدار ۳٬۶۰۰ پتافلاپس استنتاج NVFP4 (۵۰ پتافلاپس به ازای هر GPU) | مقدار ۱٬۴۴۰ پتافلاپس تنک، ۱٬۰۸۰ متراکم (حدود ۱۵ به ازای هر GPU متراکم) |
+| وضعیت عرضه | تولید انبوه از ۳۱ مه ۲۰۲۶؛ عرضه عمومی روی کلود اوراکل از ۲۷ اکتبر ۲۰۲۶ | عرضه از نیمه دوم ۲۰۲۵؛ معماری پیشتاز بازار انویدیا |
 
-Same 288 GB per GPU, far more bandwidth: Rubin's gain shows up in decode-heavy and long-context serving more than in model capacity per GPU.
+هر دو دارای حافظه ۲۸۸ گیگابایت به ازای هر پردازنده هستند، اما پهنای باند روبین به مراتب بالاتر است؛ مزیت روبین بیش از آنکه در گنجاندن مدل‌های بزرگ‌تر باشد، در پردازش‌های سنگین کدگشایی (Decode) و زمینه‌های بسیار طولانی (Long-context) خود را نشان می‌دهد.
 
-The strategic pitch is "AI factories": the NVL72 is sold as the smallest unit of a coherent, NVLink-domain inference and training cell rather than as individual cards. For frontier model training and the largest reasoning-model inference workloads, NVL72-class racks (GB300 today, Rubin as it ramps) are the default.
+ادعای انویدیا این است که روبین هزینه هر یک میلیون توکن را به یک‌دهم GB200 می‌رساند. با این حال بنچمارک‌های مستقل مانند SemiAnalysis نشان می‌دهند خروجی به تعهدات سطح خدمت (SLO) و مدل مالکیت وابسته است (حدود ۶۷ برابر توان نسبت به هزینه در سرعت ۱۷۰ توکن در ثانیه برای مالکیت کامل، اما تنها ۶۲ درصد بهبود در مدل اجاره سه ساله در سرعت ۸۰ توکن بر ثانیه). بنچمارک مستقل Artificial Analysis در ۱۵ اکتبر برتری روبین نسبت به GB300 را صرفاً بین **۱.۱۴ تا ۱.۴۵ برابر** در توان پردازشی به ازای هر مگاوات برق ارزیابی کرد. شتاب‌دهنده‌ها را همیشه روی منحنی پارتو میان توان عملیاتی و تعامل‌پذیری در سطح SLO خود مقایسه کنید، نه بر مبنای ادعاهای تک‌کاربره.
 
-Read the cost claims with the operating point attached. NVIDIA claims Rubin delivers one-tenth the cost per million tokens of GB200 NVL72 (vendor figure). SemiAnalysis's AgentX benchmark on DeepSeek V4 Pro shows how much the answer depends on the SLO and ownership model: about 67x GB300's throughput per TCO at 170 tok/s per user under ownership costs, but only about 62% more tokens than GB300 for the same 3-year rental cost at an 80 tok/s P90 target (analyst figures). The first independent measurement is more sobering still: Artificial Analysis's AA-AgentPerf agentic benchmark (October 15) put Rubin at only **1.14x to 1.45x** GB300's peak throughput per megawatt depending on the model (1.14x on DeepSeek V4 Pro, 1.45x on DeepSeek V4.1 Flash), with the large leads appearing only at high per-user speeds. Treat any big multiple as one point on a curve. Compare accelerators on a throughput-versus-interactivity Pareto curve at your SLO, never on a batch-1 headline.
+### تفکیک مراحل پیش‌پر کردن و کدگشایی میان تراشه‌های مختلف (Cross-Chip Prefill and Decode)
 
-The trade-off has stayed the same: highest absolute performance, highest absolute price, deepest software lock-in. CUDA, NCCL, and TensorRT-LLM all assume NVIDIA. If you architect around them, you have committed.
+الگوی برتر کاهش تأخیر در سال ۲۰۲۶، تقسیم پردازش یک درخواست میان دو نوع سیلیکون است: پردازنده‌های با حافظه HBM بالا برای مرحله محاسباتی پیش‌پر کردن (Prefill)، و قطعات بهینه‌شده در پهنای باند برای مرحله کدگشایی (Decode).
 
-### Cross-Chip Prefill and Decode
+- سیستم **NVIDIA Groq 3 LPX** در ۲۴ اوت ۲۰۲۶ وارد فاز تولید کامل شد: ۲۵۶ تراشه LPU و ۱۲۸ گیگابایت حافظه فوق‌سریع SRAM به ازای هر رک. در جفت شدن با Vera Rubin، انویدیا از ترکیب روبین برای پیش‌پر کردن و LPX برای کدگشایی پشتیبانی می‌کند. نکته منفی ظرفیت است: یک رک LPX به دلیل محدودیت حجم SRAM در ورودی‌های ۱۰۰ هزار توکنی حداکثر پاسخگوی بچ سایز ۱۲ است، به همین دلیل رده‌های فوق سریع قیمت‌گذاری مجزایی دارند. این فناوری حاصل قرارداد لایسنس انویدیا با Groq در دسامبر ۲۰۲۵ بوده است.
+- ترکیب **AWS Trainium به‌همراه Cerebras**: سرورهای Trainium برای مرحله پیش‌پر کردن و سیستم‌های Cerebras CS-3 برای کدگشایی متصل از طریق شبکه EFA در بستر Bedrock.
+- ترکیب **AMD Helios به‌همراه Cerebras**: رک‌های Helios برای پیش‌پر کردن و موتورهای مقیاس ویفر برای کدگشایی.
+- معماری **Intel و SambaNova**: پردازنده‌های گرافیکی برای پیش‌پر کردن و تراشه‌های SambaNova RDU برای کدگشایی.
 
-The premium-latency pattern of 2026 splits one request across two kinds of silicon: HBM-rich GPUs or accelerators for compute-bound prefill, bandwidth-optimized parts for decode.
-
-- **NVIDIA Groq 3 LPX** entered full production on August 24, 2026: 256 LPUs and 128 GB of SRAM per rack, with Nebius the first cloud. Paired with Vera Rubin, NVIDIA supports Rubin-prefill plus LPX-decode, attention-FFN splits, and LPX as a speculative drafter. The catch is capacity: The Register estimates a single LPX rack tops out around batch 12 at 100K-token inputs because SRAM is small, which is why premium-latency tiers are priced separately. The technology came from NVIDIA's non-exclusive license with Groq (December 24, 2025; terms undisclosed, reported at about $17-20B, with a DOJ investigation reported). GroqCloud continues independently and raised a $350M Series A at a $3.5B valuation on August 17, 2026.
-- **AWS Trainium plus Cerebras** (announced March 13, 2026): Trainium servers for prefill and Cerebras CS-3 systems for decode, linked over EFA, to be sold only through Amazon Bedrock.
-- **AMD Helios plus Cerebras** (announced July 23, 2026): Helios racks for prefill, the wafer-scale engine for decode, offered first through Cerebras Cloud in H2 2026 (announced).
-- **Intel plus SambaNova** (April 8, 2026 blueprint): GPUs for prefill, SambaNova RDUs for decode, Xeon 6 for agent tool execution. SambaNova was not acquired; it raised a $1B first close at an $11B valuation on July 8, 2026.
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -581,100 +633,79 @@ flowchart LR
     D --> S[Streamed tokens]
 ```
 
-The design question is whether the KV transfer erases the win. Llama-3.1-70B in BF16 stores 320 KiB of KV per token, so a 10K-token prompt hands decode about 3 GB, roughly 65 ms at 400 Gb/s added to TTFT. Disaggregation pays when it raises **goodput** (request rate meeting both TTFT and inter-token-latency SLOs), not peak throughput.
+</div>
 
-### AMD MI455X and Helios Rack
+مسئله اصلی این است که آیا زمان انتقال کش KV برتری سرعت را از بین می‌برد یا خیر. یک پرامپت ۱۰ هزار توکنی در مدل Llama-3.1-70B نیازمند انتقال حدود ۳ گیگابایت داده کش است که روی شبکه ۴۰۰ گیگابیت حدود ۶۵ میلی‌ثانیه به تأخیر اضافه می‌کند. این تفکیک زمانی توجیه دارد که خروجی معتبر منطبق بر SLO را افزایش دهد.
 
-[AMD's MI400 series](https://www.amd.com/en/products/accelerators/instinct/mi400.html) is the credible second source; the volume part is the **MI455X**, built into the 72-GPU **Helios** rack.
+### پردازنده AMD MI455X و رک‌های سرور Helios
 
-| Spec | MI455X / Helios |
-|------|-----------------|
-| Memory | HBM4, **432 GB** per GPU |
-| Memory bandwidth | 23.3 TB/s per GPU |
-| Peak FP4 | ~40 PFLOPS MXFP4 per GPU; 2.9 exaFLOPS per Helios rack |
-| Rack solution | **Helios**: 72 MI455X GPUs, 18 EPYC Venice CPUs, Pensando networking |
-| Software | ROCm 10.x (10.0.0 August 26, 2026; 10.1.0 October 5 with PyTorch 2.14.0) with PyTorch / vLLM / SGLang support; vLLM 0.33.0 builds against ROCm 10.0 by default. Check AMD's compatibility matrix for MI455X status, since the 10.0 hardware table lists MI355X |
+خانواده پردازنده‌های [AMD MI400](https://www.amd.com/en/products/accelerators/instinct/mi400.html) گزینه دوم معتبر در بازار است، و تراشه اصلی آن **MI455X** است که در قالب رک‌های ۷۲ پردازنده‌ای **Helios** عرضه می‌شود.
 
-The 432 GB per GPU is the headline: 50% above the 288 GB on both B300 and Rubin, while bandwidth and FP4 compute are near Rubin parity. For MoE serving (where the limiting factor is keeping expert weights resident) and for KV-cache-heavy long-context workloads, that memory advantage is real. AMD has also closed most of the software gap; ROCm (now 10.x, after a jump from 7.14 in August 2026) is no longer the disqualifier it was in 2023, and quantized checkpoints now port across vendors (SGLang requantizes NVFP4 checkpoints to MXFP4 at load on AMD).
+| مشخصه | شتاب‌دهنده MI455X / رک Helios |
+|---|---|
+| میزان حافظه | مقدار **۴۳۲ گیگابایت** HBM4 به ازای هر GPU |
+| پهنای باند حافظه | مقدار ۲۳.۳ ترابایت بر ثانیه به ازای هر GPU |
+| اوج توان FP4 | حدود ۴۰ پتافلاپس MXFP4 به ازای هر GPU؛ ۲.۹ اگزاTarget در هر رک Helios |
+| ساختار رک | رک **Helios**: تعداد ۷۲ کارت گرافیکی MI455X، ۱۸ پردازنده EPYC Venice، شبکه Pensando |
+| پشته نرم‌افزاری | پلتفرم ROCm 10.x همراه با پشتیبانی کامل از PyTorch، vLLM و SGLang |
 
-The frontier labs have committed. AMD said Helios is in production (July 23, 2026), and Anthropic agreed on July 22 to deploy up to 2 GW of MI450-series GPUs, with the first gigawatt from H1 2027. In its Q3 2026 remarks (November 3), AMD said it started shipping MI455X in volume during the quarter and that lead customers including Anthropic, Meta, Microsoft, OpenAI and Oracle brought their first Helios racks online quickly; data center revenue was a record $8.5B, and AMD expects Helios deployments to rise substantially in Q4 as HPE, Dell, Lenovo, Supermicro and other OEM and ODM partners begin shipping systems (company-reported). The catch is still **deployment maturity at scale**: first racks at a handful of lead customers are not bulk capacity for everyone else, so plan on OEM-supplied AMD capacity from late 2026 and real volume in 2027. Hyperscalers (Meta, Microsoft, Oracle Cloud) are running mixed fleets.
+حافظه ۴۳۲ گیگابایتی ویژگی برجسته آن است: ۵۰ درصد بیشتر از ۲۸۸ گیگابایت در B300 و روبین، در حالی که پهنای باند و محاسبات FP4 تقریباً هم‌سطح روبین است. برای سرویس‌دهی مدل‌های MoE و زمینه‌های فوق‌طولانی، این مزیت حافظه تعیین‌کننده است. شرکت AMD شکاف نرم‌افزاری را پر کرده و پلتفرم ROCm 10 به بلوغ رسیده است. آزمایشگاه‌های بزرگ مانند انتروپیک (قرارداد استقرار تا ۲ گیگاوات)، متا، مایکروسافت، اوپن‌ای‌آی و اوراکل نخستین رک‌های هلیوس را فعال کرده‌اند؛ هرچند حجم بالای تجاری در بازار OEM در اواخر ۲۰۲۶ و ۲۰۲۷ شکل می‌گیرد.
 
-### Google TPU and Custom Inference Silicon
+### پردازنده‌های TPU گوگل و تراشه‌های سفارشی استنتاج
 
-Google, OpenAI and Meta now split training silicon from inference silicon, and AMD is buying its way into fixed-model inference:
+شرکت‌های گوگل، متا و اوپن‌ای‌آی اکنون سخت‌افزارهای آموزش را از استنتاج تفکیک کرده‌اند:
 
-| Owner | Part | Status | Notes |
-|-------|------|--------|-------|
-| Google | TPU7x (Ironwood) | GA March 31, 2026 | TPU 8t (training) and 8i (inference) announced April 2026. On October 27, 2026 Oracle and Google announced that OCI will offer both starting in calendar 2027 (scheduled), the first hyperscale cloud outside Google to offer TPUs; no pricing or regions disclosed |
-| OpenAI (with Broadcom) | Jalapeño | Shipping late 2026, volume 2027 (announced) | Inference-only; 13.4 PFLOPS MXFP4 and 216 GB HBM4 per chip (The Register, Hot Chips) |
-| Meta | MTIA 400 | Disclosed at Hot Chips, August 2026 | Training-first; 12 PFLOPS MXFP4, 288 GB HBM3e (The Register); inference-focused MTIA 450 expected 2027 |
-| AMD (Taalas) | Hardwired-model ASICs | Acquisition announced August 6, 2026; close expected Q4 pending approval | Weights etched into silicon: Taalas HC1 served Llama 3.1 8B at about 17,000 tok/s (vendor figure); anything beyond a LoRA-sized change needs a chip re-spin |
+| مالک | قطعه سیلیکونی | وضعیت | توضیحات |
+|---|---|---|---|
+| شرکت Google | شتاب‌دهنده TPU7x (Ironwood) | عرضه عمومی در ۳۱ مارس ۲۰۲۶ | معرفی نسخه‌های TPU 8t (آموزش) و 8i (استنتاج). در ۲۷ اکتبر ۲۰۲۶ اوراکل و گوگل اعلام کردند OCI از سال ۲۰۲۷ پردازنده‌های TPU را ارائه خواهد کرد |
+| شرکت OpenAI (با همکاری Broadcom) | تراشه Jalapeño | ارسال در اواخر ۲۰۲۶، عرضه انبوه در ۲۰۲۷ | صرفاً برای استنتاج؛ توان ۱۳.۴ پتافلاپس MXFP4 و ۲۱۶ گیگابایت حافظه HBM4 به ازای هر تراشه |
+| شرکت Meta | تراشه MTIA 400 | معرفی در Hot Chips، اوت ۲۰۲۶ | با اولویت آموزش؛ توان ۱۲ پتافلاپس، ۲۸۸ گیگابایت حافظه؛ نسخه ویژه استنتاج MTIA 450 در سال ۲۰۲۷ |
+| شرکت AMD (شرکت Taalas) | تراشه‌های ASIC با مدل سخت‌افزاری | اعلام تصاحب در ۶ اوت ۲۰۲۶ | وزن‌های مدل روی سیلیکون حک شده‌اند: مدل Llama 3.1 8B را با سرعت ۱۷٬۰۰۰ توکن بر ثانیه اجرا می‌کند؛ هر تغییری فراتر از LoRA نیازمند ساخت مجدد تراشه است |
 
-Taalas marks the far end of the flexibility-versus-efficiency trade-off: it only makes sense for one stable, very high-volume model.
+تراشه‌های Taalas در انتهای طیف کارایی در برابر انعطاف‌پذیری قرار دارند و تنها برای یک مدل باثبات و با حجم بسیار عظیم مقرون‌به‌صرفه هستند.
 
-### AWS Trainium3 and the Anthropic $100B+ Deal
+### تراشه AWS Trainium3 و قرارداد ۱۰۰ میلیارد دلاری انتروپیک
 
-On April 20, 2026, Anthropic and Amazon announced a deal for **up to 5 gigawatts** of capacity to train and serve Claude, anchored on Trainium: Anthropic committed **more than $100B over ten years** to AWS, and Amazon invested $5B with up to $20B more to follow. Anthropic said nearly 1 GW of Trainium2 and Trainium3 capacity would come online by the end of 2026 ([Anthropic announcement](https://www.anthropic.com/news/anthropic-amazon-compute)).
+در ۲۰ آوریل ۲۰۲۶، شرکت‌های آمازون و Anthropic توافقی برای استقرار **تا ۵ گیگاوات** ظرفیت پردازشی بر پایه Trainium امضا کردند: تعهد پرداخت **بیش از ۱۰۰ میلیارد دلار طی ده سال** از سوی انتروپیک، و سرمایه‌گذاری ۵ تا ۲۰ میلیارد دلاری آمازون.
 
-Key numbers:
+| مشخصه | تراشه Trainium3 |
+|---|---|
+| فرایند ساخت | معماری ۳ نانومتری |
+| ساختار سرور | سرور **Trn3 UltraServer** با **۱۴۴ تراشه** در هر سیستم |
+| توان محاسباتی | حدود **۴.۴ برابر** بهتر نسبت به نسل قبل Trainium2 |
+| نوع حافظه | حافظه HBM3e |
+| شبکه ارتباطی | شبکه NeuronLink در سطح سرور، و شبکه EFA در سطح کلاستر |
 
-| Spec | Trainium3 |
-|------|-----------|
-| Process node | 3nm |
-| Configuration | **Trn3 UltraServer** with **144 chips** per system |
-| Peak perf vs T2 | **~4.4x** in target workloads |
-| Memory | HBM3e |
-| Networking | NeuronLink across the UltraServer; EFA across the cluster |
+پیامد استراتژیک: آمازون اکنون یک بستر سخت‌افزاری عمودی کامل دارد (تراشه‌های Trainium + شبکه Annapurna + زیرساخت EC2 و Bedrock) که از نظر نسبت کارایی به قیمت برای مدل‌های Claude کاملاً با انویدیا رقابت می‌کند. چالش اصلی: نیازمندی به بازنویسی کرنل‌ها با **AWS Neuron SDK** به جای CUDA است که برای مقیاس‌های بزرگ کاملاً توجیه‌پذیر اما برای مقیاس‌های کوچک دشوار است.
 
-The strategic implication: AWS now has a credible vertically-integrated AI fabric (Trainium silicon + Annapurna networking + EC2 + Bedrock). For inference-heavy workloads on Anthropic models, the price/performance is competitive with NVIDIA on H200-class hardware.
+### عرضه اولیه عمومی شرکت Cerebras (مه ۲۰۲۶)
 
-The constraint: Trainium runs the **AWS Neuron SDK**, not CUDA. Porting a stack means rebuilding kernels, retesting numerics, and re-tuning batching. Worth it at scale, painful at small scale.
+شرکت Cerebras در ۱۳ مه ۲۰۲۶ با قیمت هر سهم ۱۸۵ دلار عرضه عمومی شد و حدود ۵.۵ میلیارد دلار سرمایه جذب کرد، و در نخستین روز معاملاتی ارزش بازار آن به حدود **۶۷ میلیارد دلار** رسید. آمازون پیش از IPO همکاری با آن را برای تفکیک پیش‌پر کردن (با Trainium) و کدگشایی (با CS-3) آغاز کرد. همچنین Cerebras سیستم جدید **CS-4** را معرفی نمود. این رویداد مسیر تأمین مالی را برای رقبای غیرانویدیایی باز کرد.
 
-### Cerebras IPO (May 2026)
+### پلتفرم Tenstorrent Galaxy Blackhole
 
-Cerebras priced its IPO at **$185/share** on May 13, 2026 and raised about **$5.5B**. The stock opened at $350 on May 14, briefly valuing the company above $100B, and closed its first day at $311.07, a valuation of about **$67B** ([SiliconANGLE](https://siliconangle.com/2026/05/13/cerebras-stock-almost-doubles-initial-offering-price-biggest-tech-ipo-years-raised-55b/)).
+سیستم [Galaxy از شرکت Tenstorrent](https://tenstorrent.com/hardware/galaxy) در تاریخ **۲۸ آوریل ۲۰۲۶** به عرضه عمومی رسید.
 
-What changed in the market around it:
+| مشخصه | سرور Galaxy Blackhole |
+|---|---|
+| ظرفیت هر سرور | تعداد **۳۲ تراشه Blackhole** |
+| معماری پردازنده | هسته‌های RISC-V و کاشی‌های Tensix |
+| اوج توان پردازش | حدود **۲۳ پتافلاپس** BlockFP8 در هر سرور |
+| ظرفیت حافظه | مقدار ۱ ترابایت GDDR6 با پهنای باند ۱۶ ترابایت بر ثانیه، به‌علاوه ۶.۲ گیگابایت حافظه روی‌تراشه SRAM |
+| قیمت فهرست | شروع از **۱۶۰٬۰۰۰ دلار** برای هر سرور ۳۲ تراشه‌ای در اکتبر ۲۰۲۶ |
+| معماری نرم‌افزار | کنترل پلن کاملاً منبع‌باز مبتنی بر RISC-V، فریمور منبع‌باز، کامپایلر باز |
 
-- **AWS partnered with Cerebras** two months before the IPO ([Amazon announcement](https://press.aboutamazon.com/aws/2026/3/aws-and-cerebras-collaboration-aims-to-set-a-new-standard-for-ai-inference-speed-and-performance-in-the-cloud)). The announced offering is a cross-chip split sold through Bedrock (Trainium prefill, CS-3 decode), promised "in the next couple of months", and AWS said open-weight models and Amazon Nova would follow on Cerebras hardware later in 2026. Check current Bedrock availability before designing around it.
-- The Cerebras Cloud API has been used as a quick second source for teams whose primary stack is GPU-based and want a latency edge without porting.
+این سیستم برای دیتاسنترهای حاکمیتی و کلودهایی که خواهان فرار از انحصار نرم‌افزاری CUDA هستند گزینه‌ای اقتصادی و جذاب برای استنتاج است.
 
-Since the IPO, wafer-scale has stopped being the only route to extreme per-user speed. OpenAI previewed **GPT-5.6 Sol Ultrafast** on Cerebras at up to 750 output tok/s for select customers (pipelined across CS-3 systems at layer boundaries), but NVIDIA says GPT-6 Astra's Ultrafast tier runs on Blackwell GPUs (Ultrafast has since opened to all API users on GPT-6.1 Sol), and in an Artificial Analysis run NVIDIA's LPX served Gemma 4 31B at 100K context at about 3,400 output tok/s against 882 tok/s for Cerebras (per The Register). Cerebras introduced the **CS-4** on August 18, 2026 (three WSE-3 Turbo processors per system) and said first shipments would begin in Q3 2026; it has also announced CS-5 for 2027. Confirm actual delivery before planning around either. Treat "fastest tokens per user" as a contested, separately priced tier, not a single-vendor niche.
+### پروژه Stargate و مقیاس سرمایه‌گذاری‌های ابری
 
-The IPO is structurally important because it changes the financing thesis: there is now a public-market path for a non-NVIDIA inference vendor, which makes it cheaper for the next entrants to raise.
+مقیاس توسعه زیرساخت‌ها فراتر از تراشه‌ها رفته و مستقیماً به تأمین نیرو و ابعاد نیروگاه‌ها گره خورده است. پروژه **Stargate** (پلتفرم زیرساختی مشترک OpenAI با اوراکل و سافت‌بانک) در سپتامبر ۲۰۲۵ به هدف **۱۰ گیگاوات و ۵۰۰ میلیارد دلار** هدف‌گذاری شد. به گفته سم آلتمن، تعهدات دیتاسنتری این شرکت در افق هشت ساله به حدود **۱.۴ تریلیون دلار** می‌رسد. با این حال گلوگاه واقعی محدودیت‌های فیزیکی تأمین برق، بسته‌بندی پیشرفته و ظرفیت حافظه HBM در جهان است؛ ضمن اینکه مخالفت‌های محلی در آمریکا روند صدور مجوز برای دیتاسنترهای هوش مصنوعی را به چالش کشیده است.
 
-### Tenstorrent Galaxy Blackhole
+این فشارها به بازار اجاره سرورها نیز منتقل شده است: قیمت اجاره هر کارت B200 از ۵.۸۸ دلار در اوایل اکتبر به ۶.۷۰ دلار در نوامبر ۲۰۲۶ رسید؛ در حالی که قیمت توکن‌های API به طور مداوم افت کرد. بنابراین نقطه سربه‌سر اقتصادی میان میزبانی اختصاصی و API به نفع APIها جابه‌جا شده است.
 
-[Tenstorrent's Galaxy](https://tenstorrent.com/hardware/galaxy) reached general availability on **April 28, 2026** ([Tenstorrent announcement](https://tenstorrent.com/newsroom/tenstorrent-enables-ai-at-scale-with-industry-leading-performance)).
+### استراتژی ناوگان سه لایه‌ای (Three-Tier Fleet Strategy)
 
-| Spec | Galaxy Blackhole |
-|------|------------------|
-| Per-server | **32 Blackhole chips** |
-| Per-chip | RISC-V cores and Tensix tiles |
-| Peak BlockFP8 | **~23 PFLOPS** per server |
-| Memory | 1 TB GDDR6 at 16 TB/s, plus 6.2 GB of on-chip SRAM |
-| List price | Starting at **$160,000** per 32-chip server on Tenstorrent's product page in October 2026; the April launch announcement listed the same 32-chip, 23 PFLOPS configuration starting at $110,000 |
-| Architecture | Fully open RISC-V control plane, open firmware, open compiler |
-
-The open-source RISC-V story matters for two audiences:
-
-- **Hyperscalers and sovereign clouds** that want a non-CUDA stack with full visibility into firmware and toolchain.
-- **Research labs** building custom kernels who hit walls with CUDA's closed bits.
-
-Even at $160K, a Galaxy server costs a small fraction of an NVL72-class rack. It is not a frontier-training competitor. It is an inference and small-fine-tuning competitor that wins on hardware cost for models that fit in its memory.
-
-### Stargate and the Scale of Cloud Commitments
-
-The capacity story is no longer just about chips; it is about the buildings around them.
-
-- **Stargate** (OpenAI's infrastructure platform with Oracle and SoftBank) reached nearly **7 GW** of planned capacity and over **$400B** of planned investment when five new US sites joined the Abilene, Texas flagship in September 2025, against a **$500B, 10 GW** target ([OpenAI announcement](https://openai.com/index/five-new-stargate-sites/)).
-- Across all partners, Sam Altman put OpenAI's data center commitments at about **$1.4 trillion over eight years** (November 2025, [TechCrunch](https://techcrunch.com/2025/11/06/sam-altman-says-openai-has-20b-arr-and-about-1-4-trillion-in-data-center-commitments/)).
-
-The architectural implication for senior engineers: **announced gigawatts are not deliverable gigawatts**. A Jefferies estimate (via The Register, September 30, 2026) puts US datacenter deployments at about 16-18 GW in 2026, with a practical ceiling in the low 20s of GW for 2027, capped by advanced packaging and power. Micron says HBM and DRAM demand exceeds supply through 2028 (per The Register), so memory, not logic, gates accelerator supply and makes host-DRAM KV offload tiers more expensive. Local politics is now a constraint too: on November 3, 2026, AI data-center development was on local ballots 41 times in 10 states and voters sided with the industry only once (Scientific American's tally), with Wells, Maine approving a retroactive 180-day moratorium and Emporia, Kansas a construction ban. If you plan to build your own GPU capacity, site approval belongs on the critical path.
-
-The squeeze shows in rental prices. Silicon Data's B200 index was up 27.6% year to date entering September, then read $6.50 per GPU-hour on November 1, 2026 and $6.70 on November 5, about 14% above its October 7 reading of $5.88 (November 5 readings for the other parts: B300 flat at $7.56, H200 $3.51, H100 $2.97; read the daily table, because the index pages' FAQ shows stale "current" prices). Per-token API prices kept falling over the same period (GPT-6 Sol launched on September 22 at $2/$10 per 1M tokens against $5/$30 list for GPT-5.6 Sol, and in October Claude Haiku 5.5 arrived at $0.10/$0.50 and GPT-6.1 Terra at $1/$5), so in 2026 the self-host break-even moved toward APIs for teams that rent their GPUs. Multi-vendor and multi-region capacity contracts matter more than they did when GPUs were getting cheaper every quarter.
-
-### A Three-Tier Fleet Strategy
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -696,123 +727,116 @@ flowchart TD
     E --> E3[Hardwired-model ASICs for one stable high-volume model]
 ```
 
-| Tier | What It Serves | Default Hardware | Why |
-|------|----------------|-------------------|-----|
-| **Tier 1: Training and Heavy Compute** | Frontier model training, reasoning-heavy inference, multi-trillion-parameter MoE | **Vera Rubin NVL72**, **GB300 NVL72**, **MI455X Helios**, **TPU7x** | Need NVLink-class coherency and the largest HBM pools available |
-| **Tier 2: High-Throughput Inference** | API products, RAG backends, agent platforms | **Trainium3**, **MI455X**, **B300**, cross-chip prefill/decode (**Rubin + LPX**, plus the announced **Trainium + Cerebras** and **Helios + Cerebras**) for the premium-latency slice | Optimize for goodput at the SLO and predictable P99, often MoE-aware |
-| **Tier 3: Edge and Specialty** | Latency-critical, sovereign, open-source-firmware mandated, low total spend | **Tenstorrent Galaxy**, **Apple Silicon**, consumer GPUs, hardwired-model ASICs | $/perf, open stack, regulatory locality |
+</div>
 
-The framing that matters in 2026: **no senior architect designs a serious AI product around a single vendor anymore**. The capacity is too contested, the price moves too fast, and the failure modes are too correlated within a single vendor's stack. Multi-vendor is the new default.
+| لایه | چه نیازمندی‌هایی را پوشش می‌دهد | سخت‌افزار پیش‌فرض | دلایل انتخاب |
+|---|---|---|---|
+| **لایه ۱: آموزش و محاسبات سنگین** | آموزش مدل‌های پیشرو، استنتاج استدلالی سنگین، مدل‌های عظیم MoE چندتریلیون پارامتری | **رک‌های Vera Rubin NVL72**، **رک‌های GB300 NVL72**، **رک‌های MI455X Helios**، **تراشه‌های TPU7x** | نیاز حیاتی به یکپارچگی حافظه در سطح NVLink و بزرگ‌ترین استخرهای حافظه HBM |
+| **لایه ۲: استنتاج با توان بالا** | محصولات API، بک‌اندهای RAG، پلتفرم‌های عاملی | **تراشه‌های Trainium3**، **پردازنده‌های MI455X**، **شتاب‌دهنده‌های B300**، تفکیک پیش‌پر کردن/کدگشایی چندتراشه‌ای (مانند **Rubin + LPX**) | بهینه‌سازی توان خروجی معتبر بر اساس SLO و ثبات صدک ۹۹، متناسب با معماری MoE |
+| **لایه ۳: پردازش لبه و تخصصی** | سیستم‌های فوق سریع در تأخیر، دیتاسنترهای حاکمیتی، الزام به فریمور منبع‌باز، بودجه کل پایین | **سرورهای Tenstorrent Galaxy**، **تراشه‌های Apple Silicon**، کارتهای گرافیکی تجاری، تراشه‌های اختصاصی ثابت | بهینگی هزینه نسبت به عملکرد، پشته باز، الزامات رگولاتوری منطقه‌ای |
 
-### Take-Aways for Capacity Planning
-
-- Plan around **memory per accelerator** as much as FLOPS. MoE serving is bottlenecked on expert residency, and memory is now the supply constraint as well.
-- Treat **CUDA lock-in as a real cost**. ROCm 10.x is good enough for most production serving. Neuron is good enough for Anthropic and any team willing to do the porting work. Open RISC-V is good enough for cost-sensitive inference.
-- The hyperscaler choice now drives the chip choice as much as the other way around. AWS = Trainium + NVIDIA, with Cerebras announced. Microsoft = NVIDIA + Maia. Google = TPU7x + NVIDIA (among the first Vera Rubin clouds). Oracle = NVIDIA at scale (generally available Vera Rubin NVL72 since October 27), plus Google TPU 8t and 8i from 2027 (scheduled), so from 2027 TPU access no longer implies Google Cloud. The labs build their own: OpenAI runs NVIDIA, has its first AMD Helios racks online (per AMD, November 3), and plans its own Jalapeño from late 2026 (announced).
-- **API $/token keeps falling** (for constant capability, a16z's [LLMflation analysis](https://a16z.com/llmflation-llm-inference-cost/) measured about 10x per year through 2024), but **GPU-hours got more expensive in 2026**. On September 7, a 12-month B200 term priced at $5.39 per GPU-hour against $5.73 for 3 months (Silicon Data), so longer terms are now the cheaper way to rent, the opposite of the old "wait for spot to fall" assumption.
-- **Evaluate hardware on Pareto curves under agentic traffic** (multi-turn, long context, high prefix reuse), at your interactivity SLO. MLPerf Inference v6.1 (September 16, 2026) added end-to-end RAG and edge agentic benchmarks for the same reason.
+پیام بنیادین برای سال ۲۰۲۶ این است: **هیچ معمار ارشد سیستمی دیگر پروژه‌ای جدی را منحصراً حول یک تأمین‌کننده واحد طراحی نمی‌کند.** تنوع چندتأمینی (Multi-vendor) به استاندارد جدید تبدیل شده است.
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-### Q: How would you design infrastructure for 1M LLM queries per day?
+### پرسش: چگونه زیرساخت پاسخگویی به یک میلیون کوئری LLM در روز را طراحی می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
+حجم ۱ میلیون کوئری در روز معادل میانگین ۱۲ درخواست در ثانیه است، با این احتمال که در ساعات اوج بار به ۳ تا ۵ برابر این مقدار برسد. رویکرد من به این شرح است:
 
-"At 1M queries per day, that is about 12 queries per second on average, with peaks potentially 3-5x higher. Here is my approach:
+**معماری:**
+- استفاده از توزیع‌کننده بار (Load Balancer) در سراسر چندین اندپوینت و منطقه ابری
+- بهره‌گیری از مسیریاب مدل (Model Router) برای بهینه‌سازی هزینه (ارسال پرسش‌های ساده به مدل‌های سبک‌تر)
+- لایه کش Redis برای پرسش‌های متداول و پرکاربرد
+- معماری صف‌بندی‌شده ناهمگام برای بارهای کاری غیربلادرنگ
 
-**Architecture:**
-- Load balancer distributing across multiple API endpoints
-- Model router for cost optimization (route simple queries to cheaper models)
-- Redis cache for frequent queries
-- Queue-based processing for async workloads
+**بهینه‌سازی هزینه در این مقیاس حیاتی است:**
+- هدایت ۶۰ تا ۷۰ درصد درخواست‌های ساده به یک مدل بسیار ارزان (مانند GPT-6 Luna یا Claude Haiku 5.5 با حفظ اندازه پرامپت زیر سقف ۱۰۰ هزار توکن)
+- حفظ ثبات پیشوند پرامپت‌ها برای بهره‌مندی حداکثری از کش ارائه‌دهنده، به‌همراه کش معنایی با هدف اصابت بالای ۳۰ درصد
+- استفاده از رده‌های Batch یا Flex برای درخواست‌های غیرفوری با تخفیف ۵۰ درصدی
+- در این مقیاس، میزبانی محلی برای وظایف تخصصی مشخص از نظر اقتصادی کاملاً رقابتی می‌شود
 
-**Cost optimization is critical at this scale:**
-- Route 60-70% of simple queries to a small model (GPT-6 Luna, or Claude Haiku 5.5 with prompts kept under its 100K-token price threshold)
-- Keep the static prefix stable for provider prompt caching, and add semantic caching (30%+ hit rate target)
-- Use batch or Flex tiers for non-urgent requests (50% discount)
-- At this volume, self-hosting becomes cost-competitive for the high-volume narrow tasks
+**قابلیت اطمینان و پایداری:**
+- ساختار چندتأمینی همراه با بازگشت خودکار میان ارائه‌دهندگان مختلف (نه صرفاً بین مدل‌های یک شرکت)
+- محدودسازی نرخ درخواست (Rate Limiting) به ازای هر کاربر برای پیشگیری از سوءاستفاده
+- معماری مبتنی بر صف جهت مهار جهش‌های ناگهانی ترافیک
+- افت عملکرد تدریجی (Graceful degradation) در زمان بروز قطعی نزد ارائه‌دهندگان
 
-**Reliability:**
-- Multi-provider setup with automatic failover across vendors, not just models
-- Rate limiting per user to prevent abuse
-- Queue-based architecture for handling spikes
-- Graceful degradation when providers are unavailable
+**پایش و مانیتورینگ:**
+- رصد هزینه‌ها به‌صورت بلادرنگ همراه با هشدارهای چندسطحی بودجه
+- پایش صدک‌های تأخیر (p50، p95، p99)
+- ارزیابی مداوم کیفیت خروجی با نمونه‌گیری دوره‌ای
+- ردگیری نرخ خطاها و برخوردهای نرخ مجاز (Rate limit hits)
 
-**Monitoring:**
-- Real-time cost tracking with budget alerts
-- Latency percentiles (p50, p95, p99)
-- Quality metrics sampled continuously
-- Error rate and rate-limit hit tracking
+در حجم ۱ میلیون کوئری با فرضیات میانگین ۲ هزار توکن ورودی و ۲ هزار توکن خروجی، هزینه یک مدل رده متوسط (نرخ ۲ / ۱۰ دلار) حدود ۲۴ هزار دلار در روز است. مسیریابی ۶۵ درصد ترافیک به یک مدل ارزان قیمت این صورت‌حساب را به حدود ۹ هزار دلار در روز می‌رساند. توکن‌های خروجی بخش عمده هزینه را تشکیل می‌دهند، بنابراین تعیین سقف دقیق برای طول خروجی مهم‌ترین اهرم بعدی صرفه‌جویی است.
 
-At 1M queries with 2K input and 2K output tokens each, a $2/$10 mid-tier model (GPT-6 Sol or Claude Sonnet 5.5 list price) costs about $24K/day: $4K of input and $20K of output. Routing 65% of traffic to GPT-6 Luna ($0.10/$0.50) brings that to roughly $9K/day, and caching the static prefix trims the input share further. Output dominates the bill here, so capping output length is the next lever."
+### پرسش: چه زمانی میزبانی اختصاصی (سلف‌هاستد) را به استفاده از APIهای ابری ترجیح می‌دهید؟
 
-### Q: When would you self-host vs use API providers?
+**پاسخ قوی:**
+چارچوب تصمیم‌گیری من شامل چندین فاکتور اساسی است:
 
-**Strong answer:**
+**استفاده از ارائه‌دهندگان API زمانی که:**
+- حجم کوئری‌ها کمتر از ۱ میلیون درخواست در ماه است (نقطه سربه‌سر هزینه)
+- زمان ورود به بازار (Time-to-Market) یک اولویت فوری است
+- تیم فاقد تجربه عمیق در مهندسی زیرساخت‌های GPU است
+- دسترسی فوری به جدیدترین مدل‌های مرزی جهان ضروری است
+- حجم بار کاری متغیر و غیرقابل پیش‌بینی است
 
-"My decision framework considers several factors:
+**انتخاب میزبانی اختصاصی (Self-host) زمانی که:**
+- الزامات قانونی و امنیتی خروج داده‌ها از شبکه سازمان را ممنوع می‌کنند
+- حجم پردازش ماهانه از ۱۰ میلیون کوئری فراتر می‌رود (صرفه‌جویی مقیاس)
+- نیاز به تأخیر زیر ۱۰۰ میلی‌ثانیه در صدک ۹۹ وجود دارد
+- نیاز به شخصی‌سازی وزن‌های مدل یا فرآیندهای فاین‌تیونینگ اختصاصی است
+- کنترل کامل بر رفتار مدل و حذف تغییرات ناگهانی سمت سرور ارائه‌دهنده الزامی است
 
-**Use API providers when:**
-- Volume is under 1M queries/month (cost crossover point)
-- Time-to-market is critical
-- Team lacks GPU infrastructure expertise
-- You want the latest models immediately
-- Workload is variable and hard to predict
+**رویکرد ترکیبی (Hybrid) معمولاً بهترین نتیجه را به همراه دارد:**
+- میزبانی محلی برای بارهای کاری پایدار، پرتکرار و با حجم بالا
+- استفاده از API برای جهش‌های ترافیکی پیش‌بینی‌نشده و مدل‌های تخصصی
+- استفاده از API به‌عنوان مسیر جایگزین (Fallback) در صورت بروز مشکل در سرورهای محلی
 
-**Self-host when:**
-- Data cannot leave your infrastructure (compliance, security)
-- Volume exceeds 10M queries/month (significant savings)
-- You need latency under 100ms P99
-- You need custom model weights or fine-tuning
-- You want full control over model behavior
+هزینه‌های پنهان میزبانی اختصاصی را نباید نادیده گرفت: خرید یا اجاره سرورهای گران‌قیمت، زمان مهندسی برای مدیریت و عیب‌یابی، و پچ کردن مداوم موتورهای سرویس‌دهی که مدام آسیب‌پذیری‌های امنیتی منتشر می‌کنند (حداقل نیازمند ۱ تا ۲ مهندس زیرساخت اختصاصی). در بازار ۲۰۲۶ که هزینه اجاره سرورها بالا رفته و مدل‌های کوچک API بسیار ارزان شده‌اند، توجیه سلف‌هاستد امروزه بیشتر بر پایه امنیت، تأخیر و استقلال شکل می‌گیرد تا صرفاً قیمت.
 
-**Hybrid approach often works best:**
-- Self-host for high-volume predictable workloads
-- API for spikes and specialized models
-- API as fallback for self-hosted failures
+### پرسش: چگونه یک شتاب‌دهنده سخت‌افزاری یا پلتفرم سرویس‌دهی جدید را برای ناوگان زیرساختی خود ارزیابی می‌کنید؟
 
-The hidden costs of self-hosting: GPU procurement/rental, engineering time for ops, model updates, monitoring infrastructure, and patching a serving engine that now ships security advisories every few weeks. Factor in at least 1-2 dedicated engineers for infrastructure. The 2026 market also moved against renters: GPU-hour prices rose while small API models fell to $0.10/$0.50 per 1M tokens (GPT-6 Luna, Claude Haiku 5.5), which undercuts most self-hosted open-weight serving for routing and classification. Today the self-host case rests on data control, latency, or customization more often than on price."
+**پاسخ قوی:**
+من هرگز کار را با ادعای تبلیغاتی تولید توکن در ثانیه (که معمولاً روی بچ سایز ۱ گزارش می‌شود و در پروداکشن وجود ندارد) آغاز نمی‌کنم. فرآیند ارزیابی من به این شرح است:
 
-### Q: How would you evaluate a new accelerator or serving platform for your fleet?
+۱. **بازپخش الگوی ترافیک واقعی سازمان.** بارهای کاری عاملی چندنوبته، دارای زمینه‌های طولانی و با استفاده مکرر از پیشوندها هستند؛ بنابراین از تریس‌های واقعی بازپخش‌شده یا بنچمارک‌های عاملی مانند AgentX استفاده می‌کنم نه بارهای ساختگی تک‌نوبته.
+۲. **ترسیم منحنی پارتو (Pareto Curve)** میان توان عملیاتی کل و میزان تعامل‌پذیری هر کاربر، و قرائت نتایج در سطح تعهدات خدمت (SLO) سازمان. تفاوت میان ادعاهای تبلیغاتی و واقعیت در همین نقطه آشکار می‌شود (مثلاً تفاوت ۶۷ برابری در برابر برتری ۱.۱۴ برابری روبین بر مبنای توان بر مگاوات).
+۳. **بررسی ظرفیت حافظه در وهله اول:** حجم وزن‌ها به‌علاوه کش KV در حداکثر همروندی، اقامت کامل کارشناسان در مدل‌های MoE، و در معماری‌های تفکیک‌شده هزینه انتقال کش میان استخرها (حدود ۳ گیگابایت برای پرامپت ۱۰ هزار توکنی در مدل ۷۰ میلیاردی).
+۴. **محاسبه هزینه و پختگی پشته نرم‌افزاری.** عدم بهینگی کرنل‌ها می‌تواند نتایج را معکوس کند؛ تست‌ها باید روی همان نسخه دقیق موتوری انجام شوند که در پروداکشن استفاده خواهد شد.
+۵. **سنجش ریسک تأمین و قفل شدن به تأمین‌کننده:** تاریخ‌های تحویل واقعی، تعهدات دوره‌ای اجاره، و میزان کدهای وابسته به CUDA که به سیستم تحمیل می‌شود.
 
-**Strong answer:**
-
-"I would not start from the vendor's headline tokens per second, which is usually a batch-1 number nobody sees in production. I would:
-
-1. **Replay my own traffic shape.** Agentic workloads are multi-turn, long-context and prefix-heavy, so I would use a trace replay or an agentic benchmark such as SemiAnalysis's AgentX rather than a synthetic single-turn load.
-2. **Plot the Pareto curve** of total throughput against per-user interactivity, and read it at my SLO. The same Rubin-versus-GB300 comparison came out at about 67x per TCO at 170 tok/s per user under ownership costs and about 1.6x on 3-year rental at 80 tok/s P90 (analyst figures), and Artificial Analysis's independent AA-AgentPerf run measured only 1.14x to 1.45x peak throughput per megawatt. The operating point and the cost basis decide the answer.
-3. **Check memory first:** weights plus KV cache at my concurrency, expert residency for MoE, and for disaggregated setups the KV transfer cost between pools (about 3 GB per 10K-token prompt on a 70B BF16 model).
-4. **Price the software path.** Kernel maturity can flip results: NVIDIA's own Dynamo recipe for one model ran BF16 80% faster than NVFP4 on Marlin kernels. I would test with the engine version I would actually run.
-5. **Assess supply and lock-in:** delivery dates, rental term structure, second-source options, and how much CUDA-specific code I would be committing to.
-
-Then I would run a shadow slice of production on it before any capacity commitment."
+در نهایت، پیش از هرگونه تعهد مالی سنگین، بخشی از ترافیک سایه (Shadow Traffic) پروداکشن را روی آن مستقر کرده و عملکرد را در عمل می‌سنجم.
 
 ---
 
-## References
+## منابع <a id="references"></a>
 
-- vLLM: https://docs.vllm.ai/
-- SGLang: https://github.com/sgl-project/sglang
-- TensorRT-LLM: https://github.com/NVIDIA/TensorRT-LLM
-- NVIDIA Dynamo: https://github.com/ai-dynamo/dynamo
-- Text Generation Inference (maintenance mode): https://github.com/huggingface/text-generation-inference
-- NVIDIA Vera Rubin NVL72: https://www.nvidia.com/en-us/data-center/vera-rubin-nvl72/
-- NVIDIA Groq 3 LPX: https://nvidianews.nvidia.com/news/nvidia-groq-3-lpx-now-in-full-production-with-world-class-speed-for-agentic-ai
-- SemiAnalysis, Vera Rubin NVL72 agentic inference: https://newsletter.semianalysis.com/p/vera-rubin-nvl72-agentic-inference
-- Artificial Analysis, Vera Rubin NVL72 on AA-AgentPerf: https://artificialanalysis.ai/articles/vera-rubin-nvl72-agentperf
-- vLLM advisory GHSA-4xqp-c3mv-qff7 (engine hang behind a healthy `/health`): https://github.com/vllm-project/vllm/security/advisories/GHSA-4xqp-c3mv-qff7
-- Amazon Bedrock model lifecycle: https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html
-- Vertex AI model versions and retirement dates: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
-- AMD ROCm release notes: https://rocm.docs.amd.com/en/latest/about/release-notes.html
-- AMD Q3 2026 prepared remarks (November 3, 2026): https://newsroom.amd.com/documents/2026/11/84f4476b-f064-4f0f-957c-fe484853e178.pdf?download=1
-- Oracle and Google, TPUs on Oracle Cloud Infrastructure (October 27, 2026): https://www.googlecloudpresscorner.com/2026-10-27-Oracle-Brings-Google-TPUs-to-Oracle-Cloud-Infrastructure
-- Scientific American, 2026 data-center ballot results: https://www.scientificamerican.com/article/2026-election-results-show-widespread-opposition-to-ai-data-centers/
-- Silicon Data rental indexes: https://www.silicondata.com/products/silicon-index/b200 (also /b300, /h200, /h100)
-- OpenAI Pricing: https://developers.openai.com/api/docs/pricing
-- Anthropic Pricing: https://platform.claude.com/docs/en/about-claude/pricing
+- مستندات vLLM: https://docs.vllm.ai/
+- مستندات SGLang: https://github.com/sgl-project/sglang
+- مستندات TensorRT-LLM: https://github.com/NVIDIA/TensorRT-LLM
+- مستندات NVIDIA Dynamo: https://github.com/ai-dynamo/dynamo
+- مخزن Text Generation Inference (در حالت نگهداری): https://github.com/huggingface/text-generation-inference
+- مستندات NVIDIA Vera Rubin NVL72: https://www.nvidia.com/en-us/data-center/vera-rubin-nvl72/
+- مستندات NVIDIA Groq 3 LPX: https://nvidianews.nvidia.com/news/nvidia-groq-3-lpx-now-in-full-production-with-world-class-speed-for-agentic-ai
+- تحلیل SemiAnalysis پیرامون استنتاج عاملی در Vera Rubin NVL72: https://newsletter.semianalysis.com/p/vera-rubin-nvl72-agentic-inference
+- گزارش Artificial Analysis پیرامون بنچمارک AA-AgentPerf در Vera Rubin NVL72: https://artificialanalysis.ai/articles/vera-rubin-nvl72-agentperf
+- هشدار امنیتی vLLM با شناسه GHSA-4xqp-c3mv-qff7: https://github.com/vllm-project/vllm/security/advisories/GHSA-4xqp-c3mv-qff7
+- مستندات چرخه حیات مدل‌های Amazon Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html
+- نسخه‌ها و تاریخ‌های بازنشستگی مدل‌ها در Vertex AI: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+- توضیحات انتشار پلتفرم AMD ROCm: https://rocm.docs.amd.com/en/latest/about/release-notes.html
+- بیانیه مالی شرکت AMD برای سه‌ماهه سوم ۲۰۲۶ (۳ نوامبر ۲۰۲۶): https://newsroom.amd.com/documents/2026/11/84f4476b-f064-4f0f-957c-fe484853e178.pdf?download=1
+- اطلاعیه همکاری اوراکل و گوگل در ارائه TPUها روی OCI (۲۷ اکتبر ۲۰۲۶): https://www.googlecloudpresscorner.com/2026-10-27-Oracle-Brings-Google-TPUs-to-Oracle-Cloud-Infrastructure
+- گزارش مجله Scientific American از نتایج آرای مردمی پیرامون دیتاسنترها: https://www.scientificamerican.com/article/2026-election-results-show-widespread-opposition-to-ai-data-centers/
+- شاخص‌های قیمت اجاره سیلیکون در Silicon Data: https://www.silicondata.com/products/silicon-index/b200
+- ساختار قیمت‌گذاری OpenAI: https://developers.openai.com/api/docs/pricing
+- ساختار قیمت‌گذاری Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
 
 ---
 
-*Next: [CI/CD for LLM Applications](02-cicd.md)*
+*مبحث بعدی: [خطوط لوله CI/CD برای برنامه‌های LLM](02-cicd.md)*
+
+</div>
