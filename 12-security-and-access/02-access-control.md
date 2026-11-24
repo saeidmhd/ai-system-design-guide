@@ -1,48 +1,52 @@
-# Access Control for LLM Systems
+<div dir="rtl">
 
-Secure access control is essential for multi-user and multi-tenant LLM applications. This chapter covers authentication, authorization, and data isolation patterns.
+# کنترل دسترسی برای سیستم‌های LLM (Access Control for LLM Systems)
 
-## Table of Contents
+کنترل دسترسی امن برای برنامه‌های کاربردی چندکاربره و چندمستاجره مبتنی بر مدل‌های بزرگ زبان (LLM) امری حیاتی است. این فصل الگوهای احراز هویت، مجوزدهی، و ایزوله‌سازی داده‌ها را پوشش می‌دهد.
 
-- [Access Control Requirements](#access-control-requirements)
-- [Authentication Patterns](#authentication-patterns)
-- [Authorization Models](#authorization-models)
-- [Agent and Tool Authorization](#agent-and-tool-authorization)
-- [Tenant Isolation](#tenant-isolation)
-- [API Key Management](#api-key-management)
-- [Audit and Compliance](#audit-and-compliance)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Access Control Requirements
-
-### Security Dimensions
-
-| Dimension | Description | Controls |
-|-----------|-------------|----------|
-| **Authentication** | Who is making the request? | API keys, OAuth, JWT, workload identity |
-| **Authorization** | What can they do? | RBAC, ABAC, policies |
-| **Isolation** | What data can they see? | Tenant filtering, encryption |
-| **Audit** | What did they do? | Logging, compliance reports |
-
-### LLM-Specific Concerns
-
-| Concern | Risk | Mitigation |
-|---------|------|------------|
-| Prompt injection | Bypass access controls | Input validation |
-| Data leakage | Cross-tenant exposure | Strict filtering |
-| Model output | Expose protected info | Output filtering |
-| Context pollution | Inject unauthorized data | Context validation |
-| Agent credentials | A hijacked agent or assistant session reuses its tokens | Scoped, short-lived, sender-constrained tokens |
-| Confused deputy across tool servers | One server steers credentials meant for another | Bind every credential to its issuer and audience |
+- [الزامات کنترل دسترسی (Access Control Requirements)](#الزامات-کنترل-دسترسی-access-control-requirements)
+- [الگوهای احراز هویت (Authentication Patterns)](#الگوهای-احراز-هویت-authentication-patterns)
+- [مدل‌های مجوزدهی (Authorization Models)](#مدلهای-مجوزدهی-authorization-models)
+- [مجوزدهی به ایجنت و ابزار (Agent and Tool Authorization)](#مجوزدهی-به-ایجنت-و-ابزار-agent-and-tool-authorization)
+- [ایزوله‌سازی مستاجران (Tenant Isolation)](#ایزولهسازی-مستاجران-tenant-isolation)
+- [مدیریت کلیدهای API (API Key Management)](#مدیریت-کلیدهای-api-api-key-management)
+- [ممیزی و انطباق (Audit and Compliance)](#ممیزی-و-انطباق-audit-and-compliance)
+- [پرسش‌های مصاحبه (Interview Questions)](#پرسشهای-مصاحبه-interview-questions)
+- [مراجع (References)](#مراجع-references)
 
 ---
 
-## Authentication Patterns
+## الزامات کنترل دسترسی (Access Control Requirements)
 
-### API Key Authentication
+### ابعاد امنیتی
+
+| بعد امنیتی (Dimension) | شرح | ابزارهای کنترلی |
+|---|---|---|
+| **احراز هویت (Authentication)** | چه کسی درخواست می‌دهد؟ | کلیدهای API، پروتکل OAuth، توکن JWT، هویت بار کاری (Workload identity) |
+| **مجوزدهی (Authorization)** | چه کارهایی مجاز است انجام دهد؟ | مدل‌های RBAC، مدل‌های ABAC، سیاست‌ها |
+| **ایزوله‌سازی (Isolation)** | چه داده‌هایی را می‌تواند ببیند؟ | فیلتر کردن بر اساس مستاجر، رمزنگاری |
+| **بازرسی و ممیزی (Audit)** | چه کارهایی انجام داده است؟ | لاگ‌گیری، گزارش‌های انطباق قانونی |
+
+### دغدغه‌های خاص سیستم‌های LLM
+
+| دغدغه امنیتی | ریسک | راهکار کاهش ریسک |
+|---|---|---|
+| تزریق پرامپت (Prompt injection) | دور زدن کنترل‌های دسترسی | اعتبارسنجی ورودی |
+| نشت داده‌ها (Data leakage) | افشای اطلاعات میان مستاجران | فیلتر کردن دقیق و سخت‌گیرانه |
+| خروجی مدل (Model output) | افشای اطلاعات حفاظت‌شده | فیلتر کردن خروجی |
+| آلودگی کانتکست (Context pollution) | تزریق داده‌های غیرمجاز | اعتبارسنجی کانتکست |
+| اعتبارات ایجنت (Agent credentials) | نشست ایجنت یا دستیار نفوذیافته از توکن‌های خود سوءاستفاده کند | توکن‌های کوتاه‌مدت، دارای دامنه محدود (Scoped)، و مقید به فرستنده (Sender-constrained) |
+| نایب گیج‌شده در میان سرورهای ابزار (Confused deputy across tool servers) | یک سرور اعتبارات در نظر گرفته‌شده برای دیگری را هدایت کند | پیوند دادن هر اعتبار به صادرکننده و مخاطب آن |
+
+---
+
+## الگوهای احراز هویت (Authentication Patterns)
+
+### احراز هویت با کلید API
+
+<div dir="ltr">
 
 ```python
 class APIKeyAuthenticator:
@@ -79,7 +83,11 @@ class APIKeyAuthenticator:
         return hashlib.sha256(key.encode()).hexdigest()
 ```
 
-### JWT with Scopes
+</div>
+
+### توکن JWT همراه با دامنه‌های دسترسی (Scopes)
+
+<div dir="ltr">
 
 ```python
 class JWTAuthenticator:
@@ -108,23 +116,27 @@ class JWTAuthenticator:
             return AuthResult(authenticated=False, error=str(e))
 ```
 
-### Workload Identity Instead of Static Keys
+</div>
 
-Static API keys are the weakest link in an agent fleet, and attackers now hunt them by name. The ChainDrop npm worm (August 2026) harvested OpenAI, Anthropic, Cursor, Codex and Gemini tokens alongside cloud and GitHub credentials. Mandiant described an intrusion in which an attacker took over a live AI coding-assistant session, the assistant recommended an already-poisoned package, and stolen GitHub OAuth tokens let the Shai-Hulud worm spread across about 100 internal repositories. Providers have moved accordingly: OpenAI made mutual TLS and X.509 workload identity federation GA (August 29, 2026), added API key expiration with org- and project-level maximum lifetimes (September 10), and lets admins restrict or disable key creation (September 15).
+### هویت بار کاری (Workload Identity) به جای کلیدهای استاتیک
 
-**Stolen credentials are billed by the hour.** Google Threat Intelligence Group and Mandiant reported on November 3, 2026 that LLMjacking incidents they handled ran up more than $100,000 in fraudulent charges in a single day and up to $1 million cumulatively before access was revoked; one actor made more than 500,000 LLM API calls in under eight hours through a resale service, passing nearly $1 million in token costs to the victim (vendor-reported). The entry point was stolen cloud identity (IAM credentials, service account keys, GitHub PATs, session tokens), not a model bug, and the attackers' habits are detectable: they validated keys with `max_tokens=1` requests, switched on LLM services the victim had never used, and probed exposed Ollama `/api/create` endpoints. That makes per-key quotas and spend caps a security control, not only a FinOps one, and it makes "LLM service enabled in an account that never used it" an alert worth wiring up.
+کلیدهای استاتیک API ضعیف‌ترین حلقه در ناوگان ایجنت‌ها هستند و مهاجمان اکنون آنها را بر اساس نام شکار می‌کنند. کرم npm موسوم به ChainDrop (آگوست ۲۰۲۶) توکن‌های OpenAI، Anthropic، Cursor، Codex و Gemini را در کنار اعتبارات ابری و گیت‌هاب سرقت می‌کرد. شرکت Mandiant نفوذی را توصیف کرد که در آن مهاجم یک نشست زنده دستیار کدنویسی AI را در دست گرفت، دستیار یک پکیج از پیش مسموم‌شده را پیشنهاد داد، و توکن‌های مسروقه OAuth گیت‌هاب باعث انتشار کرم Shai-Hulud در حدود ۱۰۰ مخزن داخلی شدند. ارائه‌دهندگان متناسب با این موضوع حرکت کرده‌اند: شرکت OpenAI قابلیت احراز هویت متقابل TLS (mTLS) و فدراسیون هویت بار کاری با گواهی‌های X.509 را به مرحله GA رساند (۲۹ آگوست ۲۰۲۶)، انقضای کلیدهای API را با سقف طول عمر در سطح سازمان و پروژه اضافه کرد (۱۰ سپتامبر)، و به ادمین‌ها اجازه محدودسازی یا غیرفعال کردن ساخت کلید را داد (۱۵ سپتامبر).
 
-The rules that follow:
+**اعتبارات سرقت‌شده بر اساس ساعت صورت‌حساب می‌شوند:** گروه اطلاعات تهدیدات گوگل (GTIG) و Mandiant در ۳ نوامبر ۲۰۲۶ گزارش دادند که حوادث سرقت منابع LLMjacking که مدیریت کردند، در یک روز بیش از ۱۰۰,۰۰۰ دلار و در مجموع تا پیش از لغو دسترسی تا ۱ میلیون دلار هزینه کلاهبردارانه ایجاد کرده بود؛ یک عامل تهدید بیش از ۵۰۰,۰۰۰ فراخوانی API مدل‌های LLM را در کمتر از هشت ساعت از طریق یک سرویس بازفروش انجام داد و نزدیک به ۱ میلیون دلار هزینه توکن را به قربانی تحمیل کرد (گزارش ارائه‌دهنده). نقطه ورود مهاجمان هویت ابری سرقت‌شده بود (اعتبارات IAM، کلیدهای حساب کاربری سرویس، توکن‌های دسترسی شخصی گیت‌هاب، توکن‌های نشست)، نه باگی در مدل؛ و عادات مهاجمان قابل تشخیص بود: آنها کلیدها را با درخواست‌های `max_tokens=1` اعتبارسنجی می‌کردند، سرویس‌های LLM را که قربانی هرگز استفاده نکرده بود روشن می‌کردند، و اندپوینت‌های بی‌حفاظ `/api/create` در Ollama را پروب می‌کردند. این واقعیت سهمیه‌ها و سقف هزینه‌های به ازای هر کلید را به یک ابزار کنترلی امنیتی تبدیل می‌کند، نه صرفاً یک موضوع FinOps؛ و همچنین رخداد «فعال شدن سرویس LLM در حسابی که هرگز از آن استفاده نکرده است» را به هشداری تبدیل می‌سازد که حتماً باید متصل و فعال شود.
 
-- **Prefer workload identity** (mTLS, federated short-lived tokens) for service-to-provider calls. Where keys remain, give each an owner, an expiry and a spend cap.
-- **Treat an agent or AI-assistant session as a principal** with its own scoped credentials and monitoring, and keep raw API keys and long-lived OAuth tokens out of its reach.
-- **Use sender-constrained tokens** where the protocol supports them (DPoP, RFC 9449), so a stolen bearer token is not enough on its own.
+قواعدی که از این تجربیات حاصل می‌شوند:
+
+- **هویت بار کاری را ترجیح دهید** (mTLS، توکن‌های فدرال کوتاه‌مدت) برای فراخوانی‌های سرویس به ارائه‌دهنده. در جاهایی که کلیدها باقی می‌مانند، برای هر کلید یک مالک، تاریخ انقضا و سقف هزینه تعیین کنید.
+- **با یک نشست ایجنت یا دستیار هوش مصنوعی به عنوان یک ماهیت هویتی مستقل (Principal) رفتار کنید** که اعتبارات محدودشده و مانیتورینگ اختصاصی خود را دارد، و کلیدهای خام API و توکن‌های بلندمدت OAuth را دور از دسترس آن نگه دارید.
+- **از توکن‌های مقید به فرستنده (Sender-constrained tokens)** در جاهایی که پروتکل از آنها پشتیبانی می‌کند استفاده کنید (مانند DPoP تحت استاندارد RFC 9449)، تا یک توکن Bearer سرقت‌شده به تنهایی برای سوءاستفاده کافی نباشد.
 
 ---
 
-## Authorization Models
+## مدل‌های مجوزدهی (Authorization Models)
 
-### Role-Based Access Control (RBAC)
+### کنترل دسترسی نقش‌محور (RBAC)
+
+<div dir="ltr">
 
 ```python
 class RBACAuthorizer:
@@ -144,7 +156,11 @@ class RBACAuthorizer:
         return action in permissions
 ```
 
-### Attribute-Based Access Control (ABAC)
+</div>
+
+### کنترل دسترسی ویژگی‌محور (ABAC)
+
+<div dir="ltr">
 
 ```python
 class ABACAuthorizer:
@@ -171,7 +187,11 @@ class ABACAuthorizer:
         return AuthzResult(allowed=False, reason="No matching policy")
 ```
 
-### Model-Level Permissions
+</div>
+
+### مجوزهای سطح مدل (Model-Level Permissions)
+
+<div dir="ltr">
 
 ```python
 class ModelAccessControl:
@@ -202,39 +222,43 @@ class ModelAccessControl:
         ]
 ```
 
-Model access is now gated on the vendor side too. Anthropic's Cyber Verification Program (expanded October 6, 2026, with Project Glasswing folded in) has three tiers (Defense, Red Team, Specialized); Mythos 5.1 is available in every tier, admins assign the program to specific workspaces, and enrollment requires data retention, so the entitlement and the retention term change together. OpenAI's `gpt-rosalind-research` is trusted-access only, and Gemini 3.8 Flash Cyber is available only through Google's Fairwind Program. The model registry behind this check should record, per model and platform, which models and access programs the organization is entitled to, their data-retention terms, and their retirement dates, so routing and fallback can never pick a model a tenant may not use.
+</div>
+
+دسترسی به مدل‌ها اکنون در سمت ارائه‌دهنده نیز دروازه‌بانی می‌شود. برنامه تایید سایبری Anthropic (گسترش‌یافته در ۶ اکتبر ۲۰۲۶، با ادغام پروژه Glasswing) دارای سه رده است (Defense، Red Team و Specialized)؛ مدل Mythos 5.1 در همه رده‌ها موجود است، ادمین‌ها برنامه را به فضاهای کاری مشخص تخصیص می‌دهند، و ثبت‌نام نیازمند نگهداری داده است؛ بنابراین استحقاق و شرط نگهداری داده با هم تغییر می‌کنند. مدل `gpt-rosalind-research` شرکت OpenAI تنها برای دسترسی مورد اعتماد است، و مدل Gemini 3.8 Flash Cyber تنها از طریق برنامه Fairwind گوگل عرضه می‌شود. رجیستری مدل در پشت این بررسی باید به تفکیک مدل و پلتفرم ثبت کند که سازمان مجاز به استفاده از کدام مدل‌ها و برنامه‌های دسترسی است، شرایط نگهداری داده آنها چیست، و تاریخ بازنشستگی آنها چه زمانی است؛ تا روتینگ و Fallback هرگز مدلی را که یک مستاجر مجاز به استفاده از آن نیست انتخاب نکنند.
 
 ---
 
-## Agent and Tool Authorization
+## مجوزدهی به ایجنت و ابزار (Agent and Tool Authorization)
 
-When an agent calls tools on a user's behalf, authorization involves three parties: the user, the agent acting as an OAuth client, and each tool server. 2026 produced both a standards direction and a concrete failure.
+زمانی که یک ایجنت ابزارها را از طرف کاربر فراخوانی می‌کند، مجوزدهی شامل سه طرف است: کاربر، ایجنت در نقش کلاینت OAuth، و هر یک از سرورهای ابزار. سال ۲۰۲۶ هم یک مسیر استانداردسازی و هم یک شکست عملی را به همراه داشت.
 
-**The failure: authorization-server mix-up.** The official MCP SDKs let the MCP server decide which authorization server received the client's credentials, so a malicious or compromised server could name its own and receive stored refresh tokens and client secrets with no user interaction (CVE-2026-104850 in TypeScript, GHSA-qx49-fqc8-xw99 in Python, both CVSS 7.5; fixed in TypeScript 1.31.0 and 2.2.0, Python 1.30.0 and 2.2.0). Upgrading alone is not enough: machine-to-machine providers must be configured with the expected issuer (`expectedIssuer` in TypeScript, `issuer=` in Python), and credentials saved before the upgrade stay exposed until they are tagged with their issuer or cleared. A multi-server agent client is a natural confused deputy. The rule: **bind every credential to its issuer, and never let a resource server choose where secrets go.**
+**شکست عملی: اشتباه سرور مجوزدهی (Authorization-server mix-up).** کیت‌های رسمی توسعه MCP SDK به سرور MCP اجازه می‌دادند تعیین کند کدام سرور مجوزدهی اعتبارات کلاینت را دریافت کند، بنابراین یک سرور مخرب یا نفوذیافته می‌توانست سرور خود را نام ببرد و توکن‌های رفرش و اسرار کلاینت ذخیره‌شده را بدون هیچ تعامل کاربری دریافت کند (شناسه CVE-2026-104850 در تایپ‌اسکریپت و شناسه GHSA-qx49-fqc8-xw99 در پایتون، هر دو با امتیاز CVSS 7.5؛ اصلاح‌شده در تایپ‌اسکریپت 1.31.0 و 2.2.0، و پایتون 1.30.0 و 2.2.0). ارتقای نسخه به تنهایی کافی نیست: ارائه‌دهندگان ماشین-به-ماشین باید با صادرکننده مورد انتظار پیکربندی شوند (`expectedIssuer` در تایپ‌اسکریپت و `issuer=` در پایتون)، و اعتبارات ذخیره‌شده قبل از ارتقا تا زمانی که با صادرکننده خود برچسب‌گذاری یا پاک نشوند، در معرض خطر باقی می‌مانند. یک کلاینت ایجنت چندسروره یک نایب گیج‌شده (Confused deputy) طبیعی است. قاعده اصلی: **هر اعتبار را به صادرکننده آن مقید کنید، و هرگز اجازه ندهید یک سرور منبع انتخاب کند که اسرار به کجا فرستاده شوند.**
 
-**The building blocks:**
+**بلوک‌های سازنده:**
 
-| Need | Mechanism | Status |
-|------|-----------|--------|
-| A token usable only at one server | Audience binding (RFC 8707 resource indicators) | Part of the MCP authorization spec, but the TypeScript SDK accepted tokens issued for other services (CVE-2026-111771); the fix in `sdk` 1.32.0 and `server` 2.3.0 is opt-in, so set `expectedResource` and return `AuthInfo.resource` |
-| A stolen token is useless on its own | DPoP sender-constrained tokens (RFC 9449) | Shipped in the MCP TypeScript client 2.1.0 (September 23, 2026); the spec profile (SEP-1932) is still an open draft |
-| Least privilege per tool | Per-tool step-up scope challenges (HTTP 403 `insufficient_scope`) | Shipped in the MCP TypeScript server 2.1.0 |
-| Enterprise IdP controls which servers an agent may use | ID-JAG grant behind MCP Enterprise-Managed Authorization | Shipped in MCP; the IETF draft is at -04, not yet an RFC |
-| The agent's own identity, for headless agents | Workload identity plus the OAuth family, not new protocols | IETF WIMSE adopted draft-ietf-wimse-aims-00 (September 15, 2026); MCP workload identity federation (SEP-1933) is an open draft |
+| نیاز امنیتی | سازوکار | وضعیت |
+|---|---|---|
+| توکن قابل استفاده تنها در یک سرور | پیوند مخاطب (RFC 8707 resource indicators) | بخشی از مشخصات احراز هویت MCP، اما SDK تایپ‌اسکریپت توکن‌های صادرشده برای سایر سرویس‌ها را می‌پذیرفت (CVE-2026-111771)؛ اصلاحیه در `sdk` 1.32.0 و `server` 2.3.0 اختیاری (Opt-in) است، بنابراین `expectedResource` را تنظیم کرده و `AuthInfo.resource` را بازگردانید |
+| بی‌اثر بودن توکن سرقت‌شده به تنهایی | توکن‌های مقید به فرستنده با DPoP (استاندارد RFC 9449) | در کلاینت MCP TypeScript نسخه 2.1.0 عرضه شد (۲۳ سپتامبر ۲۰۲۶)؛ پیش‌نویس مشخصات (SEP-1932) هنوز یک درفت باز است |
+| حداقل دسترسی به ازای هر ابزار | چالش‌های ارتقای دامنه به ازای هر ابزار (خطای HTTP 403 با `insufficient_scope`) | در سرور MCP TypeScript نسخه 2.1.0 عرضه شد |
+| کنترل سرورهای مجاز ایجنت توسط IdP سازمانی | گرنت ID-JAG پشت سیستم مدیریت مجوز سازمانی MCP | در MCP عرضه شد؛ پیش‌نویس IETF در وضعیت 04- قرار دارد و هنوز RFC نشده است |
+| هویت مستقل برای ایجنت‌های بدون سرپرست (Headless) | هویت بار کاری (Workload identity) به همراه خانواده OAuth، نه پروتکل‌های جدید | کارگروه WIMSE در IETF درفت draft-ietf-wimse-aims-00 را تصویب کرد (۱۵ سپتامبر ۲۰۲۶)؛ فدراسیون هویت بار کاری در MCP (سند SEP-1933) یک درفت باز است |
 
-**Approvals are authorization too.** Per-call human approval does not scale, so platforms are moving to policy: Claude Managed Agents' auto permission policy (September 10, 2026) has the server evaluate each agent or MCP tool call and run it, deny it, or pause for approval. Where humans do approve, bind the approval to the exact call: research on approval laundering (arXiv 2609.38983) shows the action a person approves is not always the action a coding-agent harness executes.
+**تاییدیه‌ها نیز نوعی مجوزدهی هستند:** تایید انسانی به ازای هر فراخوانی مقیاس‌پذیر نیست، بنابراین پلتفرم‌ها به سمت خط‌مشی‌های سیاستی حرکت می‌کنند: سیاست مجوزدهی خودکار در Claude Managed Agents (۱۰ سپتامبر ۲۰۲۶) کاری می‌کند که سرور هر فراخوانی ابزار ایجنت یا MCP را ارزیابی کند و آن را اجرا نماید، رد کند، یا برای تایید متوقف سازد. در جایی که انسان‌ها تایید را انجام می‌دهند، تاییدیه را دقیقاً به همان فراخوانی مقید کنید: تحقیقات درباره شستشوی تاییدیه (Approval laundering به شناسه arXiv 2609.38983) نشان می‌دهد اکشنی که یک فرد تایید می‌کند همیشه همان اکشنی نیست که محیط اجرای دستیار کدنویسی اجرا می‌نماید.
 
-**A government checklist for agent identity.** NIST's NCCoE published ten "design tenets for agent identity management systems" on October 27, 2026 (a blog post with no NIST publication number, so a draft starting point rather than a standard). They match the rules in this chapter: a distinct identity per agent; cryptographic linking to the initiating party, with delegated authority that can only narrow; least and zero standing privilege; short-lived, task-specific, revocable authorization with no long-lived bearer tokens; human-in-the-loop triggers that guard against consent fatigue; signed mandates from task originators; the policy decision kept separate from the model's reasoning; deterministic primary access decisions; agent-specific monitoring; and append-only evidence the agent cannot touch. It is a useful review checklist for an agent platform design, and a credible citation in an interview.
+**یک چک‌لیست دولتی برای هویت ایجنت:** مرکز ملی تعالی امنیت سایبری NIST (یا NCCoE) در ۲۷ اکتبر ۲۰۲۶ ده «اصل طراحی برای سیستم‌های مدیریت هویت ایجنت» را منتشر کرد (یک پست وبلاگی بدون شماره انتشار رسمی NIST، بنابراین یک نقطه شروع پیش‌نویس است نه یک استاندارد قطعی). این اصول با قواعد این فصل مطابقت دارند: هویت متمایز به ازای هر ایجنت؛ پیوند رمزنگاری‌شده به طرف آغازگر، با اختیارات تفویض‌شده‌ای که تنها می‌تواند محدودتر شود؛ حداقل دسترسی و عدم وجود دسترسی دائمی (Zero standing privilege)؛ مجوزهای کوتاه‌مدت، مختص به تسک، و قابل ابطال بدون توکن‌های حامل بلندمدت؛ محرک‌های حضور انسان در حلقه برای جلوگیری از خستگی ناشی از موافقت (Consent fatigue)؛ ماموریت‌های امضاشده از سوی آغازگران تسک؛ تفکیک تصمیمات سیاستی از استدلال مدل؛ تصمیمات اولیه دسترسی قطعی و معین؛ مانیتورینگ اختصاصی ایجنت؛ و شواهد فقط-افزودنی که ایجنت امکان دستکاری آنها را ندارد. این یک چک‌لیست بازبینی بسیار سودمند برای طراحی پلتفرم‌های ایجنت است.
 
-**User-delegated model access.** Sign in with ChatGPT (announced at OpenAI DevDay, September 29, 2026; limited trial for selected partners) uses OAuth 2.0 with PKCE and OpenID Connect, and can optionally run eligible Responses API requests on the user's own ChatGPT plan. It is convenient identity, but it concentrates login and AI billing at one model vendor; weigh it like any IdP lock-in decision.
+**دسترسی مدل تفویض‌شده از طرف کاربر:** قابلیت ورود با ChatGPT (Sign in with ChatGPT، معرفی‌شده در DevDay شرکت OpenAI در ۲۹ سپتامبر ۲۰۲۶؛ در فاز آزمایشی محدود برای شرکای منتخب) از پروتکل OAuth 2.0 همراه با PKCE و OpenID Connect استفاده می‌کند و می‌تواند به درخواست‌های واجد شرایط Responses API اجازه دهد روی پلن ChatGPT خود کاربر اجرا شوند. این قابلیت هویتی راحتی به همراه دارد، اما ورود به سیستم و صورت‌حساب هوش مصنوعی را در یک ارائه‌دهنده متمرکز می‌کند؛ با آن مانند هر تصمیم دیگری در زمینه وابستگی به ارائه‌دهنده هویت (IdP lock-in) برخورد کنید.
 
-Protocol-level detail, including Enterprise-Managed Authorization, is in [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md).
+جزئیات در سطح پروتکل، از جمله مدیریت مجوز سازمانی، در فصل [استفاده از ابزار و پروتکل MCP](../07-agentic-systems/03-tool-use-and-mcp.md) آمده است.
 
 ---
 
-## Tenant Isolation
+## ایزوله‌سازی مستاجران (Tenant Isolation)
 
-### Data Isolation Patterns
+### الگوهای ایزوله‌سازی داده‌ها
+
+<div dir="ltr">
 
 ```python
 class TenantIsolatedVectorStore:
@@ -268,7 +292,11 @@ class TenantIsolatedVectorStore:
         await self.db.insert(documents)
 ```
 
-### Prompt Isolation
+</div>
+
+### ایزوله‌سازی پرامپت
+
+<div dir="ltr">
 
 ```python
 class TenantAwarePromptBuilder:
@@ -293,7 +321,11 @@ User query: {user_query}
 """
 ```
 
-### Cache Isolation
+</div>
+
+### ایزوله‌سازی کش
+
+<div dir="ltr">
 
 ```python
 class TenantIsolatedCache:
@@ -314,15 +346,19 @@ class TenantIsolatedCache:
         )
 ```
 
-Cache isolation also reaches into the inference engine. A shared prefix cache is a timing side channel: if tenant B's request returns faster because tenant A already cached the same prefix, B learns something about A's prompt. vLLM isolates tenants with a per-request `cache_salt`, and in September 2026 a regression on one code path (tool-continuation turns on its Harmony `/v1/responses` endpoint dropped the salt) reopened the oracle until 0.30.0 (the current vLLM floor is 0.32.0; see [Securing the AI Stack Itself](01-llm-security.md#securing-the-ai-stack-itself)). Pass a per-tenant salt on every request, test each endpoint for it, and when many tenants share one provider account, keep tenant-specific content after the shared cacheable prefix.
+</div>
 
-The same failure shows up in protocol servers. In the MCP TypeScript SDK, an HTTP server that created one transport or server instance at startup and shared it across clients could deliver one client's responses to another (CVE-2026-111770, CVSS 7.7, `@modelcontextprotocol/server` 2.0.0 to 2.2.x), because messages were matched to connections only by JSON-RPC id and every SDK client numbers its requests from 0. The SDK's own README examples showed the shared pattern. Version 2.3.0 refuses it, so upgrading breaks those apps until each request or session gets its own server and transport. Any per-connection state in a multi-tenant server, not only caches, needs a tenant or session key.
+ایزوله‌سازی کش به داخل موتور استنتاج نیز نفوذ می‌کند. کش پیشوند مشترک یک کانال جانبی زمانی است: اگر درخواست مستاجر B سریع‌تر بازگردد به این دلیل که مستاجر A قبلاً همان پیشوند را کش کرده است، مستاجر B اطلاعاتی در مورد پرامپت مستاجر A به دست می‌آورد. ابزار vLLM مستاجران را با یک `cache_salt` به ازای هر درخواست ایزوله می‌کند، و در سپتامبر ۲۰۲۶ یک بازگشت باگ در یک مسیر کد (نوبت‌های ادامه ابزار روی اندپوینت Harmony `/v1/responses` نمک کش را حذف می‌کرد) این روزنه اوراکل را تا نسخه 0.30.0 مجدداً باز کرد (کف نسخه فعلی vLLM نسخه 0.32.0 است؛ بخش [امن‌سازی خود پشته هوش مصنوعی](01-llm-security.md#securing-the-ai-stack-itself) را ببینید). در هر درخواست یک نمک به ازای هر مستاجر ارسال کنید، هر اندپوینت را برای آن تست نمایید، و زمانی که مستاجران زیادی از یک حساب ارائه‌دهنده مشترک استفاده می‌کنند، محتوای خاص هر مستاجر را بعد از پیشوند پایدار و قابل کش‌سازی قرار دهید.
+
+همین نقص در سرورهای پروتکل ظاهر می‌شود. در کیت توسعه MCP TypeScript SDK، یک سرور HTTP که یک ترنسپورت یا نمونه سرور را در زمان راه‌اندازی می‌ساخت و آن را میان کلاینت‌ها به اشتراک می‌گذاشت، می‌توانست پاسخ‌های یک کلاینت را به کلاینت دیگر تحویل دهد (شناسه CVE-2026-111770 با امتیاز CVSS 7.7 در `@modelcontextprotocol/server` نسخه 2.0.0 تا 2.2.x)، زیرا پیام‌ها تنها با شناسه JSON-RPC به اتصالات تطبیق داده می‌شدند و تمام کلاینت‌های SDK درخواست‌های خود را از ۰ شماره‌گذاری می‌کردند. حتی مثال‌های فایل README خود SDK همین الگوی اشتراکی را نشان می‌دادند. نسخه 2.3.0 آن را رد می‌کند، بنابراین ارتقا باعث از کار افتادن آن برنامه‌ها می‌شود تا زمانی که هر درخواست یا نشست سرور و ترنسپورت مجزای خود را دریافت کند. هر وضعیت به ازای اتصال در یک سرور چندمستاجره، نه صرفاً کش‌ها، نیازمند یک کلید مستاجر یا نشست است.
 
 ---
 
-## API Key Management
+## مدیریت کلیدهای API (API Key Management)
 
-### Key Lifecycle
+### چرخه حیات کلید
+
+<div dir="ltr">
 
 ```python
 class APIKeyManager:
@@ -376,7 +412,11 @@ class APIKeyManager:
         })
 ```
 
-### Key Rotation
+</div>
+
+### تعویض دوره‌ای کلید (Key Rotation)
+
+<div dir="ltr">
 
 ```python
 class KeyRotator:
@@ -403,11 +443,15 @@ class KeyRotator:
         return new_key
 ```
 
+</div>
+
 ---
 
-## Audit and Compliance
+## ممیزی و انطباق (Audit and Compliance)
 
-### Audit Logging
+### ثبت لاگ‌های ممیزی
+
+<div dir="ltr">
 
 ```python
 class AuditLogger:
@@ -436,7 +480,11 @@ class AuditLogger:
         await self.audit_store.append(audit_entry)
 ```
 
-### Compliance Reports
+</div>
+
+### گزارش‌های انطباق قانونی
+
+<div dir="ltr">
 
 ```python
 class ComplianceReporter:
@@ -464,111 +512,112 @@ class ComplianceReporter:
         )
 ```
 
----
-
-## Interview Questions
-
-### Q: How do you implement multi-tenant isolation in a RAG system?
-
-**Strong answer:**
-
-"Multi-tenant isolation requires defense in depth:
-
-**Vector database level:**
-- Every vector includes tenant_id in metadata
-- All queries filter by tenant_id at the database level
-- Never filter after retrieval (data already leaked to memory)
-
-**Cache level:**
-- All cache keys prefixed with tenant_id
-- Semantic cache scoped to tenant
-- No cross-tenant cache hits even for identical queries
-
-**Prompt level:**
-- Validate context documents belong to requesting tenant before including
-- Never mix context from multiple tenants
-
-**Output level:**
-- Verify response does not contain cross-tenant information
-- Output filtering as additional safeguard
-
-**Audit:**
-- Log all access with tenant context
-- Monitor for cross-tenant access attempts
-
-The key principle: tenant_id is a mandatory filter at every data access point, not an optional parameter."
-
-### Q: How do you manage API keys for an LLM service?
-
-**Strong answer:**
-
-"Secure API key management:
-
-**Creation:**
-- Generate cryptographically random keys
-- Store only the hash, return raw key once
-- Associate with user, tenant, scopes, expiration
-
-**Validation:**
-- Hash incoming key, compare to stored hash
-- Check expiration and revocation status
-- Verify scopes match requested action
-
-**Rotation:**
-- Support key rotation with grace period
-- Old key works during transition (7 days)
-- Notify users of impending expiration
-
-**Security:**
-- Rate limit failed authentication attempts
-- Revoke immediately on suspected compromise
-- Audit all key operations
-
-**Scopes:**
-- Fine-grained: model access, operation type, daily limits
-- Least privilege by default
-
-**Keys we hold, not just keys we issue:**
-- For our own calls to model providers, prefer workload identity (mTLS or federated tokens) over static keys, and give any remaining key an owner, an expiry and a spend cap
-- LLM API keys are now standard loot for supply-chain worms, so keep them out of developer machines, agent sessions and CI logs
-- A gateway concentrates them: the poisoned LiteLLM releases of October 21, 2026 harvested provider keys and the proxy's master and virtual keys, so I need to be able to rotate everything the gateway holds in one step
-
-The key principle: never store raw keys, support rotation, implement least privilege."
-
-### Q: An agent calls tools on five MCP servers on a user's behalf. How do you authorize it?
-
-**Strong answer:**
-
-"I design against the confused deputy, because the agent holds credentials for five servers and any one of them could be malicious or compromised.
-
-**Bind credentials to issuer and audience.** Each token is audience-bound to its server (RFC 8707), and each stored credential is tagged with the authorization server that issued it and never sent anywhere else. That exact gap was CVE-2026-104850 in the MCP TypeScript SDK in September 2026 (the Python SDK had the same flaw): a malicious server could name its own authorization server and collect refresh tokens and client secrets. Upgrading the SDK is not enough; machine-to-machine clients need an explicit expected issuer, and pre-upgrade credentials must be re-tagged or cleared. On the server side, audience binding only helps if the server checks it: the TypeScript SDK's October fix (CVE-2026-111771) is opt-in, so every server I run sets `expectedResource`.
-
-**Make stolen tokens less useful.** Short lifetimes, and DPoP sender-constrained tokens where the client and server support them.
-
-**Least privilege per tool.** Narrow default scopes with per-tool step-up challenges, so a read-only session cannot silently call a write tool.
-
-**Enterprise control.** Where the company runs an IdP, Enterprise-Managed Authorization lets admins decide centrally which servers the agent may reach. For headless agents, I give the agent its own workload identity rather than a user's long-lived token.
-
-**Approval and audit.** High-risk calls go through a policy engine or a human, with the approval bound to the exact call executed, and every call is logged with user, agent, server and scope.
-
-Standards are still settling (DPoP for MCP and workload identity federation are drafts, ID-JAG is not yet an RFC), so I keep the authorization layer behind my own interface and expect to swap pieces."
+</div>
 
 ---
 
-## References
+## پرسش‌های مصاحبه (Interview Questions)
 
-- OAuth 2.0: https://oauth.net/2/
-- OWASP API Security: https://owasp.org/API-Security/
-- RFC 8707, Resource Indicators for OAuth 2.0: https://www.rfc-editor.org/rfc/rfc8707
-- RFC 9449, OAuth 2.0 Demonstrating Proof of Possession (DPoP): https://www.rfc-editor.org/rfc/rfc9449
-- MCP TypeScript SDK advisory GHSA-6qxp-vccf-f47h (CVE-2026-104850): https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-6qxp-vccf-f47h
-- MCP TypeScript SDK advisories GHSA-jm63-cq47-j5jp (CVE-2026-111770, shared transports) and GHSA-rvq5-wwqv-78pq (CVE-2026-111771, token audience): https://github.com/modelcontextprotocol/typescript-sdk/security/advisories
-- Anthropic, expanded Cyber Verification Program (October 6, 2026): https://www.anthropic.com/news/cyber-verification-program
-- Google Threat Intelligence Group, LLMjacking (November 3, 2026): https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models
-- NIST NCCoE, design tenets for agent identity management systems (October 27, 2026): https://www.nist.gov/blogs/cybersecurity-insights/design-tenets-agent-identity-management-systems
-- IETF WIMSE, AI Identity Management System (draft-ietf-wimse-aims): https://datatracker.ietf.org/doc/draft-ietf-wimse-aims/
-- OpenAI API changelog (workload identity, key expiry): https://developers.openai.com/api/docs/changelog
+### پرسش: ایزوله‌سازی چندمستاجره را در یک سیستم RAG چگونه پیاده‌سازی می‌کنید؟
+
+**پاسخ قوی:**
+ایزوله‌سازی چندمستاجره نیازمند دفاع در عمق است:
+
+**در سطح پایگاه داده برداری:**
+- هر بردار شامل tenant_id در متادیتا است
+- تمام کوئری‌ها بر اساس tenant_id در سطح دیتابیس فیلتر می‌شوند
+- هرگز پس از بازیابی فیلتر نکنید (زیرا داده‌ها قبلاً به حافظه نشت کرده‌اند)
+
+**در سطح کش:**
+- تمام کلیدهای کش با شناسه tenant_id پیشوندگذاری می‌شوند
+- کش معنایی به دامنه مستاجر محدود می‌شود
+- عدم اصابت کش میان‌مستاجره حتی برای کوئری‌های کاملاً یکسان
+
+**در سطح پرامپت:**
+- اعتبارسنجی اینکه اسناد کانتکست متعلق به مستاجر درخواست‌دهنده هستند قبل از گنجاندن در پرامپت
+- هرگز کانتکست مستاجران مختلف را با هم ترکیب نکنید
+
+**در سطح خروجی:**
+- بررسی اینکه پاسخ حاوی اطلاعات میان‌مستاجره نباشد
+- فیلتر کردن خروجی به عنوان حفاظ مضاعف
+
+**در سطح ممیزی و بازرسی:**
+- ثبت لاگ تمام دسترسی‌ها با کانتکست مستاجر
+- پایش برای کشف تلاش‌های دسترسی متقاطع
+
+اصل کلیدی: پارامتر tenant_id یک فیلتر اجباری در هر نقطه دسترسی به داده است، نه یک پارامتر اختیاری.
+
+### پرسش: کلیدهای API را برای یک سرویس LLM چگونه مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+مدیریت امن کلیدهای API:
+
+**ساخت و صدور:**
+- تولید کلیدهای تصادفی امن از نظر رمزنگاری
+- ذخیره تنها هش کلید، و بازگرداندن کلید خام تنها برای یک بار
+- انتساب به کاربر، مستاجر، دامنه‌ها (Scopes)، و تاریخ انقضا
+
+**اعتبارسنجی:**
+- هش کردن کلید ورودی و مقایسه آن با هش ذخیره‌شده
+- بررسی وضعیت انقضا و ابطال
+- بررسی تطابق دامنه‌ها با اکشن درخواستی
+
+**تعویض دوره‌ای (Rotation):**
+- پشتیبانی از تعویض کلید همراه با دوره تنفس (Grace period)
+- کلید قدیمی در طول دوره گذار کار می‌کند (مثلاً ۷ روز)
+- اطلاع‌رسانی به کاربران درباره انقضای قریب‌الوقوع
+
+**امنیت:**
+- محدودسازی نرخ تلاش‌های ناموفق احراز هویت
+- ابطال فوری در صورت ظن به نفوذ
+- ثبت لاگ ممیزی تمام عملیات کلید
+
+**دامنه‌های دسترسی (Scopes):**
+- ریزدانه: دسترسی به مدل، نوع عملیات، سقف‌های روزانه
+- حداقل سطح دسترسی (Least privilege) به‌صورت پیش‌فرض
+
+**کلیدهایی که نگهداری می‌کنیم، نه فقط کلیدهایی که صادر می‌کنیم:**
+- برای فراخوانی‌های خودمان به ارائه‌دهندگان مدل، هویت بار کاری (mTLS یا توکن‌های فدرال) را بر کلیدهای استاتیک ترجیح می‌دهیم، و برای هر کلید باقیمانده مالک، انقضا و سقف هزینه تعیین می‌کنیم
+- کلیدهای API مدل‌های LLM اکنون غنایم استاندارد کرم‌های زنجیره تامین هستند، بنابراین آنها را از سیستم‌های توسعه‌دهندگان، نشست‌های ایجنت و لاگ‌های CI دور نگه می‌دارم
+- یک درگاه آنها را متمرکز می‌کند: نسخه‌های آلوده LiteLLM در ۲۱ اکتبر ۲۰۲۶ کلیدهای ارائه‌دهندگان و کلیدهای اصلی و مجازی پراکسی را جمع‌آوری کردند، بنابراین من باید بتوانم تمام کلیدهای نگهداری‌شده در درگاه را در یک مرحله تعویض کنم
+
+اصل کلیدی: هرگز کلیدهای خام را ذخیره نکنید، از تعویض کلید پشتیبانی کنید، و حداقل سطح دسترسی را پیاده نمایید.
+
+### پرسش: یک ایجنت ابزارها را روی پنج سرور پروتکل MCP از طرف یک کاربر فراخوانی می‌کند. چگونه آن را مجوزدهی می‌کنید؟
+
+**پاسخ قوی:**
+من سیستم را در برابر آسیب‌پذیری نایب گیج‌شده (Confused deputy) طراحی می‌کنم، زیرا ایجنت اعتبارات پنج سرور را در اختیار دارد و هر یک از آنها ممکن است مخرب یا نفوذیافته باشند.
+
+**پیوند دادن اعتبارات به صادرکننده و مخاطب:** هر توکن بر اساس RFC 8707 به سرور مقصد خود پیوند داده می‌شود (Audience-bound)، و هر اعتبار ذخیره‌شده با سرور مجوزدهی که آن را صادر کرده برچسب‌گذاری می‌شود و هرگز به جای دیگری فرستاده نمی‌شود. این دقیقاً همان شکافی بود که در سپتامبر ۲۰۲۶ در کیت MCP TypeScript SDK رخ داد (کد CVE-2026-104850؛ کیت پایتون نیز همین نقص را داشت): یک سرور مخرب می‌توانست سرور مجوزدهی خود را نام ببرد و توکن‌های رفرش و اسرار کلاینت را جمع‌آوری کند. ارتقای SDK کافی نیست؛ کلاینت‌های ماشین-به-ماشین نیازمند یک صادرکننده مورد انتظار صریح هستند، و اعتبارات پیش از ارتقا باید مجدداً برچسب‌گذاری یا پاک شوند. در سمت سرور، پیوند مخاطب تنها زمانی کمک می‌کند که سرور آن را بررسی کند: اصلاحیه اکتبر در SDK تایپ‌اسکریپت (CVE-2026-111771) اختیاری است، بنابراین هر سروری که اجرا می‌کنم پارامتر `expectedResource` را تنظیم می‌کند.
+
+**کاهش کارایی توکن‌های سرقت‌شده:** طول عمرهای کوتاه، و توکن‌های مقید به فرستنده DPoP در جاهایی که کلاینت و سرور پشتیبانی می‌کنند.
+
+**حداقل سطح دسترسی به ازای هر ابزار:** دامنه‌های پیش‌فرض محدود با چالش‌های ارتقای دسترسی به ازای هر ابزار، تا یک نشست فقط-خواندنی نتواند بی‌صدا یک ابزار نوشتن را فراخوانی کند.
+
+**کنترل سازمانی:** در جایی که شرکت یک IdP اجرا می‌کند، سیستم مدیریت مجوز سازمانی به ادمین‌ها اجازه می‌دهد به‌صورت متمرکز تعیین کنند ایجنت به کدام سرورها دسترسی دارد. برای ایجنت‌های بدون سرپرست (Headless)، به جای توکن بلندمدت کاربر، هویت بار کاری مستقل به ایجنت اختصاص می‌دهم.
+
+**تایید و ممیزی:** فراخوانی‌های پرخطر از یک موتور سیاست یا تایید انسانی عبور می‌کنند، به گونه‌ای که تاییدیه دقیقاً به همان فراخوانی اجراشده مقید است، و تمام فراخوانی‌ها همراه با کاربر، ایجنت، سرور و دامنه ثبت لاگ می‌شوند.
+
+استانداردها هنوز در حال تکامل هستند (DPoP برای MCP و فدراسیون هویت بار کاری هنوز پیش‌نویس هستند، و ID-JAG هنوز RFC نشده است)، بنابراین لایه مجوزدهی را پشت اینترفیس اختصاصی خود نگه می‌دارم و انتظار تعویض قطعات را دارم.
 
 ---
 
-*Previous: [LLM Security](01-llm-security.md)*
+## مراجع (References)
+
+- پروتکل احراز هویت OAuth 2.0: https://oauth.net/2/
+- امنیت API بر اساس OWASP: https://owasp.org/API-Security/
+- سند RFC 8707، نشانگرهای منبع برای OAuth 2.0: https://www.rfc-editor.org/rfc/rfc8707
+- سند RFC 9449، اثبات تصرف کلید (DPoP) در OAuth 2.0: https://www.rfc-editor.org/rfc/rfc9449
+- اطلاعیه امنیتی MCP TypeScript SDK شناسه GHSA-6qxp-vccf-f47h (کد CVE-2026-104850): https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-6qxp-vccf-f47h
+- اطلاعیه‌های امنیتی MCP TypeScript SDK شناسه‌های GHSA-jm63-cq47-j5jp (کد CVE-2026-111770) و GHSA-rvq5-wwqv-78pq (کد CVE-2026-111771): https://github.com/modelcontextprotocol/typescript-sdk/security/advisories
+- شرکت Anthropic، برنامه توسعه‌یافته Cyber Verification Program (۶ اکتبر ۲۰۲۶): https://www.anthropic.com/news/cyber-verification-program
+- گروه اطلاعات تهدیدات گوگل، سرقت منابع ابری LLMjacking (۳ نوامبر ۲۰۲۶): https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models
+- مرکز NCCoE متعلق به NIST، اصول طراحی سیستم‌های مدیریت هویت ایجنت (۲۷ اکتبر ۲۰۲۶): https://www.nist.gov/blogs/cybersecurity-insights/design-tenets-agent-identity-management-systems
+- کارگروه IETF WIMSE، سیستم مدیریت هویت هوش مصنوعی (draft-ietf-wimse-aims): https://datatracker.ietf.org/doc/draft-ietf-wimse-aims/
+- گزارش تغییرات API شرکت OpenAI (هویت بار کاری، انقضای کلید): https://developers.openai.com/api/docs/changelog
+
+---
+
+*قبلی: [امنیت مدل‌های بزرگ زبان](01-llm-security.md)*
+
+</div>
