@@ -1,68 +1,72 @@
-# OCR and Layout Analysis
+<div dir="rtl">
 
-Document parsing is no longer a two-way choice between classic OCR engines and frontier multimodal LLMs. A middle tier of **specialist document-parsing VLMs** (small vision-language models trained to turn pages into structure) now returns Markdown, tables, bounding boxes and reading order at a fraction of frontier cost per page. The design question has moved from "which model reads best?" to "which tier does each page need, and what does a page cost at my volume?"
+# سامانه OCR و تحلیل چیدمان اسناد (Layout Analysis)
 
-## Table of Contents
+تجزیه و پارس اسناد دیگر صرفاً یک دوراهی میان موتورهای کلاسیک OCR و مدل‌های بزرگ چندحالته پیشرو (Frontier Multimodal LLMs) نیست. امروزه یک لایه میانی از **مدل‌های بینایی-زبانی تخصصی در پارس اسناد (Specialist Document-Parsing VLMs)** (مدل‌های کوچک بینایی-زبانی که برای تبدیل صفحات به خروجی‌های ساختاریافته آموزش دیده‌اند) متن‌های Markdown، جداول، کادرهای مرزی (Bounding Boxes) و ترتیب خوانش را با کسری از هزینه مدل‌های پیشرو به ازای هر صفحه ارائه می‌دهند. پرسش طراحی سیستم از «کدام مدل بهتر می‌خواند؟» به «هر صفحه به کدام سطح نیاز دارد و هزینه هر صفحه در حجم کاری من چقدر است؟» تغییر یافته است.
 
-- [The Three Tiers: OCR Engines, Parsing VLMs, Frontier VLMs](#the-three-tiers-ocr-engines-parsing-vlms-frontier-vlms)
-- [Vision-LLM Layout Extraction](#vision-llm-layout-extraction)
-- [Tiered Parsing and Block-Level Locators](#tiered-parsing-and-block-level-locators)
-- [Reading Order and Logical Structure](#reading-order-and-logical-structure)
-- [Handling Low-Quality Scans and Handwriting](#handling-low-quality-scans-and-handwriting)
-- [Cost and Latency Tradeoffs](#cost-and-latency-tradeoffs)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## The Three Tiers: OCR Engines, Parsing VLMs, Frontier VLMs
-
-| Feature | Classic OCR engines (Tesseract, AWS Textract, Azure AI Document Intelligence, Google Document AI) | Document-parsing VLMs (Cohere Parse, Mistral OCR 4.1, MinerU, PaddleOCR-VL, Nemotron 3.5 Parse, DeepSeek-OCR 2) | Frontier VLMs (Claude Opus 5.5 / Sonnet 5.5, GPT-6 Sol, Gemini 4 Argon; fast-tier Gemini 3.8 Flash as the cheap fallback) |
-|---------|-------------------------------------------|----------------------------------------|--------------------------------------------------------|
-| **Primary mechanism** | Character recognition plus layout rules or models | Small VLM trained to transcribe pages into structure | General visual-token understanding |
-| **Reading order** | Simple; breaks on complex layouts | Predicted explicitly | Implicit; usually right, not auditable |
-| **Geometry** | Per-word boxes with confidence | Per-block boxes (text, table, figure) with reading order | Not a per-word audit layer |
-| **Tables** | Separate table APIs; weak on merged cells | Inline HTML or Markdown | Markdown or HTML on request |
-| **Failure mode** | Misreads characters; does not invent text | Can hallucinate on degraded pages | Can produce fluent, plausible, wrong text |
-| **Cost driver** | CPU or per-page API fee | Pages per second per GPU, or ~$1.50 per 1,000 pages via API | Tokens: roughly $4 (Gemini 3.8 Flash, intro) to $23 (Claude Opus 5.5) per 1,000 pages at October 2026 list prices |
-
-**How big is the quality gap?** On ParseBench, a document-parsing benchmark that Cohere ran for its own launch (vendor-run, August 2026), the averages were: GPT-5.5 84.4, Claude Opus 4.8 84.3, Gemini 3.5 Flash 81.8, Cohere Parse 79.2, LlamaParse (cost-effective mode) 78.3, Google Document AI 57.3, AWS Textract 53.3. Read that as: the top frontier models lead Cohere Parse by about five points, and classic OCR services trail both by twenty-plus. That last gap most likely reflects what a parsing benchmark rewards (tables, reading order, structured output) more than raw character accuracy, so do not read it as "Textract cannot read".
-
-**Parsing VLMs moved fast in 2026.** Most are open weights; Cohere Parse is API or single-tenant only. Scores below come from different benchmarks and different runners, so do not compare them across rows:
-
-| Model | Released | Notes |
-|-------|----------|-------|
-| DeepSeek-OCR 2 | January 27, 2026 | Apache 2.0 |
-| PaddleOCR-VL | 1.5 on January 29, 2026 | Jina's comparison puts version 1.6 at 96.34 on OmniDocBench v1.6; Apache 2.0 |
-| Chandra OCR 2 | March 18, 2026 | 85.8 on olmOCR-Bench; code Apache 2.0, but weights under Datalab's modified OpenRAIL-M: free for research, personal use and startups under $2M funding or revenue, not for use that competes with Datalab's API; otherwise a paid license |
-| Surya OCR 2 | May 27, 2026 | Code Apache 2.0; weights under a modified OpenRAIL-M: free for research, personal use and startups under $5M funding or revenue; otherwise a paid license |
-| NVIDIA Nemotron Parse 2.0 | August 3, 2026 | Under 1B parameters; layout classes, bounding boxes, reading order, chart-to-table; OpenMDW-1.1; superseded by Nemotron 3.5 Parse |
-| NVIDIA Nemotron 3.5 Parse | October 17, 2026 | About 0.631B parameters including a multi-token-prediction head, OpenMDW-1.1, optional 89.3M DFlash2 speculative drafter (November 4). NVIDIA reports ParseBench 72.74 single pass, 74.92 double and 75.20 triple, against 63.91 for Nemotron Parse 2.0 (NVIDIA-run, with a different runner and scale from Cohere's ParseBench numbers): pass count is now a cost and accuracy dial |
-| Mistral OCR 4.1 (`mistral-ocr-4-1`) | July 16, 2026 (GA August 31) | Closed weights, API at $4 per 1,000 pages ($0.40 cached). `mistral-ocr-latest` points to it; Mistral deprecated OCR 4.0 on September 29 and retired it the next day, so pin the versioned ID, not the alias |
-| Cohere Parse (`parse-v5.0`) | August 27, 2026 | Closed weights; 2.3B-parameter VLM, API at $1.50 per 1,000 pages; Markdown with HTML tables, or ordered blocks with bounding boxes |
-| jina-ocr-v1 | September 14, 2026 | Built on DeepSeek-OCR (3.4B total, ~570M active MoE); 91.14 on OmniDocBench v1.6, 83.4 on olmOCR-Bench; **CC BY-NC 4.0, so not for commercial use without a license** |
-| MinerU 4.0 | September 16, 2026 | Toolkit with quality tiers and an agent-oriented CLI (see below); MinerU Open Source License (Apache 2.0 plus terms): commercial use allowed, a separate license above 100M monthly active users or $20M monthly revenue, and online services must credit MinerU |
-
-Check the license before the benchmark. A parser you cannot ship is not a candidate, and "open weights" covers everything from Apache 2.0 to non-commercial to revenue-capped terms that a growing company can outgrow.
+- [سه لایه پردازش: موتورهای OCR، مدل‌های VLM پارس‌کننده و مدل‌های VLM پیشرو](#the-three-tiers-ocr-engines-parsing-vlms-frontier-vlms)
+- [استخراج چیدمان با مدل‌های بینایی-LLM](#vision-llm-layout-extraction)
+- [پارس چندلایه و مکان‌یاب‌های در سطح بلوک](#tiered-parsing-and-block-level-locators)
+- [ترتیب خوانش و ساختار منطقی](#reading-order-and-logical-structure)
+- [مدیریت اسکن‌های بی‌کیفیت و متون دست‌نویس](#handling-low-quality-scans-and-handwriting)
+- [موازنه‌های هزینه و تأخیر](#cost-and-latency-tradeoffs)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Vision-LLM Layout Extraction
+## سه لایه پردازش: موتورهای OCR، مدل‌های VLM پارس‌کننده و مدل‌های VLM پیشرو <a id="the-three-tiers-ocr-engines-parsing-vlms-frontier-vlms"></a>
 
-The baseline workflow is still **Screenshot-to-Markdown**:
-1. **Rasterize**: Convert PDF pages to images (pages with a usable native text layer may not need this at all).
-2. **Visual Prompting**: Ask the model to "Transcribe the following page into GitHub-flavored Markdown, preserving tables and headers."
-3. **Structured Recovery**: Use the model's spatial awareness to rebuild the logical hierarchy.
+| ویژگی | موتورهای کلاسیک OCR (مانند Tesseract، AWS Textract، Azure AI Document Intelligence و Google Document AI) | مدل‌های VLM پارس اسناد (مانند Cohere Parse، Mistral OCR 4.1، MinerU، PaddleOCR-VL، Nemotron 3.5 Parse و DeepSeek-OCR 2) | مدل‌های VLM پیشرو (مانند Claude Opus 5.5 / Sonnet 5.5، GPT-6 Sol، Gemini 4 Argon؛ و مدل رده سریع Gemini 3.8 Flash به‌عنوان جایگزین اقتصادی) |
+|---|---|---|---|
+| **مکانیسم اصلی** | تشخیص کاراکتر به‌علاوه قواعد چیدمان یا مدل‌های ساده | مدل کوچک VLM که برای رونویسی صفحات به ساختار آموزش دیده است | درک عمومی توکن‌های بصری |
+| **ترتیب خوانش** | ساده؛ در چیدمان‌های پیچیده دچار شکست می‌شود | به‌صورت صریح پیش‌بینی می‌شود | ضمنی؛ معمولاً درست است اما قابل ممیزی نیست |
+| **هندسه و مختصات** | کادرهای کلمه‌به‌کلمه همراه با امتیاز اطمینان | کادرهای بلوک‌به‌بلوک (متن، جدول، تصویر) همراه با ترتیب خوانش | لایه ممیزی کلمه‌به‌کلمه ارائه نمی‌دهد |
+| **جداول** | متدهای API مجزا برای جدول؛ ضعف در سلول‌های ادغام‌شده | ساختار درون‌خطی به صورت HTML یا Markdown | ارائه Markdown یا HTML بنا به درخواست |
+| **حالت شکست** | خطای خواندن کاراکترها؛ متن توهم‌آمیز نمی‌سازد | امکان توهم در صفحات مخدوش و بی‌کیفیت | توانایی تولید متن روان، قابل‌باور اما کاملاً اشتباه |
+| **عامل تعیین‌کننده هزینه** | مصرف CPU یا هزینه API به ازای هر صفحه | تعداد صفحات در ثانیه به ازای هر GPU، یا حدود ۱.۵۰ دلار به ازای هر ۱٬۰۰۰ صفحه از طریق API | مصرف توکن: حدود ۴ دلار (در Gemini 3.8 Flash، قیمت معرفی) تا ۲۳ دلار (در Claude Opus 5.5) به ازای هر ۱٬۰۰۰ صفحه طبق قیمت‌های رسمی اکتبر ۲۰۲۶ |
 
-For RAG, ask for **blocks, not just Markdown**. A list of typed blocks (heading, paragraph, table, figure, caption) with page number, bounding box and reading-order index lets you chunk on real boundaries, keep tables atomic, and cite a region of a page instead of a whole document. Parsing VLMs return this natively (Cohere Parse's `blocks` output, Nemotron Parse 2.0's layout classes and boxes); with a frontier VLM you have to request it with structured outputs and validate it.
+**شکاف کیفی چقدر است؟** در بنچمارک ParseBench، یک ارزیابی پارس اسناد که شرکت Cohere برای راه‌اندازی محصول خود اجرا کرد (گزارش ارائه‌دهنده، اوت ۲۰۲۶)، میانگین‌ها به این ترتیب بودند: مدل GPT-5.5 برابر ۸۴.۴، مدل Claude Opus 4.8 برابر ۸۴.۳، مدل Gemini 3.5 Flash برابر ۸۱.۸، سرویس Cohere Parse برابر ۷۹.۲، ابزار LlamaParse (در حالت مقرون‌به‌صرفه) برابر ۷۸.۳، ابزار Google Document AI برابر ۵۷.۳، و AWS Textract برابر ۵۳.۳. این اعداد نشان می‌دهند که مدل‌های پیشرو برتر حدود پنج امتیاز از Cohere Parse جلوتر هستند، و سرویس‌های OCR کلاسیک بیش از بیست امتیاز از هر دو عقب‌تر قرار دارند. این شکاف عمیق احتمالاً ناشی از فاکتورهایی است که بنچمارک پارس اسناد به آن‌ها پاداش می‌دهد (جداول، ترتیب خوانش، خروجی ساختاریافته) و نباید صرفاً به‌معنای ناتوانی Textract در خواندن حروف تلقی شود.
+
+**مدل‌های VLM پارس اسناد در سال ۲۰۲۶ با سرعت بالایی پیشرفت کردند.** بیشتر آن‌ها دارای وزن‌های باز (Open weights) هستند؛ در حالی که Cohere Parse صرفاً به‌صورت API یا محیط اختصاصی ارائه می‌شود. نمرات جدول زیر از بنچمارک‌ها و مراجع متفاوتی گردآوری شده‌اند، بنابراین آن‌ها را در امتداد سطرها با یکدیگر مقایسه نکنید:
+
+| مدل | تاریخ انتشار | توضیحات |
+|---|---|---|
+| مدل DeepSeek-OCR 2 | ۲۷ ژانویه ۲۰۲۶ | مجوز Apache 2.0 |
+| مدل PaddleOCR-VL | نسخه ۱.۵ در ۲۹ ژانویه ۲۰۲۶ | مقایسه ارائه‌شده توسط Jina امتیاز نسخه ۱.۶ را برابر ۹۶.۳۴ در OmniDocBench v1.6 نشان می‌دهد؛ مجوز Apache 2.0 |
+| مدل Chandra OCR 2 | ۱۸ مارس ۲۰۲۶ | امتیاز ۸۵.۸ در olmOCR-Bench؛ کد منبع با مجوز Apache 2.0، اما وزن‌ها تحت نسخه تغییریافته OpenRAIL-M ارائه شده است: استفاده رایگان برای تحقیقات، استفاده شخصی و استارتاپ‌های با جذب سرمایه یا درآمد کمتر از ۲ میلیون دلار، غیرمجاز برای کاربردهایی که با API شرکت Datalab رقابت کنند؛ در غیر این صورت نیازمند مجوز تجاری پولی |
+| مدل Surya OCR 2 | ۲۷ مه ۲۰۲۶ | کد منبع با مجوز Apache 2.0؛ وزن‌ها تحت نسخه تغییریافته OpenRAIL-M: رایگان برای تحقیقات، استفاده شخصی و استارتاپ‌های با سرمایه یا درآمد کمتر از ۵ میلیون دلار؛ در غیر این صورت نیازمند مجوز پولی |
+| مدل NVIDIA Nemotron Parse 2.0 | ۳ اوت ۲۰۲۶ | کمتر از ۱ میلیارد پارامتر؛ دسته‌بندی چیدمان، کادرهای مرزی، ترتیب خوانش، تبدیل نمودار به جدول؛ مجوز OpenMDW-1.1؛ با مدل Nemotron 3.5 Parse جایگزین شد |
+| مدل NVIDIA Nemotron 3.5 Parse | ۱۷ اکتبر ۲۰۲۶ | حدود ۰.۶۳۱ میلیارد پارامتر شامل سر پیش‌بینی چندتوکنی، مجوز OpenMDW-1.1، همراه با پیش‌نویس‌کننده اختیاری ۸۹.۳ میلیون پارامتری DFlash2 (۴ نوامبر). شرکت NVIDIA امتیاز ParseBench را ۷۲.۷۴ در تک‌گذر، ۷۴.۹۲ در دوگذر و ۷۵.۲۰ در سه‌گذر گزارش می‌دهد در مقایسه با ۶۳.۹۱ برای نسخه Nemotron Parse 2.0: تعداد گذرها اکنون اهرمی برای تنظیم دقت و هزینه است |
+| مدل Mistral OCR 4.1 (شناسه `mistral-ocr-4-1`) | ۱۶ ژوئیه ۲۰۲۶ (عرضه عمومی ۳۱ اوت) | وزن‌های بسته، نرخ API برابر ۴ دلار به ازای هر ۱٬۰۰۰ صفحه (۰.۴۰ دلار برای صفحات کش‌شده). شناسه `mistral-ocr-latest` به آن اشاره می‌کند؛ شرکت میسترال نسخه OCR 4.0 را در ۲۹ سپتامبر منسوخ و روز بعد بازنشسته کرد، بنابراین شناسه نسخه‌بندی‌شده را قفل کنید نه نام مستعار |
+| سرویس Cohere Parse (شناسه `parse-v5.0`) | ۲۷ اوت ۲۰۲۶ | وزن‌های بسته؛ مدل VLM با ۲.۳ میلیارد پارامتر، نرخ API برابر ۱.۵۰ دلار به ازای هر ۱٬۰۰۰ صفحه؛ خروجی Markdown با جداول HTML، یا بلوک‌های مرتب همراه با کادرهای مرزی |
+| مدل jina-ocr-v1 | ۱۴ سپتامبر ۲۰۲۶ | ساخته‌شده بر پایه DeepSeek-OCR (تعداد ۳.۴ میلیارد پارامتر کل، حدود ۵۷۰ میلیون پارامتر فعال MoE)؛ امتیاز ۹۱.۱۴ در OmniDocBench v1.6 و ۸۳.۴ در olmOCR-Bench؛ مجوز CC BY-NC 4.0، بنابراین بدون دریافت مجوز تجاری قابل استفاده برای مصارف تجاری نیست |
+| جعبه‌ابزار MinerU 4.0 | ۱۶ سپتامبر ۲۰۲۶ | جعبه‌ابزار مجهز به رده‌های کیفی و یک CLI عاملی؛ مجوز MinerU Open Source License (مجوز Apache 2.0 به‌همراه شروط اضافه): استفاده تجاری مجاز است، اما نیازمند مجوز مجزا برای کاربران فعال ماهانه بالای ۱۰۰ میلیون نفر یا درآمد ماهانه بالای ۲۰ میلیون دلار است، و سرویس‌های آنلاین باید نام MinerU را ذکر کنند |
+
+پیش از اتکا به نتایج بنچمارک، شرایط مجوزها را به دقت بررسی کنید. پارسری که نتوانید آن را به مرحله عملیاتی برسانید گزینه‌ای قابل استفاده نیست، و اصطلاح «وزن‌های باز» طیف وسیعی از مجوزها را در بر می‌گیرد؛ از Apache 2.0 گرفته تا مجوزهای غیرتجاری یا دارای سقف درآمدی که یک شرکت رو به رشد ممکن است به‌سرعت از آن فراتر برود.
 
 ---
 
-## Tiered Parsing and Block-Level Locators
+## استخراج چیدمان با مدل‌های بینایی-LLM <a id="vision-llm-layout-extraction"></a>
 
-Most pages in a real corpus are easy. Paying frontier-VLM prices for a born-digital PDF with a clean text layer is waste, so route each page to the cheapest tier that passes validation.
+گردش کار پایه همچنان مبتنی بر فرآیند **اسکرین‌شات به مارک‌داون (Screenshot-to-Markdown)** است:
+۱. **تبدیل به تصویر (Rasterize)**: صفحات PDF را به تصویر تبدیل کنید (صفحاتی که دارای لایه متنی بومی قابل استفاده هستند ممکن است اصلاً نیازی به این مرحله نداشته باشند).
+۲. **پرامپت‌نویسی بصری (Visual Prompting)**: از مدل بخواهید «صفحه زیر را با حفظ جداول و سرتیترها به قالب استاندارد GitHub Markdown رونویسی کند.»
+۳. **بازیابی ساختاریافته (Structured Recovery)**: از درک فضایی مدل برای بازسازی سلسله‌مراتب منطقی سند بهره بگیرید.
 
-MinerU 4.0 (September 16, 2026) builds this into the tool. It replaces backend selection with four quality tiers: **flash** (no models; native PDF text and digital documents), **basic** (small OCR, formula and table models; runs on CPU), **standard** (small models plus a VLM; the default) and **advanced** (more inference for hard documents). It also parses DOCX, PPTX, XLSX, EPUB, OFD, HTML and CSV natively without converting to PDF.
+برای معماری RAG، خروجی را **به‌صورت بلوک‌های مجزا بخواهید، نه صرفاً یک متن مارک‌داون پیوسته**. فهرستی از بلوک‌های دارای نوع (سرتیتر، پاراگراف، جدول، شکل، زیرنویس) همراه با شماره صفحه، کادر مرزی و شاخص ترتیب خوانش به شما امکان می‌دهد قطعه‌بندی (Chunking) را روی مرزهای واقعی انجام دهید، ساختار اتمیک جداول را حفظ کنید، و به جای کل یک سند به یک بخش مشخص از صفحه ارجاع دهید. مدل‌های VLM پارس اسناد این اطلاعات را به‌صورت بومی ارائه می‌دهند (مانند خروجی `blocks` در Cohere Parse و کلاس‌ها و کادرهای چیدمان در Nemotron Parse 2.0)؛ در مقابل، با یک VLM پیشرو باید این ساختار را از طریق خروجی‌های ساختاریافته (Structured Outputs) درخواست کرده و صحت آن را اعتبارسنجی نمایید.
+
+---
+
+## پارس چندلایه و مکان‌یاب‌های در سطح بلوک <a id="tiered-parsing-and-block-level-locators"></a>
+
+بیشتر صفحات در یک مجموعه اسناد واقعی ساده هستند. پرداخت هزینه مدل‌های پیشرو VLM برای یک فایل PDF که اساساً دیجیتالی تولید شده و دارای لایه متنی تمیز است هدر دادن منابع به شمار می‌رود؛ بنابراین هر صفحه را به ارزان‌ترین لایه‌ای هدایت کنید که اعتبارسنجی را با موفقیت پشت سر بگذارد.
+
+ابزار MinerU 4.0 (۱۶ سپتامبر ۲۰۲۶) این منطق را درون خود پیاده‌سازی کرده است. این ابزار به جای انتخاب دستی بک‌اند، چهار سطح کیفی ارائه می‌دهد: رده **flash** (بدون مدل؛ استفاده از متن بومی PDF و اسناد دیجیتال)، رده **basic** (مدل‌های کوچک OCR، فرمول و جدول؛ قابل اجرا روی پردازنده CPU)، رده **standard** (مدل‌های کوچک به‌همراه یک VLM؛ حالت پیش‌فرض) و رده **advanced** (استنتاج عمیق‌تر برای اسناد دشوار). این ابزار همچنین فرمت‌های DOCX، PPTX، XLSX، EPUB، OFD، HTML و CSV را به‌صورت بومی و بدون نیاز به تبدیل به PDF پارس می‌کند.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -79,98 +83,102 @@ flowchart TD
     X --> O
 ```
 
-**Locators make citations verifiable.** MinerU 4.0's `mineru` CLI (parse, read, find, search, watch) returns stable locators such as `doc:{id}/tier:{tier}/page:{page}/block:{block}` and reads long documents progressively (the first 10 pages plus a continuation request), so an agent can cite a block and a reviewer can open exactly that region. Parsing is local unless `--remote` is passed. Docling followed the same direction with pluggable VLM backends: NVIDIA Nemotron Parse 2.0 in v2.128.0 (September 16), MinerU 2.5 Pro in v2.130.0 (September 22), and Nemotron 3.5 Parse in v2.141.0 (October 20).
+</div>
 
-Store the parser name, version and tier on every block. Docling changed its reading-order algorithm in v2.132.0 (October 1, 2026); a parser upgrade can reorder text and move chunk boundaries, which silently changes retrieval. Re-parse a sample and diff before upgrading in production.
+**مکان‌یاب‌ها اعتبارسنجی ارجاعات را میسر می‌سازند.** ابزار خط فرمان `mineru` در MinerU 4.0 (دارای دستورات parse، read، find، search و watch) مکان‌یاب‌های پایداری مانند `doc:{id}/tier:{tier}/page:{page}/block:{block}` را برمی‌گرداند و اسناد طولانی را به‌صورت تدریجی می‌خواند (۱۰ صفحه نخست به‌همراه درخواست ادامه)، بنابراین یک Agent می‌تواند دقیقاً به یک بلوک استناد کند و یک بازبین انسانی دقیقاً همان بخش را باز کند. فرآیند پارس محلی است مگر اینکه پرچم `--remote` ارسال شود. ابزار Docling نیز همین مسیر را با ارائه بک‌اندهای ماژولار VLM طی کرد: افزونه NVIDIA Nemotron Parse 2.0 در نسخه v2.128.0 (۱۶ سپتامبر)، افزونه MinerU 2.5 Pro در نسخه v2.130.0 (۲۲ سپتامبر)، و افزونه Nemotron 3.5 Parse در نسخه v2.141.0 (۲۰ اکتبر).
 
-**Parser workers are an attack surface.** Untrusted office files and PDFs run through LibreOffice, image decoders and VLM preprocessors, so sandbox the workers like any code that handles hostile input. Reducto's self-hosted release v1.12.21 (October 29, 2026) carried the concrete case: on nodes where pods can reach the cloud instance metadata service (IMDSv1, or IMDSv2 with a hop limit of 2), LibreOffice parsing of an untrusted document could reach the node's instance role. The fix is to set the IMDSv2 hop limit to 1 or block 169.254.169.254 from the namespace. Run parser pods with no metadata access, no node role, and egress limited to where results go.
+نام، نسخه و سطح کیفی پارسر را در تمامی بلوک‌ها ذخیره کنید. ابزار Docling الگوریتم ترتیب خوانش خود را در نسخه v2.132.0 (۱ اکتبر ۲۰۲۶) تغییر داد؛ ارتقای یک پارسر می‌تواند توالی متن را جابه‌جا کرده و مرزهای چانک‌ها را تغییر دهد، که به‌صورت خاموش کیفیت بازیابی را متأثر می‌سازد. پیش از ارتقا در محیط پروداکشن، نمونه‌ای از اسناد را مجدداً پارس کرده و تفاوت‌ها (Diff) را بررسی کنید.
+
+**ورکرهای پارسر یک سطح حمله به شمار می‌روند.** فایل‌های غیرقابل اعتماد آفیس و اسناد PDF از بسته‌های LibreOffice، دیکودرهای تصویر و پیش‌پردازشگرهای VLM عبور می‌کنند، بنابراین ورکرها را مانند هر کدی که ورودی‌های خصمانه را پردازش می‌کند ایزوله و سندباکس نمایید. انتشار سلف‌هاستد Reducto نسخه v1.12.21 (۲۹ اکتبر ۲۰۲۶) نمونه‌ای عینی را به همراه داشت: در گره‌هایی که پادها به سرویس متادیتای نمونه ابری (IMDSv1، یا IMDSv2 با سقف پرش ۲) دسترسی داشتند، پارس یک سند غیرقابل اعتماد در LibreOffice می‌توانست به نقش IAM گره دست یابد. راه‌حل تنظیم سقف پرش IMDSv2 روی ۱ یا مسدودسازی آدرس 169.254.169.254 در سطح فضای نام (Namespace) است. پادهای پارسر را بدون دسترسی به متادیتا، بدون نقش گره، و با ترافیک خروجی محدود به مقصد نتایج اجرا کنید.
 
 ---
 
-## Reading Order and Logical Structure
+## ترتیب خوانش و ساختار منطقی <a id="reading-order-and-logical-structure"></a>
 
 > [!IMPORTANT]
-> A common failure in naive RAG is breaking a paragraph across a column.
-> Vision models avoid this by "seeing" the column gutter and sequencing the text correctly, unlike rule-based parsers that might read straight across both columns.
+> یکی از خطاهای متداول در سیستم‌های RAG ساده، شکستن یک پاراگراف در میان ستون‌های مجاور است.
+> مدل‌های بینایی با «دیدن» فضای میان ستون‌ها (Gutter) و توالی صحیح متن از این خطا جلوگیری می‌کنند، برخلاف پارسرهای مبتنی بر قاعده که ممکن است متن را در راستای عرضی هر دو ستون بخوانند.
 
-Parsing VLMs predict reading order as an explicit output, which you can check (for example, flag pages where the predicted order jumps between columns more than once). Frontier VLMs usually get it right but give you nothing to audit, so for multi-column legal and scientific documents prefer a parser that emits an order index.
-
----
-
-## Handling Low-Quality Scans and Handwriting
-
-Modern vision models are far more robust than character-level OCR to:
-- **Skew and rotation**: usually handled without a deskew pass, though a cheap deskew still helps small parsing models.
-- **Bleed-through**: semantic context helps the model ignore text from the back of the page.
-- **Handwritten annotations**: can be extracted into a separate `annotations` field.
-
-Robust is not the same as reliable. On degraded pages the dangerous failure is a fluent, plausible transcription of text that is not there. For high-stakes fields (amounts, dates, IDs), run a classic OCR pass as a cross-check and flag tokens the VLM produced that OCR cannot find on the page, and route low-confidence handwriting to human review rather than trusting any single model.
+مدل‌های VLM پارس اسناد، ترتیب خوانش را به‌عنوان یک خروجی صریح پیش‌بینی می‌کنند که قابل ارزیابی و بررسی است (برای مثال، می‌توان صفحاتی را که ترتیب پیش‌بینی‌شده در آن‌ها بیش از یک بار بین ستون‌ها جابه‌جا می‌شود علامت‌گذاری کرد). مدل‌های VLM پیشرو معمولاً این ترتیب را درست درک می‌کنند اما ابزاری برای ممیزی در اختیار شما نمی‌گذارند؛ بنابراین برای اسناد حقوقی و مقالات علمی چندستونه، استفاده از پارسرهایی که شاخص ترتیب خوانش تولید می‌کنند ارجحیت دارد.
 
 ---
 
-## Cost and Latency Tradeoffs
+## مدیریت اسکن‌های بی‌کیفیت و متون دست‌نویس <a id="handling-low-quality-scans-and-handwriting"></a>
 
-Frontier rows assume about 1.7K input tokens (page image plus prompt) and 800 output tokens per page at November 2, 2026 list prices (unchanged since October 1), before reasoning tokens; Batch APIs halve them.
+مدل‌های بینایی مدرن نسبت به سیستم‌های OCR کلمه‌محور در برابر موارد زیر بسیار مقاوم‌تر هستند:
+- **کجی و چرخش تصویر (Skew and rotation)**: معمولاً بدون نیاز به گام تصحیح زاویه (Deskew) پردازش می‌شوند، هرچند تصحیح زاویه سبک همچنان به مدل‌های پارس کوچک کمک می‌کند.
+- **پس دادن جوهر از پشت صفحه (Bleed-through)**: زمینه معنایی به مدل کمک می‌کند متون محو پشت صفحه را نادیده بگیرد.
+- **یادداشت‌های دست‌نویس (Handwritten annotations)**: می‌توان آن‌ها را در یک فیلد مجزا به نام `annotations` استخراج نمود.
 
-| Option | Use Case | Throughput | Cost (1K pages) |
-|--------|----------|------------|-----------------|
-| **Self-hosted parsing VLM** (MinerU, PaddleOCR-VL, Nemotron 3.5 Parse, DeepSeek-OCR 2) | PII-sensitive, on-prem, high volume | Varies by model; for scale, jina-ocr-v1 reports 2.57 pages/s on one A100 at concurrency 32 (vendor-reported) | GPU $/hr ÷ (pages/s x 3.6); about $0.22 at $2/GPU-hr and 2.5 pages/s, at full utilization |
-| **Cohere Parse API** | Managed specialist parser | 4.5 pages/s per GPU; 36 pages/s per 8xH100 node (vendor-reported) | $1.50 |
-| **Mistral OCR 4.1 API** | Managed specialist parser | Not published | $4 ($0.40 cached) |
-| **Gemini 3.8 Flash** | High-volume frontier fallback | 1-2 s / page | ~$4 at the intro price; ~$9 from January 1, 2027 |
-| **Claude Sonnet 5.5 / GPT-6 Sol** | Hard pages, legal precision | 3-5 s / page | ~$11 |
-| **Claude Opus 5.5** | Hardest pages only | 3-5 s / page | ~$23 |
-
-Cohere also sells single-tenant deployment (Model Vault) and says it cuts inference cost 23% versus the API at 50% GPU utilization and up to 61% at full utilization (vendor-reported). The utilization caveat applies to every self-hosted row: a GPU pool sized for peak ingestion and idle the rest of the day costs several times the full-utilization number.
+مقاوم بودن به معنای قابل‌اعتماد بودن مطلق نیست. در صفحات با افت کیفیت، شکست پرخطر این است که مدل متنی روان و باورپذیر را رونویسی کند که اصلاً روی صفحه وجود ندارد. برای فیلدهای حساس و حیاتی (مانند مبالغ مالی، تاریخ‌ها، شناسه‌ها)، یک گذر OCR کلاسیک را به‌عنوان کنترل متقابل اجرا کنید و توکن‌هایی را که VLM تولید کرده اما OCR در صفحه پیدا نکرده است علامت‌گذاری نمایید؛ همچنین دست‌خط‌های دارای اطمینان پایین را به جای اعتماد به یک مدل منفرد، به بازبینی انسانی ارجاع دهید.
 
 ---
 
-## Interview Questions
+## موازنه‌های هزینه و تأخیر <a id="cost-and-latency-tradeoffs"></a>
 
-### Q: Why would you still use AWS Textract or Azure AI Document Intelligence when vision LLMs exist?
+ردیف‌های مربوط به مدل‌های پیشرو فرض می‌کنند که در هر صفحه حدود ۱.۷ هزار توکن ورودی (تصویر صفحه به‌علاوه پرامپت) و ۸۰۰ توکن خروجی با قیمت‌های رسمی ۲ نوامبر ۲۰۲۶ (بدون تغییر از ۱ اکتبر)، پیش از اعمال توکن‌های استدلال مصرف می‌شود؛ استفاده از Batch API این هزینه‌ها را به نصف کاهش می‌دهد.
 
-**Strong answer:**
-Three reasons survive, and one does not.
+| گزینه | موارد کاربرد | توان عملیاتی (Throughput) | هزینه (به ازای ۱K صفحه) |
+|---|---|---|---|
+| مدل‌های **VLM پارس اسناد به‌صورت سلف‌هاستد** (MinerU، PaddleOCR-VL، Nemotron 3.5 Parse، DeepSeek-OCR 2) | داده‌های دارای اطلاعات هویتی حساس (PII)، استقرار درون‌سازمانی، حجم بالا | متغیر بر اساس مدل؛ برای مقیاس، مدل jina-ocr-v1 نرخ ۲.۵۷ صفحه بر ثانیه را روی یک A100 با همروندی ۳۲ گزارش می‌دهد (گزارش سازنده) | هزینه هر ساعت GPU تقسیم بر (صفحات در ثانیه ضرب‌در ۳.۶)؛ حدود ۰.۲۲ دلار به ازای ۲ دلار در هر ساعت GPU با ۲.۵ صفحه بر ثانیه، در ظرفیت اشغال کامل |
+| سرویس **Cohere Parse API** | پارسر تخصصی مدیریت‌شده | ۴.۵ صفحه در ثانیه به ازای هر GPU؛ ۳۶ صفحه در ثانیه به ازای هر گره ۸ کارت H100 (گزارش سازنده) | ۱.۵۰ دلار |
+| سرویس **Mistral OCR 4.1 API** | پارسر تخصصی مدیریت‌شده | منتشر نشده است | ۴ دلار (۰.۴۰ دلار برای موارد کش‌شده) |
+| مدل **Gemini 3.8 Flash** | گزینه جایگزین اقتصادی مدل‌های پیشرو در حجم بالا | ۱ تا ۲ ثانیه برای هر صفحه | حدود ۴ دلار در قیمت معرفی؛ حدود ۹ دلار از ۱ ژانویه ۲۰۲۷ |
+| مدل‌های **Claude Sonnet 5.5 / GPT-6 Sol** | صفحات دشوار، دقت بالای حقوقی | ۳ تا ۵ ثانیه برای هر صفحه | حدود ۱۱ دلار |
+| مدل **Claude Opus 5.5** | فقط برای پیچیده‌ترین صفحات | ۳ تا ۵ ثانیه برای هر صفحه | حدود ۲۳ دلار |
 
-1. **Word-level geometry with confidence scores.** Redaction tools, form-field mapping and human review UIs need a box and a confidence for every word. Parsing VLMs now give block-level boxes and reading order, so the "only OCR gives you boxes" argument has narrowed to word-level work.
-2. **Failure mode.** OCR misreads characters, but it does not invent fluent text. For compliance workloads I use OCR output as a check on the VLM: any VLM token that OCR cannot find on the page gets flagged.
-3. **Procurement and compliance.** A managed, certified service inside the existing cloud contract is sometimes the only thing a regulated buyer can approve quickly.
-
-What no longer holds is "OCR services are better at structure". On Cohere's vendor-run ParseBench, Textract averaged 53.3 and Google Document AI 57.3, against roughly 78 to 84 for specialist parsers and frontier models. So the pattern is hybrid: OCR for words and geometry, a VLM for structure, and a cross-check between them.
-
-### Q: How do you handle a 500-page PDF with vision models efficiently?
-
-**Strong answer:**
-I use a **routed, parallel map-reduce** pattern.
-1. **Route**: Pages with a clean native text layer skip the vision model entirely; the rest go to a parsing VLM, and only pages that fail validation escalate to a frontier model.
-2. **Map**: Spin up parallel workers (AWS Lambda, Modal, or a GPU pool) to process 10 pages each. With 50 workers at 1-2 seconds per page, each worker finishes in 10-20 seconds, so wall-clock time drops from 8-17 minutes sequential to well under a minute, as long as the provider's rate limits allow 50 concurrent requests and each request fits the payload cap. Caps differ by platform: Anthropic raised the first-party Claude API's Messages and Token Counting limit from 32 MB to 128 MB on October 28, 2026, while Google-managed Agent Platform limits Claude payloads to 30 MB, so a gateway that fails over between them must batch page images to the smallest cap.
-3. **Consolidate**: A final pass stitches blocks across page boundaries, repairs tables split over two pages, and checks header continuity.
-4. **Index**: Store blocks with page, box and locator metadata so every chunk can cite its source region.
-
-### Q: You need to parse 5M pages a month for RAG ingestion. Frontier VLM, specialist API, or self-hosted?
-
-**Strong answer:**
-I would price all three, then route instead of picking one.
-
-- **Frontier VLM for everything**: about $57K a month on Claude Sonnet 5.5 or GPT-6 Sol at list price (roughly half with a Batch API), or about $21K on Gemini 3.8 Flash at its intro price, doubling to about $43K when the intro price ends on January 1, 2027.
-- **Specialist API**: 5M pages at Cohere Parse's $1.50 per 1,000 is $7,500 a month.
-- **Self-hosted parsing VLM**: at 2.5 pages per second per GPU, 5M pages is about 556 GPU-hours, roughly $1,600 a month at the $2.93 per H100-hour Silicon Data index (November 1, 2026; it read $2.78 in early October), assuming full utilization. Real cost is higher once the pool is sized for peak and someone owns it, and the license must allow commercial use (jina-ocr-v1's CC BY-NC 4.0 does not).
-
-The design: self-host or use the specialist API for the bulk, validate every page, and escalate the few percent that fail (charts, handwriting, dense tables) to a frontier model. At 5% escalation that is about 250K frontier pages, under $3K a month. Before committing, I would run 500 of our own pages through each option, because the frontier-versus-specialist comparison cited above (ParseBench) is vendor-run and shows a five-point frontier advantage that may or may not show up on our documents.
+شرکت Cohere همچنین امکان استقرار در محیط اختصاصی مشتری (Model Vault) را ارائه می‌دهد و بیان می‌کند که این روش هزینه استنتاج را نسبت به API تا ۲۳٪ در نرخ اشغال ۵۰٪ و تا ۶۱٪ در اشغال کامل کاهش می‌دهد (گزارش ارائه‌دهنده). نکته مربوط به ضریب اشغال برای تمام گزینه‌های سلف‌هاستد صادق است: استخر کارت‌های گرافیکی که برای ساعات اوج بار طراحی شده و در بقیه روز بیکار بماند، چندین برابر گران‌تر از هزینه برآوردشده در اشغال کامل خواهد بود.
 
 ---
 
-## References
-- Cohere. "Introducing Cohere Parse" and changelog (August 2026)
-- Jina AI. "jina-ocr-v1: Faster Document Parsing on Low-Budget GPUs" and model card (September 2026)
-- OpenDataLab. MinerU 4.0 release notes (September 2026)
-- NVIDIA. Nemotron Parse 2.0 model card (August 2026) and [Nemotron 3.5 Parse model card](https://huggingface.co/nvidia/Nemotron-3.5-Parse) (October 2026)
-- [Mistral changelog](https://docs.mistral.ai/getting-started/changelog) (OCR 4.1; OCR 4.0 retired September 30, 2026)
-- [Reducto changelog](https://docs.reducto.ai/changelog) (v1.12.21 security advisory, October 29, 2026)
-- Docling. Release notes, v2.128.0 to v2.141.0 (September to October 2026)
-- OpenDataLab. OmniDocBench (v1.6)
-- Allen Institute for AI. olmOCR-Bench
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
+
+### پرسش: با وجود مدل‌های بزرگ زبانی دیداری (Vision LLMs)، چرا همچنان از ابزارهایی مانند AWS Textract یا Azure AI Document Intelligence استفاده می‌کنید؟
+
+**پاسخ قوی:**
+سه دلیل همچنان معتبر هستند، و یک دلیل دیگر اعتباری ندارد.
+
+۱. **هندسه کلمه‌به‌کلمه همراه با امتیازات اطمینان.** ابزارهای ماسک‌کردن داده‌ها (Redaction)، نگاشت فیلدهای فرم و رابط‌های کاربری بازبینی انسانی به یک کادر مرزی و ضریب اطمینان برای تک‌تک کلمات نیاز دارند. مدل‌های VLM پارس اسناد اکنون کادرهای در سطح بلوک و ترتیب خوانش را ارائه می‌دهند، بنابراین این بحث که «تنها OCR کادر مرزی تولید می‌کند» به کارهای نیازمند تفکیک دقیق در سطح کلمه محدود شده است.
+۲. **حالت و الگوی شکست (Failure Mode).** ابزارهای OCR کاراکترها را اشتباه می‌خوانند، اما متن روان و من‌درآوردی جعل نمی‌کنند. برای کارهای منطبق با الزامات قانونی، من از خروجی OCR به‌عنوان کنترلی بر VLM استفاده می‌کنم: هر توکنی از VLM که OCR نتواند آن را در صفحه بیابد علامت‌گذاری می‌شود.
+۳. **فرآیندهای تدارکات سازمانی و انطباق قانونی.** گاهی یک سرویس ابری تأییدشده و مدیریت‌شده که درون قراردادهای ابری فعلی سازمان قرار دارد، تنها گزینه‌ای است که خریدار تحت نظارت‌های قانونی می‌تواند به‌سرعت آن را تصویب کند.
+
+آنچه دیگر صحت ندارد این ادعاست که «سرویس‌های OCR در درک ساختار بهتر هستند». در بنچمارک ParseBench ارائه‌شده توسط Cohere، ابزار Textract میانگین ۵۳.۳ و Google Document AI میانگین ۵۷.۳ را کسب کردند، در مقایسه با ارقام حدود ۷۸ تا ۸۴ برای پارسرهای تخصصی و مدل‌های پیشرو. بنابراین الگوی برتر، یک سیستم ترکیبی (Hybrid) است: OCR برای استخراج کلمات و هندسه دقیق، VLM برای درک ساختار کلی، و اعتبارسنجی متقابل میان آن دو.
+
+### پرسش: چگونه یک سند PDF پانصد صفحه‌ای را با استفاده از مدل‌های بینایی به‌صورت کارآمد پردازش می‌کنید؟
+
+**پاسخ قوی:**
+من از الگوی **مسیریابی‌شده و موازی Map-Reduce** استفاده می‌کنم.
+۱. **مسیریابی (Route)**: صفحاتی که دارای یک لایه متنی بومی تمیز هستند اصلاً وارد مدل بینایی نمی‌شوند؛ مابقی صفحات به یک VLM پارس اسناد هدایت می‌گردند، و تنها صفحاتی که در اعتبارسنجی رد شوند به یک مدل پیشرو منتقل خواهند شد.
+۲. **توزیع و اجرا (Map)**: راه‌اندازی ورکرهای موازی (از طریق AWS Lambda، Modal یا استخر GPU) که هر یک ۱۰ صفحه را پردازش کنند. با ۵۰ ورکر و نرخ ۱ تا ۲ ثانیه برای هر صفحه، هر ورکر ظرف ۱۰ تا ۲۰ ثانیه به پایان می‌رسد؛ بنابراین زمان پردازش کلی از ۸ تا ۱۷ دقیقه ترتیبی به کمتر از یک دقیقه کاهش می‌یابد، به شرطی که سقف نرخ درخواست (Rate Limits) ارائه‌دهنده اجازه ۵۰ درخواست همزمان را بدهد و هر درخواست در سقف حجم Payload بگنجد. سقف‌ها در پلتفرم‌های مختلف متفاوت است: Anthropic در ۲۸ اکتبر ۲۰۲۶ سقف حجم پیام‌ها و شمارش توکن را در API مستقیم Claude از ۳۲ مگابایت به ۱۲۸ مگابایت افزایش داد، در حالی که پلتفرم مدیریت‌شده گوگل برای Claude سقف ۳۰ مگابایت دارد؛ بنابراین یک درگاه هوشمند باید تصاویر صفحات را متناسب با کمترین سقف بسته‌بندی کند.
+۳. **یکپارچه‌سازی (Consolidate)**: در مرحله نهایی، بلوک‌ها در امتداد مرزهای صفحات به هم پیوند داده می‌شوند، جداولی که بین دو صفحه نصف شده‌اند ترمیم می‌گردند، و پیوستگی سرتیترها بررسی می‌شود.
+۴. **نمایه‌سازی (Index)**: بلوک‌ها به همراه شماره صفحه، مختصات کادر و فراداده مکان‌یاب ذخیره می‌شوند تا هر چانک بتواند به بخش دقیق منبع خود ارجاع دهد.
+
+### پرسش: شما نیاز دارید ماهانه ۵ میلیون صفحه را برای تغذیه سیستم RAG پارس کنید. مدل VLM پیشرو، سرویس API تخصصی یا میزبانی اختصاصی (Self-hosted)؟
+
+**پاسخ قوی:**
+من هر سه گزینه را قیمت‌گذاری کرده و سپس به جای انتخاب منفرد، یک سازوکار مسیریابی طراحی می‌کنم.
+
+- **مدل VLM پیشرو برای همه چیز**: حدود ۵۷ هزار دلار در ماه با Claude Sonnet 5.5 یا GPT-6 Sol طبق قیمت‌های رسمی (با استفاده از Batch API تقریباً نصف می‌شود)، یا حدود ۲۱ هزار دلار با Gemini 3.8 Flash در قیمت معرفی که از اول ژانویه ۲۰۲۷ با پایان تخفیف به حدود ۴۳ هزار دلار می‌رسد.
+- **سرویس API تخصصی**: پردازش ۵ میلیون صفحه با نرخ ۱.۵۰ دلار در هر ۱٬۰۰۰ صفحه در Cohere Parse برابر با ۷٬۵۰۰ دلار در ماه است.
+- **مدل VLM پارس به‌صورت سلف‌هاستد**: با نرخ ۲.۵ صفحه در ثانیه به ازای هر GPU، پردازش ۵ میلیون صفحه حدود ۵۵۶ ساعت GPU نیاز دارد که بر اساس شاخص ۲.۹۳ دلار در هر ساعت H100 (اول نوامبر ۲۰۲۶) با فرض اشغال کامل حدود ۱٬۶۰۰ دلار در ماه می‌شود. هزینه واقعی زمانی که استخر برای ساعات پیک طراحی شود و نیروهای فنی برای نگهداری آن در نظر گرفته شوند بالاتر خواهد بود، و نوع مجوز نیز باید استفاده تجاری را مجاز بداند (برای مثال مجوز CC BY-NC 4.0 در jina-ocr-v1 این اجازه را نمی‌دهد).
+
+طرح معماری من: استفاده از مدل سلف‌هاستد یا API تخصصی برای بخش عمده صفحات، اعتبارسنجی تک‌تک صفحات، و هدایت چند درصد معدودی که دچار خطا می‌شوند (نمودارهای پیچیده، دست‌خط‌ها، جداول فشرده) به یک مدل پیشرو. با نرخ ارجاع ۵ درصدی، این مقدار معادل ۲۵۰ هزار صفحه در مدل پیشرو خواهد بود که کمتر از ۳ هزار دلار هزینه دارد. قبل از نهایی کردن تصمیم، ۵۰۰ صفحه از اسناد واقعی خودمان را در هر گزینه اجرا می‌کنم؛ زیرا مقایسه ParseBench توسط ارائه‌دهنده اجرا شده و برتری ۵ امتیازی مدل‌های پیشرو ممکن است در اسناد سازمان ما اثر متفاوتی داشته باشد.
 
 ---
 
-*Related: [Multi-Modal RAG](../06-retrieval-systems/12-multimodal-rag.md) | [Case Study: Document Intelligence](../16-case-studies/10-document-intelligence.md)*
+## منابع <a id="references"></a>
+- مستندات Cohere. معرفی سرویس Cohere Parse و تاریخچه تغییرات (اوت ۲۰۲۶)
+- مستندات Jina AI. پارس سریع‌تر اسناد روی کارت‌های گرافیکی اقتصادی با jina-ocr-v1 و کارت مدل (سپتامبر ۲۰۲۶)
+- مستندات OpenDataLab. یادداشت‌های انتشار MinerU 4.0 (سپتامبر ۲۰۲۶)
+- مستندات NVIDIA. کارت مدل Nemotron Parse 2.0 (اوت ۲۰۲۶) و [کارت مدل Nemotron 3.5 Parse](https://huggingface.co/nvidia/Nemotron-3.5-Parse) (اکتبر ۲۰۲۶)
+- [تاریخچه تغییرات Mistral](https://docs.mistral.ai/getting-started/changelog) (مدل OCR 4.1؛ بازنشستگی OCR 4.0 در ۳۰ سپتامبر ۲۰۲۶)
+- [تاریخچه تغییرات Reducto](https://docs.reducto.ai/changelog) (هشدار امنیتی نسخه v1.12.21، ۲۹ اکتبر ۲۰۲۶)
+- مستندات Docling. یادداشت‌های انتشار نسخه‌های v2.128.0 تا v2.141.0 (سپتامبر تا اکتبر ۲۰۲۶)
+- مؤسسه OpenDataLab. بنچمارک OmniDocBench (نسخه ۱.۶)
+- مؤسسه Allen Institute for AI. بنچمارک olmOCR-Bench
+
+---
+
+*مباحث مرتبط: [معماری RAG چندحالته](../06-retrieval-systems/12-multimodal-rag.md) | [مطالعه موردی: هوش اسناد](../16-case-studies/10-document-intelligence.md)*
+
+</div>
