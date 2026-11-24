@@ -1,52 +1,56 @@
-# Reliability Patterns
+<div dir="rtl">
 
-Production LLM systems need reliability patterns beyond basic retry logic. This chapter covers advanced patterns for building resilient AI applications.
+# الگوهای پایایی و تاب‌آوری (Reliability Patterns)
 
-## Table of Contents
+سیستم‌های LLM در محیط پروداکشن به الگوهای پایایی فراتر از منطق ساده تلاش مجدد (Retry) نیاز دارند. این فصل الگوهای پیشرفته برای ساخت برنامه‌های هوش مصنوعی تاب‌آور را پوشش می‌دهد.
 
-- [Reliability Challenges](#reliability-challenges)
-- [Retry Patterns](#retry-patterns)
-- [Circuit Breaker](#circuit-breaker)
-- [Bulkhead Pattern](#bulkhead-pattern)
-- [Timeout Strategies](#timeout-strategies)
-- [Graceful Degradation](#graceful-degradation)
-- [Multi-Provider Failover](#multi-provider-failover)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Reliability Challenges
-
-### LLM-Specific Failure Modes
-
-| Failure Mode | Cause | Impact |
-|--------------|-------|--------|
-| Rate limiting | Quota exceeded, traffic ramping too fast | Request rejection |
-| Spend cap | Monthly budget limit reached | A 429 that no retry clears until the cap resets or is raised |
-| Timeouts | Long generation, network issues | Slow/failed responses |
-| Provider outage | Infrastructure issues | Complete failure |
-| Quality degradation | Model updates (sometimes under the same model ID), SDK default-model changes, load | Worse outputs with no error |
-| Model retirement | Scheduled shutdown of a model ID (for example `claude-sonnet-4-5-20250929` on November 30, 2026) | Hard failures on a date announced in advance (Anthropic gives at least 60 days' notice; OpenAI six months for GA models, as little as two weeks for previews) |
-| Safety refusal | Provider classifier declines the request | HTTP 200 with empty content that looks like success |
-| Context overflow | Input too large | Request failure |
-| Malformed output | Generation errors | Parsing failures |
-
-Two of these rows are easy to miss because nothing throws. **Silent quality changes** happen under stable model IDs: GPT-6 Sol and GPT-6 Luna launched on September 22, 2026 with an image-encoding bug that degraded image understanding and computer use; OpenAI fixed it on September 25 without a new snapshot and told customers with image inputs to rerun their evals. Pinning a model ID pins the name, not the serving stack. Defaults move too: openai-agents 0.20.0 (August 11, 2026) made `gpt-5.6-luna` its implicit default model, so an agent that never named a model changed models on a routine dependency bump. Name the model explicitly everywhere. **Safety refusals** on the newest Claude models arrive as successful responses with `stop_reason: "refusal"`, so retry logic keyed on exceptions never sees them (see [Handling Safety Refusals](#handling-safety-refusals)).
-
-### Reliability Targets
-
-| Tier | Availability | Latency p99 | Examples |
-|------|--------------|-------------|----------|
-| Critical | 99.99% | < 3s | Payment processing |
-| Standard | 99.9% | < 10s | Customer support |
-| Best effort | 99% | < 30s | Background tasks |
+- [چالش‌های پایایی و تاب‌آوری (Reliability Challenges)](#چالشهای-پایایی-و-تابآوری-reliability-challenges)
+- [الگوهای تلاش مجدد (Retry Patterns)](#الگوهای-تلاش-مجدد-retry-patterns)
+- [قطع‌کننده مدار (Circuit Breaker)](#قطعکننده-مدار-circuit-breaker)
+- [الگوی تیغه یا دیواره آتش (Bulkhead Pattern)](#الگوی-تیغه-یا-دیواره-آتش-bulkhead-pattern)
+- [استراتژی‌های انقضای زمان (Timeout Strategies)](#استراتژیهای-انقضای-زمان-timeout-strategies)
+- [کاهش تدریجی سطح خدمت (Graceful Degradation)](#کاهش-تدریجی-سطح-خدمت-graceful-degradation)
+- [تغییر مسیر اضطراری میان چند ارائه‌دهنده (Multi-Provider Failover)](#تغییر-مسیر-اضطراری-میان-چند-ارائهدهنده-multi-provider-failover)
+- [پرسش‌های مصاحبه (Interview Questions)](#پرسشهای-مصاحبه-interview-questions)
+- [مراجع (References)](#مراجع-references)
 
 ---
 
-## Retry Patterns
+## چالش‌های پایایی و تاب‌آوری (Reliability Challenges)
 
-### Exponential Backoff with Jitter
+### حالت‌های شکست خاص LLM
+
+| حالت شکست (Failure Mode) | علت رخداد | پیامد و اثر (Impact) |
+|---|---|---|
+| محدودیت نرخ (Rate limiting) | اتمام سهمیه (Quota)، افزایش بسیار سریع ترافیک | رد شدن درخواست |
+| سقف بودجه و هزینه (Spend cap) | رسیدن به سقف بودجه ماهانه | خطای 429 که هیچ تلاش مجددی آن را رفع نمی‌کند تا زمان ریست شدن یا افزایش سقف |
+| انقضای زمان (Timeouts) | تولید طولانی خروجی، مشکلات شبکه | پاسخ‌های کند یا با شکست مواجه‌شده |
+| قطعی ارائه‌دهنده (Provider outage) | اختلالات و مشکلات زیرساختی ارائه‌دهنده | شکست و توقف کامل سرویس |
+| افت کیفیت خروجی (Quality degradation) | به‌روزرسانی مدل‌ها (گاهی تحت شناسه مدل یکسان)، تغییر مدل پیش‌فرض SDK، بار کاری بالا | خروجی‌های ضعیف‌تر بدون بروز هیچ‌گونه خطای نرم‌افزاری |
+| بازنشستگی مدل (Model retirement) | خاموشی زمان‌بندی‌شده یک شناسه مدل (مانند `claude-sonnet-4-5-20250929` در ۳۰ نوامبر ۲۰۲۶) | خطاهای سخت در تاریخی که از قبل اعلام شده است (Anthropic حداقل ۶۰ روز، OpenAI شش ماه برای مدل‌های GA و تا دو هفته برای پیش‌نمایش‌ها مهلت می‌دهد) |
+| امتناع‌های ایمنی (Safety refusal) | رد درخواست توسط طبقه‌بند ارائه‌دهنده | پاسخ HTTP 200 با محتوای خالی که شبیه به موفقیت به نظر می‌رسد |
+| سرریز کانتکست (Context overflow) | ورودی بیش از حد بزرگ | شکست پردازش درخواست |
+| خروجی بدشکل (Malformed output) | خطاهای ساختاری در فرآیند تولید | شکست در پارس کردن داده‌ها |
+
+دو مورد از این سطرها به سادگی نادیده گرفته می‌شوند زیرا هیچ استثنایی (Exception) پرتاب نمی‌کنند. **تغییرات خاموش کیفیت** تحت شناسه‌های ثابت مدل رخ می‌دهند: مدل‌های GPT-6 Sol و GPT-6 Luna در ۲۲ سپتامبر ۲۰۲۶ با یک باگ انکودینگ تصویر عرضه شدند که درک تصویر و تعامل با کامپیوتر را تضعیف می‌کرد؛ OpenAI آن را در ۲۵ سپتامبر بدون تغییر اسنپ‌شات برطرف کرد و به مشتریان ورودی تصویر گفت ارزیابی‌های خود را دوباره اجرا کنند. تثبیت شناسه مدل تنها نام را ثابت می‌کند، نه پشته سروینگ را. پیش‌فرض‌ها نیز جابه‌جا می‌شوند: پکیج openai-agents نسخه 0.20.0 (۱۱ آگوست ۲۰۲۶) مدل `gpt-5.6-luna` را پیش‌فرض ضمنی خود قرار داد، بنابراین ایجنتی که نام مدل را قید نکرده بود با یک ارتقای وابستگی معمولی تغییر مدل داد. مدل را همیشه به‌صورت صریح در همه‌جا نام ببرید. **امتناع‌های ایمنی** در جدیدترین مدل‌های Claude به عنوان پاسخ‌های موفق با `stop_reason: "refusal"` می‌آیند، بنابراین منطق تلاش مجدد متکی بر خطا هرگز آنها را نمی‌بیند (بخش [مدیریت امتناع‌های ایمنی](#مدیریت-امتناعهای-ایمنی) را ببینید).
+
+### اهداف پایایی و دسترسی‌پذیری
+
+| رده خدمت (Tier) | دسترسی‌پذیری (Availability) | تاخیر در صدک ۹۹ (Latency p99) | نمونه‌های کاربرد |
+|---|---|---|---|
+| رده بحرانی (Critical) | دسترسی‌پذیری ۹۹.۹۹٪ | کمتر از ۳ ثانیه | پردازش پرداخت‌های مالی |
+| رده استاندارد (Standard) | دسترسی‌پذیری ۹۹.۹٪ | کمتر از ۱۰ ثانیه | پشتیبانی مشتریان |
+| رده بهترین تلاش (Best effort) | دسترسی‌پذیری ۹۹٪ | کمتر از ۳۰ ثانیه | کارهای پس‌زمینه (Background tasks) |
+
+---
+
+## الگوهای تلاش مجدد (Retry Patterns)
+
+### عقب‌نشینی نمایی همراه با نوسان تصادفی (Exponential Backoff with Jitter)
+
+<div dir="ltr">
 
 ```python
 import random
@@ -103,9 +107,13 @@ async def retry_with_backoff(
     raise last_exception
 ```
 
-### Retryable vs Non-Retryable Errors
+</div>
 
-Classify by status **and** error code. The same status now means different things: since September 2, 2026, OpenAI returns 429 with code `slow_down` when traffic ramps too fast and 503 on temporary model overload, both possibly with `Retry-After`. Anthropic returns 429 for acceleration limits, but its monthly spend cap is a 429 with `error_code: enforced_spend_limit_reached` and no `retry-after`, and nothing clears it until the cap resets or an admin raises it. A lower spend limit you set yourself is different again: it returns a 400 `invalid_request_error` whose message says you have reached your specified usage limits, so a classifier like the one below files an organization-wide stop as a bad request. Alert on a sudden jump in 400s, not only 429s and 5xx.
+### خطاهای قابل تکرار در برابر خطاهای غیرقابل تکرار
+
+خطاها را بر اساس کد وضعیت HTTP **و** کد تفصیلی خطا طبقه‌بندی کنید. یک کد وضعیت واحد اکنون معانی متفاوتی دارد: از ۲ سپتامبر ۲۰۲۶، شرکت OpenAI خطای 429 را با کد `slow_down` در زمان اوج‌گیری سریع ترافیک و خطای 503 را در بار اضافه موقت مدل بازمی‌گرداند، که هر دو ممکن است هدر `Retry-After` داشته باشند. شرکت Anthropic خطای 429 را برای محدودیت‌های شتاب ترافیک بازمی‌گرداند، اما سقف بودجه ماهانه آن یک خطای 429 با کد `error_code: enforced_spend_limit_reached` و بدون `retry-after` است که هیچ تلاشی آن را پاک نمی‌کند تا زمانی که سقف ریست شود یا ادمین آن را بالا ببرد. سقف مصرف پایین‌تری که خودتان تنظیم می‌کنید متفاوت است: خطای 400 `invalid_request_error` برمی‌گرداند، بنابراین یک طبقه‌بند ممکن است این توقف سراسری را به عنوان یک درخواست نامعتبر تلقی کند. روی جهش ناگهانی خطاهای 400 هشدار بگذارید، نه فقط 429 و 5xx.
+
+<div dir="ltr">
 
 ```python
 from enum import Enum
@@ -137,25 +145,29 @@ class LLMRetryPolicy:
         return computed_backoff
 ```
 
-Timeouts and connection errors map to `BACKOFF`. Ignoring `Retry-After` is the most common backoff bug; treating every 429 the same is the second.
+</div>
 
-### Handling Safety Refusals
+خطاهای تایم‌اوت و خطاهای اتصال به `BACKOFF` نگاشت می‌شوند. نادیده گرفتن `Retry-After` رایج‌ترین باگ در پیاده‌سازی عقب‌نشینی است؛ یکسان دانستن تمام خطاهای 429 دومین باگ رایج است.
 
-A refusal is not a transport error, so none of the retry machinery above sees it. On Claude Fable 5.1 and 5, Opus 5.5 and 5, and Sonnet 5.5, a safety-classifier decline returns HTTP 200 with `stop_reason: "refusal"`, empty content, and a `stop_details.category` (`cyber`, `bio`, `frontier_llm`, `reasoning_extraction`, `general_harms`, or `null`). Retrying the same request on the same model is wasted spend; route it instead:
+### مدیریت امتناع‌های ایمنی (Handling Safety Refusals)
 
-- **Server-side fallback** (beta, Claude API): `fallbacks: "default"` with the `server-side-fallback-2026-07-01` header retries on the model Anthropic recommends for that category, or you name up to three targets from the model's allowed list (Fable 5.1's permitted targets are Opus 4.8 and Opus 5). It fires only on classifier declines; rate limits and overloads come back as-is. It is not offered on Bedrock, Google Cloud, or Foundry, where the Anthropic SDK's refusal-fallback middleware does the retry client-side, and a Message Batches item that sets `fallbacks` comes back as an errored result, so retry refused batch items yourself.
-- **Size the fallback model's rate limits.** If the fallback model is rate limited or overloaded, the API skips the attempt and returns the original refusal, with `stop_details.recommended_model` as a hint for a direct retry. Each attempt counts against its own model's limits, so refusal volume lands on the fallback model's quota.
-- **Expect sticky routing.** Once a conversation has fallen back, later requests for it that include `fallbacks` go straight to the fallback model (the routing is kept for about an hour and is best-effort, so the requested model can be tried again at any time). Per-model traffic and quality dashboards shift accordingly, so read the response's `model` field and `usage.iterations` rather than assuming the requested model answered.
-- **`reasoning_extraction` has no recommended fallback.** It fires when a prompt asks the model to write out its reasoning (a `<thinking>` section, a `reasoning` field in JSON). Change the prompt; do not retry.
-- **Refusals cost money and quota.** Since September 24, 2026, pre-output refusals in `bio`, `frontier_llm`, and `reasoning_extraction` are billed, and every refusal counts against rate limits.
+یک امتناع از جنس خطای انتقال شبکه نیست، بنابراین ماشین‌های تلاش مجدد بالا آن را نمی‌بینند. در مدل‌های Claude Fable 5.1 و 5، Opus 5.5 و 5، و Sonnet 5.5، رد درخواست توسط طبقه‌بند ایمنی پاسخی با کد وضعیت HTTP 200 همراه با `stop_reason: "refusal"`، محتوای خالی، و یک دسته‌بندی در `stop_details.category` است (`cyber`، `bio`، `frontier_llm`، `reasoning_extraction`، `general_harms`، یا `null`). تلاش مجدد همان درخواست روی همان مدل هدر دادن بودجه است؛ در عوض آن را هدایت کنید:
 
-Refusals say nothing about provider health, so they should not trip a circuit breaker. Track them as their own metric by category; a jump usually means a prompt, traffic-mix, or provider safeguard change, not an outage. [Guardrails](01-guardrails.md#provider-safeguards-and-refusals) covers the guardrail side, and the [gateway chapter](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#fallback-and-reliability) has the full response-classification flow.
+- **بازگشت اضطراری سمت سرور (بتای Claude API):** قابلیت `fallbacks: "default"` با هدر `server-side-fallback-2026-07-01` روی مدلی که Anthropic برای آن دسته توصیه می‌کند تلاش مجدد انجام می‌دهد، یا می‌توانید تا سه مقصد از لیست مجاز مدل نام ببرید (مقاصد مجاز Fable 5.1 شامل Opus 4.8 و Opus 5 هستند). این قابلیت فقط روی امتناع‌های طبقه‌بند عمل می‌کند؛ محدودیت‌های نرخ و اضافه بار بدون تغییر بازمی‌گردند. این امکان در Bedrock، Google Cloud، یا Foundry وجود ندارد و میدل‌ویر کلاینت SDK آن را انجام می‌دهد.
+- **تخصیص ظرفیت برای محدودیت‌های نرخ مدل جایگزین:** اگر مدل فال‌بک دچار محدودیت نرخ یا اضافه بار باشد، API از تلاش صرف‌نظر کرده و امتناع اصلی را بازمی‌گرداند. هر تلاش در سقف مدل خود محاسبه می‌شود، بنابراین حجم امتناع‌ها به سهمیه مدل جایگزین وارد می‌شود.
+- **انتظار هدایت چسبنده (Sticky routing):** هنگامی که یک مکالمه فال‌بک کرد، درخواست‌های بعدی آن که شامل `fallbacks` باشند مستقیماً به مدل فال‌بک می‌روند (این مسیریابی حدود یک ساعت نگه‌داری می‌شود). بنابراین به جای فرض اینکه مدل درخواستی پاسخ داده، فیلد `model` و `usage.iterations` پاسخ را بخوانید.
+- **دسته `reasoning_extraction` فاقد مدل فال‌بک پیشنهادی است:** زمانی رخ می‌دهد که پرامپت از مدل بخواهد استدلال خود را بنویسد (یک بخش `<thinking>` یا فیلد `reasoning` در JSON). پرامپت را اصلاح کنید؛ دوباره امتحان نکنید.
+- **امتناع‌ها هزینه و سهمیه مصرف می‌کنند:** از ۲۴ سپتامبر ۲۰۲۶، امتناع‌های پیش از خروجی در دسته‌های `bio`، `frontier_llm` و `reasoning_extraction` صورت‌حساب دارند و در سقف نرخ شمرده می‌شوند.
+
+امتناع‌ها ارتباطی با سلامت ارائه‌دهنده ندارند، بنابراین نباید مدارشکن (Circuit breaker) را باز کنند. آنها را به تفکیک دسته مانیتور کنید؛ جهش ناگهانی نشانه تغییر پرامپت یا گاردریل است، نه قطعی سرویس.
 
 ---
 
-## Circuit Breaker
+## قطع‌کننده مدار (Circuit Breaker)
 
-### Implementation
+### پیاده‌سازی مدارشکن
+
+<div dir="ltr">
 
 ```python
 from enum import Enum
@@ -242,7 +254,11 @@ class CircuitBreaker:
         return datetime.now() - self.last_failure_time >= self.config.recovery_timeout
 ```
 
-### Usage with LLM Client
+</div>
+
+### نحوه استفاده به همراه کلاینت LLM
+
+<div dir="ltr">
 
 ```python
 class ResilientLLMClient:
@@ -267,13 +283,17 @@ class ResilientLLMClient:
             raise
 ```
 
-**Decide what counts as a failure.** Count 5xx, overloads, timeouts, and 429s that persist through backoff. Do not count 400-class errors or safety refusals: they describe the request, not the provider's health, and counting them lets one bad prompt template open the breaker for everyone. A spend-cap 429 is the exception in the other direction: force the breaker open until the cap resets or is raised rather than probing it every 30 seconds.
+</div>
+
+**تعیین کنید چه مواردی شکست به حساب می‌آیند:** خطاهای 5xx، اضافه بارها، تایم‌اوت‌ها، و خطاهای 429 که با وجود عقب‌نشینی ادامه می‌یابند را بشمارید. خطاهای کلاس 400 یا امتناع‌های ایمنی را نشمارید: آنها وضعیت درخواست را توصیف می‌کنند نه سلامت ارائه‌دهنده را، و شمردن آنها باعث می‌شود یک قالب پرامپت خراب مدارشکن را برای همه باز کند. خطای 429 ناشی از سقف بودجه استثنایی در جهت مخالف است: مدارشکن را اجباراً تا ریست شدن یا افزایش سقف باز نگه دارید، نه اینکه هر ۳۰ ثانیه پروب بفرستید.
 
 ---
 
-## Bulkhead Pattern
+## الگوی تیغه یا دیواره آتش (Bulkhead Pattern)
 
-### Isolating Resources
+### ایزوله‌سازی منابع
+
+<div dir="ltr">
 
 ```python
 import asyncio
@@ -339,11 +359,15 @@ class BulkheadedLLMClient:
             return await self._call_llm(prompt)
 ```
 
+</div>
+
 ---
 
-## Timeout Strategies
+## استراتژی‌های انقضای زمان (Timeout Strategies)
 
-### Layered Timeouts
+### تایم‌اوت‌های لایه‌ای
+
+<div dir="ltr">
 
 ```python
 class TimeoutConfig:
@@ -376,9 +400,13 @@ class TimeoutManager:
             )
 ```
 
-**Time to first token is its own timeout.** For streaming, the first-token deadline is the one that matters for failover: before the first token you can move to another backend cleanly, after it you must replay from scratch or surface the error. Gateways now expose this directly (Envoy AI Gateway 1.1 added `streamIdleTimeout`, which can fail over to the next backend when a stream stalls before its first token and returns a 504 when it stalls mid-stream). Set it per model and effort level: a high-effort reasoning request can legitimately stream nothing visible for a long stretch, and a TTFT deadline tuned for a fast model will fail those over for no reason.
+</div>
 
-### Adaptive Timeouts
+**زمان رسیدن به اولین توکن (TTFT) تایم‌اوت مستقل خود را دارد:** در جریان‌های استریمینگ، مهلت اولین توکن چیزی است که برای تغییر مسیر اضطراری اهمیت دارد: پیش از اولین توکن می‌توانید تمیز به بک‌اند دیگر سوئیچ کنید، پس از آن باید از ابتدا بازپخش نمایید یا خطا را نمایش دهید. درگاه‌های استنتاج اکنون این قابلیت را به‌طور مستقیم ارائه می‌دهند (مانند `streamIdleTimeout` در Envoy AI Gateway 1.1). آن را به ازای هر مدل و سطح تلاش استدلال تنظیم کنید: یک درخواست استدلال سطح بالا می‌تواند برای مدتی طولانی هیچ خروجی مشهودی ارسال نکند.
+
+### تایم‌اوت‌های تطبیقی (Adaptive Timeouts)
+
+<div dir="ltr">
 
 ```python
 class AdaptiveTimeout:
@@ -423,11 +451,15 @@ class AdaptiveTimeout:
         return self.current_timeout
 ```
 
+</div>
+
 ---
 
-## Graceful Degradation
+## کاهش تدریجی سطح خدمت (Graceful Degradation)
 
-### Degradation Levels
+### سطوح تنزل خدمت
+
+<div dir="ltr">
 
 ```python
 class DegradationLevel(Enum):
@@ -483,24 +515,26 @@ class GracefulDegrader:
         return await self.generate(query, None, model="gpt-6-luna")
 ```
 
+</div>
+
 ---
 
-## Multi-Provider Failover
+## تغییر مسیر اضطراری میان چند ارائه‌دهنده (Multi-Provider Failover)
 
-**Fail over across vendors, not across sibling models.** Outages take out a vendor's whole surface at once. Anthropic's status feed records at least 12 major or critical incidents between August 16 and September 29, 2026, several spanning the API, Claude Code, and claude.ai together. OpenAI's September 29 incident degraded the API (including the Agents API), ChatGPT, and Codex for about 5 hours 20 minutes. Clouds fail too: a Google Cloud us-west1 incident on August 20 had 2 hours 22 minutes of customer impact. A chain that steps from one model to another on the same provider survives none of these.
+**تغییر مسیر اضطراری را میان ارائه‌دهندگان مختلف تنظیم کنید، نه میان مدل‌های هم‌خانواده:** قطعی‌ها کل سطح خدمات یک ارائه‌دهنده را همزمان از کار می‌اندازند. فید وضعیت Anthropic حداقل ۱۲ حادثه بزرگ یا بحرانی را بین ۱۶ آگوست تا ۲۹ سپتامبر ۲۰۲۶ ثبت کرده که چندین مورد آن API، ابزار Claude Code و claude.ai را همزمان مختل کردند. حادثه ۲۹ سپتامبر OpenAI کل API، ChatGPT و Codex را برای بیش از ۵ ساعت دچار اختلال کرد. ابرها نیز دچار قطعی می‌شوند: حادثه منطقه us-west1 گوگل کلود در ۲۰ آگوست بیش از ۲ ساعت اختلال برای مشتریان داشت. زنجیره‌ای که فقط به یک مدل دیگر در همان ارائه‌دهنده سوئیچ کند، از هیچ‌یک از این حوادث نجات نمی‌یابد.
 
-**Failover is not drop-in.** The fallback leg has to accept the request, carry the conversation, meet the same data terms, and do the job:
+**تغییر مسیر اضطراری یک تعویض ساده و مستقیم نیست:** مسیر فال‌بک باید درخواست را بپذیرد، مکالمه را حفظ کند، شرایط داده‌ای یکسانی را برآورده سازد، و کار را به درستی انجام دهد:
 
-| What breaks | Example (November 2026) | Fix |
-|-------------|------------------------|-----|
-| Request shape | Claude Fable 5.1, Opus 5.5, and Sonnet 5.5 return 400 on forced `tool_choice`; Claude API version `2026-10-21` rejects `temperature`, `top_p`, and `top_k` at any value on every model; GPT-6 Astra rejects custom `temperature`, `top_p`, and `logprobs` | Translate per target from a capability profile; never pass parameters through blindly |
-| Conversation state | The newest Claude models bind thinking blocks to the model and conversation | Fail over at turn boundaries; send the visible transcript and tool results |
-| Data terms | Fable 5.1 requires 30-day retention unless authorized for ZDR; OpenAI's Agents API beta has no ZDR | Store retention and residency per model in the registry and enforce them at routing time |
-| Output quality | The fallback model was never evaluated on your task | Run the eval suite on every fallback leg, on a schedule |
+| بخش آسیب‌پذیر | نمونه واقعی (نوامبر ۲۰۲۶) | راهکار اصلاحی |
+|---|---|---|
+| ساختار درخواست (Request shape) | مدل‌های Claude Fable 5.1، Opus 5.5 و Sonnet 5.5 روی `tool_choice` اجباری خطای 400 می‌دهند؛ نسخه API کلود `2026-10-21` پارامترهای `temperature`، `top_p` و `top_k` را در هر مقداری رد می‌کند؛ مدل GPT-6 Astra پارامترهای سفارشی دما و `logprobs` را نمی‌پذیرد | تبدیل و ترجمه پارامترها به ازای هر مقصد از روی پروفایل قابلیت‌ها؛ هرگز پارامترها را کورکورانه عبور ندهید |
+| وضعیت مکالمه (Conversation state) | جدیدترین مدل‌های Claude بلوک‌های تفکر را به مدل و مکالمه مقید می‌کنند | تغییر مسیر اضطراری را در مرز نوبت‌های مکالمه انجام دهید؛ متن مشهود و نتایج ابزار را ارسال کنید |
+| شرایط نگهداری داده (Data terms) | مدل Fable 5.1 نیازمند ۳۰ روز نگهداری داده است مگر مجوز ZDR داشته باشد؛ نسخه بتای Agents API شرکت OpenAI فاقد ZDR است | شرایط نگهداری و اقامتگاه داده را به ازای هر مدل در رجیستری ثبت کرده و در زمان روتینگ اعمال کنید |
+| کیفیت خروجی (Output quality) | مدل جایگزین هرگز روی تسک شما ارزیابی نشده است | سوییت ارزیابی را بر اساس یک زمان‌بندی منظم روی تمام مسیرهای بازگشت اجرا کنید |
 
-The [gateway chapter](../11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md#fallback-and-reliability) covers the routing mechanics; the code below shows the core loop.
+### مدیریت ارائه‌دهندگان (Provider Manager)
 
-### Provider Manager
+<div dir="ltr">
 
 ```python
 class ProviderManager:
@@ -543,7 +577,11 @@ class ProviderManager:
             asyncio.create_task(self._health_check_later(provider_name))
 ```
 
-### Request Hedging
+</div>
+
+### پوشش ریسک درخواست (Request Hedging)
+
+<div dir="ltr">
 
 ```python
 class HedgedRequest:
@@ -585,82 +623,82 @@ class HedgedRequest:
                 task.cancel()  # stop paying for the losers
 ```
 
-Hedge only idempotent requests (no tool calls with side effects), set `hedge_delay` near the primary's p95 latency for that model and effort level (time to first token if you hedge streams), and budget for it: a hedged request also pays for the losing legs, at least their input tokens and often more, since canceling on the client does not guarantee the provider stops generating.
+</div>
+
+پوشش ریسک را تنها برای درخواست‌های خنثی‌اثر (Idempotent - بدون فراخوانی ابزارهای با اثر جانبی) به کار بگیرید، مقدار `hedge_delay` را نزدیک به تاخیر صدک ۹۵ ارائه‌دهنده اصلی تنظیم کنید، و برای آن بودجه لحاظ نمایید: یک درخواست پوشش‌داده‌شده هزینه بازوهای بازنده را نیز پرداخت می‌کند (حداقل توکن‌های ورودی آنها را).
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه (Interview Questions)
 
-### Q: How do you design for high availability in LLM systems?
+### پرسش: چگونه برای دسترسی‌پذیری بالا (High Availability) در سیستم‌های LLM طراحی انجام می‌دهید؟
 
-**Strong answer:**
+**پاسخ قوی:**
+من از لایه‌های متعددی از راهکارهای پایایی استفاده می‌کنم:
 
-"I use multiple layers of reliability:
+**تلاش مجدد با عقب‌نشینی (Retry with backoff):** عقب‌نشینی نمایی با نوسان تصادفی (Jitter) برای خطاهای گذرا، با رعایت کامل هدر `Retry-After`. تفکیک دقیق خطاهای قابل تکرار (بیشتر خطاهای محدودیت نرخ، اضافه بار، تایم‌اوت) از خطاهای غیرقابل تکرار (احراز هویت، خطای درخواست کلاینت) امری حیاتی است؛ و همچنین انشعاب بر اساس کد تفصیلی خطا: خطای 429 سقف بودجه شبیه محدودیت نرخ است اما نیازمند انتقال فوری به ارائه‌دهنده دیگر و مداخله انسانی است، نه صرفاً عقب‌نشینی زمانی.
 
-**Retry with backoff:** Exponential backoff with jitter for transient failures, honoring `Retry-After`. Important to distinguish retryable (most rate limits, overloads, timeouts) from non-retryable (auth, bad request) errors, and to branch on the error code rather than the status alone: a spend-cap 429 looks like a rate limit but needs failover and a human, not backoff.
+**قطع‌کننده مدار (Circuit breaker):** اگر یک ارائه‌دهنده مکرراً با شکست مواجه شود، تلاش را برای یک دوره خنک‌سازی مشخص متوقف می‌کنم. این کار از اتلاف تاخیر روی ارائه‌دهنده از کار افتاده جلوگیری کرده و به آن زمان بازیابی می‌دهد.
 
-**Circuit breaker:** If a provider fails repeatedly, stop trying for a cooldown period. This prevents wasting latency on a dead provider and gives it time to recover.
+**تغییر مسیر اضطراری میان چند ارائه‌دهنده (Multi-provider failover):** هرگز به یک ارائه‌دهنده منفرد وابسته نمی‌شوم. ارائه‌دهندگان اصلی، ثانویه و ثالث را در میان شرکت‌های مختلف پیکربندی می‌کنم، زیرا قطعی یک ارائه‌دهنده معمولاً تمام مدل‌های آن را از کار می‌اندازد. هر ارائه‌دهنده مدارشکن مختص به خود را دارد و تمام بازوهای فال‌بک از قبل ارزیابی کیفی شده‌اند.
 
-**Multi-provider failover:** Never depend on a single provider. I configure primary/secondary/tertiary across different vendors, because a vendor outage usually takes down every model it serves. Each provider has its own circuit breaker, and every fallback leg is evaluated on our task, since a fallback nobody tested is a second outage waiting to happen.
+**مدیریت امتناع‌های ایمنی:** امتناع‌های ایمنی در جدیدترین مدل‌های Claude به عنوان پاسخ HTTP 200 با `stop_reason: "refusal"` بازمی‌گردند؛ بنابراین آنها را به مدل جایگزین تاییدشده هدایت می‌کنم نه اینکه خطا یا موفقیت تلقی نمایم.
 
-**Refusal handling:** Safety refusals from the newest Claude models come back as HTTP 200 with `stop_reason: "refusal"`, so I route them to an approved fallback model instead of counting them as errors or as successes.
+**کاهش تدریجی سطح خدمت (Graceful degradation):** تعریف آنچه در زمان در دسترس نبودن هیچ ارائه‌دهنده‌ای رخ می‌دهد. بازگرداندن پاسخ تقلیل‌یافته (مدل ساده‌تر، نتایج کش‌شده) بسیار بهتر از شکست کامل سیستم است.
 
-**Graceful degradation:** Define what happens when no providers are available. Better to return a degraded response (simpler model, cached result) than to fail completely.
+**جداسازی منابع (Bulkheading):** ایزوله‌سازی بارهای کاری مختلف. هجوم بارهای کاری دسته‌ای (Batch) نباید کوئری‌های بلادرنگ کاربران را با اختلال مواجه کند.
 
-**Bulkheading:** Isolate different workloads. A batch processing surge should not take down real-time queries.
+بینش کلیدی: فرض را بر وقوع قطعی بگذارید. APIهای LLM بسیار ناپایدارتر از سرویس‌های سنتی هستند؛ بنابراین طوری طراحی کنید که گویی ارائه‌دهنده قطع خواهد شد.
 
-The key insight is assuming failure. LLM APIs are less reliable than traditional APIs. Design as if the provider will go down, because it will."
+### پرسش: تفاوت میان قطع‌کننده مدار (Circuit Breaker) و تلاش مجدد (Retry) چیست؟
 
-### Q: What is the difference between circuit breaker and retry?
+**پاسخ قوی:**
+آنها مسائل متفاوتی را حل می‌کنند:
 
-**Strong answer:**
+**تلاش مجدد (Retry)** خطاهای گذرا و موقت را مدیریت می‌کند. اگر یک درخواست منفرد با شکست مواجه شد، دوباره تلاش می‌کند. این فرض را دارد که شکست‌ها مستقل هستند و تلاش بعدی ممکن است موفق شود.
 
-"They solve different problems:
+**قطع‌کننده مدار (Circuit breaker)** خطاهای سیستمی و فراگیر را مدیریت می‌کند. اگر درخواست‌های زیادی پی‌درپی شکست بخورند، ارسال درخواست را کاملاً متوقف می‌سازد. این فرض را دارد که سیستم پایینی ناسالم است و تکرار درخواست‌ها منابع را هدر داده و روند بازیابی را کند می‌کند.
 
-**Retry** handles transient failures. If a single request fails, try again. It assumes failures are independent and the next attempt may succeed.
+**نحوه همکاری آنها:**
+۱. درخواست شکست می‌خورد ← تلاش مجدد با عقب‌نشینی (تلاش‌های ۱، ۲ و ۳)
+۲. اگر تمام تلاش‌ها شکست بخورند ← مدارشکن شکست را ثبت می‌کند
+۳. پس از N شکست متوالی ← مدار باز می‌شود و درخواست‌ها را فوراً رد می‌کند
+۴. پس از انقضای تایم‌اوت ← مدار نیمه‌باز می‌شود و تعداد محدودی درخواست آزمایشی عبور می‌دهد
+۵. اگر آزمون‌ها موفق شوند ← مدار بسته می‌شود و عملیات عادی از سر گرفته می‌شود
 
-**Circuit breaker** handles systemic failures. If many requests are failing, stop trying entirely. It assumes the downstream system is unhealthy and repeated attempts waste resources and slow recovery.
+بدون مدارشکن: در زمان قطعی ارائه‌دهنده، هر درخواست تمام زمان تلاش‌های مجدد را پیش از شکست سپری می‌کند، تاخیرها اوج می‌گیرند و منابع تهی می‌شوند.
+با مدارشکن: پس از کشف قطعی، درخواست‌ها به سرعت شکست را اعلام می‌کنند (Fail fast)، سیستم پاسخگو می‌ماند و می‌تواند به سرعت ترافیک را به ارائه‌دهنده دیگر هدایت کند.
 
-**How they work together:**
-1. Request fails → retry with backoff (attempt 1, 2, 3)
-2. If all retries fail → circuit breaker records failure
-3. After N failures → circuit opens, rejects requests immediately
-4. After timeout → circuit half-opens, allows limited test requests
-5. If tests succeed → circuit closes, normal operation resumes
+### پرسش: ارائه‌دهنده شما اصلاحیه‌ای را تحت همان شناسه مدل قبلی منتشر کرده و متریک‌های کیفی شما تغییر کرده‌اند. چگونه تغییرات خاموش مدل را کشف و مدیریت می‌کنید؟
 
-Without circuit breaker: during an outage, every request waits through all retries before failing. Latency spikes, resources exhausted.
+**پاسخ قوی:**
+من فرض را بر این می‌گذارم که مدل پشت یک شناسه می‌تواند تغییر کند، زیرا این اتفاق عملاً رخ می‌دهد. مدل‌های GPT-6 Sol و Luna در ۲۲ سپتامبر ۲۰۲۶ با یک باگ انکودینگ تصویر عرضه شدند؛ شرکت OpenAI در ۲۵ سپتامبر آن را تحت همان شناسه اصلاح کرد و به مشتریان ورودی تصویر گفت ارزیابی‌های خود را دوباره اجرا کنند.
 
-With circuit breaker: after detecting the outage, requests fail fast. System remains responsive, can fail over to alternatives."
+**کشف و شناسایی:**
+- اجرای یک سوییت ارزیابی قناری کوچک روی اندپوینت پروداکشن بر اساس زمان‌بندی منظم (مثلاً ساعتی برای مسیرهای حیاتی)، نه صرفاً در خط لوله CI.
+- مانیتورینگ توزیع روی سیگنال‌های ارزان: طول خروجی، نرخ امتناع به تفکیک دسته، نرخ فراخوانی ابزارها، خطاهای اعتبارسنجی اسکیما، و نمرات داور روی نمونه‌ای از ترافیک واقعی.
+- اتصال مستقیم گزارش تغییرات ارائه‌دهندگان و صفحات وضعیت آنها به همان کانال هشداری که استقرارهای داخلی خودمان به آن متصل است.
 
-### Q: Your provider shipped a fix under the same model ID and your quality metrics moved. How do you detect and handle silent model changes?
+**مدیریت:**
+- تثبیت اسنپ‌شات‌های تاریخ‌دار در صورت ارائه توسط ارائه‌دهنده.
+- متوقف کردن مهاجرت نهایی تا اجرای دومین آزمون ارزیابی یک یا دو هفته پس از انتشار اولیه، و گرم نگه داشتن مدل قبلی تا زمان اثبات پایداری مدل جدید.
+- زمانی که ارائه‌دهنده اصلاحیه‌ای را اعلام می‌کند، اجرای مجدد برش ارزیابی مربوطه و مقایسه آن با آخرین خط مبنای سالم پیش از اعتماد به اعداد جدید.
 
-**Strong answer:**
-
-"I assume the model behind an ID can change, because it does. GPT-6 Sol and Luna launched on September 22, 2026 with an image-encoding bug; OpenAI fixed it on September 25 under the same ID and told customers with image inputs to rerun their evals. Anyone who finalized an image or computer-use migration on launch-week numbers may have measured the broken path.
-
-**Detection:**
-- A small canary eval suite running against the production endpoint on a schedule (hourly for critical paths), not only in CI.
-- Distribution monitors on cheap signals: output length, refusal rate by category, tool-call rate, schema-validation failures, judge scores on a traffic sample.
-- Provider changelogs and status pages wired into the same alert channel as our own deploys.
-
-**Handling:**
-- Pin dated snapshots where the provider offers them, knowing that pins the name, not the serving stack.
-- Gate migrations on a second eval run a week or two after launch, and keep the previous model warm until the new one is stable.
-- When a provider announces a fix, rerun the affected eval slice and compare against the last known-good baseline before trusting either number.
-
-The principle: model behavior is a dependency that changes without a version bump, so it needs the same continuous verification as any external service."
+اصل اساسی: رفتار مدل یک وابستگی خارجی است که بدون تغییر نسخه جابه‌جا می‌شود، بنابراین نیازمند همان راستی‌آزمایی مستمری است که برای هر سرویس خارجی اعمال می‌گردد.
 
 ---
 
-## References
+## مراجع (References)
 
-- Microsoft Resilience Patterns: https://learn.microsoft.com/en-us/azure/architecture/patterns/
-- Netflix Hystrix: https://github.com/Netflix/Hystrix
-- OpenAI API changelog (September 2, 2026 `slow_down` 429 and 503 overload; September 25, 2026 GPT-6 Sol/Luna image-encoding fix): https://developers.openai.com/api/docs/changelog
-- Anthropic, refusals and fallback: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
-- Anthropic, rate limits: https://platform.claude.com/docs/en/api/rate-limits
-- Anthropic status history: https://status.claude.com/history
+- الگوهای تاب‌آوری معماری مایکروسافت: https://learn.microsoft.com/en-us/azure/architecture/patterns/
+- لایبرری Hystrix نتفلیکس: https://github.com/Netflix/Hystrix
+- گزارش تغییرات API شرکت OpenAI (خطای `slow_down` و خطای ۵۰۳ در ۲ سپتامبر ۲۰۲۶؛ اصلاح باگ انکودینگ تصویر در ۲۵ سپتامبر ۲۰۲۶): https://developers.openai.com/api/docs/changelog
+- مستندات امتناع‌ها و بازگشت اضطراری در شرکت Anthropic: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
+- مستندات محدودیت‌های نرخ در Anthropic: https://platform.claude.com/docs/en/api/rate-limits
+- تاریخچه وضعیت خدمات Anthropic: https://status.claude.com/history
 
 ---
 
-*Previous: [Ensemble Methods](02-ensemble-methods.md) · Next: [AI Governance and Compliance](04-ai-governance-and-compliance.md)*
+*قبلی: [روش‌های آنسامبل](02-ensemble-methods.md) · بعدی: [حاکمیت و انطباق هوش مصنوعی](04-ai-governance-and-compliance.md)*
+
+</div>

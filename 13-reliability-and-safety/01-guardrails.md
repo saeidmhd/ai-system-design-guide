@@ -1,70 +1,74 @@
-# Guardrails and Safety
+<div dir="rtl">
 
-Guardrails are systems that constrain LLM behavior to ensure safe, reliable outputs and prevent unsafe actions. This chapter covers input validation, output filtering, prompt injection defense, action safety, hallucination mitigation, and reliability patterns for production systems.
+# گاردریل‌ها و ایمنی (Guardrails and Safety)
 
-## Table of Contents
+گاردریل‌ها (Guardrails) یا نرده‌های محافظ، سیستم‌هایی هستند که رفتار LLM را مقید و محدود می‌کنند تا خروجی‌های امن و قابل اعتماد تضمین شود و از اقدامات ناامن جلوگیری به عمل آید. این فصل به اعتبارسنجی ورودی، فیلتر کردن خروجی، دفاع در برابر تزریق پرامپت، ایمنی اکشن‌ها و اقدامات، کاهش توهم (Hallucination)، و الگوهای پایایی برای سیستم‌های پروداکشن می‌پردازد.
 
-- [Why Guardrails Matter](#why-guardrails-matter)
-- [Types of Guardrails](#types-of-guardrails)
-- [Input Guardrails](#input-guardrails)
-- [Output Guardrails](#output-guardrails)
-- [Prompt Injection Defense](#prompt-injection-defense)
-- [Hallucination Mitigation](#hallucination-mitigation)
-- [Structured Output Validation](#structured-output-validation)
-- [Action Safety](#action-safety)
-- [Fallback Strategies](#fallback-strategies)
-- [Guardrail Architecture](#guardrail-architecture)
-- [Guardrail Frameworks](#guardrail-frameworks)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Why Guardrails Matter
-
-### The Reliability Challenge
-
-LLMs are probabilistic and can produce:
-- Factually incorrect information (hallucination)
-- Harmful or inappropriate content
-- Off-topic or unhelpful responses
-- Inconsistent formatting
-- Leaked sensitive information
-
-### Risk Categories
-
-| Risk | Description | Impact |
-|------|-------------|--------|
-| Harmful content | Violence, hate, illegal activities | Legal liability, reputation damage |
-| PII exposure | Leaking personal information | Privacy violations, fines |
-| Prompt injection | Malicious instruction override | Security breach |
-| Hallucination | False information presented as fact | User harm, trust erosion, liability |
-| Unsafe actions | Executing dangerous operations | System damage, data loss |
-| Off-topic responses | Irrelevant answers | Poor user experience |
-| Format errors | Invalid output structure | Application crashes |
-| Missing required safeguards | No disclosure, crisis protocol, or output filter where the law requires one | Fines, private lawsuits |
-
-### Guardrails Are Becoming Legal Requirements
-
-Some guardrails are no longer a product choice. Each row below names a control a regulator can ask you to demonstrate (status as of November 6, 2026; see [AI Governance and Compliance](04-ai-governance-and-compliance.md) for the full picture):
-
-| Requirement | Status | Guardrail it implies |
-|-------------|--------|----------------------|
-| EU AI Act Article 50 interaction disclosure | Applies since August 2, 2026 | Tell users they are talking to AI; per the Commission's guidelines, agents also say on whose behalf they act |
-| EU AI Act Article 5 ban on generating non-consensual intimate imagery and CSAM (Regulation (EU) 2026/1744) | Applies from December 2, 2026 | Output safeguards on image and video generators wherever such output is reasonably foreseeable, plus red-team evidence that they work |
-| California SB 1119, companion chatbots used by children | Signed September 10, 2026 | Crisis protocols for suicidal ideation, parental controls, independent child-safety audits |
-| Companion-chatbot laws in nine more states (Colorado, Connecticut, Georgia, Hawaii, Idaho, Iowa, Nebraska, Oregon, Washington) | Hawaii in effect since July 2026; the rest in 2027 | AI disclosure and self-harm and sexual-content protections for minors; Oregon adds a private right of action |
-| New York S9051-B/A10379-C, AI companions and minors | Signed October 28, 2026; effective January 1, 2027 per the NY Senate bill page (scheduled) | Unsafe companion features off for any user not verified as an adult, at least one age-verification method that does not rely solely on government ID, and age data deleted after use |
-| California SB 947, workplace AI | Signed September 30, 2026 | No sole reliance on AI for discipline or termination: a human makes the final call |
-| FCC 26-67 consent-revocation rules, reaching AI voice calls through the FCC's 2024 "artificial voice" ruling | Effective November 25, 2026 | Outbound voice agents recognize a revocation of consent during the call and record it where the dialer checks before the next call |
-
-The design consequence: a consumer chatbot needs one disclosure-and-crisis-protocol design that satisfies all of these at once, and the evidence that it fires (logged triggers, tested escalation paths) matters as much as the guardrail itself.
+- [چرا گاردریل‌ها اهمیت دارند (Why Guardrails Matter)](#چرا-گاردریلها-اهمیت-دارند-why-guardrails-matter)
+- [انواع گاردریل‌ها (Types of Guardrails)](#انواع-گاردریلها-types-of-guardrails)
+- [گاردریل‌های ورودی (Input Guardrails)](#گاردریلهای-ورودی-input-guardrails)
+- [گاردریل‌های خروجی (Output Guardrails)](#گاردریلهای-خروجی-output-guardrails)
+- [دفاع در برابر تزریق پرامپت (Prompt Injection Defense)](#دفاع-در-برابر-تزریق-پرامپت-prompt-injection-defense)
+- [کاهش توهم (Hallucination Mitigation)](#کاهش-توهم-hallucination-mitigation)
+- [اعتبارسنجی خروجی ساختاریافته (Structured Output Validation)](#اعتبارسنجی-خروجی-ساختاریافته-structured-output-validation)
+- [ایمنی اکشن‌ها و اقدامات (Action Safety)](#ایمنی-اکشنها-و-اقدامات-action-safety)
+- [استراتژی‌های بازگشت اضطراری (Fallback Strategies)](#استراتژیهای-بازگشت-اضطراری-fallback-strategies)
+- [معماری گاردریل (Guardrail Architecture)](#معماری-گاردریل-guardrail-architecture)
+- [فریم‌ورک‌های گاردریل (Guardrail Frameworks)](#فریمورکهای-گاردریل-guardrail-frameworks)
+- [پرسش‌های مصاحبه (Interview Questions)](#پرسشهای-مصاحبه-interview-questions)
+- [مراجع (References)](#مراجع-references)
 
 ---
 
-## Types of Guardrails
+## چرا گاردریل‌ها اهمیت دارند (Why Guardrails Matter)
 
-### Defense in Depth
+### چالش پایایی و اطمینان‌پذیری
+
+مدل‌های LLM ماهیتی احتمالاتی دارند و می‌توانند موارد زیر را تولید کنند:
+- اطلاعات نادرست از نظر واقعیت (پدیده توهم یا Hallucination)
+- محتوای مضر یا نامناسب
+- پاسخ‌های خارج از موضوع یا غیرمفید
+- قالب‌بندی‌های ناسازگار و نامعتبر
+- نشت اطلاعات حساس و محرمانه
+
+### دسته‌بندی‌های ریسک
+
+| دسته ریسک (Risk) | شرح ریسک | پیامد و اثر (Impact) |
+|---|---|---|
+| محتوای مضر (Harmful content) | خشونت، نفرت‌پراکنی، فعالیت‌های غیرقانونی | مسئولیت حقوقی، آسیب به شهرت و اعتبار |
+| افشای داده‌های PII (PII exposure) | نشت اطلاعات هویتی و شخصی | نقض حریم خصوصی، جریمه‌های قانونی |
+| تزریق پرامپت (Prompt injection) | بازنویسی و نقض مخرب دستورالعمل‌ها | رخنه امنیتی |
+| پدیده توهم (Hallucination) | ارائه اطلاعات نادرست در قالب حقیقت | آسیب به کاربر، سلب اعتماد، مسئولیت مدنی |
+| اکشن‌های ناامن (Unsafe actions) | اجرای عملیات و دستورات خطرناک | آسیب به سیستم، از دست رفتن داده‌ها |
+| پاسخ‌های خارج از موضوع (Off-topic responses) | پاسخ‌های نامربوط و غیرمفید | تجربه کاربری ضعیف |
+| خطاهای ساختار و فرمت (Format errors) | ساختار نامعتبر در خروجی | کرش کردن و توقف برنامه |
+| فقدان تدابیر حفاظتی الزامی (Missing required safeguards) | نبود شفاف‌سازی هویت AI، پروتکل بحران، یا فیلتر خروجی در مواردی که قانون ملزم کرده است | جریمه‌های رگولاتوری، دعاوی حقوقی خصوصی |
+
+### گاردریل‌ها در حال تبدیل شدن به الزامات قانونی هستند
+
+برخی از گاردریل‌ها دیگر صرفاً یک انتخاب محصولی اختیاری نیستند. هر سطر در جدول زیر کنترلی را مشخص می‌کند که یک نهاد نظارتی می‌تواند اثبات آن را از شما مطالبه کند (وضعیت تا ۶ نوامبر ۲۰۲۶؛ برای تصویر کامل به بخش [حاکمیت و انطباق هوش مصنوعی](04-ai-governance-and-compliance.md) مراجعه کنید):
+
+| الزام قانونی (Requirement) | وضعیت اعمال (Status) | گاردریل و کنترل مورد نیاز |
+|---|---|---|
+| شفاف‌سازی تعامل طبق ماده ۵۰ قانون هوش مصنوعی اروپا (EU AI Act) | در حال اجرا از ۲ آگوست ۲۰۲۶ | اطلاع به کاربران مبنی بر گفتگو با هوش مصنوعی؛ طبق دستورالعمل‌های کمیسیون، ایجنت‌ها همچنین باید اعلام کنند از طرف چه کسی اقدام می‌کنند |
+| ممنوعیت تولید تصاویر مستهجن بدون رضایت و سوءاستفاده جنسی از کودکان (CSAM) در ماده ۵ قانون اتحادیه اروپا (مقرره ۲۰۲۶/۱۷۴۴) | لازم‌الاجرا از ۲ دسامبر ۲۰۲۶ | گاردریل‌های خروجی روی تولیدکننده‌های تصویر و ویدیو در هر جایی که چنین خروجی‌هایی به‌طور معقول قابل پیش‌بینی باشند، همراه با مستندات تیم قرمز مبنی بر کارایی آنها |
+| لایحه SB 1119 کالیفرنیا، چت‌بات‌های همنشین مورد استفاده کودکان | امضا شده در ۱۰ سپتامبر ۲۰۲۶ | پروتکل‌های مدیریت بحران برای گرایش به خودکشی، کنترل‌های والدین، و ممیزی‌های مستقل ایمنی کودکان |
+| قوانین چت‌بات‌های همنشین در ۹ ایالت دیگر آمریکا (کلرادو، کنتیکت، جورجیا، هاوایی، آیداهو، آیووا، نبراسکا، اورگان، واشینگتن) | هاوایی در حال اجرا از ژوئیه ۲۰۲۶؛ مابقی در سال ۲۰۲۷ | شفاف‌سازی ماهیت هوش مصنوعی، حفاظت در برابر خودآسیبی و محتوای غیراخلاقی برای خردسالان؛ ایالت اورگان حق اقامه دعوای خصوصی را نیز اضافه کرده است |
+| لایحه ایالت نیویورک S9051-B/A10379-C، همراهان هوش مصنوعی و خردسالان | امضا شده در ۲۸ اکتبر ۲۰۲۶؛ لازم‌الاجرا از اول ژانویه ۲۰۲۷ طبق صفحه لایحه سنای نیویورک | غیرفعال بودن قابلیت‌های ناامن چت‌بات همنشین برای هر کاربری که بزرگسال بودن آن تایید نشده است، حداقل یک روش تایید سن بدون اتکای صِرف به کارت شناسایی دولتی، و حذف داده‌های سنی پس از استفاده |
+| لایحه SB 947 کالیفرنیا، هوش مصنوعی در محیط کار | امضا شده در ۳۰ سپتامبر ۲۰۲۶ | ممنوعیت اتکای صرف به هوش مصنوعی برای تنبیه انضباطی یا اخراج: تصمیم‌گیری نهایی باید توسط یک انسان انجام شود |
+| قواعد لغو رضایت FCC 26-67، موثر بر تماس‌های صوتی AI از طریق رای سال ۲۰۲۴ کمیسیون فدرال ارتباطات درباره «صدای مصنوعی» | لازم‌الاجرا از ۲۵ نوامبر ۲۰۲۶ | ایجنت‌های صوتی خروجی باید لغو رضایت توسط کاربر در حین تماس را تشخیص داده و آن را در محلی ثبت کنند که سیستم شماره‌گیر پیش از تماس بعدی آن را بررسی کند |
+
+پیامد طراحی: یک چت‌بات مصرف‌کننده نیازمند طراحی یکپارچه شفاف‌سازی و پروتکل بحران است که همه این الزامات را همزمان برآورده کند؛ و مستندات فعال شدن آن (تریگرهای لاگ‌شده، مسیرهای ارجاع تست‌شده) به اندازه خود گاردریل اهمیت دارند.
+
+---
+
+## انواع گاردریل‌ها (Types of Guardrails)
+
+### دفاع در عمق (Defense in Depth)
+
+<div dir="ltr">
 
 ```
 User Input
@@ -102,13 +106,17 @@ User Input
     Safe Response
 ```
 
+</div>
+
 ---
 
-## Input Guardrails
+## گاردریل‌های ورودی (Input Guardrails)
 
-### Topic Classification
+### طبقه‌بندی موضوعی (Topic Classification)
 
-Block off-topic or prohibited requests:
+مسدودسازی درخواست‌های نامربوط یا ممنوع:
+
+<div dir="ltr">
 
 ```python
 class TopicGuardrail:
@@ -144,9 +152,13 @@ result = guardrail.check("How do I cook pasta?")
 # Result: passed=False, topic outside allowed scope
 ```
 
-### PII Detection
+</div>
 
-Detect and handle personally identifiable information:
+### تشخیص اطلاعات هویتی و حساس (PII Detection)
+
+تشخیص و مدیریت اطلاعات قابل شناسایی شخصی:
+
+<div dir="ltr">
 
 ```python
 class PIIGuardrail:
@@ -182,7 +194,11 @@ class PIIGuardrail:
         return redacted
 ```
 
-### Input Length and Rate Limiting
+</div>
+
+### محدودیت طول ورودی و نرخ درخواست (Length and Rate Limiting)
+
+<div dir="ltr">
 
 ```python
 class InputLimitsGuardrail:
@@ -219,11 +235,15 @@ class InputLimitsGuardrail:
         return GuardrailResult(passed=True)
 ```
 
+</div>
+
 ---
 
-## Output Guardrails
+## گاردریل‌های خروجی (Output Guardrails)
 
-### Content Safety Filter
+### فیلتر ایمنی محتوا (Content Safety Filter)
+
+<div dir="ltr">
 
 ```python
 class ContentSafetyGuardrail:
@@ -273,9 +293,13 @@ def check_with_openai(text: str) -> GuardrailResult:
     return GuardrailResult(passed=True)
 ```
 
-### Relevance Check
+</div>
 
-Ensure response addresses the question:
+### بررسی ارتباط و پاسخگویی به پرسش (Relevance Check)
+
+اطمینان از اینکه پاسخ مستقیماً به پرسش مطرح‌شده می‌پردازد:
+
+<div dir="ltr">
 
 ```python
 class RelevanceGuardrail:
@@ -298,7 +322,11 @@ class RelevanceGuardrail:
         return GuardrailResult(passed=True, metadata={"relevance": similarity})
 ```
 
-### Factuality Check (for RAG)
+</div>
+
+### بررسی صحت و انطباق با واقعیت (Factuality Check برای RAG)
+
+<div dir="ltr">
 
 ```python
 class FactualityGuardrail:
@@ -329,11 +357,15 @@ class FactualityGuardrail:
         return GuardrailResult(passed=True)
 ```
 
+</div>
+
 ---
 
-## Prompt Injection Defense
+## دفاع در برابر تزریق پرامپت (Prompt Injection Defense)
 
-### Detection
+### تشخیص تزریق پرامپت
+
+<div dir="ltr">
 
 ```python
 class PromptInjectionDetector:
@@ -377,7 +409,11 @@ class PromptInjectionDetector:
         return GuardrailResult(passed=True)
 ```
 
-### Mitigation Strategies
+</div>
+
+### استراتژی‌های کاهش ریسک
+
+<div dir="ltr">
 
 ```python
 class InjectionMitigation:
@@ -433,21 +469,25 @@ Provide a helpful response.
         return self.llm.generate(response_prompt)
 ```
 
-### What Detection Does Not Buy You
+</div>
 
-Pattern lists and prompt wrappers are speed bumps. Treat them as cheap first layers, not as the control:
+### آنچه تشخیص به تنهایی برای شما به ارمغان نمی‌آورد
 
-- **Frontier models resist better, not perfectly.** Vendor-reported indirect-injection success on Gray Swan's benchmarks, with 15 attempts per scenario, is 1.0% for Claude Opus 5.5 and 8.5% for GPT-6 Astra (each vendor ran its own setup, so read these as levels, not a head-to-head; see [LLM Security](../12-security-and-access/01-llm-security.md#indirect-prompt-injection-ipi-defense-in-depth)). At 1%, an agent that reads thousands of attacker-reachable documents a day still lets attacks through every day, and small models on GUI surfaces do much worse: Claude Haiku 5.5 reports 7.1% overall but 24.4% on GUI computer use.
-- **User-pasted content is untrusted too.** Anthropic reported that early Claude Opus 5.5 snapshots regressed by treating text pasted into the user turn as unable to contain injections. A document the user pastes deserves the same suspicion as a retrieved web page.
-- **Exfiltration does not need a suspicious URL.** LLMLeak (arXiv 2610.01768) encodes secrets into ordinary-looking reference URLs that the model's normal web-fetch tool requests, reaching 79.7% attack success across 11 open-parameter models. An output filter looking for markdown images misses it; an egress allowlist on fetch tools does not.
+فهرست‌های الگو و ساختارهای پوشاننده پرامپت مانند سرعت‌گیر هستند. با آنها به عنوان لایه‌های اولیه ارزان برخورد کنید، نه به عنوان کنترل قطعی:
 
-The controls that hold are structural: least-privilege tools, egress allowlists, sandboxed execution, and approvals bound to the exact action (see [Action Safety](#action-safety)).
+- **مدل‌های پیشرو مقاومت بهتری دارند، اما کامل نیستند:** میزان موفقیت تزریق غیرمستقیم پرامپت در بنچمارک‌های Gray Swan (با ۱۵ تلاش به ازای هر سناریو طبق گزارش ارائه‌دهندگان) برای مدل Claude Opus 5.5 برابر ۱.۰٪ و برای GPT-6 Astra برابر ۸.۵٪ است. با نرخ ۱٪، ایجنتی که روزانه هزاران سند در دسترس مهاجم را می‌خواند همچنان هر روز حملاتی را از خود عبور می‌دهد، و مدل‌های کوچک روی رابط‌های گرافیکی بسیار ضعیف‌تر عمل می‌کنند: مدل Claude Haiku 5.5 موفقیت کلی را ۷.۱٪ اما در تعامل با رابط کاربری کامپیوتر ۲۴.۴٪ گزارش کرده است.
+- **محتوای پیست‌شده توسط کاربر نیز غیرمعتمد است:** شرکت Anthropic گزارش داد که اسنپ‌شات‌های اولیه Claude Opus 5.5 متنی را که در نوبت کاربر Paste شده بود ناتوان از داشتن تزریق می‌دانستند. سندی که کاربر Paste می‌کند نیازمند همان سوءظنی است که برای یک صفحه وب بازیابی‌شده اعمال می‌شود.
+- **خروج غیرمجاز داده نیازی به URL مشکوک ندارد:** چارچوب LLMLeak اسرار را در قالب URLهای مراجعی با ظاهر عادی انکود می‌کند که ابزار وب‌فچ معمولی مدل آنها را فراخوانی می‌کند (با نرخ موفقیت ۷۹.۷٪ در ۱۱ مدل با پارامتر باز). فیلتر خروجی که به دنبال تصاویر مارک‌داون باشد این مورد را از دست می‌دهد؛ اما لیست سفید ترافیک خروجی روی ابزارهای واکشی جلوی آن را می‌گیرد.
+
+کنترل‌هایی که دوام می‌آورند ساختاری هستند: ابزارهای با حداقل دسترسی، لیست‌های سفید خروجی، اجرای ایزوله در سندباکس، و تاییدیه‌های متصل به اکشن دقیق (بخش [ایمنی اکشن‌ها و اقدامات](#ایمنی-اکشنها-و-اقدامات-action-safety) را ببینید).
 
 ---
 
-## Hallucination Mitigation
+## کاهش توهم (Hallucination Mitigation)
 
-### Multi-Layer Approach
+### رویکرد چندلایه‌ای
+
+<div dir="ltr">
 
 ```python
 class HallucinationGuard:
@@ -518,9 +558,13 @@ class HallucinationGuard:
         return GuardrailResult(passed=True)
 ```
 
-### Abstention Strategy
+</div>
 
-Train the model to say "I don't know":
+### استراتژی پرهیز و خودداری از پاسخ (Abstention Strategy)
+
+آموزش مدل برای اینکه در زمان عدم اطمینان بگوید «نمی‌دانم»:
+
+<div dir="ltr">
 
 ```python
 ABSTENTION_PROMPT = """
@@ -556,11 +600,15 @@ class AbstentionDetector:
         return any(phrase in response_lower for phrase in self.abstention_phrases)
 ```
 
+</div>
+
 ---
 
-## Structured Output Validation
+## اعتبارسنجی خروجی ساختاریافته (Structured Output Validation)
 
-### JSON Schema Validation
+### اعتبارسنجی اسکیما JSON
+
+<div dir="ltr">
 
 ```python
 from jsonschema import validate, ValidationError
@@ -606,7 +654,11 @@ product_schema = {
 guardrail = StructuredOutputGuardrail(product_schema)
 ```
 
-### Retry with Correction
+</div>
+
+### تلاش مجدد همراه با اصلاح خطا (Retry with Correction)
+
+<div dir="ltr">
 
 ```python
 class StructuredOutputRetry:
@@ -638,11 +690,15 @@ class StructuredOutputRetry:
         raise ValueError("Failed to generate valid structured output")
 ```
 
+</div>
+
 ---
 
-## Action Safety
+## ایمنی اکشن‌ها و اقدامات (Action Safety)
 
-### Action Validation
+### اعتبارسنجی اکشن‌ها
+
+<div dir="ltr">
 
 ```python
 class ActionSafetyGuard:
@@ -707,9 +763,13 @@ class ActionSafetyGuard:
         return self.approval_store.consume(action.get("approval_id"), digest)
 ```
 
-**Bind the approval to the action.** A `confirmed: true` flag the agent can set, or an approval the harness checks against a different action than it runs, is how **approval laundering** happens: a September 2026 paper (arXiv 2609.38983) names six classes (scope, argument, temporal, tool, delegation, and semantic) in which the action a human approved is not the one that executed. Binding a single-use approval to a digest of the exact call closes some of them; the paper's cryptographic approval token eliminated delegation laundering and its seeded temporal case, but left scope laundering untouched and did not significantly reduce argument laundering, because those diverge below what a field-level check can see. Approval complements a sandbox; it does not replace one. See [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md#approval-laundering).
+</div>
 
-### Sandbox Execution
+**تاییدیه را به اکشن مقید کنید:** یک پرچم ساده `confirmed: true` که خود ایجنت بتواند آن را تنظیم کند، یا تاییدیه‌ای که سیستم در برابر اکشنی متفاوت با آنچه اجرا می‌شود چک کند، منشأ پدیده **شستشوی تاییدیه (Approval laundering)** است: یک مقاله پژوهشی در سپتامبر ۲۰۲۶ شش دسته از آن را نام می‌برد (دامنه، آرگومان، زمانی، ابزار، تفویض، و معنایی) که در آنها اکشنی که انسان تایید کرده همان اکشنی نبوده که اجرا شده است. پیوند دادن یک تاییدیه یک‌بارمصرف به چکیده (Digest) همان فراخوانی دقیق، برخی از این موارد را حل می‌کند؛ اما تاییدیه مکمل سندباکس است، نه جایگزین آن. بخش [الگوهای حضور انسان در حلقه](../07-agentic-systems/08-human-in-the-loop-patterns.md#approval-laundering) را ببینید.
+
+### اجرای ایزوله در سندباکس (Sandbox Execution)
+
+<div dir="ltr">
 
 ```python
 class SandboxedExecutor:
@@ -749,11 +809,15 @@ class SandboxedExecutor:
             await sandbox.destroy()
 ```
 
+</div>
+
 ---
 
-## Fallback Strategies
+## استراتژی‌های بازگشت اضطراری (Fallback Strategies)
 
-### Graceful Degradation
+### کاهش تدریجی سطح خدمت (Graceful Degradation)
+
+<div dir="ltr">
 
 ```python
 class FallbackChain:
@@ -792,9 +856,13 @@ fallback = FallbackChain([
 ])
 ```
 
-### Provider Safeguards and Refusals
+</div>
 
-Your guardrail stack is no longer the only one in the request path. The newest Claude models (Fable 5.1 and 5, Opus 5.5 and 5, Sonnet 5.5) run provider safety classifiers, and a decline arrives as a successful HTTP 200 with `stop_reason: "refusal"`, empty content, and a `stop_details.category`. Design for it like any other guardrail outcome:
+### تدابیر ایمنی ارائه‌دهنده و امتناع‌ها (Refusals)
+
+پشته گاردریل شما دیگر تنها پشته موجود در مسیر پردازش درخواست نیست. جدیدترین مدل‌های Claude (شامل Fable 5.1 و 5، Opus 5.5 و 5، و Sonnet 5.5) طبقه‌بندهای ایمنی ارائه‌دهنده را اجرا می‌کنند و یک امتناع به عنوان یک پاسخ HTTP 200 با مقدار `stop_reason: "refusal"`، محتوای خالی، و یک دسته‌بندی در `stop_details.category` تحویل داده می‌شود. مانند هر خروجی گاردریل دیگری برای آن برنامه‌ریزی کنید:
+
+<div dir="ltr">
 
 ```python
 def check_provider_refusal(response) -> GuardrailResult:
@@ -814,17 +882,21 @@ def check_provider_refusal(response) -> GuardrailResult:
                            suggested_action="fallback_model")
 ```
 
-What to know about this layer:
+</div>
 
-- **It has false positives you do not control.** Anthropic's docs say benign cybersecurity and life-sciences work can trigger the `cyber` and `bio` categories. Anthropic reports its newest cyber safeguards produce about 60% fewer false positives than before, and its latest biology safeguards fire about 85% less often on benign elementary biology and medical questions (vendor-reported).
-- **It costs money.** Since September 24, 2026, pre-output refusals in `bio`, `frontier_llm`, and `reasoning_extraction` are billed on every platform, and all refusals count against rate limits. Break out refusal counts and spend by category on the guardrail dashboard, and budget for it when red-team suites probe those categories.
-- **Your own guardrail prompts can trigger it.** A judge or verifier prompt that asks for a `reasoning` field in JSON or a `<thinking>` section can be refused as `reasoning_extraction`. Ask for a short explanation or the evidence instead.
-- **Fallback is a configuration, not a hope.** Anthropic's server-side fallback (`fallbacks: "default"`, in beta on the Claude API) retries on the model it recommends for the category, or on up to three targets you name from the model's allowed list. It is not available on Bedrock, Google Cloud, or Foundry, where the Anthropic SDK's refusal-fallback middleware does the same retry client-side, and a Message Batches item that sets `fallbacks` comes back as an errored result. Run your own output guardrails on whatever model answered, since the response names it. See [Reliability Patterns](03-reliability-patterns.md#handling-safety-refusals).
-- **Some task classes are refused by design.** GPT-6 Astra's general release restricts scaled vulnerability research and exploit chaining, with looser access through OpenAI's Daybreak trusted-access program; Claude Fable 5.1 may find vulnerabilities but not develop exploits, while Mythos 5.1, the same model with looser safeguards, is available through the three tiers of Anthropic's Cyber Verification Program (expanded October 6, 2026, with data retention required). If your product lives in security or life sciences, plan for verified-access tiers, not prompt workarounds.
+آنچه باید درباره این لایه بدانید:
 
-### Human Escalation
+- **دارای مثبت‌های کاذبی است که شما کنترلی بر آنها ندارید:** مستندات Anthropic بیان می‌کند کارهای پژوهشی سالم در زمینه امنیت سایبری و علوم زیستی می‌توانند دسته‌های `cyber` و `bio` را فعال کنند. شرکت Anthropic گزارش می‌دهد که جدیدترین گاردریل‌های سایبری آن حدود ۶۰٪ مثبت کاذب کمتر و گاردریل‌های زیستی آن حدود ۸۵٪ مثبت کاذب کمتر در پرسش‌های پزشکی و زیستی ابتدایی دارند.
+- **این لایه هزینه دارد:** از ۲۴ سپتامبر ۲۰۲۶، امتناع‌های پیش از خروجی در دسته‌های `bio`، `frontier_llm` و `reasoning_extraction` روی تمام پلتفرم‌ها صورت‌حساب دارند، و تمام امتناع‌ها در سقف نرخ محاسبه می‌شوند. تعداد امتناع‌ها و هزینه‌ها را به تفکیک دسته در داشبورد گاردریل خود نمایش دهید.
+- **پرامپت‌های گاردریل خود شما ممکن است آن را فعال کنند:** پرامپت یک داور (Judge) یا اعتبارسنج که فیلد `reasoning` در JSON یا یک بخش `<thinking>` را طلب کند، می‌تواند به عنوان `reasoning_extraction` ریجکت شود. به جای آن یک توضیح کوتاه یا شواهد را بخواهید.
+- **بازگشت اضطراری (Fallback) یک پیکربندی است، نه یک امید:** قابلیت بازگشت سمت سرور Anthropic (گزینه `fallbacks: "default"` در بتای Claude API) روی مدلی که ارائه‌دهنده برای آن دسته پیشنهاد می‌کند تلاش مجدد انجام می‌دهد. این قابلیت روی پلتفرم‌های Bedrock، Google Cloud، یا Foundry فعال نیست و در آنجا میدل‌ویر کلاینت SDK این کار را انجام می‌دهد. گاردریل‌های خروجی خود را روی هر مدلی که پاسخ نهایی را داده اجرا کنید. بخش [الگوهای پایایی](03-reliability-patterns.md#handling-safety-refusals) را ببینید.
+- **برخی از دسته‌های تسک بر اساس طراحی مسدود هستند:** نسخه عمومی GPT-6 Astra پژوهش‌های گسترده آسیب‌پذیری و زنجیره‌سازی اکسپلویت را محدود می‌کند؛ مدل Claude Fable 5.1 می‌تواند آسیب‌پذیری بیابد اما نمی‌تواند اکسپلویت بسازد، در حالی که Mythos 5.1 از طریق برنامه Cyber Verification Program در دسترس است. اگر محصول شما در حوزه امنیت یا علوم زیستی فعالیت دارد، برای سطوح دسترسی تاییدشده برنامه‌ریزی کنید، نه راهکارهای دور زدن پرامپت.
 
-The confidence score has to come from a signal you control. Token logprobs are not a dependable source: GPT-6 Astra does not return them at all. Vote share across samples, a judge score, or retrieval coverage (how many claims trace to a retrieved source) work across providers.
+### ارجاع به انسان (Human Escalation)
+
+امتیاز اطمینان (Confidence score) باید از سیگنالی حاصل شود که شما بر آن کنترل دارید. مقادیر logprobs توکن‌ها منبع قابل اتکایی نیستند: مدل GPT-6 Astra اصلاً آنها را بازنمی‌گرداند. سهم آرا در میان نمونه‌ها، امتیاز داور، یا پوشش بازیابی (اینکه چه تعداد ادعا به یک منبع بازیابی‌شده پیوند دارند) در میان تمام ارائه‌دهندگان کارایی دارند.
+
+<div dir="ltr">
 
 ```python
 class HumanEscalationGuardrail:
@@ -854,11 +926,15 @@ def handle_low_confidence(query: str, response: str, metadata: dict):
     return f"I want to make sure I give you accurate information. I've escalated your question to our team. Ticket: {ticket.id}"
 ```
 
+</div>
+
 ---
 
-## Guardrail Architecture
+## معماری گاردریل (Guardrail Architecture)
 
-### Layered Pipeline
+### خط لوله لایه‌ای (Layered Pipeline)
+
+<div dir="ltr">
 
 ```python
 class GuardrailPipeline:
@@ -919,7 +995,11 @@ class GuardrailPipeline:
         )
 ```
 
-### Guardrail Metrics
+</div>
+
+### متریک‌های گاردریل
+
+<div dir="ltr">
 
 ```python
 class GuardrailMetrics:
@@ -948,13 +1028,17 @@ class GuardrailMetrics:
         ).observe(result.latency_ms)
 ```
 
-**A dashboard that goes quiet after an upgrade may be blind, not safe.** OpenAI's Python SDK 3.0 (August 12, 2026) and Anthropic's Python SDK 1.0 (August 20, 2026) both moved their HTTP layer to `httpx2`. Anthropic's migration guide warns that httpx-based tooling (OpenTelemetry's HTTPX instrumentor, Sentry's httpx integration, respx, pytest-httpx, vcrpy) can silently miss SDK requests unless `httpx2.alias_httpx()` runs before anything imports httpx. LLM-call spans and any guardrail or cost signals derived from them drop to zero with no error, and test mocks stop intercepting, so guardrail tests hit the live API. After any provider SDK bump, assert that a known-bad canary request still trips its guardrail and still shows up in the metrics.
+</div>
+
+**داشبوردی که پس از ارتقای نسخه ساکت می‌شود ممکن است کور شده باشد، نه امن:** کیت‌های توسعه پایتون OpenAI نسخه 3.0 (۱۲ آگوست ۲۰۲۶) و Anthropic نسخه 1.0 (۲۰ آگوست ۲۰۲۶) هر دو لایه HTTP خود را به `httpx2` منتقل کردند. راهنمای مهاجرت Anthropic هشدار می‌دهد که ابزارهای مبتنی بر httpx (مانند اینسترومنتور OpenTelemetry، افزونه Sentry، respx، pytest-httpx، و vcrpy) می‌توانند بدون خطا درخواست‌های SDK را از دست بدهند مگر اینکه متد `httpx2.alias_httpx()` قبل از هرگونه ایمپورت httpx اجرا شود. در این صورت اسپن‌های فراخوانی LLM و سیگنال‌های گاردریل یا هزینه مشتق‌شده از آنها بدون خطا به صفر می‌رسند. پس از هر ارتقای SDK ارائه‌دهنده، مطمئن شوید که یک درخواست قناری عمداً مخرب همچنان گاردریل خود را فعال می‌کند و در متریک‌ها ثبت می‌شود.
 
 ---
 
-## Guardrail Frameworks
+## فریم‌ورک‌های گاردریل (Guardrail Frameworks)
 
-### NeMo Guardrails (NVIDIA)
+### فریم‌ورک NeMo Guardrails (متعلق به NVIDIA)
+
+<div dir="ltr">
 
 ```python
 from nemoguardrails import LLMRails, RailsConfig
@@ -979,9 +1063,13 @@ define flow
 response = rails.generate(messages=[{"role": "user", "content": user_message}])
 ```
 
-### Guardrails AI
+</div>
 
-Validators ship as separate packages (for example `pip install guardrails-ai guardrails-ai-toxic-language`, then `python -m guardrails_ai.toxic_language.post_install` to download its local model, so bake that step into the container image rather than the first request). Validating output you already have keeps the guard independent of which provider generated it:
+### فریم‌ورک Guardrails AI
+
+اعتبارسنج‌ها به صورت پکیج‌های مجزا عرضه می‌شوند (مثلاً `pip install guardrails-ai guardrails-ai-toxic-language`، سپس `python -m guardrails_ai.toxic_language.post_install` برای دانلود مدل محلی، بنابراین این گام را به ایمیج کانتینر اضافه کنید نه به اولین درخواست). اعتبارسنجی خروجی‌ای که از قبل در اختیار دارید، گاردریل را از اینکه کدام ارائه‌دهنده آن را تولید کرده مستقل نگه می‌دارد:
+
+<div dir="ltr">
 
 ```python
 from guardrails import Guard, OnFailAction
@@ -1005,134 +1093,142 @@ toxicity_guard = Guard().use(
 toxicity_guard.validate(response_text)  # raises on toxic sentences
 ```
 
-### Choosing Where Each Check Runs
+</div>
 
-| Layer | Examples | Use it for |
-|-------|----------|------------|
-| In-process library | Guardrails AI validators, NeMo Guardrails rails | Schema, topic, and format checks with no extra network hop |
-| Self-hosted safety classifier | Llama Guard 4 12B (multimodal, derived from Llama 4); Mistral Shieldstral 1.0 3B (Apache 2.0, text and image, scores content against a natural-language policy you pass at inference time) | High-volume content safety on your own GPUs, with your own thresholds; a policy-adaptive classifier changes policy without retraining |
-| Hosted moderation endpoint | OpenAI `omni-moderation-latest` | Content safety without hosting a classifier, where sending content to the provider is acceptable |
-| Agent SDK hooks | openai-agents 0.22.1 (September 8, 2026) added MCP server-wide guardrails | Checks on tool calls and tool results inside an agent loop |
-| Provider safeguards | Claude safety classifiers, gated cyber tiers | Not yours to tune: monitor, budget, and route around them |
+### انتخاب محل اجرای هر بررسی
+
+| لایه اجرایی (Layer) | نمونه‌ها | کاربرد مناسب |
+|---|---|---|
+| لایبرری درون فرآیندی (In-process library) | اعتبارسنج‌های Guardrails AI، ریل‌های NeMo Guardrails | بررسی‌های اسکیما، موضوع، و فرمت بدون تحمیل پرش شبکه اضافی |
+| طبقه‌بند ایمنی خودمیزبان (Self-hosted safety classifier) | مدل Llama Guard 4 12B (چندوجهی، مشتق‌شده از لاما ۴)؛ مدل Mistral Shieldstral 1.0 3B (لایسنس Apache 2.0، متن و تصویر، با امتیازدهی بر اساس سیاست زبان طبیعی در زمان استنتاج) | ایمنی محتوا در حجم بالا روی GPUهای اختصاصی با آستانه‌های دلخواه شما؛ یک طبقه‌بند انطباق‌پذیر با سیاست، بدون نیاز به بازآموزی سیاست‌ها را تغییر می‌دهد |
+| اندپوینت مدریشن میزبانی‌شده (Hosted moderation endpoint) | اندپوینت `omni-moderation-latest` در OpenAI | ایمنی محتوا بدون نیاز به میزبانی یک طبقه‌بند، در شرایطی که ارسال داده‌ها به ارائه‌دهنده از نظر امنیتی مجاز باشد |
+| هوک‌های SDK ایجنت (Agent SDK hooks) | پکیج openai-agents نسخه 0.22.1 (۸ سپتامبر ۲۰۲۶) با گاردریل‌های سراسری سرور MCP | اعتبارسنجی روی فراخوانی‌های ابزار و نتایج ابزار در داخل حلقه ایجنت |
+| تدابیر ایمنی ارائه‌دهنده (Provider safeguards) | طبقه‌بندهای ایمنی Claude، رده‌های دسترسی سایبری دروازه‌بانی‌شده | مواردی که تحت کنترل شما برای تنظیم دقیق نیستند: آنها را مانیتور کنید، برایشان بودجه در نظر بگیرید، و در اطراف آنها مسیرهای هدایت بسازید |
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه (Interview Questions)
 
-### Q: How do you prevent hallucination in a production RAG system?
+### پرسش: چگونه از رخداد توهم (Hallucination) در یک سیستم RAG در پروداکشن جلوگیری می‌کنید؟
 
-**Strong answer:**
-Multi-layer approach:
+**پاسخ قوی:**
+رویکرد چندلایه‌ای:
 
-**1. Retrieval quality:**
-- High-quality retrieval is the first defense
-- If we retrieve wrong context, model will hallucinate
-- Use reranking to ensure relevance
+**۱. کیفیت بازیابی اطلاعات:**
+- بازیابی با کیفیت بالا نخستین خط دفاعی است
+- اگر کانتکست اشتباه بازیابی کنیم، مدل قطعاً دچار توهم خواهد شد
+- استفاده از رتبه‌بندی مجدد (Reranking) برای تضمین ارتباط اسناد
 
-**2. Prompt engineering:**
-- Explicit instruction: "Answer only from context"
-- Encourage abstention: "If not in context, say you don't know"
-- Low temperature (0.1-0.3) where the API still accepts it; the Claude API rejects sampling parameters at any value on every model from API version `2026-10-21` (and non-default values on Claude 4.7 and later models before it), Gemini deprecated them in July 2026, and GPT-6 Astra does not support them, so grounding has to come from retrieval, instructions, and verification
+**۲. مهندسی پرامپت:**
+- دستورالعمل صریح: «تنها بر اساس کانتکست پاسخ بده»
+- تشویق به خودداری از پاسخ: «اگر در کانتکست نیست، بگو نمی‌دانم»
+- تعیین دمای پایین (0.1 تا 0.3) در صورت پذیرش توسط API؛ API شرکت Anthropic پارامترهای سمپلینگ را در هر مقداری از نسخه `2026-10-21` رد می‌کند، گوگل آن را منسوخ کرده، و GPT-6 Astra از آن پشتیبانی نمی‌کند؛ بنابراین انطباق بر واقعیت باید از بازیابی، پرامپت دقیق و اعتبارسنجی تامین شود
 
-**3. Output validation:**
-- Factuality checking: NLI model or LLM judge
-- Citation verification: Check claims against sources
-- Self-consistency: Multiple samples should agree
+**۳. اعتبارسنجی خروجی:**
+- بررسی فکت‌ها: با مدل NLI یا داور LLM
+- تایید استنادها: تطبیق ادعاها در برابر منابع
+- سازگاری با خود (Self-consistency): نمونه‌های متعدد باید بر سر حقایق توافق داشته باشند
 
-**4. Abstention strategy:**
-- Train/prompt model to say "I don't know"
-- Detect low-confidence responses
-- Escalate to human when uncertain
+**۴. استراتژی پرهیز (Abstention):**
+- آموزش/پرامپت‌نویسی به مدل برای گفتن «نمی‌دانم»
+- تشخیص پاسخ‌های دارای اعتماد پایین
+- ارجاع به انسان در زمان عدم اطمینان
 
-**5. Monitoring:**
-- Track hallucination rate in production
-- User feedback on accuracy
-- Regular evaluation on test set
+**۵. پایش و مانیتورینگ:**
+- ردیابی نرخ توهم در پروداکشن
+- بازخورد کاربران در مورد دقت پاسخ‌ها
+- ارزیابی منظم روی مجموعه داده آزمون
 
-### Q: How do you protect an LLM application from prompt injection?
+### پرسش: چگونه یک برنامه LLM را در برابر تزریق پرامپت محافظت می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
+دفاع در عمق با لایه‌های متعدد:
 
-"Defense in depth with multiple layers:
+**تشخیص:**
+- تطبیق الگو برای عبارات تزریقی شناخته‌شده ('ignore previous instructions')
+- طبقه‌بند ML آموزش‌دیده روی نمونه‌های تزریق
+- تشخیص ناهنجاری برای الگوهای ورودی غیرمعمول
 
-**Detection:**
-- Pattern matching for known injection phrases ('ignore previous instructions')
-- ML classifier trained on injection examples
-- Anomaly detection for unusual input patterns
+**کاهش ریسک:**
+- دفاع ساندویچی: احاطه ورودی کاربر با یادآوری‌های دستورالعمل
+- جداکننده‌های شفاف: استفاده از نشانگرهای یکتا در اطراف محتوای کاربر
+- جداسازی ورودی/خروجی: خلاصه‌سازی قصد کاربر قبل از اقدام روی آن
+- پارامتری‌سازی: جداسازی داده از دستورالعمل (مشابه پارامترهای SQL)
 
-**Mitigation:**
-- Sandwich defense: wrap user input with instruction reminders
-- Clear delimiters: use unique markers around user content
-- Input/output isolation: summarize intent before acting on it
-- Parameterization: separate data from instructions (like SQL params)
+**معماری:**
+- حداقل دسترسی: ایجنت‌ها فقط دسترسی‌هایی را دارند که واقعاً نیاز دارند
+- اعتبارسنجی اکشن: اعتبارسنجی اکشن‌ها قبل از اجرا، با تاییدیه‌های مقید به فراخوانی دقیق
+- کنترل خروجی شبکه: تعریف لیست سفید برای آنچه ابزارهای وب‌فچ و مرورگر می‌توانند به آن دسترسی داشته باشند، زیرا اسرار می‌توانند داخل یک URL ظاهراً سالم خارج شوند
+- فیلتر کردن خروجی: شناسایی پاسخ‌هایی که پرامپت سیستم را لو می‌دهند
 
-**Architecture:**
-- Least privilege: agents only have permissions they need
-- Action validation: verify actions before execution, with approvals bound to the exact call
-- Egress control: allowlist what fetch and browse tools can reach, since secrets can leave inside an ordinary-looking URL
-- Output filtering: catch responses that leak system prompts
+هیچ دفاع منفردی کامل نیست. هدف این است که مهاجم نیاز به عبور از چندین لایه داشته باشد. همچنین تلاش‌های تزریق را برای به‌روزرسانی خطوط دفاعی پایش می‌کنم.
 
-No single defense is perfect. The goal is that an attacker needs to bypass multiple layers. I also monitor for injection attempts to update defenses.
+برای کاربردهای با امنیت بالا، از رویکرد دو مرحله‌ای استفاده می‌کنم: LLM اول قصد کاربر را بدون انجام اکشن استخراج می‌کند، و LLM دوم تنها بر اساس قصد استخراج‌شده عمل می‌کند.
 
-For high-security applications, I use a two-stage approach: first LLM extracts intent without acting, second LLM acts only on the extracted intent."
+### پرسش: یک سیستم گاردریل برای چت‌بات خدمات مشتریان طراحی کنید.
 
-### Q: Design a guardrail system for a customer service chatbot.
+**پاسخ قوی:**
+من گاردریل‌ها را در دو لایه ورودی و خروجی پیاده‌سازی می‌کنم:
 
-**Strong answer:**
-I would implement guardrails at input and output:
+**گاردریل‌های ورودی:**
+۱. فیلتر موضوعی: فقط به سوالات مربوط به محصول/خدمات اجازه ورود داده شود
+۲. تشخیص PII: پاک‌سازی یا هشدار در مورد داده‌های حساس
+۳. تشخیص جیل‌بریک/تزریق: مسدودسازی تلاش‌های دستکاری مدل
+۴. محدودسازی نرخ: جلوگیری از سوءاستفاده و بات‌ها
 
-**Input guardrails:**
-1. Topic filter: Only allow product/service questions
-2. PII detection: Redact or warn about sensitive data
-3. Jailbreak/injection detection: Block manipulation attempts
-4. Rate limiting: Prevent abuse
+**گاردریل‌های خروجی:**
+۱. ایمنی محتوا: عدم وجود محتوای مضر یا نامناسب
+۲. بررسی ارتباط: پاسخ مستقیماً به پرسش مطرح‌شده بپردازد
+۳. لحن برند: لحن و پیام‌رسانی منسجم و حرفه‌ای
+۴. انطباق با واقعیت: ادعاها توسط پایگاه دانش پشتیبانی شوند
+۵. فیلتر PII: اطمینان از اینکه هیچ داده هویتی در پاسخ‌ها نشت نکند
 
-**Output guardrails:**
-1. Content safety: No harmful/inappropriate content
-2. Relevance check: Response addresses the question
-3. Brand voice: Consistent tone and messaging
-4. Factuality: Claims supported by knowledge base
-5. PII filter: Ensure no PII leaks in responses
+**گاردریل‌های رفتاری:**
+- آستانه‌های اطمینان: ارجاع به انسان در صورت پایین بودن اطمینان
+- الگوهای امتناع: رد محترمانه درخواست‌های خارج از محدوده
+- شفاف‌سازی هویت: اعلام صریح هوش مصنوعی بودن در همان ابتدا (الزامی طبق ماده ۵۰ قانون AI اروپا و قوانین ایالتی آمریکا)
+- پروتکل بحران: تشخیص نشانه‌های خودآسیبی و انتقال فوری به اپراتور انسانی و منابع امدادی بحران
 
-**Behavioral guardrails:**
-- Confidence thresholds: escalate to human if uncertain
-- Refusal patterns: graceful decline for out-of-scope requests
-- Disclosure: identify as AI up front (required under EU AI Act Article 50 and a growing list of US state chatbot laws)
-- Crisis protocol: detect self-harm signals and hand off to a human and crisis resources, which several state laws now require for companion-style bots
+**زنجیره بازگشت اضطراری (Fallback chain):**
 
-**Fallback chain:**
+<div dir="ltr">
+
 ```
 Primary LLM -> Backup LLM (different vendor) -> Canned responses -> Human escalation
 ```
 
-Provider safety refusals (HTTP 200 with `stop_reason: "refusal"` on the newest Claude models) count as failures, not successes: route them to the provider's approved fallback model or on to the backup step.
+</div>
 
-**Monitoring:**
-- Log all guardrail triggers
-- Track guardrail trigger rates
-- Alert on high block rates (may indicate attack or model issue)
-- Sample blocked conversations for review
-- User satisfaction tracking
+امتناع‌های ایمنی ارائه‌دهنده (پاسخ HTTP 200 با `stop_reason: "refusal"` در جدیدترین مدل‌های Claude) به عنوان شکست تلقی می‌شوند، نه موفقیت: آنها را به مدل فال‌بک تاییدشده ارائه‌دهنده یا گام پشتیبان هدایت کنید.
 
-The balance is: enough guardrails to be safe, not so many that the bot is useless. Tune thresholds based on the risk profile: financial services tighter than casual chat.
+**پایش و مانیتورینگ:**
+- لاگ‌گیری از تمام تریگرهای گاردریل
+- ردیابی نرخ فعال شدن گاردریل‌ها
+- هشدار در زمان بالا رفتن نرخ مسدودسازی (ممکن است نشانه حمله یا اشکال در مدل باشد)
+- نمونه‌برداری از گفتگوهای مسدودشده برای بازبینی کیفی
+- ردیابی رضایت کاربران
 
----
-
-## References
-
-- NeMo Guardrails: https://github.com/NVIDIA/NeMo-Guardrails
-- Guardrails AI: https://github.com/guardrails-ai/guardrails
-- OpenAI Moderation: https://developers.openai.com/api/docs/guides/moderation
-- Llama Guard: https://ai.meta.com/research/publications/llama-guard/
-- Mistral Shieldstral 1.0 3B model card: https://huggingface.co/mistralai/Shieldstral-1.0-3B
-- OWASP LLM Top 10: https://genai.owasp.org/llm-top-10/
-- Anthropic, content moderation guide: https://platform.claude.com/docs/en/about-claude/use-case-guides/content-moderation
-- Anthropic, refusals and fallback: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
-- Approval laundering in coding-agent harnesses (arXiv 2609.38983): https://arxiv.org/abs/2609.38983
-- LLMLeak, "The Innocent Courier" (arXiv 2610.01768): https://arxiv.org/abs/2610.01768
-- OpenAI Python SDK, httpx2 notes: https://github.com/openai/openai-python/blob/main/httpx2.md
-- Anthropic Python SDK v1.0.0 release notes: https://github.com/anthropics/anthropic-sdk-python/releases/tag/v1.0.0
+تعادل در این است: گاردریل کافی برای ایمن بودن، نه آن‌قدر زیاد که ربات بی‌فایده شود. آستانه‌ها را بر اساس پروفایل ریسک تنظیم می‌کنم: برای خدمات مالی بسیار سخت‌گیرانه‌تر از یک چت عمومی.
 
 ---
 
-*Next: [Ensemble Methods](02-ensemble-methods.md)*
+## مراجع (References)
+
+- فریم‌ورک NeMo Guardrails: https://github.com/NVIDIA/NeMo-Guardrails
+- ابزار Guardrails AI: https://github.com/guardrails-ai/guardrails
+- سیستم اعتدال محتوای OpenAI: https://developers.openai.com/api/docs/guides/moderation
+- مدل Llama Guard: https://ai.meta.com/research/publications/llama-guard/
+- شناسنامه مدل Mistral Shieldstral 1.0 3B: https://huggingface.co/mistralai/Shieldstral-1.0-3B
+- ده ریسک برتر OWASP برای LLM: https://genai.owasp.org/llm-top-10/
+- شرکت Anthropic، راهنمای اعتدال محتوا: https://platform.claude.com/docs/en/about-claude/use-case-guides/content-moderation
+- شرکت Anthropic، امتناع‌ها و بازگشت اضطراری: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
+- مقاله شستشوی تاییدیه در محیط‌های اجرای دستیار کدنویسی (arXiv 2609.38983): https://arxiv.org/abs/2609.38983
+- مقاله LLMLeak، «پیک بی‌گناه» (arXiv 2610.01768): https://arxiv.org/abs/2610.01768
+- یادداشت‌های مربوط به httpx2 در پایتون SDK شرکت OpenAI: https://github.com/openai/openai-python/blob/main/httpx2.md
+- یادداشت‌های انتشار نسخه v1.0.0 پایتون SDK شرکت Anthropic: https://github.com/anthropics/anthropic-sdk-python/releases/tag/v1.0.0
+
+---
+
+*بعدی: [روش‌های آنسامبل](02-ensemble-methods.md)*
+
+</div>

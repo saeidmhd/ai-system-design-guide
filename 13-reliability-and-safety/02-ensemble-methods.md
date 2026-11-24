@@ -1,47 +1,51 @@
-# Ensemble Methods for LLM Reliability
+<div dir="rtl">
 
-Ensemble methods are critical for production reliability. This chapter covers multi-model coordination patterns that improve accuracy and reduce hallucinations.
+# روش‌های گروهی و آنسامبل برای پایایی LLM (Ensemble Methods for LLM Reliability)
 
-## Table of Contents
+روش‌های گروهی یا آنسامبل (Ensemble Methods) نقشی حیاتی در پایایی سیستم‌های پروداکشن ایفا می‌کنند. این فصل الگوهای هماهنگی چندمدلی را پوشش می‌دهد که موجب ارتقای دقت و کاهش پدیده توهم (Hallucination) می‌شوند.
 
-- [Why Ensembles Matter](#why-ensembles-matter)
-- [Evaluation Ensembles](#evaluation-ensembles)
-- [Generation Ensembles](#generation-ensembles)
-- [Multi-Agent Patterns](#multi-agent-patterns)
-- [Ensemble vs Arbitration](#ensemble-vs-arbitration)
-- [Cost-Accuracy Tradeoffs](#cost-accuracy-tradeoffs)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Why Ensembles Matter
-
-Single-model outputs are unreliable for high-stakes applications:
-- Models hallucinate facts
-- Reasoning can be flawed
-- Outputs vary from one sample to the next
-- Single-judge evaluations are biased
-
-Ensembles improve reliability through redundancy and diversity.
-
-### Ensemble Methods Taxonomy
-
-| Category | Purpose | Methods |
-|----------|---------|---------|
-| Evaluation | Reduce judge bias | Panel of Judges, Pairwise Comparison |
-| Generation | Improve output quality | Self-Consistency, Best-of-N |
-| Verification | Reduce hallucinations | Multi-Agent Debate, Fact Checking |
-| Synthesis | Combine perspectives | Mixture of Agents |
-| Escalation | Spend strong-model compute only where needed | Cascade, Cross-Family Critique |
+- [چرا روش‌های آنسامبل اهمیت دارند (Why Ensembles Matter)](#چرا-روشهای-آنسامبل-اهمیت-دارند-why-ensembles-matter)
+- [آنسامبل‌های ارزیابی (Evaluation Ensembles)](#آنسامبلهای-ارزیابی-evaluation-ensembles)
+- [آنسامبل‌های تولید پاسخ (Generation Ensembles)](#آنسامبلهای-تولید-پاسخ-generation-ensembles)
+- [الگوهای چندایجنت (Multi-Agent Patterns)](#الگوهای-چندایجنت-multi-agent-patterns)
+- [مقایسه آنسامبل در برابر داوری (Ensemble vs Arbitration)](#مقایسه-آنسامبل-در-برابر-داوری-ensemble-vs-arbitration)
+- [مصالحه‌های هزینه و دقت (Cost-Accuracy Tradeoffs)](#مصالحههای-هزینه-و-دقت-cost-accuracy-tradeoffs)
+- [پرسش‌های مصاحبه (Interview Questions)](#پرسشهای-مصاحبه-interview-questions)
+- [مراجع (References)](#مراجع-references)
 
 ---
 
-## Evaluation Ensembles
+## چرا روش‌های آنسامبل اهمیت دارند (Why Ensembles Matter)
 
-### Panel of LLM Judges (PoLL)
+خروجی‌های حاصل از یک مدل واحد برای کاربردهای حساس و پرریسک غیرقابل‌اعتماد هستند:
+- مدل‌ها فکت‌ها و حقایق را تحریف می‌کنند (پدیده توهم)
+- استدلال آنها می‌تواند دچار نقص و مغالطه باشد
+- خروجی‌ها از یک نمونه تا نمونه بعدی نوسان دارند
+- ارزیابی‌های مبتنی بر یک داور واحد دارای سوگیری (Bias) هستند
 
-Multiple diverse models score the same output:
+روش‌های گروهی و آنسامبل از طریق افزونگی و تنوع، پایایی سیستم را ارتقا می‌دهند.
+
+### آرایه‌شناسی روش‌های آنسامبل
+
+| دسته‌بندی (Category) | هدف | روش‌ها (Methods) |
+|---|---|---|
+| ارزیابی (Evaluation) | کاهش سوگیری داور | هیئت داوران (Panel of Judges)، مقایسه زوجی (Pairwise Comparison) |
+| تولید پاسخ (Generation) | بهبود کیفیت خروجی | خودسازگاری (Self-Consistency)، روش Best-of-N |
+| راستی‌آزمایی (Verification) | کاهش توهم (Hallucination) | مناظره چندایجنت (Multi-Agent Debate)، اعتبارسنجی فکت‌ها |
+| ترکیب و سنتز (Synthesis) | ترکیب دیدگاه‌ها | آمیخته‌ای از ایجنت‌ها (Mixture of Agents) |
+| ارتقا و تشدید (Escalation) | صرف توان محاسباتی مدل قوی تنها در صورت نیاز | ساختار آبشاری (Cascade)، نقد بین‌خانواده‌ای (Cross-Family Critique) |
+
+---
+
+## آنسامبل‌های ارزیابی (Evaluation Ensembles)
+
+### هیئت داوران مدل‌های زبانی (PoLL)
+
+چندین مدل متنوع به یک خروجی یکسان نمره می‌دهند:
+
+<div dir="ltr">
 
 ```python
 class PanelOfJudges:
@@ -83,13 +87,17 @@ class PanelOfJudges:
         }
 ```
 
-**When to use:** High-stakes evaluations, benchmark creation, when single-judge bias is unacceptable.
+</div>
 
-**Agreement is not accuracy.** Judges fail in correlated ways, so a panel that agrees can be confidently wrong together. A September 2026 study (arXiv 2609.29769) compared Jev, a decision model that returns typed scores instead of text, with LLM rubric judges: the LLM judges cost 16 to 325x more and took 28 to 350x longer, yet on Jev's most confident errors about 96% of LLM verdicts repeated the same wrong answer, and no cascade beat the best single judge by more than 2.7 points. Panels reduce variance and cascades cut cost; neither reliably catches a blind spot the judges share. Keep a human-labeled gold set and measure the panel against it, not against itself.
+**موارد استفاده مناسب:** ارزیابی‌های پرریسک و حیاتی، ساخت مجموعه‌داده‌های بنچمارک، و زمانی که سوگیری یک داور منفرد غیرقابل قبول است.
 
-### Pairwise Comparison with Positional Debiasing
+**توافق نظر به معنای درستی و دقت نیست:** داورها به شیوه‌های همبسته دچار شکست می‌شوند، بنابراین هیئتی از داورها که با هم توافق دارند ممکن است با اعتمادبه‌نفس بالا با هم اشتباه کنند. یک مطالعه در سپتامبر ۲۰۲۶ مدل تصمیم‌گیری Jev را که نمرات تایپ‌شده بازمی‌گرداند با داوران LLM مبتنی بر روباریک مقایسه کرد: داوران LLM بین ۱۶ تا ۳۲۵ برابر گران‌تر بودند و ۲۸ تا ۳۵۰ برابر زمان بیشتری بردند، با این حال در خطاهای با بالاترین اعتماد Jev، حدود ۹۶٪ از آرای LLM همان پاسخ اشتباه را تکرار کردند و هیچ ساختار آبشاری نتوانست بیش از ۲.۷ امتیاز نسبت به بهترین داور منفرد برتری یابد. هیئت‌های داوری واریانس را کاهش می‌دهند و آبشارها هزینه‌ها را کم می‌کنند؛ اما هیچ‌کدام نقاط کور مشترک میان داورها را رفع نمی‌کنند. همواره یک مجموعه طلایی برچسب‌گذاری‌شده توسط انسان نگه‌داری کنید و هیئت را با آن بسنجید، نه با خودش.
 
-LLM judges show position bias, often favoring whichever answer appears first, and its size varies by judge and task (Zheng et al., 2023; Wang et al., 2023). Always run both orderings:
+### مقایسه زوجی همراه با رفع سوگیری مکانی (Positional Debiasing)
+
+داوران LLM دچار سوگیری موقعیت مکانی هستند و غالباً پاسخی را که اول بیاید ترجیح می‌دهند. همیشه هر دو ترتیب را اجرا کنید:
+
+<div dir="ltr">
 
 ```python
 async def pairwise_compare_debiased(model, response_a: str, response_b: str, criteria: str) -> dict:
@@ -120,13 +128,17 @@ async def pairwise_compare_debiased(model, response_a: str, response_b: str, cri
         }
 ```
 
+</div>
+
 ---
 
-## Generation Ensembles
+## آنسامبل‌های تولید پاسخ (Generation Ensembles)
 
-### Self-Consistency (Majority Voting)
+### روش خودسازگاری و اکثریت آرا (Self-Consistency)
 
-Generate multiple reasoning paths, vote on the final answer:
+تولید مسیرهای استدلال متعدد و رأی‌گیری روی پاسخ نهایی:
+
+<div dir="ltr">
 
 ```python
 class SelfConsistencyDecoder:
@@ -185,27 +197,31 @@ class SelfConsistencyDecoder:
         pass
 ```
 
-**Best for:** Math, logic, coding with verifiable answers. The original paper's (Wang et al.) headline gains over greedy chain-of-thought ranged from +3.9 points (ARC-challenge) to +17.9 (GSM8K), measured on 2022-era models with no built-in reasoning. Do not carry those numbers over to a current reasoning model; measure the gain on your own eval set before paying k times the cost.
+</div>
 
-### Sampling Controls Are Disappearing
+**بهترین کاربرد برای:** ریاضیات، منطق، و کدنویسی با پاسخ‌های قابل اعتبارسنجی. دستاوردهای اولیه این روش روی مدل‌های سال ۲۰۲۲ بدون استدلال درونی سنجیده شده بود؛ این اعداد را به مدل‌های مدرن دارای استدلال تعمیم ندهید و قبل از پرداخت هزینه k برابری، دستاورد آن را روی ارزیابی‌های اختصاصی خود بسنجید.
 
-The classic recipe tunes temperature for diversity. On frontier APIs that knob is going away:
+### ناپدید شدن پارامترهای کنترل سمپلینگ
 
-| Platform | Status (November 2026) |
-|----------|-----------------------|
-| Claude API | From API version `2026-10-21` (October 21, 2026), `temperature`, `top_p`, and `top_k` return 400 at any value, even the default, on every model; all eight new SDK and CLI majors (Python, TypeScript, Go, Java, C#, PHP, Ruby, and the ant CLI; see [the model taxonomy](../02-model-landscape/01-model-taxonomy.md)) send that version by default. Earlier versions already rejected non-default values on Claude 4.7 and later models, and the Python SDK 1.0 (August 20, 2026) removed the parameters from Messages methods, so passing them raises `TypeError` |
-| Gemini API | `temperature`, `top_p`, and `top_k` deprecated on July 21, 2026; Gemini 3.8 Flash controls reasoning with `thinking_level` instead of `thinking_budget` |
-| OpenAI GPT-6 Astra | No custom `temperature` or `top_p`, and no `logprobs` |
+دستورالعمل سنتی برای تنوع پاسخ‌ها دما (Temperature) را تنظیم می‌کرد. در APIهای پیشرو این دکمه تنظیمی در حال حذف است:
 
-What this changes for ensembles:
+| پلتفرم (Platform) | وضعیت تا نوامبر ۲۰۲۶ (Status) |
+|---|---|
+| رابط Claude API | از نسخه `2026-10-21` از API شرکت Anthropic، پارامترهای `temperature`، `top_p` و `top_k` روی تمام مدل‌ها با هر مقداری (حتی مقدار پیش‌فرض) خطای 400 برمی‌گردانند؛ تمام ۸ کیت توسعه و CLI اصلی این نسخه را پیش‌فرض ارسال می‌کنند. نسخه‌های قبلی نیز مقادیر غیرپیش‌فرض را در مدل‌های Claude 4.7 به بعد رد می‌کردند |
+| رابط Gemini API | پارامترهای `temperature`، `top_p` و `top_k` در ۲۱ ژوئیه ۲۰۲۶ منسوخ شدند؛ مدل Gemini 3.8 Flash استدلال را با `thinking_level` کنترل می‌کند |
+| مدل OpenAI GPT-6 Astra | بدون پارامترهای سفارشی `temperature` یا `top_p`، و فاقد خروجی `logprobs` |
 
-- **Diversity comes from elsewhere.** Default sampling on these models is already stochastic, so k samples still disagree. When they do not disagree enough, vary the prompt, the reasoning effort, or the model family instead of the temperature.
-- **Confidence comes from votes, not logprobs.** With no logprobs on Astra, vote share across samples (or a judge score) is the confidence signal.
-- **Do not ask the newest Claude models to write out their reasoning.** A prompt that demands a `<thinking>` section or a `reasoning` field in JSON can be refused under the `reasoning_extraction` category, and those refusals have been billed since September 24, 2026. Vote on final answers; if you need the path, ask for a short explanation, or set `thinking: {type: "adaptive", display: "summarized"}` and read the summarized thinking (at the default `display: "omitted"` these models return empty thinking blocks).
+این تغییر چه اثری بر روش‌های آنسامبل دارد:
 
-### Best-of-N with Reward Model
+- **تنوع از منابع دیگری به دست می‌آید:** سمپلینگ پیش‌فرض روی این مدل‌ها خودبه‌خود تصادفی است، بنابراین k نمونه همچنان اختلاف نظر خواهند داشت. در صورت نیاز به تنوع بیشتر، به جای دما، پرامپت، سطح تلاش استدلال، یا خانواده مدل را تغییر دهید.
+- **اطمینان از آرا به دست می‌آید، نه از logprobs:** در نبود logprobs روی Astra، سهم آرا در میان نمونه‌ها (یا امتیاز داور) سیگنال اعتماد محسوب می‌شود.
+- **از مدل‌های جدید Claude نخواهید استدلال خود را متنی بنویسند:** پرامپتی که یک بخش `<thinking>` یا فیلد `reasoning` در JSON طلب کند، می‌تواند به عنوان `reasoning_extraction` رد شود و این امتناع‌ها هزینه دارند. روی پاسخ‌های نهایی رأی‌گیری کنید.
 
-Generate N candidates, score with reward model, return best:
+### روش Best-of-N با مدل پاداش (Reward Model)
+
+تولید N کاندید، امتیازدهی با مدل پاداش، و بازگرداندن بهترین گزینه:
+
+<div dir="ltr">
 
 ```python
 class BestOfNSampler:
@@ -269,15 +285,19 @@ class BestOfNSampler:
         return 1 - np.mean(similarities)  # Higher = more diverse
 ```
 
-**Best for:** Open-ended generation, creative tasks. The gain is bounded by the scorer: against a proxy reward model, best-of-n improves true quality at first and can then degrade it as n grows (Gao et al., 2022), so check selections against human ratings and keep N modest.
+</div>
+
+**بهترین کاربرد برای:** تولید محتوای بی‌پایان و تسک‌های خلاقانه. بازدهی توسط ارزیاب محدود می‌شود: در برابر یک مدل پاداش تقریبی، روش Best-of-N ابتدا کیفیت واقعی را افزایش می‌دهد اما با بزرگ شدن N می‌تواند آن را دچار افت کند؛ بنابراین خروجی‌ها را با ارزیابی‌های انسانی تطبیق دهید و N را متعادل نگه دارید.
 
 ---
 
-## Multi-Agent Patterns
+## الگوهای چندایجنت (Multi-Agent Patterns)
 
-### Multi-Agent Debate
+### مناظره چندایجنت (Multi-Agent Debate)
 
-Multiple models critique each other iteratively:
+نقد تکرارشونده و متقابل چند مدل بر روی پاسخ‌های یکدیگر:
+
+<div dir="ltr">
 
 ```python
 class MultiAgentDebate:
@@ -339,11 +359,15 @@ Provide your final answer.
         }
 ```
 
-**Best for:** Fact verification, reducing hallucinations in complex answers.
+</div>
 
-### Mixture of Agents (MoA)
+**بهترین کاربرد برای:** راستی‌آزمایی فکت‌ها و کاهش پدیده توهم در پاسخ‌های پیچیده.
 
-Layered architecture where multiple models feed into aggregators:
+### آمیخته‌ای از ایجنت‌ها (Mixture of Agents - MoA)
+
+معماری لایه‌ای که در آن چندین مدل به تجمیع‌کننده‌ها خروجی می‌دهند:
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -367,6 +391,10 @@ Layered architecture where multiple models feed into aggregators:
 │                    [Final Output]                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class MixtureOfAgents:
@@ -397,15 +425,19 @@ Synthesize the best answer, combining the strongest elements from each response.
         return final_answer
 ```
 
-**Best for:** Complex synthesis, report generation, multi-domain problems.
+</div>
 
-### Cascades and Cross-Family Critique
+**بهترین کاربرد برای:** ترکیب و یکپارچه‌سازی‌های پیچیده، تولید گزارش، و مسائل چندحوزه‌ای.
 
-Two cheaper patterns are now shipping in developer tools. GitHub Copilot Fusion (generally available October 28, 2026, after a September research preview as HydraFusion) routes across models at Standard, High, or Max effort and runs one of three workflows:
+### ساختار آبشاری و نقد بین‌خانواده‌ای (Cascades and Cross-Family Critique)
 
-- **Single:** one model, the baseline.
-- **Cascade:** an efficient model drafts, a quality gate decides, and the work escalates to a stronger model only when the gate fails it. Cost tracks the escalation rate, not the strong model's price.
-- **Critique:** a critic from a different model family reviews the draft and the drafter revises once. One round keeps the cost bounded, and a critic from another family is less likely to share the drafter's blind spots.
+دو الگوی ارزان‌تر اکنون در ابزارهای توسعه‌دهندگان عرضه شده‌اند. قابلیت GitHub Copilot Fusion ترافیک را میان مدل‌ها هدایت کرده و یکی از سه گردش کار را اجرا می‌کند:
+
+- **حالت تک‌مدلی (Single):** یک مدل واحد به عنوان خط مبنا.
+- **حالت آبشاری (Cascade):** یک مدل بهینه پیش‌نویس اولیه را می‌سازد، یک دروازه کیفیت تصمیم می‌گیرد، و کار تنها در صورت رد شدن از گیت به مدل قوی‌تر ارتقا می‌یابد. هزینه با نرخ ارتقا تعیین می‌شود، نه قیمت مدل قوی.
+- **حالت نقد (Critique):** یک منتقد از یک خانواده مدل متفاوت پیش‌نویس را بازبینی می‌کند و تدوین‌کننده یک بار آن را اصلاح می‌نماید. یک دور نقد هزینه را محدود نگه می‌دارد، و منتقدی از خانواده دیگر کمتر احتمال دارد نقاط کور مشترک داشته باشد.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -416,23 +448,27 @@ flowchart LR
     S --> O
 ```
 
-The cascade is only as good as its gate. If the gate is a judge from the same family as the drafter, expect it to wave through the drafter's characteristic mistakes (the correlated-error result above), so prefer gates that check something verifiable: tests pass, schema validates, citations resolve.
+</div>
+
+سیستم آبشاری تنها به اندازه گیت کیفیت آن دقیق است. اگر گیت، داوری از همان خانواده مدل پیش‌نویس‌کننده باشد، اشتباهات آن را نادیده خواهد گرفت؛ بنابراین گیت‌هایی را ترجیح دهید که موارد قابل اثبات را چک کنند: موفقیت آزمون‌ها، اعتبارسنجی اسکیما، یا ارجاع به مستندات معتبر.
 
 ---
 
-## Ensemble vs Arbitration
+## مقایسه آنسامبل در برابر داوری (Ensemble vs Arbitration)
 
-### Conceptual Distinction
+### تمایز مفهومی
 
-| Aspect | Ensemble Learning | Model Arbitration |
-|--------|------------------|-------------------|
-| **Goal** | Combine ALL outputs | SELECT single best output |
-| **Mechanism** | Aggregation (voting, averaging) | Selection (scoring, ranking) |
-| **Relationship** | Collaborative | Competitive |
-| **Final Output** | Composite from all models | Output of single winner |
-| **When to Use** | Want robustness, reduced variance | Want best quality |
+| جنبه مقایسه (Aspect) | یادگیری گروهی (Ensemble Learning) | داوری و انتخاب مدل (Model Arbitration) |
+|---|---|---|
+| **هدف** | ترکیب تمام خروجی‌ها | انتخاب تنها یک خروجی برتر |
+| **سازوکار** | تجمیع (رأی‌گیری، میانگین‌گیری) | گزینش (امتیازدهی، رتبه‌بندی) |
+| **روابط میان مدل‌ها** | مشارکتی و هم‌افزا | رقابتی |
+| **خروجی نهایی** | ترکیب مرکبی از تمام مدل‌ها | خروجی مدل واحد برنده |
+| **زمان استفاده مناسب** | نیاز به استحکام و کاهش واریانس | نیاز به بالاترین کیفیت ممکن |
 
-### Decision Framework
+### چارچوب تصمیم‌گیری
+
+<div dir="ltr">
 
 ```
 Is there a single "correct" answer format?
@@ -446,111 +482,103 @@ Is there a single "correct" answer format?
             └── No → LLM-as-judge or human
 ```
 
----
-
-## Cost-Accuracy Tradeoffs
-
-### Ensemble Cost Matrix
-
-| Method | Cost Multiplier | Latency | Expected Effect | When to Use |
-|--------|-----------------|---------|---------------|-------------|
-| Single Model | 1x | 1x | Baseline | Low-stakes, high-volume |
-| Self-Consistency k=3 | 3x | 1x (parallel) | Modest; a three-way split has no majority | Reasoning, latency-sensitive |
-| Self-Consistency k=10 | 10x | 1x (parallel) | Larger on verifiable answers, with diminishing returns as k grows | Math, accuracy-critical |
-| Best-of-N (N=8) | 8x + scoring | 1x (parallel) | Bounded by the scorer; can degrade against a hackable reward model | Creative generation |
-| Panel of Judges (3) | 3x eval | 1x (parallel) | Bias reduction | Evaluation tasks |
-| Multi-Agent Debate | 6x | 3x | Hallucination ↓ | Fact-critical |
-| Mixture of Agents | 5-8x | 2x | Better synthesis | Complex reports |
-| Cascade with quality gate | 1x + gate + (escalation rate x strong model) | 1x, 2x on escalation | Near strong-model quality if the gate is reliable | High volume with a verifiable gate |
-| Cross-family critique (one round) | ~3x | ~3x (sequential) | Catches family-specific errors | Code review, fact-critical drafts |
-
-The effect column is directional on purpose. Effect sizes depend on the model and the task, so measure each method against a single-model baseline on your own eval set before paying the multiplier.
-
-### When NOT to Use Ensembles
-
-| Situation | Why Not | Alternative |
-|-----------|---------|-------------|
-| Simple factual lookup | No diversity benefit | Single RAG call |
-| Latency < 500ms required | Ensemble adds latency | Single model + caching |
-| Cost is primary constraint | Ensembles multiply cost | Model distillation |
-| Models highly correlated | No diversity = no benefit | Get diverse models first |
+</div>
 
 ---
 
-## Interview Questions
+## مصالحه‌های هزینه و دقت (Cost-Accuracy Tradeoffs)
 
-### Q: When would you use Self-Consistency vs Best-of-N?
+### ماتریس هزینه آنسامبل
 
-**Strong answer:**
+| روش (Method) | ضریب هزینه (Cost Multiplier) | تاخیر (Latency) | اثر مورد انتظار | کاربرد مناسب |
+|---|---|---|---|---|
+| مدل منفرد (Single Model) | ضریب 1x | ضریب 1x | خط مبنا | کاربردهای کم‌خطر و حجم بالا |
+| خودسازگاری با k=3 | ضریب 3x | ضریب 1x (موازی) | متوسط؛ تقسیم سه‌گانه اکثریت قاطع ندارد | استدلال، حساس به تاخیر |
+| خودسازگاری با k=10 | ضریب 10x | ضریب 1x (موازی) | اثر چشم‌گیرتر روی پاسخ‌های قابل راستی‌آزمایی با بازدهی نزولی در kهای بالاتر | ریاضیات، حساسیت بالا به دقت |
+| روش Best-of-N با N=8 | ضریب 8x به علاوه امتیازدهی | ضریب 1x (موازی) | محدود به دقت ارزیاب؛ در برابر مدل پاداش قابل هک افت می‌کند | تولید خلاقانه متن |
+| هیئت داوران با ۳ عضو (Panel of Judges) | ضریب 3x ارزیابی | ضریب 1x (موازی) | کاهش سوگیری داوری | تسک‌های ارزیابی و سنجش |
+| مناظره چندایجنت (Multi-Agent Debate) | ضریب 6x | ضریب 3x | کاهش چشم‌گیر توهم | پاسخ‌های حساس به فکت‌های دقیق |
+| آمیخته‌ای از ایجنت‌ها (Mixture of Agents) | ضریب 5 تا 8 برابر | ضریب 2x | ترکیب و یکپارچه‌سازی بهتر | گزارش‌های پیچیده چندوجهی |
+| ساختار آبشاری همراه با گیت کیفیت (Cascade) | ضریب 1x به علاوه هزینه گیت + (نرخ ارتقا × مدل قوی) | ضریب 1x، و 2x در صورت ارتقا | نزدیک به کیفیت مدل قوی در صورت اطمینان به گیت | حجم بالا با امکان سنجش دقیق گیت |
+| نقد بین‌خانواده‌ای (یک دور) | حدود 3x | حدود 3x (ترتیبی) | کشف خطاهای مختص به خانواده مدل | بازبینی کد، پیش‌نویس‌های حساس به صحت |
 
-"These serve different purposes:
+ستون اثرگذاری صرفاً نشان‌دهنده جهت تغییرات است. اندازه اثر به مدل و تسک وابسته است، بنابراین هر روش را پیش از پرداخت ضریب هزینه، روی مجموعه ارزیابی خود بسنجید.
 
-**Self-Consistency** is for tasks with extractable, verifiable answers:
-- Math problems: Extract final number, majority vote
-- Classification: Vote on labels
-- Short-form QA: Vote on answer
+### چه زمانی نباید از آنسامبل استفاده کرد
 
-The key is you can compare answers for equality. Where the API exposes temperature, 0.5-0.8 provides diversity while maintaining coherence; on models with fixed sampling (every Claude model under API version `2026-10-21`, GPT-6 Astra) or deprecated sampling parameters (Gemini since July 2026) I rely on default sampling and add prompt or model variation if the samples agree too readily. I use k=5-10 for most tasks.
-
-**Best-of-N** is for open-ended generation where there is no single right answer:
-- Creative writing
-- Explanations
-- Code that could be written many ways
-
-Here I need a reward model or judge to score candidates since I cannot just compare for equality. N=8-16 typically. The challenge is avoiding reward hacking, so I use reward model ensembles with conservative aggregation.
-
-I would not use Self-Consistency for creative writing (no extractable answer) or Best-of-N for math (just use voting, simpler)."
-
-### Q: How do you prevent reward hacking in Best-of-N?
-
-**Strong answer:**
-
-"Reward hacking is when the model exploits weaknesses in the reward model rather than genuinely improving quality.
-
-**My mitigations:**
-
-1. **Reward model ensemble**: Use 3+ diverse reward models. A sample that hacks one RM is unlikely to hack all of them.
-
-2. **Conservative aggregation**: Instead of using the mean score, use the 25th percentile or minimum. This selects samples that score well across all RMs, not just one.
-
-3. **Diversity monitoring**: Track sample diversity. If diversity drops too low, the model may be exploiting a narrow reward hack. I vary the prompts or reasoning effort, or the temperature where the API still accepts it.
-
-4. **Human calibration**: Periodically validate that RM-selected samples actually match human preferences.
-
-5. **Multiple dimensions**: Score on multiple criteria (quality, safety, relevance) and require good scores on all, not just composite. A summed rubric lets strong criteria hide a failing one: a September 2026 rubric-RL study (arXiv 2609.38847) saw rubric coverage rise while appropriateness on held-out physician criteria fell below the untrained model, and counting a dimension only when all of its criteria pass raised appropriateness by 10.8 points without losing coverage. The same gate works for selecting among N samples.
-
-The key insight is that any single reward signal can be gamed. Ensembles make gaming much harder."
-
-### Q: Your panel of three LLM judges agrees on 95% of verdicts. Is that good news?
-
-**Strong answer:**
-
-"Not by itself. High agreement tells me the panel is consistent, not that it is right. Judges share training data and blind spots, so their errors correlate. A September 2026 comparison of a cheap decision-model judge against LLM rubric judges (arXiv 2609.29769) found that on the cheap judge's most confident errors, about 96% of LLM verdicts repeated the same wrong answer, and cascades added at most 2.7 points over the best single judge.
-
-**What I would check:**
-1. **Accuracy against a human-labeled gold set**, stratified by the criteria that matter. Agreement among judges is not a substitute.
-2. **Where the panel disagrees with humans together.** Those cases show the shared blind spot, and they are what I add to the gold set.
-3. **Real diversity.** Different model families, and for binary checklist criteria, a different judge type (a typed decision model rather than another LLM). Three judges from one family is one judge at three times the cost.
-4. **Position and length bias**, by swapping orderings and controlling for length.
-
-If the panel is accurate on the gold set, 95% agreement means I can probably drop to one or two judges and save money. If it is not, the agreement was hiding the problem."
+| موقعیت و وضعیت | چرا استفاده نشود | جایگزین مناسب |
+|---|---|---|
+| جستجو و بازیابی فکت ساده | نبود سود ناشی از تنوع پاسخ‌ها | یک فراخوانی منفرد RAG |
+| نیاز به تاخیر کمتر از ۵۰۰ میلی‌ثانیه | آنسامبل تاخیر را افزایش می‌دهد | مدل منفرد به همراه کش‌سازی |
+| هزینه محدودیت و اولویت اصلی است | روش‌های آنسامبل هزینه‌ها را ضرب می‌کنند | تقطیر مدل (Model Distillation) |
+| همبستگی بالای مدل‌ها با یکدیگر | نبود تنوع مساوی با نبود فایده است | استفاده از مدل‌های دارای تنوع واقعی |
 
 ---
 
-## References
+## پرسش‌های مصاحبه (Interview Questions)
 
-- Verga et al. "Replacing Judges with Juries: Evaluating LLM Generations with a Panel of Diverse Models" (2024)
-- Wang et al. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (ICLR 2023): https://arxiv.org/abs/2203.11171
-- Gao, Schulman, and Hilton. "Scaling Laws for Reward Model Overoptimization" (2022): https://arxiv.org/abs/2210.10760
-- Du et al. "Improving Factuality and Reasoning in Language Models through Multiagent Debate" (2023)
-- Wang et al. "Mixture-of-Agents Enhances Large Language Model Capabilities" (2024)
-- Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (2023)
-- Wang et al. "Large Language Models are not Fair Evaluators" (2023)
-- Rao and Callison-Burch. "JEV vs. LLMs as Rubric Judges: Cheaper, Faster, and Wrong in the Same Places" (arXiv 2609.29769, 2026): https://arxiv.org/abs/2609.29769
-- GitHub changelog, HydraFusion in VS Code and the GitHub Copilot app (September 30, 2026): https://github.blog/changelog/2026-09-30-hydrafusion-in-vs-code-and-the-github-copilot-app
-- GitHub changelog, Copilot Fusion generally available (October 28, 2026): https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/
-- Liu et al. "Scoring Higher, Answering Worse: Mitigating Reward Hacking in Rubric-Based RL via Protocol-Level Rubrics" (arXiv 2609.38847, 2026): https://arxiv.org/abs/2609.38847
+### پرسش: چه زمانی از روش خودسازگاری (Self-Consistency) در برابر روش Best-of-N استفاده می‌کنید؟
+
+**پاسخ قوی:**
+این دو روش اهداف متفاوتی را دنبال می‌کنند:
+
+**روش خودسازگاری (Self-Consistency)** برای تسک‌هایی با پاسخ‌های قابل استخراج و سنجش‌پذیر است:
+- مسائل ریاضی: استخراج عدد نهایی و رأی‌گیری اکثریت
+- طبقه‌بندی: رأی‌گیری روی برچسب‌ها
+- پرسش و پاسخ کوتاه: رأی‌گیری روی پاسخ
+
+نکته کلیدی این است که شما می‌توانید پاسخ‌ها را بر اساس برابری مستقیم مقایسه کنید. در جایی که API دما را در اختیار می‌گذارد، مقدار 0.5 تا 0.8 تنوع کافی را با حفظ انسجام فراهم می‌کند؛ در مدل‌های با سمپلینگ ثابت (مانند مدل‌های جدید Claude یا GPT-6 Astra) یا مدل‌هایی با پارامترهای منسوخ (مانند Gemini)، به سمپلینگ پیش‌فرض تکیه می‌کنم و در صورت نیاز تنوع پرامپت یا مدل را اضافه می‌نمایم. برای اکثر تسک‌ها از k=5-10 استفاده می‌کنم.
+
+**روش Best-of-N** برای تولید محتوای باز است که در آن پاسخ منفرد صحیحی وجود ندارد:
+- نگارش خلاقانه
+- توضیحات و مقالات
+- کدهایی که می‌توانند به روش‌های مختلف نوشته شوند
+
+در اینجا به یک مدل پاداش یا داور برای امتیازدهی به کاندیداها نیاز دارم زیرا نمی‌توانم صرفاً برابری را چک کنم (معمولاً N=8-16). چالش اصلی اجتناب از هک مدل پاداش (Reward Hacking) است، بنابراین از آنسامبل‌های مدل پاداش با تجمیع محافظه‌کارانه استفاده می‌کنم.
+
+### پرسش: چگونه از هک شدن مدل پاداش در روش Best-of-N جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+هک پاداش زمانی است که مدل به جای ارتقای واقعی کیفیت، نقاط ضعف مدل پاداش را اکسپلویت می‌کند.
+
+**اقدامات من برای کاهش ریسک:**
+۱. **آنسامبل مدل‌های پاداش:** استفاده از ۳ مدل پاداش متنوع یا بیشتر. نمونه‌ای که یک مدل را هک کند، بعید است همه آنها را دور بزند.
+۲. **تجمیع محافظه‌کارانه:** به جای میانگین نمرات، از صدک ۲۵ یا حداقل نمره استفاده می‌کنم تا نمونه‌هایی برگزیده شوند که نزد تمام ارزیاب‌ها نمره خوبی دارند.
+۳. **مانیتورینگ تنوع نمونه‌ها:** اگر تنوع افت شدیدی پیدا کند، مدل احتمالاً در حال اکسپلویت یک باگ پاداش باریک است.
+۴. **کالیبراسیون دوره‌ای با انسان:** اطمینان از اینکه نمونه‌های برگزیده مدل پاداش واقعاً با ترجیحات انسانی تطابق دارند.
+۵. **معیارهای چندبعدی:** امتیازدهی بر اساس چند معیار (کیفیت، ایمنی، ارتباط) و الزام به کسب نمره قبولی در همه آنها، نه یک نمره میانگین تجمیعی. مطالعات نشان می‌دهند جمع نمرات اجازه می‌دهد نقاط قوت کاذب نقص‌های ایمنی را بپوشانند؛ سنجش مستقل هر بعد ایمنی را تضمین می‌کند.
+
+### پرسش: هیئت داوران سه‌نفره LLM شما بر سر ۹۵٪ از احکام با یکدیگر توافق دارند. آیا این خبر خوبی است؟
+
+**پاسخ قوی:**
+به خودی خود خیر. توافق بالا تنها ثبات هیئت را نشان می‌دهد، نه درستی آن را. داورها دارای داده‌های آموزش و نقاط کور مشترک هستند، بنابراین خطاهای آنها همبسته است. یک مطالعه در سپتامبر ۲۰۲۶ نشان داد در خطاهای قطعی یک ارزیاب، حدود ۹۶٪ از آرای هیئت LLM همان خطای واحد را تکرار کردند.
+
+**مواردی که من بررسی می‌کنم:**
+۱. **دقت در برابر یک مجموعه داده طلایی برچسب‌خورده توسط انسان:** توافق داورها جایگزین حقیقت زمینی (Ground truth) نیست.
+۲. **مواردی که هیئت همگی با انسان مخالفت کرده‌اند:** این موارد نقطه کور مشترک را نشان می‌دهند و باید به مجموعه طلایی افزوده شوند.
+۳. **تنوع واقعی مدل‌ها:** استفاده از خانواده‌های مدل کاملاً متفاوت، و برای معیارهای چک‌لیستی، استفاده از یک مدل تصمیم‌گیری تایپ‌شده به جای یک LLM متنی دیگر. سه داور از یک خانواده، صرفاً یک داور با سه برابر هزینه است.
+۴. **بررسی سوگیری مکانی و طول متن:** با جابجایی ترتیب پاسخ‌ها و نرمال‌سازی طول متن.
+
+اگر هیئت روی مجموعه طلایی دقیق عمل کند، توافق ۹۵ درصدی به این معناست که می‌توانم تعداد داورها را به یک یا دو کاهش دهم تا هزینه کم شود. اما اگر دقیق نباشد، این توافق صرفاً در حال پوشاندن مشکل بوده است.
 
 ---
 
-*Previous: [Guardrails and Safety](01-guardrails.md) · Next: [Reliability Patterns](03-reliability-patterns.md)*
+## مراجع (References)
+
+- مقاله Verga و همکاران، «جایگزینی داوران با هیئت منصفه: ارزیابی خروجی‌های LLM با هیئتی از مدل‌های متنوع» (۲۰۲۴)
+- مقاله Wang و همکاران، «خودسازگاری استدلال زنجیره تفکر را در مدل‌های زبانی بهبود می‌بخشد» (ICLR 2023): https://arxiv.org/abs/2203.11171
+- مقاله Gao، Schulman و Hilton، «قوانین مقیاس‌پذیری برای بهینه‌سازی بیش از حد مدل پاداش» (۲۰۲۲): https://arxiv.org/abs/2210.10760
+- مقاله Du و همکاران، «بهبود صحت و استدلال در مدل‌های زبانی از طریق مناظره چندایجنت» (۲۰۲۳)
+- مقاله Wang و همکاران، «آمیخته‌ای از ایجنت‌ها توانمندی‌های مدل‌های بزرگ زبان را ارتقا می‌دهد» (۲۰۲۴)
+- مقاله Zheng و همکاران، «داوری با LLM به عنوان داور در MT-Bench و Chatbot Arena» (۲۰۲۳)
+- مقاله Wang و همکاران، «مدل‌های بزرگ زبان ارزیاب‌های منصفی نیستند» (۲۰۲۳)
+- مقاله Rao و Callison-Burch، «مقایسه JEV با LLMها به عنوان داوران روباریک: ارزان‌تر، سریع‌تر، و خطاکار در همان نقاط» (arXiv 2609.29769, 2026): https://arxiv.org/abs/2609.29769
+- گزارش تغییرات گیت‌هاب، عرضه HydraFusion در VS Code و اپلیکیشن GitHub Copilot (۳۰ سپتامبر ۲۰۲۶): https://github.blog/changelog/2026-09-30-hydrafusion-in-vs-code-and-the-github-copilot-app
+- گزارش تغییرات گیت‌هاب، عرضه عمومی Copilot Fusion (۲۸ اکتبر ۲۰۲۶): https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/
+- مقاله Liu و همکاران، «امتیاز بالاتر، پاسخ بدتر: کاهش هک پاداش در RL مبتنی بر روباریک» (arXiv 2609.38847, 2026): https://arxiv.org/abs/2609.38847
+
+---
+
+*قبلی: [گاردریل‌ها و ایمنی](01-guardrails.md) · بعدی: [الگوهای پایایی](03-reliability-patterns.md)*
+
+</div>
