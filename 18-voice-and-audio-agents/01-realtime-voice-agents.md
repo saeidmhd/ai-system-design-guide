@@ -1,38 +1,42 @@
-# Real-Time Voice Agents
+<div dir="rtl">
 
-A voice agent is a soft-real-time media system wrapped around an LLM. The reasoning is the easy part; the hard part is **timing**: get audio in, decide when the human actually stopped talking, think, and get audio back out fast enough that the conversation feels alive. Miss the timing and users talk over the agent, repeat themselves, and hang up. This chapter covers the three architectures, turn-taking and barge-in, latency and cost per minute, telephony, session limits, evaluation, and regulation.
+# ایجنت‌های صوتی بلادرنگ (Real-Time Voice Agents)
 
-A scoping note: read this if you are building telephony, support, or voice-first products. If you are not, the [agent fundamentals](../07-agentic-systems/01-agent-fundamentals.md) and [tool-use](../17-tool-use-and-computer-agents/01-tool-use-landscape.md) chapters cover the parts that transfer. Model names, prices, and latency figures below are an early November 2026 snapshot and move monthly. Numbers marked **vendor-reported** come from the vendor; per-minute figures marked **derived** are arithmetic from list prices.
+یک Agent صوتی، یک سیستم رسانه‌ای شبه‌بلادرنگ (Soft-real-time) است که پیرامون یک مدل LLM پیچیده شده است. بخش استدلال کار آسان ماجراست؛ بخش دشوار **زمان‌بندی** است: دریافت صوت ورودی، تشخیص اینکه انسان واقعاً چه زمانی صحبت را متوقف کرده، فکر کردن، و بازگرداندن صوت خروجی با چنان سرعتی که مکالمه زنده به نظر برسد. اگر زمان‌بندی را از دست بدهید، کاربران روی صدای Agent صحبت می‌کنند، حرف خود را تکرار می‌کنند و تماس را قطع می‌نمایند. این فصل سه معماری اصلی، تشخیص نوبت و قطع صحبت (Turn-taking & Barge-in)، تاخیر (Latency) و هزینه به ازای هر دقیقه، تلفنی (Telephony)، محدودیت‌های نشست، ارزیابی و مقررات را پوشش می‌دهد.
 
-## Table of Contents
+یک یادداشت درباره دامنه فصل: اگر در حال ساخت محصولات تلفنی، پشتیبانی یا صوت‌محور (Voice-first) هستید، این فصل را بخوانید. در غیر این صورت، فصل‌های [مبانی Agentها](../07-agentic-systems/01-agent-fundamentals.md) و [استفاده از ابزار](../17-tool-use-and-computer-agents/01-tool-use-landscape.md) بخش‌های قابل انتقال به سیستم شما را پوشش می‌دهند. نام مدل‌ها، قیمت‌ها و ارقام تاخیر زیر مربوط به تصویر وضعیت اوایل نوامبر ۲۰۲۶ هستند و ماهانه تغییر می‌کنند. اعدادی که با **گزارش ارائه‌دهنده** علامت‌گذاری شده‌اند از خود فروشنده می‌آیند؛ ارقام به ازای هر دقیقه با برچسب **استنتاج‌شده** حاصل محاسبات ریاضی بر اساس قیمت‌های رسمی لیست هستند.
 
-- [The Three Architectures](#the-three-architectures)
-- [Choosing an Architecture](#choosing-an-architecture)
-- [The Stack](#the-stack)
-- [Turn Detection and Barge-In](#turn-detection-and-barge-in)
-- [Latency Budgets](#latency-budgets)
-- [Cost per Minute](#cost-per-minute)
-- [Telephony](#telephony)
-- [Session Limits and State](#session-limits-and-state)
-- [Tools Mid-Conversation](#tools-mid-conversation)
-- [Production Concerns](#production-concerns)
-- [Evaluation](#evaluation)
-- [Regulation and Disclosure](#regulation-and-disclosure)
-- [Honest Maturity](#honest-maturity)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [سه معماری اصلی](#the-three-architectures)
+- [انتخاب معماری مناسب](#choosing-an-architecture)
+- [پشته فناوری (The Stack)](#the-stack)
+- [تشخیص نوبت و قطع صحبت (Turn Detection & Barge-In)](#turn-detection-and-barge-in)
+- [بودجه‌های تاخیر (Latency Budgets)](#latency-budgets)
+- [هزینه به ازای هر دقیقه](#cost-per-minute)
+- [تلفنی (Telephony)](#telephony)
+- [محدودیت‌های نشست و وضعیت](#session-limits-and-state)
+- [فراخوانی ابزار در میانه مکالمه](#tools-mid-conversation)
+- [نگرانی‌های محیط عملیاتی](#production-concerns)
+- [ارزیابی (Evaluation)](#evaluation)
+- [مقررات و افشا (Regulation & Disclosure)](#regulation-and-disclosure)
+- [بلوغ واقعی فناوری در عمل](#honest-maturity)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع و مراجع](#references)
 
 ---
 
-## The Three Architectures
+## سه معماری اصلی <a id="the-three-architectures"></a>
 
-Until mid-2026 the standard framing had two shapes: a chained pipeline or a single speech-to-speech model. OpenAI's voice-agent guide now lists three, and Google, LiveKit, and a cluster of September 2026 papers have converged on the same third shape.
+تا اواسط سال ۲۰۲۶، چارچوب استاندارد دو شکل داشت: یک خط لوله زنجیره‌ای یا یک مدل یکپارچه گفتار-به-گفتار (S2S). اکنون راهنمای Agentهای صوتی OpenAI سه شکل را فهرست می‌کند، و شرکت‌های Google، LiveKit و مجموعه‌ای از مقالات سپتامبر ۲۰۲۶ همگی به همان شکل سوم همگرا شده‌اند.
 
-**1. Chained pipeline (cascade):** `mic -> VAD -> streaming STT -> turn detection -> LLM -> streaming TTS -> speaker`. Audio becomes **text** at each boundary, and every stage is a swappable component, often from a different vendor.
+**۱. خط لوله زنجیره‌ای (Chained pipeline / Cascade):** زنجیره `mic -> VAD -> streaming STT -> turn detection -> LLM -> streaming TTS -> speaker`. صوت در هر مرز به **متن** تبدیل می‌شود و هر مرحله یک مولفه قابل تعویض است که اغلب از یک ارائه‌دهنده متفاوت می‌آید.
 
-**2. Single speech-to-speech model (S2S):** one model hears audio, reasons, calls tools, and emits audio, with text only as a transcription side channel. Current examples: OpenAI's Realtime API (`gpt-realtime-2.1` and `-2.1-mini`, July 6, 2026), Google's `gemini-3.8-live` (GA September 15, 2026), Amazon Nova 2.5 Sonic (GA on Bedrock October 5, 2026, at Nova 2 Sonic's price, with a 256K context, seven languages, controllable turn-taking, and asynchronous tool calls), and xAI's `grok-voice-3.0`, which speaks Realtime-compatible events. xAI moved its `grok-voice-latest` alias from `grok-voice-2.0` to 3.0 in October and deprecated 2.0, so anyone on the alias was upgraded without a code change: pin the dated ID and re-run voice evals before you move. Google's preview IDs are on a hard clock: its Gemini API deprecations page shuts down `gemini-3.1-flash-live-preview` and `gemini-2.5-flash-native-audio-preview-12-2025` on November 17, 2026 (scheduled; Google calls it the earliest possible date), naming `gemini-3.8-live` as the replacement with no routing described, and on Vertex AI `gemini-live-2.5-flash-native-audio` retires December 13, 2026. These are **turn-based**, not full duplex: the Realtime API detects turns with `server_vad` or `semantic_vad`, then responds.
+**۲. مدل یکپارچه گفتار-به-گفتار (Single speech-to-speech model یا S2S):** یک مدل واحد صوت را می‌شنود، استدلال می‌کند، ابزارها را فراخوانی می‌نماید و صوت تولید می‌کند، در حالی که متن فقط یک کانال جانبی رونویسی (Transcription) است. نمونه‌های فعلی: API بلادرنگ OpenAI (مدل‌های `gpt-realtime-2.1` و `-2.1-mini`، ۶ ژوئیه ۲۰۲۶)، مدل `gemini-3.8-live` گوگل (عرضه عمومی GA در ۱۵ سپتامبر ۲۰۲۶)، مدل Amazon Nova 2.5 Sonic (عرضه عمومی در Bedrock در ۵ اکتبر ۲۰۲۶ با قیمت Nova 2 Sonic، دارای کانتکست ۲۵۶ هزارتایی، هفت زبان، نوبت‌گیری قابل کنترل و فراخوانی غیرهمزمان ابزارها) و مدل `grok-voice-3.0` شرکت xAI که رویدادهای سازگار با Realtime API تولید می‌کند. شرکت xAI در ماه اکتبر نام مستعار `grok-voice-latest` خود را از `grok-voice-2.0` به نسخه 3.0 منتقل کرد و نسخه 2.0 را منسوخ نمود؛ بنابراین هر کس از این نام مستعار استفاده می‌کرد بدون تغییر کد ارتقا یافت: همیشه شناسه تاریخ‌دار را پین (Pin) کنید و پیش از مهاجرت ارزیابی‌های صوتی را مجدداً اجرا نمایید. شناسه‌های پیش‌نمایش گوگل نیز زمان‌بندی سخت‌گیرانه‌ای دارند: صفحه منسوخ‌سازی‌های Gemini API گوگل مدل‌های `gemini-3.1-flash-live-preview` و `gemini-2.5-flash-native-audio-preview-12-2025` را در ۱۷ نوامبر ۲۰۲۶ خاموش می‌کند (زمان‌بندی‌شده؛ گوگل آن را زودترین تاریخ ممکن می‌نامد) و `gemini-3.8-live` را بدون مسیریابی خودکار به عنوان جایگزین معرفی کرده است، و در Vertex AI نیز مدل `gemini-live-2.5-flash-native-audio` در ۱۳ دسامبر ۲۰۲۶ بازنشسته می‌شود. این مدل‌ها **نوبت‌محور (Turn-based)** هستند نه تمام‌دوپلکس (Full duplex): سرویس Realtime API نوبت‌ها را با `server_vad` یا `semantic_vad` تشخیص می‌دهد و سپس پاسخ می‌گوید.
 
-**3. Full-duplex voice front end with a delegated backend (talker and thinker):** a duplex speech model listens while it speaks and owns the timing (when to answer, backchannel, pause, or yield), and hands reasoning and tool calls to a separate text model. OpenAI's `gpt-live-1` (API GA September 10, 2026) is the reference: **Responses delegation** runs an OpenAI model as the backend (OpenAI's guide suggests `gpt-6-luna` to start and `gpt-6-sol` for harder work), and **client delegation** sends tasks to any agent you run. Since October 2026 GPT-Live also has native Decisions API integration (a cheap typed classifier for opt-out or escalation detection, by delegation or triggered from transcript deltas) and generally available prompt-to-voice (custom voices from a text description, free to create, speech billed at standard session rates), so a GPT-Live stack no longer needs a TTS vendor for a brand voice. Gemini 3.8 Live Extended Thinking sits between shapes 2 and 3: one model, but it reasons in the background while it keeps talking. LiveKit Agents 1.8.1 (September 10) added a `DuplexModel` interface (since 1.8.8 it runs GPT-Live from a model string), Pipecat 1.13.0 (October 19) added `LLMWithBackend` in alpha, which pairs a conversational front-end LLM (text or speech-to-speech) with a backend LLM for reasoning and tools, and preprints such as arXiv 2609.19334 (a duplex front end that emits a delegation token to a text backend) formalize the split.
+**۳. بخش جلویی صوتی تمام‌دوپلکس با بک‌اند واگذارشده (Full-duplex voice front end with a delegated backend / Talker and Thinker):** یک مدل گفتاری دوپلکس همزمان که صحبت می‌کند به حرف کاربر نیز گوش می‌دهد و مالک زمان‌بندی است (چه زمانی پاسخ دهد، چه زمانی تایید صوتی کوتاه یا backchannel بدهد، مکث کند یا نوبت را واگذار کند)، و استدلال و فراخوانی ابزارها را به یک مدل متنی جداگانه می‌سپارد. مدل `gpt-live-1` شرکت OpenAI (عرضه عمومی API در ۱۰ سپتامبر ۲۰۲۶) مرجع این الگوست: **واگذاری پاسخ‌ها (Responses delegation)** یک مدل OpenAI را به عنوان بک‌اند اجرا می‌کند (راهنمای OpenAI شروع با `gpt-6-luna` و استفاده از `gpt-6-sol` برای کارهای دشوارتر را پیشنهاد می‌دهد) و **واگذاری سمت کلاینت (Client delegation)** وظایف را به هر Agentای که خودتان اجرا می‌کنید می‌فرستد. از اکتبر ۲۰۲۶، GPT-Live دارای یکپارچه‌سازی بومی با Decisions API (یک دسته‌بندی‌کننده نوع‌دار ارزان‌قیمت برای تشخیص انصراف یا ارجاع به انسان، با واگذاری یا فعال‌سازی از روی تغییرات رونوشت) و قابلیت Prompt-به-صدا (ساخت صداهای سفارشی از روی توصیف متنی، رایگان برای ساخت، و محاسبه صورتحساب گفتار با نرخ‌های استاندارد نشست) است؛ بنابراین یک پشته GPT-Live دیگر برای داشتن صدای اختصاصی برند نیازی به فروشنده مجزای TTS ندارد. قابلیت Gemini 3.8 Live Extended Thinking بین اشکال ۲ و ۳ قرار می‌گیرد: یک مدل واحد، اما در پس‌زمینه استدلال می‌کند در حالی که به صحبت کردن ادامه می‌دهد. کتابخانه LiveKit Agents نسخه 1.8.1 (۱۰ سپتامبر) رابط `DuplexModel` را اضافه کرد (و از نسخه 1.8.8 مدل GPT-Live را از طریق یک رشته نام مدل اجرا می‌کند)، فریم‌ورک Pipecat نسخه 1.13.0 (۱۹ اکتبر) قابلیت `LLMWithBackend` را در نسخه آلفا افزود که یک LLM مکالمه‌ای بخش جلویی (متنی یا S2S) را با یک LLM بک‌اند برای استدلال و ابزارها جفت می‌کند، و پیش‌چاپ‌هایی مانند مقاله arXiv 2609.19334 (یک بخش جلویی دوپلکس که یک Token واگذاری به بک‌اند متنی ارسال می‌کند) این تفکیک را صورت‌بندی کرده‌اند.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -60,288 +64,292 @@ flowchart TB
     end
 ```
 
-| Dimension | Chained pipeline | Single S2S model | Duplex front end + backend |
-|-----------|------------------|------------------|----------------------------|
-| **Turn-taking** | Runtime-controlled: VAD, audio turn model, interruption classifier | Turn-based (`server_vad` / `semantic_vad` on Realtime) | The voice model decides when to speak, backchannel, or yield |
-| **Reference latency** | Pipecat's illustrative breakdown: 1.044 s | 0.70 to 1.21 s to first audio for reasoning-capable models (Artificial Analysis) | OpenAI reports 0.798 s turn-taking vs 1.41 s for `gpt-realtime-2.1` (vendor-reported); Artificial Analysis measured 1.34 s with an Astra backend |
-| **Reasoning and tools** | Any text model and tool stack | The speech model's own reasoning; effort is a latency dial | Any backend, including your existing text agent; tools run while the voice keeps talking |
-| **Controllability** | Text at every hop; swap any component; verbatim scripts through TTS | One vendor model; voice and logic share one prompt | Speaking style and business rules are separate prompts; the duplex model cannot read a script word for word (per LiveKit's `DuplexModel` docs) |
-| **Cost model** | Sum of per-minute components (about $0.05 to $0.14 per minute bundled) | Audio tokens; on the Realtime API the whole conversation is re-sent on every response | $0.05 per session minute (GPT-Live), billed per second including silence, plus backend tokens |
-| **Prosody and code-switching** | Affect is lost at the STT boundary and re-synthesized from text; code-switching is bounded by each component | Hears and produces tone, laughter, and emphasis; handles mid-sentence code-switching more naturally | Native prosody and backchannels in the voice layer; the backend sees text only |
-| **Observability** | Text artifacts at every boundary | Needs a transcription stream for logs | Backend calls are text and loggable; the voice layer needs transcription |
-| **Failure to design for** | Endpointing tax; serial first-chunk latencies | Session limits; opaque reasoning failures | Stale backend results after the caller corrects themselves; lossy, compacted voice context |
+</div>
 
-**Anthropic has no speech API.** Claude takes text and images and returns text, so in a voice stack it is the LLM in a chained pipeline or the backend behind a duplex front end (GPT-Live client delegation, or the LLM option on platforms such as ElevenLabs Agents and Retell).
+| بُعد مقایسه | خط لوله زنجیره‌ای (Chained pipeline) | مدل یکپارچه S2S | بخش جلویی دوپلکس + بک‌اند |
+|-------------|--------------------------------------|------------------|---------------------------|
+| **نوبت‌گیری (Turn-taking)** | کنترل‌شده توسط زمان اجرا: VAD، مدل صوتی تشخیص نوبت، دسته‌بندی‌کننده قطع صحبت | نوبت‌محور (`server_vad` / `semantic_vad` در Realtime) | خود مدل صوتی تصمیم می‌گیرد چه زمانی صحبت کند، واکنش کوتاه بدهد یا نوبت را واگذار کند |
+| **تاخیر مرجع** | تفکیک نمونه Pipecat: معادل ۱.۰۴۴ ثانیه | بازه ۰.۷۰ تا ۱.۲۱ ثانیه تا اولین صوت برای مدل‌های دارای توان استدلال (Artificial Analysis) | گزارش OpenAI: معادل ۰.۷۹۸ ثانیه نوبت‌گیری در برابر ۱.۴۱ ثانیه برای `gpt-realtime-2.1` (گزارش ارائه‌دهنده)؛ سنجش Artificial Analysis معادل ۱.۳۴ ثانیه با بک‌اند Astra |
+| **استدلال و ابزارها** | هر مدل متنی و پشته ابزاری | استدلال داخلی خود مدل گفتاری؛ سطح تلاش (Effort) نقش پیچ تنظیم تاخیر را دارد | هر بک‌اندی از جمله Agent متنی فعلی شما؛ ابزارها همزمان با ادامه صحبت مدل صوتی اجرا می‌شوند |
+| **کنترل‌پذیری** | متن در هر گام؛ قابلیت تعویض هر مولفه؛ خواندن متن دقیق اسکریپت‌ها از طریق TTS | یک مدل اختصاصی از یک فروشنده؛ صدا و منطق در یک Prompt مشترک هستند | سبک گفتار و قوانین کسب‌وکار دو Prompt جداگانه دارند؛ مدل دوپلکس نمی‌تواند یک متن را کلمه‌به‌کلمه بخواند (طبق مستندات `DuplexModel` در LiveKit) |
+| **مدل هزینه** | مجموع هزینه مولفه‌های دقیقه‌ای (حدود ۰.۰۵ تا ۰.۱۴ دلار در دقیقه به صورت بسته‌ای) | بر حسب Token صوتی؛ در Realtime API کل مکالمه در هر پاسخ دوباره ارسال می‌شود | مبلغ ۰.۰۵ دلار به ازای هر دقیقه نشست (GPT-Live) با محاسبه ثانیه‌ای شامل سکوت، به علاوه Tokenهای بک‌اند |
+| **آهنگ کلام و تغییر زبان (Code-switching)** | لحن در مرز STT از دست می‌رود و از روی متن بازسازی می‌شود؛ تغییر زبان محدود به هر مولفه است | لحن، خنده و تاکید را می‌شنود و تولید می‌کند؛ تغییر زبان میانه جمله را طبیعی‌تر مدیریت می‌نماید | آهنگ کلام بومی و واکنش‌های کوتاه در لایه صوتی؛ بک‌اند فقط متن را می‌بیند |
+| **مشاهده‌پذیری (Observability)** | آثار متنی شفاف در هر مرز | نیازمند جریان رونویسی مجزا برای ثبت لاگ‌ها | فراخوانی‌های بک‌اند متنی و قابل لاگ‌گیری هستند؛ لایه صوتی نیازمند رونویسی است |
+| **شکستی که باید برایش طراحی کرد** | هزینه تاخیر تشخیص پایان صحبت؛ تاخیرهای متوالی اولین قطعه | محدودیت‌های نشست؛ شکست‌های مات و غیرشفاف در استدلال | نتایج کهنه بک‌اند پس از تصحیح حرف توسط تماس‌گیرنده؛ کانتکست فشرده و پرافت در لایه صوتی |
 
----
-
-## Choosing an Architecture
-
-Pick a **chained pipeline** when you need verbatim language (consent scripts, legal disclosures, payment terms), per-component audit and redaction, a domain-specific STT model, or a self-hosted stack at very high volume (open STT and TTS on your own GPUs can undercut hosted per-minute rates, but first price it against Gemini 3.8 Live's roughly $0.06 for the 5-minute example call below). It remains the default wherever an auditor will read the transcript.
-
-Pick a **single S2S model** when the task is shallow and naturalness matters most: companions, coaching, translation, simple lookups. Price is no longer the objection it was: at $3 / $12 per 1M audio tokens, Gemini 3.8 Live works out to about $0.005 per minute of input audio and $0.018 per minute of output audio. On the Realtime API, re-sending the conversation makes long calls more expensive per minute. On any token-billed S2S model, read the usage metadata from a long test call before trusting a per-minute conversion.
-
-Pick a **duplex front end with a backend** when you already have a text agent with tools, guardrails, and business rules, or when the task needs real reasoning. On tau-Voice-style benchmarks, task success tracks the reasoning attached to the voice layer: Google reports Gemini 3.8 Live Extended Thinking at 68.6% against 30.1% for the base model (vendor-reported). The split also gives you a clean place for authority: the backend owns state and tool permissions, and the voice layer owns timing.
-
-**Hybrids are normal.** A duplex front end plus a TTS path for scripted disclosures, because a duplex model paraphrases rather than reads, and the framework can stop its playout but not its generation. An S2S core plus a parallel STT stream for logging and evaluation.
-
-**A reality check that applies to all three:** none wins latency by default. Transport, endpointing configuration, codec, sample rate, and now reasoning effort dominate, and a well-tuned cascade matches S2S in many deployments.
+**شرکت Anthropic هیچ API صوتی ندارد.** مدل‌های Claude متن و تصویر می‌گیرند و متن برمی‌گردانند، بنابراین در یک پشته صوتی نقش LLM درون خط لوله زنجیره‌ای یا بک‌اند پشت یک بخش جلویی دوپلکس (واگذاری سمت کلاینت GPT-Live، یا گزینه LLM در پلتفرم‌هایی چون ElevenLabs Agents و Retell) را ایفا می‌کنند.
 
 ---
 
-## The Stack
+## انتخاب معماری مناسب <a id="choosing-an-architecture"></a>
 
-| Layer | Current options (November 2026) | Notes |
-|-------|--------------------------------|-------|
-| **Orchestration** | LiveKit Agents 1.8.10 and Pipecat 1.15.0 (open source); Vapi, Retell, Bland, ElevenLabs Agents, Deepgram Voice Agent (managed) | LiveKit puts nine S2S providers behind one interface, so "few S2S vendors" no longer holds. Pin framework versions: LiveKit 1.8.8 (October 15) was a patch release that broke `isinstance` checks (`inference.RealtimeModel` no longer subclasses the OpenAI plugin's model) and replaced the GPT-Live `aster` voice with `cedar`. Mistral launched managed Voice Agents (telephony, browser, and custom audio) on October 20 |
-| **S2S and duplex models** | `gpt-live-1`, `gpt-realtime-2.1` / `-2.1-mini`, `gemini-3.8-live` / `-extended-thinking`, Nova 2.5 Sonic, `grok-voice-3.0`; Azure Voice Live (Realtime-compatible, serves `gpt-realtime-2.1`, does not list `gpt-live-1`) | Open full duplex: NVIDIA PersonaPlex (7B, built on Moshi; vendor-reported 0.170 s turn-taking). Realtime-API-compatible but not S2S: ElevenLabs' Eleven Realtime (`eleven_realtime_v1_mini` and `_max`, rolled out to every ElevenAgents workspace by November 2) matches OpenAI's events and WebSocket transport but bundles LLM, STT, and TTS settings behind one configuration, so clients can swap vendors without a rewrite |
-| **Streaming STT** | Deepgram Flux and Nova-3, AssemblyAI Universal-3.6 Pro Realtime (`universal-3-6-pro`, September 2026, the LiveKit plugin default since 1.8.4), ElevenLabs Scribe v2 Realtime, OpenAI `gpt-live-transcribe` and `gpt-transcribe` (committed turns over `v1/realtime/transcription_sessions`), Gemini 3.5 Transcribe Live, Mistral Voxtral Mini Transcribe Realtime 3 (preview), Cartesia Ink-2; self-hosted NVIDIA `nemotron-3.5-asr-streaming-0.6b` | `whisper-1` and the `gpt-4o-*-transcribe` models shut down February 26, 2027. Deepgram's Nova-3 multilingual expanded to 55 languages on October 23 (pin the 10-language version if you need the old behavior; not yet self-hosted), and self-hosted release 261020 moved Flux to a runtime that loads only `.dgv2` model files, so that upgrade is a model-file migration, not a container bump |
-| **Turn detection** | LiveKit audio `TurnDetector`, Pipecat Smart Turn v3, STT-native end of turn (Deepgram Flux, Cartesia Ink-2) | LiveKit's transcript-based detector is deprecated |
-| **TTS** | ElevenLabs Eleven v4 Turbo (about 100 ms median inference) and Flash v2.5 (about 75 ms), Deepgram Flux TTS (first audio "as low as 80 ms"), AssemblyAI-TTS-1 (October 27, six languages, about 90 ms to first audio), Cartesia Sonic 3.6, Gemini 3.8 Flash and Flash-Lite TTS (custom voices through voice remixing since November 4), Mistral Voxtral TTS 3 (preview), `gpt-4o-mini-tts`; all latencies vendor-reported | `tts-1`, `tts-1-hd`, and the `gpt-4o-mini-tts` snapshots shut down January 6, 2027, and OpenAI names `gpt-realtime-2.1-mini` as the replacement, so an OpenAI-only cascade ends its TTS stage on a speech-to-speech model. Cartesia sunset Sonic-2, Sonic-turbo, and the Sonic-3-2025-10-27 snapshot after October 20, so pins on those are already gone. Open: Chatterbox Flash (MIT), Kokoro-82M (Apache 2.0), Voxtral-4B-TTS (CC BY-NC, so no commercial self-hosting) |
-| **Transport** | WebRTC (UDP, Opus) for the client leg; WebSocket for server-to-model; SIP for the phone network | WebRTC handles loss better because UDP avoids head-of-line blocking |
+زمانی **خط لوله زنجیره‌ای (Chained pipeline)** را انتخاب کنید که به زبان دقیق و کلمه‌به‌کلمه (متن‌های رضایت‌نامه، افشاگری‌های قانونی، شرایط پرداخت)، ممیزی و سانسور داده‌های حساس به ازای هر مولفه، یک مدل STT تخصصی دامنه، یا یک پشته خودمیزبان (Self-hosted) در حجم بسیار بالا نیاز دارید (مدل‌های STT و TTS متن‌باز روی GPUهای خودتان می‌توانند از نرخ‌های دقیقه‌ای میزبانی‌شده ارزان‌تر باشند، اما ابتدا هزینه آن را با حدود ۰.۰۶ دلار مدل Gemini 3.8 Live برای مثال تماس ۵ دقیقه‌ای زیر مقایسه کنید). این الگو همچنان پیش‌فرض هر جایی است که یک ممیز قانونی قرار است رونوشت مکالمه را بخواند.
 
-**STT accuracy has a new baseline.** The Open ASR Leaderboard's October 1 snapshot uses a new 8-dataset average that is not comparable to 2025 numbers. Proprietary leaders sit at 3.59% to 4.34% average WER (Zoom, Azure, ElevenLabs Scribe v2, AssemblyAI Universal-3.5 Pro); Qwen3-ASR-1.7B leads the open models at 4.31% (Apache 2.0), parakeet-tdt-0.6b-v2 scores 4.70% at about 6,000x real time, and whisper-large-v3 scores 5.78%. Two cheap accuracy levers: bias toward your keyterms (names, SKUs), and pass the agent's last question to the STT as context (AssemblyAI reports 8.9% lower WER, vendor-reported).
+زمانی **مدل یکپارچه S2S** را برگزینید که وظیفه کم‌عمق باشد و طبیعی بودن مکالمه بیشترین اهمیت را داشته باشد: همدم‌ها (Companions)، مربی‌گری، ترجمه، و جست‌وجوهای ساده. قیمت دیگر مانع سابق نیست: با نرخ ۳ و ۱۲ دلار به ازای ۱ میلیون Token صوتی، مدل Gemini 3.8 Live حدود ۰.۰۰۵ دلار به ازای هر دقیقه صوت ورودی و ۰.۰۱۸ دلار به ازای هر دقیقه صوت خروجی هزینه دارد. در Realtime API، ارسال مجدد مکالمه تماس‌های طولانی‌تر را به ازای هر دقیقه گران‌تر می‌کند. در هر مدل S2S با صورتحساب توکنی، پیش از اتکا به تبدیل هزینه‌های دقیقه‌ای، متادیتای مصرف یک تماس آزمایشی طولانی را بررسی کنید.
 
-**Streaming transcripts.** Streaming STT emits partials every ~50 ms while the user is talking, so transcription overlaps speech. Distinguish three STT latencies: partial transcript, final transcript, and endpointing. Voice agents optimize the last.
+زمانی **بخش جلویی دوپلکس همراه با بک‌اند** را انتخاب کنید که از قبل یک Agent متنی دارای ابزارها، گاردریل‌ها و قوانین کسب‌وکار در اختیار دارید، یا زمانی که وظیفه نیازمند استدلال واقعی است. در بنچمارک‌های سبک tau-Voice، موفقیت وظیفه همگام با توان استدلال متصل به لایه صوتی حرکت می‌کند: گوگل امتیاز Gemini 3.8 Live Extended Thinking را ۶۸.۶٪ در برابر ۳۰.۱٪ مدل پایه گزارش کرده است (گزارش ارائه‌دهنده). همچنین این تفکیک جایگاه شفافی برای اختیار و مرجعیت به شما می‌دهد: بک‌اند مالک وضعیت و مجوزهای ابزار است و لایه صوتی مالک زمان‌بندی.
+
+**معماری‌های ترکیبی (Hybrids) کاملاً عادی هستند.** یک بخش جلویی دوپلکس به همراه یک مسیر TTS برای افشاگری‌های اجباری متنی، زیرا مدل دوپلکس متن را بازگویی می‌کند نه کلمه‌به‌کلمه، و فریم‌ورک تنها می‌تواند پخش صوت آن را متوقف کند نه تولیدش را. یا یک هسته S2S به همراه یک جریان STT موازی برای ثبت لاگ و ارزیابی.
+
+**یک واقعیت مهم که درباره هر سه صدق می‌کند:** هیچ‌کدام به صورت پیش‌فرض برنده تاخیر نیستند. لایه انتقال (Transport)، پیکربندی تشخیص پایان جمله (Endpointing)، کدک (Codec)، نرخ نمونه‌برداری (Sample rate) و اکنون سطح تلاش استدلال تعیین‌کننده اصلی هستند، و یک خط لوله زنجیره‌ای خوب‌تنظیم‌شده در بسیاری از استقرارها با S2S برابری می‌کند.
 
 ---
 
-## Turn Detection and Barge-In
+## پشته فناوری (The Stack) <a id="the-stack"></a>
 
-**Voice Activity Detection (VAD)** classifies each frame as speech or silence and adds about 10 to 50 ms. Silero VAD is still the open default (v6.2.3, September 23, 2026). VAD alone cannot tell a mid-sentence pause from the end of a turn.
+| لایه | گزینه‌های فعلی (نوامبر ۲۰۲۶) | نکات قابل توجه |
+|------|------------------------------|----------------|
+| **ارکستراسیون (Orchestration)** | فریم‌ورک‌های متن‌باز LiveKit Agents 1.8.10 و Pipecat 1.15.0؛ سرویس‌های مدیریت‌شده Vapi، Retell، Bland، ElevenLabs Agents و Deepgram Voice Agent | ابزار LiveKit نه ارائه‌دهنده S2S را پشت یک رابط قرار می‌دهد، پس دیگر بحث «کمبود فروشنده S2S» مطرح نیست. نسخه فریم‌ورک‌ها را پین کنید: نسخه LiveKit 1.8.8 (۱۵ اکتبر) یک نسخه اصلاحی بود که بررسی‌های `isinstance` را شکست (`inference.RealtimeModel` دیگر از مدل افزونه OpenAI ارث‌بری نمی‌کند) و صدای `aster` در GPT-Live را با `cedar` جایگزین کرد. شرکت Mistral در ۲۰ اکتبر سرویس مدیریت‌شده Voice Agents (تلفنی، مرورگر و صوت سفارشی) را عرضه کرد |
+| **مدل‌های S2S و دوپلکس** | مدل‌های `gpt-live-1`، `gpt-realtime-2.1` / `-2.1-mini`، `gemini-3.8-live` / `-extended-thinking`، Nova 2.5 Sonic، `grok-voice-3.0`؛ و Azure Voice Live (سازگار با Realtime، سرویس‌دهی `gpt-realtime-2.1`، بدون فهرست کردن `gpt-live-1`) | تمام‌دوپلکس متن‌باز: NVIDIA PersonaPlex (مدل 7B ساخته‌شده بر پایه Moshi؛ تاخیر نوبت‌گیری ۰.۱۷۰ ثانیه بنا بر گزارش ارائه‌دهنده). سازگار با Realtime API اما نه S2S: سرویس Eleven Realtime از ElevenLabs (شامل `eleven_realtime_v1_mini` و `_max`، عرضه‌شده به تمام فضاهای کاری ElevenAgents تا ۲ نوامبر) با رویدادها و انتقال WebSocket اوپن‌ای‌آی منطبق است اما تنظیمات LLM، STT و TTS را پشت یک پیکربندی واحد جمع می‌کند تا کلاینت‌ها بدون بازنویسی کد فروشندگان را عوض کنند |
+| **تشخیص گفتار استریمینگ (Streaming STT)** | سرویس‌های Deepgram Flux و Nova-3، AssemblyAI Universal-3.6 Pro Realtime (`universal-3-6-pro`، سپتامبر ۲۰۲۶، پیش‌فرض افزونه LiveKit از 1.8.4)، ElevenLabs Scribe v2 Realtime، OpenAI `gpt-live-transcribe` و `gpt-transcribe` (نوبت‌های قطعی روی `v1/realtime/transcription_sessions`)، Gemini 3.5 Transcribe Live، Mistral Voxtral Mini Transcribe Realtime 3 (پیش‌نمایش)، Cartesia Ink-2؛ و مدل خودمیزبان NVIDIA `nemotron-3.5-asr-streaming-0.6b` | مدل‌های `whisper-1` و `gpt-4o-*-transcribe` در ۲۶ فوریه ۲۰۲۷ خاموش می‌شوند. مدل چندزبانه Nova-3 شرکت Deepgram در ۲۳ اکتبر به ۵۵ زبان گسترش یافت (اگر به رفتار قبلی نیاز دارید نسخه ۱۰زبانه را پین کنید؛ هنوز خودمیزبان نشده است)، و نسخه خودمیزبان 261020 مدل Flux را به یک زمان اجرای جدید برد که فقط فایل‌های مدل `.dgv2` را بارگذاری می‌کند، بنابراین ارتقای آن نیازمند مهاجرت فایل مدل است نه صرفاً ارتقای کانتینر |
+| **تشخیص نوبت (Turn detection)** | آشکارساز صوتی `TurnDetector` در LiveKit، مدل Pipecat Smart Turn v3، پایان نوبت بومی درون STT (در Deepgram Flux و Cartesia Ink-2) | آشکارساز مبتنی بر رونوشت متنی LiveKit منسوخ شده است |
+| **تبدیل متن به گفتار (TTS)** | سرویس‌های ElevenLabs Eleven v4 Turbo (میانه استنتاج حدود ۱۰۰ میلی‌ثانیه) و Flash v2.5 (حدود ۷۵ میلی‌ثانیه)، Deepgram Flux TTS (اولین صوت «در حد ۸۰ میلی‌ثانیه»)، AssemblyAI-TTS-1 (۲۷ اکتبر، شش زبان، حدود ۹۰ میلی‌ثانیه تا اولین صوت)، Cartesia Sonic 3.6، Gemini 3.8 Flash و Flash-Lite TTS (صداهای سفارشی با ترکیب صدا از ۴ نوامبر)، Mistral Voxtral TTS 3 (پیش‌نمایش)، `gpt-4o-mini-tts`؛ تمام تاخیرها به گزارش ارائه‌دهندگان است | اسنپ‌شات‌های `tts-1`، `tts-1-hd` و `gpt-4o-mini-tts` در ۶ ژانویه ۲۰۲۷ خاموش می‌شوند، و OpenAI مدل `gpt-realtime-2.1-mini` را جایگزین آن‌ها معرفی کرده است؛ بنابراین یک زنجیره تماماً OpenAI در مرحله TTS خود به یک مدل S2S ختم می‌شود. شرکت Cartesia پس از ۲۰ اکتبر مدل‌های Sonic-2، Sonic-turbo و اسنپ‌شات Sonic-3-2025-10-27 را بازنشسته کرد. گزینه‌های متن‌باز: Chatterbox Flash (لایسنس MIT)، Kokoro-82M (لایسنس Apache 2.0)، Voxtral-4B-TTS (لایسنس CC BY-NC، پس فاقد مجوز میزبانی تجاری) |
+| **انتقال (Transport)** | پروتکل WebRTC (بر پایه UDP و Opus) برای سمت کلاینت؛ WebSocket برای ارتباط سرور به مدل؛ و SIP برای شبکه تلفنی | پروتکل WebRTC افت بسته‌ها را بهتر مدیریت می‌کند زیرا UDP از انسداد سر صف (Head-of-line blocking) پرهیز می‌نماید |
 
-**Endpointing moved from text to audio.** A fixed silence timeout taxes every turn: 800 ms of required silence adds nearly a second before the pipeline starts. The 2025 answer was a small transformer reading the partial transcript; the 2026 answer reads the audio itself, which hears intonation and trailing-off that a transcript loses:
+**دقت STT یک خط مبنای جدید دارد.** برش ۱ اکتبر در جدول رده‌بندی Open ASR Leaderboard از میانگین ۸ مجموعه‌داده جدید استفاده می‌کند که با ارقام ۲۰۲۵ قابل مقایسه نیست. پیشتازان تجاری در نرخ خطای واژه (WER) میانگین ۳.۵۹٪ تا ۴.۳۴٪ قرار دارند (Zoom، Azure، ElevenLabs Scribe v2، AssemblyAI Universal-3.5 Pro)؛ مدل Qwen3-ASR-1.7B با نرخ ۴.۳۱٪ (Apache 2.0) پیشتاز مدل‌های متن‌باز است، مدل parakeet-tdt-0.6b-v2 امتیاز ۴.۷۰٪ با سرعت حدود ۶٬۰۰۰ برابر زمان واقعی کسب می‌کند، و whisper-large-v3 امتیاز ۵.۷۸٪ می‌گیرد. دو اهرم ارزان برای افزایش دقت: وزن‌دهی به کلیدواژه‌های اختصاصی خودتان (نام‌ها، کدهای SKU)، و ارسال آخرین پرسش Agent به عنوان کانتکست برای STT (شرکت AssemblyAI کاهش ۸.۹ درصدی WER را گزارش کرده است؛ گزارش ارائه‌دهنده).
 
-| Detector | How it works | Facts |
-|----------|--------------|-------|
-| LiveKit `TurnDetector` (`v1` on LiveKit Inference, `v1-mini` on CPU) | Audio end-of-turn model, 14 languages | With it on, default delays drop to `min_delay` 0.3 s and `max_delay` 2.5 s (from 0.5 and 3.0). The text turn detector is deprecated and slated for removal in Agents 2.0 |
-| Pipecat Smart Turn v3 | 8M parameters on a Whisper Tiny encoder | About 12 ms on CPU (vendor-reported); BSD-2. Pipecat 1.15.0 (October 29) added an opt-in `ClassifierUserTurnStopStrategy`, where a classifier such as a decision model decides whether the turn is complete, combinable with Smart Turn so the turn ends once both agree |
-| Deepgram Flux | STT with built-in end of turn | `eot_threshold` defaults to 0.7; `eager_eot_threshold` (0.3 to 0.9) is off by default; about 260 ms detection (vendor-reported) |
-| Cartesia Ink-2 | STT with turn events | Emits `turn.eager_end` and `turn.resume` |
-| AssemblyAI Universal-3.6 Pro Realtime | STT with end-of-turn detection | 537 ms median end-of-turn latency on 12,460 English voice-agent conversations, against about 150 ms P50 streaming latency after VAD (vendor-reported) |
-
-**Separate proposing from deciding.** When VAD, an audio turn model, and the STT can each declare a turn over, one arbiter must decide. Pipecat 1.8.0 (August 26) introduced exactly this arbitration and, along the way, fixed a hidden flat ~0.5 s delay on every turn: a reminder to instrument your own framework, not just the models.
-
-**Speculative generation trades LLM spend for latency.** Start the LLM on an eager end-of-turn signal and throw the result away if the caller keeps talking. Deepgram says eager end of turn raises LLM calls 50% to 70% (vendor-reported). LiveKit runs preemptive generation by default, and Pipecat 1.9.0 holds speculative responses until the turn is confirmed. The rule: speculative tokens are fine, speculative side effects are not. Hold any tool call that changes state until the turn is confirmed (Deepgram's `defer_until_eot` does this for its agent API).
-
-**Barge-in is a protocol, not a VAD event.** When the caller starts talking over the agent:
-
-1. **Classify the overlap.** "Uh-huh" is a backchannel, not an interruption. LiveKit's adaptive interruption model (on by default since 1.5.0) reports 86% precision and 100% recall at 500 ms of overlap, rejects 51% of VAD-triggered barge-ins, and resumes playback after a false one (vendor-reported). Plain VAD barge-in is now the baseline to beat.
-2. **Stop playout everywhere.** Cancel your TTS stream and flush the carrier's buffer too: on Twilio Media Streams, send `clear`, or the caller keeps hearing buffered audio after you stopped.
-3. **Trim history to what was heard.** If the agent was cut off mid-sentence, the LLM context should contain only the words the caller heard. Deepgram Flux TTS returns `text_spoken` on interrupt for exactly this.
-4. **Decide what happens to in-flight work.** With GPT-Live, backend work keeps running after an interruption and your app decides whether to finish or cancel it. On Gemini Live, sending client content with `turn_complete=true` interrupts generation unconditionally.
-
-With a duplex model, the model handles barge-in itself. LiveKit can stop playout, but cannot make the model stop generating early.
+**رونویسی‌های استریمینگ (Streaming transcripts).** سیستم STT استریمینگ تقریباً هر ۵۰ میلی‌ثانیه در حین صحبت کاربر خروجی‌های جزئی (Partials) منتشر می‌کند، به‌طوری‌که رونویسی با گفتار هم‌پوشانی دارد. میان سه تاخیر STT تمایز قائل شوید: رونوشت جزئی، رونوشت نهایی و تشخیص پایان صحبت (Endpointing). Agentهای صوتی گزینه آخر را بهینه می‌کنند.
 
 ---
 
-## Latency Budgets
+## تشخیص نوبت و قطع صحبت (Turn Detection and Barge-In) <a id="turn-detection-and-barge-in"></a>
 
-In natural human conversation the gap between speakers averages **~200 ms**. Production agents are nowhere near that, and the honest 2026 numbers are worth knowing:
+**تشخیص فعالیت گفتار (VAD)** هر فریم را به عنوان گفتار یا سکوت دسته‌بندی می‌کند و حدود ۱۰ تا ۵۰ میلی‌ثانیه تاخیر اضافه می‌نماید. مدل Silero VAD همچنان پیش‌فرض متن‌باز است (نسخه v6.2.3، ۲۳ سپتامبر ۲۰۲۶). روش VAD به تنهایی نمی‌تواند مکث میانه جمله را از پایان نوبت تشخیص دهد.
 
-| Measurement | Value | Source |
-|-------------|-------|--------|
-| Illustrative cascade turn | 1.044 s: endpointing 0.200 + STT 0.125 + LLM 0.336 + turn completion 0.024 + TTS 0.359 | Pipecat 1.9.0 release notes (an example, not a benchmark) |
-| Time to first audio, reasoning-capable S2S | Grok Voice Think Fast 2.0 0.70 s (measured before xAI deprecated Grok Voice 2.0 for 3.0); Gemini 3.8 Live 1.18 s; `gpt-realtime-2.1` (high) 1.21 s; GPT-Live-1 with an Astra backend at medium 1.34 s | Artificial Analysis (independent) |
-| GPT-Live turn-taking | 0.798 s vs 1.41 s for `gpt-realtime-2.1` | OpenAI (vendor-reported) |
-| Voice-tuned LLM, time to first answer token | Mercury Voice (a diffusion reasoning model, enterprise GA September 29, 2026): 320 ms median, 750 ms p95 on production voice prompts | Inception (vendor-reported) |
+**تشخیص پایان صحبت (Endpointing) از متن به صوت منتقل شد.** یک مهلت سکوت ثابت بر هر نوبت مالیات تاخیر می‌بندد: ۸۰۰ میلی‌ثانیه سکوت اجباری نزدیک به یک ثانیه پیش از شروع خط لوله تلف می‌کند. راهکار سال ۲۰۲۵ یک ترنسفورمر کوچک بود که رونوشت جزئی را می‌خواند؛ راهکار سال ۲۰۲۶ خودِ صوت را می‌خواند که لحن صدا و افت انرژی پایان جمله را که در متن از بین می‌رود می‌شنود:
 
-A per-turn budget for a tuned, fully streaming cascade:
+| آشکارساز (Detector) | نحوه عملکرد | حقایق کلیدی |
+|---------------------|-------------|-------------|
+| آشکارساز LiveKit `TurnDetector` (`v1` در LiveKit Inference، `v1-mini` روی CPU) | مدل صوتی پایان نوبت، ۱۴ زبان | با فعال کردن آن، تاخیرهای پیش‌فرض به `min_delay` معادل ۰.۳ ثانیه و `max_delay` معادل ۲.۵ ثانیه کاهش می‌یابند (از ۰.۵ و ۳.۰). آشکارساز متنی منسوخ شده و در Agents 2.0 حذف می‌شود |
+| مدل Pipecat Smart Turn v3 | دارای ۸ میلیون پارامتر بر پایه انکودر Whisper Tiny | حدود ۱۲ میلی‌ثانیه روی CPU (گزارش ارائه‌دهنده)؛ لایسنس BSD-2. نسخه Pipecat 1.15.0 (۲۹ اکتبر) قابلیت اختیاری `ClassifierUserTurnStopStrategy` را افزود که در آن یک دسته‌بندی‌کننده مانند مدل تصمیم‌گیر تشخیص می‌دهد نوبت کامل شده است و با Smart Turn ترکیب می‌شود تا پس از توافق هر دو، نوبت پایان یابد |
+| سیستم Deepgram Flux | سامانه STT با تشخیص پایان نوبت داخلی | مقدار `eot_threshold` به طور پیش‌فرض ۰.۷ است؛ گزینه `eager_eot_threshold` (۰.۳ تا ۰.۹) به طور پیش‌فرض خاموش است؛ تشخیص حدود ۲۶۰ میلی‌ثانیه (گزارش ارائه‌دهنده) |
+| سیستم Cartesia Ink-2 | سامانه STT همراه با رویدادهای نوبت | رویدادهای `turn.eager_end` و `turn.resume` را صادر می‌کند |
+| سیستم AssemblyAI Universal-3.6 Pro Realtime | سامانه STT با تشخیص پایان نوبت | میانه تاخیر پایان نوبت ۵۳۷ میلی‌ثانیه در ۱۲٬۴۶۰ مکالمه صوتی انگلیسی، در برابر حدود ۱۵۰ میلی‌ثانیه تاخیر استریمینگ P50 پس از VAD (گزارش ارائه‌دهنده) |
 
-| Stage | Typical budget | Notes |
-|-------|---------------|-------|
-| Network transport (one way) | 30-80 ms | WebRTC/UDP; each SIP or carrier hop adds more |
-| VAD frame decision | 10-50 ms | Runs continuously |
-| Endpointing / turn decision | 200-300 ms | Set by your turn detector and delays |
-| STT final transcript | 50-150 ms after speech ends | Partials already streamed during speech |
-| **LLM time to first token** | **150-400 ms, more with reasoning** | Usually the long pole; reasoning effort is now the dial |
-| TTS time to first audio | 75-360 ms | First chunk only; vendor figures are single-stream |
-| **End to end (time to first audio)** | **~0.8-1.1 s** | Sub-700 ms needs a non-reasoning fast path |
+**پیشنهاد دادن را از تصمیم‌گیری جدا کنید.** زمانی که VAD، یک مدل صوتی نوبت و STT هر سه می‌توانند پایان نوبت را اعلام کنند، یک داور واحد باید تصمیم نهایی را بگیرد. نسخه Pipecat 1.8.0 (۲۶ اوت) دقیقاً همین داوری را معرفی کرد و در ضمن آن یک تاخیر ثابت پنهان ~۰.۵ ثانیه‌ای در هر نوبت را برطرف ساخت: یادآوری مهمی برای ابزاردقیق کردن خودِ فریم‌ورک، نه فقط مدل‌ها.
 
-**Streaming removes the whole-duration terms, not the first-chunk terms.** Without streaming you wait for the full transcript, the full LLM response, and the full audio. With streaming those disappear, but endpointing, final transcript, LLM first token, and TTS first audio still run in series after the caller stops, which is why Pipecat's example is a sum.
+**تولید گمانه‌زنانه (Speculative generation) هزینه LLM را با تاخیر معامله می‌کند.** بر اساس یک سیگنال زودهنگام پایان نوبت، LLM را استارت بزنید و اگر تماس‌گیرنده به صحبت ادامه داد نتیجه را دور بریزید. شرکت Deepgram می‌گوید پایان نوبت زودهنگام فراخوانی‌های LLM را ۵۰٪ تا ۷۰٪ افزایش می‌دهد (گزارش ارائه‌دهنده). فریم‌ورک LiveKit تولید پیش‌دستانه را به‌صورت پیش‌فرض اجرا می‌کند و Pipecat 1.9.0 پاسخ‌های گمانه‌زنانه را تا تایید نوبت نگه می‌دارد. قاعده طلایی: تولید Tokenهای گمانه‌زنانه مشکلی ندارد، اما آثار جانبی (Side effects) گمانه‌زنانه مجاز نیستند. هر فراخوانی ابزاری که وضعیت سیستم را تغییر می‌دهد تا تایید قطعی نوبت به تعویق بیندازید (گزینه `defer_until_eot` در Deepgram برای Agent API همین کار را انجام می‌دهد).
 
-The levers, in order of impact:
+**قطع صحبت (Barge-in) یک پروتکل است، نه یک رویداد VAD.** زمانی که تماس‌گیرنده وسط صحبت Agent شروع به حرف زدن می‌کند:
 
-- **Stream everything.** Partial transcripts, token streaming, and chunked TTS that starts on the first clause.
-- **Tune endpointing.** An audio turn detector instead of a long silence timeout, plus eager end of turn with speculative generation if you can afford the extra LLM calls. In Pipecat's example, endpointing is about 19% of the turn and TTS about 34%.
-- **Keep reasoning off the speaking path.** Acknowledge immediately, then delegate. Reasoning effort is now a latency dial: `gpt-realtime-2.1` exposes it, and Pipecat defaults GPT-5.x voice calls to effort `none`. Check that your backend can actually go low: GPT-6 Astra has no `none` effort, Claude Opus 5.5 cannot disable thinking, and Sonnet 5.5's floor is `between_tools`.
-- **Choose TTS by time to first audio at your concurrency.** Voxtral-4B-TTS measures 70 ms at concurrency 1 and 552 ms at concurrency 32 on an H200 (vendor-reported), so a single-stream number is not a capacity plan.
-- **Count connection setup.** It lands on the first turn. LiveKit 1.8.2 cut agent startup by up to 800 ms, and OpenAI's Realtime API supports WARP, an IETF-draft bundle that cuts WebRTC round trips (mostly native clients today, since browsers support it only partially).
+1. **هم‌پوشانی را دسته‌بندی کنید.** عبارت «آها» یا «بله» یک تایید کوتاه (Backchannel) است، نه قطع صحبت. مدل تطبیقی قطع صحبت LiveKit (فعال به صورت پیش‌فرض از نسخه 1.5.0) در ۵۰۰ میلی‌ثانیه هم‌پوشانی، دقت ۸۶٪ و بازیابی ۱۰۰٪ گزارش کرده، ۵۱٪ از قطع‌صحبت‌های تحریک‌شده توسط VAD را رد می‌کند و پس از یک تشخیص کاذب، پخش صوت را از سر می‌گیرد (گزارش ارائه‌دهنده). قطع صحبت ساده مبتنی بر VAD اکنون صرفاً خط مبنایی است که باید از آن پیشی گرفت.
+2. **پخش صوت را همه‌جا متوقف کنید.** جریان TTS خود را لغو کرده و بافر مخابراتی (Carrier) را نیز تخلیه کنید: در Twilio Media Streams دستور `clear` بفرستید، وگرنه تماس‌گیرنده پس از توقف شما همچنان صدای داخل بافر را می‌شنود.
+3. **تاریخچه را به آنچه شنیده شده کوتاه کنید.** اگر صحبت Agent در میانه جمله قطع شد، کانتکست LLM باید تنها شامل کلماتی باشد که تماس‌گیرنده شنیده است. سرویس Deepgram Flux TTS هنگام قطع شدن، دقیقا برای همین کار `text_spoken` را برمی‌گرداند.
+4. **درباره سرنوشت کارهای در حال اجرا تصمیم بگیرید.** در GPT-Live، کارهای بک‌اند پس از قطع صحبت به اجرا ادامه می‌دهند و اپلیکیشن شما تصمیم می‌گیرد که آن‌ها را تکمیل یا لغو کند. در Gemini Live، ارسال محتوای کلاینت با `turn_complete=true` تولید را به‌طور بی‌قیدوشرط متوقف می‌سازد.
 
-Measure what the caller experiences: OpenAI's voice guide recommends median and p95 time to a **useful** spoken answer, tracked separately from "let me check that" acknowledgments.
+در یک مدل دوپلکس، خودِ مدل قطع صحبت را مدیریت می‌کند. فریم‌ورک LiveKit می‌تواند پخش صوت (Playout) را متوقف کند، اما نمی‌تواند مدل را مجبور سازد تولید را زودتر متوقف نماید.
 
 ---
 
-## Cost per Minute
+## بودجه‌های تاخیر (Latency Budgets) <a id="latency-budgets"></a>
 
-Voice is billed on three different meters, and mixing them up is the most common costing error:
+در مکالمه طبیعی انسانی، فاصله میان دو گوینده به‌طور میانگین **حدود ۲۰۰ میلی‌ثانیه** است. Agentهای عملیاتی هنوز فاصله زیادی تا آن دارند و شناخت ارقام صادقانه سال ۲۰۲۶ ارزشمند است:
 
-| Option | List price | Per minute | What drives the bill |
-|--------|------------|------------|----------------------|
-| **`gpt-live-1`** | $0.05 per session minute, billed per second | $0.05 plus backend tokens | Session time, including silence and backend wait; close idle sessions |
-| **`gpt-realtime-2.1`** | Audio $32 in / $0.40 cached / $64 out per 1M | ~$0.019 per minute of caller audio, ~$0.077 per minute of agent audio (derived) | The whole conversation is re-sent on every response, so cost per minute rises with call length unless the cached rate applies |
-| **`gpt-realtime-2.1-mini`** | Audio $10 / $0.30 / $20 per 1M | ~$0.006 / ~$0.024 (derived) | Same re-send behavior |
-| **Gemini 3.8 Live** (and Extended Thinking) | Audio $3 in / $12 out per 1M; text $0.75 / $4.50 | ~$0.005 in / ~$0.018 out | Thinking tokens bill as output |
-| **xAI Grok voice** | $0.08 per minute (`grok-voice-3.0`, same price as 2.0) | $0.08 | Flat per minute; text inputs billed separately |
-| **Streaming STT** | `gpt-live-transcribe` $0.017/min; `gpt-transcribe` $0.0045/min (committed turns, not partials); Deepgram Flux $0.0077/min pay as you go ($0.0065 on the prepaid Growth plan); AssemblyAI Universal-3.6 Pro Realtime $0.45/hr; ElevenLabs Scribe v2 Realtime $0.39/hr; Voxtral Mini Transcribe Realtime 3 $0.008/min (preview); Gemini 3.5 Transcribe Live ~$0.009/min | $0.0045-0.017 | AssemblyAI bills idle socket time. Where per-turn finals suffice, `gpt-transcribe` cuts OpenAI STT cost by about 74% |
-| **TTS** | Gemini 3.8 Flash TTS $0.50 in / $9 out per 1M (promotional to December 31, then $1 / $18); Flash-Lite TTS $6 per 1M audio out (then $12); `gpt-4o-mini-tts` $12 per 1M audio tokens (snapshots shut down January 6, 2027); Voxtral TTS 3 $13 and AssemblyAI-TTS-1 $15 per 1M characters | Varies | Budget for the January 1, 2027 Gemini doubling |
-| **Bundled platforms** | Vapi $0.05/min plus providers at cost (~$0.08-0.13 before telephony); Retell ~$0.13 in a worked example; Bland $0.12-0.14; ElevenLabs Agents $0.08 ($0.16 burst) per additional minute, plus tokens on Eleven Realtime ($0.20 in / $6.00 out per 1M for Mini, $1.80 / $9.00 for Max); Mistral Voice Agents $0.04 with Mistral Small 4, $0.08 with larger models (preview); Deepgram Voice Agent $0.075 ($0.050 bringing your own LLM and TTS); Cartesia $0.06, though Cartesia stops hosting Line SDK agents on December 1, 2026 (scheduled) | $0.04-0.14 | Platform fee plus model choice; on Eleven Realtime the per-minute rate is only part of the bill |
-| **Streaming translation** | `gpt-realtime-translate` $0.034/min; Gemini 3.5 Live Translate (preview) about $0.037/min | $0.034-0.037 per session minute | One session per target language, so sessions scale with speakers times languages |
-| **Hosting and telephony** | LiveKit Cloud and Pipecat Cloud ~$0.01/min; Twilio Media Streams $0.0044/min vs ConversationRelay $0.07/min | | |
+| سنجه | مقدار | منبع |
+|------|-------|------|
+| نوبت نمونه در خط لوله زنجیره‌ای | مجموع ۱.۰۴۴ ثانیه: تشخیص پایان صحبت ۰.۲۰۰ + STT معادل ۰.۱۲۵ + LLM معادل ۰.۳۳۶ + تکمیل نوبت ۰.۰۲۴ + TTS معادل ۰.۳۵۹ | یادداشت انتشار Pipecat 1.9.0 (یک مثال است، نه بنچمارک) |
+| زمان تا اولین صوت، S2S با توان استدلال | مدل Grok Voice Think Fast 2.0 برابر با ۰.۷۰ ثانیه (سنجیده‌شده پیش از منسوخ شدن 2.0 به نفع 3.0)؛ Gemini 3.8 Live برابر با ۱.۱۸ ثانیه؛ `gpt-realtime-2.1` (سطح high) برابر با ۱.۲۱ ثانیه؛ GPT-Live-1 با بک‌اند Astra در سطح medium برابر با ۱.۳۴ ثانیه | مؤسسه Artificial Analysis (مستقل) |
+| نوبت‌گیری GPT-Live | مقدار ۰.۷۹۸ ثانیه در برابر ۱.۴۱ ثانیه برای `gpt-realtime-2.1` | شرکت OpenAI (گزارش ارائه‌دهنده) |
+| مدل LLM تنظیم‌شده برای صدا، زمان تا اولین Token پاسخ | مدل Mercury Voice (یک مدل استدلالی انتشاری، عرضه عمومی سازمانی در ۲۹ سپتامبر ۲۰۲۶): میانه ۳۲۰ میلی‌ثانیه و P95 معادل ۷۵۰ میلی‌ثانیه روی Promptهای صوتی عملیاتی | شرکت Inception (گزارش ارائه‌دهنده) |
 
-The Realtime arithmetic: caller audio is 1 token per 100 ms (600 per minute) and agent audio 1 token per 50 ms (1,200 per minute). Audio input costs 8x text input ($32 vs $4) and audio output about 2.7x text output ($64 vs $24). Cached audio input is $0.40, 98.75% below the fresh rate, so prefix caching decides whether a long Realtime call stays cheap.
+یک بودجه به ازای هر نوبت برای یک خط لوله زنجیره‌ای تمام‌استریمینگ و تنظیم‌شده:
 
-**A 5-minute call** with 2.5 minutes of caller speech and 2 minutes of agent speech (derived, model costs only): GPT-Live is $0.25 plus backend tokens; `gpt-realtime-2.1` is about $0.20 of fresh audio plus the re-sent conversation; Gemini 3.8 Live is about $0.06 of fresh audio if you stream the caller's audio for the whole call, plus whatever accumulated context its usage metadata shows billed per turn; Grok is $0.40. On a bundled platform the same call is $0.40 to $0.65 before telephony. Raw model audio is no longer the dominant cost; platform fees, backend reasoning tokens, and idle session time are. See [FinOps and Token Economics](../11-infrastructure-and-mlops/04-finops-and-token-economics.md).
+| مرحله | بودجه متداول | نکات |
+|-------|--------------|------|
+| انتقال شبکه (یک‌طرفه) | ۳۰ تا ۸۰ میلی‌ثانیه | پروتکل WebRTC/UDP؛ هر گام SIP یا مخابراتی تاخیر بیشتری اضافه می‌کند |
+| تصمیم فریم VAD | ۱۰ تا ۵۰ میلی‌ثانیه | به‌طور پیوسته اجرا می‌شود |
+| تشخیص پایان صحبت / تصمیم نوبت | ۲۰۰ تا ۳۰۰ میلی‌ثانیه | توسط آشکارساز نوبت و تاخیرهای تنظیمی شما تعیین می‌شود |
+| رونوشت نهایی STT | ۵۰ تا ۱۵۰ میلی‌ثانیه پس از پایان گفتار | خروجی‌های جزئی از قبل در حین گفتار استریم شده‌اند |
+| **زمان تا اولین Token مدل LLM** | **۱۵۰ تا ۴۰۰ میلی‌ثانیه، و بیشتر در صورت استفاده از استدلال** | معمولاً طولانی‌ترین گلوگاه؛ سطح تلاش استدلال اکنون پیچ تنظیم آن است |
+| زمان تا اولین صوت TTS | ۷۵ تا ۳۶۰ میلی‌ثانیه | فقط اولین قطعه صوتی؛ ارقام فروشندگان برای تک‌جریان است |
+| **سرتاسری (زمان تا اولین صوت)** | **حدود ۰.۸ تا ۱.۱ ثانیه** | رسیدن به زیر ۷۰۰ میلی‌ثانیه نیازمند مسیر سریع بدون استدلال است |
 
----
+**استریمینگ جملات تمام‌مدت را حذف می‌کند، نه جملات اولین قطعه را.** بدون استریمینگ باید منتظر کل رونوشت، کل پاسخ LLM و کل فایل صوتی بمانید. با استریمینگ آن‌ها محو می‌شوند، اما تشخیص پایان صحبت، رونوشت نهایی، اولین Token مدل LLM و اولین صوت TTS همچنان پس از توقف کاربر به صورت سری اجرا می‌شوند، به همین دلیل مثال Pipecat حاصل جمع آن‌هاست.
 
-## Telephony
+اهرم‌های بهبود به ترتیب بیشترین تاثیر:
 
-**The phone network is narrowband.** Twilio Media Streams audio is fixed at 8 kHz mu-law. Models trained on 16 kHz audio can misbehave on it: Pipecat's Smart Turn v3 gave wrong predictions on 8 kHz Twilio audio until the pipeline resampled to 16 kHz first. Check the sample rate at every hop. Vonage's WebSocket interface supports L16 at 8, 16, or 24 kHz.
+- **همه‌چیز را استریم کنید.** رونوشت‌های جزئی، استریمینگ Tokenها و TTS قطعه‌ای که از همان بند اول جمله شروع به خواندن می‌کند.
+- **تشخیص پایان صحبت را تنظیم کنید.** یک آشکارساز صوتی نوبت به جای مهلت سکوت طولانی، به علاوه تشخیص زودهنگام پایان نوبت همراه با تولید گمانه‌زنانه در صورتی که هزینه فراخوانی‌های اضافی LLM برایتان قابل پذیرش است. در مثال Pipecat، حدود ۱۹٪ زمان نوبت سهم endpointing و حدود ۳۴٪ سهم TTS است.
+- **استدلال را از مسیر مستقیم صحبت دور نگه دارید.** ابتدا بلافاصله تایید کلامی بدهید، سپس کار را واگذار کنید. سطح تلاش استدلال اکنون یک پیچ تنظیم تاخیر است: `gpt-realtime-2.1` آن را در دسترس می‌گذارد و Pipecat تماس‌های صوتی GPT-5.x را به صورت پیش‌فرض روی تلاش `none` می‌گذارد. بررسی کنید بک‌اند شما واقعاً از سطوح پایین پشتیبانی می‌کند یا خیر: مدل GPT-6 Astra سطح تلاش `none` ندارد، Claude Opus 5.5 نمی‌تواند تفکر (Thinking) را غیرفعال کند و کف سطح Sonnet 5.5 گزینه `between_tools` است.
+- **سرویس TTS را بر اساس زمان تا اولین صوت در همزمانی واقعی خود انتخاب کنید.** مدل Voxtral-4B-TTS در همزمانی ۱ معادل ۷۰ میلی‌ثانیه و در همزمانی ۳۲ روی کارت H200 معادل ۵۵۲ میلی‌ثانیه تاخیر دارد (گزارش ارائه‌دهنده)، پس عدد تک‌جریان برای برنامه‌ریزی ظرفیت کافی نیست.
+- **برقراری اتصال اولیه (Connection setup) را بشمارید.** این هزینه روی نوبت اول می‌نشیند. فریم‌ورک LiveKit 1.8.2 زمان راه‌اندازی Agent را تا ۸۰۰ میلی‌ثانیه کاهش داد و Realtime API شرکت OpenAI از WARP (یک بسته پیش‌نویس IETF برای کاهش رفت‌وبرگشت‌های WebRTC، عمدتاً در کلاینت‌های بومی زیرا مرورگرها فعلاً پشتیبانی ناقصی دارند) پشتیبانی می‌کند.
 
-**You can now terminate SIP at the model vendor.** OpenAI accepts SIP trunks directly (`sip.api.openai.com`, with an EU endpoint), with TLS signaling and SRTP media; GPT-Live trunks require Opus with SDES-SRTP. Calls are accepted, rejected, transferred (`refer`), and hung up through the API, and DTMF key presses arrive on a separate server-side connection. Outbound calls ring for at most 3 minutes and stay connected for at most 2 hours. GPT-Live also accepts raw G.711 mu-law or A-law at 8 kHz over WebSocket, and xAI's voice API supports SIP. The tradeoff: removing your media relay removes a hop, and also removes the place where you would record, redact, and enforce consent, so decide where those live before you cut it.
-
-**Answering-machine detection is a separate audio path.** GPT-Live delegation does not forward audio to the backend, so voicemail detection needs its own audio-capable detector running beside the call (OpenAI suggests a parallel Realtime session). Frameworks now ship this as a component: Pipecat 1.12.0 rebuilt its voicemail detector as a classifier with a 1-second decision timeout, and ElevenLabs Agents added Twilio answering-machine detection.
-
-**Barge-in on the phone** needs the carrier buffer flushed (see above), and Twilio ConversationRelay's `interruptSensitivity` defaults to `high`, which is worth tuning on noisy lines. On October 28, 2026 Twilio made ConversationRelay's dynamic mid-call configuration, WebSocket application reconnect, and agent echo prompt filtering generally available, which closes two common failure modes (a dropped app socket ending the call, and the agent hearing itself) when you weigh its $0.07/min against raw Media Streams. **DTMF is the reliable fallback for digits**: let callers key in account numbers and dates instead of speaking them.
-
----
-
-## Session Limits and State
-
-Every vendor caps something, and a long call will hit it:
-
-| Platform | Limit | What to build |
-|----------|-------|---------------|
-| **OpenAI Realtime API** | 60-minute session; the whole conversation is re-sent on every response | Trim and summarize; reconnect with seeded state for longer calls |
-| **OpenAI GPT-Live** | 128K context. Past 90% it starts a replacement voice engine seeded with your instructions plus at most 8,192 tokens of history, including a summary of older turns. Instructions up to 16,384 tokens. No published maximum duration, though an `expired` close reason exists. Outbound SIP calls max 2 hours | Keep slots, bookings, and verified identity in application state; version the context |
-| **Gemini Live (3.8)** | Without context compression, 15 minutes audio-only and 2 minutes audio plus video; a single connection lasts about 10 minutes with a GoAway warning; resumption tokens are valid for 2 hours | Turn on sliding-window compression for long calls; build reconnect and resume |
-| **Amazon Nova Sonic** | Nova 2 Sonic: 8-minute connection limit (AWS documents a renewal pattern). The Nova 2.5 Sonic launch materials state no limit, so measure it rather than assume it was lifted | Connection renewal with state handoff |
-
-**Treat the voice model's context as a cache, not the system of record.** OpenAI's GPT-Live docs say as much: compacted conversation history is not your booking record. Anything the business depends on (what the caller confirmed, what was booked, who they proved they are) belongs in application state that survives compaction, reconnects, and model swaps. Two client-side traps from September: on Gemini 3.8 Live Extended Thinking, `turnComplete` no longer means the model is idle (check `interaction_status`), and GPT-Live has no "end of spoken response" event. State machines written for the older APIs break on both.
-
-Durable memory across calls belongs in the text layer; see [Agent Memory and State](../07-agentic-systems/05-agent-memory-and-state.md).
+آنچه را تماس‌گیرنده تجربه می‌کند اندازه‌گیری کنید: راهنمای صوتی OpenAI توصیه می‌کند میانه و P95 زمان تا یک **پاسخ گفتاری مفید** را جدا از جملات تایید اولیه‌ای مانند «بگذارید بررسی کنم» ردیابی کنید.
 
 ---
 
-## Tools Mid-Conversation
+## هزینه به ازای هر دقیقه <a id="cost-per-minute"></a>
 
-**Asynchronous tools are now a platform default, not a trick.** Gemini 3.8 Live makes tool calls non-blocking by default (scheduling modes `SILENT`, `WHEN_IDLE`, `INTERRUPTED`; Extended Thinking allows only async). `gpt-realtime-2` speaks preambles while it works. LiveKit 1.6.0 added async tools with filler phrases and a cancellable flag, Pipecat supports async function calls, and ElevenLabs Agents turned parallel tool calls on by default (September 21). "Say something while the tool runs" is solved. The design questions moved:
+صوت بر اساس سه کنتور متفاوت قیمت‌گذاری می‌شود و اشتباه گرفتن آن‌ها رایج‌ترین خطای برآورد هزینه است:
 
-- **Cancellation.** The caller changes their mind while a lookup or booking is in flight. Every tool needs a cancel path, and the voice layer needs to know what was canceled.
-- **Duplicates.** A speculative turn and the confirmed turn both fire the same tool. Use idempotency keys per logical action (LiveKit offers `on_duplicate="confirm"`).
-- **Stale results.** The caller corrects a date while the backend is searching with the old one. Stamp every delegation with a context revision and drop results whose revision is stale; OpenAI's GPT-Live migration guide recommends exactly this.
-- **Spoken claims vs completed actions.** OpenAI advises turning off parallel tool calls during GPT-Live migration and verifying that spoken confirmations match completed actions. "Your appointment is booked" must be generated from the booking result, not from the model's intent.
+| گزینه | قیمت لیست | هزینه به ازای هر دقیقه | عامل تعیین‌کننده صورتحساب |
+|-------|-----------|------------------------|--------------------------|
+| **مدل `gpt-live-1`** | مبلغ ۰.۰۵ دلار به ازای هر دقیقه نشست، با محاسبه ثانیه‌ای | مبلغ ۰.۰۵ دلار به علاوه Tokenهای بک‌اند | زمان نشست، شامل سکوت و انتظار بک‌اند؛ نشست‌های بیکار را ببندید |
+| **مدل `gpt-realtime-2.1`** | صوت ۳۲ دلار ورودی / ۰.۴۰ دلار کش‌شده / ۶۴ دلار خروجی به ازای ۱ میلیون | حدود ۰.۰۱۹ دلار بر دقیقه صوت کاربر و ۰.۰۷۷ دلار بر دقیقه صوت Agent (استنتاج‌شده) | کل مکالمه در هر پاسخ دوباره ارسال می‌شود، بنابراین هزینه دقیقه‌ای با طول تماس بالا می‌رود مگر اینکه نرخ کش اعمال شود |
+| **مدل `gpt-realtime-2.1-mini`** | صوت ۱۰ / ۰.۳۰ / ۲۰ دلار به ازای ۱ میلیون | حدود ۰.۰۰۶ / ۰.۰۲۴ دلار (استنتاج‌شده) | همان رفتار ارسال مجدد |
+| **مدل Gemini 3.8 Live** (و Extended Thinking) | صوت ۳ دلار ورودی / ۱۲ دلار خروجی به ازای ۱ میلیون؛ متن ۰.۷۵ / ۴.۵۰ دلار | حدود ۰.۰۰۵ ورودی / ۰.۰۱۸ دلار خروجی | محاسبه Tokenهای تفکر به عنوان خروجی |
+| **صدای xAI Grok** | مبلغ ۰.۰۸ دلار در دقیقه (`grok-voice-3.0`، هم‌قیمت نسخه 2.0) | مبلغ ۰.۰۸ دلار | نرخ ثابت دقیقه‌ای؛ ورودی‌های متنی جداگانه محاسبه می‌شوند |
+| **سرویس‌های Streaming STT** | مدل `gpt-live-transcribe` برابر ۰.۰۱۷ دلار/دقیقه؛ `gpt-transcribe` برابر ۰.۰۰۴۵ دلار/دقیقه (نوبت‌های قطعی، نه جزئی)؛ Deepgram Flux برابر ۰.۰۰۷۷ دلار/دقیقه (۰.۰۰۶۵ در طرح پیش‌پرداخت Growth)؛ AssemblyAI Universal-3.6 Pro Realtime برابر ۰.۴۵ دلار/ساعت؛ ElevenLabs Scribe v2 Realtime برابر ۰.۳۹ دلار/ساعت؛ Voxtral Mini Transcribe Realtime 3 برابر ۰.۰۰۸ دلار/دقیقه (پیش‌نمایش)؛ Gemini 3.5 Transcribe Live حدود ۰.۰۰۹ دلار/دقیقه | بازه ۰.۰۰۴۵ تا ۰.۰۱۷ دلار | سرویس AssemblyAI زمان بیکاری سوکت را هم حساب می‌کند. جایی که خروجی نهایی هر نوبت کافی است، `gpt-transcribe` هزینه STT در OpenAI را حدود ۷۴٪ کاهش می‌دهد |
+| **سرویس‌های TTS** | مدل Gemini 3.8 Flash TTS برابر ۰.۵۰ ورودی / ۹ دلار خروجی به ازای ۱ میلیون (تعرفه تشویقی تا ۳۱ دسامبر، سپس ۱ / ۱۸ دلار)؛ Flash-Lite TTS برابر ۶ دلار به ازای ۱ میلیون Token صوت خروجی (سپس ۱۲ دلار)؛ `gpt-4o-mini-tts` برابر ۱۲ دلار به ازای ۱ میلیون Token صوتی (اسنپ‌شات‌ها در ۶ ژانویه ۲۰۲۷ خاموش می‌شوند)؛ Voxtral TTS 3 برابر ۱۳ دلار و AssemblyAI-TTS-1 برابر ۱۵ دلار به ازای ۱ میلیون کاراکتر | متغیر | برای دو برابر شدن قیمت جمینای در ۱ ژانویه ۲۰۲۷ بودجه‌بندی کنید |
+| **پلتفرم‌های یکپارچه (Bundled)** | سرویس Vapi معادل ۰.۰۵ دلار/دقیقه + هزینه واقعی ارائه‌دهندگان (حدود ۰.۰۸ تا ۰.۱۳ دلار پیش از تلفنی)؛ Retell حدود ۰.۱۳ دلار در یک مثال عملی؛ Bland معادل ۰.۱۲ تا ۰.۱۴ دلار؛ ElevenLabs Agents معادل ۰.۰۸ دلار (۰.۱۶ در اوج بار) + Tokenها در Eleven Realtime (۰.۲۰ ورودی / ۶.۰۰ دلار خروجی به ازای ۱ میلیون برای Mini، و ۱.۸۰ / ۹.۰۰ دلار برای Max)؛ Mistral Voice Agents معادل ۰.۰۴ دلار با Mistral Small 4 و ۰.۰۸ دلار با مدل‌های بزرگ‌تر (پیش‌نمایش)؛ Deepgram Voice Agent معادل ۰.۰۷۵ دلار (۰.۰۵۰ با LLM و TTS خودتان)؛ Cartesia معادل ۰.۰۶ دلار، هرچند میزبانی Agentهای Line SDK را در ۱ دسامبر ۲۰۲۶ متوقف می‌کند (زمان‌بندی‌شده) | بازه ۰.۰۴ تا ۰.۱۴ دلار | کارمزد پلتفرم به علاوه انتخاب مدل؛ در Eleven Realtime نرخ دقیقه‌ای تنها بخشی از صورتحساب است |
+| **ترجمه استریمینگ** | سرویس `gpt-realtime-translate` برابر ۰.۰۳۴ دلار/دقیقه؛ Gemini 3.5 Live Translate (پیش‌نمایش) حدود ۰.۰۳۷ دلار/دقیقه | معادل ۰.۰۳۴ تا ۰.۰۳۷ دلار به ازای هر دقیقه نشست | یک نشست به ازای هر زبان مقصد، بنابراین نشست‌ها بر اساس ضرب گویندگان در زبان‌ها افزایش می‌یابند |
+| **میزبانی و تلفنی** | سرویس‌های LiveKit Cloud و Pipecat Cloud حدود ۰.۰۱ دلار/دقیقه؛ Twilio Media Streams برابر ۰.۰۰۴۴ دلار/دقیقه در برابر ConversationRelay با ۰.۰۷ دلار/دقیقه | | |
 
-When you migrate from a single S2S prompt to GPT-Live, split the prompt: speaking style goes in the voice session's instructions; business rules, tools, and authority go in the backend.
+حساب و کتاب Realtime: صوت تماس‌گیرنده ۱ Token به ازای هر ۱۰۰ میلی‌ثانیه (۶۰۰ عدد در دقیقه) و صوت Agent معادل ۱ Token به ازای هر ۵۰ میلی‌ثانیه (۱٬۲۰۰ عدد در دقیقه) است. ورودی صوتی ۸ برابر ورودی متنی هزینه دارد (۳۲ دلار در برابر ۴ دلار) و خروجی صوتی حدود ۲.۷ برابر خروجی متنی است (۶۴ دلار در برابر ۲۴ دلار). ورودی صوتی کش‌شده ۰.۴۰ دلار است که ۹۸.۷۵٪ ارزان‌تر از نرخ تازه است؛ بنابراین کشینگ پیشوند (Prefix caching) تعیین می‌کند که آیا یک تماس طولانی Realtime ارزان باقی می‌ماند یا خیر.
 
----
-
-## Production Concerns
-
-**Entity capture is the dominant failure.** Once the agent mishears a name, email, or confirmation code, everything downstream fails. The September 2026 tau-Elicitation preprint (arXiv 2609.13602) measured four voice setups at 0.14 to 0.41 robust exact success on capturing names, IDs, and dates, on tasks a text agent passes completely; only 24% to 37% of verified capture errors were repaired. A spell, read-back, correct, and confirm scaffold added 14 to 31 points of robust Pass^3 at a cost of 21 to 28 seconds per call. Defenses: confirmation scaffolds for critical slots, DTMF for digits, keyterm biasing, routing low-confidence spans to a clarifying question, and accepting the extra seconds where an error is expensive.
-
-**Privacy and retention differ by endpoint and vendor:**
-
-| Vendor | What to know |
-|--------|--------------|
-| OpenAI | `/v1/realtime` keeps data 30 days for abuse monitoring and is eligible for zero data retention; `/v1/live/sessions` is eligible with limitations; file transcription (`/v1/audio/transcriptions`) keeps nothing, but streaming transcription runs on a separate Realtime endpoint, so check the one you call |
-| Vapi | HIPAA mode and zero data retention cannot both be on; HIPAA costs $2,000 per month |
-| ElevenLabs | A BAA is Enterprise-only and requires zero retention |
-| Deepgram | Flux rejects entity redaction requests; Nova streaming supports them |
-| AssemblyAI | Streaming redacts final turns only, not partials, and does not redact audio |
-| LiveKit | 1.7.0 extended PII redaction to audio recordings |
-
-Your STT and platform choice constrains your compliance posture, so check redaction on partial transcripts and recordings, not just final text.
-
-**Security.** Audio is an injection channel. Preprints report 79% to 96% success for imperceptible audio injection across 13 audio-language models, including unauthorized actions by commercial voice agents (AudioHijack, arXiv 2604.14604), 69.1% for injection piggybacked on concurrent speech against Gemini 3 Pro (arXiv 2607.28165), and 48.7% for jailbreaks delivered through spoken interruptions (DuplexJail). Put tool authorization in deterministic backend policy, never in the voice model's prompt. And a voice is never an authenticator: cloned voices are cheap (ElevenLabs Eleven v4 clones from 10 seconds of audio), the FBI warned in May 2025 about AI voice messages impersonating senior US officials, and Pindrop reports $12.5B in contact-center fraud losses for 2024 (vendor-reported). Verify identity out of band.
-
-**Observability.** LiveKit 1.8.0 moved to OpenTelemetry GenAI semantic conventions (a breaking rename of attributes) with a `realtime_inference` span and PII stripped in process before export. Pipecat 1.9.0 added a per-stage latency breakdown, and LiveKit 1.8.7 (October 14) added an end-to-end latency metric for realtime agents, the number the latency section says to track. GPT-Live's usage events are cumulative snapshots, so summing them overcounts, and backend usage is reported separately. Pin dashboard queries to framework versions, because attribute names change.
+**یک تماس ۵ دقیقه‌ای** با ۲.۵ دقیقه صحبت تماس‌گیرنده و ۲ دقیقه صحبت Agent (محاسبه استنتاج‌شده، صرفاً هزینه مدل): با GPT-Live معادل ۰.۲۵ دلار به علاوه Tokenهای بک‌اند؛ با `gpt-realtime-2.1` حدود ۰.۲۰ دلار صوت تازه به علاوه مکالمه ارسال‌شده مجدد؛ با Gemini 3.8 Live حدود ۰.۰۶ دلار صوت تازه در صورت استریم مداوم صوت تماس‌گیرنده در کل تماس، به علاوه هر مقدار کانتکست انباشته‌ای که متادیتای مصرف نشان دهد در هر نوبت حساب می‌شود؛ با Grok معادل ۰.۴۰ دلار. روی یک پلتفرم یکپارچه همین تماس پیش از هزینه تلفنی بین ۰.۴۰ تا ۰.۶۵ دلار تمام می‌شود. هزینه خام صوت مدل دیگر عامل غالب نیست؛ کارمزد پلتفرم، Tokenهای استدلال بک‌اند و زمان نشست بیکار هزینه‌ها را تعیین می‌کنند. بخش [FinOps و اقتصاد توکن](../11-infrastructure-and-mlops/04-finops-and-token-economics.md) را ببینید.
 
 ---
 
-## Evaluation
+## تلفنی (Telephony) <a id="telephony"></a>
 
-**Use OpenAI's crawl, walk, run progression:** synthetic speech first, then replayed human recordings, then an independent simulated caller. Verify task outcomes against backend state (was the booking made, with the right date), not against the transcript. Add acoustic stress (noise, accents, 8 kHz audio) and per-language packs.
+**شبکه تلفنی پهنای باند باریک (Narrowband) دارد.** صوت در Twilio Media Streams روی ۸ کیلوهرتز با کدینگ mu-law ثابت شده است. مدل‌هایی که روی صوت ۱۶ کیلوهرتزی آموزش دیده‌اند ممکن است روی آن بد عمل کنند: مدل Pipecat Smart Turn v3 روی صوت ۸ کیلوهرتزی Twilio پیش‌بینی‌های غلطی می‌داد تا زمانی که خط لوله ابتدا نرخ نمونه‌برداری را به ۱۶ کیلوهرتز تبدیل (Resample) کرد. نرخ نمونه‌برداری را در هر گام بررسی کنید. رابط WebSocket شرکت Vonage از فرمت L16 با نرخ‌های ۸، ۱۶ یا ۲۴ کیلوهرتز پشتیبانی می‌کند.
 
-**Metrics that catch real failures:** median and p95 time to a useful spoken answer; false barge-in rate; p95 endpointing delay; exact entity-capture rate; task success verified in the backend; handoff rate. Sierra's readiness checklist covers latency, turn-taking, hearing, context, action, guardrails, and handoff.
+**اکنون می‌توانید SIP را مستقیماً نزد ارائه‌دهنده مدل خاتمه دهید.** شرکت OpenAI ترانک‌های SIP را مستقیماً روی `sip.api.openai.com` (همراه با نقطه پایانی اتحادیه اروپا) با سیگنالینگ TLS و رسانه SRTP می‌پذیرد؛ ترانک‌های GPT-Live نیازمند کدک Opus با SDES-SRTP هستند. تماس‌ها از طریق API پذیرفته، رد، منتقل (`refer`) و قطع می‌شوند، و فشردن کلیدهای DTMF روی یک اتصال مجزای سمت سرور دریافت می‌گردد. تماس‌های خروجی حداکثر ۳ دقیقه زنگ می‌خورند و حداکثر ۲ ساعت متصل می‌مانند. همچنین GPT-Live فرمت خام G.711 mu-law یا A-law را با نرخ ۸ کیلوهرتز روی WebSocket می‌پذیرد و API صوتی xAI نیز از SIP پشتیبانی می‌کند. بده‌بستان: حذف رله رسانه خودتان یک گام شبکه را حذف می‌کند، اما همزمان جایی را که در آن تماس را ضبط، سانسور (Redact) و رضایت‌نامه را اعمال می‌کردید نیز برمی‌دارد؛ پس پیش از حذف آن، تصمیم بگیرید این وظایف کجا قرار بگیرند.
 
-| Benchmark | What it measures | Current numbers |
-|-----------|------------------|-----------------|
-| **tau-Voice** (Sierra, arXiv 2603.13686, March 2026) | Tool-using tasks over full-duplex voice with noise, accents, interruptions | Text agent 85%; voice 31-51% on clean audio and 26-38% under realistic conditions; 79-90% of failures were agent behavior |
-| **tau-bench voice leaderboard** (Sierra, 1.x) | Retail, airline, telecom, banking | `gpt-live-1` 81.7% pass@1 (paired with GPT-6 Astra at medium effort, per launch coverage), Pine Voice Preview 75.4%, `grok-voice-think-fast-1.0` 67.3%. tau-bench 2.0.0 (October 19) added six-language packs, frozen voice benchmarks, and a 200-task entity-capture domain, and its release notes say "Scores are not comparable with 1.x" |
-| **Vendor-reported** | Same family of tasks | Google: Gemini 3.8 Live Extended Thinking 68.6% vs 30.1% base, and GPT-Live-1 with Astra 67.9% in Google's table. OpenAI: GPT-Live 83.6% first attempt vs 45.7% for `gpt-realtime-2.1`, with an Astra backend. Not comparable with the leaderboard or with each other |
-| **tau-Elicitation** (arXiv 2609.13602, preprint) | Exact capture of names, IDs, dates | 0.14-0.41 robust exact success |
-| **tau-Multilingual** (arXiv 2609.35820, preprint) | Non-English tasks | Spanish, Portuguese, Hindi within 3.2 points of English; Korean -14.7, Mandarin -8.4 |
-| **APEX-Voice** (arXiv 2609.34973, preprint) | Professional multi-step workflows | No frontier voice system above 25% Pass@1; best Reliable@3 10.8%; stateful coordination is the main failure |
-| **Artificial Analysis speech-to-speech** | Reasoning, conversational dynamics, latency | Big Bench Audio is saturated (top scores 97.6% to 99.7%); Conversational Dynamics: StepAudio 3 98.9%, GPT-Live-1 97.3%, Gemini 3.8 Live 96.1% |
+**تشخیص منشی تلفنی (Answering-machine detection) یک مسیر صوتی جداگانه است.** واگذاری در GPT-Live صوت را به بک‌اند ارسال نمی‌کند، بنابراین تشخیص صندوق صوتی نیازمند آشکارساز صوتی اختصاصی خود در کنار تماس است (OpenAI یک نشست Realtime موازی را پیشنهاد می‌دهد). فریم‌ورک‌ها اکنون این قابلیت را به عنوان یک مولفه آماده عرضه می‌کنند: Pipecat 1.12.0 آشکارساز صندوق صوتی خود را به صورت یک دسته‌بندی‌کننده با مهلت تصمیم‌گیری ۱ ثانیه‌ای بازسازی کرد و ElevenLabs Agents تشخیص منشی تلفنی Twilio را اضافه نمود.
 
-Note which backend produced a duplex score: the same voice layer scores very differently depending on the model behind it. Tooling has caught up partly: the OpenAI Agents SDK added voice testing modules in v0.21.0 and made `gpt-transcribe` its default voice STT model in 0.23.0 (a silent swap for anyone who did not pin the model), and Pipecat ships a scripted-eval CLI with LLM judges. See [Evaluating Agentic Systems](../07-agentic-systems/10-evaluating-agentic-systems.md).
+**قطع صحبت روی تلفن** نیازمند تخلیه بافر مخابراتی است (مورد بالا را ببینید)، و تنظیم `interruptSensitivity` در Twilio ConversationRelay به‌طور پیش‌فرض روی `high` قرار دارد که در خطوط پرنویز ارزش تنظیم مجدد دارد. در ۲۸ اکتبر ۲۰۲۶، Twilio قابلیت‌های پیکربندی پویا در میانه تماس، اتصال مجدد WebSocket اپلیکیشن، و فیلترینگ پژواک صدای خود Agent در ConversationRelay را به صورت عمومی عرضه کرد که دو حالت شکست رایج (قطع شدن تماس در اثر افت سوکت اپلیکیشن و شنیده شدن صدای خود Agent توسط خودش) را هنگام مقایسه نرخ ۰.۰۷ دلار/دقیقه آن با Media Streams خام برطرف می‌سازد. **کلیدهای DTMF جایگزین مطمئنی برای ارقام هستند:** اجازه دهید تماس‌گیرندگان به جای گفتن شماره حساب و تاریخ‌ها، آن‌ها را با صفحه‌کلید وارد کنند.
 
 ---
 
-## Regulation and Disclosure
+## محدودیت‌های نشست و وضعیت <a id="session-limits-and-state"></a>
 
-| Rule | Status | What it means for a voice agent |
-|------|--------|---------------------------------|
-| **EU AI Act Article 50** | Applies since August 2, 2026. Machine-readable marking of synthetic audio has a grace period to December 2, 2026, only for systems placed on the market before August 2 | Disclose that the caller is talking to an AI at the first interaction. The Commission's July 20 guidelines say agents must also disclose on whose behalf they act, and that general public awareness of AI does not make an interaction obvious |
-| **EU Code of Practice on marking** (final June 10, 2026) | Voluntary route to compliance | At least two marking layers (signed metadata plus an imperceptible watermark); audio disclaimers are allowed for audio-only content |
-| **US FCC 24-17** (February 2024) | In force | AI-generated voices are "artificial or prerecorded voice" under the TCPA, so outbound AI calls need prior express consent (written consent for telemarketing); keep a consent ledger per call |
-| **FCC 24-84** (August 2024) | Proposed rule; no final rule found | Would require AI disclosure when collecting consent and at the start of each call; disclose anyway |
-| **FCC consent revocation** (FCC 26-67, adopted September 30, 2026) | Final rule published in the Federal Register October 26, 2026; **effective November 25, 2026**. A companion proposal (comments due November 25, replies December 28) asks about a shorter deadline to honor revocations, a revoke-all method, two-way texting, and affiliates | Reaches AI voice calls through FCC 24-17, which treats AI voices as artificial voice. Replaces the 2024 revoke-all rule: a caller may limit an opt-out to the category of informational call it targets, but a telemarketing opt-out still ends all telemarketing. A caller may make one method exclusive (for a voice agent, an automated voice or key-press opt-out) only if the call discloses it clearly and conspicuously. Otherwise any reasonable request counts, so the agent must recognize spoken opt-outs and log their scope |
-| **California AB 2905** | Operative January 1, 2025 | A live natural voice must disclose an AI-generated voice before an autodialed message plays |
-| **Texas TRAIGA** | In effect January 1, 2026 | Disclosure duties for government agencies and health-care providers; voiceprints are biometric identifiers |
-| **Companion-chatbot laws** | Enacted in California (SB 243), New York, New Hampshire, and Hawaii; laws in eight more states take effect during 2027 (Connecticut, Oregon, and Washington on January 1) | AI disclosure and minor protections if your voice product is a companion |
+هر فروشنده سقفی می‌گذارد و یک تماس طولانی به آن برخورد خواهد کرد:
 
-**Design consequence:** a spoken disclosure in the greeting that names the AI and the business it acts for, generated from a fixed script (through TTS if your duplex model cannot read verbatim), plus a watermark on all synthetic audio. Gemini Live already embeds SynthID in its audio. Treat watermarks as a compliance signal, not a fraud control: published attacks strip common audio watermarks (AudioSeal, WavMark, SilentCipher, Perth), and detectors cover only their own vendor's output.
+| پلتفرم | محدودیت | چه چیزی باید ساخت |
+|---------|---------|-------------------|
+| **سرویس OpenAI Realtime API** | نشست ۶۰ دقیقه‌ای؛ کل مکالمه در هر پاسخ دوباره ارسال می‌شود | خلاصه‌سازی و کوتاه کردن تاریخچه؛ اتصال مجدد با وضعیت مقداردهی‌شده برای تماس‌های طولانی‌تر |
+| **سرویس OpenAI GPT-Live** | کانتکست ۱۲۸ هزارتایی. پس از ۹۰٪ پر شدن، یک موتور صوتی جایگزین با دستورالعمل‌های شما و حداکثر ۸٬۱۹۲ Token تاریخچه شامل خلاصه‌ای از نوبت‌های قدیمی‌تر راه‌اندازی می‌کند. دستورالعمل‌ها تا ۱۶٬۳۸۴ Token. حداکثر مدت زمان منتشرشده‌ای ندارد اما دلیل بسته شدن `expired` وجود دارد. تماس‌های SIP خروجی حداکثر ۲ ساعت است | اسلات‌ها، رزروها و هویت تاییدشده را در وضعیت اپلیکیشن نگه دارید؛ کانتکست را نسخه‌بندی کنید |
+| **سرویس Gemini Live (نسخه 3.8)** | بدون فشرده‌سازی کانتکست، ۱۵ دقیقه فقط صوت و ۲ دقیقه صوت به همراه تصویر؛ یک اتصال واحد حدود ۱۰ دقیقه با هشدار GoAway دوام می‌آورد؛ Tokenهای ازسرگیری (Resumption) تا ۲ ساعت معتبرند | فشرده‌سازی پنجره لغزان (Sliding-window) را برای تماس‌های طولانی فعال کنید؛ قابلیت اتصال مجدد و ازسرگیری بسازید |
+| **مدل Amazon Nova Sonic** | در Nova 2 Sonic: محدودیت اتصال ۸ دقیقه‌ای (AWS الگوی تمدید را مستند کرده است). مستندات معرفی Nova 2.5 Sonic هیچ محدودیتی ذکر نکرده‌اند، پس به جای فرض برداشته شدن آن، اندازه بگیرید | تمدید اتصال همراه با تحویل وضعیت (State handoff) |
 
-**Voice cloning and avatars.** Keep a consent record for any cloned voice (Gemini Flash-Lite TTS voice replication requires consent verification; Tennessee's ELVIS Act protects voice likeness). Custom voices are now first-party on both big APIs (OpenAI's prompt-to-voice for GPT-Live, GA October 16, and Gemini 3.8 TTS voice remixing, November 4, which returns a reusable `voice_` ID), so voice-identity governance applies to hyperscaler TTS too, not only to specialist cloning vendors. Voice agents are also gaining faces: Google's Live Avatar reportedly went GA in Gemini Enterprise on September 25, and Tavus reports that 48% of participants in its own study believed its Griffin avatar was a real person after a one-minute call (vendor-reported). Every disclosure duty above applies to an avatar agent. See [Multimodal Generation](../19-multimodal-generation/01-multimodal-generation.md#provenance-and-safety) and [AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md).
+**با کانتکست مدل صوتی به عنوان کش برخورد کنید، نه سیستم مرجع ثبت رکورد (System of record).** مستندات GPT-Live شرکت OpenAI صراحتاً همین را می‌گویند: تاریخچه فشرده‌شده مکالمه، سند رزرو شما نیست. هر چیزی که کسب‌وکار به آن وابسته است (آنچه تماس‌گیرنده تایید کرده، آنچه رزرو شده، هویتی که ثابت کرده) باید در وضعیت اپلیکیشن (Application state) ذخیره شود تا از فشرده‌سازی، اتصال مجدد و تعویض مدل جان سالم به در ببرد. دو دام سمت کلاینت از ماه سپتامبر: در Gemini 3.8 Live Extended Thinking، رویداد `turnComplete` دیگر به معنای بیکار شدن مدل نیست (باید `interaction_status` را چک کرد)، و GPT-Live هیچ رویداد «پایان پاسخ گفتاری» ندارد. ماشین‌های وضعیت نوشته‌شده برای APIهای قدیمی‌تر روی هر دو می‌شکنند.
+
+حافظه پایدار میان تماس‌ها به لایه متنی تعلق دارد؛ بخش [حافظه و وضعیت Agent](../07-agentic-systems/05-agent-memory-and-state.md) را ببینید.
 
 ---
 
-## Honest Maturity
+## فراخوانی ابزار در میانه مکالمه <a id="tools-mid-conversation"></a>
 
-What works well in November 2026: duplex turn-taking that handles backchannels and interruptions; audio turn detection that beats silence thresholds; asynchronous tools with spoken progress; direct SIP to model vendors; and raw audio prices low enough that the platform fee, not the model, dominates many bills.
+**ابزارهای غیرهمزمان (Asynchronous tools) اکنون پیش‌فرض پلتفرم‌ها هستند، نه یک ترفند.** مدل Gemini 3.8 Live فراخوانی ابزارها را به طور پیش‌فرض غیرمسدودکننده انجام می‌دهد (حالت‌های زمان‌بندی `SILENT`، `WHEN_IDLE` و `INTERRUPTED`؛ حالت Extended Thinking فقط نوع غیرهمزمان را مجاز می‌داند). مدل `gpt-realtime-2` هنگام کار جملات مقدماتی بیان می‌کند. LiveKit 1.6.0 ابزارهای غیرهمزمان را همراه با عبارات پرکننده سکوت و پرچم قابلیت لغو اضافه کرد، Pipecat از فراخوانی غیرهمزمان توابع پشتیبانی می‌کند، و ElevenLabs Agents فراخوانی موازی ابزارها را به صورت پیش‌فرض فعال نمود (۲۱ سپتامبر). مسئله «در حین اجرای ابزار چیزی بگو» دیگر حل شده است. پرسش‌های طراحی به سمت موارد زیر حرکت کرده‌اند:
 
-What is still hard: exact capture of names, IDs, and dates; stateful multi-step workflows (no system above 25% Pass@1 on APEX-Voice); non-English quality outside the major European languages; session and connection limits on long calls; verbatim compliance language on duplex models; and audio prompt injection.
+- **لغو کردن (Cancellation).** تماس‌گیرنده در حالی که یک استعلام یا رزرو در حال اجراست نظرش را عوض می‌کند. هر ابزار نیازمند یک مسیر لغو است و لایه صوتی باید بداند چه چیزی لغو شده است.
+- **تکراری شدن (Duplicates).** یک نوبت گمانه‌زنانه و نوبت تاییدشده هر دو ابزار یکسانی را فراخوانی می‌کنند. از کلیدهای تکرارپذیری بی‌اثر (Idempotency keys) به ازای هر اقدام منطقی استفاده کنید (LiveKit گزینه `on_duplicate="confirm"` را ارائه می‌دهد).
+- **نتایج کهنه (Stale results).** تماس‌گیرنده تاریخی را اصلاح می‌کند در حالی که بک‌اند مشغول جست‌وجو با تاریخ قبلی است. هر واگذاری کار را با یک شماره نسخه کانتکست (Context revision) مُهر بزنید و نتایجی را که شماره نسخه آن‌ها کهنه شده دور بریزید؛ راهنمای مهاجرت GPT-Live شرکت OpenAI دقیقاً همین کار را توصیه می‌کند.
+- **ادعاهای گفتاری در برابر اقدامات تکمیل‌شده.** شرکت OpenAI توصیه می‌کند هنگام مهاجرت به GPT-Live فراخوانی موازی ابزارها را خاموش کنید و راستی‌آزمایی نمایید که تاییدیه‌های گفتاری با اقدامات واقعاً تکمیل‌شده تطابق داشته باشند. جمله «نوبت شما رزرو شد» باید از روی نتیجه واقعی رزرو تولید شود، نه از روی قصد مدل.
 
-Deployments reflect that. Taco Bell runs Omilia's voice ordering at about 890 restaurants (July 2026) and now picks stores selectively, after a viral "18,000 waters" order slowed an earlier rollout in 2025; a Metrigy survey reported in July found 80% of consumers prefer a human order-taker. The production pattern is order-sanity limits, a per-store and per-daypart switch back to humans, and intervention rate as the gating metric.
-
-**The capability gap narrowed, but only with reasoning attached.** The March 2026 tau-Voice paper found voice agents retaining roughly 30% to 45% of the equivalent text agent's task ability under realistic conditions. By May, Sierra reported a frontier of 67% (`grok-voice-think-fast-1.0`), about 79% of text, up from 30% for `gpt-realtime-1.0` in August 2025. The September leaders pair a voice layer with a reasoning backend or a thinking mode; plain speech-to-speech without reasoning still sits near the old range (Gemini 3.8 Live base: 30.1%, Google-reported). **Voice is still not "a text agent plus a microphone."** The remaining gap is mostly hearing the exact entity and keeping state across a long call, so design for it: confirm critical slots explicitly, keep authoritative state in the backend, keep a human-handoff path, and evaluate under noise, interruptions, and 8 kHz audio.
-
----
-
-## Interview Questions
-
-### Q: Walk me through the latency budget of a voice agent. Where do the milliseconds go, and what is the single biggest lever?
-
-**Strong answer:**
-Humans leave about a 200 ms gap between turns; production agents land around 0.8 to 1.3 s. Pipecat's illustrative cascade is a good anchor at 1.044 s: endpointing 200 ms, final transcript 125 ms, LLM first token 336 ms, turn completion 24 ms, TTS first audio 359 ms. Independent measurements of reasoning-capable speech-to-speech models run 0.70 to 1.34 s to first audio, so S2S is not automatically faster. Streaming is mandatory, but it removes the whole-duration terms, not the first-chunk terms: after the caller stops, endpointing, final transcript, first token, and first audio still run in series. So the biggest lever after streaming is endpointing: an audio turn detector instead of a silence timeout, plus eager end of turn with speculative generation if I can afford 50% to 70% more LLM calls, holding side-effecting tools until the turn is confirmed. Then I keep reasoning off the speaking path (acknowledge, then delegate, and pick a backend that actually supports low effort), and choose TTS by first-audio latency at my real concurrency. I measure median and p95 time to a useful answer, separately from acknowledgments.
-
-### Q: Chained pipeline, single speech-to-speech model, or a duplex front end with a backend: how do you choose?
-
-**Strong answer:**
-I start from what the call must guarantee. If I need verbatim disclosures, per-stage audit and redaction, or a domain STT model, I use a chained pipeline, because text at every boundary gives me logs, swappable parts, and policy hooks. If the task is shallow and naturalness matters most, a single speech-to-speech model is simplest, and Gemini 3.8 Live, at roughly $0.005 per minute of caller audio and $0.018 per minute of agent audio, makes it cheap; on the Realtime API I watch for cost growing with call length and the 60-minute session cap. If I already have a text agent with tools and rules, or the task needs real reasoning, I put a duplex front end like GPT-Live in front of it: $0.05 per session minute plus backend tokens, natural turn-taking, and a clean split where the backend owns state and tool authority. The price of that split is engineering: compacted voice context, stale results when the caller corrects themselves, and no verbatim scripts, so I keep authoritative state in the app, version every delegation, and route required disclosures through TTS. In every case I keep tool authorization outside the voice model, because audio prompt injection works.
+هنگام مهاجرت از یک Prompt واحد S2S به GPT-Live، Prompt را بشکنید: سبک گفتار در دستورالعمل‌های نشست صوتی قرار می‌گیرد؛ قوانین کسب‌وکار، ابزارها و اختیارات در بک‌اند می‌روند.
 
 ---
 
-## References
+## نگرانی‌های محیط عملیاتی <a id="production-concerns"></a>
 
-- OpenAI, [Voice agents guide](https://developers.openai.com/api/docs/guides/voice-agents), [GPT-Live conversations](https://developers.openai.com/api/docs/guides/live-conversations), [GPT-Live migration](https://developers.openai.com/api/docs/guides/live-migration), [voice latency and cost](https://developers.openai.com/api/docs/guides/voice-latency-cost), and [SIP](https://developers.openai.com/api/docs/guides/voice-sip)
-- Google, [Gemini 3.8 Live model page](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-live) and [Live API session management](https://ai.google.dev/gemini-api/docs/live-api/session-management)
-- Sierra, "tau-Voice: Benchmarking Full-Duplex Voice Agents on Real-World Domains" (arXiv:2603.13686), the [tau-Voice benchmarking post](https://sierra.ai/blog/tau-voice-benchmarking-real-time-voice-agents-on-real-world-tasks), and the [tau-bench leaderboard](https://taubench.com/)
-- LiveKit, [turn detector docs](https://docs.livekit.io/agents/build/turns/turn-detector/), [adaptive interruption handling](https://livekit.com/blog/adaptive-interruption-handling), and [Agents releases](https://github.com/livekit/agents/releases)
-- Pipecat, [releases](https://github.com/pipecat-ai/pipecat/releases) and [Smart Turn v3](https://huggingface.co/pipecat-ai/smart-turn-v3)
-- Deepgram, [Flux TTS overview](https://developers.deepgram.com/docs/flux-tts/overview) and [changelog](https://developers.deepgram.com/changelog)
-- Hugging Face, [Open ASR Leaderboard](https://huggingface.co/spaces/hf-audio/open_asr_leaderboard)
-- Artificial Analysis, [speech-to-speech leaderboard](https://artificialanalysis.ai/speech-to-speech)
-- Twilio, [Media Streams WebSocket messages](https://www.twilio.com/docs/voice/media-streams/websocket-messages)
-- FCC, [Declaratory Ruling FCC 24-17 on AI-generated voices](https://docs.fcc.gov/public/attachments/FCC-24-17A1.pdf)
-- Federal Register, [FCC 26-67 final rule on revoking robocall consent](https://www.federalregister.gov/documents/2026/10/26/2026-21821/enhancing-the-ability-of-consumers-to-control-the-robocalls) (October 26, 2026) and the [companion proposed rule](https://www.federalregister.gov/documents/2026/10/26/2026-21820/modernizing-the-ability-of-consumers-to-control-robocalls)
-- AWS, [Amazon Nova 2.5 Sonic general availability](https://aws.amazon.com/about-aws/whats-new/2026/10/amazon-nova-2.5-Sonic/) (October 5, 2026); xAI, [release notes](https://docs.x.ai/docs/release-notes)
-- European Commission, [Article 50 transparency guidelines](https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems) and [Code of Practice on AI-generated content](https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content)
-- Cekura, [voice AI evaluation metrics](https://www.cekura.ai/blogs/voice-ai-evaluation-metrics)
+**استخراج موجودیت‌ها (Entity capture) شکست غالب است.** به محض اینکه Agent یک نام، ایمیل یا کد تایید را اشتباه بشنود، تمام مراحل پایین‌دستی شکست می‌خورند. پیش‌چاپ سپتامبر ۲۰۲۶ به نام tau-Elicitation (مقاله arXiv 2609.13602) چهار راه‌اندازی صوتی را سنجید و میزان موفقیت دقیق و مقاوم را در استخراج نام‌ها، شناسه‌ها و تاریخ‌ها بین ۰.۱۴ تا ۰.۴۱ به دست آورد، روی تسک‌هایی که یک Agent متنی به‌طور کامل پاس می‌کند؛ تنها ۲۴٪ تا ۳۷٪ خطاهای تاییدشده استخراج اصلاح شدند. یک اسکفولد هجی کردن، بازخوانی، اصلاح و تایید (Spell, read-back, correct, confirm) معیار مقاوم Pass^3 را ۱۴ تا ۳۱ واحد افزایش داد به بهای ۲۱ تا ۲۸ ثانیه وقت بیشتر در هر تماس. تدابیر دفاعی: اسکفولدهای تایید برای اسلات‌های حیاتی، صفحه‌کلید DTMF برای ارقام، وزن‌دهی به کلیدواژه‌ها، هدایت بخش‌های با اطمینان پایین به پرسش روشن‌کننده، و پذیرش ثانیه‌های اضافی در جاهایی که خطا پرهزینه است.
+
+**حریم خصوصی و نگهداری داده بر اساس نقطه پایانی و فروشنده متفاوت است:**
+
+| فروشنده | نکاتی که باید بدانید |
+|---------|----------------------|
+| شرکت OpenAI | مسیر `/v1/realtime` داده‌ها را ۳۰ روز برای پایش سوءاستفاده نگه می‌دارد و واجد شرایط عدم نگهداری داده (ZDR) است؛ مسیر `/v1/live/sessions` با محدودیت‌هایی واجد شرایط است؛ رونویسی فایل (`/v1/audio/transcriptions`) چیزی نگه نمی‌دارد، اما رونویسی استریمینگ روی یک نقطه پایانی مجزای Realtime اجرا می‌شود، پس مسیر فراخوانی خود را چک کنید |
+| پلتفرم Vapi | حالت HIPAA و عدم نگهداری داده نمی‌توانند همزمان روشن باشند؛ حالت HIPAA ماهانه ۲٬۰۰۰ دلار هزینه دارد |
+| پلتفرم ElevenLabs | قرارداد BAA فقط در طرح سازمانی (Enterprise) ارائه می‌شود و نیازمند نگهداری صفر داده است |
+| سرویس Deepgram | مدل Flux درخواست‌های سانسور موجودیت (Redaction) را رد می‌کند؛ استریمینگ Nova از آن‌ها پشتیبانی می‌نماید |
+| سرویس AssemblyAI | استریمینگ فقط نوبت‌های نهایی را سانسور می‌کند نه رونوشت‌های جزئی را، و فایل صوتی را سانسور نمی‌نماید |
+| فریم‌ورک LiveKit | نسخه 1.7.0 سانسور اطلاعات هویتی (PII) را به ضبط‌های صوتی گسترش داد |
+
+انتخاب STT و پلتفرم، وضعیت انطباق قانونی شما را مقید می‌کند؛ بنابراین سانسور داده‌ها را روی رونوشت‌های جزئی و صوت‌های ضبط‌شده بررسی کنید، نه فقط متن نهایی.
+
+**امنیت.** صوت یک کانال تزریق (Injection) است. پیش‌چاپ‌ها نرخ موفقیت ۷۹٪ تا ۹۶٪ را برای تزریق صوتی نامحسوس در ۱۳ مدل صوتی-زبانی گزارش کرده‌اند، از جمله اقدامات غیرمجاز توسط Agentهای صوتی تجاری (AudioHijack، مقاله arXiv 2604.14604)، نرخ ۶۹.۱٪ برای تزریق سوارشده روی گفتار همزمان علیه Gemini 3 Pro (مقاله arXiv 2607.28165)، و ۴۸.۷٪ برای جیل‌بریک‌های ارائه‌شده از طریق قطع صحبت‌های گفتاری (DuplexJail). صدور مجوز ابزارها را در خط‌مشی قطعی بک‌اند قرار دهید، هرگز در Prompt مدل صوتی. و صدا هرگز ابزار احراز هویت نیست: شبیه‌سازی صدا ارزان است (ElevenLabs Eleven v4 از روی ۱۰ ثانیه صدا شبیه‌سازی می‌کند)، پلیس فدرال آمریکا در مه ۲۰۲۵ درباره پیام‌های صوتی هوش مصنوعی در نقش مقامات ارشد هشدار داد، و Pindrop خسارت ۱۲.۵ میلیارد دلاری کلاهبرداری در مراکز تماس را برای سال ۲۰۲۴ گزارش کرده است (گزارش ارائه‌دهنده). هویت را خارج از کانال صوتی (Out of band) تایید کنید.
+
+**مشاهده‌پذیری (Observability).** ابزار LiveKit 1.8.0 به قراردادهای معنایی OpenTelemetry GenAI مهاجرت کرد (تغییر نام ناسازگار ویژگی‌ها) همراه با یک Span به نام `realtime_inference` و حذف PII درون فرآیند پیش از خروجی. نسخه Pipecat 1.9.0 تفکیک تاخیر به ازای هر مرحله را افزود و LiveKit 1.8.7 (۱۴ اکتبر) یک متریک تاخیر سرتاسری برای Agentهای بلادرنگ اضافه کرد؛ همان عددی که بخش تاخیر توصیه به ردیابی آن داشت. رویدادهای مصرف GPT-Live اسنپ‌شات‌های تجمعی هستند، بنابراین جمع زدن آن‌ها بیش‌شماری ایجاد می‌کند و مصرف بک‌اند جداگانه گزارش می‌شود. کوئری‌های داشبورد را به نسخه‌های فریم‌ورک پین کنید، چون نام ویژگی‌ها تغییر می‌کنند.
 
 ---
 
-*Previous: [Safety and Governance](../17-tool-use-and-computer-agents/07-safety-and-governance.md) · Next: [Multimodal Generation](../19-multimodal-generation/01-multimodal-generation.md)*
+## ارزیابی (Evaluation) <a id="evaluation"></a>
+
+**از روند پیشرفت خزیدن، راه رفتن، دویدن (Crawl, walk, run) شرکت OpenAI پیروی کنید:** ابتدا گفتار مصنوعی، سپس پخش مجدد ضبط‌های انسانی، و سپس یک تماس‌گیرنده شبیه‌سازی‌شده مستقل. نتایج تسک را در برابر وضعیت بک‌اند راستی‌آزمایی کنید (آیا رزرو با تاریخ درست ثبت شد؟)، نه در برابر رونوشت متن. فشار آکوستیکی (نویز، لهجه‌ها، صوت ۸ کیلوهرتزی) و بسته‌های چندزبانه را اضافه کنید.
+
+**متریک‌هایی که شکست‌های واقعی را شکار می‌کنند:** میانه و P95 زمان تا یک پاسخ گفتاری مفید؛ نرخ قطع صحبت کاذب؛ تاخیر P95 تشخیص پایان صحبت؛ نرخ دقیق استخراج موجودیت؛ موفقیت تسک تاییدشده در بک‌اند؛ نرخ تحویل به انسان (Handoff). چک‌لیست آمادگی Sierra مواردی چون تاخیر، نوبت‌گیری، شنوایی، کانتکست، اقدام، گاردریل‌ها و تحویل را پوشش می‌دهد.
+
+| بنچمارک | چه چیزی را می‌سنجد | ارقام فعلی |
+|---------|----------------------|------------|
+| **بنچمارک tau-Voice** (مؤسسه Sierra، مقاله arXiv 2603.13686، مارس ۲۰۲۶) | تسک‌های مبتنی بر ابزار روی صوت تمام‌دوپلکس با نویز، لهجه و قطع صحبت | عملکرد Agent متنی ۸۵٪؛ صوت روی صوت تمیز ۳۱ تا ۵۱٪ و در شرایط واقعی ۲۶ تا ۳۸٪؛ حدود ۷۹ تا ۹۰٪ شکست‌ها ناشی از رفتار Agent بوده است |
+| **جدول رده‌بندی صوتی tau-bench** (مؤسسه Sierra، نسخه 1.x) | خرده‌فروشی، هواپیمایی، مخابرات، بانکداری | مدل `gpt-live-1` با ۸۱.۷٪ در pass@1 (جفت‌شده با GPT-6 Astra در تلاش متوسط بنا بر پوشش خبری عرضه)، Pine Voice Preview با ۷۵.۴٪، `grok-voice-think-fast-1.0` با ۶۷.۳٪. نسخه tau-bench 2.0.0 (۱۹ اکتبر) بسته‌های شش‌زبانه، بنچمارک‌های صوتی منجمد و یک دامنه ۲۰۰تسکی استخراج موجودیت افزود و یادداشت انتشار آن می‌گوید «امتیازها با 1.x قابل مقایسه نیستند» |
+| **گزارش ارائه‌دهندگان** | همان خانواده تسک‌ها | شرکت Google: مدل Gemini 3.8 Live Extended Thinking معادل ۶۸.۶٪ در برابر ۳۰.۱٪ پایه، و GPT-Live-1 با Astra معادل ۶۷.۹٪ در جدول گوگل. شرکت OpenAI: مدل GPT-Live معادل ۸۳.۶٪ در تلاش اول در برابر ۴۵.۷٪ برای `gpt-realtime-2.1` با بک‌اند Astra. این اعداد نه با جدول رده‌بندی و نه با یکدیگر قابل مقایسه نیستند |
+| **بنچمارک tau-Elicitation** (مقاله arXiv 2609.13602، پیش‌چاپ) | استخراج دقیق نام‌ها، شناسه‌ها و تاریخ‌ها | موفقیت دقیق و مقاوم ۰.۱۴ تا ۰.۴۱ |
+| **بنچمارک tau-Multilingual** (مقاله arXiv 2609.35820، پیش‌چاپ) | تسک‌های غیرانگلیسی | زبان‌های اسپانیایی، پرتغالی و هندی با اختلاف کمتر از ۳.۲ واحد از انگلیسی؛ کره‌ای ۱۴.۷- واحد، ماندارین ۸.۴- واحد |
+| **بنچمارک APEX-Voice** (مقاله arXiv 2609.34973، پیش‌چاپ) | گردش‌کارهای حرفه‌ای چندمرحله‌ای | هیچ سیستم صوتی مرزی بالای ۲۵٪ در Pass@1 نیست؛ بهترین Reliable@3 برابر ۱۰.۸٪؛ هماهنگی با وضعیت (Stateful) عامل شکست اصلی است |
+| **بنچمارک Artificial Analysis S2S** | استدلال، پویایی مکالمه، تاخیر | بنچمارک Big Bench Audio اشباع شده (امتیازهای برتر ۹۷.۶٪ تا ۹۹.۷٪)؛ پویایی مکالمه: StepAudio 3 برابر ۹۸.۹٪، GPT-Live-1 برابر ۹۷.۳٪، Gemini 3.8 Live برابر ۹۶.۱٪ |
+
+دقت کنید کدام بک‌اند امتیاز دوپلکس را تولید کرده است: همان لایه صوتی بسته به مدلی که پشت آن قرار دارد امتیاز بسیار متفاوتی می‌گیرد. ابزارسازی تا حدی خود را رسانده است: SDK عامل‌های OpenAI در نسخه v0.21.0 ماژول‌های تست صوتی اضافه کرد و در 0.23.0 مدل `gpt-transcribe` را به پیش‌فرض STT صوتی خود تبدیل نمود (یک تغییر بی‌سروصدا برای کسی که مدل را پین نکرده بود)، و Pipecat یک CLI ارزیابی اسکریپتی همراه با داورهای LLM عرضه می‌کند. بخش [ارزیابی سیستم‌های Agentمحور](../07-agentic-systems/10-evaluating-agentic-systems.md) را ببینید.
+
+---
+
+## مقررات و افشا (Regulation and Disclosure) <a id="regulation-and-disclosure"></a>
+
+| قانون / مقررات | وضعیت | معنای آن برای یک Agent صوتی چیست |
+|---------------|-------|----------------------------------|
+| **ماده ۵۰ قانون هوش مصنوعی اتحادیه اروپا** | از ۲ اوت ۲۰۲۶ اعمال می‌شود. علامت‌گذاری ماشین‌خوان صوت سنتتیک فقط برای سیستم‌های عرضه‌شده پیش از ۲ اوت تا ۲ دسامبر ۲۰۲۶ دوره تنفس دارد | در نخستین تعامل افشا کنید که تماس‌گیرنده با یک هوش مصنوعی صحبت می‌کند. دستورالعمل ۲۰ ژوئیه کمیسیون می‌گوید Agentها باید همچنین افشا کنند به نمایندگی از چه کسی عمل می‌کنند و آگاهی عمومی جامعه از هوش مصنوعی تعامل را بدیهی نمی‌کند |
+| **منشور رفتار علامت‌گذاری اتحادیه اروپا** (نهایی در ۱۰ ژوئن ۲۰۲۶) | مسیر داوطلبانه برای انطباق | حداقل دو لایه علامت‌گذاری (متادیتای امضاشده به علاوه واترمارک نامحسوس)؛ اعلامیه‌های صوتی برای محتوای تماماً صوتی مجاز هستند |
+| **حکم FCC 24-17 آمریکا** (فوریه ۲۰۲۴) | لازم‌الاجرا | صداهای تولیدشده با هوش مصنوعی ذیل قانون TCPA مصداق «صدای مصنوعی یا از پیش ضبط‌شده» هستند، بنابراین تماس‌های خروجی هوش مصنوعی نیازمند رضایت صریح قبلی هستند (رضایت کتبی برای بازاریابی تلفنی)؛ دفتر ثبت رضایت به ازای هر تماس نگه دارید |
+| **پیشنهاد FCC 24-84** (اوت ۲۰۲۴) | قاعده پیشنهادی؛ هنوز قانون نهایی یافت نشده | افشای هوش مصنوعی را هنگام گرفتن رضایت و در ابتدای هر تماس الزامی می‌کند؛ در هر حال افشا کنید |
+| **قاعده لغو رضایت FCC** (سند FCC 26-67، تصویب در ۳۰ سپتامبر ۲۰۲۶) | قاعده نهایی در ۲۶ اکتبر ۲۰۲۶ در ثبت فدرال منتشر شد؛ **لازم‌الاجرا از ۲۵ نوامبر ۲۰۲۶**. یک پیشنهاد همراه (مهلت نظرات ۲۵ نوامبر، پاسخ‌ها ۲۸ دسامبر) درباره کوتاه‌تر شدن مهلت اعمال لغو، روش لغو همگانی، پیامک دوطرفه و زیرمجموعه‌ها می‌پرسد | از طریق حکم FCC 24-17 که صدای هوش مصنوعی را صدای مصنوعی می‌داند، تماس‌های صوتی هوش مصنوعی را شامل می‌شود. جایگزین قاعده «لغو همگانی» ۲۰۲۴ می‌شود: تماس‌گیرنده می‌تواند انصراف را به دسته تماس اطلاعاتی هدف محدود کند، اما انصراف از بازاریابی تلفنی همچنان تمام بازاریابی‌های تلفنی را متوقف می‌کند. تماس‌گیرنده فقط زمانی می‌تواند یک روش را انحصاری کند (برای Agent صوتی، انصراف خودکار گفتاری یا فشردن کلید) که تماس آن را به وضوح و آشکارا اعلام کند. در غیر این صورت هر درخواست معقولی پذیرفته است، بنابراین Agent باید انصراف‌های گفتاری را تشخیص دهد و دامنه آن را لاگ کند |
+| **قانون AB 2905 کالیفرنیا** | عملیاتی از ۱ ژانویه ۲۰۲۵ | یک صدای طبیعی زنده باید پیش از پخش پیام شماره‌گیری خودکار افشا کند که صدا تولیدشده با هوش مصنوعی است |
+| **قانون TRAIGA تگزاس** | لازم‌الاجرا از ۱ ژانویه ۲۰۲۶ | وظایف افشا برای نهادهای دولتی و ارائه‌دهندگان خدمات درمانی؛ اثر صدا (Voiceprints) شناسه بیومتریک محسوب می‌شود |
+| **قوانین چت‌بات‌های همدم** | تصویب‌شده در کالیفرنیا (SB 243)، نیویورک، نیوهمپشایر و هاوایی؛ قوانین در هشت ایالت دیگر در طول ۲۰۲۷ اجرایی می‌شوند (کنتیکت، اورگان و واشنگتن در ۱ ژانویه) | افشای هوش مصنوعی و محافظت از افراد زیر سن قانونی در صورتی که محصول صوتی شما نقش همدم دارد |
+
+**پیامد طراحی:** یک افشای گفتاری در خوشامدگویی که نام هوش مصنوعی و کسب‌وکاری را که به نمایندگی از آن عمل می‌کند بگوید، تولیدشده از روی یک متن ثابت (از طریق TTS در صورتی که مدل دوپلکس شما نتواند کلمه‌به‌کلمه بخواند)، به علاوه یک واترمارک روی تمام صوت‌های سنتتیک. مدل Gemini Live از قبل فناوری SynthID را در صوت خود تعبیه می‌کند. با واترمارک به عنوان یک سیگنال انطباق قانونی برخورد کنید نه کنترل ضدتقلب: حملات منتشرشده واترمارک‌های صوتی رایج (AudioSeal، WavMark، SilentCipher، Perth) را حذف می‌کنند و آشکارسازها فقط خروجی فروشنده خودشان را پوشش می‌دهند.
+
+**شبیه‌سازی صدا و آواتارها.** برای هر صدای شبیه‌سازی‌شده سابقه رضایت‌نامه نگه دارید (تکثیر صدا در Gemini Flash-Lite TTS نیازمند تایید رضایت است؛ قانون ELVIS در تنسی از شباهت صدا محافظت می‌کند). صداهای سفارشی اکنون در هر دو API بزرگ به عنوان قابلیت اصلی عرضه شده‌اند (Prompt-به-صدای OpenAI برای GPT-Live با عرضه عمومی در ۱۶ اکتبر، و ترکیب صدای Gemini 3.8 TTS در ۴ نوامبر که یک شناسه `voice_` قابل استفاده مجدد برمی‌گرداند)، بنابراین حاکمیت هویت صوتی برای TTSهای ابرهای بزرگ نیز صادق است، نه فقط فروشندگان تخصصی شبیه‌سازی صدا. Agentهای صوتی چهره هم پیدا کرده‌اند: گزارش‌ها حاکی است Live Avatar گوگل در ۲۵ سپتامبر در Gemini Enterprise به صورت عمومی عرضه شد، و Tavus گزارش می‌دهد ۴۸٪ شرکت‌کنندگان در مطالعه خودش پس از یک تماس یک‌دقیقه‌ای باور کردند آواتار Griffin آن یک انسان واقعی است (گزارش ارائه‌دهنده). تمامی وظایف افشای بالا برای یک Agent آواتاردار نیز اعمال می‌شود. بخش‌های [تولید چندوجهی](../19-multimodal-generation/01-multimodal-generation.md#provenance-and-safety) و [حاکمیت هوش مصنوعی و انطباق](../13-reliability-and-safety/04-ai-governance-and-compliance.md) را ببینید.
+
+---
+
+## بلوغ واقعی فناوری در عمل <a id="honest-maturity"></a>
+
+آنچه در نوامبر ۲۰۲۶ به خوبی کار می‌کند: نوبت‌گیری دوپلکس که تاییدهای کوتاه (Backchannels) و قطع صحبت را مدیریت می‌کند؛ تشخیص نوبت صوتی که آستانه‌های سکوت را شکست می‌دهد؛ ابزارهای غیرهمزمان همراه با اعلام پیشرفت گفتاری؛ اتصال مستقیم SIP به فروشندگان مدل؛ و قیمت‌های خام صوتی که آن‌قدر پایین آمده‌اند که کارمزد پلتفرم بر بسیاری از صورتحساب‌ها مسلط است نه خود مدل.
+
+آنچه همچنان دشوار است: استخراج دقیق نام‌ها، شناسه‌ها و تاریخ‌ها؛ گردش‌کارهای چندمرحله‌ای دارای وضعیت (هیچ سیستمی بالای ۲۵٪ در Pass@1 روی APEX-Voice قرار ندارد)؛ کیفیت غیرانگلیسی در خارج از زبان‌های اصلی اروپایی؛ محدودیت‌های نشست و اتصال در تماس‌های طولانی؛ بیان متن‌های دقیق انطباق قانونی روی مدل‌های دوپلکس؛ و تزریق Prompt صوتی.
+
+استقرارهای واقعی بازتاب‌دهنده همین واقعیت هستند. رستوران‌های Taco Bell سفارش‌گیری صوتی Omilia را در حدود ۸۹۰ شعبه اجرا می‌کنند (ژوئیه ۲۰۲۶) و اکنون پس از آنکه سفارش ویروسی «۱۸٬۰۰۰ لیوان آب» در سال ۲۰۲۵ عرضه اولیه را کند کرد، شعبه‌ها را گزینشی انتخاب می‌نمایند؛ یک نظرسنجی Metrigy که در ژوئیه گزارش شد نشان داد ۸۰٪ مصرف‌کنندگان سفارش‌گیرنده انسانی را ترجیح می‌دهند. الگوی عملیاتی استاندارد شامل محدودیت‌های منطقی سفارش، سوئیچ بازگشت به انسان به تفکیک شعبه و بخش‌های مختلف روز، و متریک نرخ مداخله (Intervention rate) به عنوان گیت کنترلی است.
+
+**شکاف توانمندی باریک شده است، اما تنها با اتصال استدلال.** مقاله tau-Voice در مارس ۲۰۲۶ نشان داد Agentهای صوتی در شرایط واقعی حدود ۳۰٪ تا ۴۵٪ از توان انجام تسک همتای متنی خود را حفظ می‌کنند. تا ماه مه، Sierra مرز توانمندی را ۶۷٪ گزارش کرد (`grok-voice-think-fast-1.0`) یعنی حدود ۷۹٪ توان متن، که نسبت به ۳۰٪ برای `gpt-realtime-1.0` در اوت ۲۰۲۵ جهش داشت. پیشتازان ماه سپتامبر یک لایه صوتی را با یک بک‌اند استدلالی یا حالت تفکر جفت می‌کنند؛ مدل گفتار-به-گفتار ساده بدون استدلال همچنان نزدیک محدوده قدیمی باقی مانده است (مدل پایه Gemini 3.8 Live برابر ۳۰.۱٪، گزارش گوگل). **صوت هنوز «یک Agent متنی به علاوه یک میکروفون» نیست.** شکاف باقی‌مانده عمدتاً در شنیدن دقیق موجودیت‌ها و حفظ وضعیت در طول یک تماس طولانی است؛ پس برای آن طراحی کنید: اسلات‌های بحرانی را صراحتاً تایید بگیرید، وضعیت مرجع را در بک‌اند نگه دارید، مسیر تحویل به انسان (Human-handoff) داشته باشید، و سیستم را زیر نویز، قطع صحبت و صوت ۸ کیلوهرتزی ارزیابی کنید.
+
+---
+
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
+
+### پرسش: بودجه تاخیر (Latency budget) یک Agent صوتی را برایم تشریح کنید. میلی‌ثانیه‌ها کجا صرف می‌شوند و بزرگ‌ترین اهرم بهبود چیست؟
+
+**پاسخ قوی:**
+انسان‌ها حدود ۲۰۰ میلی‌ثانیه فاصله بین نوبت‌ها می‌گذارند؛ Agentهای عملیاتی در بازه ۰.۸ تا ۱.۳ ثانیه فرود می‌آیند. خط لوله نمونه Pipecat یک مرجع خوب در ۱.۰۴۴ ثانیه است: تشخیص پایان صحبت ۲۰۰ میلی‌ثانیه، رونوشت نهایی ۱۲۵ میلی‌ثانیه، اولین Token مدل LLM معادل ۳۳۶ میلی‌ثانیه، تکمیل نوبت ۲۴ میلی‌ثانیه، اولین صوت TTS معادل ۳۵۹ میلی‌ثانیه. سنجش‌های مستقل مدل‌های گفتار-به-گفتار دارای توان استدلال از ۰.۷۰ تا ۱.۳۴ ثانیه تا اولین صوت متغیرند، پس S2S به صورت خودکار سریع‌تر نیست. استریمینگ الزامی است، اما جملات تمام‌مدت را حذف می‌کند نه جملات اولین قطعه را: پس از توقف تماس‌گیرنده، تشخیص پایان صحبت، رونوشت نهایی، اولین Token و اولین صوت همچنان به صورت سری اجرا می‌شوند. بنابراین بزرگ‌ترین اهرم پس از استریمینگ، تشخیص پایان صحبت (Endpointing) است: یک آشکارساز صوتی نوبت به جای مهلت سکوت، به علاوه پایان نوبت زودهنگام با تولید گمانه‌زنانه در صورتی که بتوانم ۵۰٪ تا ۷۰٪ فراخوانی LLM بیشتر را بپردازم، همراه با نگه داشتن ابزارهای دارای اثر جانبی تا تایید قطعی نوبت. سپس استدلال را از مسیر صحبت خارج نگه می‌دارم (ابتدا تایید کلامی، سپس واگذاری، و انتخاب بک‌اندی که واقعاً از سطح تلاش پایین پشتیبانی کند) و TTS را بر اساس تاخیر اولین صوت در همزمانی واقعی خودم انتخاب می‌کنم. من میانه و P95 زمان تا یک پاسخ مفید را جدا از جملات تایید اولیه می‌سنجم.
+
+### پرسش: خط لوله زنجیره‌ای، مدل واحد گفتار-به-گفتار، یا بخش جلویی دوپلکس با بک‌اند: چگونه انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+من از آنچه تماس باید تضمین کند شروع می‌کنم. اگر به افشاگری‌های متنی کلمه‌به‌کلمه، ممیزی و سانسور در هر مرحله، یا یک مدل STT تخصصی دامنه نیاز داشته باشم، از خط لوله زنجیره‌ای استفاده می‌کنم، زیرا متن در هر مرز به من لاگ‌ها، اجزای قابل تعویض و قلاب‌های خط‌مشی می‌دهد. اگر وظیفه کم‌عمق باشد و طبیعی بودن بیشترین اهمیت را داشته باشد، یک مدل واحد S2S ساده‌ترین گزینه است و Gemini 3.8 Live با حدود ۰.۰۰۵ دلار در دقیقه صوت کاربر و ۰.۰۱۸ دلار در دقیقه صوت Agent آن را ارزان می‌کند؛ روی Realtime API مراقب رشد هزینه با طول تماس و سقف ۶۰ دقیقه‌ای نشست هستم. اگر از قبل یک Agent متنی دارای ابزارها و قوانین دارم، یا وظیفه نیازمند استدلال واقعی است، یک بخش جلویی دوپلکس مانند GPT-Live را جلوی آن می‌گذارم: ۰.۰۵ دلار به ازای هر دقیقه نشست به علاوه Tokenهای بک‌اند، نوبت‌گیری طبیعی، و یک تفکیک تمیز که در آن بک‌اند مالک وضعیت و اختیار ابزار است. بهای این تفکیک، کار مهندسی است: کانتکست فشرده صوتی، نتایج کهنه هنگام تصحیح حرف توسط تماس‌گیرنده، و نبود امکان خواندن متن دقیق از روی اسکریپت؛ بنابراین وضعیت مرجع را در اپلیکیشن نگه می‌دارم، هر واگذاری را نسخه‌بندی می‌کنم و افشاگری‌های الزامی را از مسیر TTS می‌گذرانم. در همه موارد، مجوزدهی ابزار را بیرون از مدل صوتی قرار می‌دهم، چون تزریق Prompt صوتی در عمل کار می‌کند.
+
+---
+
+## منابع و مراجع <a id="references"></a>
+
+- مستندات شرکت OpenAI: [راهنمای Agentهای صوتی](https://developers.openai.com/api/docs/guides/voice-agents)، [مکالمات GPT-Live](https://developers.openai.com/api/docs/guides/live-conversations)، [مهاجرت GPT-Live](https://developers.openai.com/api/docs/guides/live-migration)، [تاخیر و هزینه صوت](https://developers.openai.com/api/docs/guides/voice-latency-cost) و [اتصال SIP](https://developers.openai.com/api/docs/guides/voice-sip)
+- مستندات شرکت Google: [صفحه مدل Gemini 3.8 Live](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-live) و [مدیریت نشست Live API](https://ai.google.dev/gemini-api/docs/live-api/session-management)
+- پژوهش شرکت Sierra: مقاله «tau-Voice: Benchmarking Full-Duplex Voice Agents on Real-World Domains» (arXiv:2603.13686)، [پست محک‌زنی tau-Voice](https://sierra.ai/blog/tau-voice-benchmarking-real-time-voice-agents-on-real-world-tasks) و [جدول رده‌بندی tau-bench](https://taubench.com/)
+- مستندات LiveKit: [مستندات آشکارساز نوبت](https://docs.livekit.io/agents/build/turns/turn-detector/)، [مدیریت تطبیقی قطع صحبت](https://livekit.com/blog/adaptive-interruption-handling) و [انتشارهای Agents](https://github.com/livekit/agents/releases)
+- مخزن Pipecat: [انتشارها](https://github.com/pipecat-ai/pipecat/releases) و [مدل Smart Turn v3](https://huggingface.co/pipecat-ai/smart-turn-v3)
+- مستندات Deepgram: [مرور کلی Flux TTS](https://developers.deepgram.com/docs/flux-tts/overview) و [گزارش تغییرات](https://developers.deepgram.com/changelog)
+- صفحه Hugging Face: [جدول رده‌بندی Open ASR Leaderboard](https://huggingface.co/spaces/hf-audio/open_asr_leaderboard)
+- رتبه‌بندی Artificial Analysis: [جدول رده‌بندی گفتار-به-گفتار](https://artificialanalysis.ai/speech-to-speech)
+- مستندات Twilio: [پیام‌های WebSocket در Media Streams](https://www.twilio.com/docs/voice/media-streams/websocket-messages)
+- حکم اعلامی FCC: [سند FCC 24-17 پیرامون صداهای تولیدشده با هوش مصنوعی](https://docs.fcc.gov/public/attachments/FCC-24-17A1.pdf)
+- ثبت فدرال ایالات متحده: [قاعده نهایی FCC 26-67 پیرامون لغو رضایت تماس‌های خودکار](https://www.federalregister.gov/documents/2026/10/26/2026-21821/enhancing-the-ability-of-consumers-to-control-the-robocalls) (۲۶ اکتبر ۲۰۲۶) و [قاعده پیشنهادی همراه](https://www.federalregister.gov/documents/2026/10/26/2026-21820/modernizing-the-ability-of-consumers-to-control-robocalls)
+- اخبار AWS و xAI: [عرضه عمومی Amazon Nova 2.5 Sonic](https://aws.amazon.com/about-aws/whats-new/2026/10/amazon-nova-2.5-Sonic/) (۵ اکتبر ۲۰۲۶)؛ و [یادداشت‌های انتشار xAI](https://docs.x.ai/docs/release-notes)
+- اسناد کمیسیون اروپا: [دستورالعمل‌های شفافیت ماده ۵۰](https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems) و [منشور رفتار پیرامون محتوای تولیدشده با هوش مصنوعی](https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content)
+- وبلاگ Cekura: [متریک‌های ارزیابی هوش مصنوعی صوتی](https://www.cekura.ai/blogs/voice-ai-evaluation-metrics)
+
+---
+
+*قبلی: [ایمنی و حاکمیت](../17-tool-use-and-computer-agents/07-safety-and-governance.md) · بعدی: [تولید چندوجهی](../19-multimodal-generation/01-multimodal-generation.md)*
+
+</div>
