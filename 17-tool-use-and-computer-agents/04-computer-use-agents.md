@@ -1,30 +1,34 @@
-# Computer-Use Agents
+<div dir="rtl">
 
-Computer-use agents let an LLM see a screen, reason about it, and act through mouse clicks and keystrokes, the same way a human operates a computer. Instead of calling structured APIs, the model works with raw pixels (and, for browsers, increasingly with the page's accessibility tree). This chapter covers how they work, when they beat traditional automation, and how to design production systems around them.
+# ایجنت‌های استفاده از کامپیوتر (Computer-Use Agents)
 
-## Table of Contents
+ایجنت‌های استفاده از کامپیوتر (Computer-Use Agents) به یک LLM امکان می‌دهند صفحه‌نمایش را ببیند، درباره آن استدلال کند و از طریق کلیک‌های ماوس و فشردن کلیدهای صفحه‌کلید، دقیقاً به همان روشی که یک انسان با کامپیوتر کار می‌کند، اقدام انجام دهد. مدل به جای فراخوانی APIهای ساختاریافته، با پیکسل‌های خام (و در مرورگرها، به‌طور فزاینده‌ای با درخت دسترس‌پذیری یا accessibility tree صفحه) کار می‌کند. این فصل نحوه عملکرد آن‌ها، زمان‌هایی که بر اتوماسیون سنتی برتری دارند و نحوه طراحی سیستم‌های محیط عملیاتی (Production) پیرامون آن‌ها را بررسی می‌کند.
 
-- [What Are Computer-Use Agents?](#what-are-computer-use-agents)
-- [The Screenshot-Reason-Act Loop](#the-screenshot-reason-act-loop)
-- [Claude Computer Use: Tools and API](#claude-computer-use-tools-and-api)
-- [Architecture: Sandboxed Environments](#architecture-sandboxed-environments)
-- [Browser vs Desktop Automation](#browser-vs-desktop-automation)
-- [Comparison with Traditional Automation](#comparison-with-traditional-automation)
-- [When Computer-Use Beats API Calls](#when-computer-use-beats-api-calls)
-- [Error Handling and Recovery](#error-handling-and-recovery)
-- [Performance: Latency, Cost, Throughput](#performance-latency-cost-throughput)
-- [Benchmarks: Reading the Numbers](#benchmarks-reading-the-numbers)
-- [Real-World Applications](#real-world-applications)
-- [Security Considerations](#security-considerations)
-- [Code Examples](#code-examples)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [ایجنت‌های استفاده از کامپیوتر چه هستند؟](#what-are-computer-use-agents)
+- [حلقه تصویربرداری-استدلال-اقدام](#the-screenshot-reason-act-loop)
+- [استفاده از کامپیوتر در Claude: ابزارها و API](#claude-computer-use-tools-and-api)
+- [معماری: محیط‌های سندباکس‌شده](#architecture-sandboxed-environments)
+- [اتوماسیون مرورگر در برابر دسکتاپ](#browser-vs-desktop-automation)
+- [مقایسه با اتوماسیون سنتی](#comparison-with-traditional-automation)
+- [چه زمانی استفاده از کامپیوتر بر فراخوانی API برتری دارد](#when-computer-use-beats-api-calls)
+- [مدیریت خطا و بازیابی](#error-handling-and-recovery)
+- [کارایی: تاخیر، هزینه و توان عملیاتی](#performance-latency-cost-throughput)
+- [بنچمارک‌ها: خواندن و تفسیر اعداد](#benchmarks-reading-the-numbers)
+- [کاربردهای دنیای واقعی](#real-world-applications)
+- [ملاحظات امنیتی](#security-considerations)
+- [نمونه کدها](#code-examples)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## What Are Computer-Use Agents?
+## ایجنت‌های استفاده از کامپیوتر چه هستند؟ <a id="what-are-computer-use-agents"></a>
 
-A computer-use agent is an LLM that controls a graphical interface by interpreting screenshots and issuing low-level input commands (mouse moves, clicks, keystrokes). It replaces the human in the human-computer interaction loop.
+یک ایجنت استفاده از کامپیوتر، مدل LLMای است که یک رابط گرافیکی را با تفسیر اسکرین‌شات‌ها و صدور دستورات ورودی سطح پایین (حرکت ماوس، کلیک، فشردن کلید) کنترل می‌کند. این ایجنت در حلقه تعامل انسان و کامپیوتر جایگزین انسان می‌شود.
+
+<div dir="ltr">
 
 ```
 Traditional Tool Use:           Computer Use:
@@ -50,38 +54,42 @@ User Request                    User Request
                                 LLM verifies result, continues...
 ```
 
-The key difference: traditional tool use requires pre-defined APIs with known schemas. Computer use works with any application that has a visual interface, no API required.
+</div>
 
-### The Landscape (2026)
+تفاوت کلیدی این است: استفاده سنتی از ابزار نیازمند APIهای از پیش تعریف‌شده با طرحواره‌های (Schema) مشخص است. استفاده از کامپیوتر با هر برنامه‌ای که رابط بصری داشته باشد کار می‌کند و به هیچ APIای نیاز ندارد.
 
-Most major labs and platforms now ship computer use, and the product has split into three shapes: an API tool you host, a managed runtime the vendor hosts, and a persistent agent with its own cloud computer.
+### چشم‌انداز فعلی (۲۰۲۶)
 
-| Provider | Offering | Approach | Key Strength |
-|----------|----------|----------|--------------|
-| Anthropic | `computer_toolset_20260801` (GA on the Claude API since Aug 19, 2026) and `browser_toolset_20260801`; Claude Duet (research preview Oct 21, 2026) | Client toolsets you host: pixels for desktops, accessibility-tree element refs for browsers; Duet is a persistent agent on its own cloud computer and browser | Desktop and browser in one API; batch actions; Duet's ask-versus-block action policy |
-| OpenAI | Agents API computer use (hosted browser added Sep 29, 2026, public beta), `computer_use` in the Responses API (GPT-6.1 Terra, Oct 26, 2026, $1/$5 per 1M), ChatGPT agent, dots | OpenAI-hosted browser on the managed Codex harness; a client-hosted tool on the Responses API; persistent agents on their own cloud computer | Per-origin approvals; credentials kept out of model input |
-| Google | Gemini API computer use (GA Oct 30, 2026; `gemini-3.8-flash` recommended, `gemini-4-argon` the most capable option); Gemini Enterprise Computer Use sandboxes (GA Sep 9, 2026) | Browser, Android, and desktop actions on a normalized 0-999 grid | Built-in `require_confirmation` safety service; VPC-isolated managed sandboxes |
-| Microsoft | GitHub Copilot computer use (public preview Oct 1, 2026), Copilot Autopilot (private preview), the UFO research framework | Accessible app content plus vision across desktop apps | Per-app approval grants; agent identity inside the customer tenant |
-| Amazon | Nova Act; Amazon WorkSpaces for AI agents (Linux and Windows 11 desktops added Nov 3, 2026, alongside Windows Server) | Purpose-built browser model; managed cloud desktops driven through a managed MCP server whose tools click, type, scroll, and screenshot, enabled per stack | E-commerce workflows; desktop-as-a-service with human observers who can watch and stop sessions live, plus WorkSpaces network isolation and IAM access (Linux agents get full root, so isolate accordingly) |
-| Meta | Muse (Sep 8, 2026) | Consumer agent that runs a browser in a dedicated cloud VM | Retail and connector partnerships |
+امروزه بیشتر آزمایشگاه‌ها و پلتفرم‌های بزرگ قابلیت استفاده از کامپیوتر را ارائه می‌دهند و این محصول به سه شکل تقسیم شده است: یک ابزار API که شما میزبانی می‌کنید، یک محیط اجرای مدیریت‌شده که ارائه‌دهنده میزبانی می‌کند، و یک ایجنت ماندگار (Persistent) با کامپیوتر ابری اختصاصی خودش.
 
-### What Differs Between Vendor APIs
+| ارائه‌دهنده | محصول ارائه‌شده | رویکرد | نقطه قوت کلیدی |
+|-------------|------------------|--------|----------------|
+| شرکت Anthropic | ابزارهای `computer_toolset_20260801` (دسترس‌پذیری عمومی روی Claude API از ۱۹ اوت ۲۰۲۶) و `browser_toolset_20260801`؛ همچنین Claude Duet (پیش‌نمایش پژوهشی ۲۱ اکتبر ۲۰۲۶) | مجموعه‌ابزارهای سمت کلاینت با میزبانی شما: پیکسل‌ها برای دسکتاپ و ارجاع‌های عناصر درخت دسترس‌پذیری برای مرورگرها؛ Duet یک ایجنت ماندگار روی کامپیوتر و مرورگر ابری خودش است | پشتیبانی از دسکتاپ و مرورگر در یک API واحد؛ اقدامات دسته‌ای (Batch)؛ سیاست پرسش در برابر مسدودسازی اقدام در Duet |
+| شرکت OpenAI | قابلیت استفاده از کامپیوتر در Agents API (مرورگر میزبانی‌شده در ۲۹ سپتامبر ۲۰۲۶ افزوده شد، بتای عمومی)، ابزار `computer_use` در Responses API (مدل GPT-6.1 Terra، ۲۶ اکتبر ۲۰۲۶، ۱ / ۵ دلار به ازای هر ۱ میلیون توکن)، ChatGPT agent و dots | مرورگر میزبانی‌شده توسط OpenAI روی مهاربند (Harness) مدیریت‌شده Codex؛ یک ابزار با میزبانی کلاینت در Responses API؛ ایجنت‌های ماندگار روی کامپیوتر ابری خودشان | تاییدیه به ازای هر مبدأ (Per-origin)؛ نگهداری اطلاعات احراز هویت خارج از ورودی مدل |
+| شرکت Google | قابلیت استفاده از کامپیوتر در Gemini API (دسترس‌پذیری عمومی ۳۰ اکتبر ۲۰۲۶؛ مدل `gemini-3.8-flash` توصیه‌شده و `gemini-4-argon` توانمندترین گزینه)؛ سندباکس‌های Gemini Enterprise Computer Use (دسترس‌پذیری عمومی ۹ سپتامبر ۲۰۲۶) | اقدامات مرورگر، اندروید و دسکتاپ روی یک شبکه نرمال‌شده ۰ تا ۹۹۹ | سرویس ایمنی داخلی `require_confirmation`؛ سندباکس‌های مدیریت‌شده ایزوله در VPC |
+| شرکت Microsoft | قابلیت استفاده از کامپیوتر در GitHub Copilot (پیش‌نمایش عمومی ۱ اکتبر ۲۰۲۶)، Copilot Autopilot (پیش‌نمایش خصوصی) و فریم‌ورک پژوهشی UFO | محتوای دسترس‌پذیر برنامه به همراه بینایی در سراسر برنامه‌های دسکتاپ | اعطای مجوز به ازای هر برنامه؛ هویت ایجنت در داخل مستاجر (Tenant) مشتری |
+| شرکت Amazon | سرویس Nova Act؛ سرویس Amazon WorkSpaces برای ایجنت‌های هوش مصنوعی (دسکتاپ‌های لینوکس و ویندوز ۱۱ در ۳ نوامبر ۲۰۲۶ در کنار ویندوز سرور اضافه شدند) | مدل مرورگر اختصاصی؛ دسکتاپ‌های ابری مدیریت‌شده که از طریق یک سرور MCP مدیریت‌شده هدایت می‌شوند و ابزارهای آن برای کلیک، تایپ، اسکرول و اسکرین‌شات به ازای هر پشته فعال می‌شوند | گردش‌کارهای تجارت الکترونیک؛ دسکتاپ به عنوان سرویس با ناظران انسانی که می‌توانند نشست‌ها را به‌صورت زنده تماشا و متوقف کنند، به علاوه ایزوله‌سازی شبکه WorkSpaces و دسترسی IAM (ایجنت‌های لینوکس دسترسی root کامل می‌گیرند، پس متناسب با آن ایزوله کنید) |
+| شرکت Meta | سرویس Muse (۸ سپتامبر ۲۰۲۶) | ایجنت مصرف‌کننده که یک مرورگر را در یک ماشین مجازی ابری اختصاصی اجرا می‌کند | همکاری‌های خرده‌فروشی و اتصالات (Connectors) |
 
-The loop is the same everywhere. The contract around it is not, and these differences decide how much of the safety layer you build yourself.
+### تفاوت‌های بین APIهای ارائه‌دهندگان
 
-| Concern | Anthropic computer toolset | Gemini computer use | OpenAI Agents API (hosted browser) |
-|---------|----------------------------|---------------------|------------------------------------|
-| Who hosts the environment | You | You (or Gemini Enterprise sandboxes) | OpenAI |
-| Coordinate space | Pixels of the screenshot you return | Normalized 0-999 grid you map to the display | Not your concern; OpenAI executes |
-| Built-in confirmation | Yours to build; Anthropic advises checking each action before it runs, because one batch can finish a multistep action | Safety service returns `require_confirmation` for categories such as financial transactions, communication tools, account creation, and legal terms | `browser_origin_access` approval for each new website origin; `browser_authentication` for sign-in |
-| Credentials | Yours to keep out of the screen | Yours to keep out of the screen | Separate sign-in UI and session events endpoint; kept out of model input (not passkeys or QR sign-in) |
-| Billing and data terms | Model tokens; ZDR-eligible, since screenshots and actions stay in your environment, except on Fable and Mythos, which require 30-day retention unless Anthropic expressly authorizes ZDR | Model tokens at the model's price | No separate API fee: model, tool, and container usage; US data residency only, no ZDR during the beta |
+حلقه اجرایی همه‌جا یکسان است؛ اما قرارداد پیرامون آن یکسان نیست و همین تفاوت‌ها تعیین می‌کنند چه مقدار از لایه ایمنی را باید خودتان بسازید.
+
+| دغدغه | مجموعه‌ابزار کامپیوتر Anthropic | استفاده از کامپیوتر Gemini | سرویس OpenAI Agents API (مرورگر میزبانی‌شده) |
+|-------|--------------------------------|----------------------------|----------------------------------------------|
+| چه کسی محیط را میزبانی می‌کند | شما | شما (یا سندباکس‌های Gemini Enterprise) | شرکت OpenAI |
+| فضای مختصات | پیکسل‌های اسکرین‌شاتی که برمی‌گردانید | شبکه نرمال‌شده ۰ تا ۹۹۹ که روی نمایشگر نگاشت می‌کنید | دغدغه شما نیست؛ OpenAI اجرا می‌کند |
+| تاییدیه داخلی | بر عهده خودتان است؛ Anthropic توصیه می‌کند پیش از اجرای هر اقدام آن را بررسی کنید، زیرا یک دسته (Batch) می‌تواند یک اقدام چندمرحله‌ای را کامل کند | سرویس ایمنی برای دسته‌هایی مانند تراکنش‌های مالی، ابزارهای ارتباطی، ساخت حساب کاربری و شرایط حقوقی مقدار `require_confirmation` برمی‌گرداند | تاییدیه `browser_origin_access` برای هر مبدأ وب‌سایت جدید؛ `browser_authentication` برای ورود به سیستم |
+| اطلاعات احراز هویت | خودتان باید از نمایش در صفحه‌نمایش دور نگه دارید | خودتان باید از نمایش در صفحه‌نمایش دور نگه دارید | رابط کاربری ورود مجزا و نقطه پایانی رویدادهای نشست؛ خارج از ورودی مدل نگه داشته می‌شود (نه کلیدهای عبور یا ورود با QR) |
+| صورت‌حساب و شرایط داده | بر اساس واحدهای Token مدل؛ واجد شرایط ZDR، زیرا اسکرین‌شات‌ها و اقدامات در محیط شما می‌مانند، به جز در Fable و Mythos که نیازمند نگهداری ۳۰ روزه هستند مگر اینکه Anthropic صراحتاً مجوز ZDR بدهد | بر اساس واحدهای Token مدل با قیمت همان مدل | بدون هزینه جداگانه API: مصرف مدل، ابزار و کانتینر؛ فقط اقامت داده در آمریکا و بدون ZDR در طول دوره بتا |
 
 ---
 
-## The Screenshot-Reason-Act Loop
+## حلقه تصویربرداری-استدلال-اقدام <a id="the-screenshot-reason-act-loop"></a>
 
-Every computer-use agent follows the same core loop, often called the "agent loop" or "action loop":
+هر ایجنت استفاده از کامپیوتر از همین حلقه اصلی پیروی می‌کند که اغلب «حلقه ایجنت» (Agent Loop) یا «حلقه اقدام» (Action Loop) نامیده می‌شود:
+
+<div dir="ltr">
 
 ```
 +------------------+
@@ -117,41 +125,45 @@ Every computer-use agent follows the same core loop, often called the "agent loo
          +----------------------+
 ```
 
-Each iteration:
-1. **Capture**: Take a screenshot of the current display state.
-2. **Send**: Pass the screenshot (base64 image) plus the conversation history to the LLM.
-3. **Reason**: The model analyzes what is on screen and determines the next step toward the goal.
-4. **Act**: The model outputs one or more tool calls (for example `left_click` at `[450, 320]`), which the runtime executes in order.
-5. **Repeat**: A new screenshot is captured and the loop continues until the model signals completion.
+</div>
 
-The model maintains context across iterations through the conversation history, which accumulates screenshots and actions like a visual "memory" of what has happened. That history is also the cost driver: long sessions are input-dominated (see [Performance](#performance-latency-cost-throughput)).
+در هر تکرار:
+1. **ثبت تصویر (Capture):** یک اسکرین‌شات از وضعیت فعلی نمایشگر گرفته می‌شود.
+2. **ارسال (Send):** اسکرین‌شات (تصویر base64) به همراه تاریخچه گفتگو به LLM ارسال می‌شود.
+3. **استدلال (Reason):** مدل آنچه را روی صفحه‌نمایش است تحلیل می‌کند و گام بعدی به سوی هدف را تعیین می‌کند.
+4. **اقدام (Act):** مدل یک یا چند فراخوانی ابزار (برای مثال `left_click` در `[450, 320]`) خروجی می‌دهد که محیط اجرا آن‌ها را به ترتیب اجرا می‌کند.
+5. **تکرار (Repeat):** اسکرین‌شات جدیدی گرفته می‌شود و حلقه تا زمانی که مدل اتمام کار را اعلام کند ادامه می‌یابد.
 
-**Batch actions change the loop's economics and its safety gate.** Claude's computer toolset can return several actions in one turn (click a field, type, press Return, take a screenshot). The executor runs them in order and stops at the first failure. One model round trip now covers several steps, which cuts latency and cost per step, but a single turn can also complete a consequential multistep action. Anthropic's guidance is to run the confirmation check before each action executes, not once per turn. In practice: inspect the whole batch when it arrives and pause before any consequential action, so a submit click in the middle of a batch cannot slip past a check that only looked at the first one.
+مدل زمینه (Context) را در طول تکرارها از طریق تاریخچه گفتگو حفظ می‌کند؛ تاریخچه‌ای که اسکرین‌شات‌ها و اقدامات را مانند یک «حافظه» بصری از اتفاقات رخ‌داده انباشته می‌کند. همین تاریخچه عامل اصلی هزینه نیز هست: نشست‌های طولانی به شدت ورودی‌محور هستند (بخش [کارایی](#performance-latency-cost-throughput) را ببینید).
+
+**اقدامات دسته‌ای (Batch Actions) اقتصاد حلقه و دروازه ایمنی آن را تغییر می‌دهند.** مجموعه‌ابزار کامپیوتر Claude می‌تواند چندین اقدام را در یک نوبت برگرداند (روی یک فیلد کلیک کن، تایپ کن، کلید Return را بزن، اسکرین‌شات بگیر). اجراکننده آن‌ها را به ترتیب اجرا می‌کند و در اولین خطا متوقف می‌شود. اکنون یک رفت‌وبرگشت به مدل چندین گام را پوشش می‌دهد که تاخیر (Latency) و هزینه به ازای هر گام را کاهش می‌دهد، اما یک نوبت واحد می‌تواند یک اقدام چندمرحله‌ای سرنوشت‌ساز را نیز کامل کند. راهنمای Anthropic این است که بررسی تاییدیه را پیش از اجرای هر اقدام انجام دهید، نه یک بار برای کل نوبت. در عمل: کل دسته را هنگام دریافت بازرسی کنید و پیش از هر اقدام پیامددار مکث کنید، تا یک کلیک ارسال (Submit) در میانه دسته نتواند از بازرسی‌ای که فقط به اقدام اول نگاه کرده است عبور کند.
 
 ---
 
-## Claude Computer Use: Tools and API
+## استفاده از کامپیوتر در Claude: ابزارها و API <a id="claude-computer-use-tools-and-api"></a>
 
-Anthropic ships computer use as client-side tools: you host the environment and execute the actions, and Claude decides what to do. Computer use left beta on the Claude API on August 19, 2026 (Google Cloud on August 20) as a **toolset**, one `tools` entry that expands into many member tools. It is still beta on Amazon Bedrock, Claude Platform on AWS, and Microsoft Foundry. Supported models are Fable 5 and 5.1, Mythos 5 and 5.1, Opus 5 and 5.5, Sonnet 5 and 5.5, Haiku 5.5, and Opus 4.8.
+شرکت Anthropic قابلیت استفاده از کامپیوتر را به عنوان ابزارهای سمت کلاینت ارائه می‌دهد: شما محیط را میزبانی می‌کنید و اقدامات را اجرا می‌کنید، و Claude تصمیم می‌گیرد چه کاری انجام دهد. قابلیت استفاده از کامپیوتر در ۱۹ اوت ۲۰۲۶ از حالت بتا در Claude API خارج شد (و در ۲۰ اوت در Google Cloud) و به شکل یک **مجموعه‌ابزار (Toolset)** عرضه گردید؛ یعنی یک ورودی در `tools` که به چندین ابزار عضو بسط می‌یابد. این قابلیت در Amazon Bedrock، پلتفرم Claude روی AWS و Microsoft Foundry همچنان در حالت بتا است. مدل‌های پشتیبانی‌شده عبارت‌اند از Fable 5 و 5.1، Mythos 5 و 5.1، Opus 5 و 5.5، Sonnet 5 و 5.5، Haiku 5.5 و Opus 4.8.
 
-### The Tools
+### ابزارها
 
-| Tool | Declared as | What it does |
-|------|-------------|--------------|
-| Computer toolset | `{"type": "computer_toolset_20260801"}` (no `name`, no display size) | 17 member tools for screen, mouse, and keyboard |
-| Browser toolset | `browser_toolset_20260801` | 31 member tools that drive a browser your application hosts |
-| Bash | `{"type": "bash_20250124", "name": "bash"}` | Persistent shell session; commands share environment and working directory |
-| Text editor | `{"type": "text_editor_20250728", "name": "str_replace_based_edit_tool"}` | `view`, `create`, `str_replace` (unique match), `insert` |
+| ابزار | نحوه تعریف | کاری که انجام می‌دهد |
+|-------|------------|----------------------|
+| مجموعه‌ابزار Computer toolset | به صورت `{"type": "computer_toolset_20260801"}` (بدون `name` و بدون اندازه نمایشگر) | ۱۷ ابزار عضو برای صفحه‌نمایش، ماوس و کیبورد |
+| مجموعه‌ابزار Browser toolset | به صورت `browser_toolset_20260801` | ۳۱ ابزار عضو که مرورگری را که برنامه شما میزبانی می‌کند هدایت می‌کنند |
+| ابزار Bash | به صورت `{"type": "bash_20250124", "name": "bash"}` | نشست شل ماندگار؛ دستورات محیط و دایرکتوری کاری را به اشتراک می‌گذارند |
+| ابزار Text editor | به صورت `{"type": "text_editor_20250728", "name": "str_replace_based_edit_tool"}` | دستورات `view`، `create`، `str_replace` (تطابق یکتا) و `insert` |
 
-**The 17 computer toolset members:**
-- **Screen:** `screenshot`, `zoom` (captures a region at full resolution; on by default)
-- **Mouse:** `left_click`, `right_click`, `middle_click`, `double_click`, `triple_click`, `left_click_drag`, `mouse_move`, `left_mouse_down`, `left_mouse_up`, `cursor_position`, `scroll`
-- **Keyboard:** `type`, `key` (a key or combination such as `ctrl+s`, with `repeat` from 1 to 100), `hold_key` (up to 300 s)
-- **Timing:** `wait` (up to 300 s)
+**۱۷ عضو مجموعه‌ابزار کامپیوتر:**
+- **صفحه‌نمایش:** `screenshot`، `zoom` (یک ناحیه را با وضوح کامل ثبت می‌کند؛ به‌طور پیش‌فرض فعال است)
+- **ماوس:** `left_click`، `right_click`، `middle_click`، `double_click`، `triple_click`، `left_click_drag`، `mouse_move`، `left_mouse_down`، `left_mouse_up`، `cursor_position`، `scroll`
+- **کیبورد:** `type`، `key` (یک کلید یا ترکیب کلیدی مانند `ctrl+s`، با `repeat` از ۱ تا ۱۰۰)، `hold_key` (تا ۳۰۰ ثانیه)
+- **زمان‌بندی:** `wait` (تا ۳۰۰ ثانیه)
 
-Every member is on by default. A `configs` map sets `enabled` and `defer_loading` per member, which is a least-privilege lever: turn off what your executor does not implement or the task does not need.
+هر عضو به‌طور پیش‌فرض روشن است. یک نگاشت `configs` مقادیر `enabled` و `defer_loading` را برای هر عضو تنظیم می‌کند که اهرمی برای اصل کمترین دسترسی (Least Privilege) است: هر عضوی را که اجراکننده شما پیاده‌سازی نکرده یا کار به آن نیازی ندارد خاموش کنید.
 
-### API Request and Response Shape
+### ساختار درخواست و پاسخ API
+
+<div dir="ltr">
 
 ```python
 import anthropic
@@ -175,39 +187,47 @@ response = client.messages.create(  # GA: no beta header
 )
 ```
 
-Claude's calls come back as `tool_use` blocks whose `name` is the member and which carry `"toolset_name": "computer"`:
+</div>
+
+فراخوانی‌های Claude به شکل بلوک‌های `tool_use` برمی‌گردند که `name` آن‌ها نام عضو است و دارای `"toolset_name": "computer"` هستند:
+
+<div dir="ltr">
 
 ```json
 {"type": "tool_use", "id": "toolu_01WkoTUvSHDzTBu2xnGk8Ep8", "name": "left_click",
  "toolset_name": "computer", "input": {"coordinate": [512, 742]}}
 ```
 
-Return one `tool_result` per call, all in the next user message, each echoing `"toolset_name": "computer"` (a result without it is rejected). Only `screenshot` and `zoom` need an image; a short `OK` is enough for the rest. In a batch, run the calls in order; if one fails, answer every later call with `is_error: true` and the text `Not executed: an earlier computer action in this turn failed.`
+</div>
 
-**Migration traps from the beta tool:**
-- On the Claude API and Google Cloud, the 5.5 models (Opus, Sonnet, and Haiku) return HTTP 400 for the older `computer_20251124` tool. Amazon Bedrock still accepts it for all three. The two forms cannot share a request.
-- The action moved from `input.action` to the block's `name`, so an executor written for the old tool needs a rewrite, not a type swap.
-- `display_width_px`, `display_height_px`, and `display_number` are rejected. Coordinates are in the pixel space of the screenshots you return, and the API does not downscale for you, so screenshots must already fit the model's image limits: 2576 px on the long edge for Opus 4.7 and later (every toolset model), 1568 px for earlier models.
-- Samples that target `claude-sonnet-4-20250514` or `claude-3-7-sonnet-20250219` point at retired models, and the `computer_20250124` version they use supports only Claude Sonnet 4.5, Haiku 4.5, and older models.
+به ازای هر فراخوانی، یک `tool_result` برگردانید؛ همگی در پیام بعدی کاربر و هر یک با تکرار `"toolset_name": "computer"` (نتیجه بدون آن رد می‌شود). فقط `screenshot` و `zoom` به تصویر نیاز دارند؛ یک `OK` کوتاه برای بقیه کافی است. در یک دسته، فراخوانی‌ها را به ترتیب اجرا کنید؛ اگر یکی شکست خورد، به تمام فراخوانی‌های بعدی با `is_error: true` و متن `Not executed: an earlier computer action in this turn failed.` پاسخ دهید.
 
-### The Browser Toolset
+**دام‌های مهاجرت از ابزار نسخه بتا:**
+- در API کلود (Claude API) و Google Cloud، مدل‌های نسخه ۵.۵ (Opus، Sonnet و Haiku) برای ابزار قدیمی‌تر `computer_20251124` خطای HTTP 400 برمی‌گردانند. Amazon Bedrock همچنان آن را برای هر سه مدل می‌پذیرد. این دو شکل نمی‌توانند در یک درخواست کنار هم باشند.
+- نوع اقدام از `input.action` به فیلد `name` بلوک منتقل شده است؛ بنابراین اجراکننده‌ای که برای ابزار قدیمی نوشته شده به بازنویسی نیاز دارد، نه صرفاً یک تغییر نوع داده.
+- پارامترهای `display_width_px`، `display_height_px` و `display_number` رد می‌شوند. مختصات در فضای پیکسلی اسکرین‌شات‌هایی است که خودتان برمی‌گردانید و API تصویر را برای شما کوچک‌سازی (Downscale) نمی‌کند؛ بنابراین اسکرین‌شات‌ها باید از پیش با محدودیت‌های تصویر مدل سازگار باشند: ۲۵۷۶ پیکسل در ضلع بلند برای Opus 4.7 و نسخه‌های بعدی (همه مدل‌های دارای toolset) و ۱۵۶۸ پیکسل برای مدل‌های قدیمی‌تر.
+- نمونه‌هایی که `claude-sonnet-4-20250514` یا `claude-3-7-sonnet-20250219` را هدف قرار می‌دهند به مدل‌های بازنشسته اشاره دارند و نسخه `computer_20250124` که به کار می‌برند فقط از Claude Sonnet 4.5، Haiku 4.5 و مدل‌های قدیمی‌تر پشتیبانی می‌کند.
 
-`browser_toolset_20260801` (August 19, 2026; Claude API and Google Cloud only, not Bedrock, Claude Platform on AWS, or Foundry) drives a browser your application hosts. It has 31 members: 27 on by default plus 4 opt-in (`javascript_exec`, `file_upload`, `read_console`, `read_network`). The important one is `read_page`, which returns the accessibility tree with element references such as `[ref_2]` (default depth 15, capped at 50,000 characters). Clicks, hovers, `scroll_to`, `form_input`, and `file_upload` can target a ref instead of a coordinate.
+### مجموعه‌ابزار مرورگر (Browser Toolset)
 
-- **Why refs matter:** a ref survives layout shifts, animations, and resolution changes that break pixel coordinates. Refs are scoped to a tab and go stale after navigation or a material DOM change, so re-read the page after either.
-- **Pixels remain available:** screenshot-and-click still works for canvas content and widgets with no accessible name.
-- **Other members:** `find`, `get_page_text`, `form_input`, tab management (new, list, switch, close), and a `browser_state` block that reports the tab inventory and state changes such as downloads.
-- **Built-in injection scanning:** Anthropic's classifiers scan returned page text and screenshots for prompt injection and steer the model to confirm that an instruction really came from the user (customers can opt out through support).
+مجموعه‌ابزار `browser_toolset_20260801` (۱۹ اوت ۲۰۲۶؛ فقط در Claude API و Google Cloud، و نه در Bedrock، پلتفرم Claude روی AWS یا Foundry) مرورگری را که برنامه شما میزبانی می‌کند هدایت می‌کند. این مجموعه‌ابزار ۳۱ عضو دارد: ۲۷ عضو به‌طور پیش‌فرض روشن و ۴ عضو انتخابی (`javascript_exec`، `file_upload`، `read_console`، `read_network`). عضو مهم آن `read_page` است که درخت دسترس‌پذیری را با ارجاع‌های عناصر مانند `[ref_2]` برمی‌گرداند (عمق پیش‌فرض ۱۵ و سقف ۵۰٬۰۰۰ کاراکتر). کلیک‌ها، شناورسازی‌ها (Hover)، `scroll_to`، `form_input` و `file_upload` می‌توانند به جای مختصات، یک ref را هدف قرار دهند.
 
-Anthropic's security guidance doubles as a least-privilege checklist: a fresh browser profile with no credentials, a network-layer domain allowlist that blocks loopback, link-local, and private ranges, http/https URLs only, and the four opt-in members left off unless the executor implements them and the task needs them.
+- **چرا ارجاع‌ها (Refs) مهم هستند:** یک ref در برابر جابه‌جایی چیدمان، انیمیشن‌ها و تغییرات وضوح که مختصات پیکسلی را خراب می‌کنند دوام می‌آورد. ارجاع‌ها به یک تب محدود هستند و پس از ناوبری (Navigation) یا تغییر اساسی DOM منقضی می‌شوند؛ بنابراین پس از هر کدام، صفحه را دوباره بخوانید.
+- **پیکسل‌ها همچنان در دسترس‌اند:** روش اسکرین‌شات و کلیک هنوز برای محتوای canvas و ویجت‌هایی که نام دسترس‌پذیر ندارند کار می‌کند.
+- **سایر اعضا:** ابزارهای `find`، `get_page_text`، `form_input`، مدیریت تب‌ها (جدید، فهرست، جابه‌جایی، بستن) و یک بلوک `browser_state` که فهرست تب‌ها و تغییرات وضعیت مانند دانلودها را گزارش می‌دهد.
+- **اسکن داخلی تزریق دستور (Injection):** طبقه‌بندهای Anthropic متن صفحه و اسکرین‌شات‌های بازگشتی را برای یافتن تزریق پرامپت (Prompt Injection) اسکن می‌کنند و مدل را هدایت می‌کنند تا مطمئن شود دستور واقعاً از سوی کاربر آمده است (مشتریان می‌توانند از طریق پشتیبانی این قابلیت را غیرفعال کنند).
+
+راهنمای امنیتی Anthropic در عین حال به عنوان یک چک‌لیست کمترین دسترسی عمل می‌کند: یک پروفایل تازه مرورگر بدون هیچ‌گونه اطلاعات ورود، یک فهرست مجاز دامنه در لایه شبکه که محدوده‌های loopback، link-local و خصوصی را مسدود می‌کند، فقط نشانی‌های http/https، و خاموش گذاشتن چهار عضو انتخابی مگر اینکه اجراکننده آن‌ها را پیاده‌سازی کرده و کار به آن‌ها نیاز داشته باشد.
 
 ---
 
-## Architecture: Sandboxed Environments
+## معماری: محیط‌های سندباکس‌شده <a id="architecture-sandboxed-environments"></a>
 
-Computer-use agents must run in isolated environments. The model has full control of mouse and keyboard, and you do not want that on your production workstation.
+ایجنت‌های استفاده از کامپیوتر باید در محیط‌های ایزوله اجرا شوند. مدل کنترل کامل ماوس و کیبورد را در اختیار دارد و شما قطعاً چنین چیزی را روی ایستگاه کاری محیط عملیاتی (Production) خود نمی‌خواهید.
 
-### Standard Architecture: Docker + VNC
+### معماری استاندارد: Docker + VNC
+
+<div dir="ltr">
 
 ```
 +-----------------------------------------------------+
@@ -231,122 +251,126 @@ Computer-use agents must run in isolated environments. The model has full contro
 +-----------------------------------------------------+
 ```
 
-### Managed Alternatives
+</div>
 
-You no longer have to run the display stack yourself:
+### جایگزین‌های مدیریت‌شده
 
-| Option | What you get | Tradeoff |
-|--------|--------------|----------|
-| E2B and similar sandbox services | Ephemeral VMs with browsers preinstalled, an API for screenshots and input, automatic cleanup | You still own the agent loop and the executor |
-| Gemini Enterprise Computer Use and Shell sandboxes (GA Sep 9, 2026) | VPC Service Controls, Private Service Connect ingress and egress, CMEK through Cloud KMS; idle sandboxes are descheduled with file-system state kept and resume in seconds | Tied to Google Cloud |
-| OpenAI Agents API hosted browser (beta, Sep 29, 2026) | OpenAI runs the browser and the loop; per-origin approvals; sign-in outside model input | US residency only and no ZDR in the beta; OpenAI advises restricting the browser, or using one you control, when you need guaranteed confirmation before consequential actions |
-| Cursor self-hosted machines (Sep 2, 2026) | Cloud coding agents, including computer use on Linux and Mac workers, run on machines or pools you own | Coding-agent context only |
+دیگر مجبور نیستید خودتان پشته نمایش را اجرا کنید:
 
-### Key Environment Components
+| گزینه | آنچه دریافت می‌کنید | بده‌بستان (Tradeoff) |
+|-------|---------------------|-----------------------|
+| سرویس E2B و خدمات سندباکس مشابه | ماشین‌های مجازی کوتاه‌عمر (Ephemeral) با مرورگرهای از پیش نصب‌شده، API برای اسکرین‌شات و ورودی، پاک‌سازی خودکار | مالکیت حلقه ایجنت و اجراکننده همچنان با شماست |
+| سندباکس‌های Gemini Enterprise Computer Use و Shell (دسترس‌پذیری عمومی ۹ سپتامبر ۲۰۲۶) | ابزارهای VPC Service Controls، ترافیک ورودی و خروجی Private Service Connect، کلیدهای CMEK از طریق Cloud KMS؛ سندباکس‌های بیکار با حفظ وضعیت فایل‌سیستم از زمان‌بندی خارج می‌شوند و در چند ثانیه از سر گرفته می‌شوند | وابسته به Google Cloud |
+| مرورگر میزبانی‌شده OpenAI Agents API (بتا، ۲۹ سپتامبر ۲۰۲۶) | شرکت OpenAI مرورگر و حلقه را اجرا می‌کند؛ تاییدیه‌های به ازای هر مبدأ؛ ورود به سیستم خارج از ورودی مدل | فقط اقامت داده در آمریکا و بدون ZDR در دوره بتا؛ OpenAI توصیه می‌کند وقتی به تاییدیه تضمینی پیش از اقدامات پیامددار نیاز دارید، مرورگر را محدود کنید یا از مرورگری تحت کنترل خودتان استفاده کنید |
+| ماشین‌های خودمیزبان Cursor (۲ سپتامبر ۲۰۲۶) | ایجنت‌های کدنویسی ابری، شامل استفاده از کامپیوتر روی کارگرهای (Workers) لینوکس و مک، روی ماشین‌ها یا استخرهای تحت مالکیت شما اجرا می‌شوند | فقط در بافت ایجنت کدنویسی |
 
-| Component | Purpose | Example |
-|-----------|---------|---------|
-| Xvfb | Virtual X11 display server | Creates a framebuffer without physical display |
-| Mutter/Xfwm | Window manager | Handles window positioning, resizing |
-| Tint2 | Task panel | Shows running applications |
-| xdotool | Input injection | Executes mouse/keyboard commands |
-| scrot/maim | Screenshot capture | Takes display snapshots as PNG |
+### اجزای کلیدی محیط
 
----
-
-## Browser vs Desktop Automation
-
-| Dimension | Browser-Only | Full Desktop |
-|-----------|-------------|--------------|
-| Scope | Web apps only | Any GUI application |
-| Setup complexity | Lower (headless browser) | Higher (full desktop env) |
-| Targeting | Accessibility-tree refs or DOM, pixels as fallback | Pixel coordinates, plus OS accessibility APIs where available |
-| Performance | Faster (smaller screenshots, text page reads) | Slower (full screen captures) |
-| Reliability | Higher (predictable layouts, stable refs) | Lower (OS variations) |
-| Use case | Web scraping, form filling | Legacy software, cross-app workflows |
-
-Browser automation controls a web browser (navigate, fill forms, click buttons, handle SPAs). Desktop automation controls the full OS environment (launch applications, use native dialogs, interact with thick-client software, chain operations across multiple apps).
-
-**Ref-based targeting is the reliability lever for web work.** Anthropic's browser toolset targets accessibility-tree refs first, and GitHub Copilot's computer use reads accessible app content alongside visual context. If an application exposes an accessibility tree, use it. Pure-pixel control is for canvases, remote desktops, and legacy thick clients.
+| جزء | هدف | مثال |
+|-----|-----|------|
+| سرور نمایش Xvfb | سرور نمایش مجازی X11 | یک بافر فریم بدون نمایشگر فیزیکی می‌سازد |
+| مدیر پنجره Mutter/Xfwm | مدیر پنجره (Window Manager) | موقعیت‌یابی و تغییر اندازه پنجره‌ها را مدیریت می‌کند |
+| نوار ابزار Tint2 | نوار وظیفه (Task Panel) | برنامه‌های در حال اجرا را نشان می‌دهد |
+| ابزار xdotool | تزریق ورودی | دستورات ماوس و کیبورد را اجرا می‌کند |
+| ابزارهای scrot/maim | ثبت اسکرین‌شات | تصویر نمایشگر را با فرمت PNG ثبت می‌کند |
 
 ---
 
-## Comparison with Traditional Automation
+## اتوماسیون مرورگر در برابر دسکتاپ <a id="browser-vs-desktop-automation"></a>
 
-Selenium, Playwright, and Puppeteer automate browsers via direct DOM access. Computer-use agents work with pixels. Both have a place in production.
+| بُعد | فقط مرورگر | دسکتاپ کامل |
+|------|------------|--------------|
+| دامنه | فقط برنامه‌های وب | هر برنامه با رابط گرافیکی (GUI) |
+| پیچیدگی راه‌اندازی | کمتر (مرورگر headless) | بیشتر (محیط کامل دسکتاپ) |
+| هدف‌گذاری | ارجاع‌های درخت دسترس‌پذیری یا DOM، و پیکسل به عنوان پشتیبان | مختصات پیکسلی، به علاوه APIهای دسترس‌پذیری سیستم‌عامل در صورت وجود |
+| کارایی | سریع‌تر (اسکرین‌شات‌های کوچک‌تر، خواندن متنی صفحه) | کندتر (ثبت کامل صفحه‌نمایش) |
+| قابلیت اطمینان | بالاتر (چیدمان‌های قابل‌پیش‌بینی، ارجاع‌های پایدار) | پایین‌تر (تفاوت‌های سیستم‌عامل) |
+| مورد استفاده | خزیدن وب (Web Scraping)، پر کردن فرم | نرم‌افزارهای موروثی (Legacy)، گردش‌کارهای بین‌برنامه‌ای |
 
-| Feature | Selenium/Playwright | Computer Use Agent |
-|---------|--------------------|--------------------|
-| Speed | Fast (direct DOM) | Slow (screenshot + LLM) |
-| Reliability | Brittle (selector changes) | Resilient (visual recognition) |
-| Maintenance | Constant selector updates | Minimal (adapts to UI changes) |
-| Anti-bot detection | Frequently blocked | Harder to detect |
-| Cost per action | ~$0.001 | ~$0.01-0.06 (Sonnet-class model; see [Cost Per Action](#cost-per-action)) |
-| Non-web support | No | Yes (any GUI) |
+اتوماسیون مرورگر یک مرورگر وب را کنترل می‌کند (ناوبری، پر کردن فرم‌ها، کلیک دکمه‌ها، مدیریت برنامه‌های تک‌صفحه‌ای یا SPA). اتوماسیون دسکتاپ کل محیط سیستم‌عامل را کنترل می‌کند (اجرای برنامه‌ها، استفاده از پنجره‌های محاوره‌ای بومی، تعامل با نرم‌افزارهای کلاینت ضخیم یا Thick-Client، زنجیره‌سازی عملیات بین چندین برنامه).
 
-**Hybrid approaches** work best in production: Playwright handles high-volume, well-defined flows (login, navigation) while computer-use agents handle dynamic, unpredictable steps (visual verification, novel layouts, anti-bot sites). The browser toolset narrows the gap from the other direction: the agent gets DOM-level targets without anyone maintaining selectors.
-
----
-
-## When Computer-Use Beats API Calls
-
-**Use computer use when:** no API exists (legacy systems), anti-bot protections block Selenium, visual judgment is required (chart verification, PDF layout), UIs change faster than selectors can be maintained, or the workflow spans multiple desktop applications.
-
-**Stick with APIs when:** a structured API is available (always prefer it), latency matters (sub-second), volume is high (thousands of actions/hour), or determinism is required (same input, same output).
+**هدف‌گذاری مبتنی بر ref اهرم قابلیت اطمینان برای کارهای وب است.** مجموعه‌ابزار مرورگر Anthropic ابتدا ارجاع‌های درخت دسترس‌پذیری را هدف می‌گیرد و قابلیت استفاده از کامپیوتر GitHub Copilot نیز محتوای دسترس‌پذیر برنامه را در کنار زمینه بصری می‌خواند. اگر برنامه‌ای درخت دسترس‌پذیری ارائه می‌دهد، از آن استفاده کنید. کنترل صرفاً پیکسلی برای بوم‌ها (Canvas)، دسکتاپ‌های از راه دور و کلاینت‌های ضخیم قدیمی است.
 
 ---
 
-## Error Handling and Recovery
+## مقایسه با اتوماسیون سنتی <a id="comparison-with-traditional-automation"></a>
 
-Computer-use agents fail differently from API-based tools. The main failure modes:
+ابزارهای Selenium، Playwright و Puppeteer مرورگرها را از طریق دسترسی مستقیم به DOM خودکارسازی می‌کنند. ایجنت‌های استفاده از کامپیوتر با پیکسل‌ها کار می‌کنند. هر دو جایگاه خود را در محیط عملیاتی دارند.
 
-### 1. Misclicks (Wrong Coordinates)
+| ویژگی | ابزارهای Selenium/Playwright | ایجنت استفاده از کامپیوتر |
+|-------|------------------------------|---------------------------|
+| سرعت | سریع (DOM مستقیم) | کند (اسکرین‌شات + LLM) |
+| قابلیت اطمینان | شکننده (تغییر انتخابگرها یا Selectorها) | تاب‌آور (تشخیص بصری) |
+| نگهداری | به‌روزرسانی مداوم انتخابگرها | حداقلی (با تغییرات رابط کاربری سازگار می‌شود) |
+| تشخیص ضدربات (Anti-bot) | مکرراً مسدود می‌شود | تشخیص آن دشوارتر است |
+| هزینه هر اقدام | حدود ۰.۰۰۱ دلار | حدود ۰.۰۱ تا ۰.۰۶ دلار (مدل رده Sonnet؛ بخش [هزینه هر اقدام](#cost-per-action) را ببینید) |
+| پشتیبانی غیر وب | ندارد | دارد (هر رابط گرافیکی) |
 
-The model calculates coordinates from the screenshot but may miss by a few pixels:
-- **Mitigation**: Capture a screenshot after consequential clicks to verify the expected state change. Use `zoom` to inspect dense UI before clicking, and target refs instead of pixels in browsers.
-- **Recovery**: If the wrong element was clicked, the model can reason about the new state and correct course.
-
-### 2. Stale Screenshots
-
-The screen may have changed between capture and action execution (animations, popups, loading):
-- **Mitigation**: Add a short wait before screenshots. Use the `wait` action when pages are loading. In browsers, re-read the page after navigation, because element refs go stale.
-- **Recovery**: Re-capture and re-assess before continuing.
-
-### 3. Infinite Loops
-
-The model repeats the same action without making progress:
-- **Mitigation**: Set a maximum iteration count sized to the task (around 50 actions for a form fill; OSWorld 2.0's hour-scale tasks use a 500-step budget) plus a spend cap enforced outside the agent.
-- **Recovery**: After N repeated identical actions, force a different approach or escalate to a human.
-
-### 4. Unexpected Dialogs
-
-Cookie banners, popups, permission dialogs appear unexpectedly:
-- **Mitigation**: Include instructions in the system prompt about handling common dialogs.
-- **Recovery**: The model's visual reasoning usually handles these naturally: it sees the dialog and dismisses it.
-
-### 5. Resolution and Scaling Mismatches
-
-Coordinates come back in the pixel space of the screenshot you sent. If the executor injects them into a display of a different size, every click lands in the wrong place:
-- **Mitigation**: Keep display scaling at 100% and send screenshots at a modest resolution (Anthropic's docs suggest 1024x768 or 1280x720 for desktop tasks, 1280x800 or 1366x768 for web apps, and nothing above 1920x1080). On macOS Retina displays, account for the 2x device pixel ratio.
-- **Recovery**: If you downscale screenshots to save tokens or fit the image limit, scale every returned coordinate back up before injecting input.
-
-### 6. Partial Batches
-
-A batch can fail midway, for example when a click lands on a modal that just opened:
-- **Mitigation**: Execute in order, stop at the first failure, return the halt text for the remaining calls, and capture a fresh screenshot.
-- **Recovery**: Let the model re-plan from the new screenshot. Never "finish" the remaining actions on your own; they were planned against a screen that no longer exists.
-
-### Error Handling Pattern
-
-The agent loop should track action history and detect repeats. If the same action is emitted 3+ times consecutively, inject a message telling the model to try a different approach. Always set a hard maximum iteration count and capture a verification screenshot after consequential actions to detect state changes. See the full agent loop in the Code Examples section below.
+**رویکردهای ترکیبی (Hybrid)** در محیط عملیاتی بهترین عملکرد را دارند: ابزار Playwright جریان‌های پرتکرار و خوش‌تعریف (ورود، ناوبری) را انجام می‌دهد، در حالی که ایجنت‌های استفاده از کامپیوتر گام‌های پویا و غیرقابل‌پیش‌بینی (راستی‌آزمایی بصری، چیدمان‌های جدید، سایت‌های ضدربات) را بر عهده می‌گیرند. مجموعه‌ابزار مرورگر این شکاف را از جهت دیگر کم می‌کند: ایجنت بدون اینکه کسی انتخابگرها را نگهداری کند، هدف‌هایی در سطح DOM دریافت می‌کند.
 
 ---
 
-## Performance: Latency, Cost, Throughput
+## چه زمانی استفاده از کامپیوتر بر فراخوانی API برتری دارد <a id="when-computer-use-beats-api-calls"></a>
 
-### Latency Breakdown
+**وقتی از استفاده از کامپیوتر بهره ببرید که:** هیچ APIای وجود نداشته باشد (سیستم‌های موروثی)، محافظت‌های ضدربات جلوی Selenium را بگیرند، قضاوت بصری لازم باشد (راستی‌آزمایی نمودار، چیدمان PDF)، رابط‌های کاربری سریع‌تر از سرعت نگهداری انتخابگرها تغییر کنند، یا گردش‌کار چندین برنامه دسکتاپ را دربر بگیرد.
 
-Each iteration of the agent loop involves:
+**وقتی به APIها پایبند بمانید که:** یک API ساختاریافته در دسترس باشد (همیشه آن را ترجیح دهید)، تاخیر (Latency) اهمیت داشته باشد (زیر یک ثانیه)، حجم بالا باشد (هزاران اقدام در ساعت)، یا قطعیت (Determinism) نیاز باشد (ورودی یکسان، خروجی یکسان).
+
+---
+
+## مدیریت خطا و بازیابی <a id="error-handling-and-recovery"></a>
+
+ایجنت‌های استفاده از کامپیوتر متفاوت از ابزارهای مبتنی بر API شکست می‌خورند. حالت‌های اصلی شکست عبارت‌اند از:
+
+### ۱. کلیک‌های اشتباه (مختصات نادرست)
+
+مدل مختصات را از روی اسکرین‌شات محاسبه می‌کند اما ممکن است چند پیکسل خطا برود:
+- **کاهش ریسک:** پس از کلیک‌های پیامددار اسکرین‌شات بگیرید تا تغییر وضعیت مورد انتظار را تایید کنید. پیش از کلیک روی رابط‌های متراکم، از `zoom` برای بازرسی استفاده کنید و در مرورگرها به جای پیکسل‌ها، refها را هدف قرار دهید.
+- **بازیابی:** اگر روی عنصر اشتباهی کلیک شده باشد، مدل می‌تواند درباره وضعیت جدید استدلال کند و مسیر را اصلاح کند.
+
+### ۲. اسکرین‌شات‌های کهنه (Stale)
+
+ممکن است صفحه‌نمایش بین زمان ثبت تصویر و اجرای اقدام تغییر کرده باشد (انیمیشن‌ها، پنجره‌های بازشو، بارگذاری):
+- **کاهش ریسک:** پیش از گرفتن اسکرین‌شات مکث کوتاهی اضافه کنید. هنگام بارگذاری صفحات از اقدام `wait` استفاده کنید. در مرورگرها، پس از ناوبری صفحه را دوباره بخوانید، زیرا ارجاع‌های عناصر منقضی می‌شوند.
+- **بازیابی:** پیش از ادامه، دوباره تصویربرداری و ارزیابی کنید.
+
+### ۳. حلقه‌های بی‌نهایت
+
+مدل همان اقدام را بدون هیچ پیشرفتی تکرار می‌کند:
+- **کاهش ریسک:** یک سقف حداکثر تکرار متناسب با کار تنظیم کنید (حدود ۵۰ اقدام برای پر کردن یک فرم؛ کارهای در مقیاس ساعتی OSWorld 2.0 از بودجه ۵۰۰ گامی استفاده می‌کنند) به علاوه یک سقف هزینه که بیرون از ایجنت اعمال می‌شود.
+- **بازیابی:** پس از N اقدام یکسان و تکراری، رویکرد متفاوتی را اجبار کنید یا کار را به انسان ارجاع دهید.
+
+### ۴. پنجره‌های محاوره‌ای غیرمنتظره
+
+بنرهای کوکی، پنجره‌های بازشو (Popup) و پنجره‌های درخواست مجوز به‌طور غیرمنتظره ظاهر می‌شوند:
+- **کاهش ریسک:** دستورالعمل‌هایی برای نحوه برخورد با پنجره‌های محاوره‌ای رایج در Prompt سیستم بگنجانید.
+- **بازیابی:** استدلال بصری مدل معمولاً این موارد را به‌طور طبیعی مدیریت می‌کند: پنجره را می‌بیند و آن را می‌بندد.
+
+### ۵. ناهماهنگی وضوح و مقیاس‌گذاری
+
+مختصات در فضای پیکسلی همان اسکرین‌شاتی برمی‌گردند که ارسال کرده‌اید. اگر اجراکننده آن‌ها را به نمایشگری با اندازه متفاوت تزریق کند، هر کلیک در جای اشتباهی فرود می‌آید:
+- **کاهش ریسک:** مقیاس نمایشگر را روی ۱۰۰٪ نگه دارید و اسکرین‌شات‌ها را با وضوح متعادلی ارسال کنید (مستندات Anthropic برای کارهای دسکتاپ ۱۰۲۴×۷۶۸ یا ۱۲۸۰×۷۲۰، برای برنامه‌های وب ۱۲۸۰×۸۰۰ یا ۱۳۶۶×۷۶۸ و هیچ‌چیز بالاتر از ۱۹۲۰×۱۰۸۰ را پیشنهاد می‌کند). در نمایشگرهای Retina مک‌اواس، ضریب پیکسل دستگاه ۲ برابری را لحاظ کنید.
+- **بازیابی:** اگر برای صرفه‌جویی در واحدهای Token یا سازگاری با محدودیت تصویر، اسکرین‌شات‌ها را کوچک‌سازی می‌کنید، پیش از تزریق ورودی، هر مختصات بازگشتی را دوباره به مقیاس اصلی بزرگ کنید.
+
+### ۶. دسته‌های ناقص (Partial Batches)
+
+یک دسته ممکن است در میانه راه شکست بخورد؛ برای مثال وقتی کلیکی روی یک پنجره مودال که به تازگی باز شده فرود می‌آید:
+- **کاهش ریسک:** به ترتیب اجرا کنید، در اولین شکست متوقف شوید، متن توقف را برای فراخوانی‌های باقی‌مانده برگردانید و یک اسکرین‌شات تازه بگیرید.
+- **بازیابی:** اجازه دهید مدل از روی اسکرین‌شات جدید دوباره برنامه‌ریزی کند. هرگز بقیه اقدامات را خودتان «تمام» نکنید؛ آن‌ها برای صفحه‌نمایشی برنامه‌ریزی شده بودند که دیگر وجود ندارد.
+
+### الگوی مدیریت خطا
+
+حلقه ایجنت باید تاریخچه اقدامات را ردیابی و تکرارها را شناسایی کند. اگر یک اقدام واحد ۳ بار یا بیشتر پشت سر هم صادر شد، پیامی تزریق کنید که به مدل بگوید رویکرد متفاوتی را امتحان کند. همیشه یک سقف سخت برای حداکثر تکرار تنظیم کنید و پس از اقدامات پیامددار برای تشخیص تغییرات وضعیت، اسکرین‌شات تایید بگیرید. حلقه کامل ایجنت را در بخش نمونه کدها در ادامه ببینید.
+
+---
+
+## کارایی: تاخیر، هزینه و توان عملیاتی <a id="performance-latency-cost-throughput"></a>
+
+### تفکیک تاخیر (Latency)
+
+هر تکرار از حلقه ایجنت شامل مراحل زیر است:
+
+<div dir="ltr">
 
 ```
 Screenshot capture:     ~100ms
@@ -357,91 +381,95 @@ Action execution:        ~100ms
 Total per model turn:    ~2.5-5.5s  (a batch of several actions shares one turn)
 ```
 
-A typical 10-step task takes 25-55 seconds without batching. Compare this to Playwright, which completes the same 10 steps in under 2 seconds. Long-horizon tasks are a different regime: OpenAI reports GPT-6 Astra averaging about 40 minutes per task on its OSWorld 2.0 offline set, against about 75 minutes for GPT-5.6 Sol (vendor-reported).
+</div>
 
-### Cost Per Action
+یک کار معمولی ۱۰ مرحله‌ای بدون دسته‌بندی (Batching) حدود ۲۵ تا ۵۵ ثانیه زمان می‌برد. این را با Playwright مقایسه کنید که همان ۱۰ گام را در کمتر از ۲ ثانیه به پایان می‌رساند. کارهای بلندمدت (Long-horizon) رژیم متفاوتی دارند: OpenAI گزارش می‌دهد مدل GPT-6 Astra روی مجموعه آفلاین OSWorld 2.0 به‌طور میانگین حدود ۴۰ دقیقه برای هر کار زمان می‌برد، در برابر حدود ۷۵ دقیقه برای GPT-5.6 Sol (گزارش‌شده توسط ارائه‌دهنده).
 
-Each action sends a new screenshot (Anthropic's docs estimate roughly 1,000 to 1,800 input tokens each) plus the accumulated history, so computer use is input-dominated and the cached-input price matters more than the output price. Declaring the computer toolset itself adds about 4,500 input tokens per request (disabling `zoom` saves about 410), a fixed prefix that caching absorbs.
+### هزینه هر اقدام <a id="cost-per-action"></a>
 
-The estimates below assume about 25K tokens of prior context per step, 1.5K new screenshot tokens, and 400 output tokens including thinking, at list prices:
+هر اقدام یک اسکرین‌شات جدید (مستندات Anthropic حدود ۱٬۰۰۰ تا ۱٬۸۰۰ واحد Token ورودی برای هر تصویر برآورد می‌کند) به علاوه تاریخچه انباشته‌شده ارسال می‌کند؛ بنابراین استفاده از کامپیوتر ورودی‌محور است و قیمت ورودی کش‌شده (Cached Input) بیش از قیمت خروجی اهمیت دارد. تعریف خود مجموعه‌ابزار کامپیوتر به تنهایی حدود ۴٬۵۰۰ واحد Token ورودی به هر درخواست اضافه می‌کند (غیرفعال کردن `zoom` حدود ۴۱۰ واحد صرفه‌جویی می‌کند) که یک پیشوند ثابت است و کشینگ آن را جذب می‌کند.
 
-| Model | List price per 1M (input / output / cache read) | Per action, warm cache | Per action, no cache |
-|-------|-------------------------------------------------|------------------------|----------------------|
-| Claude Haiku 5.5 (prompts up to 100K tokens) | $0.10 / $0.50 / $0.01 | ~$0.001 | ~$0.003 |
-| Claude Sonnet 5.5 | $2 / $10 / $0.10 | ~$0.01 | ~$0.06 |
-| Claude Opus 5.5 | $4 / $20 / $0.20 | ~$0.02 | ~$0.11 |
+برآوردهای زیر حدود ۲۵ هزار واحد Token زمینه قبلی در هر گام، ۱.۵ هزار واحد Token اسکرین‌شات جدید و ۴۰۰ واحد Token خروجی شامل تفکر (Thinking) را با قیمت‌های فهرست (List Prices) فرض می‌کنند:
 
-A 20-step workflow costs roughly $0.20 to $1.15 on Sonnet 5.5, or $0.40 to $2.30 on Opus 5.5, depending mostly on cache hit rate. Haiku 5.5 is an order of magnitude cheaper again, but its price applies only while the whole prompt, cache reads and writes included, stays at or under 100,000 tokens. A long session that crosses that line bills every request at $0.50/$2.50, so trim history on Haiku before it gets there, and weigh the capability gap: Anthropic reports 72.4% for Haiku 5.5 on its OSWorld 2.1 offline subset (partial credit, vendor-reported). For comparison, GPT-6 Astra lists at $10/$50 per 1M ($1 cached input), 2.5x Opus 5.5's list price, GPT-6.1 Terra at $1/$5 ($0.05 cached; above 272K input the whole request bills $2/$7.50), and Gemini 3.8 Flash at an introductory $0.75/$3.75 through December 31, 2026 ($1.50/$7.50 from January 1, 2027). Image token counts differ by vendor, so measure per-action cost on your own screenshots rather than porting these estimates.
+| مدل | قیمت فهرست به ازای هر ۱ میلیون توکن (ورودی / خروجی / خواندن از کش) | به ازای هر اقدام، کش گرم | به ازای هر اقدام، بدون کش |
+|-----|------------------------------------------------------------------|--------------------------|---------------------------|
+| مدل Claude Haiku 5.5 (پرامپت‌های تا ۱۰۰ هزار توکن) | ۰.۱۰ / ۰.۵۰ / ۰.۰۱ دلار | حدود ۰.۰۰۱ دلار | حدود ۰.۰۰۳ دلار |
+| مدل Claude Sonnet 5.5 | ۲ / ۱۰ / ۰.۱۰ دلار | حدود ۰.۰۱ دلار | حدود ۰.۰۶ دلار |
+| مدل Claude Opus 5.5 | ۴ / ۲۰ / ۰.۲۰ دلار | حدود ۰.۰۲ دلار | حدود ۰.۱۱ دلار |
 
-Effort is the other cost knob: Opus 5.5 defaults to `medium` effort and Sonnet 5.5 to `high`, and thinking tokens bill as output.
+یک گردش‌کار ۲۰ مرحله‌ای روی Sonnet 5.5 حدود ۰.۲۰ تا ۱.۱۵ دلار، یا روی Opus 5.5 حدود ۰.۴۰ تا ۲.۳۰ دلار هزینه دارد که عمدتاً به نرخ اصابت کش (Cache Hit Rate) بستگی دارد. Haiku 5.5 یک مرتبه بزرگی ارزان‌تر است، اما قیمت آن فقط تا زمانی اعمال می‌شود که کل Prompt — شامل خواندن و نوشتن‌های کش — در حد ۱۰۰٬۰۰۰ واحد Token یا کمتر باقی بماند. نشست طولانی‌ای که از این خط عبور کند، تمام درخواست را با نرخ ۰.۵۰ / ۲.۵۰ دلار محاسبه می‌کند؛ بنابراین تاریخچه را در Haiku پیش از رسیدن به آنجا هرس کنید و شکاف توانمندی را بسنجید: Anthropic برای Haiku 5.5 امتیاز ۷۲.۴٪ را روی زیرمجموعه آفلاین OSWorld 2.1 گزارش می‌دهد (امتیازدهی جزئی یا Partial Credit، گزارش‌شده توسط ارائه‌دهنده). برای مقایسه، قیمت فهرست GPT-6 Astra برابر ۱۰ / ۵۰ دلار به ازای هر ۱ میلیون توکن (۱ دلار ورودی کش‌شده) یعنی ۲.۵ برابر قیمت فهرست Opus 5.5 است، GPT-6.1 Terra برابر ۱ / ۵ دلار (۰.۰۵ دلار کش‌شده؛ بالای ۲۷۲ هزار ورودی کل درخواست ۲ / ۷.۵۰ دلار محاسبه می‌شود) و Gemini 3.8 Flash با قیمت معرفی ۰.۷۵ / ۳.۷۵ دلار تا ۳۱ دسامبر ۲۰۲۶ (و ۱.۵۰ / ۷.۵۰ دلار از ۱ ژانویه ۲۰۲۷) عرضه می‌شود. شمارش واحدهای Token تصویر در هر ارائه‌دهنده متفاوت است، بنابراین هزینه به ازای هر اقدام را به جای انتقال این برآوردها، روی اسکرین‌شات‌های خودتان اندازه‌گیری کنید.
 
-### Throughput Optimization
+سطح تلاش (Effort) اهرم هزینه دیگر است: Opus 5.5 به‌طور پیش‌فرض روی تلاش `medium` و Sonnet 5.5 روی `high` قرار دارد و واحدهای Token تفکر به عنوان خروجی صورت‌حساب می‌شوند.
 
-- **Parallel sessions**: Run multiple sandboxes for concurrent tasks.
-- **Batch actions**: Let the model chain predictable steps (click, type, Return) in one round trip, with the confirmation check applied to every action before it runs.
-- **Prompt caching**: Keep the system prompt and tool list stable so history reads hit the cache.
-- **Selective screenshots**: Only capture after uncertain actions; skip after typing text.
-- **Resolution reduction**: Use 1024x768 instead of 1920x1080 to reduce token cost, and keep each side at 2000 px or less, because a request carrying more than 20 images is held to a stricter per-side limit.
-- **Server-side pruning**: Drop old screenshots with the API's server-side tool-result clearing (context editing) rather than rewriting history in the client. On Fable 5.1, Opus 5.5, Sonnet 5.5, and Haiku 5.5, removing an earlier screenshot client-side changes the prefix that every later thinking block is bound to. For accounts created on or after August 31, 2026 (and older accounts that opt in), the request returns 400. With the `thinking-binding-controls-2026-08-01` beta header and `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`, those blocks are dropped instead.
-- **Early termination**: Teach the model to signal completion as soon as the goal is verified.
+### بهینه‌سازی توان عملیاتی (Throughput)
 
----
-
-## Benchmarks: Reading the Numbers
-
-Quoted computer-use scores swing by 30 points or more depending on the benchmark version, the metric, the effort level, and who ran the test. Ask for all four.
-
-| Benchmark | Status | What it measures |
-|-----------|--------|------------------|
-| OSWorld-Verified | Saturated: self-reported leaders sit in the mid-80s | Short, single-session desktop tasks |
-| OSWorld 2.0 / 2.1 (XLANG Lab, June 2026, arXiv 2606.29537) | The current long-horizon yardstick | 108 tasks across 31 self-hosted websites and desktop apps; a median of about 1.6 skilled-human hours per task; about 27 scoring checkpoints per task; a 500-step budget. **Binary completion is the primary metric**; partial credit is reported alongside |
-
-Where the numbers stand:
-- **Official leaderboard (XLANG, September 17, 2026 update):** Claude Opus 5 at max effort with batched tools scored 44.33% binary and 77.67% partial on the v2.1 full set. Hour-scale binary completion was still under 50%.
-- **Vendor-reported, partial credit only:** Anthropic reports Opus 5.5 at 81.8% and Sonnet 5.5 at 80.1% on "OSWorld 2.1" and gives no binary figure; its own run puts Opus 5 at 74.0%, which matches no leaderboard row. Its Haiku 5.5 launch (October 7) reports 72.4% on an "OSWorld 2.1 (offline subset)", a smaller task set, so do not line that number up against the launch figures for the larger models. OpenAI reports GPT-6 Astra at 72.6% against 65.7% for GPT-5.6 Sol on its offline v2026.08.08 set.
-- **Paper baseline (June 2026):** Claude Opus 4.8 at max thinking scored 20.6% binary and 54.8% partial.
-
-Snorkel AI's analysis of OSWorld 2.0 runs names four failure modes, and each maps to a control you can build: agents rarely ask to clarify missing information (give them a clarification tool), they misperceive unfamiliar apps (add app-specific instructions), they submit prematurely or refuse to backtrack (add a verification step before submit), and they lose track over roughly 300-step trajectories (keep task state outside the context window).
-
-Plan capacity on binary completion: a workflow that hits 80% of its checkpoints has still not finished the job. And re-run your own evals when a vendor changes serving, not only when the model ID changes. On September 25, 2026, OpenAI fixed an image-encoding bug that had degraded image understanding, including computer use, in GPT-6 Sol and Luna under unchanged model IDs, and told customers to rerun image evaluations.
+- **نشست‌های موازی:** چندین سندباکس را برای کارهای هم‌زمان اجرا کنید.
+- **اقدامات دسته‌ای:** به مدل اجازه دهید گام‌های قابل‌پیش‌بینی (کلیک، تایپ، Return) را در یک رفت‌وبرگشت زنجیره‌سازی کند، در حالی که بررسی تاییدیه پیش از اجرای هر اقدام اعمال می‌شود.
+- **کش کردن پرامپت (Prompt Caching):** پرامپت سیستم و فهرست ابزارها را پایدار نگه دارید تا خواندن‌های تاریخچه به کش اصابت کنند.
+- **اسکرین‌شات‌های گزینشی:** فقط پس از اقدامات نامطمئن تصویر بگیرید؛ پس از تایپ متن از آن صرف‌نظر کنید.
+- **کاهش وضوح:** برای کاهش هزینه Token از ۱۰۲۴×۷۶۸ به جای ۱۹۲۰×۱۰۸۰ استفاده کنید و هر ضلع را در ۲۰۰۰ پیکسل یا کمتر نگه دارید، زیرا درخواستی که بیش از ۲۰ تصویر حمل کند مشمول محدودیت سخت‌گیرانه‌تری برای هر ضلع می‌شود.
+- **هرس سمت سرور (Server-Side Pruning):** به جای بازنویسی تاریخچه در کلاینت، اسکرین‌شات‌های قدیمی را با قابلیت پاک‌سازی نتایج ابزار سمت سرور در API (ویرایش زمینه یا Context Editing) حذف کنید. در مدل‌های Fable 5.1، Opus 5.5، Sonnet 5.5 و Haiku 5.5، حذف یک اسکرین‌شات قبلی در سمت کلاینت، پیشوندی را که هر بلوک تفکر بعدی به آن متصل (Bind) است تغییر می‌دهد. برای حساب‌های ساخته‌شده در ۳۱ اوت ۲۰۲۶ یا پس از آن (و حساب‌های قدیمی‌تر که فعال کرده باشند)، درخواست کد ۴۰۰ برمی‌گرداند. با هدر بتای `thinking-binding-controls-2026-08-01` و تنظیم `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`، آن بلوک‌ها به جای خطا کنار گذاشته می‌شوند.
+- **خاتمه زودهنگام:** به مدل بیاموزید به محض تایید هدف، اتمام کار را اعلام کند.
 
 ---
 
-## Real-World Applications
+## بنچمارک‌ها: خواندن و تفسیر اعداد <a id="benchmarks-reading-the-numbers"></a>
 
-| Application | How It Works | Why Computer Use |
-|------------|--------------|------------------|
-| Legacy system integration | Agent navigates mainframe/thick-client UI, extracts data to structured format | No API exists for legacy software |
-| Form filling / data entry | Reads source documents, fills web forms field by field, handles multi-page wizards | Government portals, insurance claims with complex conditional logic |
-| QA and visual testing | Navigates app as a user, verifies visual rendering, reports issues in natural language | Goes beyond pixel-diff: understands layout and UX |
-| Visual proof for code changes | Coding agents run the app, screenshot the change, and attach it to the pull request | Reviewers see the UI without checking out the branch (see PixelLeak below for how this goes wrong) |
-| Competitive intelligence | Navigates product pages, captures pricing data from JS-rendered widgets | Works on sites that block traditional scrapers |
-| Persistent personal and workplace agents | An always-on agent with its own cloud computer works across apps between requests (OpenAI dots, Meta Muse, Copilot Autopilot, Claude Duet) | Most of the apps it touches have no agent API; see [Use Cases and Case Studies](06-use-cases-and-case-studies.md) |
+امتیازهای اعلام‌شده برای استفاده از کامپیوتر بسته به نسخه بنچمارک، معیار، سطح تلاش و کسی که آزمون را اجرا کرده است، ۳۰ امتیاز یا بیشتر نوسان دارند. هر چهار مورد را بپرسید.
 
----
+| بنچمارک | وضعیت | چه چیزی را می‌سنجد |
+|---------|-------|--------------------|
+| بنچمارک OSWorld-Verified | اشباع‌شده: پیشتازان خودگزارش‌دهنده در محدوده میانی ۸۰ درصد قرار دارند | کارهای کوتاه تک‌نشستی دسکتاپ |
+| بنچمارک OSWorld 2.0 / 2.1 (آزمایشگاه XLANG Lab، ژوئن ۲۰۲۶، arXiv 2606.29537) | معیار کنونی بلندمدت | ۱۰۸ کار در ۳۱ وب‌سایت و برنامه دسکتاپ خودمیزبان؛ میانه زمانی حدود ۱.۶ ساعت نیروی انسانی ماهر برای هر کار؛ حدود ۲۷ ایستگاه امتیازدهی (Checkpoint) در هر کار؛ بودجه ۵۰۰ گامی. **تکمیل دودویی (Binary Completion) معیار اصلی است**؛ امتیازدهی جزئی نیز در کنار آن گزارش می‌شود |
 
-## Security Considerations
+وضعیت فعلی اعداد:
+- **جدول رده‌بندی رسمی (به‌روزرسانی ۱۷ سپتامبر ۲۰۲۶ آزمایشگاه XLANG):** مدل Claude Opus 5 در حداکثر تلاش با ابزارهای دسته‌ای، امتیاز ۴۴.۳۳٪ دودویی و ۷۷.۶۷٪ جزئی را روی مجموعه کامل v2.1 کسب کرد. نرخ تکمیل دودویی در مقیاس ساعتی هنوز زیر ۵۰٪ بود.
+- **گزارش‌شده توسط ارائه‌دهنده، فقط امتیازدهی جزئی:** شرکت Anthropic امتیاز Opus 5.5 را ۸۱.۸٪ و Sonnet 5.5 را ۸۰.۱٪ روی «OSWorld 2.1» گزارش می‌کند و هیچ عدد دودویی ارائه نمی‌دهد؛ اجرای خود این شرکت برای Opus 5 عدد ۷۴.۰٪ را ثبت کرده که با هیچ ردیفی در جدول رده‌بندی تطابق ندارد. پست معرفی Haiku 5.5 (۷ اکتبر) امتیاز ۷۲.۴٪ را روی «OSWorld 2.1 (زیرمجموعه آفلاین)» گزارش می‌دهد که یک مجموعه کار کوچک‌تر است، پس آن عدد را در کنار ارقام معرفی مدل‌های بزرگ‌تر قرار ندهید. OpenAI امتیاز GPT-6 Astra را ۷۲.۶٪ در برابر ۶۵.۷٪ برای GPT-5.6 Sol روی مجموعه آفلاین v2026.08.08 خود گزارش می‌کند.
+- **خط مبنای مقاله (ژوئن ۲۰۲۶):** مدل Claude Opus 4.8 در حداکثر تفکر امتیاز ۲۰.۶٪ دودویی و ۵۴.۸٪ جزئی کسب کرد.
 
-| Risk | What Happens | Mitigation |
-|------|-------------|------------|
-| **Visible secrets** | Model sees passwords, sessions, notifications in screenshots | Ephemeral containers, a fresh browser profile with no saved credentials, sign-in through a channel the model cannot read (OpenAI's Agents API takes credentials through a separate sign-in UI) |
-| **Unrestricted actions** | Agent can run shell commands, navigate anywhere, download files | Firewall rules, read-only FS, session time limits, toolset members the task does not need turned off, HITL before any consequential action (checked per action, including mid-batch) |
-| **Data exfiltration** | Screenshots sent to the LLM provider contain sensitive data | On-premise deployment for regulated industries, mask sensitive UI fields |
-| **Screenshot leakage** | Agents publish screenshots through channels nobody forbade. PixelLeak (Glow Security, September 29, 2026) found 13,000+ internal screenshots in 900+ public repositories after coding agents told to attach visual proof to private pull requests created public repos to host them | Destination policy at the action level: block or flag new public repos, pushes to personal accounts and gists, and visibility changes |
-| **Prompt injection via UI** | Malicious site displays text to manipulate the agent | Vendor scanning where offered (automatic on Anthropic's browser toolset; opt-in, off by default, on Gemini computer use), confirmation gates the injected text cannot satisfy, and a network allowlist. System-prompt warnings alone are not a control |
-| **Internal network reach** | Agent browses to loopback, cloud metadata, or private services | Network-layer domain allowlist that blocks loopback, link-local, and private ranges; http/https only |
+تحلیل Snorkel AI از اجراهای OSWorld 2.0 چهار حالت شکست را نام می‌برد و هر کدام به یک کنترل قابل ساخت توسط شما نگاشت می‌شود: ایجنت‌ها به ندرت برای روشن کردن اطلاعات گمشده پرس‌وجو می‌کنند (یک ابزار شفاف‌سازی در اختیارشان بگذارید)، برنامه‌های ناآشنا را بد درک می‌کنند (دستورالعمل‌های اختصاصی برنامه اضافه کنید)، پیش از موعد ارسال می‌کنند یا از عقب‌گرد خودداری می‌ورزند (یک گام راستی‌آزمایی پیش از ارسال اضافه کنید)، و در مسیرهای حدود ۳۰۰ گامی رشته کار را گم می‌کنند (وضعیت کار را بیرون از پنجره زمینه یا Context Window نگه دارید).
 
-Gemini's safety service doubles as a ready-made risk taxonomy for your own confirmation gate: it flags financial transactions, sensitive data modification, communication tools, account creation, data modification, user consent management, and legal terms and agreements.
-
-Routing a computer-use agent to a cheaper model changes its injection exposure, not just its cost. Anthropic's Haiku 5.5 system card reports a Gray Swan prompt-injection attack success rate within 15 attempts of 7.1% overall but 24.4% on GUI computer use (vendor-reported). The GUI surface is the weakest one, so a model-routing change on a computer-use workload should trigger a security review, not only a cost review.
-
-The cardinal rule: **never run computer-use agents on your production workstation or with access to real credentials unless in a fully sandboxed container**. For the full defense-in-depth design, see [Safety and Governance](07-safety-and-governance.md).
+برنامه‌ریزی ظرفیت را بر پایه تکمیل دودویی انجام دهید: گردش‌کاری که ۸۰٪ ایستگاه‌های امتیازدهی خود را پاس کند هنوز کار را تمام نکرده است. و ارزیابی‌های خودتان را زمانی که ارائه‌دهنده سرویس‌دهی را تغییر می‌دهد نیز دوباره اجرا کنید، نه فقط وقتی شناسه مدل تغییر می‌کند. در ۲۵ سپتامبر ۲۰۲۶، OpenAI یک باگ رمزگذاری تصویر را برطرف کرد که درک تصویر، از جمله استفاده از کامپیوتر، را در GPT-6 Sol و Luna تحت شناسه‌های مدل بدون تغییر تضعیف کرده بود و از مشتریان خواست ارزیابی‌های تصویری را دوباره اجرا کنند.
 
 ---
 
-## Code Examples
+## کاربردهای دنیای واقعی <a id="real-world-applications"></a>
 
-### Minimal Agent Loop
+| کاربرد | نحوه عملکرد | چرا استفاده از کامپیوتر |
+|--------|-------------|-------------------------|
+| یکپارچه‌سازی سیستم‌های موروثی | ایجنت در رابط کاربری مین‌فریم یا کلاینت ضخیم پیمایش می‌کند و داده‌ها را در قالب ساختاریافته استخراج می‌کند | هیچ APIای برای نرم‌افزارهای قدیمی وجود ندارد |
+| پر کردن فرم / ورود داده | اسناد منبع را می‌خواند، فرم‌های وب را فیلد به فیلد پر می‌کند و ویزاردهای چندصفحه‌ای را مدیریت می‌کند | پورتال‌های دولتی و پرونده‌های خسارت بیمه با منطق شرطی پیچیده |
+| تضمین کیفیت (QA) و آزمون بصری | مانند یک کاربر در برنامه پیمایش می‌کند، رندر بصری را تایید می‌کند و اشکالات را به زبان طبیعی گزارش می‌دهد | فراتر از مقایسه پیکسلی می‌رود: چیدمان و تجربه کاربری (UX) را درک می‌کند |
+| مدرک بصری برای تغییرات کد | ایجنت‌های کدنویسی برنامه را اجرا می‌کنند، از تغییر اسکرین‌شات می‌گیرند و آن را به درخواست ادغام (Pull Request) پیوست می‌کنند | بازبین‌ها بدون نیاز به checkout شاخه، رابط کاربری را می‌بینند (مورد PixelLeak در ادامه را برای نحوه شکست این کار ببینید) |
+| هوش رقابتی (Competitive Intelligence) | صفحات محصول را پیمایش می‌کند و داده‌های قیمت‌گذاری را از ویجت‌های رندرشده با JS ثبت می‌کند | روی سایت‌هایی که خزنده‌های سنتی را مسدود می‌کنند کار می‌کند |
+| ایجنت‌های ماندگار شخصی و محیط کار | یک ایجنت همیشه روشن با کامپیوتر ابری خودش بین درخواست‌ها در میان برنامه‌ها کار می‌کند (OpenAI dots، Meta Muse، Copilot Autopilot، Claude Duet) | بیشتر برنامه‌هایی که با آن‌ها سر و کار دارد API ایجنت ندارند؛ بخش [موارد استفاده و مطالعات موردی](06-use-cases-and-case-studies.md) را ببینید |
+
+---
+
+## ملاحظات امنیتی <a id="security-considerations"></a>
+
+| ریسک | چه اتفاقی می‌افتد | راهکار کاهش ریسک |
+|------|--------------------|------------------|
+| **اسرار قابل مشاهده** | مدل رمزهای عبور، نشست‌ها و اعلان‌ها را در اسکرین‌شات‌ها می‌بیند | کانتینرهای کوتاه‌عمر، پروفایل تازه مرورگر بدون اطلاعات ورود ذخیره‌شده، ورود از طریق کانالی که مدل نتواند بخواند (Agents API شرکت OpenAI اطلاعات ورود را از طریق یک رابط ورود جداگانه دریافت می‌کند) |
+| **اقدامات نامحدود** | ایجنت می‌تواند دستورات شل اجرا کند، به هر جایی برود و فایل دانلود کند | قوانین فایروال، فایل‌سیستم فقط‌خواندنی، محدودیت زمانی نشست، خاموش کردن اعضای مجموعه‌ابزار که کار به آن‌ها نیاز ندارد، نظارت انسانی (HITL) پیش از هر اقدام پیامددار (بررسی برای تک‌تک اقدامات، از جمله در میانه دسته) |
+| **نشت داده (Exfiltration)** | اسکرین‌شات‌های ارسال‌شده به ارائه‌دهنده LLM حاوی داده‌های حساس هستند | استقرار درون‌سازمانی (On-premise) برای صنایع تحت نظارت، پوشاندن فیلدهای حساس رابط کاربری |
+| **نشت اسکرین‌شات** | ایجنت‌ها اسکرین‌شات‌ها را از طریق کانال‌هایی منتشر می‌کنند که کسی ممنوع نکرده است. پژوهش PixelLeak (شرکت Glow Security، ۲۹ سپتامبر ۲۰۲۶) بیش از ۱۳٬۰۰۰ اسکرین‌شات داخلی را در بیش از ۹۰۰ مخزن عمومی یافت، پس از آنکه ایجنت‌های کدنویسی مأمور به پیوست مدرک بصری به PRهای خصوصی، برای میزبانی آن‌ها مخزن عمومی ساختند | سیاست مقصد در سطح اقدام: مسدود کردن یا پرچم‌گذاری مخازن عمومی جدید، پوش به حساب‌های شخصی و gistها، و تغییر وضعیت نمایش (Visibility) |
+| **تزریق پرامپت از طریق UI** | سایت مخرب متنی را نمایش می‌دهد تا ایجنت را فریب دهد | اسکن ارائه‌دهنده در صورت وجود (خودکار در مجموعه‌ابزار مرورگر Anthropic؛ انتخابی و به‌طور پیش‌فرض خاموش در استفاده از کامپیوتر Gemini)، دروازه‌های تاییدیه که متن تزریق‌شده نتواند آن‌ها را دور بزند، و فهرست مجاز شبکه. هشدارهای صرف در Prompt سیستم کنترل امنیتی محسوب نمی‌شوند |
+| **دسترسی به شبکه داخلی** | ایجنت به نشانی‌های loopback، فراداده ابری یا سرویس‌های خصوصی مرور می‌کند | فهرست مجاز دامنه در لایه شبکه که محدوده‌های loopback، link-local و خصوصی را مسدود کند؛ فقط http/https |
+
+سرویس ایمنی Gemini در عین حال به عنوان یک طبقه‌بندی آماده ریسک برای دروازه تاییدیه خودتان عمل می‌کند: این سرویس تراکنش‌های مالی، تغییر داده‌های حساس، ابزارهای ارتباطی، ساخت حساب کاربری، تغییر داده، مدیریت رضایت کاربر و شرایط و توافق‌نامه‌های حقوقی را پرچم‌گذاری می‌کند.
+
+مسیریابی یک ایجنت استفاده از کامپیوتر به سمت مدل ارزان‌تر، مواجهه آن با تزریق پرامپت را تغییر می‌دهد، نه فقط هزینه‌اش را. کارت سیستم Haiku 5.5 شرکت Anthropic نرخ موفقیت حمله تزریق پرامپت Gray Swan طی ۱۵ تلاش را در کل ۷.۱٪ اما در استفاده از کامپیوتر با رابط گرافیکی ۲۴.۴٪ گزارش می‌کند (گزارش‌شده توسط ارائه‌دهنده). سطح رابط گرافیکی آسیب‌پذیرترین سطح است؛ بنابراین تغییر مسیریابی مدل در یک بار کاری استفاده از کامپیوتر باید یک بازبینی امنیتی را فعال کند، نه فقط یک بازبینی هزینه را.
+
+قانون طلایی: **هرگز ایجنت‌های استفاده از کامپیوتر را روی ایستگاه کاری محیط عملیاتی خود یا با دسترسی به اطلاعات ورود واقعی اجرا نکنید، مگر در یک کانتینر کاملاً سندباکس‌شده**. برای طراحی کامل دفاع در عمق، بخش [ایمنی و حاکمیت](07-safety-and-governance.md) را ببینید.
+
+---
+
+## نمونه کدها <a id="code-examples"></a>
+
+### حلقه حداقلی ایجنت
+
+<div dir="ltr">
 
 ```python
 import anthropic, base64, subprocess
@@ -526,7 +554,11 @@ def run_agent(task: str, max_turns: int = 30):
     raise RuntimeError("Max turns reached")
 ```
 
-### Dockerfile for Sandboxed Environment
+</div>
+
+### فایل Dockerfile برای محیط سندباکس‌شده
+
+<div dir="ltr">
 
 ```dockerfile
 FROM debian:trixie-slim
@@ -542,54 +574,58 @@ CMD Xvfb :1 -screen 0 1280x800x24 & sleep 1 && mutter & tint2 & \
     sleep 1 && /opt/agent/bin/python /home/agent/agent.py
 ```
 
----
-
-## Interview Questions
-
-### Q: A client has 500 insurance claim PDFs per day that must be entered into a legacy web portal with no API. Design a system using computer-use agents.
-
-**Strong answer:**
-I would build a pipeline with three stages. First, a document processing stage using an LLM to extract structured data from the PDFs (claim number, claimant name, amounts, dates). Second, a computer-use agent stage where each claim is processed by a Claude computer-use agent running in an isolated container with a virtual display. Because the portal is a web app, I would use the browser toolset's accessibility-tree refs for form fields rather than pixel coordinates, and my confirmation check would inspect every action in a batch before any of it runs, so a submit click in the middle of a batch still stops for approval. The agent captures a confirmation screenshot after submission. Third, a verification stage that uses a separate LLM call to compare the confirmation screenshot against the expected data to catch any entry errors.
-
-For scale, I would run sandboxes in parallel, each processing claims sequentially. At roughly 2 minutes per claim, one sandbox handles about 240 claims in an 8-hour day, so three cover the steady-state volume; I would run 5 to 10 for headroom against retries, slow portal pages, and end-of-month peaks. I would add a dead-letter queue for claims that fail after 3 retries, with human review.
-
-On Sonnet 5.5 list prices, 20 actions per claim at roughly $0.01 to $0.06 each (warm versus cold prompt cache) comes to about $0.20 to $1.15 per claim, or $100 to $575 a day for 500 claims. Keeping the prompt prefix stable so history reads hit the cache is the biggest cost lever, and even the top of that range is likely cheaper than the manual data entry team it replaces.
-
-### Q: Compare computer-use agents with Selenium for web automation. When would you choose each?
-
-**Strong answer:**
-Selenium interacts with the DOM directly: it is fast, deterministic, and cheap. But it breaks when selectors change, gets blocked by anti-bot systems, and cannot handle tasks requiring visual judgment.
-
-Computer-use agents are about 100x slower and 10x to 60x more expensive per action, but they adapt to UI changes because they work with what is rendered rather than with selectors. They handle anti-bot detection better because they generate human-like interaction patterns. And they can reason about visual layouts: verifying a chart rendered correctly or reading content from a canvas element that Selenium cannot inspect. Browser toolsets that target accessibility-tree refs now give the agent much of Selenium's precision without anyone maintaining selectors.
-
-I would choose Selenium for high-volume, stable workflows where the target site is under my control. I would choose computer-use agents for one-off tasks, third-party sites that change frequently, cross-application desktop workflows, and any task where the human cost of maintaining selectors exceeds the LLM inference cost.
-
-The best production systems use both: Playwright handles the predictable steps (authentication, navigation), and the computer-use agent handles the dynamic steps (interpreting results, making judgment calls).
-
-### Q: A vendor says its computer-use model scores 81.8% on OSWorld. How do you turn that into a production capacity plan?
-
-**Strong answer:**
-I would first find out what the number is. Which benchmark: OSWorld-Verified is saturated in the mid-80s and tells me little, while OSWorld 2.x measures hour-scale tasks. Which metric: 81.8% is Anthropic's partial-credit figure for Opus 5.5 on OSWorld 2.1, and partial credit can sit 30 or more points above binary completion; the top binary score on the official leaderboard's v2.1 full set was 44.33% at its September 17, 2026 update (Opus 5 at max effort with batched tools). Which effort level and harness, and who ran it: vendor runs and leaderboard runs disagree, and Anthropic's own 74.0% for Opus 5 matches no leaderboard row.
-
-Then I would ignore the headline and build our own eval: 50 to 100 real tasks on our applications, scored on binary completion with an independent verification check, plus minutes and dollars per completed task. If binary completion lands around 45%, the plan is a human-in-the-loop system, not an autonomous one: an escalation queue sized for more than half the volume at launch, with the agent doing the preparation and a human finishing or approving.
-
-Finally, I would treat the eval as continuous. Serving-side changes move results without a model ID change, as OpenAI's September 2026 image-encoding fix for GPT-6 Sol and Luna showed, so the eval runs on a schedule and after every vendor notice, not just at model selection.
+</div>
 
 ---
 
-## References
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-- Anthropic. "Computer use tool" API documentation (`computer_toolset_20260801`, 2026)
-- Anthropic. "Browser use tool" API documentation (`browser_toolset_20260801`, 2026)
-- Anthropic. "Bash Tool" and "Text Editor Tool" API documentation
-- Google. "Computer use" Gemini API documentation and changelog (GA October 30, 2026)
-- Anthropic. Claude Haiku 5.5 launch post and system card (October 2026)
-- OpenAI. "Introducing the Agents API" (September 2026)
-- E2B. "Sandboxed Cloud Environments for AI Agents" (2025)
-- XLANG Lab et al. "OSWorld 2.0" (arXiv 2606.29537, June 2026) and the official leaderboard at osworld-v2.xlang.ai
-- WebArena Benchmark: Web Agent Evaluation Suite (2024)
-- Glow Security. "How AI agents exposed developer screenshots from leading tech companies" (PixelLeak, September 2026)
+### پرسش: یک مشتری روزانه ۵۰۰ فایل PDF پرونده خسارت بیمه دارد که باید در یک پورتال وب موروثی بدون API وارد شوند. سیستمی با استفاده از ایجنت‌های استفاده از کامپیوتر طراحی کنید.
+
+**پاسخ قوی:**
+من یک خط لوله (Pipeline) سه مرحله‌ای می‌سازم. نخست، یک مرحله پردازش سند با استفاده از یک LLM برای استخراج داده‌های ساختاریافته از فایل‌های PDF (شماره خسارت، نام بیمه‌گذار، مبالغ، تاریخ‌ها). دوم، یک مرحله ایجنت استفاده از کامپیوتر که در آن هر پرونده توسط یک ایجنت استفاده از کامپیوتر Claude در یک کانتینر ایزوله با نمایشگر مجازی پردازش می‌شود. از آنجا که پورتال یک برنامه وب است، به جای مختصات پیکسلی از ارجاع‌های درخت دسترس‌پذیری مجموعه‌ابزار مرورگر برای فیلدهای فرم استفاده می‌کنم، و بررسی تاییدیه من هر اقدام در یک دسته را پیش از اجرای هر کدام بازرسی می‌کند تا یک کلیک ارسال در میانه دسته همچنان برای تایید متوقف شود. ایجنت پس از ارسال، یک اسکرین‌شات تایید می‌گیرد. سوم، یک مرحله راستی‌آزمایی که از یک فراخوانی LLM جداگانه برای مقایسه اسکرین‌شات تایید با داده‌های مورد انتظار جهت کشف هرگونه خطای ورود داده استفاده می‌کند.
+
+برای مقیاس‌پذیری، سندباکس‌ها را به‌صورت موازی اجرا می‌کنم که هر یک پرونده‌ها را به‌صورت ترتیبی پردازش می‌کنند. با حدود ۲ دقیقه برای هر پرونده، یک سندباکس در یک روز کاری ۸ ساعته حدود ۲۴۰ پرونده را مدیریت می‌کند؛ پس سه سندباکس حجم عادی را پوشش می‌دهند و من ۵ تا ۱۰ سندباکس برای حاشیه اطمینان در برابر تلاش‌های مجدد، صفحات کند پورتال و اوج‌های پایان ماه اجرا می‌کنم. یک صف نامه‌های مرده (Dead-Letter Queue) برای پرونده‌هایی که پس از ۳ بار تلاش مجدد شکست می‌خورند، همراه با بازبینی انسانی، اضافه می‌کنم.
+
+بر اساس قیمت‌های فهرست Sonnet 5.5، حدود ۲۰ اقدام به ازای هر پرونده با نرخ تقریبی ۰.۰۱ تا ۰.۰۶ دلار برای هر اقدام (کش گرم در برابر کش سرد) حدود ۰.۲۰ تا ۱.۱۵ دلار برای هر پرونده، یا ۱۰۰ تا ۵۷۵ دلار در روز برای ۵۰۰ پرونده می‌شود. پایدار نگه داشتن پیشوند Prompt برای اینکه خواندن‌های تاریخچه به کش اصابت کنند بزرگ‌ترین اهرم هزینه است و حتی سقف این بازه احتمالاً از تیم ورود داده دستی که جایگزین آن می‌شود ارزان‌تر است.
+
+### پرسش: ایجنت‌های استفاده از کامپیوتر را با Selenium برای اتوماسیون وب مقایسه کنید. چه زمانی هر کدام را انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+ابزار Selenium مستقیماً با DOM تعامل می‌کند: سریع، قطعی (Deterministic) و ارزان است. اما هنگام تغییر انتخابگرها از کار می‌افتد، توسط سیستم‌های ضدربات مسدود می‌شود و نمی‌تواند کارهایی را که نیازمند قضاوت بصری هستند انجام دهد.
+
+ایجنت‌های استفاده از کامپیوتر به ازای هر اقدام حدود ۱۰۰ برابر کندتر و ۱۰ تا ۶۰ برابر گران‌تر هستند، اما به دلیل کار با آنچه رندر شده است به جای انتخابگرها، با تغییرات رابط کاربری سازگار می‌شوند. آن‌ها چون الگوهای تعاملی شبیه انسان تولید می‌کنند، در برابر تشخیص ضدربات عملکرد بهتری دارند. همچنین می‌توانند درباره چیدمان‌های بصری استدلال کنند: تایید اینکه یک نمودار درست رندر شده یا خواندن محتوا از یک عنصر canvas که Selenium قادر به بازرسی آن نیست. مجموعه‌ابزارهای مرورگر که ارجاع‌های درخت دسترس‌پذیری را هدف می‌گیرند اکنون بخش زیادی از دقت Selenium را بدون نیاز به نگهداری انتخابگرها توسط هیچ‌کس به ایجنت می‌دهند.
+
+من Selenium را برای گردش‌کارهای پرحجم و پایدار که سایت هدف تحت کنترل من است انتخاب می‌کنم. ایجنت‌های استفاده از کامپیوتر را برای کارهای یک‌باره، سایت‌های شخص ثالثی که مرتب تغییر می‌کنند، گردش‌کارهای دسکتاپ بین‌برنامه‌ای و هر کاری که هزینه انسانی نگهداری انتخابگرها در آن از هزینه استنتاج (Inference) مدل LLM بیشتر باشد برمی‌گزینم.
+
+بهترین سیستم‌های محیط عملیاتی از هر دو استفاده می‌کنند: ابزار Playwright گام‌های قابل‌پیش‌بینی (احراز هویت، ناوبری) را انجام می‌دهد و ایجنت استفاده از کامپیوتر گام‌های پویا (تفسیر نتایج، تصمیم‌گیری‌های مبتنی بر قضاوت) را بر عهده می‌گیرد.
+
+### پرسش: یک ارائه‌دهنده می‌گوید مدل استفاده از کامپیوترش امتیاز ۸۱.۸٪ در OSWorld کسب کرده است. چگونه آن را به یک برنامه ظرفیت محیط عملیاتی تبدیل می‌کنید؟
+
+**پاسخ قوی:**
+ابتدا مشخص می‌کنم این عدد دقیقاً چیست. کدام بنچمارک: OSWorld-Verified در محدوده میانی ۸۰ درصد اشباع شده و اطلاعات کمی به من می‌دهد، در حالی که OSWorld 2.x کارهای در مقیاس ساعتی را می‌سنجد. کدام معیار: ۸۱.۸٪ رقم امتیازدهی جزئی Anthropic برای Opus 5.5 روی OSWorld 2.1 است و امتیازدهی جزئی می‌تواند ۳۰ امتیاز یا بیشتر بالاتر از تکمیل دودویی قرار بگیرد؛ بالاترین امتیاز دودویی در مجموعه کامل v2.1 جدول رده‌بندی رسمی در به‌روزرسانی ۱۷ سپتامبر ۲۰۲۶ برابر ۴۴.۳۳٪ بود (Opus 5 در حداکثر تلاش با ابزارهای دسته‌ای). کدام سطح تلاش و مهاربند و چه کسی آن را اجرا کرده است: اجراهای ارائه‌دهنده و اجراهای جدول رده‌بندی با هم اختلاف دارند و امتیاز ۷۴.۰٪ خود Anthropic برای Opus 5 با هیچ ردیفی در جدول رده‌بندی تطابق ندارد.
+
+سپس عدد تیتر را نادیده می‌گیرم و ارزیابی خودمان را می‌سازم: ۵۰ تا ۱۰۰ کار واقعی روی برنامه‌های خودمان که بر اساس تکمیل دودویی با یک بررسی راستی‌آزمایی مستقل امتیازدهی شوند، به علاوه دقیقه و دلار به ازای هر کار تکمیل‌شده. اگر تکمیل دودویی حوالی ۴۵٪ قرار بگیرد، برنامه طراحی یک سیستم انسان در چرخه (Human-in-the-Loop) است، نه یک سیستم خودگردان: یک صف ارجاع که در زمان راه‌اندازی برای بیش از نیمی از حجم کار ظرفیت‌سنجی شده است، به‌طوری که ایجنت آماده‌سازی را انجام می‌دهد و انسان کار را تمام یا تایید می‌کند.
+
+در نهایت، ارزیابی را پیوسته در نظر می‌گیرم. تغییرات سمت سرویس‌دهی بدون تغییر شناسه مدل نتایج را جابه‌جا می‌کنند — همان‌طور که اصلاح باگ رمزگذاری تصویر OpenAI در سپتامبر ۲۰۲۶ برای GPT-6 Sol و Luna نشان داد — بنابراین ارزیابی نه فقط در زمان انتخاب مدل، بلکه طبق یک برنامه زمان‌بندی‌شده و پس از هر اطلاعیه ارائه‌دهنده اجرا می‌شود.
 
 ---
 
-*Next: [Building Tool-Use Agents](05-building-tool-agents.md)*
+## منابع <a id="references"></a>
+
+- شرکت Anthropic، مستندات API با عنوان «Computer use tool» (`computer_toolset_20260801`، ۲۰۲۶)
+- شرکت Anthropic، مستندات API با عنوان «Browser use tool» (`browser_toolset_20260801`، ۲۰۲۶)
+- شرکت Anthropic، مستندات API با عنوان «Bash Tool» و «Text Editor Tool»
+- شرکت Google، مستندات و گزارش تغییرات «Computer use» در Gemini API (دسترس‌پذیری عمومی ۳۰ اکتبر ۲۰۲۶)
+- شرکت Anthropic، پست معرفی و کارت سیستم Claude Haiku 5.5 (اکتبر ۲۰۲۶)
+- شرکت OpenAI، مقاله «Introducing the Agents API» (سپتامبر ۲۰۲۶)
+- پلتفرم E2B، مقاله «Sandboxed Cloud Environments for AI Agents» (۲۰۲۵)
+- آزمایشگاه XLANG Lab و همکاران، مقاله «OSWorld 2.0» (arXiv 2606.29537، ژوئن ۲۰۲۶) و جدول رده‌بندی رسمی در osworld-v2.xlang.ai
+- بنچمارک WebArena: مجموعه ارزیابی ایجنت وب (۲۰۲۴)
+- شرکت Glow Security، گزارش «How AI agents exposed developer screenshots from leading tech companies» (پژوهش PixelLeak، سپتامبر ۲۰۲۶)
+
+---
+
+*بعدی: [ساخت ایجنت‌های استفاده‌کننده از ابزار](05-building-tool-agents.md)*
+
+</div>

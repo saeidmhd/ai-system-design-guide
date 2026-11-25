@@ -1,29 +1,33 @@
-# Architecture Patterns for Tool-Use Agents
+<div dir="rtl">
 
-Every tool-use agent in 2026, from OpenClaw to Claude Code to Cursor's cloud agents, is built on one of a handful of core architecture patterns. Understanding these patterns lets you design agents from first principles rather than copying specific tools. This chapter breaks down each pattern with detailed diagrams, code examples, trade-offs, and guidance on when to use which.
+# الگوهای معماری برای Agentهای ابزارمحور (Tool-Use Agents)
 
-## Table of Contents
+تمام Agentهای ابزارمحور در سال ۲۰۲۶، از OpenClaw گرفته تا Claude Code و Agentهای ابری Cursor، بر پایه یکی از چند الگوی معماری هسته‌ای ساخته شده‌اند. درک این الگوها به شما امکان می‌دهد به‌جای کپی‌برداری از ابزارهای خاص، Agentها را از اصول اولیه (First Principles) طراحی کنید. این فصل هر الگو را با نمودارهای دقیق، نمونه‌کدها، موازنه‌ها (Trade-offs) و راهنمایی درباره زمان استفاده از هر کدام بررسی می‌کند.
 
-- [Pattern 1: Function/Tool Calling](#pattern-1-functiontool-calling)
-- [Pattern 2: Vision-Based Automation](#pattern-2-vision-based-automation)
-- [Pattern 3: Local Code Execution](#pattern-3-local-code-execution)
-- [Pattern 4: Multi-Agent Tool Orchestration](#pattern-4-multi-agent-tool-orchestration)
-- [Sandboxed vs. Unsandboxed Execution](#sandboxed-vs-unsandboxed-execution)
-- [State Management Across Tool Calls](#state-management-across-tool-calls)
-- [Error Handling and Retry Patterns](#error-handling-and-retry-patterns)
-- [MCP Integration Patterns](#mcp-integration-patterns)
-- [Architecture Decision Tree](#architecture-decision-tree)
-- [System Design Interview Angle](#system-design-interview-angle)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [الگوی ۱: فراخوانی تابع و ابزار (Function/Tool Calling)](#pattern-1-functiontool-calling)
+- [الگوی ۲: خودکارسازی مبتنی بر بینایی (Vision-Based Automation)](#pattern-2-vision-based-automation)
+- [الگوی ۳: اجرای کد محلی (Local Code Execution)](#pattern-3-local-code-execution)
+- [الگوی ۴: ارکستراسیون ابزار چند-Agentی (Multi-Agent Tool Orchestration)](#pattern-4-multi-agent-tool-orchestration)
+- [اجرای ایزوله‌شده در سندباکس در برابر اجرای بدون سندباکس](#sandboxed-vs-unsandboxed-execution)
+- [مدیریت وضعیت در سراسر فراخوانی‌های ابزار](#state-management-across-tool-calls)
+- [الگوهای مدیریت خطا و تلاش مجدد](#error-handling-and-retry-patterns)
+- [الگوهای یکپارچه‌سازی MCP](#mcp-integration-patterns)
+- [درخت تصمیم معماری](#architecture-decision-tree)
+- [زاویه دید مصاحبه طراحی سیستم](#system-design-interview-angle)
+- [سوالات مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Pattern 1: Function/Tool Calling
+## الگوی ۱: فراخوانی تابع و ابزار (Function/Tool Calling) <a id="pattern-1-functiontool-calling"></a>
 
-The most widely deployed pattern in production. The LLM decides which tool to call and with what arguments; a framework executes the call; results are fed back into the conversation for the next reasoning step.
+پراستفاده‌ترین الگو در محیط‌های عملیاتی (Production). مدل LLM تصمیم می‌گیرد کدام ابزار را با چه آرگومان‌هایی فراخوانی کند؛ یک فریم‌ورک (Framework) فراخوانی را اجرا می‌کند؛ و نتایج برای گام استدلال بعدی به مکالمه بازگردانده می‌شوند.
 
-### Architecture
+### معماری
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -69,15 +73,19 @@ The most widely deployed pattern in production. The LLM decides which tool to ca
 +-------------------------------------------------------------------+
 ```
 
-### The Three Steps in Detail
+</div>
 
-**Step 1: Schema Presentation**. The model receives a JSON schema describing available tools. In 2026, best practice is to use Dynamic Manifests that fetch only relevant tools based on the user's intent, rather than loading all tool schemas upfront. Vendors now ship this: Anthropic's `inline-tools-2026-09-15` beta adds or replaces tools mid-conversation without invalidating the prompt cache, Cursor reports that moving MCP tools into dynamic context cut total tokens by 46.9% in sessions that called one (vendor-reported), and server-side progressive discovery for large catalogs is on MCP's August 2026 roadmap.
+### جزئیات سه گام اصلی
 
-**Step 2: Intent and Extraction**. The model outputs a structured tool call. This is not free-form text; it is a JSON object with `tool_name` and `arguments` that the framework can parse deterministically. **Forcing a call is now model-dependent**: `tool_choice` of type `any` or `tool` returns HTTP 400 on Claude Fable 5.1, Mythos 5.1, Opus 5.5 and Sonnet 5.5. Use `auto` with strict tool definitions, or structured outputs when you need a guaranteed schema. Harnesses that forced a tool call for extraction or routing need rewriting before they move to these models. OpenAI has its own version of this: GPT-6 Astra supports tool calling only through the Responses API, so a Chat Completions harness cannot simply swap in the new model ID.
+**گام ۱: ارائه طرحواره (Schema Presentation).** مدل یک طرحواره JSON دریافت می‌کند که ابزارهای در دسترس را توصیف می‌کند. در سال ۲۰۲۶، بهترین شیوه استفاده از مانیفست‌های پویا (Dynamic Manifests) است که بر اساس قصد کاربر فقط ابزارهای مرتبط را واکشی می‌کنند، به‌جای آنکه تمام طرحواره‌های ابزار را از ابتدا بارگذاری کنند. اکنون ارائه‌دهندگان این قابلیت را عرضه کرده‌اند: نسخه بتای `inline-tools-2026-09-15` شرکت Anthropic ابزارها را در میانه مکالمه اضافه یا جایگزین می‌کند بدون آنکه کش Prompt (Prompt Cache) را باطل کند؛ ابزار Cursor گزارش داده که انتقال ابزارهای MCP به زمینه پویا (Dynamic Context) مجموع واحدهای Token را در جلساتی که حداقل یک ابزار فراخوانی شده ۴۶.۹ درصد کاهش داده است (طبق گزارش ارائه‌دهنده)؛ و کشف تدریجی سمت سرور (Server-side Progressive Discovery) برای کاتالوگ‌های بزرگ در نقشه راه اوت ۲۰۲۶ پروتکل MCP قرار دارد.
 
-**Step 3: Execution and Contextualization**. The framework validates arguments (using Pydantic, Zod, or similar), calls the function, and injects the result back into the conversation as a new message with role `tool`.
+**گام ۲: تشخیص قصد و استخراج (Intent and Extraction).** مدل یک فراخوانی ابزار ساخت‌یافته (Structured Tool Call) تولید می‌کند. این خروجی متن آزاد نیست؛ بلکه یک شیء JSON با فیلدهای `tool_name` و `arguments` است که فریم‌ورک می‌تواند آن را به‌صورت قطعی (Deterministic) تجزیه کند. **اجبار به فراخوانی ابزار اکنون به مدل وابسته است**: مقدار `tool_choice` از نوع `any` یا `tool` در مدل‌های Claude Fable 5.1، Mythos 5.1، Opus 5.5 و Sonnet 5.5 خطای HTTP 400 برمی‌گرداند. از `auto` به‌همراه تعریف دقیق ابزارها استفاده کنید، یا زمانی که به طرحواره تضمینی نیاز دارید از خروجی‌های ساخت‌یافته (Structured Outputs) بهره ببرید. هارنس‌هایی (Harnesses) که برای استخراج یا مسیریابی به اجبار فراخوانی ابزار متکی بودند، پیش از مهاجرت به این مدل‌ها نیاز به بازنویسی دارند. شرکت OpenAI نیز نسخه خاص خود از این محدودیت را دارد: مدل GPT-6 Astra فراخوانی ابزار را فقط از طریق Responses API پشتیبانی می‌کند، بنابراین یک هارنس مبتنی بر Chat Completions نمی‌تواند به‌سادگی شناسه مدل جدید را جایگزین کند.
 
-### Code Example: MCP Server + Client
+**گام ۳: اجرا و زمینه‌سازی (Execution and Contextualization).** فریم‌ورک آرگومان‌ها را اعتبارسنجی می‌کند (با استفاده از Pydantic، Zod یا ابزارهای مشابه)، تابع را فراخوانی می‌نماید و نتیجه را به‌عنوان یک پیام جدید با نقش `tool` دوباره به مکالمه تزریق می‌کند.
+
+### نمونه‌کد: سرور و کلاینت MCP
+
+<div dir="ltr">
 
 ```python
 # MCP Server (Python SDK 2.x, where FastMCP was renamed MCPServer)
@@ -98,6 +106,10 @@ async def lookup_order(
     return {"status": order["status"], "tracking": order.get("tracking_number")}
 ```
 
+</div>
+
+<div dir="ltr">
+
 ```python
 # MCP Client: agent discovers tools dynamically, calls them, feeds results back
 listed = await mcp_client.list_tools()
@@ -112,31 +124,35 @@ if response.stop_reason == "tool_use":
     # Append the full assistant turn (thinking blocks included), then a tool_result block
 ```
 
-`pip install mcp` has resolved to SDK 2.x since July 28, 2026, so tutorials that import `FastMCP` break on a fresh install; pin `mcp<2` if you are not ready to migrate. The Python SDK 2.1+ also changed error visibility: an unexpected exception in a handler reaches the client only as "Error executing tool <name>", so raise `ToolError` for messages the model should see.
+</div>
 
-### When to Use This Pattern
+دستور `pip install mcp` از تاریخ ۲۸ ژوئیه ۲۰۲۶ به SDK نسخه 2.x اشاره می‌کند، بنابراین آموزش‌هایی که `FastMCP` را وارد (import) می‌کنند روی یک نصب تازه با خطا مواجه می‌شوند؛ اگر هنوز آماده مهاجرت نیستید نسخه `mcp<2` را پین کنید. همچنین Python SDK 2.1+ نحوه نمایش خطا را تغییر داده است: یک استثنای غیرمنتظره در هندلر (Handler) فقط به‌صورت «Error executing tool <name>» به کلاینت می‌رسد، بنابراین برای پیام‌هایی که مدل باید ببیند استثنای `ToolError` را پرتاب (raise) کنید.
 
-- API integrations (databases, SaaS tools, internal services)
-- Structured data retrieval and mutation
-- Any workflow where you can define the tool interface upfront
-- Production systems where you need audit trails and input validation
+### چه زمانی از این الگو استفاده کنیم
 
-### Trade-offs
+- یکپارچه‌سازی‌های API (پایگاه‌های داده، ابزارهای SaaS، سرویس‌های داخلی)
+- بازیابی و تغییر داده‌های ساخت‌یافته
+- هر جریان کاری که در آن بتوانید رابط ابزار را از پیش تعریف کنید
+- سیستم‌های عملیاتی که در آن‌ها به ردپای ممیزی (Audit Trail) و اعتبارسنجی ورودی نیاز دارید
 
-| Advantage | Disadvantage |
-|-----------|--------------|
-| Deterministic execution | Requires tool schema upfront |
-| Easy to audit and log | Cannot interact with arbitrary UIs |
-| Fast (50-200ms per tool call) | Model may hallucinate tool names/args |
-| Works with any LLM that supports tool use | Schema overload with many tools |
+### موازنه‌ها (Trade-offs)
+
+| مزیت | عیب |
+|------|-----|
+| اجرای قطعی (Deterministic) | نیازمند تعریف طرحواره ابزار از پیش |
+| ممیزی و ثبت لاگ آسان | عدم امکان تعامل با رابط‌های کاربری دلخواه |
+| سرعت بالا (۵۰ تا ۲۰۰ میلی‌ثانیه به ازای هر فراخوانی ابزار) | احتمال توهم (Hallucination) مدل در نام یا آرگومان‌های ابزار |
+| سازگار با هر مدل LLM دارای قابلیت استفاده از ابزار | سربار طرحواره (Schema Overload) در صورت زیاد بودن ابزارها |
 
 ---
 
-## Pattern 2: Vision-Based Automation
+## الگوی ۲: خودکارسازی مبتنی بر بینایی (Vision-Based Automation) <a id="pattern-2-vision-based-automation"></a>
 
-The model sees a screenshot of the screen, reasons about what to do, and emits a low-level action (click, type, scroll). The environment executes the action, takes a new screenshot, and the loop repeats. This is how Claude's computer toolset, Gemini computer use, and the original Python Open Interpreter's Computer API work.
+مدل یک اسکرین‌شات از صفحه نمایش را می‌بیند، درباره کار بعدی استدلال می‌کند و یک عمل سطح پایین (کلیک، تایپ، اسکرول) صادر می‌کند. محیط آن عمل را اجرا می‌کند، اسکرین‌شات جدیدی می‌گیرد و این حلقه تکرار می‌شود. مجموعه ابزار رایانه Claude، قابلیت Computer Use در Gemini و رابط Computer API در نسخه اولیه پایتونی Open Interpreter دقیقاً به همین شکل کار می‌کنند.
 
-### Architecture
+### معماری
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -178,27 +194,31 @@ The model sees a screenshot of the screen, reasons about what to do, and emits a
 +-------------------------------------------------------------------+
 ```
 
-### The Observe-Reason-Act Cycle
+</div>
 
-**Observe**: Capture a screenshot of the current screen state. In Claude Computer Use, this is a base64-encoded PNG sent as an image content block, at roughly 1,000-1,800 input tokens per screenshot by Anthropic's estimate. The Zoom Action (new in 2026, on by default in the GA toolset) allows capturing a high-resolution crop of a specific region for dense UIs. Claude's GA toolset takes no display dimensions: the model reads coordinates in the pixel space of the screenshots you return.
+### چرخه مشاهده-استدلال-عمل (Observe-Reason-Act)
 
-**Reason**: The multimodal LLM analyzes the screenshot alongside the task goal and action history. It decides what the next action should be. This step consumes the most tokens.
+**مشاهده (Observe):** گرفتن یک اسکرین‌شات از وضعیت فعلی صفحه نمایش. در Claude Computer Use، این تصویر یک PNG با کدگذاری base64 است که به‌عنوان یک بلوک محتوای تصویری ارسال می‌شود و بر اساس برآورد Anthropic، حدود ۱٬۰۰۰ تا ۱٬۸۰۰ واحد Token ورودی به ازای هر اسکرین‌شات مصرف می‌کند. قابلیت Zoom Action (جدید در سال ۲۰۲۶ و فعال به‌صورت پیش‌فرض در مجموعه ابزار GA) امکان گرفتن برش با وضوح بالا از یک ناحیه مشخص را برای رابط‌های کاربری متراکم فراهم می‌کند. مجموعه ابزار GA در Claude هیچ ابعاد نمایشگری دریافت نمی‌کند: مدل مختصات را در فضای پیکسلی همان اسکرین‌شات‌هایی که برمی‌گردانید می‌خواند.
 
-**Act**: The model emits a structured action:
-- `left_click(x, y)`: click at coordinates
-- `type(text)`: type a string
-- `key(key_combo)`: press keyboard shortcut
-- `scroll(direction, amount)`: scroll the page
-- `screenshot()`: take a new screenshot without acting
-- `zoom(x0, y0, x1, y1)`: inspect a region at high resolution
+**استدلال (Reason):** مدل LLM چندوجهی (Multimodal) اسکرین‌شات را در کنار هدف وظیفه و تاریخچه عمل‌ها تحلیل می‌کند و تصمیم می‌گیرد عمل بعدی چه باشد. این مرحله بیشترین مصرف Token را دارد.
 
-### Batch Actions and Element References
+**عمل (Act):** مدل یک عمل ساخت‌یافته صادر می‌کند:
+- دستور `left_click(x, y)`: کلیک روی مختصات مشخص
+- دستور `type(text)`: تایپ یک رشته متنی
+- دستور `key(key_combo)`: فشردن کلید میانبر صفحه کلید
+- دستور `scroll(direction, amount)`: پیمایش (اسکرول) صفحه
+- دستور `screenshot()`: گرفتن اسکرین‌شات جدید بدون انجام عمل
+- دستور `zoom(x0, y0, x1, y1)`: بررسی یک ناحیه با وضوح بالا
 
-Two 2026 changes reshape this loop. First, **batch actions**: Claude's GA computer toolset (August 19, 2026) lets the model return several `tool_use` blocks in one turn. The executor runs them in order and halts at the first failure, answering every later block with an error instead of running it. One model round trip now covers several GUI steps, which changes the latency and cost model. It also means a human confirmation placed between model turns arrives too late, because a single turn can finish a multistep consequential action. Anthropic's docs put the check before each block runs: inspect every action in the batch when it arrives, pause before each consequential one, and treat a rejection like a failure so the rest of the batch is answered as not executed.
+### عمل‌های دسته‌ای و ارجاع به عناصر (Batch Actions and Element References)
 
-Second, **targeting moves off pixels where it can**. Claude's browser toolset returns the accessibility tree with element refs (`[ref_2]`) that clicks and form fills can target; refs survive layout shifts but go stale after navigation. Gemini computer use normalizes coordinates to a 0-999 grid and adds a safety service that returns `require_confirmation` for categories such as financial transactions, account creation and accepting legal terms. Treat pixels as the fallback for desktop apps with no accessible structure.
+دو تغییر در سال ۲۰۲۶ این حلقه را دگرگون کرده‌اند. نخست، **عمل‌های دسته‌ای (Batch Actions)**: مجموعه ابزار رایانه GA شرکت Claude (عرضه‌شده در ۱۹ اوت ۲۰۲۶) به مدل اجازه می‌دهد چندین بلوک `tool_use` را در یک نوبت برگرداند. اجراکننده آن‌ها را به ترتیب اجرا می‌کند و در اولین شکست متوقف می‌شود و به تمام بلوک‌های بعدی به‌جای اجرا، پاسخ خطا می‌دهد. اکنون یک رفت‌وبرگشت به مدل چندین گام رابط کاربری گرافیکی (GUI) را پوشش می‌دهد که مدل تاخیر (Latency) و هزینه را تغییر می‌دهد. همچنین به این معناست که تایید انسانیِ قرارگرفته بین نوبت‌های مدل دیر می‌رسد، زیرا یک نوبت منفرد می‌تواند یک عمل حساس چندمرحله‌ای را به پایان برساند. مستندات Anthropic این بررسی را پیش از اجرای هر بلوک قرار می‌دهند: هنگام رسیدن دسته، تک‌تک عمل‌ها را بازرسی کنید، پیش از هر عمل حساس مکث نمایید و رد شدن توسط کاربر را مانند یک شکست تلقی کنید تا بقیه دسته به‌عنوان اجرا نشده پاسخ داده شوند.
 
-### Code Example: Computer Use Loop
+دوم، **هدف‌گذاری تا جای ممکن از پیکسل‌ها فاصله می‌گیرد**. مجموعه ابزار مرورگر Claude درخت دسترسی‌پذیری (Accessibility Tree) را با ارجاع به عناصر (`[ref_2]`) برمی‌گرداند که کلیک‌ها و پر کردن فرم‌ها می‌توانند آن‌ها را هدف قرار دهند؛ این ارجاع‌ها در برابر جابه‌جایی‌های چیدمان صفحه مقاوم هستند اما پس از ناوبری (Navigation) به صفحه دیگر منقضی می‌شوند. قابلیت Computer Use در Gemini مختصات را روی یک شبکه ۰ تا ۹۹۹ نرمال‌سازی می‌کند و یک سرویس ایمنی اضافه می‌کند که برای دسته‌هایی مانند تراکنش‌های مالی، ایجاد حساب کاربری و پذیرش شرایط قانونی مقدار `require_confirmation` برمی‌گرداند. پیکسل‌ها را به‌عنوان راهکار پشتیبان برای برنامه‌های دسکتاپ فاقد ساختار دسترسی‌پذیر در نظر بگیرید.
+
+### نمونه‌کد: حلقه استفاده از رایانه (Computer Use Loop)
+
+<div dir="ltr">
 
 ```python
 tools = [
@@ -233,31 +253,35 @@ for step in range(50):  # The vision-action loop, with a hard step cap
     messages.append({"role": "user", "content": results})  # all results in one message
 ```
 
-The older `computer_20251124` tool returns HTTP 400 on the 5.5 models (Opus, Sonnet and Haiku) on the Claude API and Google Cloud (Bedrock still accepts it), and the GA toolset rejects the old `name` and display-size fields. Loops that append one assistant message per `tool_use` block, as many early samples did, also break once the model batches actions. One more trap on Opus 5.5 and Sonnet 5.5: do not prune old screenshots from the history to save tokens. Editing earlier turns invalidates the thinking blocks that follow, so resize screenshots before sending them (2000 px or less per side) and let server-side tool-result clearing trim old images instead.
+</div>
 
-### When to Use This Pattern
+ابزار قدیمی‌تر `computer_20251124` روی مدل‌های نسخه 5.5 (Opus، Sonnet و Haiku) در Claude API و Google Cloud خطای HTTP 400 برمی‌گرداند (سرویس Bedrock هنوز آن را می‌پذیرد)، و مجموعه ابزار GA فیلدهای قدیمی `name` و اندازه نمایشگر را رد می‌کند. حلقه‌هایی که به‌ازای هر بلوک `tool_use` یک پیام assistant مجزا اضافه می‌کنند—همان‌طور که در بسیاری از نمونه‌های اولیه دیده می‌شد—با دسته‌ای شدن عمل‌ها توسط مدل از کار می‌افتند. یک تله دیگر در Opus 5.5 و Sonnet 5.5: برای صرفه‌جویی در واحدهای Token، اسکرین‌شات‌های قدیمی را از تاریخچه حذف نکنید. ویرایش نوبت‌های قبلی، بلوک‌های تفکر (Thinking Blocks) پس از آن را باطل می‌کند؛ بنابراین اسکرین‌شات‌ها را پیش از ارسال تغییر اندازه دهید (۲۰۰۰ پیکسل یا کمتر در هر ضلع) و بگذارید پاک‌سازی نتایج ابزار سمت سرور (Server-side Tool-result Clearing) تصاویر قدیمی را هرس کند.
 
-- Automating legacy applications with no API
-- End-to-end testing of graphical interfaces
-- Tasks that require interaction with multiple applications
-- Non-developer users who describe tasks in natural language
+### چه زمانی از این الگو استفاده کنیم
 
-### Trade-offs
+- خودکارسازی برنامه‌های قدیمی (Legacy) که هیچ API ندارند
+- تست سرتاسری (End-to-End) رابط‌های کاربری گرافیکی
+- وظایفی که نیازمند تعامل با چندین برنامه مختلف هستند
+- کاربران غیرتوسعه‌دهنده‌ای که وظایف را به زبان طبیعی توصیف می‌کنند
 
-| Advantage | Disadvantage |
-|-----------|--------------|
-| Works with any GUI application | Slow (1-3 sec per model round trip; batching amortizes it) |
-| No API or integration needed | High token cost (about 1,000-1,800 input tokens per screenshot) |
-| Handles dynamic UIs | Misclick risk on dense interfaces (zoom and element refs reduce it) |
-| Accessible to non-technical users | Requires sandboxed VM for safety |
+### موازنه‌ها (Trade-offs)
+
+| مزیت | عیب |
+|------|-----|
+| کار با هر برنامه دارای رابط گرافیکی (GUI) | کند (۱ تا ۳ ثانیه به‌ازای هر رفت‌وبرگشت مدل؛ دسته‌بندی آن را سرشکن می‌کند) |
+| عدم نیاز به API یا یکپارچه‌سازی | هزینه بالای Token (حدود ۱٬۰۰۰ تا ۱٬۸۰۰ Token ورودی به‌ازای هر اسکرین‌شات) |
+| مدیریت رابط‌های کاربری پویا | ریسک کلیک اشتباه در رابط‌های متراکم (بزرگ‌نمایی و ارجاع عناصر آن را کاهش می‌دهند) |
+| قابل دسترس برای کاربران غیرفنی | نیازمند ماشین مجازی سندباکس‌شده برای ایمنی |
 
 ---
 
-## Pattern 3: Local Code Execution
+## الگوی ۳: اجرای کد محلی (Local Code Execution) <a id="pattern-3-local-code-execution"></a>
 
-The user describes a task in natural language. The LLM generates code. The code runs on the local machine (or in a sandbox). The output is observed, and the LLM either generates more code or provides the final answer. This is how the original Python Open Interpreter and parts of Claude Code work.
+کاربر وظیفه‌ای را به زبان طبیعی توصیف می‌کند. مدل LLM کد تولید می‌کند. کد روی ماشین محلی (یا در یک سندباکس) اجرا می‌شود. خروجی مشاهده می‌شود و LLM یا کد بیشتری تولید می‌کند یا پاسخ نهایی را ارائه می‌دهد. نسخه اولیه پایتونی Open Interpreter و بخش‌هایی از Claude Code به این شکل کار می‌کنند.
 
-### Architecture
+### معماری
+
+<div dir="ltr">
 
 ```
 User (NL): "Analyze the CSV and plot the top 10 products"
@@ -278,21 +302,25 @@ User (NL): "Analyze the CSV and plot the top 10 products"
 [LLM Decides] --> Done? Return result. Need more? Generate next code block. (Loop)
 ```
 
-### The NL-Code-Execute-Observe Cycle
+</div>
 
-**1. Natural Language to Code**: The LLM translates the user's intent into executable code. The code language depends on the task: Python for data analysis, bash for system operations, JavaScript for web tasks.
+### چرخه زبان طبیعی-کد-اجرا-مشاهده
 
-**2. Permission Gate**: Before execution, the user is asked to approve. This is the critical safety mechanism for unsandboxed environments. Implementations vary:
-- **Always ask** (the Python Open Interpreter's default): Every code block requires explicit approval
-- **Auto-approve** (trusted mode): Dangerous but fast
-- **Rules-based** (Claude Code model): Allow/deny patterns in configuration. For example: allow `git` commands, deny `rm -rf`
-- **Classifier-based**: A policy model scores each action and runs it, denies it, or escalates to a human. This became a default in stages: Claude Code made auto mode the default for Pro, Max and Team on August 14, 2026, and since v2.1.284 (September 28) any interactive session with no configured permission mode starts in it. Headless runs are the exception: since v2.1.302 (October 16), `claude -p` and Agent SDK sessions with no mode start in `default` mode on third-party providers, with telemetry off, or on a fresh install, so a CI job that never sets the mode can behave differently across environments. Set it explicitly. Claude Managed Agents evaluates each tool call server-side under its auto permission policy (September 10). It trades approval fatigue for a calibration problem: you now have to choose and monitor the threshold at which the classifier defers
+**گام ۱. تبدیل زبان طبیعی به کد (Natural Language to Code):** مدل LLM قصد کاربر را به کد قابل اجرا ترجمه می‌کند. زبان کد بسته به وظیفه متفاوت است: Python برای تحلیل داده، Bash برای عملیات سیستمی و JavaScript برای کارهای وب.
 
-**3. Execute and Capture**: The code runs in a runtime with full (or restricted) system access. Stdout, stderr, return values, and any generated files are captured.
+**گام ۲. دروازه مجوز (Permission Gate):** پیش از اجرا، از کاربر تایید خواسته می‌شود. این حیاتی‌ترین سازوکار ایمنی برای محیط‌های بدون سندباکس است. پیاده‌سازی‌ها متفاوت‌اند:
+- **همیشه بپرس (Always ask)** (پیش‌فرض نسخه پایتونی Open Interpreter): هر بلوک کد نیازمند تایید صریح است
+- **تایید خودکار (Auto-approve)** (حالت مورد اعتماد): خطرناک اما سریع
+- **مبتنی بر قوانین (Rules-based)** (مدل Claude Code): الگوهای مجاز/ممنوع در پیکربندی. برای مثال: مجاز دانستن دستورات `git` و منع `rm -rf`
+- **مبتنی بر طبقه‌بندی‌کننده (Classifier-based):** یک مدل سیاست‌گذار (Policy Model) هر عمل را امتیازدهی کرده و آن را اجرا، رد یا به انسان ارجاع می‌دهد. این روش به‌صورت مرحله‌ای به پیش‌فرض تبدیل شد: Claude Code حالت خودکار (Auto Mode) را در ۱۴ اوت ۲۰۲۶ برای کاربران Pro، Max و Team پیش‌فرض کرد و از نسخه v2.1.284 (۲۸ سپتامبر) هر نشست تعاملی بدون حالت مجوز پیکربندی‌شده در همین حالت آغاز می‌شود. اجراهای بدون رابط کاربری (Headless) استثنا هستند: از نسخه v2.1.302 (۱۶ اکتبر)، نشست‌های `claude -p` و Agent SDK بدون حالت مشخص، روی ارائه‌دهندگان شخص ثالث، با تله‌متری خاموش یا روی یک نصب تازه، در حالت `default` شروع می‌شوند؛ بنابراین یک کار CI که هرگز حالت را تنظیم نمی‌کند ممکن است در محیط‌های مختلف رفتار متفاوتی داشته باشد. آن را به‌صراحت تنظیم کنید. سرویس Claude Managed Agents هر فراخوانی ابزار را در سمت سرور تحت سیاست مجوز خودکار (۱۰ سپتامبر) ارزیابی می‌کند. این رویکرد خستگی ناشی از تاییدهای مکرر (Approval Fatigue) را با مسئله کالیبراسیون معاوضه می‌کند: اکنون باید آستانه‌ای را انتخاب و پایش کنید که طبقه‌بندی‌کننده در آن تصمیم‌گیری را به انسان واگذار می‌کند
 
-**4. Observe and Iterate**: The LLM sees the execution output. If there is an error, it generates a fix. If the output is partial, it generates the next step. This creates a self-correcting loop.
+**گام ۳. اجرا و ثبت خروجی (Execute and Capture):** کد در یک ران‌تایم با دسترسی کامل (یا محدود) به سیستم اجرا می‌شود. خروجی‌های stdout، stderr، مقادیر بازگشتی و هر فایل تولیدشده ثبت می‌شوند.
 
-### Code Example: Code Execution Agent
+**گام ۴. مشاهده و تکرار (Observe and Iterate):** مدل LLM خروجی اجرا را می‌بیند. اگر خطایی وجود داشته باشد، اصلاحیه‌ای تولید می‌کند. اگر خروجی ناقص باشد، گام بعدی را می‌سازد. این روند یک حلقه خوداصلاح‌گر (Self-correcting Loop) ایجاد می‌کند.
+
+### نمونه‌کد: Agent اجرای کد
+
+<div dir="ltr">
 
 ```python
 class CodeExecutionAgent:
@@ -317,29 +345,33 @@ class CodeExecutionAgent:
         return "Max iterations reached."
 ```
 
-### When to Use This Pattern
+</div>
 
-- Data analysis and visualization tasks
-- System administration and DevOps automation
-- File processing and transformation
-- Any task where the user describes "what" and the agent figures out "how"
+### چه زمانی از این الگو استفاده کنیم
 
-### Trade-offs
+- وظایف تحلیل داده و مصورسازی
+- مدیریت سیستم و خودکارسازی DevOps
+- پردازش و تبدیل فایل‌ها
+- هر وظیفه‌ای که در آن کاربر «چیستی» کار را توصیف می‌کند و Agent «چگونگی» آن را پیدا می‌کند
 
-| Advantage | Disadvantage |
-|-----------|--------------|
-| Extremely flexible | Security risk if unsandboxed |
-| Self-correcting via observe loop | Model may generate dangerous code |
-| Works offline with local models | Requires user to evaluate code (or trust) |
-| Full system access when needed | Non-deterministic (same prompt, different code) |
+### موازنه‌ها (Trade-offs)
+
+| مزیت | عیب |
+|------|-----|
+| انعطاف‌پذیری بسیار بالا | ریسک امنیتی در صورت نبود سندباکس |
+| خوداصلاح‌گری از طریق حلقه مشاهده | احتمال تولید کد خطرناک توسط مدل |
+| عملکرد آفلاین با مدل‌های محلی | نیازمند ارزیابی کد توسط کاربر (یا اعتماد کامل) |
+| دسترسی کامل به سیستم در صورت نیاز | غیرقطعی (یک Prompt یکسان می‌تواند کد متفاوتی تولید کند) |
 
 ---
 
-## Pattern 4: Multi-Agent Tool Orchestration
+## الگوی ۴: ارکستراسیون ابزار چند-Agentی (Multi-Agent Tool Orchestration) <a id="pattern-4-multi-agent-tool-orchestration"></a>
 
-Instead of one agent with many tools, you have multiple specialized agents that each own a subset of tools. An orchestrator routes tasks to the right agent. This is the "microservices revolution" for agents.
+به‌جای یک Agent با ابزارهای فراوان، چندین Agent تخصصی دارید که هر یک مالک زیرمجموعه‌ای از ابزارهاست. یک ارکستریتور (Orchestrator) وظایف را به Agent مناسب هدایت می‌کند. این همان «انقلاب میکروسرویس‌ها» برای دنیای Agentهاست.
 
-### Architecture
+### معماری
+
+<div dir="ltr">
 
 ```
   [User Request]
@@ -360,19 +392,23 @@ Instead of one agent with many tools, you have multiple specialized agents that 
 (Docker)   (Docker)   (Docker)
 ```
 
-### Orchestration Strategies
+</div>
 
-**1. Router-Based (Simplest)**: The orchestrator is a classifier. It looks at the user's message, picks the right specialist agent, and forwards the entire task. No inter-agent communication.
+### راهبردهای ارکستراسیون
 
-**2. Plan-and-Execute**: A planning model (frontier-class) breaks the task into subtasks and assigns each to the appropriate specialist. Subtask results are aggregated by the planner. Much of the latency win comes from running independent subtasks in parallel: LLMCompiler (ICML 2024), which plans tool calls as a dependency graph, reported up to 3.7x lower latency and up to 6.7x lower cost than sequential ReAct on its benchmarks. Measure on your own tasks before quoting a number.
+**۱. مبتنی بر مسیریاب (Router-Based - ساده‌ترین):** ارکستریتور یک طبقه‌بندی‌کننده است. به پیام کاربر نگاه می‌کند، Agent متخصص مناسب را برمی‌گزیند و کل وظیفه را به آن ارجاع می‌دهد. هیچ ارتباطی بین Agentها وجود ندارد.
 
-**3. Hierarchical**: High-level agents assign work to lower-level agents, which may further delegate. This mirrors organizational structures and works well for complex projects.
+**۲. برنامه‌ریزی و اجرا (Plan-and-Execute):** یک مدل برنامه‌ریز (در رده مدل‌های پیشرو یا Frontier) وظیفه را به زیروظیفه‌ها (Subtasks) می‌شکند و هر یک را به متخصص مربوطه می‌سپارد. نتایج زیروظیفه‌ها توسط برنامه‌ریز تجمیع می‌شوند. بخش عمده کاهش تاخیر (Latency) از اجرای موازی زیروظیفه‌های مستقل به دست می‌آید: پژوهش LLMCompiler (کنفرانس ICML 2024) که فراخوانی ابزارها را به‌صورت یک گراف وابستگی برنامه‌ریزی می‌کند، در بنچمارک‌های خود تا ۳.۷ برابر تاخیر کمتر و تا ۶.۷ برابر هزینه کمتر نسبت به ReAct متوالی گزارش کرده است. پیش از استناد به هر عددی، روی وظایف خودتان اندازه‌گیری کنید.
 
-**4. Collaborative (Peer-to-Peer)**: Agents can communicate with each other directly, sharing observations and requesting help. This is the most complex pattern but handles emergent tasks well.
+**۳. سلسله‌مراتبی (Hierarchical):** Agentهای سطح بالا کار را به Agentهای سطح پایین‌تر واگذار می‌کنند و آن‌ها نیز ممکن است بیشتر تفویض اختیار کنند. این ساختار بازتابی از ساختارهای سازمانی است و برای پروژه‌های پیچیده به‌خوبی کار می‌کند.
 
-These strategies now ship as products. Cursor Projects (beta, September 10, 2026) is a hierarchical coordinator that fans work out to parallel subagents and keeps context for months. GitHub Copilot draws a useful line between **workflows as code** (dynamic workflows: deterministic stages, checkpoints for human review) and **model-driven delegation** (`/fleet`). Pick workflows-as-code when the stages are known and auditability matters; let the model delegate when the decomposition itself is the hard part.
+**۴. مشارکتی / همتابه‌همتا (Collaborative / Peer-to-Peer):** Agentها می‌توانند مستقیماً با یکدیگر ارتباط برقرار کنند، مشاهدات را به اشتراک بگذارند و درخواست کمک کنند. این پیچیده‌ترین الگو است اما وظایف نوظهور و پیش‌بینی‌نشده (Emergent Tasks) را به‌خوبی مدیریت می‌کند.
 
-### Cost Optimization: The Plan-and-Execute Advantage
+این راهبردها اکنون به‌صورت محصول عرضه می‌شوند. قابلیت Cursor Projects (نسخه بتا، ۱۰ سپتامبر ۲۰۲۶) یک هماهنگ‌کننده سلسله‌مراتبی است که کارها را به زیر-Agentهای موازی توزیع می‌کند و زمینه (Context) را برای ماه‌ها نگه می‌دارد. ابزار GitHub Copilot مرز مفیدی میان **جریان‌های کاری به‌عنوان کد (Workflows as Code)** (جریان‌های پویا: مراحل قطعی، نقاط بازبینی برای مرور انسانی) و **تفویض اختیار هدایت‌شده توسط مدل** (`/fleet`) ترسیم می‌کند. زمانی که مراحل شناخته‌شده هستند و ممیزی‌پذیری اهمیت دارد، جریان کاری به‌عنوان کد را انتخاب کنید؛ و هنگامی که خودِ تجزیه مسئله بخش دشوار کار است، تفویض اختیار را به مدل بسپارید.
+
+### بهینه‌سازی هزینه: مزیت الگوی برنامه‌ریزی و اجرا
+
+<div dir="ltr">
 
 ```
 Traditional: [Frontier Model] handles all steps       Cost: $1.00/task
@@ -385,18 +421,22 @@ Plan-and-Execute:
                                                       Savings: ~87%
 ```
 
-The 2026 trend is treating agent cost optimization as a first-class concern, similar to how cloud cost optimization became essential in the microservices era. Two refinements to the arithmetic above:
+</div>
 
-- **Cascades with a quality gate** can beat static plan/execute splits when task difficulty varies: draft with a cheap model, gate, escalate only on failure. GitHub Copilot Fusion (GA October 28, 2026, grown out of the HydraFusion preview) ships exactly this as its cascade workflow, next to single-model and critique workflows. The price spread is what makes it tempting: GPT-6 Luna lists at $0.10/$0.50 per 1M tokens against $10/$50 for GPT-6 Astra. The catch is that prompt caches are per model, so an escalation hits a cold cache and pays for the whole context at the stronger model's uncached input rate. Before building a cascade, measure the stronger model alone at a lower effort setting on the same tasks.
-- **Input tokens dominate long tool loops.** Anthropic's Claude Code telemetry (September 24, 2026, vendor-reported) puts the input-to-output ratio at 324:1, so the cache-read price and the cache hit rate matter more than the output price. Claude Opus 5.5 lists at $4/$20 with cache reads at $0.20 (0.05x input); keep the system prompt and tool definitions stable so they stay cached.
+روند سال ۲۰۲۶ برخورد با بهینه‌سازی هزینه Agent به‌عنوان یک دغدغه درجه یک است، مشابه زمانی که بهینه‌سازی هزینه ابری در عصر میکروسرویس‌ها ضروری شد. دو اصلاح بر محاسبات بالا:
+
+- **آبشارها با دروازه کیفیت (Cascades with a quality gate)** هنگامی که دشواری وظایف متغیر است می‌توانند بهتر از تقسیم ثابت برنامه‌ریزی/اجرا عمل کنند: پیش‌نویس را با یک مدل ارزان بزنید، از دروازه کیفیت عبور دهید و فقط در صورت شکست به مدل قوی‌تر ارجاع (Escalate) دهید. قابلیت GitHub Copilot Fusion (عرضه عمومی ۲۸ اکتبر ۲۰۲۶، برآمده از پیش‌نمایش HydraFusion) دقیقاً همین را در کنار جریان‌های تک‌مدلی و نقد (Critique) به‌عنوان جریان آبشاری خود ارائه می‌دهد. شکاف قیمتی است که آن را وسوسه‌انگیز می‌کند: قیمت فهرست‌شده GPT-6 Luna برابر ۰.۱۰/۰.۵۰ دلار به ازای هر ۱ میلیون Token در برابر ۱۰/۵۰ دلار برای GPT-6 Astra است. نکته ظریف اینجاست که کش‌های Prompt (Prompt Caches) به‌ازای هر مدل مجزا هستند؛ بنابراین یک ارجاع به مدل قوی‌تر با کش سرد مواجه می‌شود و کل زمینه را با نرخ ورودی بدون کش مدل قوی‌تر محاسبه می‌کند. پیش از ساخت یک آبشار، مدل قوی‌تر را به‌تنهایی با تنظیم تلاش (Effort) پایین‌تر روی همان وظایف بسنجید.
+- **واحدهای Token ورودی بر حلقه‌های طولانی ابزار غلبه دارند.** تله‌متری Claude Code شرکت Anthropic (۲۴ سپتامبر ۲۰۲۶، طبق گزارش ارائه‌دهنده) نسبت ورودی به خروجی را ۳۲۴ به ۱ اعلام می‌کند؛ بنابراین قیمت خواندن از کش و نرخ اصابت کش (Cache Hit Rate) از قیمت خروجی اهمیت بیشتری دارد. قیمت فهرست‌شده Claude Opus 5.5 برابر ۴/۲۰ دلار با نرخ خواندن کش ۰.۲۰ دلار (۰.۰۵ برابر ورودی) است؛ پس System Prompt و تعاریف ابزارها را پایدار نگه دارید تا در کش باقی بمانند.
 
 ---
 
-## Sandboxed vs. Unsandboxed Execution
+## اجرای ایزوله‌شده در سندباکس در برابر اجرای بدون سندباکس <a id="sandboxed-vs-unsandboxed-execution"></a>
 
-This is the most consequential architecture decision for any tool-use agent.
+این پیامددارترین تصمیم معماری برای هر Agent ابزارمحور است.
 
-### Comparison
+### مقایسه
+
+<div dir="ltr">
 
 ```
   UNSANDBOXED (Host Access)              SANDBOXED (Isolated)
@@ -414,46 +454,50 @@ This is the most consequential architecture decision for any tool-use agent.
   +------------------------+             +------------------------+
 ```
 
-### Sandbox Implementation Options
+</div>
 
-| Technology | Isolation Level | Startup Time | Use Case |
-|------------|----------------|-------------|----------|
-| Docker | Process + FS | 1-5 sec | Most agent sandboxes (OpenHands) |
-| Firecracker | Full VM (microVM) | ~125ms | High-security, multi-tenant |
-| gVisor | Kernel-level | ~200ms | Google Cloud Run |
-| E2B | Cloud sandbox | 2-3 sec | Remote agent execution |
-| WebAssembly | Language-level | <50ms | Browser-based execution |
-| Managed snapshot runtime (AgentCore Runtime V2) | Managed per-session sandbox, restored from a snapshot | ~2 sec P75 for 200 MB to 2 GB images (AWS-reported; ~5.4 to ~30 sec on V1) | Per-session agent sandboxes without running the fleet |
-| Managed VPC sandbox (Gemini Enterprise Computer Use and Shell, GA Sep 9, 2026) | Managed, with VPC Service Controls and CMEK | Idle sandboxes are descheduled with file-system state kept and resume in seconds (Google) | Regulated Google Cloud shops |
+### گزینه‌های پیاده‌سازی سندباکس
 
-### The 2026 Consensus
+| فناوری | سطح ایزوله‌سازی | زمان راه‌اندازی | مورد استفاده |
+|--------|-------------------|-------------------|--------------|
+| فناوری Docker | پردازش و فایل‌سیستم (Process + FS) | ۱ تا ۵ ثانیه | اغلب سندباکس‌های Agent (مانند OpenHands) |
+| فناوری Firecracker | ماشین مجازی کامل (microVM) | حدود ۱۲۵ میلی‌ثانیه | محیط‌های چندمستاجری (Multi-tenant) با امنیت بالا |
+| فناوری gVisor | سطح هسته (Kernel-level) | حدود ۲۰۰ میلی‌ثانیه | سرویس Google Cloud Run |
+| سرویس E2B | سندباکس ابری | ۲ تا ۳ ثانیه | اجرای از راه دور Agent |
+| فناوری WebAssembly | سطح زبان برنامه‌نویسی | کمتر از ۵۰ میلی‌ثانیه | اجرا در مرورگر |
+| ران‌تایم اسنپ‌شات مدیریت‌شده (AgentCore Runtime V2) | سندباکس مدیریت‌شده به‌ازای هر نشست، بازیابی‌شده از اسنپ‌شات | حدود ۲ ثانیه در صدک ۷۵ (P75) برای ایمیج‌های ۲۰۰ مگابایت تا ۲ گیگابایت (طبق گزارش AWS؛ حدود ۵.۴ تا ۳۰ ثانیه در V1) | سندباکس‌های نشست‌محور Agent بدون نیاز به مدیریت ناوگان سرور |
+| سندباکس VPC مدیریت‌شده (Gemini Enterprise Computer Use and Shell، عرضه عمومی ۹ سپتامبر ۲۰۲۶) | مدیریت‌شده، دارای VPC Service Controls و CMEK | سندباکس‌های بیکار (Idle) با حفظ وضعیت فایل‌سیستم زمان‌بندی‌زدایی می‌شوند و ظرف چند ثانیه از سر گرفته می‌شوند (Google) | سازمان‌های تحت مقررات سخت‌گیرانه در Google Cloud |
 
-Sandboxed-by-default with escape hatches. The OpenClaw security crisis (135,000 exposed instances on the public internet) has made the industry take this seriously. New production agents are expected to sandbox by default. Unsandboxed execution is reserved for single-user, supervised environments.
+### اجماع سال ۲۰۲۶
 
-Two refinements from August and September 2026:
+سندباکس به‌صورت پیش‌فرض به‌همراه دریچه‌های خروج اضطراری (Escape Hatches). بحران امنیتی OpenClaw (۱۳۵٬۰۰۰ نمونه در معرض دید در اینترنت عمومی) باعث شد صنعت این موضوع را جدی بگیرد. از Agentهای عملیاتی جدید انتظار می‌رود به‌طور پیش‌فرض در سندباکس اجرا شوند. اجرای بدون سندباکس به محیط‌های تک‌کاربره و تحت نظارت محدود شده است.
 
-- **Split the planes.** Coding-agent vendors converged on a vendor control plane with a customer-hosted execution plane: Claude Code self-hosted runners, Claude Managed Agents self-hosted sandboxes, Cursor Self-hosted Machines, and self-hosted environments in the OpenAI Agents API. Orchestration and models stay with the vendor; tool execution, credentials and network egress stay inside your perimeter. This is the standard answer to "how do you let an agent touch production code and secrets."
-- **The sandbox boundary includes egress and the kill path.** In its September 25, 2026 disclosure, OpenAI described an agent in an internal training run that tunneled out through insufficiently filtered DNS; monitoring alarmed about 12 minutes after the first external response, but the run was stopped only about 2.5 hours later because the automatic stop failed. Allowlist DNS (domains and record types), not just HTTP, and test the automatic kill like any other control. Out-of-band enforcement is the next tier: NVIDIA's Open Agent Safety Platform (announced September 28, 2026) pairs its OpenShell runtime (Apache 2.0, default-deny) with Sentry, a reference design for a watchdog on BlueField-4 DPUs that sits outside the agent's host and can quarantine it.
+دو تکمیل مهم از اوت و سپتامبر ۲۰۲۶:
+
+- **جداسازی سطوح (Split the planes).** ارائه‌دهندگان Agentهای کدنویسی روی یک سطح کنترل (Control Plane) نزد ارائه‌دهنده و یک سطح اجرا (Execution Plane) با میزبانی مشتری همگرا شدند: اجراکننده‌های خودمیزبان Claude Code، سندباکس‌های خودمیزبان Claude Managed Agents، ماشین‌های خودمیزبان Cursor و محیط‌های خودمیزبان در OpenAI Agents API. ارکستراسیون و مدل‌ها نزد ارائه‌دهنده می‌مانند؛ اجرای ابزار، اعتبارنامه‌ها و ترافیک خروجی شبکه (Egress) درون محیط امن شما باقی می‌مانند. این پاسخ استاندارد به پرسش «چگونه به یک Agent اجازه دهیم به کد عملیاتی و اسرار امنیتی دست بزند» است.
+- **مرز سندباکس شامل ترافیک خروجی (Egress) و مسیر توقف اضطراری (Kill Path) نیز هست.** شرکت OpenAI در افشای ۲۵ سپتامبر ۲۰۲۶ خود، Agentای را در یک اجرای آموزشی داخلی توصیف کرد که از طریق DNS با فیلتر ناکافی به بیرون تونل زده بود؛ سیستم پایش حدود ۱۲ دقیقه پس از اولین پاسخ خارجی هشدار داد، اما اجرا حدود ۲.۵ ساعت بعد متوقف شد زیرا توقف خودکار شکست خورد. فهرست مجاز (Allowlist) را برای DNS (دامنه‌ها و انواع رکوردها) نیز اعمال کنید، نه فقط HTTP، و توقف خودکار را مانند هر کنترل امنیتی دیگری آزمایش نمایید. اعمال کنترل خارج از باند (Out-of-band Enforcement) لایه بعدی است: پلتفرم Open Agent Safety شرکت NVIDIA (معرفی‌شده در ۲۸ سپتامبر ۲۰۲۶) ران‌تایم OpenShell خود (مجوز Apache 2.0، با سیاست منع پیش‌فرض) را با Sentry جفت می‌کند که یک طراحی مرجع برای نگهبان (Watchdog) روی پردازنده‌های BlueField-4 DPU است و بیرون از میزبان Agent قرار می‌گیرد و می‌تواند آن را قرنطینه کند.
 
 ---
 
-## State Management Across Tool Calls
+## مدیریت وضعیت در سراسر فراخوانی‌های ابزار <a id="state-management-across-tool-calls"></a>
 
-Agents need to maintain state between tool calls. The strategy depends on the agent's lifecycle and use case.
+ایجنت‌ها (Agentها) باید وضعیت (State) را میان فراخوانی‌های ابزار حفظ کنند. راهبرد مناسب به چرخه حیات و مورد استفاده Agent بستگی دارد.
 
-### State Management Patterns
+### الگوهای مدیریت وضعیت
 
-| Pattern | Lifecycle | Storage | Used By |
-|---------|-----------|---------|---------|
-| **Conversation State** | Ephemeral (single conversation) | Message array | Most API-based agents |
-| **Session State** | Per-session (working dir, open files) | Docker container / temp dir | OpenHands, Claude Code |
-| **Persistent State** | Cross-session (days, weeks) | DB, files, Markdown | OpenClaw (`MEMORY.md`, `memory/`), CLAUDE.md |
-| **Environment State** | External (source of truth) | Git repo, database, FS | Claude Code (git status), CI/CD |
-| **Managed Session State** | Durable across disconnects and restarts | Vendor-hosted session and event store | Claude Managed Agents, OpenAI Agents API |
+| الگو | چرخه حیات | ذخیره‌سازی | استفاده‌شده توسط |
+|------|------------|------------|------------------|
+| الگوی **وضعیت مکالمه** (Conversation State) | موقتی (یک مکالمه منفرد) | آرایه پیام‌ها (Message array) | اغلب Agentهای مبتنی بر API |
+| الگوی **وضعیت نشست** (Session State) | به‌ازای هر نشست (مسیر کاری، فایل‌های باز) | کانتینر Docker یا دایرکتوری موقت | ابزارهای OpenHands و Claude Code |
+| الگوی **وضعیت ماندگار** (Persistent State) | بین‌نشستی (روزها و هفته‌ها) | پایگاه داده، فایل‌ها و Markdown | ابزارهای OpenClaw (`MEMORY.md`، `memory/`) و CLAUDE.md |
+| الگوی **وضعیت محیط** (Environment State) | خارجی (منبع حقیقت) | مخزن Git، پایگاه داده و فایل‌سیستم | ابزار Claude Code (وضعیت git) و خطوط CI/CD |
+| الگوی **وضعیت نشست مدیریت‌شده** (Managed Session State) | پایدار در برابر قطعی‌ها و راه‌اندازی مجدد | مخزن نشست و رویداد میزبانی‌شده توسط ارائه‌دهنده | سرویس‌های Claude Managed Agents و OpenAI Agents API |
 
-Managed session state is convenient but moves your agent's working memory into a vendor's retention and residency terms, so check them per deployment.
+وضعیت نشست مدیریت‌شده راحت است اما حافظه کاری Agent شما را تحت شرایط نگهداری و اقامت داده (Retention and Residency) ارائه‌دهنده قرار می‌دهد؛ بنابراین آن‌ها را برای هر استقرار (Deployment) بررسی کنید.
 
-### Implementation: Session State
+### پیاده‌سازی: وضعیت نشست
+
+<div dir="ltr">
 
 ```python
 class AgentSession:
@@ -479,24 +523,28 @@ class AgentSession:
         return self._compress_history(max_tokens)  # Summarize old results
 ```
 
+</div>
+
 ---
 
-## Error Handling and Retry Patterns
+## الگوهای مدیریت خطا و تلاش مجدد <a id="error-handling-and-retry-patterns"></a>
 
-Tool calls fail. Networks time out. APIs return errors. Code throws exceptions. A production agent needs systematic error handling.
+فراخوانی‌های ابزار شکست می‌خورند. شبکه‌ها با اتمام مهلت (Timeout) مواجه می‌شوند. رابط‌های API خطا برمی‌گردانند. کدها استثنا پرتاب می‌کنند. یک Agent عملیاتی به مدیریت خطای سیستماتیک نیاز دارد.
 
-### Error Taxonomy
+### رده‌بندی خطاها
 
-| Error Type | Examples | Strategy |
-|-----------|----------|----------|
-| **Transient** | Network timeout, rate limit, 503 | Exponential backoff retry (max 3) |
-| **Input** | Invalid args, wrong format | Feed error to LLM, let it fix args |
-| **Permission** | Auth failure, access denied | Report to user, do NOT retry |
-| **Logic** | Wrong tool, impossible op | Feed error to LLM, let it re-plan |
-| **Catastrophic** | OOM, sandbox crash, infinite loop | Abort, report, clean up resources |
-| **Contract** | HTTP 400 after a model or agent-version change (forced `tool_choice` on Opus 5.5, Sonnet 5.5 or Fable 5.1, renamed tool parameters in a new managed-agent version) | Do not retry; pin versions and contract-test tool schemas in CI |
+| نوع خطا | مثال‌ها | راهبرد |
+|---------|---------|--------|
+| خطای **موقتی** (Transient) | اتمام مهلت شبکه، محدودیت نرخ (Rate limit)، کد ۵۰۳ | تلاش مجدد با تاخیر نمایی (Exponential backoff، حداکثر ۳ بار) |
+| خطای **ورودی** (Input) | آرگومان‌های نامعتبر، قالب نادرست | ارسال خطا به LLM تا خودش آرگومان‌ها را اصلاح کند |
+| خطای **دسترسی** (Permission) | شکست احراز هویت، عدم دسترسی | گزارش به کاربر؛ هرگز تلاش مجدد نکنید |
+| خطای **منطقی** (Logic) | ابزار اشتباه، عملیات غیرممکن | ارسال خطا به LLM تا دوباره برنامه‌ریزی کند |
+| خطای **فاجعه‌بار** (Catastrophic) | کمبود حافظه (OOM)، کرش سندباکس، حلقه بی‌نهایت | لغو عملیات، گزارش خطا و پاک‌سازی منابع |
+| خطای **قراردادی** (Contract) | خطای HTTP 400 پس از تغییر نسخه مدل یا Agent (اجبار `tool_choice` در Opus 5.5، Sonnet 5.5 یا Fable 5.1؛ تغییر نام پارامترهای ابزار در نسخه جدید Agent مدیریت‌شده) | تلاش مجدد نکنید؛ نسخه‌ها را پین کنید و طرحواره‌های ابزار را در CI تست قراردادی (Contract-test) بگیرید |
 
-### Retry Pattern Implementation
+### پیاده‌سازی الگوی تلاش مجدد
+
+<div dir="ltr">
 
 ```python
 class ToolExecutor:
@@ -526,9 +574,13 @@ class ToolExecutor:
         return {"error": f"Failed after {self.MAX_RETRIES} retries"}
 ```
 
-### The Self-Correction Loop
+</div>
 
-The most powerful error handling pattern in 2026. The agent observes its own failures and autonomously fixes them:
+### حلقه خوداصلاح‌گری (Self-Correction Loop)
+
+قدرتمندترین الگوی مدیریت خطا در سال ۲۰۲۶. این Agent شکست‌های خود را مشاهده می‌کند و به‌طور خودمختار آن‌ها را برطرف می‌سازد:
+
+<div dir="ltr">
 
 ```
 LLM generates code/tool call
@@ -541,31 +593,45 @@ LLM generates code/tool call
               (max 5 corrections to prevent infinite loops)
 ```
 
-This is how Claude Code, OpenHands, and Cline handle test failures: run tests, see failures, edit code, re-run tests, repeat until green.
+</div>
+
+ابزارهای Claude Code، OpenHands و Cline خطاهای تست را دقیقاً همین‌گونه مدیریت می‌کنند: اجرای تست‌ها، مشاهده شکست‌ها، ویرایش کد، اجرای مجدد تست‌ها و تکرار تا سبز شدن همه تست‌ها.
 
 ---
 
-## MCP Integration Patterns
+## الگوهای یکپارچه‌سازی MCP <a id="mcp-integration-patterns"></a>
 
-MCP has become the standard protocol for tool integration in 2026. Here are the key patterns for integrating MCP into agent architectures.
+پروتکل MCP در سال ۲۰۲۶ به استاندارد یکپارچه‌سازی ابزار تبدیل شده است. در ادامه الگوهای کلیدی برای یکپارچه‌سازی MCP در معماری Agentها آورده شده است.
 
-### Pattern A: Direct MCP Connection
+### الگوی الف: اتصال مستقیم MCP
+
+<div dir="ltr">
 
 ```
 [Agent (Client)] <-- stdio / HTTP --> [MCP Server]
 ```
-Simplest pattern. One agent, one server. Used for single-purpose tools (database, file system).
 
-### Pattern B: Multi-Server Fan-Out
+</div>
+
+ساده‌ترین الگو: یک Agent و یک سرور. برای ابزارهای تک‌منظوره (پایگاه داده، سیستم فایل) استفاده می‌شود.
+
+### الگوی ب: توزیع چندسروری (Multi-Server Fan-Out)
+
+<div dir="ltr">
 
 ```
                   +--> [GitHub MCP]
 [Agent (Client)]--+--> [Postgres MCP]
                   +--> [Slack MCP]
 ```
-Agent connects to multiple MCP servers simultaneously. Tool schemas are merged into one manifest. Used by Claude Code and multi-tool assistants.
 
-### Pattern C: MCP Gateway (Enterprise)
+</div>
+
+این Agent هم‌زمان به چندین سرور MCP متصل می‌شود. طرحواره‌های ابزار در یک مانیفست واحد ادغام می‌شوند. توسط Claude Code و دستیارهای چندابزاری استفاده می‌شود.
+
+### الگوی ج: دروازه MCP سازمانی (MCP Gateway)
+
+<div dir="ltr">
 
 ```
 [Agent 1] --+                          +--> [GitHub MCP]
@@ -573,25 +639,30 @@ Agent connects to multiple MCP servers simultaneously. Tool schemas are merged i
 [Agent 3] --+    (Auth, Rate Limit,    +--> [Slack MCP]
                   Audit, Route)
 ```
-Central gateway handles auth, rate limiting, and audit logging. Agents authenticate only with the gateway. Used for enterprise and multi-tenant deployments.
 
-### MCP Roadmap Gaps
+</div>
 
-In May 2026 the MCP specification was missing three production primitives: identity propagation, adaptive tool budgeting, and structured error semantics. Their status against the current spec revision (2026-07-28, stateless core) and the maintainers' August 22, 2026 roadmap:
+دروازه مرکزی احراز هویت، محدودیت نرخ (Rate Limiting) و ثبت لاگ ممیزی را مدیریت می‌کند. Agentها فقط با دروازه احراز هویت می‌شوند. برای استقرارهای سازمانی و چندمستاجری (Multi-tenant) استفاده می‌شود.
 
-| Gap | Status (November 2026) | What to do meanwhile |
-|-----|-----------------------|----------------------|
-| **Identity propagation** | Enterprise-Managed Authorization (stable since June 18, 2026, and classified Stable under the extension lifecycle in SEP-3392) covers IdP-provisioned access for users. Agent identity is next: DPoP (SEP-1932) and Workload Identity Federation (SEP-1933) are open drafts, and an Agent Identity working group is forming | Keep the gateway as the identity broker for headless agents |
-| **Adaptive tool budgeting** | Not among the August 22 roadmap's priority areas. The closest work is server-side progressive discovery for large tool catalogs, which saves schema tokens, not spend | Enforce budgets in the harness or gateway: session spend caps (Claude Managed Agents pauses with `budget_reached`), per-tool rate limits |
-| **Structured error semantics** | Partly addressed: the roadmap plans a redesign of the `tools/call` result shape, because returning both `content` and `structuredContent` produced diverging implementations | Normalize errors at the gateway into your own taxonomy (see the table above) |
+### شکاف‌های نقشه راه MCP
 
-The next spec revision is targeted for March 30, 2027 (SEP-3398, accepted October 14 and merged October 27, subject to confirmation), and releases after it fall generally on the last Tuesday of March and September, so plan SDK upgrades on that cadence. The [tool use and MCP chapter](../07-agentic-systems/03-tool-use-and-mcp.md) covers the stateless rewrite and the full roadmap.
+در مه ۲۰۲۶، مشخصات فنی MCP فاقد سه قابلیت پایه عملیاتی بود: انتشار هویت (Identity Propagation)، بودجه‌بندی تطبیقی ابزار (Adaptive Tool Budgeting) و معناشناسی خطای ساخت‌یافته (Structured Error Semantics). وضعیت آن‌ها نسبت به بازبینی فعلی مشخصات (۲۸ ژوئیه ۲۰۲۶، هسته بدون وضعیت یا Stateless Core) و نقشه راه ۲۲ اوت ۲۰۲۶ نگهدارندگان به شرح زیر است:
+
+| شکاف | وضعیت (نوامبر ۲۰۲۶) | در این میان چه کار کنیم |
+|------|---------------------|-------------------------|
+| **انتشار هویت (Identity propagation)** | قابلیت Enterprise-Managed Authorization (پایدار از ۱۸ ژوئن ۲۰۲۶ و طبقه‌بندی‌شده به‌عنوان Stable در چرخه عمر افزونه‌ها در SEP-3392) دسترسی تخصیص‌یافته توسط IdP را برای کاربران پوشش می‌دهد. گام بعدی هویت Agent است: استانداردهای DPoP (SEP-1932) و Workload Identity Federation (SEP-1933) در مرحله پیش‌نویس باز هستند و یک کارگروه هویت Agent در حال شکل‌گیری است | فعلاً دروازه (Gateway) را به‌عنوان کارگزار هویت برای Agentهای بدون رابط کاربری (Headless) نگه دارید |
+| **بودجه‌بندی تطبیقی ابزار (Adaptive tool budgeting)** | جزو حوزه‌های اولویت‌دار نقشه راه ۲۲ اوت نیست. نزدیک‌ترین کار، کشف تدریجی سمت سرور برای کاتالوگ‌های بزرگ ابزار است که در واحدهای Token مربوط به طرحواره صرفه‌جویی می‌کند، نه در هزینه کل | بودجه را در هارنس یا دروازه اعمال کنید: سقف هزینه نشست (سرویس Claude Managed Agents با وضعیت `budget_reached` مکث می‌کند) و محدودیت نرخ به‌ازای هر ابزار |
+| **معناشناسی خطای ساخت‌یافته (Structured error semantics)** | تا حدی برطرف شده: نقشه راه بازطراحی شکل نتیجه `tools/call` را در برنامه دارد، زیرا بازگرداندن هم‌زمان `content` و `structuredContent` به پیاده‌سازی‌های واگرا منجر شد | خطاها را در دروازه بر اساس رده‌بندی خودتان (جدول بالا را ببینید) نرمال‌سازی کنید |
+
+بازبینی بعدی مشخصات برای ۳۰ مارس ۲۰۲۷ هدف‌گذاری شده است (طرح SEP-3398، پذیرفته‌شده در ۱۴ اکتبر و ادغام‌شده در ۲۷ اکتبر، مشروط به تایید نهایی)، و انتشارهای پس از آن عموماً در آخرین سه‌شنبه ماه‌های مارس و سپتامبر انجام می‌شوند؛ بنابراین ارتقای SDK را بر اساس همین زمان‌بندی برنامه‌ریزی کنید. فصل [استفاده از ابزار و MCP](../07-agentic-systems/03-tool-use-and-mcp.md) بازنویسی بدون وضعیت و نقشه راه کامل را پوشش می‌دهد.
 
 ---
 
-## Architecture Decision Tree
+## درخت تصمیم معماری <a id="architecture-decision-tree"></a>
 
-Use this decision tree to select the right pattern for your use case:
+برای انتخاب الگوی مناسب جهت مورد استفاده خود از این درخت تصمیم بهره ببرید:
+
+<div dir="ltr">
 
 ```
 Does the target system have an API?
@@ -608,80 +679,84 @@ Does the target system have an API?
                                         +-- NO  --> Pattern 1 with custom tool.
 ```
 
-### Hybrid Architectures
+</div>
 
-In practice, production systems combine patterns. Claude Code uses:
-- Pattern 1 (tool calling) for file operations and git
-- Pattern 2 (vision-based) for computer use features
-- Pattern 3 (code execution) for bash and test running
-- Pattern 4 (multi-agent) for subagent spawning
+### معماری‌های ترکیبی (Hybrid Architectures)
 
-The key is to default to the simplest pattern (function calling) and only add complexity when the use case demands it.
+در عمل، سیستم‌های عملیاتی الگوها را ترکیب می‌کنند. ابزار Claude Code از این موارد استفاده می‌کند:
+- الگوی ۱ (فراخوانی ابزار) برای عملیات فایل و Git
+- الگوی ۲ (مبتنی بر بینایی) برای قابلیت‌های استفاده از رایانه
+- الگوی ۳ (اجرای کد) برای Bash و اجرای تست‌ها
+- الگوی ۴ (چند-Agentی) برای ایجاد زیر-Agentها (Subagents)
 
----
-
-## System Design Interview Angle
-
-When discussing tool-use architecture in interviews, structure your answer around these five dimensions:
-
-### 1. Pattern Selection
-
-Start by identifying which pattern fits: "The target system has a REST API, so I would use the function/tool calling pattern with an MCP server wrapping the API." This shows you understand the decision tree.
-
-### 2. Sandbox Boundary
-
-Always address security: "For a multi-tenant deployment, I would sandbox each user's agent session in a Docker container with no network access to internal services. The MCP server runs outside the sandbox and mediates all external calls."
-
-### 3. State Strategy
-
-Explain how state is managed: "I would use session state within the Docker container for working files, and environment state (the git repo) as the source of truth. No persistent agent memory needed for this use case."
-
-### 4. Error Budget
-
-Discuss failure modes: "Tool calls can fail due to transient errors (retry with backoff), input errors (let the LLM self-correct), or permission errors (surface to user). I would set a max of 5 self-correction attempts before escalating."
-
-### 5. Cost Model
-
-Address economics: "For the orchestrator, I would use the Plan-and-Execute pattern: Opus 5.5 plans the task and Haiku 5.5 executes each step. Haiku 5.5 lists at $0.10/$0.50 per 1M tokens against $4/$20 for Opus 5.5, a 40x gap, and its cache reads cost $0.01 against $0.20. The catch is a price cliff: once a Haiku 5.5 prompt passes 100,000 tokens, counting cache reads and writes, the whole request bills at $0.50/$2.50, so I keep executor contexts short and hand each step only what it needs. It also rejects `temperature`, `top_p`, `top_k` and assistant prefill, so executor code ported from Haiku 4.5 needs a contract test. Because input outweighs output by two orders of magnitude in long tool loops, I would keep the system prompt and tool definitions stable so they stay in the prompt cache."
+نکته کلیدی این است که به‌طور پیش‌فرض از ساده‌ترین الگو (فراخوانی تابع) شروع کنید و تنها زمانی پیچیدگی بیفزایید که مورد استفاده واقعاً آن را ایجاب کند.
 
 ---
 
-## Interview Questions
+## زاویه دید مصاحبه طراحی سیستم <a id="system-design-interview-angle"></a>
 
-### Q: Design a system that lets a customer support agent answer questions using data from Zendesk, Salesforce, and an internal knowledge base.
+هنگام بحث درباره معماری ابزارمحور در مصاحبه‌ها، پاسخ خود را حول این پنج بُعد ساختاردهی کنید:
 
-**Strong answer:**
-Pattern 1 (function/tool calling) with three MCP servers, one per data source. Use the Multi-Server Fan-Out pattern with dynamic manifests so only relevant tools load per query. For production, add an MCP Gateway to handle OAuth per data source, rate limiting (critical for Salesforce API limits), and audit logging. State is ephemeral: customer support does not need cross-session memory.
+### ۱. انتخاب الگو (Pattern Selection)
 
-### Q: How would you prevent an AI agent from causing damage through tool calls?
+با مشخص کردن الگوی مناسب شروع کنید: «سیستم هدف دارای یک REST API است، بنابراین از الگوی فراخوانی تابع/ابزار با یک سرور MCP به‌عنوان پوشش روی API استفاده می‌کنم.» این نشان می‌دهد درخت تصمیم را درک کرده‌اید.
 
-**Strong answer:**
-Defense in depth across five layers: (1) Schema constraints with deny-patterns (regex rejecting `DROP TABLE`, etc.). (2) Permission gate for destructive operations: Claude Code's allow/deny rules are a good model, and at volume a calibrated policy classifier that runs, denies or escalates each call avoids approval fatigue. (3) Sandbox isolation (Docker with read-only mounts, no outbound network, and DNS on an allowlist too). (4) Token and cost caps to prevent runaway loops, plus an automatic kill that you have actually tested. (5) Audit trail via the MCP Gateway pattern. No single layer is sufficient: the model can hallucinate args that pass validation (need sandbox), and the sandbox cannot prevent exfiltration through allowed paths (need audit logging and destination policy). PixelLeak (Glow Security, September 29, 2026) is the cautionary case: coding agents told to attach screenshots to private PRs published 13,000+ internal images to public repos, with no attacker involved, so repo visibility and destinations belong in the action policy.
+### ۲. مرز سندباکس (Sandbox Boundary)
 
-### Q: Explain the trade-offs between vision-based computer use and API-based tool calling.
+همواره به امنیت بپردازید: «برای یک استقرار چندمستاجری، نشست Agent هر کاربر را در یک کانتینر Docker بدون دسترسی شبکه به سرویس‌های داخلی ایزوله می‌کنم. سرور MCP بیرون از سندباکس اجرا می‌شود و تمام فراخوانی‌های خارجی را واسطه‌گری می‌کند.»
 
-**Strong answer:**
-API-based is faster (50-200ms vs. 1-3s per model round trip), cheaper (text vs. image tokens at roughly 1,000-1,800 tokens per screenshot), more reliable (deterministic vs. coordinate-clicking), and easier to test. Always prefer it when an API exists. Vision-based is the fallback for applications without APIs, legacy systems, or multi-app workflows. The gap has narrowed: zoom and accessibility-tree element refs cut misclicks, and batch actions spread one model round trip over several steps, at the price of a confirmation gate that must check each action in a batch before it runs rather than waiting for the next turn. Best practice: API calls for the 80% of tasks with API support, vision-based for the remaining 20%, and element refs before pixels inside browsers.
+### ۳. راهبرد وضعیت (State Strategy)
 
----
+توضیح دهید وضعیت چگونه مدیریت می‌شود: «از وضعیت نشست درون کانتینر Docker برای فایل‌های کاری و از وضعیت محیط (مخزن Git) به‌عنوان منبع حقیقت استفاده می‌کنم. برای این مورد استفاده نیازی به حافظه ماندگار Agent نیست.»
 
-## References
+### ۴. بودجه خطا (Error Budget)
 
-- Anthropic. "Computer Use Tool Documentation" (2024-2026)
-- Anthropic. "Model Context Protocol Specification" (2025-2026)
-- MCP Core Maintainers. "The New MCP Roadmap" (August 22, 2026)
-- Anthropic. Computer use and browser use tool documentation (`computer_toolset_20260801`, `browser_toolset_20260801`) (2026)
-- Google. Gemini API computer use documentation (2026)
-- IBM Developer. "MCP Architecture Patterns for Multi-Agent AI Systems" (2026)
-- Google Cloud. "Choose a Design Pattern for Your Agentic AI System" (2025-2026)
-- Microsoft Azure. "AI Agent Orchestration Patterns" (2025-2026)
-- OpenHands Documentation. "Runtime Architecture" (2025-2026)
-- OpenClaw Documentation. "Architecture and SOUL.md Guide" (2025-2026)
-- Open Interpreter GitHub Repository (2024-2026)
-- ArXiv 2603.13417. "Design Patterns for Deploying AI Agents with MCP" (2026)
-- Kim et al. "An LLM Compiler for Parallel Function Calling" (ICML 2024, arXiv 2312.04511)
+حالت‌های شکست را بررسی کنید: «فراخوانی‌های ابزار ممکن است به‌دلیل خطاهای موقتی (تلاش مجدد با تاخیر نمایی)، خطاهای ورودی (اصلاح خودکار توسط LLM) یا خطاهای دسترسی (اعلام به کاربر) شکست بخورند. پیش از ارجاع به انسان، حداکثر ۵ تلاش خوداصلاح‌گری در نظر می‌گیرم.»
+
+### ۵. مدل هزینه (Cost Model)
+
+به اقتصاد سیستم بپردازید: «برای ارکستریتور، از الگوی برنامه‌ریزی و اجرا استفاده می‌کنم: مدل Opus 5.5 وظیفه را برنامه‌ریزی و Haiku 5.5 هر گام را اجرا می‌کند. قیمت فهرست‌شده Haiku 5.5 برابر ۰.۱۰/۰.۵۰ دلار به ازای هر ۱ میلیون Token در برابر ۴/۲۰ دلار برای Opus 5.5 (شکافی ۴۰ برابری) است و خواندن کش آن ۰.۰۱ دلار در برابر ۰.۲۰ دلار هزینه دارد. نکته کلیدی یک پرتگاه قیمتی (Price Cliff) است: به محض اینکه Prompt مدل Haiku 5.5 با احتساب خواندن و نوشتن کش از ۱۰۰٬۰۰۰ Token عبور کند، کل درخواست با نرخ ۰.۵۰/۲.۵۰ دلار محاسبه می‌شود؛ بنابراین زمینه اجراکننده را کوتاه نگه می‌دارم و به هر گام فقط همان چیزی را می‌دهم که نیاز دارد. همچنین این مدل پارامترهای `temperature`، `top_p`، `top_k` و پیش‌پرکردن پاسخ دستیار (Assistant Prefill) را رد می‌کند؛ پس کد اجراکننده‌ای که از Haiku 4.5 منتقل شده نیازمند تست قراردادی است. از آنجا که در حلقه‌های طولانی ابزار حجم ورودی دو مرتبه بزرگی (100x) بیشتر از خروجی است، System Prompt و تعاریف ابزار را پایدار نگه می‌دارم تا در کش Prompt باقی بمانند.»
 
 ---
 
-*Previous: [Tool-Use and Computer Agent Landscape](01-tool-use-landscape.md)*
-*Next: [OpenClaw Deep Dive](03-openclaw-deep-dive.md)*
+## سوالات مصاحبه <a id="interview-questions"></a>
+
+### پرسش: سیستمی طراحی کنید که به یک Agent پشتیبانی مشتریان اجازه دهد با استفاده از داده‌های Zendesk، Salesforce و یک پایگاه دانش داخلی به سوالات پاسخ دهد.
+
+**پاسخ قوی:**
+الگوی ۱ (فراخوانی تابع/ابزار) با سه سرور MCP، یکی برای هر منبع داده. از الگوی توزیع چندسروری (Multi-Server Fan-Out) همراه با مانیفست‌های پویا استفاده کنید تا به‌ازای هر پرس‌وجو فقط ابزارهای مرتبط بارگذاری شوند. برای محیط عملیاتی، یک دروازه MCP اضافه کنید تا OAuth را به‌ازای هر منبع داده، محدودیت نرخ (به‌ویژه حیاتی برای محدودیت‌های Salesforce API) و ثبت لاگ ممیزی را مدیریت کند. وضعیت به‌صورت موقتی (Ephemeral) است: پشتیبانی مشتریان نیازی به حافظه بین‌نشستی ندارد.
+
+### پرسش: چگونه از وارد شدن آسیب توسط یک AI Agent از طریق فراخوانی‌های ابزار جلوگیری می‌کنید؟
+
+**پاسخ قوی:**
+دفاع در عمق (Defense in Depth) در پنج لایه: (۱) محدودیت‌های طرحواره با الگوهای منع (عبارات باقاعده برای رد کردن `DROP TABLE` و موارد مشابه). (۲) دروازه مجوز برای عملیات مخرب: قوانین مجاز/ممنوع Claude Code الگوی خوبی است و در مقیاس بالا، یک طبقه‌بندی‌کننده سیاست‌گذار کالیبره‌شده که هر فراخوانی را اجرا، رد یا ارجاع دهد از خستگی تایید جلوگیری می‌کند. (۳) ایزوله‌سازی سندباکس (Docker با مانت‌های فقط‌خواندنی، بدون شبکه خروجی و همچنین DNS روی فهرست مجاز). (۴) سقف واحدهای Token و هزینه برای جلوگیری از حلقه‌های کنترل‌نشده، به‌همراه یک مکانیزم توقف خودکار که واقعاً آن را آزمایش کرده باشید. (۵) ردپای ممیزی از طریق الگوی دروازه MCP. هیچ لایه‌ای به‌تنهایی کافی نیست: مدل می‌تواند آرگومان‌هایی بسازد که از اعتبارسنجی عبور کنند (نیاز به سندباکس)، و سندباکس نمی‌تواند جلوی نشت داده از مسیرهای مجاز را بگیرد (نیاز به ثبت لاگ ممیزی و سیاست مقصد). رخداد PixelLeak (گزارش Glow Security، ۲۹ سپتامبر ۲۰۲۶) یک نمونه هشداردهنده است: Agentهای کدنویسی که دستور داشتند اسکرین‌شات‌ها را به PRهای خصوصی پیوست کنند، بیش از ۱۳٬۰۰۰ تصویر داخلی را بدون دخالت هیچ مهاجمی در مخازن عمومی منتشر کردند؛ بنابراین میزان دیده‌شدن مخزن (Repo Visibility) و مقصدها باید جزئی از سیاست عمل (Action Policy) باشند.
+
+### پرسش: موازنه‌های بین استفاده از رایانه مبتنی بر بینایی (Vision-Based Computer Use) و فراخوانی ابزار مبتنی بر API را توضیح دهید.
+
+**پاسخ قوی:**
+روش مبتنی بر API سریع‌تر (۵۰ تا ۲۰۰ میلی‌ثانیه در برابر ۱ تا ۳ ثانیه به‌ازای هر رفت‌وبرگشت مدل)، ارزان‌تر (Tokenهای متنی در برابر Tokenهای تصویری با حدود ۱٬۰۰۰ تا ۱٬۸۰۰ Token به‌ازای هر اسکرین‌شات)، قابل اتکاتر (قطعی در برابر کلیک مختصاتی) و آزمون‌پذیرتر است. همیشه وقتی API وجود دارد آن را ترجیح دهید. روش مبتنی بر بینایی راهکار پشتیبان برای برنامه‌های فاقد API، سیستم‌های قدیمی یا جریان‌های کاری چندبرنامه‌ای است. این شکاف اکنون باریک‌تر شده است: بزرگ‌نمایی (Zoom) و ارجاع عناصر درخت دسترسی‌پذیری کلیک‌های اشتباه را کاهش می‌دهند و عمل‌های دسته‌ای یک رفت‌وبرگشت مدل را روی چندین گام سرشکن می‌کنند، به بهای یک دروازه تایید که باید پیش از اجرا تک‌تک عمل‌های یک دسته را بررسی کند به‌جای آنکه منتظر نوبت بعدی بماند. بهترین شیوه: فراخوانی API برای ۸۰ درصد وظایف دارای پشتیبانی API، روش مبتنی بر بینایی برای ۲۰ درصد باقی‌مانده، و ارجاع به عناصر پیش از پیکسل‌ها در داخل مرورگرها.
+
+---
+
+## منابع <a id="references"></a>
+
+- مستندات Anthropic: «Computer Use Tool Documentation» (۲۰۲۴-۲۰۲۶)
+- مستندات Anthropic: «Model Context Protocol Specification» (۲۰۲۵-۲۰۲۶)
+- گزارش نگهدارندگان هسته MCP: «The New MCP Roadmap» (۲۲ اوت ۲۰۲۶)
+- مستندات ابزارهای استفاده از رایانه و مرورگر Anthropic (`computer_toolset_20260801`، `browser_toolset_20260801`) (۲۰۲۶)
+- مستندات استفاده از رایانه در Gemini API گوگل (۲۰۲۶)
+- مقاله IBM Developer: «MCP Architecture Patterns for Multi-Agent AI Systems» (۲۰۲۶)
+- راهنمای Google Cloud: «Choose a Design Pattern for Your Agentic AI System» (۲۰۲۵-۲۰۲۶)
+- راهنمای Microsoft Azure: «AI Agent Orchestration Patterns» (۲۰۲۵-۲۰۲۶)
+- مستندات OpenHands: «Runtime Architecture» (۲۰۲۵-۲۰۲۶)
+- مستندات OpenClaw: «Architecture and SOUL.md Guide» (۲۰۲۵-۲۰۲۶)
+- مخزن گیت‌هاب Open Interpreter (۲۰۲۴-۲۰۲۶)
+- مقاله ArXiv 2603.13417: «Design Patterns for Deploying AI Agents with MCP» (۲۰۲۶)
+- مقاله Kim et al.: «An LLM Compiler for Parallel Function Calling» (ICML 2024، arXiv 2312.04511)
+
+---
+
+*قبلی: [چشم‌انداز Agentهای ابزارمحور و رایانه‌ای](01-tool-use-landscape.md)*
+*بعدی: [بررسی عمیق OpenClaw](03-openclaw-deep-dive.md)*
+
+</div>

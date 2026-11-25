@@ -1,30 +1,34 @@
-# Building Tool-Use Agents
+<div dir="rtl">
 
-This chapter covers the practical engineering of tool-use agents: designing tool schemas that LLMs can call reliably, building MCP servers to host those tools, composing tools into workflows, and testing the entire system. These are the patterns that separate a demo from a production deployment.
+# ساخت ایجنت‌های استفاده‌کننده از ابزار
 
-## Table of Contents
+این فصل به مهندسی عملی ایجنت‌های استفاده‌کننده از ابزار می‌پردازد: طراحی طرحواره‌های (Schema) ابزار به‌گونه‌ای که مدل‌های LLM بتوانند به‌طور قابل اتکا آن‌ها را فراخوانی کنند، ساخت سرورهای MCP برای میزبانی آن ابزارها، ترکیب ابزارها در قالب گردش‌کارها (Workflows) و آزمایش کل سیستم. این‌ها الگوهایی هستند که یک دمو را از یک استقرار (Deployment) در محیط عملیاتی متمایز می‌کنند.
 
-- [Designing Tool Schemas for LLMs](#designing-tool-schemas-for-llms)
-- [MCP Server Creation](#mcp-server-creation)
-- [Tool Registration and Discovery](#tool-registration-and-discovery)
-- [Input Validation and Output Formatting](#input-validation-and-output-formatting)
-- [Tool Composition: Chaining Tools](#tool-composition-chaining-tools)
-- [Building Custom Agent Skills](#building-custom-agent-skills)
-- [Creating Function-Calling Endpoints](#creating-function-calling-endpoints)
-- [Testing Tool-Use Agents](#testing-tool-use-agents)
-- [Observability for Tool Use](#observability-for-tool-use)
-- [Common Mistakes and Anti-Patterns](#common-mistakes-and-anti-patterns)
-- [Tool Versioning and Backwards Compatibility](#tool-versioning-and-backwards-compatibility)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [طراحی طرحواره‌های ابزار برای مدل‌های LLM](#designing-tool-schemas-for-llms)
+- [ایجاد سرور MCP](#mcp-server-creation)
+- [ثبت و کشف ابزارها](#tool-registration-and-discovery)
+- [اعتبارسنجی ورودی و قالب‌بندی خروجی](#input-validation-and-output-formatting)
+- [ترکیب ابزارها: زنجیره‌سازی ابزارها](#tool-composition-chaining-tools)
+- [ساخت مهارت‌های سفارشی ایجنت](#building-custom-agent-skills)
+- [ایجاد Endpointهای فراخوانی تابع (Function-Calling)](#creating-function-calling-endpoints)
+- [آزمایش ایجنت‌های استفاده‌کننده از ابزار](#testing-tool-use-agents)
+- [مشاهده‌پذیری (Observability) برای استفاده از ابزار](#observability-for-tool-use)
+- [اشتباهات رایج و الگوهای نادرست (Anti-Patterns)](#common-mistakes-and-anti-patterns)
+- [نسخه‌گذاری ابزارها و سازگاری با نسخه‌های قبلی](#tool-versioning-and-backwards-compatibility)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Designing Tool Schemas for LLMs
+## طراحی طرحواره‌های ابزار برای مدل‌های LLM <a id="designing-tool-schemas-for-llms"></a>
 
-The tool schema is the contract between the LLM and your system. A well-designed schema reduces hallucinated arguments, prevents misuse, and makes the model's tool selection more reliable.
+طرحواره (Schema) ابزار، قرارداد میان LLM و سیستم شماست. یک طرحواره خوش‌طراحی، آرگومان‌های توهم‌زده (Hallucinated) را کاهش می‌دهد، از سوءاستفاده جلوگیری می‌کند و انتخاب ابزار توسط مدل را قابل اتکاتر می‌سازد.
 
-### Anatomy of a Good Tool Definition
+### کالبدشناسی یک تعریف خوب برای ابزار
+
+<div dir="ltr">
 
 ```json
 {
@@ -50,21 +54,25 @@ The tool schema is the contract between the LLM and your system. A well-designed
 }
 ```
 
-### Schema Design Rules
+</div>
 
-**1. Name precisely**: Use `verb_noun` format. `search_customers` not `search` or `customer_tool`.
+### قواعد طراحی طرحواره
 
-**2. Describe when NOT to use**: The model needs negative examples. "Do NOT use for aggregate queries" prevents misuse better than only listing valid uses.
+**1. نام‌گذاری دقیق**: از قالب `verb_noun` (فعل_اسم) استفاده کنید. به‌عنوان مثال `search_customers` به جای `search` یا `customer_tool`.
 
-**3. Give argument examples**: Include example values in the description string. The model uses these to calibrate its outputs.
+**2. توضیح دادن زمانِ «عدم» استفاده**: مدل به مثال‌های منفی نیاز دارد. عبارت «برای پرس‌وجوهای تجمیعی استفاده نشود (Do NOT use for aggregate queries)» بهتر از فهرست کردنِ صرفِ کاربردهای مجاز، از سوءاستفاده جلوگیری می‌کند.
 
-**4. Constrain ranges**: Use `minimum`, `maximum`, `enum`, and `pattern` to document and constrain valid arguments. Keep the same checks in your handler: strict mode does not enforce every keyword (see rule 6).
+**3. ارائه مثال برای آرگومان‌ها**: مقادیر نمونه را در رشته توضیحات بیاورید. مدل از این نمونه‌ها برای تنظیم دقیق خروجی‌های خود استفاده می‌کند.
 
-**5. Keep tools atomic**: One tool does one thing. Avoid a `manage_customer` tool that creates, reads, updates, and deletes; split it into four tools.
+**4. محدود کردن بازه‌ها**: از `minimum`، `maximum`، `enum` و `pattern` برای مستندسازی و محدود کردن آرگومان‌های معتبر استفاده کنید. همین بررسی‌ها را در هندلر (Handler) خود نیز نگه دارید؛ زیرا حالت سخت‌گیرانه (Strict Mode) همه کلیدواژه‌ها را اعمال نمی‌کند (قانون ۶ را ببینید).
 
-**6. Use `strict: true`**: Anthropic's strict mode guarantees the tool input validates against the schema. Enable it in production, with `additionalProperties: false` and a `required` list on every object. It does not cover numeric constraints (`minimum`, `maximum`, `multipleOf`), string lengths, or recursive schemas; the Python and TypeScript SDK schema helpers strip those constraints before sending and check them client-side, which is one more reason for handler-side validation.
+**5. اتمیک نگه داشتن ابزارها**: هر ابزار فقط یک کار انجام دهد. از ساخت ابزاری مثل `manage_customer` که عملیات ایجاد، خواندن، به‌روزرسانی و حذف را با هم انجام می‌دهد خودداری کنید؛ آن را به چهار ابزار مجزا بشکنید.
 
-**7. Do not force tool calls to get JSON**: On Claude Fable 5.1, Mythos 5.1, Opus 5.5, and Sonnet 5.5, `tool_choice` of type `any` or `tool` returns HTTP 400 (`auto` and `none` still work). Use `auto` plus a prompt instruction that names the tool and `strict: true` for schema-valid arguments, and check that a call was actually made. If the forced call only existed to extract structured data, use structured outputs (`output_config.format`) instead. Forcing a tool call is now a legacy technique, and frameworks have followed: langchain-anthropic now routes `with_structured_output` to JSON-schema output on these models (1.7.3 for Fable and Opus 5.5, 1.7.5 for Sonnet 5.5).
+**6. استفاده از `strict: true`**: حالت سخت‌گیرانه Anthropic تضمین می‌کند که ورودی ابزار حتماً با طرحواره اعتبارسنجی شود. آن را در محیط عملیاتی همراه با `additionalProperties: false` و یک فهرست `required` روی هر شیء فعال کنید. این حالت محدودیت‌های عددی (`minimum`، `maximum`، `multipleOf`)، طول رشته‌ها یا طرحواره‌های بازگشتی را پوشش نمی‌دهد؛ کمک‌ابزارهای (Helpers) طرحواره در SDKهای پایتون و TypeScript این محدودیت‌ها را پیش از ارسال حذف می‌کنند و در سمت کلاینت بررسی می‌کنند، که این خود دلیل دیگری برای اعتبارسنجی در سمت هندلر است.
+
+**7. اجبار نکردن فراخوانی ابزار برای دریافت JSON**: در مدل‌های Claude Fable 5.1، Mythos 5.1، Opus 5.5 و Sonnet 5.5، مقدار `tool_choice` از نوع `any` یا `tool` خطای HTTP 400 برمی‌گرداند (`auto` و `none` همچنان کار می‌کنند). از `auto` به همراه یک دستور Prompt که نام ابزار را ذکر می‌کند و `strict: true` برای داشتن آرگومان‌های معتبر از نظر طرحواره استفاده کنید و بررسی کنید که آیا فراخوانی واقعاً انجام شده است یا نه. اگر فراخوانی اجباری فقط برای استخراج داده‌های ساختاریافته بوده است، به جای آن از خروجی‌های ساختاریافته (`output_config.format`) استفاده کنید. اجبار فراخوانی ابزار اکنون یک تکنیک قدیمی محسوب می‌شود و فریم‌ورک‌ها نیز از این تغییر پیروی کرده‌اند: کتابخانه `langchain-anthropic` اکنون `with_structured_output` را روی این مدل‌ها به خروجی JSON-schema هدایت می‌کند (نسخه 1.7.3 برای Fable و Opus 5.5، و نسخه 1.7.5 برای Sonnet 5.5).
+
+<div dir="ltr">
 
 ```
 Good Tool Design:                    Bad Tool Design:
@@ -84,15 +92,19 @@ Good Tool Design:                    Bad Tool Design:
 +-------------------+
 ```
 
+</div>
+
 ---
 
-## MCP Server Creation
+## ایجاد سرور MCP <a id="mcp-server-creation"></a>
 
-An MCP server is a standalone process that exposes tools, resources, and prompts to any MCP-compatible client (Claude, GPT, Llama-based agents). You write the server once and any LLM can use it.
+یک سرور MCP فرآیندی مستقل است که ابزارها، منابع (Resources) و الگوهای Prompt را در اختیار هر کلاینت سازگار با MCP (ایجنت‌های مبتنی بر Claude، GPT یا Llama) قرار می‌دهد. شما سرور را یک بار می‌نویسید و هر LLM می‌تواند از آن استفاده کند.
 
-The current spec revision is **2026-07-28**, which made the core protocol stateless: no initialize handshake and no protocol-level session IDs, so a remote server can sit behind an ordinary load balancer. The next revision is targeted for March 30, 2027 (SEP-3398, subject to confirmation), after which releases follow a March and September cadence. Clients on the earlier 2025-11-25 stateful revision are still common, so plan for a long dual-version period (see [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md) for the migration details).
+نسخه فعلی مشخصات (Spec) نسخه **2026-07-28** است که پروتکل هسته را بدون حالت (Stateless) کرده است: دیگر نه دست‌دادن اولیه (`initialize` handshake) وجود دارد و نه شناسه نشست در سطح پروتکل، بنابراین یک سرور از راه دور می‌تواند پشت یک متعادل‌کننده بار (Load Balancer) معمولی قرار بگیرد. نسخه بعدی برای ۳۰ مارس ۲۰۲۷ هدف‌گذاری شده است (SEP-3398، منوط به تایید نهایی) که پس از آن انتشارها طبق برنامه منظم ماه‌های مارس و سپتامبر انجام خواهند شد. کلاینت‌هایی که بر پایه نسخه حالت‌دار قبلی یعنی 2025-11-25 کار می‌کنند هنوز رایج هستند، پس برای یک دوره طولانی هم‌زیستی دو نسخه برنامه‌ریزی کنید (برای جزئیات مهاجرت، بخش [استفاده از ابزار و MCP](../07-agentic-systems/03-tool-use-and-mcp.md) را ببینید).
 
-### MCP Architecture
+### معماری MCP
+
+<div dir="ltr">
 
 ```
 +------------------+          JSON-RPC           +------------------+
@@ -107,7 +119,11 @@ The current spec revision is **2026-07-28**, which made the core protocol statel
 +------------------+                             +------------------+
 ```
 
-### TypeScript MCP Server (SDK v2)
+</div>
+
+### سرور MCP در TypeScript (SDK نسخه ۲)
+
+<div dir="ltr">
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/server";
@@ -134,9 +150,13 @@ server.registerTool(
 await server.connect(new StdioServerTransport());
 ```
 
-The v2 TypeScript SDK splits into `@modelcontextprotocol/server`, `@modelcontextprotocol/client`, and `@modelcontextprotocol/core`. The v1 package (`@modelcontextprotocol/sdk`) is in maintenance (security and critical fixes only) but still dominates installs (about 246M npm downloads in October 2026 against about 62M for v2 `core`, 49M for `server`, and 33M for `client`), so expect to read both styles.
+</div>
 
-### Python MCP Server (SDK v2, MCPServer)
+نسخه دوم SDK تایپ‌اسکریپت به سه بسته `@modelcontextprotocol/server`، `@modelcontextprotocol/client` و `@modelcontextprotocol/core` تقسیم می‌شود. بسته نسخه ۱ (`@modelcontextprotocol/sdk`) در حالت نگهداری (فقط اصلاحات امنیتی و بحرانی) قرار دارد، اما همچنان بیشترین نصب را دارد (حدود ۲۴۶ میلیون دانلود npm در اکتبر ۲۰۲۶ در مقایسه با حدود ۶۲ میلیون برای `core`، ۴۹ میلیون برای `server` و ۳۳ میلیون برای `client` در نسخه ۲)؛ بنابراین انتظار خواندن هر دو سبک را داشته باشید.
+
+### سرور MCP در پایتون (SDK نسخه ۲، MCPServer)
+
+<div dir="ltr">
 
 ```python
 import json
@@ -157,51 +177,55 @@ if __name__ == "__main__":
     mcp.run()  # stdio by default; mcp.run(transport="streamable-http") for remote
 ```
 
-Since MCP Python SDK 2.0.0 (July 28, 2026), `pip install mcp` installs the 2.x line, and tutorials that import `mcp.server.fastmcp` break on a fresh install. Both SDKs follow the same pattern: create a server, register tools with typed schemas, connect a transport. The TypeScript SDK uses Zod for validation; Python uses type hints and docstrings.
+</div>
 
-### Deployment Modes
+از زمان انتشار نسخه 2.0.0 کتابخانه MCP Python SDK (در ۲۸ ژوئیه ۲۰۲۶)، دستور `pip install mcp` شاخه 2.x را نصب می‌کند و آموزش‌هایی که `mcp.server.fastmcp` را ایمپورت می‌کنند در نصب تازه با خطا مواجه می‌شوند. هر دو SDK از یک الگوی واحد پیروی می‌کنند: ایجاد یک سرور، ثبت ابزارها با طرحواره‌های تایپ‌دار و اتصال یک لایه انتقال (Transport). در SDK تایپ‌اسکریپت از Zod برای اعتبارسنجی استفاده می‌شود و در پایتون از Type Hintها و Docstringها.
 
-| Mode | Transport | Use Case |
-|------|-----------|----------|
-| Local (stdio) | stdin/stdout pipe | Desktop tools, IDE plugins |
-| Remote (Streamable HTTP) | HTTP POST to one endpoint; responses as JSON or a stream | Cloud services, shared servers |
-| Hybrid | Both | Develop local, deploy remote |
+### حالت‌های استقرار (Deployment Modes)
 
-A remote server is a network service and gets attacked like one. Between August 15 and October 1, 2026, the GitHub Advisory Database published 73 advisories with MCP in the title (9 critical), led by 25 for the popular `mcp-atlassian` server, whose HTTP token verifier accepted any non-empty string (CVE-2026-77244, fixed in 0.22.0). Verify tokens against the issuer, not for presence; bind local HTTP servers to loopback with DNS-rebinding protection on; and treat upload or attachment tools as exfiltration channels.
+| حالت | انتقال (Transport) | مورد استفاده |
+|------|--------------------|--------------|
+| محلی (`stdio`) | لوله `stdin/stdout` | ابزارهای دسکتاپ، افزونه‌های IDE |
+| از راه دور (`Streamable HTTP`) | درخواست `HTTP POST` به یک Endpoint؛ پاسخ به‌صورت JSON یا استریم | سرویس‌های ابری، سرورهای اشتراکی |
+| ترکیبی (Hybrid) | هر دو | توسعه محلی، استقرار از راه دور |
 
-The official SDKs are part of that attack surface. In late September 2026 both published advisories for an OAuth mix-up (CVE-2026-104850 in TypeScript, GHSA-qx49-fqc8-xw99 in Python, CVSS 7.5) in which a malicious MCP server could name its own authorization server and receive the client's stored refresh tokens and client secrets. The floors for that fix are TypeScript 1.31.0 or 2.2.0 and Python 1.30.0 or 2.2.0, and upgrading is not the whole fix: machine-to-machine credential providers also need an expected issuer configured, and credentials saved before the upgrade stay exposed until they are tagged or cleared. The design rule for any multi-server client: bind every credential to its issuer, and never let a server decide where secrets go.
+یک سرور از راه دور یک سرویس شبکه‌ای است و مانند یک سرویس شبکه‌ای مورد حمله قرار می‌گیرد. بین ۱۵ اوت تا ۱ اکتبر ۲۰۲۶، پایگاه داده مشاوره‌های امنیتی گیت‌هاب (GitHub Advisory Database) تعداد ۷۳ هشدار با عنوان MCP منتشر کرد (۹ مورد بحرانی)، که در صدر آن‌ها ۲۵ مورد مربوط به سرور محبوب `mcp-atlassian` بود که تاییدکننده Token در HTTP آن هر رشته غیرخالی را می‌پذیرفت (CVE-2026-77244، رفع‌شده در نسخه 0.22.0). Tokenها را در برابر صادرکننده (Issuer) تایید کنید، نه صرفاً از نظر وجود داشتن؛ سرورهای HTTP محلی را با محافظت در برابر DNS-rebinding به آدرس loopback مقید کنید؛ و ابزارهای آپلود یا پیوست را به‌عنوان کانال‌های نشت داده (Exfiltration) در نظر بگیرید.
 
-October added two TypeScript advisories where upgrading is again not enough. In CVE-2026-111770 (CVSS 7.7), a server or transport shared across clients leaked one client's responses to another. It affects `@modelcontextprotocol/server` 2.0.0 through 2.2.x and is fixed in 2.3.0, but the fix requires code changes: create one server and transport per request or session. A module-level singleton is the convenient pattern and the vulnerable one (a stdio server like the example above serves a single client, so it is not exposed). CVE-2026-111771, accepting tokens issued for other services, is fixed in `sdk` 1.32.0 and `server` 2.3.0, but the audience check is opt-in (`expectedResource`), so set it. The lesson for any SDK: read the advisory, not just the version bump, because secure behavior is often a configuration you have to turn on.
+هر دو SDK رسمی خود بخشی از این سطح حمله هستند. در اواخر سپتامبر ۲۰۲۶ هر دو هشدارهایی برای آسیب‌پذیری جابه‌جایی OAuth منتشر کردند (CVE-2026-104850 در TypeScript و GHSA-qx49-fqc8-xw99 در پایتون، با امتیاز CVSS برابر 7.5) که در آن یک سرور MCP مخرب می‌توانست سرور احراز هویت خودش را معرفی کند و Refresh Tokenها و Client Secretهای ذخیره‌شده کلاینت را دریافت کند. حداقل نسخه‌های امن برای رفع این مشکل در TypeScript نسخه 1.31.0 یا 2.2.0 و در پایتون نسخه 1.30.0 یا 2.2.0 است، اما ارتقا به تنهایی کل راه‌حل نیست: ارائه‌دهندگان اعتبارنامه ماشین-به-ماشین نیز باید یک صادرکننده مورد انتظار (Expected Issuer) پیکربندی‌شده داشته باشند و اعتبارنامه‌هایی که پیش از ارتقا ذخیره شده‌اند تا زمان برچسب‌گذاری یا پاک‌سازی همچنان در معرض خطر می‌مانند. قانون طراحی برای هر کلاینت چندسروری این است: هر اعتبارنامه را به صادرکننده آن مقید کنید و هرگز اجازه ندهید یک سرور تصمیم بگیرد که اسرار کجا بروند.
 
-Recent releases also tightened server defaults that a production deployment should keep rather than override: TypeScript 2.1.0 and later and current Python releases cap request bodies at 4 MiB, and Python 1.30.0 and 2.2.0 close legacy stateful sessions after 30 idle minutes, with at most 10,000 per server.
+ماه اکتبر دو هشدار امنیتی دیگر برای TypeScript اضافه کرد که در آن‌ها نیز ارتقا به تنهایی کافی نیست. در آسیب‌پذیری CVE-2026-111770 (با CVSS 7.7)، یک سرور یا انتقال مشترک میان کلاینت‌ها پاسخ‌های یک کلاینت را به کلاینت دیگر نشت می‌داد. این آسیب‌پذیری نسخه‌های 2.0.0 تا 2.2.x از `@modelcontextprotocol/server` را تحت تاثیر قرار می‌دهد و در نسخه 2.3.0 رفع شده است، اما رفع آن مستلزم تغییر کد است: برای هر درخواست یا نشست یک سرور و یک انتقال مجزا بسازید. استفاده از یک نمونه یگانه (Singleton) در سطح ماژول الگویی راحت اما آسیب‌پذیر است (یک سرور `stdio` مانند مثال بالا فقط به یک کلاینت سرویس می‌دهد و در معرض این خطر نیست). آسیب‌پذیری CVE-2026-111771 که Tokenهای صادرشده برای سرویس‌های دیگر را می‌پذیرفت، در `sdk` نسخه 1.32.0 و `server` نسخه 2.3.0 رفع شده است، اما بررسی مخاطب (Audience) به‌صورت اختیاری (`expectedResource`) فعال می‌شود، پس حتماً آن را تنظیم کنید. درس مهم برای هر SDK این است: متن هشدار امنیتی را بخوانید، نه فقط شماره نسخه را؛ زیرا رفتار امن اغلب نیازمند پیکربندی است که خودتان باید فعالش کنید.
 
----
-
-## Tool Registration and Discovery
-
-In production, agents need to discover available tools dynamically rather than hardcoding them.
-
-### Static Registration
-
-Declare MCP servers in a config file (e.g., `claude_desktop_config.json`). Each entry maps a server name to a command, args, and optional env vars. Simple but inflexible: every server loads on startup regardless of relevance.
-
-### Dynamic Discovery (Tool Search)
-
-Anthropic's Tool Search (2025) solves schema overload. Instead of loading 200 tool schemas into context (which degrades reasoning), you mark most tools `defer_loading: true` and give the model a search tool (`tool_search_tool_regex_20251119` or `tool_search_tool_bm25_20251119`); it searches and receives only the 3-5 relevant schemas. Discovered schemas are appended to the request rather than swapped in, so the prompt cache survives. At least one tool, the search tool itself, must stay non-deferred.
-
-### Changing Tools Mid-Session Without Losing the Cache
-
-Editing the top-level `tools` array changes the front of the prompt and invalidates the whole cache, which is expensive for long agent sessions. Anthropic's `inline-tools-2026-09-15` beta (September 22, 2026) lets an application add a tool, change its schema, or swap in an MCP toolset inside a mid-conversation system message without invalidating the cache. With the MCP connector, the response records each server's fetched tool list in an `mcp_tool_listing` block, and sending that block back pins the list, which also blocks a server from silently changing a tool definition mid-session.
-
-### MCP Discovery Protocol
-
-MCP clients discover capabilities via standard JSON-RPC methods: `tools/list` returns available tools, `resources/list` returns data resources, `prompts/list` returns prompt templates, and the 2026-07-28 revision added `server/discover`, which every server must implement to advertise its supported protocol versions, capabilities, and identity (clients may call it first to pick a version). Before connecting at all, clients can find servers through Server Cards (SEP-2127, Final since October 6, 2026; the extension is at the Beta maturity stage), which are listed in AI Catalog entries at `/.well-known/ai-catalog.json`, or through the MCP Registry (still a preview). Server-side progressive discovery for very large catalogs is on the August 2026 MCP roadmap but not yet in the spec.
+انتشارهای اخیر همچنین پیش‌فرض‌های سرور را سخت‌گیرانه‌تر کرده‌اند که یک استقرار محیط عملیاتی باید آن‌ها را حفظ کند و بازنویسی نکند: نسخه 2.1.0 و بالاتر در TypeScript و نسخه‌های فعلی پایتون اندازه بدنه درخواست را به ۴ مبی‌بایت (4 MiB) محدود می‌کنند و نسخه‌های 1.30.0 و 2.2.0 پایتون نشست‌های حالت‌دار قدیمی را پس از ۳۰ دقیقه بی‌فعالیتی می‌بندند و حداکثر ۱۰۰۰۰ نشست را در هر سرور مجاز می‌دانند.
 
 ---
 
-## Input Validation and Output Formatting
+## ثبت و کشف ابزارها <a id="tool-registration-and-discovery"></a>
 
-### Input Validation Layers
+در محیط عملیاتی، ایجنت‌ها باید ابزارهای در دسترس را به‌صورت پویا کشف کنند و آن‌ها را به‌صورت سخت‌کدشده (Hardcoded) نداشته باشند.
+
+### ثبت ایستا (Static Registration)
+
+سرورهای MCP را در یک فایل پیکربندی (مثلاً `claude_desktop_config.json`) اعلان کنید. هر ورودی نام یک سرور را به یک دستور، آرگومان‌ها و متغیرهای محیطی اختیاری نگاشت می‌کند. این روش ساده اما غیرمنعطف است: هر سرور صرف‌نظر از مرتبط بودن یا نبودن، هنگام راه‌اندازی بارگذاری می‌شود.
+
+### کشف پویا (Tool Search)
+
+قابلیت Tool Search شرکت Anthropic (۲۰۲۵) مشکل سرریز شدن طرحواره را حل می‌کند. به جای بارگذاری ۲۰۰ طرحواره ابزار در زمینه (Context) که استدلال مدل را تضعیف می‌کند، بیشتر ابزارها را با `defer_loading: true` علامت‌گذاری می‌کنید و یک ابزار جست‌وجو (`tool_search_tool_regex_20251119` یا `tool_search_tool_bm25_20251119`) در اختیار مدل قرار می‌دهید؛ مدل جست‌وجو می‌کند و تنها ۳ تا ۵ طرحواره مرتبط را دریافت می‌کند. طرحواره‌های کشف‌شده به جای جایگزینی، به درخواست اضافه (Append) می‌شوند تا کش Prompt دست‌نخورده باقی بماند. حداقل یک ابزار، یعنی خود ابزار جست‌وجو، باید به‌صورت غیرموکول (non-deferred) باقی بماند.
+
+### تغییر ابزارها در میانه نشست بدون از دست دادن کش
+
+ویرایش آرایه سطح بالای `tools` ابتدای Prompt را تغییر می‌دهد و کل کش را باطل می‌کند، که برای نشست‌های طولانی ایجنت پرهزینه است. نسخه بتای `inline-tools-2026-09-15` شرکت Anthropic (۲۲ سپتامبر ۲۰۲۶) به برنامه اجازه می‌دهد یک ابزار اضافه کند، طرحواره‌اش را تغییر دهد یا یک مجموعه‌ابزار MCP را درون یک پیام سیستم در میانه مکالمه جایگزین کند، بدون اینکه کش باطل شود. با رابط MCP، پاسخ فهرست ابزارهای واکشی‌شده هر سرور را در یک بلوک `mcp_tool_listing` ثبت می‌کند و ارسال مجدد آن بلوک این فهرست را قفل (Pin) می‌کند، که همچنین مانع از آن می‌شود که سرور به‌طور پنهانی تعریف یک ابزار را در میانه نشست تغییر دهد.
+
+### پروتکل کشف MCP
+
+کلاینت‌های MCP قابلیت‌ها را از طریق متدهای استاندارد JSON-RPC کشف می‌کنند: `tools/list` ابزارهای موجود را برمی‌گرداند، `resources/list` منابع داده را برمی‌گرداند، `prompts/list` الگوهای Prompt را برمی‌گرداند و نسخه 2026-07-28 متد `server/discover` را اضافه کرد که هر سرور باید برای تبلیغ نسخه‌های پروتکل پشتیبانی‌شده، قابلیت‌ها و هویت خود پیاده‌سازی کند (کلاینت‌ها می‌توانند ابتدا آن را برای انتخاب نسخه صدا بزنند). پیش از برقراری هرگونه اتصال، کلاینت‌ها می‌توانند سرورها را از طریق کارت‌های سرور (Server Cards، استاندارد SEP-2127، نهایی‌شده در ۶ اکتبر ۲۰۲۶؛ این افزونه در مرحله بلوغ Beta قرار دارد) که در ورودی‌های AI Catalog در مسیر `/.well-known/ai-catalog.json` فهرست شده‌اند، یا از طریق MCP Registry (که هنوز در مرحله پیش‌نمایش است) پیدا کنند. کشف پیش‌رونده سمت سرور برای کاتالوگ‌های بسیار بزرگ در نقشه راه اوت ۲۰۲۶ پروتکل MCP قرار دارد، اما هنوز وارد مشخصات نشده است.
+
+---
+
+## اعتبارسنجی ورودی و قالب‌بندی خروجی <a id="input-validation-and-output-formatting"></a>
+
+### لایه‌های اعتبارسنجی ورودی
+
+<div dir="ltr">
 
 ```
 +---------------------+
@@ -221,9 +245,13 @@ MCP clients discover capabilities via standard JSON-RPC methods: `tools/list` re
 +---------------------+
 ```
 
-Always validate at both layers. Schema validation catches malformed input. Business validation catches semantically invalid input.
+</div>
 
-Decide which errors the model may see. Since MCP Python SDK 2.1.0, an unexpected exception in a handler is logged on the server and the client sees only `Error executing tool <name>`. That is the right default for stack traces and connection strings, but it hides the actionable messages the model needs to recover. Return them explicitly, as the handler below does, or raise `ToolError` (from `mcp.server.mcpserver.exceptions`) for a message the model should read.
+همیشه در هر دو لایه اعتبارسنجی کنید. اعتبارسنجی طرحواره ورودی‌های بدشکل را می‌گیرد و اعتبارسنجی منطق کسب‌وکار ورودی‌های نامعتبر از نظر معنایی را متوقف می‌کند.
+
+تصمیم بگیرید مدل کدام خطاها را مجاز است ببیند. از نسخه 2.1.0 کتابخانه MCP Python SDK به بعد، یک استثنای غیرمنتظره در هندلر روی سرور لاگ می‌شود و کلاینت فقط عبارت `Error executing tool <name>` را می‌بیند. این رفتار پیش‌فرضِ درستی برای رد پای پشته (Stack trace) و رشته‌های اتصال است، اما پیام‌های قابل اقدامی را که مدل برای بازیابی به آن‌ها نیاز دارد پنهان می‌کند. آن‌ها را به‌صورت صریح برگردانید — همان‌طور که هندلر زیر انجام می‌دهد — یا برای پیامی که مدل باید بخواند استثنای `ToolError` (از `mcp.server.mcpserver.exceptions`) را پرتاب کنید.
+
+<div dir="ltr">
 
 ```python
 @mcp.tool()
@@ -252,9 +280,13 @@ async def transfer_funds(
     return f"Transferred ${amount:.2f}. Confirmation: {result.id}"
 ```
 
-### Output Formatting
+</div>
 
-Return structured data when the model needs to reason about it. Return human-readable text when the result is final.
+### قالب‌بندی خروجی
+
+زمانی که مدل نیاز دارد درباره نتیجه استدلال کند، داده ساختاریافته برگردانید. زمانی که نتیجه نهایی است، متن خوانا برای انسان برگردانید.
+
+<div dir="ltr">
 
 ```python
 # Good: structured for further reasoning
@@ -271,15 +303,19 @@ return json.dumps({
 return "Found Jane Smith (ACC-123, jane@acme.com) and John Doe (ACC-456, john@acme.com)"
 ```
 
+</div>
+
 ---
 
-## Tool Composition: Chaining Tools
+## ترکیب ابزارها: زنجیره‌سازی ابزارها <a id="tool-composition-chaining-tools"></a>
 
-Real tasks require multiple tools called in sequence. There are two composition patterns:
+وظایف واقعی نیازمند فراخوانی متوالی چندین ابزار هستند. چند الگوی ترکیب در این زمینه وجود دارد:
 
-### Pattern 1: LLM-Orchestrated Chaining
+### الگو ۱: زنجیره‌سازی با هدایت LLM
 
-The LLM decides which tool to call next based on previous results:
+مدل LLM بر اساس نتایج قبلی تصمیم می‌گیرد که ابزار بعدی برای فراخوانی کدام باشد:
+
+<div dir="ltr">
 
 ```
 User: "Find customer Jane Smith and create a high-priority ticket for her billing issue"
@@ -293,11 +329,15 @@ Turn 2:  LLM -> create_ticket("ACC-123", "Billing issue", "...", "high")
 Turn 3:  LLM -> "I found Jane Smith (ACC-123) and created ticket TK-789."
 ```
 
-Each tool call is a separate API round-trip. The model reasons about results between calls.
+</div>
 
-### Pattern 2: Programmatic Tool Calling
+هر فراخوانی ابزار یک رفت‌وبرگشت (Round-trip) مجزا به API است. مدل بین فراخوانی‌ها درباره نتایج استدلال می‌کند.
 
-Anthropic's programmatic tool calling (2025) lets the model write code that chains tools without round-trips:
+### الگو ۲: فراخوانی برنامه‌نویسی‌شده ابزار (Programmatic Tool Calling)
+
+فراخوانی برنامه‌نویسی‌شده ابزار توسط Anthropic (۲۰۲۵) به مدل اجازه می‌دهد کدی بنویسد که ابزارها را بدون رفت‌وبرگشت‌های متعدد زنجیره کند:
+
+<div dir="ltr">
 
 ```
 LLM generates code:
@@ -309,25 +349,29 @@ LLM generates code:
     return "Customer not found"
 ```
 
-This executes as a single API call, reducing latency from 3 round-trips to 1. On the Claude API you enable it by adding the code execution tool and listing it in each custom tool's `allowed_callers`; it does not combine with `strict: true`, forced `tool_choice`, or MCP tools, so pick it per tool. The same idea, often called code mode or CodeAct, spread across frameworks in 2026 (Agno CodeMode, Microsoft Agent Framework's Hyperlight CodeAct provider, DSPy 3.4's interpreter), with Microsoft reporting more than 60% lower token use in the workload it evaluated (vendor-reported).
+</div>
 
-### Pattern 3: Server-Side Composition
+این کد به‌صورت یک فراخوانی API واحد اجرا می‌شود و تاخیر (Latency) را از ۳ رفت‌وبرگشت به ۱ کاهش می‌دهد. روی API کلود (Claude API) آن را با افزودن ابزار اجرای کد (Code Execution Tool) و فهرست کردن آن در فیلد `allowed_callers` هر ابزار سفارشی فعال می‌کنید؛ این قابلیت با `strict: true`، مقدار اجباری `tool_choice` یا ابزارهای MCP ترکیب نمی‌شود، بنابراین آن را برای هر ابزار به‌صورت مجزا انتخاب کنید. همین ایده که اغلب حالت کد (Code Mode) یا CodeAct نامیده می‌شود، در سال ۲۰۲۶ در فریم‌ورک‌های مختلف گسترش یافت (Agno CodeMode، ارائه‌دهنده Hyperlight CodeAct در Microsoft Agent Framework و مفسر DSPy 3.4)، به‌طوری که مایکروسافت در بار کاری ارزیابی‌شده خود بیش از ۶۰٪ کاهش مصرف Token گزارش داد (گزارش‌شده توسط ارائه‌دهنده).
 
-Compose tools inside the MCP server itself: a single `resolve_customer_issue` tool internally calls search and create_ticket, hiding the multi-step logic from the LLM. Use this for fixed, well-defined workflows where the LLM does not need to reason between steps.
+### الگو ۳: ترکیب در سمت سرور
 
-### When to Use Each
+ابزارها را درون خود سرور MCP ترکیب کنید: یک ابزار واحد `resolve_customer_issue` به‌طور داخلی ابزارهای جست‌وجو و ایجاد تیکت (`create_ticket`) را فراخوانی می‌کند و منطق چندمرحله‌ای را از دید LLM پنهان نگه می‌دارد. از این الگو برای گردش‌کارهای ثابت و خوش‌تعریفی استفاده کنید که LLM نیازی به استدلال بین گام‌های آن‌ها ندارد.
 
-| Pattern | Latency | Flexibility | Best For |
-|---------|---------|-------------|----------|
-| LLM-orchestrated | High (N round-trips) | Very high | Complex, branching logic |
-| Programmatic | Low (1 round-trip) | High | Linear chains, batches |
-| Server-side | Lowest | Low | Fixed, common workflows |
+### چه زمانی از هر کدام استفاده کنیم
+
+| الگو | تاخیر (Latency) | انعطاف‌پذیری | بهترین کاربرد |
+|------|-----------------|--------------|---------------|
+| هماهنگ‌شده توسط LLM (`LLM-orchestrated`) | زیاد (N رفت‌وبرگشت) | بسیار بالا | منطق پیچیده و انشعاب‌دار |
+| برنامه‌نویسی‌شده (`Programmatic`) | کم (۱ رفت‌وبرگشت) | بالا | زنجیره‌های خطی، پردازش‌های دسته‌ای |
+| سمت سرور (`Server-side`) | کمترین | کم | گردش‌کارهای ثابت و رایج |
 
 ---
 
-## Building Custom Agent Skills
+## ساخت مهارت‌های سفارشی ایجنت <a id="building-custom-agent-skills"></a>
 
-Agent Skills (Anthropic, 2025; out of beta on the Claude API since August 19, 2026) are folders of instructions, scripts, and resources that an agent loads only when a task needs them. A skill is a folder:
+مهارت‌های ایجنت (Agent Skills؛ معرفی‌شده توسط Anthropic در سال ۲۰۲۵ و خارج‌شده از حالت بتا در Claude API از ۱۹ اوت ۲۰۲۶) پوشه‌هایی از دستورالعمل‌ها، اسکریپت‌ها و منابع هستند که ایجنت فقط زمانی که یک کار به آن‌ها نیاز داشته باشد بارگذاری می‌کند. هر مهارت یک پوشه است:
+
+<div dir="ltr">
 
 ```
 my-skill/
@@ -338,23 +382,27 @@ my-skill/
   tests/            # Your evaluation cases (not part of the spec, but keep them)
 ```
 
-Loading is progressive: only each skill's name and description sit in context at the start, the body of `SKILL.md` loads when the model decides the skill is relevant, and supporting files are read as needed. This keeps the base agent lightweight and the prompt prefix stable, which matters for caching; injecting every skill into the system prompt defeats both.
+</div>
 
-**Skills are now a supply chain.** Two developments in September 2026 changed how to ship them:
-- **Skills over MCP:** the official MCP extension `io.modelcontextprotocol/skills` (SEP-2640, Final on September 13) lets a server publish skills next to the tools they describe. Each skill carries a file manifest with a SHA-256 digest per file; hosts must verify digests before use, bind any approval to the whole manifest (a changed, added, or removed file revokes it), treat skill content as untrusted, and get explicit approval before a skill grants tools or runs host-side code. TypeScript SDK 2.4.0 (October 23) ships Skills over MCP. A Final SEP is not a frozen interface, though: under the extension lifecycle adopted in October (SEP-3392), Skills, Tasks, and Server Cards are Beta and can still break, while MCP Apps and enterprise auth are Stable, so pin the SDK version you build on.
-- **Scanners are not enough:** Pretext (arXiv 2609.39607) crafted malicious skills that got past NVIDIA's SkillSpector, a static-plus-LLM skill scanner, and still delivered their payload in up to 97% of attempts (77% against a version of the scanner that learns from its misses). The trick was moving payloads from code into natural language and splitting instructions across files. Pin skill versions, review updates like dependency upgrades, and contain what a skill can do at runtime instead of trusting a pre-install scan.
+بارگذاری به‌صورت پیش‌رونده (Progressive) انجام می‌شود: در ابتدا تنها نام و توضیحات هر مهارت در زمینه قرار می‌گیرد، بدنه فایل `SKILL.md` زمانی بارگذاری می‌شود که مدل تشخیص دهد مهارت مرتبط است و فایل‌های پشتیبان در صورت نیاز خوانده می‌شوند. این کار ایجنت پایه را سبک و پیشوند Prompt را پایدار نگه می‌دارد که برای کشینگ حیاتی است؛ تزریق همه مهارت‌ها به درون System Prompt هر دو مزیت را از بین می‌برد.
 
----
-
-## Creating Function-Calling Endpoints
-
-To make your API callable by any LLM, expose it via FastAPI with Pydantic models. The auto-generated OpenAPI spec (`/openapi.json`) doubles as a tool schema for function calling. Alternatively, wrap the same logic in an MCP server for direct integration with Claude, GPT, or other MCP-compatible clients.
+**مهارت‌ها اکنون بخشی از زنجیره تامین (Supply Chain) هستند.** دو تحول در سپتامبر ۲۰۲۶ نحوه عرضه آن‌ها را تغییر داد:
+- **ارائه مهارت‌ها روی MCP (Skills over MCP):** افزونه رسمی MCP با نام `io.modelcontextprotocol/skills` (استاندارد SEP-2640، نهایی‌شده در ۱۳ سپتامبر) به سرور اجازه می‌دهد مهارت‌ها را در کنار ابزارهایی که توصیف می‌کنند منتشر کند. هر مهارت دارای یک مانیفست فایل با چکیده SHA-256 برای هر فایل است؛ میزبان‌ها باید پیش از استفاده چکیده‌ها را راستی‌آزمایی کنند، هر تاییدیه را به کل مانیفست مقید کنند (تغییر، افزودن یا حذف یک فایل تاییدیه را باطل می‌کند)، محتوای مهارت را نامعتبر (Untrusted) فرض کنند و پیش از اینکه مهارتی ابزاری اعطا کند یا کدی در سمت میزبان اجرا کند، تایید صریح بگیرند. نسخه 2.4.0 از TypeScript SDK (۲۳ اکتبر) قابلیت Skills over MCP را ارائه می‌دهد. با این حال، نهایی شدن یک SEP به معنای منجمد بودن رابط نیست: بر اساس چرخه عمر افزونه‌ها که در اکتبر تصویب شد (SEP-3392)، قابلیت‌های Skills، Tasks و Server Cards در مرحله Beta هستند و هنوز ممکن است تغییر شکننده داشته باشند، در حالی که MCP Apps و احراز هویت سازمانی در مرحله Stable هستند؛ بنابراین نسخه SDKای را که روی آن توسعه می‌دهید قفل (Pin) کنید.
+- **اسکنرها کافی نیستند:** پژوهش Pretext (arXiv 2609.39607) مهارت‌های مخربی ساخت که از فیلتر SkillSpector شرکت NVIDIA (یک اسکنر ترکیبی ایستا و مبتنی بر LLM) عبور کردند و همچنان در تا ۹۷٪ تلاش‌ها محموله (Payload) خود را تحویل دادند (و ۷۷٪ در برابر نسخه‌ای از اسکنر که از خطاهایش یاد می‌گیرد). ترفند آن‌ها انتقال محموله‌ها از کد به زبان طبیعی و تقسیم دستورالعمل‌ها میان چند فایل بود. نسخه‌های مهارت‌ها را قفل کنید، به‌روزرسانی‌ها را مانند ارتقای وابستگی‌ها بازبینی کنید و به جای تکیه بر اسکن پیش از نصب، سطح دسترسی و توان اجرایی مهارت را در زمان اجرا محدود کنید.
 
 ---
 
-## Testing Tool-Use Agents
+## ایجاد Endpointهای فراخوانی تابع (Function-Calling) <a id="creating-function-calling-endpoints"></a>
 
-### Three Testing Layers
+برای اینکه API شما توسط هر LLM قابل فراخوانی باشد، آن را از طریق FastAPI و با مدل‌های Pydantic ارائه دهید. مشخصات OpenAPI تولیدشده خودکار (`/openapi.json`) به‌عنوان طرحواره ابزار برای فراخوانی تابع نیز عمل می‌کند. به‌عنوان جایگزین، همان منطق را در یک سرور MCP بسته‌بندی کنید تا یکپارچه‌سازی مستقیم با Claude، GPT یا سایر کلاینت‌های سازگار با MCP داشته باشید.
+
+---
+
+## آزمایش ایجنت‌های استفاده‌کننده از ابزار <a id="testing-tool-use-agents"></a>
+
+### سه لایه آزمایش
+
+<div dir="ltr">
 
 ```
 +---------------------------+
@@ -373,13 +421,17 @@ To make your API callable by any LLM, expose it via FastAPI with Pydantic models
 +---------------------------+
 ```
 
-### Unit Tests for Tools
+</div>
 
-Test each tool handler in isolation with mocked dependencies. Cover: input validation edge cases (out-of-range values, missing fields), error message quality (does it guide the model to recover?), and output format (valid JSON, correct schema).
+### آزمون‌های واحد (Unit Tests) برای ابزارها
 
-### Eval Suites for Agent Behavior
+هر هندلر ابزار را به‌صورت ایزوله و با وابستگی‌های شبیه‌سازی‌شده (Mocked) آزمایش کنید. این موارد را پوشش دهید: حالت‌های مرزی اعتبارسنجی ورودی (مقادیر خارج از بازه، فیلدهای گمشده)، کیفیت پیام خطا (آیا مدل را برای بازیابی راهنمایی می‌کند؟) و قالب خروجی (JSON معتبر، طرحواره صحیح).
 
-Build a dataset of 100+ realistic queries with expected outcomes:
+### مجموعه‌های ارزیابی (Eval Suites) برای رفتار ایجنت
+
+یک مجموعه داده شامل بیش از ۱۰۰ پرس‌وجوی واقعی با خروجی‌های مورد انتظار بسازید:
+
+<div dir="ltr">
 
 ```python
 eval_cases = [
@@ -396,28 +448,32 @@ eval_cases = [
 ]
 ```
 
-For each case, measure: tool selection accuracy (right tool?), argument quality (correct args?), task completion rate, and efficiency (number of tool calls). Run evals on every model version change and every tool schema change.
+</div>
+
+برای هر مورد، این معیارها را اندازه بگیرید: دقت انتخاب ابزار (ابزار درست انتخاب شده؟)، کیفیت آرگومان‌ها (آرگومان‌ها صحیح هستند؟)، نرخ تکمیل وظیفه و کارایی (تعداد فراخوانی ابزار). ارزیابی‌ها را روی هر تغییر نسخه مدل و هر تغییر طرحواره ابزار اجرا کنید.
 
 ---
 
-## Observability for Tool Use
+## مشاهده‌پذیری (Observability) برای استفاده از ابزار <a id="observability-for-tool-use"></a>
 
-Every tool call should log: trace/span IDs, timestamp, tool name, input args, output size, latency, status, model used, token usage, and session ID.
+هر فراخوانی ابزار باید این موارد را لاگ کند: شناسه‌های ردیابی/بازه (Trace/Span IDs)، برچسب زمانی، نام ابزار، آرگومان‌های ورودی، اندازه خروجی، تاخیر، وضعیت، مدل استفاده‌شده، میزان مصرف Token و شناسه نشست.
 
-**Check that your tracing still sees the calls after an SDK upgrade.** The Anthropic Python SDK 1.0 (August 2026) and OpenAI Python SDK 3.0 (August 2026) moved to `httpx2`. Instrumentation and test doubles built on `httpx` (OpenTelemetry HTTP instrumentation, respx, vcrpy) can silently miss every model call unless you apply the shim Anthropic's upgrade guide describes (`httpx2.alias_httpx()`). An empty trace is not an error, so add a canary test that asserts spans exist.
+**پس از ارتقای SDK بررسی کنید که ردیابی (Tracing) شما همچنان فراخوانی‌ها را می‌بیند.** نسخه 1.0 کتابخانه Anthropic Python SDK (اوت ۲۰۲۶) و نسخه 3.0 کتابخانه OpenAI Python SDK (اوت ۲۰۲۶) به `httpx2` مهاجرت کردند. ابزارهای ردیابی و تست‌دابل‌های مبتنی بر `httpx` (ابزارهای OpenTelemetry HTTP instrumentation، `respx` و `vcrpy`) ممکن است به‌طور خاموش هر فراخوانی مدل را از دست بدهند، مگر اینکه وصله سازگاری (Shim) توصیف‌شده در راهنمای ارتقای Anthropic را اعمال کنید (`httpx2.alias_httpx()`). یک ردیابی خالی به شکل خطا ظاهر نمی‌شود، پس یک آزمون قناری (Canary test) اضافه کنید که وجود Spanها را تایید کند.
 
-### Key Metrics
+### معیارهای کلیدی
 
-| Metric | What It Measures | Alert Threshold |
-|--------|-----------------|-----------------|
-| Tool call success rate | % of calls returning valid results | < 95% |
-| Tool selection accuracy | Was the right tool chosen? | < 90% |
-| Avg tool calls per task | Efficiency of tool use | > 2x baseline |
-| Latency per tool call | Response time of tool handlers | > 5s (p99) |
-| Hallucinated arguments | Invalid args despite schema | > 2% |
-| Cost per task | Total LLM + tool execution cost | > budget |
+| معیار | چه چیزی را اندازه می‌گیرد | آستانه هشدار |
+|-------|---------------------------|--------------|
+| نرخ موفقیت فراخوانی ابزار | درصد فراخوانی‌هایی که نتیجه معتبر برمی‌گردانند | کمتر از ۹۵٪ |
+| دقت انتخاب ابزار | آیا ابزار درست انتخاب شده است؟ | کمتر از ۹۰٪ |
+| میانگین فراخوانی ابزار در هر وظیفه | کارایی استفاده از ابزار | بیش از ۲ برابر خط مبنا (Baseline) |
+| تاخیر به ازای هر فراخوانی ابزار | زمان پاسخ‌دهی هندلرهای ابزار | بیش از ۵ ثانیه (`p99`) |
+| آرگومان‌های توهم‌زده | آرگومان‌های نامعتبر با وجود طرحواره | بیش از ۲٪ |
+| هزینه به ازای هر وظیفه | کل هزینه LLM به‌علاوه اجرای ابزار | بیش از بودجه |
 
-### Tracing Architecture
+### معماری ردیابی (Tracing)
+
+<div dir="ltr">
 
 ```
 +-------------+     +----------------+     +--------------+
@@ -440,90 +496,94 @@ Every tool call should log: trace/span IDs, timestamp, tool name, input args, ou
                    +-----------------+
 ```
 
----
-
-## Common Mistakes and Anti-Patterns
-
-| Anti-Pattern | Problem | Fix |
-|-------------|---------|-----|
-| Tool overload | 50+ tools degrades selection accuracy | Dynamic discovery, load 5-10 per turn |
-| Vague descriptions | "Handles customer operations" is too vague | Include when to use, when NOT to use, examples |
-| Forced tool calls for JSON | `tool_choice` `any`/`tool` returns 400 on the newest Claude models | `auto` + `strict: true`, or structured outputs |
-| Leaking raw exceptions | Stack traces and connection strings reach the model and the logs it can echo | Return curated error messages; let the SDK hide unexpected exceptions |
-| God tools | One tool with `action` param does everything | Split into atomic tools, one operation each |
-| Missing error context | Tool returns "Error" with no details | Actionable messages: "ACC-999 not found. Use search_customers..." |
-| Unstructured output | Tool returns prose the model must parse | Return JSON for structured reasoning |
-| No idempotency | `create_ticket` called twice creates duplicates | Accept idempotency key, check before creating |
-| Exposing internal IDs | Tool requires database UUIDs model cannot know | Accept human-readable identifiers, resolve internally |
-| Ignoring rate limits | Agent loops 100 API calls, gets throttled | Backoff in handlers, return "retry in X seconds" |
+</div>
 
 ---
 
-## Tool Versioning and Backwards Compatibility
+## اشتباهات رایج و الگوهای نادرست (Anti-Patterns) <a id="common-mistakes-and-anti-patterns"></a>
 
-As tools evolve, you must maintain compatibility with agents that depend on them.
-
-**Rules:**
-1. **Additive changes** (new optional params): No version bump needed. Old calls still work.
-2. **Breaking changes** (rename, remove param, change semantics): Create a new tool name with the new schema. Keep the old tool running and add "DEPRECATED: Use new_tool instead" to its description. Log every deprecated call for monitoring.
-3. **Never remove a tool** until you verify no active agents depend on it.
-
-**The same discipline applies to tools you consume.** Vendors change built-in tool schemas on short notice. Google's `antigravity-preview-09-2026` agent (September 17, 2026) renamed its built-in tool parameters from snake_case to PascalCase, replaced full-file rewrites with line-range edits, and added `find_by_name` and `grep_search`; the 05-2026 version it replaced was scheduled to shut down on October 5, 2026, 18 days later. Code that executes those tools locally or parses `function_call` steps had to change. Pin dated agent and tool versions, run contract tests against the tool definitions you receive, and alert when a fetched MCP tool list differs from the pinned one (a changed definition after approval is the "rug pull" attack). SDK majors belong in the same contract tests: Anthropic's eight new SDK and CLI majors (Python 2.0.0, TypeScript 1.0.0, C# 13.0.0, Go 2.0.0, Java 3.0.0, PHP 1.0.0, Ruby 2.0.0, and the `ant` CLI 2.0.0) send API version `2026-10-21` by default, under which `temperature`, `top_p`, and `top_k` return HTTP 400 on every model, even at default values, and the new majors are licensed Apache 2.0 rather than MIT.
-
----
-
-## Interview Questions
-
-### Q: You need to give an LLM agent access to 200 internal tools. How do you handle schema overload?
-
-**Strong answer:**
-I would not load all 200 tool schemas into the context. Instead, I would implement a two-phase approach. First, a tool discovery phase where the agent describes what it needs to do, and a lightweight search (embedding similarity or keyword match) returns the 5-10 most relevant tool schemas. Second, a tool execution phase where only the selected tools are included in the context for the actual LLM call.
-
-This mirrors Anthropic's Tool Search pattern. The discovery step can be a separate, cheaper LLM call or even a non-LLM search. The key insight is that context window space used by irrelevant tool schemas directly reduces the model's reasoning quality. I would measure tool selection accuracy as a key metric: if the agent calls `search_customers` when it should call `get_customer_by_id`, the discovery phase needs tuning.
-
-The second constraint is the prompt cache. Long agent sessions are input-dominated, so swapping tool schemas in and out of the top-level tools array, which invalidates the cache on every change, can cost more than the context it saves. I would use a mechanism that appends discovered schemas (deferred loading with a search tool, or mid-conversation tool definitions where the provider supports them) so the cached prefix survives.
-
-For the MCP implementation, I would group tools into domain-specific servers (customer-service, billing, analytics) and only connect to the servers relevant to the current conversation, and I would pin each server's fetched tool list so a definition cannot change mid-session.
-
-### Q: Design a testing strategy for a tool-use agent that handles customer support.
-
-**Strong answer:**
-I would test at three layers. First, unit tests for each tool handler: validate input edge cases, error messages, and output format. These run in CI on every commit with mocked dependencies.
-
-Second, integration tests that verify tools work against real (staging) databases. For example, `create_ticket` actually creates a record and `search_customers` returns it. These catch schema drift between the tool and the backend.
-
-Third, eval suites that test the full agent: LLM plus tools. I would build a dataset of 100+ realistic customer queries with expected tool call sequences and output criteria. The eval measures tool selection accuracy (did it pick the right tool?), argument quality (were the arguments correct?), task completion rate (did it solve the problem?), and efficiency (how many tool calls did it take?).
-
-I would run evals on every model version change and every tool schema change. A 2% drop in tool selection accuracy after a schema change means the description needs revision, not the model.
-
-### Q: Your extraction service forces a tool call to get JSON back. After moving to the newest Claude model, every request returns HTTP 400. What happened, and how do you fix it without losing the schema guarantee?
-
-**Strong answer:**
-Claude Fable 5.1, Mythos 5.1, Opus 5.5, and Sonnet 5.5 reject `tool_choice` of type `any` or `tool`; only `auto` and `none` remain. Forcing a tool call was always a workaround for getting structured output, and the provider has now removed it on its largest models. Haiku 5.5 still accepts a forced `tool_choice`, but the response then starts with the tool call and has no thinking block.
-
-The fix depends on why the call was forced. If the tool only existed to shape the output, I would delete it and use native structured outputs (`output_config.format` with a JSON schema), which constrains the response itself. If the tool does real work, I would switch to `auto`, name the tool in the prompt, set `strict: true` so any call that happens has schema-valid arguments, and add a check in the loop for the case where the model answered without calling it, with one retry and then an error.
-
-Two follow-ups matter more than the fix. First, this broke at a model upgrade, so I would add a pre-upgrade contract test that runs every request shape we send against the new model ID before the switch, including `count_tokens` calls, which apply the same check. Second, I would keep range and length checks in the handler, because strict mode does not enforce `minimum`, `maximum`, or string lengths.
+| الگوی نادرست (Anti-Pattern) | مشکل | راه‌حل |
+|-----------------------------|------|--------|
+| بارگذاری بیش از حد ابزارها | وجود بیش از ۵۰ ابزار دقت انتخاب را کاهش می‌دهد | کشف پویا، بارگذاری ۵ تا ۱۰ ابزار در هر نوبت |
+| توضیحات مبهم | عبارتی مثل «عملیات مشتری را انجام می‌دهد» بیش از حد مبهم است | ذکر زمان استفاده، زمان عدم استفاده و مثال‌ها |
+| اجبار فراخوانی ابزار برای دریافت JSON | استفاده از `tool_choice` از نوع `any` یا `tool` در جدیدترین مدل‌های Claude خطای ۴۰۰ برمی‌گرداند | استفاده از `auto` + `strict: true` یا خروجی‌های ساختاریافته |
+| نشت خطاهای خام | رد پای پشته و رشته‌های اتصال به مدل و لاگ‌هایی که مدل می‌تواند بازگو کند می‌رسند | برگرداندن پیام‌های خطای مدیریت‌شده؛ سپردن پنهان‌سازی خطاهای غیرمنتظره به SDK |
+| ابزارهای همه‌کاره (God tools) | یک ابزار با پارامتر `action` همه کارها را انجام می‌دهد | تقسیم به ابزارهای اتمیک، هر کدام برای یک عملیات |
+| نبود زمینه در خطا | ابزار فقط «Error» را بدون جزئیات برمی‌گرداند | پیام‌های قابل اقدام: «ACC-999 not found. Use search_customers...» |
+| خروجی بدون ساختار | ابزار متن نثر برمی‌گرداند و مدل مجبور به پارس کردن آن است | برگرداندن JSON برای استدلال ساختاریافته |
+| نبود یکسان‌پذیری (Idempotency) | فراخوانی دوباره `create_ticket` تیکت‌های تکراری می‌سازد | دریافت کلید یکسان‌پذیری و بررسی قبل از ایجاد |
+| افشای شناسه‌های داخلی | ابزار به UUIDهای پایگاه داده نیاز دارد که مدل نمی‌تواند بداند | پذیرش شناسه‌های خوانا برای انسان و تبدیل داخلی آن‌ها |
+| نادیده گرفتن محدودیت نرخ (Rate limits) | ایجنت در حلقه ۱۰۰ فراخوانی API انجام می‌دهد و محدود (Throttle) می‌شود | اعمال Backoff در هندلرها و برگرداندن پیام «retry in X seconds» |
 
 ---
 
-## References
+## نسخه‌گذاری ابزارها و سازگاری با نسخه‌های قبلی <a id="tool-versioning-and-backwards-compatibility"></a>
 
-- Anthropic. "Tool Use with Claude" API documentation, including strict tool use and structured outputs
-- Anthropic. Claude Platform release notes (forced `tool_choice` removal; `inline-tools-2026-09-15` beta; August-September 2026)
-- Model Context Protocol. Specification revision 2026-07-28 and "Build an MCP Server"
-- Model Context Protocol. "The New MCP Roadmap" (August 22, 2026)
-- Model Context Protocol. Skills extension, SEP-2640 (September 2026)
-- MCP TypeScript SDK: github.com/modelcontextprotocol/typescript-sdk
-- MCP Python SDK: github.com/modelcontextprotocol/python-sdk (v2 migration guide at py.sdk.modelcontextprotocol.io)
-- Anthropic. "Introducing Advanced Tool Use" (2025)
-- Anthropic. "Agent Skills" documentation (GA on the Claude API since August 2026)
-- Kaisar and Dhar. "Pretext" (arXiv 2609.39607, September 2026)
-- GitHub Advisory Database: reviewed MCP advisories (github.com/advisories?query=type%3Areviewed+mcp)
-- MCP SDK security advisories GHSA-6qxp-vccf-f47h / CVE-2026-104850 (TypeScript) and GHSA-qx49-fqc8-xw99 (Python), OAuth authorization-server mix-up (September 2026)
-- MCP TypeScript SDK advisories CVE-2026-111770 (shared server or transport) and CVE-2026-111771 (token audience) (October 2026)
-- Model Context Protocol. SEP-3392 "Extension Lifecycle" and SEP-3398 "Release Cycle Updates" (October 2026)
+همان‌طور که ابزارها تکامل می‌یابند، باید سازگاری با ایجنت‌هایی را که به آن‌ها وابسته هستند حفظ کنید.
+
+**قواعد:**
+1. **تغییرات افزایشی** (پارامترهای اختیاری جدید): نیازی به افزایش نسخه نیست. فراخوانی‌های قدیمی همچنان کار می‌کنند.
+2. **تغییرات شکننده** (تغییر نام، حذف پارامتر، تغییر معنا): یک نام ابزار جدید با طرحواره جدید بسازید. ابزار قدیمی را فعال نگه دارید و عبارت «DEPRECATED: Use new_tool instead» را به توضیحات آن اضافه کنید. هر فراخوانی منسوخ‌شده را برای پایش لاگ کنید.
+3. **هرگز ابزاری را حذف نکنید** تا زمانی که مطمئن شوید هیچ ایجنت فعالی به آن وابسته نیست.
+
+**همین انضباط در مورد ابزارهایی که مصرف می‌کنید نیز صادق است.** ارائه‌دهندگان طرحواره ابزارهای داخلی را در زمان کوتاه تغییر می‌دهند. ایجنت `antigravity-preview-09-2026` شرکت گوگل (۱۷ سپتامبر ۲۰۲۶) پارامترهای ابزارهای داخلی خود را از snake_case به PascalCase تغییر داد، بازنویسی کامل فایل را با ویرایش بازه خطوط (Line-range edits) جایگزین کرد و `find_by_name` و `grep_search` را افزود؛ نسخه 05-2026 که جایگزین آن شد قرار بود در ۵ اکتبر ۲۰۲۶ یعنی ۱۸ روز بعد خاموش شود. کدی که آن ابزارها را به‌صورت محلی اجرا می‌کند یا گام‌های `function_call` را پارس می‌کند مجبور به تغییر شد. نسخه‌های تاریخ‌دار ایجنت و ابزار را قفل کنید، آزمون‌های قرارداد (Contract tests) را علیه تعاریف ابزاری که دریافت می‌کنید اجرا کنید و هنگام متفاوت شدن فهرست ابزارهای واکشی‌شده MCP از فهرست قفل‌شده هشدار دهید (تغییر تعریف ابزار پس از تایید، حمله «Rug pull» است). نسخه‌های اصلی (Major) SDKها نیز باید در همین آزمون‌های قرارداد قرار گیرند: هشت نسخه اصلی جدید SDK و CLI شرکت Anthropic (پایتون 2.0.0، تایپ‌اسکریپت 1.0.0، سی‌شارپ 13.0.0، گو 2.0.0، جاوا 3.0.0، پی‌اچ‌پی 1.0.0، روبی 2.0.0 و ابزار خط فرمان `ant` نسخه 2.0.0) به‌طور پیش‌فرض نسخه API برابر `2026-10-21` ارسال می‌کنند که تحت آن پارامترهای `temperature`، `top_p` و `top_k` روی هر مدلی — حتی با مقادیر پیش‌فرض — خطای HTTP 400 برمی‌گردانند و این نسخه‌های جدید تحت مجوز Apache 2.0 به جای MIT منتشر شده‌اند.
 
 ---
 
-*Previous: [Computer-Use Agents](04-computer-use-agents.md)*
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
+
+### پرسش: باید به یک ایجنت LLM دسترسی به ۲۰۰ ابزار داخلی بدهید. چگونه مشکل سرریز شدن طرحواره (Schema overload) را مدیریت می‌کنید؟
+
+**پاسخ قوی:**
+من همه ۲۰۰ طرحواره ابزار را در زمینه بارگذاری نمی‌کنم. در عوض، یک رویکرد دومرحله‌ای پیاده‌سازی می‌کنم. نخست، یک مرحله کشف ابزار که در آن ایجنت آنچه باید انجام دهد را توصیف می‌کند و یک جست‌وجوی سبک (تشابه برداری یا تطبیق کلیدواژه) ۵ تا ۱۰ طرحواره ابزار مرتبط‌تر را برمی‌گرداند. دوم، یک مرحله اجرای ابزار که در آن تنها ابزارهای انتخاب‌شده برای فراخوانی واقعی LLM در زمینه قرار می‌گیرند.
+
+این رویکرد دقیقاً الگوی Tool Search شرکت Anthropic را بازتاب می‌دهد. گام کشف می‌تواند یک فراخوانی LLM مجزا و ارزان‌تر یا حتی یک جست‌وجوی غیر-LLM باشد. نکته کلیدی این است که فضای پنجره زمینه (Context window) که صرف طرحواره‌های ابزار نامرتبط می‌شود، مستقیماً کیفیت استدلال مدل را کاهش می‌دهد. من دقت انتخاب ابزار را به‌عنوان یک معیار کلیدی اندازه می‌گیرم: اگر ایجنت به جای `get_customer_by_id` ابزار `search_customers` را صدا می‌زند، مرحله کشف نیاز به تنظیم دارد.
+
+محدودیت دوم، کش Prompt است. نشست‌های طولانی ایجنت ورودی‌محور (Input-dominated) هستند، بنابراین جابه‌جا کردن طرحواره‌های ابزار به داخل و خارج آرایه ابزارهای سطح بالا که در هر تغییر کش را باطل می‌کند، می‌تواند هزینه‌ای بیشتر از زمینه‌ای که ذخیره می‌کند تحمیل کند. من از مکانیزمی استفاده می‌کنم که طرحواره‌های کشف‌شده را اضافه (Append) کند (بارگذاری موکول‌شده همراه با ابزار جست‌وجو، یا تعاریف ابزار در میانه مکالمه در جایی که ارائه‌دهنده از آن‌ها پشتیبانی می‌کند) تا پیشوند کش‌شده دست‌نخورده بماند.
+
+برای پیاده‌سازی MCP، ابزارها را در سرورهای دامنه-محور (خدمات مشتریان، صورت‌حساب، تحلیل) گروه‌بندی می‌کنم و فقط به سرورهای مرتبط با مکالمه فعلی متصل می‌شوم، و فهرست ابزارهای واکشی‌شده هر سرور را قفل می‌کنم تا تعریفی نتواند در میانه نشست تغییر کند.
+
+### پرسش: یک استراتژی آزمایش (Testing Strategy) برای یک ایجنت استفاده‌کننده از ابزار که پشتیبانی مشتریان را مدیریت می‌کند طراحی کنید.
+
+**پاسخ قوی:**
+من در سه لایه آزمایش می‌کنم. نخست، آزمون‌های واحد برای هر هندلر ابزار: اعتبارسنجی حالت‌های مرزی ورودی، پیام‌های خطا و قالب خروجی. این آزمون‌ها در CI روی هر کامیت با وابستگی‌های شبیه‌سازی‌شده اجرا می‌شوند.
+
+دوم، آزمون‌های یکپارچه‌سازی (Integration tests) که تایید می‌کنند ابزارها در برابر پایگاه‌های داده واقعی (محیط Staging) کار می‌کنند. برای مثال، `create_ticket` واقعاً یک رکورد می‌سازد و `search_customers` آن را برمی‌گرداند. این آزمون‌ها انحراف طرحواره (Schema drift) میان ابزار و بک‌اند را کشف می‌کنند.
+
+سوم، مجموعه‌های ارزیابی (Eval suites) که کل ایجنت یعنی LLM به همراه ابزارها را آزمایش می‌کنند. من یک مجموعه داده از بیش از ۱۰۰ پرس‌وجوی واقعی مشتری با توالی‌های فراخوانی ابزار مورد انتظار و معیارهای خروجی می‌سازم. این ارزیابی دقت انتخاب ابزار (آیا ابزار درست را انتخاب کرد؟)، کیفیت آرگومان‌ها (آیا آرگومان‌ها درست بودند؟)، نرخ تکمیل وظیفه (آیا مشکل را حل کرد؟) و کارایی (چند فراخوانی ابزار طول کشید؟) را اندازه می‌گیرد.
+
+من ارزیابی‌ها را روی هر تغییر نسخه مدل و هر تغییر طرحواره ابزار اجرا می‌کنم. افت ۲ درصدی در دقت انتخاب ابزار پس از تغییر طرحواره به این معناست که توضیحات ابزار نیاز به بازبینی دارد، نه مدل.
+
+### پرسش: سرویس استخراج شما برای دریافت JSON بازگشتی، فراخوانی ابزار را اجباری می‌کند. پس از انتقال به جدیدترین مدل Claude، هر درخواست خطای HTTP 400 برمی‌گرداند. چه اتفاقی افتاده و چگونه آن را بدون از دست دادن تضمین طرحواره برطرف می‌کنید؟
+
+**پاسخ قوی:**
+مدل‌های Claude Fable 5.1، Mythos 5.1، Opus 5.5 و Sonnet 5.5 مقدار `tool_choice` از نوع `any` یا `tool` را رد می‌کنند؛ تنها `auto` و `none` باقی مانده‌اند. اجبار فراخوانی ابزار همیشه یک راه‌حل موقت (Workaround) برای گرفتن خروجی ساختاریافته بود و اکنون ارائه‌دهنده آن را از بزرگ‌ترین مدل‌های خود حذف کرده است. مدل Haiku 5.5 هنوز `tool_choice` اجباری را می‌پذیرد، اما پاسخ در آن صورت با فراخوانی ابزار شروع می‌شود و بلوک تفکر (Thinking block) ندارد.
+
+راه‌حل به دلیل اجباری شدن فراخوانی بستگی دارد. اگر ابزار فقط برای شکل‌دهی خروجی وجود داشت، آن را حذف می‌کنم و از خروجی‌های ساختاریافته بومی (`output_config.format` با یک طرحواره JSON) استفاده می‌کنم که خود پاسخ را مقید می‌کند. اگر ابزار کار واقعی انجام می‌دهد، به `auto` تغییر می‌دهم، نام ابزار را در Prompt ذکر می‌کنم، `strict: true` را تنظیم می‌کنم تا هر فراخوانیِ انجام‌شده آرگومان‌های معتبر از نظر طرحواره داشته باشد، و یک بررسی در حلقه برای حالتی که مدل بدون فراخوانی آن پاسخ داده باشد — با یک بار تلاش مجدد و سپس خطا — اضافه می‌کنم.
+
+دو اقدام بعدی از خود اصلاح مهم‌ترند. نخست، از آنجا که این مشکل هنگام ارتقای مدل شکست خورده است، یک آزمون قرارداد پیش از ارتقا اضافه می‌کنم که پیش از تغییر مدل، هر شکل درخواستی را که ارسال می‌کنیم علیه شناسه مدل جدید اجرا کند، از جمله فراخوانی‌های `count_tokens` که همان بررسی را اعمال می‌کنند. دوم، بررسی‌های بازه و طول را در هندلر نگه می‌دارم، زیرا حالت سخت‌گیرانه `minimum`، `maximum` یا طول رشته‌ها را اعمال نمی‌کند.
+
+---
+
+## منابع <a id="references"></a>
+
+- شرکت Anthropic، مستندات API با عنوان «Tool Use with Claude»، شامل استفاده سخت‌گیرانه از ابزار و خروجی‌های ساختاریافته
+- شرکت Anthropic، یادداشت‌های انتشار پلتفرم Claude (حذف `tool_choice` اجباری؛ بتای `inline-tools-2026-09-15`؛ اوت تا سپتامبر ۲۰۲۶)
+- پروتکل Model Context Protocol، نسخه مشخصات 2026-07-28 و راهنمای «Build an MCP Server»
+- پروتکل Model Context Protocol، مقاله «The New MCP Roadmap» (۲۲ اوت ۲۰۲۶)
+- پروتکل Model Context Protocol، افزونه Skills، استاندارد SEP-2640 (سپتامبر ۲۰۲۶)
+- مخزن MCP TypeScript SDK در github.com/modelcontextprotocol/typescript-sdk
+- مخزن MCP Python SDK در github.com/modelcontextprotocol/python-sdk (راهنمای مهاجرت به نسخه ۲ در py.sdk.modelcontextprotocol.io)
+- شرکت Anthropic، مقاله «Introducing Advanced Tool Use» (۲۰۲۵)
+- شرکت Anthropic، مستندات «Agent Skills» (دسترس‌پذیری عمومی در Claude API از اوت ۲۰۲۶)
+- پژوهش Kaisar و Dhar، مقاله «Pretext» (arXiv 2609.39607، سپتامبر ۲۰۲۶)
+- پایگاه داده مشاوره‌های امنیتی گیت‌هاب (GitHub Advisory Database): هشدارهای بازبینی‌شده MCP (github.com/advisories?query=type%3Areviewed+mcp)
+- هشدارهای امنیتی MCP SDK با شناسه‌های GHSA-6qxp-vccf-f47h / CVE-2026-104850 (TypeScript) و GHSA-qx49-fqc8-xw99 (پایتون)، جابه‌جایی سرور احراز هویت OAuth (سپتامبر ۲۰۲۶)
+- هشدارهای امنیتی MCP TypeScript SDK با شناسه‌های CVE-2026-111770 (سرور یا انتقال مشترک) و CVE-2026-111771 (مخاطب Token) (اکتبر ۲۰۲۶)
+- پروتکل Model Context Protocol، استانداردهای SEP-3392 «Extension Lifecycle» و SEP-3398 «Release Cycle Updates» (اکتبر ۲۰۲۶)
+
+---
+
+*قبلی: [ایجنت‌های استفاده از کامپیوتر](04-computer-use-agents.md)*
+
+</div>

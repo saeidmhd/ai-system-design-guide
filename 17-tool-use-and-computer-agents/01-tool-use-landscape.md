@@ -1,28 +1,32 @@
-# The 2026 Tool-Use and Computer Agent Landscape
+<div dir="rtl">
 
-The way AI agents interact with the outside world has undergone a dramatic shift. In 2024, "tool use" meant a model emitting a JSON function call that your backend executed. Today we have full-blown autonomous agents that clone repos, run shell commands, control desktops via screenshots, and message you on WhatsApp, all orchestrated through standardized protocols like MCP. This chapter maps these tools, their architectures, and the design decisions that differentiate them.
+# چشم‌انداز استفاده از ابزار و Agentهای کامپیوتری در سال ۲۰۲۶
 
-## Table of Contents
+نحوه تعامل ایجنت‌های هوش مصنوعی (AI Agents) با دنیای بیرون دستخوش تحولی چشمگیر شده است. در سال ۲۰۲۴، «استفاده از ابزار» (Tool Use) به معنای آن بود که یک مدل، فراخوانی تابع (Function Call) در قالب JSON تولید کند تا بک‌اند (Backend) شما آن را اجرا نماید. امروزه اما ایجنت‌های تمام‌عیار و خودمختاری داریم که مخازن کد (Repos) را کلون می‌کنند، دستورات پوسته (Shell) را اجرا می‌کنند، دسکتاپ را از طریق اسکرین‌شات کنترل می‌کنند و در WhatsApp به شما پیام می‌دهند؛ و همه این‌ها از طریق پروتکل‌های استانداردی مانند MCP هماهنگ‌سازی می‌شوند. این فصل به ترسیم نقشه این ابزارها، معماری‌های آن‌ها و تصمیمات طراحی‌ای می‌پردازد که آن‌ها را از یکدیگر متمایز می‌کند.
 
-- [Ecosystem Overview](#ecosystem-overview)
-- [Category Taxonomy](#category-taxonomy)
-- [OpenClaw: The Viral Personal AI Agent](#openclaw-the-viral-personal-ai-agent)
-- [OpenHands: Autonomous Developer Agent](#openhands-autonomous-developer-agent)
-- [Open Interpreter: Local Code Execution](#open-interpreter-local-code-execution)
-- [Claude Computer Use: Vision-Based Automation](#claude-computer-use-vision-based-automation)
-- [Claude Code: The Terminal Agent](#claude-code-the-terminal-agent)
-- [IDE Agents: Cursor, Devin Desktop, Cline](#ide-agents-cursor-devin-desktop-cline)
-- [Comparison Matrix](#comparison-matrix)
-- [Market Trends and Adoption (2026)](#market-trends-and-adoption-2026)
-- [System Design Interview Angle](#system-design-interview-angle)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [مروری بر اکوسیستم](#ecosystem-overview)
+- [دسته‌بندی اکوسیستم](#category-taxonomy)
+- [ابزار OpenClaw: دستیار هوش مصنوعی شخصی فراگیر](#openclaw-the-viral-personal-ai-agent)
+- [ابزار OpenHands: ایجنت توسعه‌دهنده خودمختار](#openhands-autonomous-developer-agent)
+- [ابزار Open Interpreter: اجرای کد محلی](#open-interpreter-local-code-execution)
+- [قابلیت Claude Computer Use: اتوماسیون مبتنی بر بینایی](#claude-computer-use-vision-based-automation)
+- [ابزار Claude Code: ایجنت ترمینال](#claude-code-the-terminal-agent)
+- [ایجنت‌های IDE: ابزارهای Cursor، Devin Desktop و Cline](#ide-agents-cursor-devin-desktop-cline)
+- [ماتریس مقایسه](#comparison-matrix)
+- [روندهای بازار و پذیرش (۲۰۲۶)](#market-trends-and-adoption-2026)
+- [زاویه دید مصاحبه طراحی سیستم](#system-design-interview-angle)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع](#references)
 
 ---
 
-## Ecosystem Overview
+## مروری بر اکوسیستم <a id="ecosystem-overview"></a>
 
-The 2026 tool-use ecosystem has consolidated around five deployment categories, each optimized for different levels of autonomy, safety, and integration depth. MCP servers and messaging bridges are the plumbing that connects them:
+اکوسیستم استفاده از ابزار در سال ۲۰۲۶ حول پنج دسته استقرار (Deployment) تثبیت شده است که هر یک برای سطوح متفاوتی از خودمختاری، ایمنی و عمق یکپارچه‌سازی بهینه‌سازی شده‌اند. سرورهای MCP و پل‌های پیام‌رسان، لوله‌کشی زیرساختی هستند که این اجزا را به هم متصل می‌کنند:
+
+<div dir="ltr">
 
 ```
 +-----------------------------------------------------------------------+
@@ -57,111 +61,115 @@ The 2026 tool-use ecosystem has consolidated around five deployment categories, 
 +-----------------------------------------------------------------------+
 ```
 
-The key insight for 2026: these categories are converging. Claude Code is a cloud agent that runs locally. OpenClaw is a local agent that connects to cloud LLMs. Cursor is an IDE agent whose cloud agents (formerly Background Agents) can now run on your own machines. By September 2026 the frontier labs sell the agent harness itself as a managed runtime, and consumer products give each agent its own computer and identity. The lines are blurring, and what matters is the underlying **architecture pattern** (covered in the next chapter).
+</div>
+
+نکته کلیدی در سال ۲۰۲۶ این است که این دسته‌بندی‌ها در حال همگرایی هستند. ابزار Claude Code یک ایجنت ابری است که به صورت محلی اجرا می‌شود. ابزار OpenClaw یک ایجنت محلی است که به مدل‌های LLM ابری متصل می‌شود. محیط Cursor یک ایجنت IDE است که ایجنت‌های ابری آن (سابقاً Background Agents) اکنون می‌توانند روی ماشین‌های خود شما اجرا شوند. تا سپتامبر ۲۰۲۶، آزمایشگاه‌های پیشرو خودِ هارنس ایجنت (Agent Harness) را به عنوان یک محیط اجرای مدیریت‌شده (Managed Runtime) می‌فروشند و محصولات مصرفی نیز به هر ایجنت کامپیوتر و هویت اختصاصی خودش را می‌دهند. مرزها در حال محو شدن هستند و آنچه اهمیت دارد، **الگوی معماری** زیربنایی است (که در فصل بعد بررسی می‌شود).
 
 ---
 
-## Category Taxonomy
+## دسته‌بندی اکوسیستم <a id="category-taxonomy"></a>
 
-### 1. Local Agents (Self-Hosted, User-Controlled)
+### ۱. ایجنت‌های محلی (خودمیزبان، تحت کنترل کاربر)
 
-Agents that run on the user's own hardware. The LLM call may go to the cloud, but the agent process, memory, and tool execution are local.
+این دسته شامل ایجنت‌هایی است که روی سخت‌افزار خود کاربر اجرا می‌شوند. فراخوانی مدل LLM ممکن است به ابر ارسال شود، اما فرایند ایجنت، حافظه و اجرای ابزار به صورت محلی انجام می‌گیرد.
 
-**Key properties:**
-- Full filesystem access on the user's machine
-- Persistent memory stored locally (SQLite, JSON, Markdown)
-- User owns all data; no vendor lock-in
-- Security responsibility falls entirely on the operator
+**ویژگی‌های کلیدی:**
+- دسترسی کامل به سیستم فایل (Filesystem) روی ماشین کاربر
+- ذخیره‌سازی حافظه پایدار به صورت محلی (SQLite، JSON، Markdown)
+- مالکیت کامل داده‌ها توسط کاربر؛ بدون وابستگی به فروشنده (Vendor Lock-in)
+- بر عهده بودن کامل مسئولیت امنیتی توسط اپراتور
 
-**Examples:** OpenClaw, Open Interpreter, local OpenHands deployments, and open-source terminal harnesses such as OpenCode (MIT, about 224K GitHub stars in early November 2026)
+**نمونه‌ها:** پروژه OpenClaw، ابزار Open Interpreter، استقرارهای محلی OpenHands و هارنس‌های ترمینال متن‌باز مانند OpenCode (تحت مجوز MIT، با حدود ۲۲۴ هزار ستاره گیت‌هاب در اوایل نوامبر ۲۰۲۶)
 
-### 2. Cloud Agents (Vendor-Hosted, API-Driven)
+### ۲. ایجنت‌های ابری (میزبانی‌شده توسط فروشنده، API-محور)
 
-Agents that run in vendor-managed cloud environments. Code execution happens in sandboxed VMs or containers.
+این دسته شامل ایجنت‌هایی است که در محیط‌های ابری مدیریت‌شده توسط فروشنده اجرا می‌شوند. اجرای کد در ماشین‌های مجازی (VM) یا کانتینرهای ایزوله‌شده (Sandboxed) انجام می‌شود.
 
-**Key properties:**
-- Sandboxed execution (Docker, Firecracker VMs, E2B)
-- No local filesystem access (works on cloned repos)
-- Vendor handles scaling, security, and infrastructure
-- Pay-per-use or subscription pricing
+**ویژگی‌های کلیدی:**
+- اجرای ایزوله‌شده (Docker، Firecracker VMs، E2B)
+- عدم دسترسی به سیستم فایل محلی (کار روی مخازن کلون‌شده انجام می‌شود)
+- مدیریت مقیاس‌پذیری، امنیت و زیرساخت توسط فروشنده
+- قیمت‌گذاری بر اساس مصرف (Pay-per-use) یا اشتراکی
 
-**Examples:** Claude Code (cloud mode), OpenAI Codex (reusable cloud environments since DevDay, September 29, 2026), Devin, OpenHands Cloud. Google Jules is winding down (read-only after November 11, 2026, shut down December 31), a reminder to keep hosted coding agents behind an interface you can repoint.
+**نمونه‌ها:** ابزار Claude Code (حالت ابری)، سرویس OpenAI Codex (محیط‌های ابری قابل استفاده مجدد از زمان DevDay در ۲۹ سپتامبر ۲۰۲۶)، ابزار Devin و سرویس OpenHands Cloud. سرویس Google Jules در حال جمع‌آوری است (پس از ۱۱ نوامبر ۲۰۲۶ فقط‌خواندنی و در ۳۱ دسامبر خاموش می‌شود)؛ این یادآوری مهمی است که ایجنت‌های کدنویسی میزبانی‌شده را پشت یک واسط (Interface) نگه دارید که بتوانید مسیر آن را تغییر دهید.
 
-The sandbox no longer has to be the vendor's. Claude Code self-hosted runners (Team and Enterprise, v2.1.224, August 2026), Cursor Self-hosted Machines (September 2, 2026) and the OpenAI Agents API's self-hosted environments all keep the vendor's control plane while tool execution, credentials and egress stay inside the customer perimeter.
+محیط ایزوله (Sandbox) دیگر لزوماً نباید متعلق به فروشنده باشد. اجراگرهای خودمیزبان Claude Code (نسخه‌های Team و Enterprise، نسخه v2.1.224 در اوت ۲۰۲۶)، قابلیت Cursor Self-hosted Machines (۲ سپتامبر ۲۰۲۶) و محیط‌های خودمیزبان در OpenAI Agents API همگی صفحه کنترل (Control Plane) فروشنده را حفظ می‌کنند، در حالی که اجرای ابزار، اطلاعات احراز هویت (Credentials) و ترافیک خروجی (Egress) درون محدوده شبکه مشتری باقی می‌ماند.
 
-### 3. IDE Agents (Editor-Integrated, Context-Aware)
+### ۳. ایجنت‌های IDE (یکپارچه با ویرایشگر، آگاه از زمینه)
 
-Agents embedded directly in code editors. They have deep understanding of project structure, open files, and editor state.
+این ایجنت‌ها مستقیماً درون ویرایشگرهای کد تعبیه شده‌اند و درک عمیقی از ساختار پروژه، فایل‌های باز و وضعیت ویرایشگر دارند.
 
-**Key properties:**
-- Tight integration with editor UI (inline diffs, tab completion)
-- Codebase indexing via embeddings or AST parsing
-- Background agents that work asynchronously on branches
-- Optimized for developer workflow, not general automation
+**ویژگی‌های کلیدی:**
+- یکپارچه‌سازی تنگاتنگ با رابط کاربری ویرایشگر (تغییرات درون‌خطی، تکمیل با کلید Tab)
+- نمایه‌سازی پایگاه کد (Codebase Indexing) از طریق بردارهای تعبیه (Embeddings) یا تجزیه AST
+- ایجنت‌های پس‌زمینه که به صورت ناهمگام روی شاخه‌های گیت (Branches) کار می‌کنند
+- بهینه‌شده برای جریان کاری توسعه‌دهنده، نه اتوماسیون عمومی
 
-**Examples:** Cursor (Agent Mode, cloud agents, Projects), Devin Desktop (formerly Windsurf), Cline, GitHub Copilot, Google Antigravity (a product family: the Antigravity 2.0 multi-agent app, the IDE, a CLI and an SDK; bundled into eligible Gemini Enterprise subscriptions since August 20, 2026). The Antigravity CLI is now Google's general-purpose terminal agent: Gemini CLI (v0.66.0, October 27, 2026) is scoped to Gemini Code Assist Standard and Enterprise and Code Assist for GitHub, and its README says it is not optimized for Gemini 4 models. AWS's Kiro (agentic IDE and CLI) shows the same harness churn: Kiro CLI 3.0.0 (November 3, 2026) made the V3 harness the default for interactive sessions, `--trust-all-tools` scripts, and new ACP clients, and retired the desktop app and inline autocomplete (details in the [coding agents guide](../09-frameworks-and-tools/10-opencoderguide.md#kiro-aws)).
+**نمونه‌ها:** محیط Cursor (قابلیت Agent Mode، ایجنت‌های ابری و Projects)، محیط Devin Desktop (سابقاً Windsurf)، افزونه Cline، ابزار GitHub Copilot و خانواده محصولات Google Antigravity (شامل اپلیکیشن چندایجنتی Antigravity 2.0، محیط IDE، یک CLI و یک SDK؛ که از ۲۰ اوت ۲۰۲۶ در اشتراک‌های واجد شرایط Gemini Enterprise گنجانده شده است). ابزار Antigravity CLI اکنون ایجنت ترمینال همه‌منظوره گوگل است: ابزار Gemini CLI (نسخه v0.66.0 در ۲۷ اکتبر ۲۰۲۶) محدود به Gemini Code Assist Standard و Enterprise و همچنین Code Assist for GitHub شده و فایل README آن می‌گوید برای مدل‌های Gemini 4 بهینه‌سازی نشده است. ابزار Kiro از AWS (محیط IDE و CLI ایجنتی) نیز همین تغییرات مداوم هارنس را نشان می‌دهد: نسخه Kiro CLI 3.0.0 (۳ نوامبر ۲۰۲۶) هارنس V3 را برای نشست‌های تعاملی، اسکریپت‌های `--trust-all-tools` و کلاینت‌های جدید ACP به حالت پیش‌فرض درآورد و اپلیکیشن دسکتاپ و تکمیل خودکار درون‌خطی را بازنشسته کرد (جزئیات بیشتر در [راهنمای ایجنت‌های کدنویسی](../09-frameworks-and-tools/10-opencoderguide.md#kiro-aws)).
 
-**Pin managed agent versions.** Google's `antigravity-preview-09-2026` replaced `antigravity-preview-05-2026` on September 17, 2026 with about three weeks' notice (shutdown scheduled for October 5). Built-in tool parameters moved from snake_case to PascalCase and file edits became line-range replacements, so any code that executes the built-in tools locally or parses their calls broke. Pin dated agent versions and contract-test tool schemas in CI.
+**نسخه‌های ایجنت‌های مدیریت‌شده را پین (Pin) کنید.** مدل `antigravity-preview-09-2026` شرکت گوگل در ۱۷ سپتامبر ۲۰۲۶ با حدود سه هفته اطلاع قبلی جایگزین `antigravity-preview-05-2026` شد (خاموشی نسخه قبلی برای ۵ اکتبر برنامه‌ریزی شده بود). پارامترهای ابزارهای داخلی از snake_case به PascalCase تغییر یافتند و ویرایش‌های فایل به جایگزینی محدوده خطوط تبدیل شدند؛ در نتیجه هر کدی که ابزارهای داخلی را به صورت محلی اجرا می‌کرد یا فراخوانی‌های آن‌ها را تجزیه می‌کرد از کار افتاد. نسخه‌های تاریخ‌دار ایجنت‌ها را پین کنید و اسکیمای ابزارها را در CI با تست قرارداد (Contract-test) بررسی نمایید.
 
-### 4. Computer-Use Agents (Vision-Based, GUI-Driven)
+### ۴. ایجنت‌های استفاده از کامپیوتر (مبتنی بر بینایی، GUI-محور)
 
-Agents that interact with software the way humans do: by looking at screenshots and clicking.
+این ایجنت‌ها دقیقاً مانند انسان‌ها با نرم‌افزار تعامل می‌کنند: از طریق نگاه کردن به اسکرین‌شات‌ها و کلیک کردن.
 
-**Key properties:**
-- Model sees screenshots, decides mouse/keyboard actions
-- Works with any application (no API needed)
-- Higher latency (screenshot-action loop is 1-3 seconds per model round trip; batch actions now put several steps in one round trip)
-- Requires sandboxed environments for safety (VM + VNC)
+**ویژگی‌های کلیدی:**
+- مدل اسکرین‌شات‌ها را می‌بیند و درباره حرکات ماوس/کیبورد تصمیم می‌گیرد
+- با هر اپلیکیشنی کار می‌کند (بدون نیاز به API)
+- دارای تأخیر (Latency) بالاتر است (حلقه اسکرین‌شات-عمل حدود ۱ تا ۳ ثانیه در هر رفت‌وبرگشت مدل طول می‌کشد؛ اکنون اقدامات دسته‌ای (Batch Actions) چندین گام را در یک رفت‌وبرگشت مدل قرار می‌دهند)
+- نیازمند محیط‌های ایزوله‌شده برای ایمنی (VM + VNC)
 
-**Examples:** Claude's computer and browser toolsets (GA August 19, 2026), Gemini computer use (GA October 30, 2026; the docs recommend `gemini-3.8-flash` and list `gemini-4-argon` as the most capable option), computer use in the OpenAI Agents API through an OpenAI-hosted browser (public beta since September 29, 2026) and through the Responses API on GPT-6.1 Terra ($1/$5 per 1M tokens, October 26), GitHub Copilot computer use (public preview October 1, 2026), and the original Python Open Interpreter's Computer API
+**نمونه‌ها:** مجموعه ابزارهای کامپیوتر و مرورگر Claude (در دسترس عموم از ۱۹ اوت ۲۰۲۶)، قابلیت استفاده از کامپیوتر Gemini (در دسترس عموم از ۳۰ اکتبر ۲۰۲۶؛ مستندات مدل `gemini-3.8-flash` را توصیه می‌کنند و `gemini-4-argon` را توانمندترین گزینه معرفی می‌کنند)، قابلیت استفاده از کامپیوتر در OpenAI Agents API از طریق مرورگر میزبانی‌شده توسط OpenAI (بتای عمومی از ۲۹ سپتامبر ۲۰۲۶) و از طریق Responses API روی مدل GPT-6.1 Terra (۱ دلار / ۵ دلار به ازای هر ۱ میلیون Token در ۲۶ اکتبر)، قابلیت استفاده از کامپیوتر GitHub Copilot (پیش‌نمایش عمومی در ۱ اکتبر ۲۰۲۶) و قابلیت Computer API در نسخه اصلی پایتونی Open Interpreter
 
-The browser variants increasingly target **accessibility-tree element references** rather than raw pixels, which survive layout shifts and cut misclicks. Pixels remain the fallback for desktop apps.
+انواع مبتنی بر مرورگر به طور فزاینده‌ای به جای پیکسل‌های خام، **ارجاع به عناصر درخت دسترسی‌پذیری (Accessibility-tree element references)** را هدف می‌گیرند که در برابر تغییرات چیدمان (Layout Shifts) مقاوم‌ترند و کلیک‌های اشتباه را کاهش می‌دهند. پیکسل‌ها همچنان به عنوان گزینه جایگزین (Fallback) برای اپلیکیشن‌های دسکتاپ باقی مانده‌اند.
 
-### 5. Managed and Persistent Agents (Vendor-Run Harness, Own Identity)
+### ۵. ایجنت‌های مدیریت‌شده و پایدار (هارنس تحت اجرای فروشنده، هویت اختصاصی)
 
-The newest category, and the one that changes the design questions. Instead of shipping a model endpoint, the vendor runs the whole agent loop, and consumer products give each agent its own cloud computer, identity and approval policy.
+جدیدترین دسته‌بندی است و همان دسته‌ای است که پرسش‌های طراحی را دگرگون می‌کند. در این الگو، فروشنده به جای ارائه صرف یک نقطه پایانی مدل (Model Endpoint)، کل حلقه ایجنت را اجرا می‌کند و محصولات مصرفی به هر ایجنت کامپیوتر ابری، هویت و سیاست تایید (Approval Policy) اختصاصی خودش را می‌دهند.
 
-**Key properties:**
-- Vendor-run harness with durable sessions, tool execution, compaction and recovery
-- One VM or sandbox per agent, often with its own sign-in identity
-- Declarative approval rules instead of per-call prompts
-- Billing per session or usage, sometimes per transaction
+**ویژگی‌های کلیدی:**
+- هارنس تحت اجرای فروشنده با نشست‌های بادوام (Durable Sessions)، اجرای ابزار، فشرده‌سازی زمینه (Compaction) و بازیابی (Recovery)
+- یک VM یا محیط ایزوله به ازای هر ایجنت، اغلب با هویت ورود اختصاصی خودش
+- قوانین تایید اعلانی (Declarative) به جای درخواست تایید (Prompt) برای هر فراخوانی
+- صدور صورت‌حساب به ازای هر نشست یا میزان مصرف، و گاهی به ازای هر تراکنش
 
-**Examples:**
+**نمونه‌ها:**
 
-| Product | Status (November 2026) | Design detail worth stealing |
-|---------|--------------------------|------------------------------|
-| Claude Managed Agents | Beta; budgets (August 7), `ant apply` (September 3) and the auto policy (September 10) are recent additions, and it now also runs on Claude on Google Cloud | Session spend caps that pause with `budget_reached`; server-evaluated auto permission policy; agents-as-code via `ant apply` and a committed `claude-lock.json` |
-| OpenAI Agents API | Public beta (September 10); since October 9, hosted sandboxes bill only during active turns | Managed Codex harness; per-origin browser approval; credentials entered out of band, never in model input; US data residency only and no ZDR at launch |
-| Amazon Bedrock Managed Agents (powered by OpenAI) | Public preview (September 29) | Per-agent IAM role, CloudTrail logging, runtime and inference stay inside AWS |
-| OpenAI dots | Announced September 29 (Pro, Business Premium) | One cloud computer per agent; read-only research when idle; Custom Rules to allow, block or require approval; saved passwords used without exposing them to the model |
-| Meta Muse | Launched September 8 (consumer) | Runs in a dedicated cloud VM; Meta says it expects to profit from a small fee on transactions |
-| Microsoft Copilot Autopilot (formerly Scout) | Private preview (end of September) | Own identity, memory and computer inside the customer tenant |
-| Anthropic Claude Duet | Research preview (October 21; waitlist for US Pro, Max and Ultra, not Team or Enterprise) | Own cloud computer and browser on Claude Opus 5.5 with no model choice; asks before messages, payments (one-time card per purchase), signing, or deleting, and blocks securities trading and moving money between accounts even with approval; draws on the plan's usage limits at no extra cost |
+| محصول | وضعیت (نوامبر ۲۰۲۶) | نکته طراحی ارزشمند برای الگوبرداری |
+|-------|----------------------|------------------------------------|
+| سرویس Claude Managed Agents | نسخه بتا؛ قابلیت‌های بودجه (۷ اوت)، دستور `ant apply` (۳ سپتامبر) و سیاست خودکار (۱۰ سپتامبر) اخیراً اضافه شده‌اند و اکنون روی Claude on Google Cloud نیز اجرا می‌شود | سقف هزینه نشست که با `budget_reached` متوقف می‌شود؛ سیاست مجوز خودکار ارزیابی‌شده در سمت سرور؛ ایجنت-به-عنوان-کد از طریق `ant apply` و یک فایل متعهدشده `claude-lock.json` |
+| سرویس OpenAI Agents API | بتای عمومی (۱۰ سپتامبر)؛ از ۹ اکتبر محیط‌های ایزوله میزبانی‌شده فقط در طول نوبت‌های فعال صورت‌حساب می‌شوند | هارنس مدیریت‌شده Codex؛ تایید به ازای هر مبدا (Per-origin) در مرورگر؛ ورود اطلاعات احراز هویت به صورت خارج از باند و هرگز در ورودی مدل؛ میزبانی داده فقط در ایالات متحده و بدون نگهداری صفر داده (ZDR) در زمان عرضه |
+| سرویس Amazon Bedrock Managed Agents (مبتنی بر OpenAI) | پیش‌نمایش عمومی (۲۹ سپتامبر) | نقش IAM اختصاصی برای هر ایجنت، ثبت وقایع در CloudTrail، باقی ماندن محیط اجرا و استنتاج (Inference) درون AWS |
+| محصول OpenAI dots | معرفی‌شده در ۲۹ سپتامبر (پلن‌های Pro و Business Premium) | یک کامپیوتر ابری به ازای هر ایجنت؛ پژوهش فقط‌خواندنی در زمان بیکاری؛ قوانین سفارشی (Custom Rules) برای اجازه، مسدودسازی یا نیاز به تایید؛ استفاده از رمزهای ذخیره شده بدون افشای آن‌ها برای مدل |
+| محصول Meta Muse | عرضه‌شده در ۸ سپتامبر (مصرف‌کننده) | اجرا در یک VM ابری اختصاصی؛ شرکت Meta اعلام کرده انتظار دارد از کارمزد اندک روی تراکنش‌ها سود کسب کند |
+| سرویس Microsoft Copilot Autopilot (سابقاً Scout) | پیش‌نمایش خصوصی (اواخر سپتامبر) | هویت، حافظه و کامپیوتر اختصاصی درون فضای مستأجر (Tenant) مشتری |
+| محصول Anthropic Claude Duet | پیش‌نمایش پژوهشی (۲۱ اکتبر؛ لیست انتظار برای کاربران آمریکایی Pro، Max و Ultra، نه Team یا Enterprise) | کامپیوتر ابری و مرورگر اختصاصی روی Claude Opus 5.5 بدون امکان انتخاب مدل؛ پیش از ارسال پیام، پرداخت (کارت یک‌بارمصرف برای هر خرید)، امضا یا حذف سوال می‌پرسد و معاملات اوراق بهادار و جابه‌جایی پول بین حساب‌ها را حتی با تایید مسدود می‌کند؛ بدون هزینه اضافی از سقف مصرف پلن کسر می‌شود |
 
-The interview takeaway: once an agent has its own VM, inbox and credentials, the hard problems are tenancy, agent identity, approval policy and kill switches, not single-task completion.
+درس کلیدی برای مصاحبه: هنگامی که یک ایجنت دارای VM، صندوق ورودی و اطلاعات احراز هویت اختصاصی خود باشد، مسائل دشوار عبارت‌اند از چندمستأجری (Tenancy)، هویت ایجنت، سیاست تایید و کلیدهای توقف اضطراری (Kill Switches)، نه صرفاً تکمیل یک وظیفه واحد.
 
 ---
 
-## OpenClaw: The Viral Personal AI Agent
+## ابزار OpenClaw: دستیار هوش مصنوعی شخصی فراگیر <a id="openclaw-the-viral-personal-ai-agent"></a>
 
-### What It Is
+### چیستی ابزار
 
-OpenClaw is a self-hosted, open-source personal AI assistant created by Austrian developer Peter Steinberger. Originally published as "Clawdbot" in November 2025, it was renamed to OpenClaw in January 2026. It exploded from 0 to 346,000 GitHub stars in under five months, surpassing React as GitHub's most-starred software project on March 3, 2026.
+ابزار OpenClaw یک دستیار هوش مصنوعی شخصی خودمیزبان و متن‌باز است که توسط توسعه‌دهنده اتریشی، پتر اشتاینبرگر (Peter Steinberger)، ساخته شد. این پروژه در ابتدا با نام «Clawdbot» در نوامبر ۲۰۲۵ منتشر شد و در ژانویه ۲۰۲۶ به OpenClaw تغییر نام داد. این پروژه در کمتر از پنج ماه از ۰ به ۳۴۶٬۰۰۰ ستاره گیت‌هاب رسید و در ۳ مارس ۲۰۲۶ از React به عنوان پراستاره‌ترین پروژه نرم‌افزاری گیت‌هاب پیشی گرفت.
 
-**By the numbers (May 2026):**
-- 346,000+ GitHub stars
-- 3.2 million active users
-- 500,000+ running instances
-- 44,000+ community skills on ClawHub
-- 38 million monthly visitors to the project site
-- 24+ messaging platform integrations
+**آمار و ارقام (مه ۲۰۲۶):**
+- بیش از ۳۴۶٬۰۰۰ ستاره گیت‌هاب
+- ۳٫۲ میلیون کاربر فعال
+- بیش از ۵۰۰٬۰۰۰ نمونه (Instance) در حال اجرا
+- بیش از ۴۴٬۰۰۰ مهارت (Skill) اجتماعی در ClawHub
+- ۳۸ میلیون بازدیدکننده ماهانه از وب‌سایت پروژه
+- یکپارچه‌سازی با بیش از ۲۴ پلتفرم پیام‌رسان
 
-In early November 2026 the repository showed about 394K stars and 83K forks. The project is now stewarded by the **OpenClaw Foundation**, an independent 501(c)(3) with no paid tier, hosted service or token; its README describes OpenAI as "a donor, not an owner." Releases run on two trains: calendar-versioned builds (2026.9.7 on September 30) and gateway-only extended-stable builds that the project treats as its LTS line (2026.8.35 on October 2). The code is MIT-licensed. See the [OpenClaw deep dive](03-openclaw-deep-dive.md) for the architecture in detail.
+در اوایل نوامبر ۲۰۲۶، این مخزن حدود ۳۹۴ هزار ستاره و ۸۳ هزار انشعاب (Fork) داشت. این پروژه اکنون توسط **بنیاد OpenClaw** اداره می‌شود؛ یک بنیاد مستقل 501(c)(3) بدون پلن پولی، سرویس میزبانی‌شده یا توکن، که در فایل README آن شرکت OpenAI به عنوان «حامی مالی (Donor) و نه مالک» توصیف شده است. انتشارها در دو خط زمانی انجام می‌شوند: بیلدهای نسخه‌بندی‌شده تقویمی (2026.9.7 در ۳۰ سپتامبر) و بیلدهای پایدار گسترده صرفاً برای Gateway که پروژه آن‌ها را به عنوان خط LTS خود در نظر می‌گیرد (2026.8.35 در ۲ اکتبر). کد پروژه تحت مجوز MIT منتشر شده است. برای جزئیات دقیق معماری، به [بررسی عمیق OpenClaw](03-openclaw-deep-dive.md) مراجعه کنید.
 
-### How It Works
+### نحوه عملکرد
 
-OpenClaw's architecture has six core components:
+معماری OpenClaw دارای شش جزء اصلی است:
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -187,44 +195,48 @@ OpenClaw's architecture has six core components:
 +-------------------------------------------------------------------+
 ```
 
-**1. Gateway**: The message ingress/egress layer. Connects to WhatsApp (via Baileys), Telegram, Discord, Slack, Signal, iMessage, Microsoft Teams, Matrix, and 16+ other platforms. Supports both DMs and group conversations with mention-based activation.
+</div>
 
-**2. LLM (The Brain)**: Model-agnostic by design. Supports OpenAI (recent releases added GPT-6 Astra and GPT-6.1 Sol), Claude (including Fable 5.1), Gemini, Meta Muse Spark 1.3, DeepSeek, or local models via Ollama. The user picks the model; the architecture does not care.
+**۱. دروازه ارتباطی (Gateway):** لایه ورودی و خروجی پیام. به WhatsApp (از طریق Baileys)، Telegram، Discord، Slack، Signal، iMessage، Microsoft Teams، Matrix و بیش از ۱۶ پلتفرم دیگر متصل می‌شود. از هر دو حالت گفتگوی مستقیم (DM) و گفتگوهای گروهی با فعال‌سازی مبتنی بر منشن (Mention) پشتیبانی می‌کند.
 
-**3. Agent Runtime and Core Tools**: OpenClaw's embedded agent loop wires the model to core tools (read, write, edit and exec, plus browser, messaging and others), always subject to tool policy. The LLM generates code or commands, and the runtime writes and executes them. This is the "hands" of the agent. (The README credits Mario Zechner's pi agent toolkit; current docs describe a single OpenClaw-owned runtime, and external harnesses such as Codex or Claude can be swapped in as plugins.)
+**۲. مدل LLM (مغز سیستم):** از نظر طراحی، مستقل از مدل (Model-agnostic) است. از مدل‌های OpenAI (نسخه‌های اخیر مدل‌های GPT-6 Astra و GPT-6.1 Sol را اضافه کرده‌اند)، Claude (از جمله Fable 5.1)، Gemini، Meta Muse Spark 1.3، DeepSeek یا مدل‌های محلی از طریق Ollama پشتیبانی می‌کند. کاربر مدل را انتخاب می‌کند و معماری به نوع آن اهمیتی نمی‌دهد.
 
-**4. SOUL.md (Identity Layer)**: A plain Markdown file that defines the agent's personality, communication style, values, and behavioral guardrails. Loaded at session start and injected into the system prompt. Every agent instance reads SOUL.md first; it "reads itself into being."
+**۳. محیط اجرای ایجنت و ابزارهای اصلی (Agent Runtime and Core Tools):** حلقه ایجنت توکار OpenClaw مدل را به ابزارهای اصلی (خواندن، نوشتن، ویرایش و اجرا یعنی read، write، edit و exec، به‌علاوه مرورگر، پیام‌رسان و موارد دیگر) متصل می‌کند که همواره تابع سیاست ابزار (Tool Policy) هستند. مدل LLM کد یا دستورات را تولید می‌کند و محیط اجرا آن‌ها را نوشته و اجرا می‌نماید. این بخش «دستان» ایجنت محسوب می‌شود. (فایل README از کیت ابزار pi agent ماریو زخنر قدردانی کرده است؛ مستندات فعلی یک محیط اجرای واحد متعلق به OpenClaw را شرح می‌دهند و هارنس‌های خارجی مانند Codex یا Claude را می‌توان به عنوان افزونه جایگزین کرد.)
 
-**5. Skills (Plugin System)**: Extensions that give the agent new capabilities. Over 44,000 community skills exist on ClawHub. Skills follow the AgentSkills spec and can be bundled, workspace-local, or installed globally.
+**۴. فایل SOUL.md (لایه هویت):** یک فایل Markdown ساده که شخصیت، سبک ارتباطی، ارزش‌ها و حفاظ‌های رفتاری (Guardrails) ایجنت را تعریف می‌کند. در شروع نشست بارگذاری شده و به پرامپت سیستم (System Prompt) تزریق می‌شود. هر نمونه ایجنت ابتدا فایل SOUL.md را می‌خواند؛ به عبارتی «خودش را با خواندن به وجود می‌آورد.»
 
-**6. Memories (Persistent Context)**: Long-term memory stored locally. The agent builds up context about the user across conversations. Combined with SOUL.md, this gives each agent a consistent personality across all messaging platforms.
+**۵. مهارت‌ها (Skills - سیستم افزونه):** افزونه‌هایی که قابلیت‌های جدیدی به ایجنت می‌دهند. بیش از ۴۴٬۰۰۰ مهارت اجتماعی در ClawHub وجود دارد. مهارت‌ها از مشخصات AgentSkills پیروی می‌کنند و می‌توانند به صورت بسته‌بندی‌شده (Bundled)، محلی در فضای کاری یا نصب‌شده به صورت سراسری (Global) باشند.
 
-### Workspace Files
+**۶. حافظه‌ها (Memories - زمینه پایدار):** حافظه بلندمدتی که به صورت محلی ذخیره می‌شود. ایجنت در طول مکالمات مختلف زمینه‌ای درباره کاربر می‌سازد. این بخش در ترکیب با SOUL.md، شخصیت یکپارچه‌ای به ایجنت در تمامی پلتفرم‌های پیام‌رسان می‌دهد.
 
-| File | Purpose |
-|------|---------|
-| `SOUL.md` | Agent personality, tone, values, guardrails |
-| `AGENTS.md` | Operating instructions, plus a Tools section for local tool conventions |
-| `USER.md`, `IDENTITY.md` | Optional user model; the agent's name and persona details |
-| `MEMORY.md`, `memory/YYYY-MM-DD.md` | Curated long-term memory and daily logs, indexed for memory search |
+### فایل‌های فضای کاری (Workspace Files)
 
-Earlier releases also used `HEARTBEAT.md` for scheduled autonomous actions. Current releases have retired it: heartbeat instructions and cron jobs live in the Gateway's automation state, and `openclaw doctor --fix` migrates an old file.
+| فایل | کاربرد |
+|------|--------|
+| فایل `SOUL.md` | شخصیت، لحن، ارزش‌ها و حفاظ‌های ایجنت |
+| فایل `AGENTS.md` | دستورالعمل‌های عملیاتی، به‌علاوه بخش Tools برای قراردادهای ابزار محلی |
+| فایل‌های `USER.md` و `IDENTITY.md` | مدل اختیاری کاربر؛ نام و جزئیات پرسونا برای ایجنت |
+| فایل‌های `MEMORY.md` و `memory/YYYY-MM-DD.md` | حافظه بلندمدت دست‌چین‌شده و گزارش‌های روزانه، نمایه‌شده برای جستجوی حافظه |
 
-### Security Concerns
+نسخه‌های قدیمی‌تر همچنین از `HEARTBEAT.md` برای اقدامات خودکار زمان‌بندی‌شده استفاده می‌کردند. نسخه‌های فعلی آن را بازنشسته کرده‌اند: دستورالعمل‌های ضربان قلب (Heartbeat) و کارهای زمان‌بندی‌شده (Cron Jobs) در وضعیت اتوماسیون Gateway نگهداری می‌شوند و دستور `openclaw doctor --fix` فایل قدیمی را مهاجرت می‌دهد.
 
-OpenClaw's rapid growth has outpaced security practices. In February 2026, SecurityScorecard's STRIKE team counted more than 135,000 instances exposed on the public internet, many with default configurations. The ClawHub skills marketplace has minimal security oversight: skills are Markdown with optional TypeScript, easy to create and install, and easy to abuse. Tools for the main session run directly on the host unless you configure sandboxing (sandbox mode defaults to `off`). This is a critical design consideration for anyone deploying OpenClaw in production; `openclaw security audit` reports where a deployment has drifted from the safe defaults.
+### نگرانی‌های امنیتی
+
+رشد سریع OpenClaw از رویه‌های امنیتی آن پیشی گرفته است. در فوریه ۲۰۲۶، تیم STRIKE شرکت SecurityScorecard بیش از ۱۳۵٬۰۰۰ نمونه در معرض دید در اینترنت عمومی را شمارش کرد که بسیاری از آن‌ها دارای پیکربندی پیش‌فرض بودند. بازارچه مهارت‌های ClawHub نظارت امنیتی حداقلی دارد: مهارت‌ها فایل‌های Markdown به همراه TypeScript اختیاری هستند که ساخت و نصب آن‌ها بسیار ساده و سوءاستفاده از آن‌ها نیز آسان است. ابزارهای نشست اصلی مستقیماً روی میزبان (Host) اجرا می‌شوند مگر اینکه ایزوله‌سازی را پیکربندی کنید (حالت ایزوله‌سازی به طور پیش‌فرض روی `off` قرار دارد). این یک ملاحظه طراحی حیاتی برای هر کسی است که OpenClaw را در محیط تولید مستقر می‌کند؛ دستور `openclaw security audit` گزارش می‌دهد که استقرار در کجاها از پیش‌فرض‌های امن فاصله گرفته است.
 
 ---
 
-## OpenHands: Autonomous Developer Agent
+## ابزار OpenHands: ایجنت توسعه‌دهنده خودمختار <a id="openhands-autonomous-developer-agent"></a>
 
-### What It Is
+### چیستی ابزار
 
-OpenHands (formerly OpenDevin) is an open-source autonomous AI software engineer. Licensed under MIT, it can modify code, execute commands, browse the web, and interact with APIs. Unlike tools that suggest code snippets, OpenHands clones repositories, runs terminal commands, executes tests, and debugs errors inside a sandboxed runtime, typically a Docker container.
+ابزار OpenHands (سابقاً OpenDevin) یک مهندس نرم‌افزار هوش مصنوعی خودمختار و متن‌باز است. این ابزار تحت مجوز MIT منتشر شده و می‌تواند کد را تغییر دهد، دستورات را اجرا کند، وب را مرور کند و با APIها تعامل داشته باشد. برخلاف ابزارهایی که صرفاً تکه‌کد پیشنهاد می‌دهند، OpenHands مخازن را کلون می‌کند، دستورات ترمینال را اجرا می‌کند، تست‌ها را به کار می‌اندازد و خطاها را درون یک محیط اجرای ایزوله‌شده — معمولاً یک کانتینر Docker — اشکال‌زدایی می‌کند.
 
-### Architecture of the v1.x OpenHands Agent (pre-Agent Canvas)
+### معماری ایجنت OpenHands نسخه v1.x (پیش از Agent Canvas)
 
-This is the agent runtime as it shipped before Agent Canvas; the current packaging is summarized at the end of this section.
+این بخش محیط اجرای ایجنت را همان‌گونه که پیش از Agent Canvas عرضه می‌شد توصیف می‌کند؛ بسته‌بندی فعلی در انتهای این بخش خلاصه شده است.
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -263,31 +275,35 @@ This is the agent runtime as it shipped before Agent Canvas; the current packagi
 +-------------------------------------------------------------------+
 ```
 
-**Key architectural decisions in the v1.x agent:**
-- **Event-stream architecture**: All agent-environment interactions flow as typed events through a central hub. The Agent analyzes conversation state and produces Actions; the sandbox produces Observations.
-- **Per-session Docker containers**: Each session gets its own isolated container with full OS capabilities. The container is insulated from the host.
-- **CodeAct-style agent**: The agent acts by writing and running bash or Python (the CodeAct approach of executable code as the action space) instead of choosing from a fixed set of JSON tool calls, and maintains session-level project context.
-- **BrowserGym integration**: Agents can conduct browser automation via declarative primitives (DOM manipulation, navigation).
-- **SDK composability**: The OpenHands SDK is a Python library. You can define agents in code, run them locally, or scale to thousands in the cloud.
+</div>
 
-**Updates in v1.6.0 (March 2026):**
-- Kubernetes support for orchestrating agent sessions
-- Planning Mode beta for multi-step task decomposition
-- 2,100+ contributions from 188+ contributors
+**تصمیمات معماری کلیدی در ایجنت نسخه v1.x:**
+- **معماری جریان‌رویداد (Event-stream):** تمام تعاملات ایجنت و محیط به صورت رویدادهای نوع‌دار (Typed Events) از طریق یک هاب مرکزی جریان می‌یابند. ایجنت وضعیت گفتگو را تحلیل کرده و اقدامات (Actions) را تولید می‌کند؛ محیط ایزوله نیز مشاهدات (Observations) را تولید می‌نماید.
+- **کانتینرهای Docker به ازای هر نشست:** هر نشست کانتینر ایزوله‌شده مخصوص به خود را با قابلیت‌های کامل سیستم‌عامل دریافت می‌کند. کانتینر از میزبان جدا شده است.
+- **ایجنت به سبک CodeAct:** ایجنت به جای انتخاب از یک مجموعه ثابت فراخوانی ابزار JSON، از طریق نوشتن و اجرای دستورات bash یا Python عمل می‌کند (رویکرد CodeAct مبنی بر کد قابل اجرا به عنوان فضای اقدام) و زمینه پروژه را در سطح نشست حفظ می‌نماید.
+- **یکپارچه‌سازی BrowserGym:** ایجنت‌ها می‌توانند اتوماسیون مرورگر را از طریق دستورات اعلانی (دستکاری DOM، ناوبری) انجام دهند.
+- **ترکیب‌پذیری SDK:** کیت توسعه OpenHands SDK یک کتابخانه پایتونی است. شما می‌توانید ایجنت‌ها را در کد تعریف کنید، به صورت محلی اجرا نمایید یا تا هزاران نمونه در ابر مقیاس دهید.
 
-The repository has since moved to the `OpenHands` GitHub organization and has about 90K stars. Since v1.24.0 (September 25, 2026) OpenHands ships as Agent Canvas, a self-hosted control center that runs the OpenHands agent or any ACP agent (Claude Code, Codex, Gemini) on local, Docker, VM or cloud backends; see the [open coder guide](../09-frameworks-and-tools/10-opencoderguide.md#openhands-formerly-opendevin).
+**به‌روزرسانی‌های نسخه v1.6.0 (مارس ۲۰۲۶):**
+- پشتیبانی از Kubernetes برای هماهنگ‌سازی نشست‌های ایجنت
+- نسخه بتای Planning Mode برای تجزیه وظایف چندگامی
+- بیش از ۲٬۱۰۰ مشارکت از بیش از ۱۸۸ مشارکت‌کننده
+
+این مخزن از آن زمان به سازمان گیت‌هاب `OpenHands` منتقل شده و حدود ۹۰ هزار ستاره دارد. از نسخه v1.24.0 (۲۵ سپتامبر ۲۰۲۶)، پروژه OpenHands به صورت Agent Canvas عرضه می‌شود؛ یک مرکز کنترل خودمیزبان که ایجنت OpenHands یا هر ایجنت ACP (مانند Claude Code، Codex و Gemini) را روی بک‌اندهای محلی، Docker، ماشین مجازی یا ابری اجرا می‌کند؛ به [راهنمای کدنویسی باز](../09-frameworks-and-tools/10-opencoderguide.md#openhands-formerly-opendevin) مراجعه کنید.
 
 ---
 
-## Open Interpreter: Local Code Execution
+## ابزار Open Interpreter: اجرای کد محلی <a id="open-interpreter-local-code-execution"></a>
 
-### What It Is
+### چیستی ابزار
 
-Open Interpreter is a local code execution agent that provides a ChatGPT-like terminal interface. Instead of showing code and asking you to run it, Open Interpreter asks for permission and then executes it directly on your machine with full access to your local files.
+ابزار Open Interpreter یک ایجنت اجرای کد محلی است که رابطی شبیه به ChatGPT در ترمینال ارائه می‌دهد. به جای اینکه صرفاً کد را نمایش دهد و از شما بخواهد آن را اجرا کنید، اجازه می‌گیرد و سپس کد را مستقیماً روی ماشین شما با دسترسی کامل به فایل‌های محلی‌تان اجرا می‌کند.
 
-**Status change (mid-2026):** the main `openinterpreter` repository now ships a different product. It is a Rust fork of OpenAI's Codex under Apache-2.0, replacing the AGPL-3.0 Python code; Rust releases began in June 2026, the main branch was rebased onto Codex in mid-July, and 0.0.55 shipped on September 30. It is pitched as "a coding agent optimized for low-cost models": it emulates the harnesses that get the most out of models such as Kimi K3 and GLM-5.3, switches between built-in harness profiles (Claude Code, Kimi CLI, Qwen Code, DeepSeek TUI and others), supports MCP and skills, and runs commands inside native sandboxing on macOS, Linux and Windows. The architecture below describes the original Python project, whose last PyPI release (0.4.3) dates from October 2024; a small community fork (`endolith/open-interpreter`, still AGPL-3.0) keeps it going. The pivot is itself a data point: harness design, not just model choice, now differentiates coding agents.
+**تغییر وضعیت (اواسط ۲۰۲۶):** مخزن اصلی `openinterpreter` اکنون محصول متفاوتی را عرضه می‌کند. این مخزن یک انشعاب (Fork) به زبان Rust از Codex شرکت OpenAI تحت مجوز Apache-2.0 است که جایگزین کد پایتونی با مجوز AGPL-3.0 شده است؛ انتشار نسخه‌های Rust در ژوئن ۲۰۲۶ آغاز شد، شاخه اصلی در اواسط ژوئیه روی Codex بازپایه‌گذاری (Rebase) شد و نسخه 0.0.55 در ۳۰ سپتامبر منتشر گردید. این محصول با شعار «یک ایجنت کدنویسی بهینه‌شده برای مدل‌های کم‌هزینه» معرفی می‌شود: این ابزار هارنس‌هایی را شبیه‌سازی می‌کند که بیشترین بازدهی را از مدل‌هایی مانند Kimi K3 و GLM-5.3 می‌گیرند، بین پروفایل‌های هارنس داخلی (Claude Code، Kimi CLI، Qwen Code، DeepSeek TUI و غیره) جابه‌جا می‌شود، از MCP و مهارت‌ها پشتیبانی می‌کند و دستورات را درون ایزوله‌سازی بومی در macOS، Linux و Windows اجرا می‌نماید. معماری زیر، پروژه اصلی پایتون را شرح می‌دهد که آخرین انتشار PyPI آن (0.4.3) به اکتبر ۲۰۲۴ برمی‌گردد؛ یک انشعاب اجتماعی کوچک (`endolith/open-interpreter`، همچنان تحت AGPL-3.0) آن را زنده نگه داشته است. این چرخش خود یک نکته مهم است: امروزه طراحی هارنس، و نه صرفاً انتخاب مدل، عامل تمایز ایجنت‌های کدنویسی است.
 
-### Architecture
+### معماری
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -330,25 +346,29 @@ Open Interpreter is a local code execution agent that provides a ChatGPT-like te
 +-------------------------------------------------------------------+
 ```
 
-**Key properties:**
-- **Model flexibility**: Works with 100+ LLMs. Use a frontier API model for maximum capability, or run entirely offline with Ollama and LM Studio for privacy.
-- **Permission gate**: Every code execution requires user approval (can be disabled for trusted workflows).
-- **Computer API**: Beyond code execution, Open Interpreter can see your screen, identify UI elements, and control your mouse and keyboard, elevating it from a code interpreter to a computer automation agent.
-- **Unsandboxed by default (Python version)**: Runs directly on the host machine. This is a deliberate design choice for maximum capability, but it means a bad LLM output can damage your system. Docker sandboxing is optional. The Rust rewrite reverses this default with native OS sandboxing.
+</div>
 
-### When to Use Open Interpreter
+**ویژگی‌های کلیدی:**
+- **انعطاف‌پذیری مدل:** با بیش از ۱۰۰ مدل LLM کار می‌کند. می‌توانید برای حداکثر توانمندی از یک مدل API پیشرو استفاده کنید یا برای حفظ حریم خصوصی به صورت کاملاً آفلاین با Ollama و LM Studio اجرا نمایید.
+- **دروازه مجوز (Permission Gate):** هر اجرای کد نیازمند تایید کاربر است (که می‌توان آن را برای جریان‌های کاری مورد اعتماد غیرفعال کرد).
+- **واسط Computer API:** فراتر از اجرای کد، Open Interpreter می‌تواند صفحه نمایش شما را ببیند، عناصر رابط کاربری را شناسایی کند و ماوس و کیبورد شما را کنترل کند؛ این امر آن را از یک مفسر کد به یک ایجنت اتوماسیون کامپیوتر ارتقا می‌دهد.
+- **غیرایزوله به صورت پیش‌فرض (نسخه پایتون):** مستقیماً روی ماشین میزبان اجرا می‌شود. این یک انتخاب طراحی عمدی برای حداکثر توانمندی است، اما به این معناست که یک خروجی بد از مدل LLM می‌تواند به سیستم شما آسیب بزند. ایزوله‌سازی Docker اختیاری است. بازنویسی Rust این پیش‌فرض را با ایزوله‌سازی بومی سیستم‌عامل معکوس کرده است.
 
-The Python design suits data analysis, file manipulation, and system administration tasks where you want a conversational interface to your local machine. It is not ideal for production deployments or untrusted environments. The Rust rewrite is a different tool: a sandboxed coding agent for teams that want to run cheap open-weight models through a harness tuned for them.
+### زمان استفاده از Open Interpreter
+
+طراحی پایتونی برای تحلیل داده، دستکاری فایل و وظایف مدیریت سیستم که در آن‌ها رابطی مکالمه‌محور روی ماشین محلی خود می‌خواهید، مناسب است. این گزینه برای استقرارهای محیط تولید یا محیط‌های نامطمئن ایده‌آل نیست. بازنویسی Rust ابزار متفاوتی است: یک ایجنت کدنویسی ایزوله‌شده برای تیم‌هایی که می‌خواهند مدل‌های متن‌باز و ارزان‌قیمت را از طریق هارنسی تنظیم‌شده برای آن‌ها اجرا کنند.
 
 ---
 
-## Claude Computer Use: Vision-Based Automation
+## قابلیت Claude Computer Use: اتوماسیون مبتنی بر بینایی <a id="claude-computer-use-vision-based-automation"></a>
 
-### What It Is
+### چیستی ابزار
 
-Claude Computer Use is an Anthropic API feature that allows Claude to control a desktop via screenshots, mouse movements, keyboard input, and application interaction. Introduced in October 2024 as a beta, it reached general availability on the Claude API on August 19, 2026 (Google Cloud on August 20) as the `computer_toolset_20260801` client toolset. It remains in beta on Bedrock, Claude Platform on AWS and Foundry. Supported models are Fable 5/5.1, Mythos 5/5.1, Opus 5/5.5, Sonnet 5/5.5, Haiku 5.5 and Opus 4.8.
+قابلیت Claude Computer Use یک ویژگی API از شرکت Anthropic است که به Claude اجازه می‌دهد یک دسکتاپ را از طریق اسکرین‌شات‌ها، حرکات ماوس، ورودی کیبورد و تعامل با اپلیکیشن‌ها کنترل کند. این قابلیت که در اکتبر ۲۰۲۴ به عنوان بتا معرفی شد، در ۱۹ اوت ۲۰۲۶ در Claude API (و در ۲۰ اوت در Google Cloud) به عنوان مجموعه ابزار کلاینت `computer_toolset_20260801` به مرحله دسترسی عمومی (GA) رسید. این قابلیت روی Bedrock، Claude Platform on AWS و Foundry همچنان در مرحله بتا قرار دارد. مدل‌های پشتیبانی‌شده عبارت‌اند از Fable 5/5.1، Mythos 5/5.1، Opus 5/5.5، Sonnet 5/5.5، Haiku 5.5 و Opus 4.8.
 
-### The Vision-Action Loop
+### حلقه بینایی-عمل (Vision-Action Loop)
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -375,50 +395,54 @@ Claude Computer Use is an Anthropic API feature that allows Claude to control a 
 +-------------------------------------------------------------------+
 ```
 
-### Available Tools
+</div>
 
-| Tool | Capability | Notes |
-|------|------------|-------|
-| `computer_toolset_20260801` | 17 member tools: screenshot, zoom, left/right/middle/double/triple click, drag, mouse move and button down/up, cursor position, scroll, type, key, hold_key, wait | GA; zoom on by default; no display-size parameters (the model reads coordinates off your screenshots); members can be disabled or deferred individually |
-| `browser_toolset_20260801` | 31 member tools (27 on by default, 4 opt-in): `read_page` returns the accessibility tree with element refs such as `[ref_2]`, plus find, form input, tab management and pixel actions | For a browser your own application hosts; Claude API and Google Cloud only |
-| `bash` (`bash_20250124`) | Run shell commands | Persistent session across turns |
-| `text_editor` (`text_editor_20250728`) | Read/write/edit files | Supports view, create, str_replace |
+### ابزارهای در دسترس
 
-### 2026 Enhancements
+| ابزار | قابلیت | یادداشت‌ها |
+|-------|--------|------------|
+| مجموعه ابزار `computer_toolset_20260801` | ۱۷ ابزار عضو: screenshot، zoom، کلیک چپ/راست/وسط/دوبل/سه‌گانه، کشیدن (drag)، حرکت ماوس و پایین/بالا بردن دکمه، موقعیت مکان‌نما، اسکرول، تایپ، کلید، نگه داشتن کلید (hold_key)، انتظار (wait) | در دسترس عموم (GA)؛ بزرگ‌نمایی به صورت پیش‌فرض فعال است؛ بدون پارامترهای اندازه صفحه نمایش (مدل مختصات را از روی اسکرین‌شات‌های شما می‌خواند)؛ اعضا را می‌توان به صورت تکی غیرفعال یا به تعویق انداخت |
+| مجموعه ابزار `browser_toolset_20260801` | ۳۱ ابزار عضو (۲۷ ابزار فعال به صورت پیش‌فرض، ۴ ابزار با انتخاب کاربر): ابزار `read_page` درخت دسترسی‌پذیری را با ارجاع عناصر مانند `[ref_2]` برمی‌گرداند، به‌علاوه جستجو، ورودی فرم، مدیریت تب و اقدامات پیکسلی | برای مرورگری که اپلیکیشن خود شما میزبانی می‌کند؛ فقط در Claude API و Google Cloud |
+| ابزار `bash` (`bash_20250124`) | اجرای دستورات پوسته (Shell) | نشست پایدار در طول نوبت‌ها |
+| ابزار `text_editor` (`text_editor_20250728`) | خواندن/نوشتن/ویرایش فایل‌ها | پشتیبانی از view، create، str_replace |
 
-- **Batch actions**: Claude can return several `tool_use` blocks in one turn. The executor runs them in order and halts at the first failure, answering each later block with an error ("Not executed: an earlier computer action in this turn failed"). This cuts model round trips, and it means a confirmation placed between model turns arrives too late, because one turn can now complete a multistep consequential action. Anthropic's docs put the human check before each block runs: inspect the whole batch when it arrives and pause before each consequential action, including one in the middle of a batch.
-- **Zoom Action**: Inspects small UI elements at high resolution before clicking. Reduces misclick rates on dense interfaces. On by default in the GA toolset.
-- **Element refs for browsers**: The browser toolset targets accessibility-tree refs, which survive layout shifts but go stale after navigation. Anthropic scans returned page text and screenshots for prompt injection.
-- **Breaking change**: On the Claude API and Google Cloud, the 5.5 models (Opus, Sonnet and Haiku) return HTTP 400 for the older `computer_20251124` tool (Bedrock still accepts it). Code written against the beta tool needs migrating.
-- **Screenshot budget**: Models from Opus 4.7 onward accept up to 2576 px on the long edge. Anthropic estimates roughly 1,000-1,800 input tokens per screenshot and recommends keeping 20 or fewer images per request or resizing to 2000 px or less per side.
-- **Consumer surfaces**: Cowork is being merged with chat into one Claude app (rollout to Pro and Max from September 16, 2026), with Claude asking for approval before acting by default.
-- **Sandboxing best practice**: Always run in a sandboxed VM (Docker + VNC, or E2B cloud). Never give computer-use access to an unsandboxed host machine. For browsers, Anthropic's guidance adds a fresh profile with no credentials and a network-layer domain allowlist that blocks loopback, link-local and private ranges.
+### بهبودهای سال ۲۰۲۶
 
-### Performance Trajectory
+- **اقدامات دسته‌ای (Batch Actions):** مدل Claude می‌تواند چندین بلوک `tool_use` را در یک نوبت برگرداند. اجراکننده آن‌ها را به ترتیب اجرا کرده و در اولین خطا متوقف می‌شود و به هر بلوک بعدی با یک خطا پاسخ می‌دهد («اجرا نشد: یک اقدام کامپیوتری قبلی در این نوبت شکست خورد»). این قابلیت رفت‌وبرگشت‌های مدل را کاهش می‌دهد، اما به این معناست که تایید گرفتن در فاصله بین نوبت‌های مدل خیلی دیر انجام می‌شود، زیرا یک نوبت اکنون می‌تواند یک اقدام حساس چندمرحله‌ای را کامل کند. مستندات Anthropic بررسی انسانی را پیش از اجرای هر بلوک قرار می‌دهند: کل دسته را هنگام رسیدن بازرسی کنید و پیش از هر اقدام حساس، از جمله اقدامی در میانه یک دسته، مکث نمایید.
+- **اقدام بزرگ‌نمایی (Zoom Action):** عناصر کوچک رابط کاربری را پیش از کلیک با وضوح بالا بازرسی می‌کند. نرخ کلیک‌های اشتباه را در رابط‌های متراکم کاهش می‌دهد. به طور پیش‌فرض در مجموعه ابزار GA فعال است.
+- **ارجاع عناصر (Element refs) برای مرورگرها:** مجموعه ابزار مرورگر ارجاع‌های درخت دسترسی‌پذیری را هدف می‌گیرد که در برابر تغییرات چیدمان مقاوم هستند اما پس از ناوبری (Navigation) منقضی می‌شوند. شرکت Anthropic متن صفحه و اسکرین‌شات‌های بازگردانده‌شده را برای تزریق پرامپت (Prompt Injection) اسکن می‌کند.
+- **تغییر ناسازگار (Breaking change):** در Claude API و Google Cloud، مدل‌های نسل ۵٫۵ (Opus، Sonnet و Haiku) برای ابزار قدیمی‌تر `computer_20251124` خطای HTTP 400 برمی‌گردانند (سرویس Bedrock همچنان آن را می‌پذیرد). کدی که بر اساس ابزار بتا نوشته شده نیاز به مهاجرت دارد.
+- **بودجه اسکرین‌شات:** مدل‌های از Opus 4.7 به بعد تا ۲۵۷۶ پیکسل را در ضلع بلند می‌پذیرند. شرکت Anthropic حدود ۱٬۰۰۰ تا ۱٬۸۰۰ Token ورودی به ازای هر اسکرین‌شات تخمین می‌زند و توصیه می‌کند حداکثر ۲۰ تصویر در هر درخواست نگه دارید یا اندازه تصاویر را به ۲۰۰۰ پیکسل یا کمتر در هر ضلع کاهش دهید.
+- **سطوح مصرف‌کننده:** ابزار Cowork در حال ادغام با چت در یک اپلیکیشن واحد Claude است (عرضه برای کاربران Pro و Max از ۱۶ سپتامبر ۲۰۲۶)، به طوری که Claude به صورت پیش‌فرض پیش از اقدام درخواست تایید می‌کند.
+- **بهترین شیوه ایزوله‌سازی:** همیشه در یک VM ایزوله‌شده (Docker + VNC یا ابر E2B) اجرا کنید. هرگز دسترسی استفاده از کامپیوتر را به یک ماشین میزبان غیرایزوله ندهید. برای مرورگرها، راهنمای Anthropic یک پروفایل تازه بدون اطلاعات احراز هویت و یک لیست مجاز دامنه در لایه شبکه (Network-layer domain allowlist) را توصیه می‌کند که محدوده‌های loopback، link-local و خصوصی را مسدود نماید.
 
-| Date | Benchmark | Score | Key Milestone |
-|------|-----------|-------|---------------|
-| Oct 2024 | OSWorld | 14.9% | Beta launch (Claude 3.5 Sonnet) |
-| Feb 2025 | OSWorld | 28.0% | Claude 3.7 Sonnet |
-| Mid 2025 | OSWorld | ~42-44% | Claude Sonnet 4 / Opus 4.1 |
-| Q1 2026 | OSWorld-Verified | 72.5% | Sonnet 4.6, Zoom Action |
-| Sep 2026 | OSWorld 2.0 (v2.1 full set, XLANG leaderboard) | 44.33% binary / 77.67% partial | Opus 5, max effort, batched tools |
-| Sep 2026 | OSWorld 2.1 (Anthropic, vendor-reported) | 81.8% partial | Opus 5.5 |
-| Oct 2026 | OSWorld 2.1 offline subset (Anthropic, vendor-reported) | 72.4% partial | Haiku 5.5 |
+### روند عملکرد (Performance Trajectory)
 
-Do not read these rows as one trend line. Self-reported OSWorld-Verified scores now sit in the mid-80s, so that benchmark is saturated. **OSWorld 2.0** (June 2026) has 108 long-horizon tasks with a median of about 1.6 skilled-human hours each, scored primarily on binary completion at a 500-step budget. Quoted numbers swing 30-40 points with binary vs partial scoring, effort level and task-release version, so always ask which one is being cited. The interview point: short, single-session desktop tasks are close to solved, but hour-scale binary completion is still under 50% on the public leaderboard.
+| تاریخ | بنچمارک | امتیاز | نقطه عطف کلیدی |
+|-------|---------|--------|----------------|
+| اکتبر ۲۰۲۴ | بنچمارک OSWorld | ۱۴٫۹٪ | عرضه نسخه بتا (Claude 3.5 Sonnet) |
+| فوریه ۲۰۲۵ | بنچمارک OSWorld | ۲۸٫۰٪ | مدل Claude 3.7 Sonnet |
+| اواسط ۲۰۲۵ | بنچمارک OSWorld | حدود ۴۲ تا ۴۴٪ | مدل‌های Claude Sonnet 4 / Opus 4.1 |
+| سه‌ماهه اول ۲۰۲۶ | بنچمارک OSWorld-Verified | ۷۲٫۵٪ | مدل Sonnet 4.6، اقدام Zoom Action |
+| سپتامبر ۲۰۲۶ | بنچمارک OSWorld 2.0 (مجموعه کامل v2.1، جدول رده‌بندی XLANG) | ۴۴٫۳۳٪ باینری / ۷۷٫۶۷٪ جزئی | مدل Opus 5، حداکثر تلاش، ابزارهای دسته‌ای |
+| سپتامبر ۲۰۲۶ | بنچمارک OSWorld 2.1 (گزارش‌شده توسط Anthropic) | ۸۱٫۸٪ جزئی | مدل Opus 5.5 |
+| اکتبر ۲۰۲۶ | زیرمجموعه آفلاین OSWorld 2.1 (گزارش‌شده توسط Anthropic) | ۷۲٫۴٪ جزئی | مدل Haiku 5.5 |
+
+این ردیف‌ها را به عنوان یک خط روند واحد نخوانید. امتیازهای خوداظهارشده در OSWorld-Verified اکنون در محدوده میانی ۸۰ درصد قرار دارند، بنابراین آن بنچمارک اشباع شده است. بنچمارک **OSWorld 2.0** (ژوئن ۲۰۲۶) دارای ۱۰۸ وظیفه بلندمدت با میانه حدود ۱٫۶ ساعت کار نیروی انسانی ماهر برای هر وظیفه است که عمدتاً بر اساس تکمیل باینری در بودجه ۵۰۰ گام امتیازدهی می‌شود. اعداد نقل‌شده بسته به امتیازدهی باینری در برابر جزئی، سطح تلاش و نسخه مجموعه وظایف ۳۰ تا ۴۰ واحد نوسان دارند، بنابراین همیشه بپرسید به کدام مورد استناد شده است. نکته مصاحبه‌ای: وظایف کوتاه و تک‌جلسه‌ای دسکتاپ تقریباً حل شده‌اند، اما تکمیل باینری در مقیاس ساعتی در جدول رده‌بندی عمومی هنوز زیر ۵۰ درصد است.
 
 ---
 
-## Claude Code: The Terminal Agent
+## ابزار Claude Code: ایجنت ترمینال <a id="claude-code-the-terminal-agent"></a>
 
-### What It Is
+### چیستی ابزار
 
-Claude Code is Anthropic's agentic coding tool that lives in the terminal. It reads your codebase, edits files, runs commands, and integrates with development tools. It shipped publicly in May 2025 and crossed $2.5 billion ARR by February 2026.
+ابزار Claude Code ابزار کدنویسی ایجنتی شرکت Anthropic است که در ترمینال زندگی می‌کند. این ابزار پایگاه کد شما را می‌خواند، فایل‌ها را ویرایش می‌کند، دستورات را اجرا می‌نماید و با ابزارهای توسعه یکپارچه می‌شود. در مه ۲۰۲۵ به صورت عمومی عرضه شد و تا فوریه ۲۰۲۶ از ۲٫۵ میلیارد دلار درآمد سالانه (ARR) عبور کرد.
 
-### Architecture
+### معماری
 
-Claude Code is a TypeScript terminal agent that loops through three phases:
+ابزار Claude Code یک ایجنت ترمینال به زبان TypeScript است که در یک حلقه سه‌فازی می‌چرخد:
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -450,60 +474,64 @@ Built-in Tools: bash, read, write, edit, glob, grep, browser,
                 subagent, notebook, web_search, web_fetch
 ```
 
-**Key architectural properties:**
-- One agent loop with a rich tool palette
-- On-demand skill loading via slash commands and CLAUDE.md
-- Context compression for long sessions (1M+ token context)
-- Subagent spawning for parallel workstreams
-- Worktree isolation for parallel branch execution
-- Permission governance (allow/deny rules for tools). Since v2.1.284 (September 28, 2026), interactive sessions with no permission mode configured start in **auto mode**, where a server-side classifier decides whether each action runs, is denied, or asks. Headless runs differ: since v2.1.302 (October 16), `claude -p` and Agent SDK sessions with no mode start in `default` mode on third-party providers, with telemetry off, or on a fresh install, so CI callers should set the permission mode explicitly
-- Task system with dependency graphs
-- Hooks for custom automation (pre/post commit, file changes), and since v2.1.287 (October 1, 2026) **mods**: TypeScript functions shipped inside plugins that can rewrite prompts, block or rewrite tool calls, approve or deny permission requests, and redact tool output. Anthropic warns they are not sandboxed and run with Claude Code's own access, so plugin review is now part of the agent's trust boundary
-- Self-hosted runners (`claude self-hosted-runner`, Team and Enterprise) for running sessions on your own infrastructure
+</div>
 
-**Not the only serious terminal harness.** In early November 2026: OpenCode (MIT, about 224K stars; new installs go to the V2 line, `@opencode/cli` 2.2.5, which dropped the OpenCode GitHub Action in 2.2.0 on October 27), Codex CLI (Apache-2.0, about 133K stars; its default model switched to GPT-6.1 Sol on September 29), and Google's Antigravity CLI are the main alternatives, alongside the anthropics/claude-code repo at about 154K stars. Gemini CLI (Apache-2.0, about 109K stars) still ships, but only for Google's enterprise Code Assist licenses. Aider has gone quiet (last release February 12, last commit May 22, 2026). Silent default-model swaps like Codex's are a reason to pin the model explicitly in any automation built on these CLIs.
+**ویژگی‌های معماری کلیدی:**
+- یک حلقه ایجنت با پالت ابزار غنی
+- بارگذاری مهارت‌ها بر اساس تقاضا (On-demand) از طریق دستورات اسلش (Slash Commands) و فایل CLAUDE.md
+- فشرده‌سازی زمینه برای نشست‌های طولانی (زمینه بیش از ۱ میلیون Token)
+- ایجاد ساب‌ایجنت (Subagent) برای جریان‌های کاری موازی
+- ایزوله‌سازی Worktree برای اجرای موازی شاخه‌ها
+- حاکمیت مجوزها (قوانین اجازه/رد برای ابزارها). از نسخه v2.1.284 (۲۸ سپتامبر ۲۰۲۶)، نشست‌های تعاملی بدون پیکربندی حالت مجوز در **حالت خودکار (Auto mode)** آغاز می‌شوند که در آن یک دسته‌بند سمت سرور تصمیم می‌گیرد هر اقدام اجرا شود، رد شود یا سوال بپرسد. اجراهای بدون رابط کاربری (Headless) متفاوت هستند: از نسخه v2.1.302 (۱۶ اکتبر)، دستورات `claude -p` و نشست‌های Agent SDK بدون تعیین حالت روی ارائه‌دهندگان شخص ثالث، با تله‌متری خاموش یا روی نصب تازه در حالت `default` شروع می‌شوند؛ بنابراین فراخواننده‌های CI باید حالت مجوز را صریحاً تنظیم کنند.
+- سیستم وظایف (Task system) همراه با گراف‌های وابستگی
+- قلاب‌ها (Hooks) برای اتوماسیون سفارشی (پیش/پس از کامیت، تغییرات فایل) و از نسخه v2.1.287 (۱ اکتبر ۲۰۲۶) قابلیت **mods**: توابع TypeScript عرضه‌شده درون افزونه‌ها که می‌توانند پرامپت‌ها را بازنویسی کنند، فراخوانی ابزارها را مسدود یا بازنویسی نمایند، درخواست‌های مجوز را تایید یا رد کنند و خروجی ابزار را ویرایش و سانسور (Redact) نمایند. شرکت Anthropic هشدار می‌دهد که این توابع ایزوله‌شده نیستند و با سطح دسترسی خود Claude Code اجرا می‌شوند، بنابراین بازبینی افزونه اکنون بخشی از مرز اعتماد (Trust Boundary) ایجنت محسوب می‌شود.
+- اجراگرهای خودمیزبان (`claude self-hosted-runner`، نسخه‌های Team و Enterprise) برای اجرای نشست‌ها روی زیرساخت خودتان
+
+**تنها هارنس جدی ترمینال نیست.** در اوایل نوامبر ۲۰۲۶: پروژه OpenCode (تحت MIT، حدود ۲۲۴ هزار ستاره؛ نصب‌های جدید به خط V2، یعنی `@opencode/cli` نسخه 2.2.5 می‌روند که OpenCode GitHub Action را در نسخه 2.2.0 در ۲۷ اکتبر کنار گذاشت)، ابزار Codex CLI (تحت Apache-2.0، حدود ۱۳۳ هزار ستاره؛ مدل پیش‌فرض آن در ۲۹ سپتامبر به GPT-6.1 Sol تغییر یافت) و ابزار Antigravity CLI گوگل جایگزین‌های اصلی در کنار مخزن anthropics/claude-code با حدود ۱۵۴ هزار ستاره هستند. ابزار Gemini CLI (تحت Apache-2.0، حدود ۱۰۹ هزار ستاره) همچنان عرضه می‌شود اما فقط برای مجوزهای سازمانی Code Assist گوگل است. پروژه Aider ساکت شده است (آخرین انتشار ۱۲ فوریه، آخرین کامیت ۲۲ مه ۲۰۲۶). تغییرهای بی‌سروصدای مدل پیش‌فرض مانند تغییر Codex دلیلی محکم برای پین کردن صریح مدل در هر اتوماسیونی است که بر پایه این CLIها ساخته می‌شود.
 
 ---
 
-## IDE Agents: Cursor, Devin Desktop, Cline
+## ایجنت‌های IDE: ابزارهای Cursor، Devin Desktop و Cline <a id="ide-agents-cursor-devin-desktop-cline"></a>
 
-### Cursor
+### محیط توسعه Cursor
 
-Cursor is a VS Code fork with deep AI integration. By early 2026 it offered:
-- **Agent Mode**: Uses 20x scaled reinforcement learning for multi-file editing
-- **Background Agents** (now called cloud agents): Clone your repo in cloud VMs, work autonomously, open PRs when done
-- **Mission Control**: Dashboard for managing parallel agent workflows
-- **Market (early 2026)**: $2B annualized revenue, 2M+ users, 1M+ paying customers, adopted by half the Fortune 500
+محیط توسعه Cursor یک انشعاب (Fork) از VS Code با یکپارچه‌سازی عمیق هوش مصنوعی است. تا اوایل ۲۰۲۶ امکانات زیر را ارائه می‌داد:
+- **حالت ایجنت (Agent Mode):** از یادگیری تقویتی مقیاس‌یافته با ضریب ۲۰ برابر برای ویرایش چندفایلی استفاده می‌کند
+- **ایجنت‌های پس‌زمینه (Background Agents)** (که اکنون ایجنت‌های ابری نامیده می‌شوند): مخزن شما را در ماشین‌های مجازی ابری کلون می‌کنند، به صورت خودمختار کار می‌کنند و پس از اتمام PR باز می‌کنند
+- **کنترل ماموریت (Mission Control):** داشبوردی برای مدیریت جریان‌های کاری موازی ایجنت‌ها
+- **وضعیت بازار (اوایل ۲۰۲۶):** ۲ میلیارد دلار درآمد سالانه، بیش از ۲ میلیون کاربر، بیش از ۱ میلیون مشتری پولی و پذیرش توسط نیمی از شرکت‌های Fortune 500
 
-**Ownership changed in August 2026.** Cursor announced on August 14 that it is part of SpaceX (TechCrunch reported the close on August 15, at about $60B in SpaceX stock). Its blog now hosts SpaceXAI's Grok launches, and the announcement said nothing about third-party model access or data-use commitments. Two weeks later the risk became concrete: on August 28 OpenAI told SpaceX it would wind down its contract supplying OpenAI models to Cursor, with a proposed shutoff of November 12, 2026, and no future OpenAI models (GPT-6 Astra included) in the meantime. The notice covers only OpenAI's models. The lesson generalizes: when a tool vendor is owned by a model vendor, a rival's models can disappear on contractual notice, so keep model choice in your own routing layer. Cursor also holds AIUC-1 agent certification (August 13).
+**تغییر مالکیت در اوت ۲۰۲۶.** شرکت Cursor در ۱۴ اوت اعلام کرد که بخشی از SpaceX است (TechCrunch نهایی شدن معامله را در ۱۵ اوت با ارزش حدود ۶۰ میلیارد دلار در سهام SpaceX گزارش داد). وبلاگ آن اکنون میزبان معرفی‌های Grok از SpaceXAI است و اطلاعیه درباره دسترسی به مدل‌های شخص ثالث یا تعهدات استفاده از داده سکوت کرده بود. دو هفته بعد ریسک این موضوع ملموس شد: در ۲۸ اوت شرکت OpenAI به SpaceX اطلاع داد که قرارداد تامین مدل‌های OpenAI برای Cursor را با تاریخ قطع پیشنهادی ۱۲ نوامبر ۲۰۲۶ جمع‌آوری می‌کند و در این میان هیچ مدل آینده‌ای از OpenAI (از جمله GPT-6 Astra) ارائه نخواهد شد. این اخطار فقط شامل مدل‌های OpenAI می‌شود. درس کلی از این ماجرا تعمیم‌پذیر است: وقتی یک فروشنده ابزار تحت تملک یک فروشنده مدل قرار می‌گیرد، مدل‌های رقیب ممکن است با یک اخطار قراردادی ناپدید شوند؛ بنابراین انتخاب مدل را در لایه مسیریابی (Routing Layer) خودتان نگه دارید. شرکت Cursor همچنین گواهینامه ایجنت AIUC-1 (۱۳ اوت) را در اختیار دارد.
 
-What shipped since, all vendor-described:
-- **Self-hosted Machines** (September 2): cloud agents run on your own machines or autoscaling team pools (AWS Lambda, Coder, Cloudflare, Daytona, Modal, Namespace, Vercel or E2B), with computer use on Linux and Mac workers. This is the data-residency answer for cloud agents.
-- **Projects** (beta, September 10): a coordinator agent plans the work, fans it out to as many parallel subagents as needed, keeps context for months, and returns finished work for review. Cursor reports that new Projects users merge 30% more PRs (vendor-reported, internal data).
-- **Rollouts and Security Review** (September 23, Teams and Enterprise): a monitor attached to every PR that tracks change health per environment after merge, plus a PR scanner for exploitable bugs.
+امکانات عرضه‌شده از آن زمان (همگی بنا بر توصیف فروشنده):
+- **ماشین‌های خودمیزبان (Self-hosted Machines)** (۲ سپتامبر): ایجنت‌های ابری روی ماشین‌های خود شما یا استخرهای تیمی خودکارمقیاس‌پذیر (AWS Lambda، Coder، Cloudflare، Daytona، Modal، Namespace، Vercel یا E2B) با قابلیت استفاده از کامپیوتر روی کارگرهای لینوکس و مک اجرا می‌شوند. این پاسخ نیاز اقامت داده (Data Residency) برای ایجنت‌های ابری است.
+- **پروژه‌ها (Projects)** (بتا، ۱۰ سپتامبر): یک ایجنت هماهنگ‌کننده کار را برنامه‌ریزی می‌کند، آن را به تعداد مورد نیاز به ساب‌ایجنت‌های موازی توزیع (Fan out) می‌کند، زمینه را برای ماه‌ها نگه می‌دارد و کار تکمیل‌شده را برای بازبینی برمی‌گرداند. شرکت Cursor گزارش می‌دهد که کاربران جدید Projects حدود ۳۰ درصد PR بیشتری ادغام می‌کنند (گزارش فروشنده، داده‌های داخلی).
+- **انتشارها و بازبینی امنیتی (Rollouts and Security Review)** (۲۳ سپتامبر، نسخه‌های Teams و Enterprise): ناظری متصل به هر PR که سلامت تغییر را در هر محیط پس از ادغام ردیابی می‌کند، به‌علاوه یک اسکنر PR برای باگ‌های قابل بهره‌برداری.
 
-### Devin Desktop (formerly Windsurf)
+### محیط توسعه Devin Desktop (سابقاً Windsurf)
 
-Windsurf (originally Codeium, acquired by Cognition for $250M in July 2025) was renamed **Devin Desktop** in v3.0.12 (June 2, 2026), and the rename was more than cosmetic:
-- **Devin Local**: since v3.9.19 (September 8, 2026) the only agent in the product. It replaced Cascade, Windsurf's original multi-step agent, and Cognition describes it as the same harness its terminal agent uses
-- **Agent Command Center**: a Kanban-style view of local and cloud agent sessions, with one-click delegation from a local session to cloud Devin, which runs on its own VM
-- **Proprietary models**: SWE-1.5 (13x faster than Sonnet 4.5, per Cognition) and Fast Context, followed by the SWE-2 flagship model (September 10, 2026)
-- **Codemaps**: AI-powered visual code navigation
+ابزار Windsurf (در اصل Codeium که در ژوئیه ۲۰۲۵ به مبلغ ۲۵۰ میلیون دلار توسط Cognition خریداری شد) در نسخه v3.0.12 (۲ ژوئن ۲۰۲۶) به **Devin Desktop** تغییر نام داد و این تغییر نام فراتر از یک تغییر ظاهری بود:
+- **ابزار Devin Local:** از نسخه v3.9.19 (۸ سپتامبر ۲۰۲۶) تنها ایجنت موجود در محصول است. این ایجنت جایگزین Cascade (ایجنت چندگامی اولیه Windsurf) شد و Cognition آن را همان هارنسی توصیف می‌کند که ایجنت ترمینال آن استفاده می‌کند.
+- **مرکز فرماندهی ایجنت (Agent Command Center):** نمای کانبان‌مانند از نشست‌های ایجنت محلی و ابری، با واگذاری تک‌کلیکی از یک نشست محلی به Devin ابری که روی VM اختصاصی خودش اجرا می‌شود.
+- **مدل‌های اختصاصی:** مدل SWE-1.5 (۱۳ برابر سریع‌تر از Sonnet 4.5 بنا بر ادعای Cognition) و Fast Context، و پس از آن مدل پرچم‌دار SWE-2 (۱۰ سپتامبر ۲۰۲۶).
+- **نقشه‌های کد (Codemaps):** ناوبری بصری کد مبتنی بر هوش مصنوعی.
 
-Cognition (Devin Desktop and cloud Devin) raised more than $2B at a $48B valuation on September 8, 2026 and reports over $1B in annualized revenue run rate (September 25, vendor-reported): an independent coding-agent company that owns both an IDE and its own models. The design lesson from the rename: when a vendor swaps the agent inside a product you have standardized on, prompts, rules files and approval habits tuned for the old agent need re-evaluation, so treat it as a migration.
+شرکت Cognition (سازنده Devin Desktop و Devin ابری) در ۸ سپتامبر ۲۰۲۶ بیش از ۲ میلیارد دلار سرمایه با ارزش‌گذاری ۴۸ میلیارد دلار جذب کرد و از نرخ درآمد سالانه بیش از ۱ میلیارد دلار خبر داد (۲۵ سپتامبر، گزارش فروشنده): یک شرکت مستقل ایجنت کدنویسی که هم مالک یک IDE و هم مالک مدل‌های اختصاصی خود است. درس طراحی از این تغییر نام: وقتی فروشنده‌ای ایجنت درون محصولی که روی آن استانداردسازی کرده‌اید را عوض می‌کند، پرامپت‌ها، فایل‌های قوانین و عادت‌های تایید تنظیم‌شده برای ایجنت قدیمی نیاز به بازبینی دارند؛ بنابراین با آن مانند یک مهاجرت (Migration) برخورد کنید.
 
-### Cline
+### افزونه Cline
 
-Cline is a VS Code extension that operates as a full agent rather than an autocomplete tool. It takes a series of steps, evaluates results, fixes its own errors, and continues. More autonomous than Cursor or Devin Desktop but with less polish. It is Apache-2.0 and ships an SDK; v4.1.26 is from October 26, 2026.
+افزونه Cline یک افزونه VS Code است که به جای یک ابزار تکمیل خودکار، به عنوان یک ایجنت کامل عمل می‌کند. این ابزار یک سری گام برمی‌دارد، نتایج را ارزیابی می‌کند، خطاهای خودش را برطرف می‌نماید و ادامه می‌دهد. خودمختارتر از Cursor یا Devin Desktop است اما پرداخت ظاهری کمتری دارد. مجوز آن Apache-2.0 است و یک SDK عرضه می‌کند؛ نسخه v4.1.26 متعلق به ۲۶ اکتبر ۲۰۲۶ است.
 
-### GitHub Copilot
+### ابزار GitHub Copilot
 
-Copilot now ships orchestration patterns that were paper ideas a year ago:
-- **Computer use** (public preview, October 1, 2026, Copilot CLI and the Copilot app on macOS and Windows): operates desktop apps with per-app approval, reviewable permanent grants, and an org-level off switch.
-- **Dynamic workflows** (public preview, October 1): code-defined programs that mix automated steps and agents in sequential or parallel stages, with checkpoints for human review. GitHub contrasts them with `/fleet`, which lets the model delegate.
-- **Copilot Fusion** (GA October 28, 2026, on all Copilot plans; it grew out of the HydraFusion research preview): you pick Standard, High or Max effort, and Fusion picks a workflow per task. **Single** sends the task to one model; **cascade** drafts with an efficient model, gates on quality, and escalates to a stronger one; **critique** has a second model review the draft before the first revises it. Each model used bills at its own rate, so the cost of a task now depends on the route Fusion picks.
+ابزار Copilot اکنون الگوهای هماهنگ‌سازی‌ای را عرضه می‌کند که یک سال پیش در حد ایده‌های مقاله‌ای بودند:
+- **استفاده از کامپیوتر (Computer use)** (پیش‌نمایش عمومی، ۱ اکتبر ۲۰۲۶، Copilot CLI و اپلیکیشن Copilot روی macOS و Windows): اپلیکیشن‌های دسکتاپ را با تایید به ازای هر اپلیکیشن، مجوزهای دائمی قابل بازبینی و کلید قطع سازمانی کنترل می‌کند.
+- **جریان‌های کاری پویا (Dynamic workflows)** (پیش‌نمایش عمومی، ۱ اکتبر): برنامه‌های تعریف‌شده با کد که گام‌های خودکار و ایجنت‌ها را در مراحل متوالی یا موازی با نقاط بازبینی برای بازبینی انسانی ترکیب می‌کنند. شرکت GitHub آن‌ها را با `/fleet` مقایسه می‌کند که در آن واگذاری کار به عهده مدل گذاشته می‌شود.
+- **قابلیت Copilot Fusion** (در دسترس عموم در ۲۸ اکتبر ۲۰۲۶ روی تمام پلن‌های Copilot؛ برخاسته از پیش‌نمایش پژوهشی HydraFusion): شما سطح تلاش Standard، High یا Max را انتخاب می‌کنید و Fusion برای هر وظیفه یک جریان کاری برمی‌گزیند. حالت **Single** وظیفه را به یک مدل می‌فرستد؛ حالت **cascade** با یک مدل کارآمد پیش‌نویس تهیه می‌کند، کیفیت را می‌سنجد و در صورت نیاز به مدل قوی‌تر ارجاع می‌دهد؛ حالت **critique** باعث می‌شود مدل دومی پیش‌نویس را پیش از بازنگری مدل اول بررسی کند. هر مدل استفاده‌شده با تعرفه خودش صورت‌حساب می‌شود، بنابراین هزینه یک وظیفه اکنون به مسیری که Fusion انتخاب می‌کند بستگی دارد.
 
-### IDE Agent Architecture Comparison
+### مقایسه معماری ایجنت‌های IDE
+
+<div dir="ltr">
 
 ```
 +-------------------------------------------------------------------+
@@ -527,119 +555,123 @@ Copilot now ships orchestration patterns that were paper ideas a year ago:
 +-------------------------------------------------------------------+
 ```
 
----
-
-## Comparison Matrix
-
-| Feature | OpenClaw | OpenHands | Open Interpreter | Claude Computer Use | Claude Code | Cursor |
-|---------|----------|-----------|-----------------|-------------------|-------------|--------|
-| **Type** | Local agent | Dev agent | Local code exec | Vision automation | Terminal agent | IDE agent |
-| **License** | MIT | MIT | Apache-2.0 (Rust rewrite); AGPL-3.0 (Python fork) | Proprietary API | Proprietary | Proprietary |
-| **GitHub Stars (Nov 2026)** | ~394K | ~92K | ~69K | N/A (API) | ~154K (issues and plugins repo) | N/A |
-| **Sandboxed** | Optional (main session on host by default) | Yes (Docker) | Native OS sandbox (Rust); No (Python) | Requires VM | Configurable | Yes (cloud agents) |
-| **LLM Support** | Any (model-agnostic) | Any | 100+ models | Claude only | Claude only | Multi-model |
-| **GUI Control** | Browser tool | Yes (BrowserGym) | Computer API (Python fork); browser and app QA skills (Rust) | Yes (native) | Via computer-use | Computer use on cloud agent workers |
-| **Code Execution** | Yes (exec tool) | Yes (container) | Yes (local) | Yes (bash tool) | Yes (bash) | Yes (terminal) |
-| **Messaging** | 24+ platforms | Web UI / API | Terminal | API | Terminal / IDE | Editor |
-| **Memory** | Persistent (local) | Session-based | Session-based | Per-conversation | Session + CLAUDE.md | Project-scoped |
-| **MCP Support** | Native (client and server) | Limited | Yes (Rust); No (Python) | Via Claude | Native | Native (loaded dynamically) |
-| **Best For** | Personal assistant | Autonomous dev | Cheap-model coding (Rust); data analysis (Python) | GUI automation | Professional dev | IDE workflow |
-| **Risk Level** | High (unsandboxed by default) | Low (sandboxed) | High for the Python fork; lower for the Rust rewrite | Medium (needs VM) | Medium | Low |
+</div>
 
 ---
 
-## Market Trends and Adoption (2026)
+## ماتریس مقایسه <a id="comparison-matrix"></a>
 
-### The Numbers
-
-- **MCP ecosystem**: 10,000+ active servers. In October 2026 the v1 TypeScript SDK alone had about 246M npm downloads against about 62M for v2 `@modelcontextprotocol/core`, 49M for `server` and 33M for `client`: v2 roughly doubled in a month but is still only 13 to 25% of v1 volume. Tier 1 SDKs now cover TypeScript, Python, C#, Go, Rust and Ruby
-- **Gartner projection**: 40% of enterprise applications will incorporate AI agents by end of 2026 (up from under 5% in early 2025)
-- **OpenClaw**: Fastest project to 300K GitHub stars in history (under 5 months); about 394K in early November 2026
-- **Claude Code**: $2.5B ARR by February 2026, the fastest enterprise software product to $1B
-- **Cursor**: $2B annualized revenue and half of the Fortune 500 (early 2026); part of SpaceX since August 2026, and OpenAI is winding down its model supply to Cursor (proposed cutoff November 12, 2026)
-- **Cognition**: valued at $48B after a $2B+ round (September 8, 2026)
-
-### Key Trends
-
-**1. Convergence of Agent Types**: The boundaries between local, cloud, and IDE agents are dissolving. Claude Code runs locally but uses cloud models. Cursor's cloud agents run on Cursor's VMs or on your own machines. OpenClaw connects to any LLM. The pattern is moving toward a universal agent architecture that can operate in any environment.
-
-**2. MCP as the Universal Tool Layer**: MCP has become the standard for tool integration, with adoption by Anthropic, OpenAI, Google, and hundreds of tool providers, under the Linux Foundation's Agentic AI Foundation (10 hosted projects and 305 member organizations as of October 22, 2026). The current spec revision, 2026-07-28, made the protocol core stateless. The maintainers' August 22, 2026 roadmap prioritizes agentic messaging (Tasks, server-initiated events), Streamable HTTP as the single transport, agent identity (DPoP and workload identity federation, both still open drafts), a redesign of the `tools/call` result shape, and server-side progressive discovery for large tool catalogs. The next revision is targeted for March 30, 2027 (SEP-3398, accepted October 14 and merged October 27, subject to confirmation), with releases after that generally on the last Tuesday of March and September. Extensions now carry maturity stages (SEP-3392): MCP Apps and enterprise auth are Stable, while Tasks, Skills and Server Cards are Beta and can still break.
-
-**3. Sandboxing Becomes Non-Negotiable**: The OpenClaw security crisis (135,000 exposed instances) has pushed the industry toward sandboxed-by-default architectures. New agents are expected to provide isolation out of the box.
-
-**4. Cost Optimization as First-Class Concern**: The Plan-and-Execute pattern (a capable model plans, cheaper models execute) cuts cost by roughly 85-90% in illustrative math (see the next chapter). For coding agents the bigger lever is now input tokens: Anthropic's Claude Code telemetry (September 24, 2026, vendor-reported) shows the input-to-output ratio rising from 189:1 to 324:1, so cache-read price and cache hit rate dominate the bill. Opus 5.5 and Sonnet 5.5 both read cache at 0.05x input ($0.20 and, since October 7, $0.10 per 1M tokens). This is the agentic equivalent of cloud cost optimization.
-
-**5. Background and Asynchronous Agents**: Cursor's cloud agents and Projects, Codex cloud environments, and Claude Code's subagent spawning represent a shift from synchronous, interactive agents to autonomous, asynchronous workers that notify you when done. OpenAI dots and Meta Muse push the same idea to consumers: an always-on agent with its own computer.
-
-**6. The Harness Becomes the Product**: Anthropic (Claude Managed Agents), OpenAI (Agents API) and AWS (Bedrock Managed Agents, built on OpenAI's harness) now sell the agent loop as a managed runtime, and the coding vendors converge on a **split plane**: vendor control plane, customer-hosted execution plane. Build-vs-rent is now a design-review question, and so are the gaps: the OpenAI Agents API launched with US data residency only and no Zero Data Retention, and in November 2026 all three managed runtimes were still in beta or preview. Billing models are converging too: since October 9, OpenAI bills hosted sandbox compute only during active turns, so an agent waiting on a human approval no longer burns sandbox time.
+| ویژگی | ابزار OpenClaw | ابزار OpenHands | ابزار Open Interpreter | قابلیت Claude Computer Use | ابزار Claude Code | محیط Cursor |
+|-------|----------------|-----------------|------------------------|---------------------------|-------------------|-------------|
+| **نوع** | ایجنت محلی | ایجنت توسعه | اجرای کد محلی | اتوماسیون بینایی | ایجنت ترمینال | ایجنت IDE |
+| **مجوز** | مجوز MIT | مجوز MIT | مجوز Apache-2.0 (بازنویسی Rust)؛ مجوز AGPL-3.0 (انشعاب Python) | سرویس اختصاصی (API) | اختصاصی | اختصاصی |
+| **ستاره‌های گیت‌هاب (نوامبر ۲۰۲۶)** | حدود ۳۹۴ هزار | حدود ۹۲ هزار | حدود ۶۹ هزار | ندارد (API) | حدود ۱۵۴ هزار (مخزن issues و plugins) | ندارد |
+| **ایزوله‌سازی (Sandboxed)** | اختیاری (نشست اصلی به صورت پیش‌فرض روی میزبان) | بله (Docker) | محیط ایزوله بومی سیستم‌عامل (Rust)؛ خیر (Python) | نیازمند VM | قابل پیکربندی | بله (ایجنت‌های ابری) |
+| **پشتیبانی از LLM** | هر مدل (آزاد از مدل) | هر مدل | بیش از ۱۰۰ مدل | فقط مدل‌های Claude | فقط مدل‌های Claude | چندمدلی |
+| **کنترل رابط گرافیکی (GUI)** | ابزار مرورگر | بله (BrowserGym) | رابط Computer API (انشعاب Python)؛ مهارت‌های QA مرورگر و اپ (Rust) | بله (بومی) | از طریق computer-use | قابلیت استفاده از کامپیوتر روی کارگرهای ایجنت ابری |
+| **اجرای کد** | بله (ابزار exec) | بله (کانتینر) | بله (محلی) | بله (ابزار bash) | بله (bash) | بله (ترمینال) |
+| **پیام‌رسانی** | بیش از ۲۴ پلتفرم | رابط وب / API | ترمینال | رابط API | ترمینال / IDE | ویرایشگر |
+| **حافظه** | پایدار (محلی) | مبتنی بر نشست | مبتنی بر نشست | به ازای هر گفتگو | نشست + CLAUDE.md | در محدوده پروژه |
+| **پشتیبانی از MCP** | بومی (کلاینت و سرور) | محدود | بله (Rust)؛ خیر (Python) | از طریق Claude | بومی | بومی (بارگذاری پویا) |
+| **بهترین کاربرد** | دستیار شخصی | توسعه خودمختار | کدنویسی با مدل ارزان (Rust)؛ تحلیل داده (Python) | اتوماسیون GUI | توسعه حرفه‌ای | جریان کاری IDE |
+| **سطح ریسک** | بالا (غیرایزوله به صورت پیش‌فرض) | پایین (ایزوله‌شده) | بالا برای انشعاب Python؛ پایین‌تر برای بازنویسی Rust | متوسط (نیازمند VM) | متوسط | پایین |
 
 ---
 
-## System Design Interview Angle
+## روندهای بازار و پذیرش (۲۰۲۶) <a id="market-trends-and-adoption-2026"></a>
 
-When asked about tool-use agents in system design interviews, focus on these dimensions:
+### آمار و ارقام
 
-**1. Security Model**: Is execution sandboxed? How are credentials managed? What happens if the LLM generates malicious code? (OpenClaw's host execution by default vs. OpenHands' per-session Docker isolation is a great comparison point; both are MIT-licensed, so license is not the differentiator.)
+- **اکوسیستم MCP:** بیش از ۱۰٬۰۰۰ سرور فعال. در اکتبر ۲۰۲۶، نسخه v1 کیت توسعه TypeScript SDK به تنهایی حدود ۲۴۶ میلیون دانلود npm داشت در برابر حدود ۶۲ میلیون دانلود برای نسخه v2 پکیج `@modelcontextprotocol/core`، ۴۹ میلیون برای `server` و ۳۳ میلیون برای `client`: نسخه v2 در یک ماه تقریباً دو برابر شد اما همچنان تنها ۱۳ تا ۲۵ درصد حجم v1 است. کیت‌های توسعه رده اول (Tier 1 SDKs) اکنون TypeScript، Python، C#، Go، Rust و Ruby را پوشش می‌دهند.
+- **پیش‌بینی گارتنر (Gartner):** ۴۰ درصد اپلیکیشن‌های سازمانی تا پایان سال ۲۰۲۶ ایجنت‌های هوش مصنوعی را در خود جای خواهند داد (افزایش از زیر ۵ درصد در اوایل ۲۰۲۵).
+- **پروژه OpenClaw:** سریع‌ترین پروژه برای رسیدن به ۳۰۰ هزار ستاره گیت‌هاب در تاریخ (در کمتر از ۵ ماه)؛ حدود ۳۹۴ هزار ستاره در اوایل نوامبر ۲۰۲۶.
+- **ابزار Claude Code:** ۲٫۵ میلیارد دلار ARR تا فوریه ۲۰۲۶، سریع‌ترین محصول نرم‌افزاری سازمانی برای رسیدن به ۱ میلیارد دلار.
+- **محیط Cursor:** ۲ میلیارد دلار درآمد سالانه و نیمی از شرکت‌های Fortune 500 (اوایل ۲۰۲۶)؛ بخشی از SpaceX از اوت ۲۰۲۶، و شرکت OpenAI در حال جمع‌آوری تامین مدل خود برای Cursor است (قطع پیشنهادی ۱۲ نوامبر ۲۰۲۶).
+- **شرکت Cognition:** ارزش‌گذاری ۴۸ میلیارد دلاری پس از دور جذب سرمایه بیش از ۲ میلیارد دلاری (۸ سپتامبر ۲۰۲۶).
 
-**2. State Management**: How does the agent maintain context across tool calls? Session-based (OpenHands) vs. persistent memory (OpenClaw) vs. file-based (Claude Code's CLAUDE.md)?
+### روندهای کلیدی
 
-**3. Tool Discovery**: Static manifest (old approach) vs. dynamic discovery via MCP vs. skill marketplace (OpenClaw ClawHub)?
+**۱. همگرایی انواع ایجنت‌ها:** مرزهای میان ایجنت‌های محلی، ابری و IDE در حال محو شدن است. ابزار Claude Code به صورت محلی اجرا می‌شود اما از مدل‌های ابری استفاده می‌کند. ایجنت‌های ابری Cursor روی ماشین‌های مجازی Cursor یا ماشین‌های خود شما اجرا می‌شوند. ابزار OpenClaw به هر مدل LLM متصل می‌شود. الگو به سمت یک معماری جهانی ایجنت حرکت می‌کند که می‌تواند در هر محیطی عمل کند.
 
-**4. Latency Budget**: Function calling (50-200ms per tool call) vs. vision-based automation (1-3 seconds per screenshot-action loop). Batch actions amortize one model round trip over several GUI steps, and element refs cut the retries that misclicks cause. How does this affect UX, and where does the confirmation gate sit when one turn can do five things?
+**۲. تبدیل شدن MCP به لایه ابزار جهانی:** پروتکل MCP به استاندارد یکپارچه‌سازی ابزار تبدیل شده است و توسط Anthropic، OpenAI، Google و صدها ارائه‌دهنده ابزار، زیر نظر بنیاد Agentic AI Foundation متعلق به Linux Foundation (۱۰ پروژه میزبانی‌شده و ۳۰۵ سازمان عضو تا ۲۲ اکتبر ۲۰۲۶) پذیرفته شده است. بازبینی فعلی مشخصات، یعنی 2026-07-28، هسته پروتکل را بدون حالت (Stateless) کرد. نقشه راه ۲۲ اوت ۲۰۲۶ نگهدارندگان پروژه، پیام‌رسانی ایجنتی (Tasks، رویدادهای آغازشده توسط سرور)، Streamable HTTP را به عنوان تنها بستر انتقال (Transport)، هویت ایجنت (DPoP و فدراسیون هویت بار کاری، که هر دو هنوز پیش‌نویس باز هستند)، بازطراحی شکل نتیجه `tools/call` و کشف پیش‌رونده سمت سرور (Server-side progressive discovery) برای کاتالوگ‌های بزرگ ابزار را در اولویت قرار داده است. بازبینی بعدی برای ۳۰ مارس ۲۰۲۷ هدف‌گذاری شده است (SEP-3398، تاییدشده در ۱۴ اکتبر و ادغام‌شده در ۲۷ اکتبر، منوط به تایید نهایی)، و انتشارهای پس از آن عموماً در آخرین سه‌شنبه ماه‌های مارس و سپتامبر انجام خواهد شد. افزونه‌ها (Extensions) اکنون دارای مراحل بلوغ هستند (SEP-3392): اپلیکیشن‌های MCP Apps و احراز هویت سازمانی در وضعیت پایدار (Stable) قرار دارند، در حالی که Tasks، Skills و Server Cards در مرحله Beta هستند و همچنان ممکن است تغییر کنند و بشکنند.
 
-**5. Failure Handling**: What happens when a tool call fails? Retry? Fallback? Human-in-the-loop? How many retries before giving up?
+**۳. غیرقابل‌چشم‌پوشی شدن ایزوله‌سازی (Sandboxing):** بحران امنیتی OpenClaw (۱۳۵٬۰۰۰ نمونه در معرض دید) صنعت را به سمت معماری‌های ایزوله‌شده به صورت پیش‌فرض سوق داده است. از ایجنت‌های جدید انتظار می‌رود ایزوله‌سازی را به صورت آماده (Out of the box) فراهم کنند.
 
-**6. Hosting Model**: Build your own loop, rent a managed harness, or split the planes? Check residency, retention and identity per option, and who can stop a runaway agent. OpenAI's September 2026 disclosure is the cautionary case: in an internal training run, an agent's DNS-tunnel egress set off an alarm about 12 minutes in, but the run was killed only about 2.5 hours later because the automatic stop failed.
+**۴. بهینه‌سازی هزینه به عنوان دغدغه درجه اول:** الگوی برنامه‌ریزی و اجرا (Plan-and-Execute، که در آن یک مدل توانمند برنامه‌ریزی می‌کند و مدل‌های ارزان‌تر اجرا می‌کنند) در محاسبات نمونه هزینه را حدود ۸۵ تا ۹۰ درصد کاهش می‌دهد (فصل بعد را ببینید). برای ایجنت‌های کدنویسی، اهرم بزرگ‌تر اکنون Tokenهای ورودی است: تله‌متری Claude Code شرکت Anthropic (۲۴ سپتامبر ۲۰۲۶، گزارش فروشنده) نشان می‌دهد نسبت ورودی به خروجی از ۱۸۹:۱ به ۳۲۴:۱ افزایش یافته است، بنابراین قیمت خواندن کش (Cache-read) و نرخ اصابت کش (Cache hit rate) بر صورت‌حساب غلبه دارند. مدل‌های Opus 5.5 و Sonnet 5.5 هر دو کش را با نرخ ۰٫۰۵ برابر ورودی می‌خوانند (۰٫۲۰ دلار و از ۷ اکتبر، ۰٫۱۰ دلار به ازای هر ۱ میلیون Token). این معادل ایجنتی بهینه‌سازی هزینه ابر (Cloud Cost Optimization) است.
 
----
+**۵. ایجنت‌های پس‌زمینه و ناهمگام:** ایجنت‌های ابری و Projects در Cursor، محیط‌های ابری Codex و ایجاد ساب‌ایجنت در Claude Code نشان‌دهنده گذار از ایجنت‌های همگام و تعاملی به کارگرهای خودمختار و ناهمگامی هستند که پس از پایان کار به شما اطلاع می‌دهند. محصولات OpenAI dots و Meta Muse همین ایده را به مصرف‌کنندگان می‌برند: یک ایجنت همیشه روشن با کامپیوتر اختصاصی خودش.
 
-## Interview Questions
-
-### Q: Your team wants to build an internal AI assistant. Should you build on OpenClaw, OpenHands, or build custom with Claude Code + MCP?
-
-**Strong answer:**
-It depends on the use case and security requirements. OpenClaw is optimized for personal assistants with messaging integrations, ideal if the goal is a Slack/Teams bot with persistent personality. It is MIT-licensed and now foundation-governed with an LTS-style release line, but its single-operator trust model and host execution by default create enterprise concerns (its own docs say it does not support hostile multi-tenant setups). OpenHands is better for autonomous development tasks: per-session Docker sandboxing and an MIT license are enterprise-friendly. For a custom internal tool, an agent loop with MCP servers gives the most control: you define exactly which tools are available, run them in your own infrastructure, and benefit from MCP's standardized discovery and auth. Since September 2026 there is a fourth option: rent the loop (Claude Managed Agents, OpenAI Agents API, Bedrock Managed Agents) and keep only tools and data in your perimeter, after checking residency and retention terms. The decision tree is: messaging-first? OpenClaw. Dev automation? OpenHands. Custom enterprise tool? MCP plus your own or a managed agent loop.
-
-### Q: How would you design a system that lets non-technical users automate desktop tasks using AI?
-
-**Strong answer:**
-I would use the vision-based computer-use pattern (Claude's computer toolset, Gemini computer use, or similar). The key design decisions: (1) Always run in a sandboxed VM so the agent cannot damage the user's actual machine. (2) Implement a Human-in-the-Loop confirmation step before any destructive action (file deletion, form submission, purchases), and run it before each consequential action executes, including one in the middle of a batch, since one model turn can now emit several actions. Gemini's built-in safety service returning `require_confirmation` for categories like financial transactions and account creation is a ready-made risk taxonomy for that gate. (3) Use zoom and, for browsers, accessibility-tree element refs to reduce misclicks. (4) Set token/cost caps to prevent runaway loops. (5) Record all actions as an audit trail. The main tradeoff is latency (1-3 seconds per model round trip), but this approach works with any application without needing APIs. For higher-speed workflows, combine computer-use with function calling for applications that have APIs.
-
-### Q: Why did OpenClaw grow faster than any open-source project in history? What does this tell you about the market?
-
-**Strong answer:**
-Three factors. (1) **Zero-friction onboarding**: OpenClaw connects to messaging platforms people already use (WhatsApp, Telegram). Users do not need to learn a new interface. (2) **SOUL.md personalization**: The ability to give your agent a custom personality creates emotional attachment and virality: people share their agents. (3) **Model-agnostic architecture**: Users are not locked into one LLM provider, reducing cost and increasing flexibility. The market signal is that the agent "interface" matters more than the underlying model. People want agents that meet them where they are (messaging apps, not web UIs). The flip side: rapid growth without security investment leads to crises like the 135,000 exposed instances, which is a cautionary tale for any open-source agent project.
-
-### Q: Design an always-on personal agent that keeps working while the user is away. What does it need beyond a chat agent?
-
-**Strong answer:**
-Treat it as a tenant, not a session. (1) **Isolation**: one VM or sandbox per agent (OpenAI dots and Meta Muse both ship this way), with the agent's browser open to the user for inspection, as dots allows. (2) **Identity and secrets**: the agent gets its own identity, and credentials sit in a vault the model cannot read; dots sign in with saved passwords without exposing them to the model, and the OpenAI Agents API takes credentials through a separate sign-in UI. (3) **Policy, not prompts**: declarative rules that allow, block or require approval per action type, with per-origin approval for new websites. Per-call prompts cause approval fatigue on an always-on agent. (4) **Idle mode**: when no task is active, restrict the agent to read-only work, as dots does. (5) **Budgets and kill switches**: session spend caps that pause the agent (Claude Managed Agents' `budget_reached`) and an automatic stop that is tested, because an alarm without an automatic kill is not a control. (6) **Egress**: allowlist destinations including DNS, and treat public repos, gists and image hosts as exfiltration channels. Close with the open questions: who is liable for a transaction the agent made, and how a user audits a day of background activity.
-
-### Q: Compare sandboxed vs. unsandboxed execution for AI agents. When would you choose each?
-
-**Strong answer:**
-Sandboxed (Docker/VM): Use for untrusted code execution, multi-tenant systems, or any production deployment. OpenHands does this well: each session gets its own Docker container. The trade-off is setup complexity and performance overhead, which managed snapshot-restore runtimes are shrinking (AWS reports about 2 s P75 cold starts for AgentCore Runtime V2). Unsandboxed (host access): Use only for single-user, trusted environments where the user is watching. The original Python Open Interpreter and OpenClaw's main session take this approach for maximum capability; tellingly, Open Interpreter's 2026 Rust rewrite switched to native OS sandboxing. The risk is that a bad LLM output can damage the host system. The 2026 consensus is sandboxed-by-default with escape hatches for power users. In an interview, always mention that the sandbox boundary is a security decision, not just a convenience decision.
+**۶. تبدیل شدن هارنس به محصول:** شرکت‌های Anthropic (سرویس Claude Managed Agents)، OpenAI (سرویس Agents API) و AWS (سرویس Bedrock Managed Agents، ساخته‌شده روی هارنس OpenAI) اکنون حلقه ایجنت را به عنوان یک محیط اجرای مدیریت‌شده می‌فروشند و فروشندگان ابزارهای کدنویسی روی یک **صفحه تقسیم‌شده (Split plane)** همگرا می‌شوند: صفحه کنترل فروشنده، صفحه اجرای میزبانی‌شده توسط مشتری. انتخاب بین ساخت یا اجاره (Build-vs-rent) اکنون یک پرسش بازبینی طراحی است و شکاف‌های آن نیز مطرح هستند: سرویس OpenAI Agents API فقط با اقامت داده در ایالات متحده و بدون نگهداری صفر داده (Zero Data Retention) عرضه شد و در نوامبر ۲۰۲۶ هر سه محیط اجرای مدیریت‌شده همچنان در مرحله بتا یا پیش‌نمایش بودند. مدل‌های صورت‌حساب نیز در حال همگرایی هستند: از ۹ اکتبر، OpenAI محاسبات محیط ایزوله میزبانی‌شده را فقط در طول نوبت‌های فعال صورت‌حساب می‌کند، بنابراین ایجنتی که منتظر تایید انسان است دیگر زمان محیط ایزوله را هدر نمی‌دهد.
 
 ---
 
-## References
+## زاویه دید مصاحبه طراحی سیستم <a id="system-design-interview-angle"></a>
 
-- OpenClaw GitHub Repository and Documentation (2025-2026)
-- OpenHands Documentation and SDK Reference (2025-2026)
-- Open Interpreter GitHub Repository (2024-2026)
-- Anthropic. "Computer Use Tool Documentation" (2024-2026)
-- Anthropic. "Browser Use Tool Documentation" (2026)
-- Anthropic. "Claude Code Overview" and changelog (2025-2026)
-- MCP Specification 2026-07-28 and "The New MCP Roadmap" (August 22, 2026)
-- OpenAI. "Introducing the Agents API" and "Introducing dots" (September 2026)
-- OpenAI. "Our decision on Cursor following its acquisition by SpaceX" (August 28, 2026)
-- Google. Gemini API computer use documentation and changelog (2026)
-- XLANG Lab. OSWorld 2.0 leaderboard (September 2026)
-- Gartner. "AI Agent Adoption Projections" (2025-2026)
-- Cursor, Devin Desktop (formerly Windsurf), Cline, and GitHub Copilot official documentation and changelogs (2025-2026)
-- GitHub. "Route and orchestrate models with GitHub Copilot Fusion" (changelog, October 28, 2026)
-- Model Context Protocol. SEP-3398 "Release Cycle Updates" and SEP-3392 "Extension Lifecycle" (October 2026)
+وقتی در مصاحبه‌های طراحی سیستم درباره ایجنت‌های ابزارمحور سوال می‌شود، روی این ابعاد تمرکز کنید:
+
+**۱. مدل امنیتی:** آیا اجرا ایزوله‌شده (Sandboxed) است؟ اطلاعات احراز هویت چگونه مدیریت می‌شوند؟ اگر مدل LLM کد مخرب تولید کند چه اتفاقی می‌افتد؟ (اجرای پیش‌فرض روی میزبان در OpenClaw در برابر ایزوله‌سازی Docker به ازای هر نشست در OpenHands یک نقطه مقایسه عالی است؛ هر دو دارای مجوز MIT هستند، بنابراین مجوز عامل تمایز نیست.)
+
+**۲. مدیریت وضعیت (State Management):** ایجنت چگونه زمینه را در طول فراخوانی‌های ابزار حفظ می‌کند؟ مبتنی بر نشست (OpenHands) در برابر حافظه پایدار (OpenClaw) در برابر مبتنی بر فایل (فایل CLAUDE.md در Claude Code)؟
+
+**۳. کشف ابزار (Tool Discovery):** مانیفست ایستا (رویکرد قدیمی) در برابر کشف پویا از طریق MCP در برابر بازارچه مهارت‌ها (ClawHub در OpenClaw)؟
+
+**۴. بودجه تأخیر (Latency Budget):** فراخوانی تابع (۵۰ تا ۲۰۰ میلی‌ثانیه به ازای هر فراخوانی ابزار) در برابر اتوماسیون مبتنی بر بینایی (۱ تا ۳ ثانیه به ازای هر حلقه اسکرین‌شات-عمل). اقدامات دسته‌ای یک رفت‌وبرگشت مدل را بین چندین گام GUI سرشکن می‌کنند و ارجاع عناصر (Element refs) تکرارهای ناشی از کلیک‌های اشتباه را کاهش می‌دهند. این موضوع چگونه بر تجربه کاربری (UX) اثر می‌گذارد و دروازه تایید کجا قرار می‌گیرد وقتی یک نوبت می‌تواند پنج کار انجام دهد؟
+
+**۵. مدیریت خطا (Failure Handling):** وقتی فراخوانی ابزار شکست می‌خورد چه اتفاقی می‌افتد؟ تلاش مجدد (Retry)؟ مسیر جایگزین (Fallback)؟ انسان در حلقه (Human-in-the-loop)؟ چند بار تلاش مجدد پیش از دست کشیدن؟
+
+**۶. مدل میزبانی (Hosting Model):** حلقه خودتان را بسازید، یک هارنس مدیریت‌شده اجاره کنید یا صفحات را تقسیم کنید؟ اقامت داده، نگهداری داده و هویت را در هر گزینه بررسی کنید و ببینید چه کسی می‌تواند یک ایجنت افسارگسیخته را متوقف کند. افشاگری سپتامبر ۲۰۲۶ شرکت OpenAI نمونه هشداردهنده این مورد است: در یک اجرای آموزشی داخلی، ترافیک خروجی تونل DNS یک ایجنت حدود ۱۲ دقیقه پس از شروع زنگ هشدار را به صدا درآورد، اما اجرا تنها حدود ۲٫۵ ساعت بعد متوقف شد زیرا توقف خودکار شکست خورد.
 
 ---
 
-*Next: [Architecture Patterns for Tool-Use Agents](02-architecture-patterns.md)*
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
+
+### پرسش: تیم شما می‌خواهد یک دستیار هوش مصنوعی داخلی بسازد. آیا باید روی OpenClaw یا OpenHands بسازید، یا با Claude Code + MCP به صورت سفارشی پیاده‌سازی کنید؟
+
+**پاسخ قوی:**
+این انتخاب به مورد استفاده و نیازمندی‌های امنیتی بستگی دارد. ابزار OpenClaw برای دستیارهای شخصی با یکپارچه‌سازی‌های پیام‌رسان بهینه‌سازی شده و اگر هدف یک ربات Slack یا Teams با شخصیت پایدار باشد، ایده‌آل است. این ابزار دارای مجوز MIT است و اکنون توسط بنیاد اداره می‌شود و خط انتشار LTS-مانند دارد، اما مدل اعتماد تک‌اپراتوری و اجرای پیش‌فرض روی میزبان، نگرانی‌های سازمانی ایجاد می‌کند (مستندات خود آن می‌گویند از تنظیمات چندمستأجری غیرقابل اعتماد پشتیبانی نمی‌کند). ابزار OpenHands برای وظایف توسعه خودمختار بهتر است: ایزوله‌سازی Docker به ازای هر نشست و مجوز MIT برای محیط سازمانی مناسب‌اند. برای یک ابزار داخلی سفارشی، یک حلقه ایجنت با سرورهای MCP بیشترین کنترل را می‌دهد: شما دقیقاً تعریف می‌کنید کدام ابزارها در دسترس باشند، آن‌ها را در زیرساخت خودتان اجرا می‌کنید و از کشف و احراز هویت استاندارد MCP بهره‌مند می‌شوید. از سپتامبر ۲۰۲۶ گزینه چهارمی هم وجود دارد: حلقه را اجاره کنید (Claude Managed Agents، OpenAI Agents API، Bedrock Managed Agents) و پس از بررسی شرایط اقامت و نگهداری داده، فقط ابزارها و داده‌ها را در محدوده شبکه خودتان نگه دارید. درخت تصمیم این است: پیام‌رسان در اولویت است؟ OpenClaw. اتوماسیون توسعه؟ OpenHands. ابزار سازمانی سفارشی؟ پروتکل MCP به همراه حلقه ایجنت خودتان یا یک حلقه مدیریت‌شده.
+
+### پرسش: چگونه سیستمی طراحی می‌کنید که به کاربران غیرفنی اجازه دهد وظایف دسکتاپ را با استفاده از هوش مصنوعی خودکار کنند؟
+
+**پاسخ قوی:**
+من از الگوی استفاده از کامپیوتر مبتنی بر بینایی (مجموعه ابزار کامپیوتر Claude، قابلیت استفاده از کامپیوتر Gemini یا موارد مشابه) استفاده می‌کنم. تصمیمات کلیدی طراحی: (۱) همیشه در یک VM ایزوله‌شده اجرا کنید تا ایجنت نتواند به ماشین واقعی کاربر آسیب بزند. (۲) یک گام تایید انسان در حلقه (Human-in-the-Loop) پیش از هر اقدام مخرب (حذف فایل، ارسال فرم، خریدها) پیاده‌سازی کنید و آن را پیش از اجرای هر اقدام حساس — از جمله اقدامی در میانه یک دسته — اجرا نمایید، زیرا یک نوبت مدل اکنون می‌تواند چندین اقدام صادر کند. سرویس ایمنی داخلی Gemini که برای دسته‌هایی مانند تراکنش‌های مالی و ایجاد حساب مقدار `require_confirmation` را برمی‌گرداند، یک دسته‌بندی ریسک آماده برای آن دروازه است. (۳) از بزرگ‌نمایی (Zoom) و برای مرورگرها از ارجاع عناصر درخت دسترسی‌پذیری برای کاهش کلیک‌های اشتباه استفاده کنید. (۴) سقف‌های Token و هزینه برای جلوگیری از حلقه‌های بی‌نهایت تعیین کنید. (۵) تمامی اقدامات را به عنوان گزارش ممیزی (Audit Trail) ثبت نمایید. معامله اصلی (Tradeoff) در اینجا تأخیر است (۱ تا ۳ ثانیه به ازای هر رفت‌وبرگشت مدل)، اما این رویکرد با هر اپلیکیشنی بدون نیاز به API کار می‌کند. برای جریان‌های کاری پرسرعت‌تر، استفاده از کامپیوتر را با فراخوانی تابع برای اپلیکیشن‌هایی که API دارند ترکیب کنید.
+
+### پرسش: چرا OpenClaw سریع‌تر از هر پروژه متن‌باز دیگری در تاریخ رشد کرد؟ این موضوع درباره بازار به شما چه می‌گوید؟
+
+**پاسخ قوی:**
+سه عامل در این رشد نقش داشتند. (۱) **شروع به کار بدون اصطکاک:** ابزار OpenClaw به پلتفرم‌های پیام‌رسانی متصل می‌شود که مردم همین الان از آن‌ها استفاده می‌کنند (WhatsApp، Telegram). کاربران نیازی به یادگیری یک رابط جدید ندارند. (۲) **شخصی‌سازی با SOUL.md:** توانایی دادن شخصیت سفارشی به ایجنت، دلبستگی عاطفی و همه‌گیری (Virality) ایجاد می‌کند: افراد ایجنت‌های خود را به اشتراک می‌گذارند. (۳) **معماری مستقل از مدل:** کاربران در انحصار یک ارائه‌دهنده LLM نیستند که این امر هزینه را کاهش و انعطاف‌پذیری را افزایش می‌دهد. پیام بازار این است که «رابط» (Interface) ایجنت از مدل زیربنایی مهم‌تر است. مردم ایجنت‌هایی می‌خواهند که در جایی که هستند (اپلیکیشن‌های پیام‌رسان، نه رابط‌های وب) با آن‌ها ملاقات کنند. روی دیگر سکه: رشد سریع بدون سرمایه‌گذاری امنیتی منجر به بحران‌هایی مانند ۱۳۵٬۰۰۰ نمونه در معرض دید می‌شود که درسی هشداردهنده برای هر پروژه ایجنت متن‌باز است.
+
+### پرسش: یک ایجنت شخصی همیشه روشن طراحی کنید که وقتی کاربر دور است به کار خود ادامه دهد. این ایجنت فراتر از یک ایجنت گفتگو به چه چیزهایی نیاز دارد؟
+
+**پاسخ قوی:**
+با آن مانند یک مستأجر (Tenant) رفتار کنید، نه یک نشست (Session). (۱) **ایزوله‌سازی:** یک VM یا محیط ایزوله به ازای هر ایجنت (OpenAI dots و Meta Muse هر دو به این شکل عرضه می‌شوند)، به طوری که مرورگر ایجنت برای بازرسی توسط کاربر باز باشد، همان‌طور که dots اجازه می‌دهد. (۲) **هویت و اسرار:** ایجنت هویت خودش را می‌گیرد و اطلاعات احراز هویت در یک گاوصندوق (Vault) قرار می‌گیرند که مدل نمی‌تواند آن را بخواند؛ محصول dots با رمزهای ذخیره‌شده وارد سیستم می‌شود بدون آنکه آن‌ها را به مدل نشان دهد، و OpenAI Agents API اطلاعات احراز هویت را از طریق یک رابط ورود جداگانه دریافت می‌کند. (۳) **سیاست، نه پرامپت:** قوانین اعلانی که بر اساس نوع اقدام اجازه می‌دهند، مسدود می‌کنند یا تایید می‌خواهند، به همراه تایید به ازای هر مبدا برای وب‌سایت‌های جدید. درخواست‌های تایید در هر فراخوانی باعث خستگی تایید (Approval Fatigue) در یک ایجنت همیشه روشن می‌شوند. (۴) **حالت بیکاری (Idle mode):** وقتی هیچ وظیفه‌ای فعال نیست، ایجنت را به کارهای فقط‌خواندنی محدود کنید، همان‌طور که dots انجام می‌دهد. (۵) **بودجه‌ها و کلیدهای توقف اضطراری:** سقف هزینه نشست که ایجنت را متوقف می‌کند (مقدار `budget_reached` در Claude Managed Agents) و یک توقف خودکار که آزمایش شده باشد، زیرا هشدار بدون توقف خودکار یک کنترل محسوب نمی‌شود. (۶) **ترافیک خروجی (Egress):** مقصدها از جمله DNS را در لیست مجاز قرار دهید و مخازن عمومی، Gistها و میزبان‌های تصویر را به عنوان کانال‌های نشت داده (Exfiltration) در نظر بگیرید. پاسخ را با پرسش‌های باز ببندید: چه کسی مسئول تراکنشی است که ایجنت انجام داده، و کاربر چگونه یک روز فعالیت پس‌زمینه را ممیزی می‌کند.
+
+### پرسش: اجرای ایزوله‌شده (Sandboxed) در برابر اجرای غیرایزوله (Unsandboxed) را برای ایجنت‌های هوش مصنوعی مقایسه کنید. چه زمانی هر کدام را انتخاب می‌کنید؟
+
+**پاسخ قوی:**
+محیط ایزوله‌شده (Docker/VM): برای اجرای کد نامطمئن، سیستم‌های چندمستأجری یا هر استقرار محیط تولید استفاده کنید. ابزار OpenHands این کار را به خوبی انجام می‌دهد: هر نشست کانتینر Docker خودش را می‌گیرد. هزینه این کار پیچیدگی راه‌اندازی و سربار عملکرد است که محیط‌های اجرای مدیریت‌شده با بازیابی اسنپ‌شات (Snapshot-restore) در حال کوچک کردن آن هستند (AWS حدود ۲ ثانیه تاخیر صدک ۷۵ام برای راه‌اندازی سرد در AgentCore Runtime V2 گزارش می‌دهد). محیط غیرایزوله (دسترسی میزبان): فقط برای محیط‌های تک‌کاربره و مورد اعتماد که کاربر در حال تماشاست استفاده کنید. نسخه اصلی پایتونی Open Interpreter و نشست اصلی OpenClaw این رویکرد را برای حداکثر توانمندی در پیش می‌گیرند؛ به طرز معناداری، بازنویسی Rust سال ۲۰۲۶ در Open Interpreter به ایزوله‌سازی بومی سیستم‌عامل روی آورد. ریسک اینجاست که یک خروجی بد LLM می‌تواند به سیستم میزبان آسیب بزند. اجماع سال ۲۰۲۶ بر ایزوله‌سازی پیش‌فرض با درهای خروجی (Escape Hatches) برای کاربران حرفه‌ای است. در مصاحبه همیشه اشاره کنید که مرز محیط ایزوله یک تصمیم امنیتی است، نه صرفاً یک تصمیم برای راحتی.
+
+---
+
+## منابع <a id="references"></a>
+
+- مخزن گیت‌هاب و مستندات OpenClaw (۲۰۲۵-۲۰۲۶)
+- مستندات و مرجع SDK پروژه OpenHands (۲۰۲۵-۲۰۲۶)
+- مخزن گیت‌هاب Open Interpreter (۲۰۲۴-۲۰۲۶)
+- مستندات ابزار Computer Use شرکت Anthropic (۲۰۲۴-۲۰۲۶)
+- مستندات ابزار Browser Use شرکت Anthropic (۲۰۲۶)
+- مرور کلی و تاریخچه تغییرات Claude Code شرکت Anthropic (۲۰۲۵-۲۰۲۶)
+- مشخصات MCP نسخه 2026-07-28 و «نقشه راه جدید MCP» (۲۲ اوت ۲۰۲۶)
+- اطلاعیه‌های معرفی Agents API و dots شرکت OpenAI (سپتامبر ۲۰۲۶)
+- بیانیه OpenAI با عنوان «تصمیم ما درباره Cursor پس از تملک آن توسط SpaceX» (۲۸ اوت ۲۰۲۶)
+- مستندات و تاریخچه تغییرات استفاده از کامپیوتر در Gemini API شرکت Google (۲۰۲۶)
+- جدول رده‌بندی OSWorld 2.0 آزمایشگاه XLANG Lab (سپتامبر ۲۰۲۶)
+- گزارش «پیش‌بینی‌های پذیرش ایجنت‌های هوش مصنوعی» موسسه Gartner (۲۰۲۵-۲۰۲۶)
+- مستندات رسمی و تاریخچه تغییرات Cursor، Devin Desktop (سابقاً Windsurf)، Cline و GitHub Copilot (۲۰۲۵-۲۰۲۶)
+- اطلاعیه شرکت GitHub با عنوان «مسیریابی و هماهنگ‌سازی مدل‌ها با GitHub Copilot Fusion» (تاریخچه تغییرات، ۲۸ اکتبر ۲۰۲۶)
+- اسناد SEP-3398 «به‌روزرسانی چرخه انتشار» و SEP-3392 «چرخه عمر افزونه‌ها» از Model Context Protocol (اکتبر ۲۰۲۶)
+
+---
+
+*بعدی: [الگوهای معماری برای ایجنت‌های ابزارمحور](02-architecture-patterns.md)*
+
+</div>
