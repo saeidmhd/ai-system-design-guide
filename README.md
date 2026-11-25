@@ -2,6 +2,7 @@
 ### مرجع کامل مصاحبه و محیط تولید — نسخه‌ی فارسی
 
 <p align="center">
+  <a href="https://saeidmhd.github.io/ai-system-design-guide/"><img src="https://img.shields.io/badge/Read%20Online-Persian%20Site-7C3AED?style=for-the-badge&logo=bookstack&logoColor=white" alt="Read online"></a>
   <a href="https://github.com/saeidmhd/ai-system-design-guide"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-saeidmhd-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
   <a href="https://github.com/saeidmhd/ai-system-design-guide/stargazers"><img src="https://img.shields.io/badge/%E2%AD%90%20%D8%A7%D8%B3%D8%AA%D8%A7%D8%B1%D9%87%20%D8%A8%D8%AF%D9%87%DB%8C%D8%AF-7C3AED?style=for-the-badge" alt="Star this repo"></a>
   <a href="https://github.com/ombharatiya/ai-system-design-guide"><img src="https://img.shields.io/badge/Original%20Repo-ombharatiya-1F2937?style=for-the-badge&logo=github" alt="Original repository"></a>
@@ -314,6 +315,7 @@ mindmap
 
 اگر این نسخه‌ی فارسی برایتان مفید است، ساده‌ترین راه حمایت این است که به مخزن ستاره بدهید و آن را Watch کنید تا از به‌روزرسانی‌ها باخبر شوید:
 
+- **سایت نسخه‌ی فارسی:** [saeidmhd.github.io/ai-system-design-guide](https://saeidmhd.github.io/ai-system-design-guide/) - مطالعه‌ی آنلاین با جست‌وجو و فونت فارسی.
 - **گیت‌هاب (GitHub):** [@saeidmhd](https://github.com/saeidmhd) - نسخه‌ی فارسی و به‌روزرسانی‌های ترجمه.
 - **مخزن اصلی (انگلیسی):** [ombharatiya/ai-system-design-guide](https://github.com/ombharatiya/ai-system-design-guide) - منبع اصلی محتوا.
 - **وب‌سایت نسخه‌ی اصلی:** [aidaddy.tech](https://www.aidaddy.tech) - خواندن نسخه‌ی انگلیسی با جست‌وجو و ناوبری تمیز.
