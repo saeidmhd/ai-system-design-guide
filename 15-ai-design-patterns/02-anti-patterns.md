@@ -1,24 +1,28 @@
-# AI Anti-Patterns
+<div dir="rtl">
 
-Recognizing what NOT to do is as important as knowing best practices. This chapter catalogs common mistakes in AI system design.
+# ضدالگوهای هوش مصنوعی (AI Anti-Patterns)
 
-## Table of Contents
+شناختن کارهایی که نباید انجام داد به اندازه دانستن بهترین روش‌ها (Best Practices) اهمیت دارد. این فصل اشتباهات رایج در طراحی سیستم‌های هوش مصنوعی را دسته‌بندی و بررسی می‌کند.
 
-- [Architecture Anti-Patterns](#architecture-anti-patterns)
-- [RAG Anti-Patterns](#rag-anti-patterns)
-- [Agent Anti-Patterns](#agent-anti-patterns)
-- [Prompting Anti-Patterns](#prompting-anti-patterns)
-- [Evaluation Anti-Patterns](#evaluation-anti-patterns)
-- [Production Anti-Patterns](#production-anti-patterns)
-- [Interview Questions](#interview-questions)
+## فهرست مطالب
+
+- [ضدالگوهای معماری](#architecture-anti-patterns)
+- [ضدالگوهای RAG](#rag-anti-patterns)
+- [ضدالگوهای Agent](#agent-anti-patterns)
+- [ضدالگوهای پرامپت‌نویسی (Prompting)](#prompting-anti-patterns)
+- [ضدالگوهای ارزیابی (Evaluation)](#evaluation-anti-patterns)
+- [ضدالگوهای محیط تولید (Production)](#production-anti-patterns)
+- [پرسش‌های مصاحبه](#interview-questions)
 
 ---
 
-## Architecture Anti-Patterns
+## ضدالگوهای معماری <a id="architecture-anti-patterns"></a>
 
-### The God Prompt
+### ضدالگوی God Prompt (پرامپت همه‌کاره)
 
-**Problem:** Single massive prompt trying to do everything.
+**مسئله:** یک `Prompt` واحد و عظیم که تلاش می‌کند همه‌چیز را به تنهایی انجام دهد.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: God Prompt
@@ -36,13 +40,18 @@ You are a helpful assistant. You can:
 """
 ```
 
-**Why it fails:**
-- Context consumed by instructions, not user content
-- Model struggles with conflicting instructions
-- Impossible to optimize for all cases
-- Updates affect everything
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- پنجره زمینه (Context) به جای محتوای کاربر، توسط دستورالعمل‌ها اشغال می‌شود
+- مدل با دستورالعمل‌های متناقض دچار سردرگمی می‌شود
+- بهینه‌سازی برای همه حالت‌ها غیرممکن است
+- به‌روزرسانی‌ها بر کل سیستم اثر می‌گذارند
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Specialized components
 class QueryRouter:
@@ -52,11 +61,15 @@ class QueryRouter:
         return await handler.process(query)
 ```
 
+</div>
+
 ---
 
-### Single Provider Dependency
+### وابستگی به یک ارائه‌دهنده (Single Provider Dependency)
 
-**Problem:** Entire system depends on one LLM provider.
+**مسئله:** کل سیستم تنها به یک ارائه‌دهنده LLM وابسته است.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Single provider
@@ -64,13 +77,18 @@ async def generate(prompt: str) -> str:
     return await openai.chat.completions.create(...)
 ```
 
-**Why it fails:**
-- Provider outage = complete system failure. Outages are routine, not rare: Anthropic logged at least 12 major or critical incidents between August 16 and September 29, 2026, and one OpenAI incident on September 29 degraded the API, ChatGPT, and Codex together for about 5 hours 20 minutes
-- Rate limits affect all traffic
-- No price negotiation leverage
-- Locked into one model family, and into that vendor's retirement calendar (OpenAI retires the `gpt-5-2025-08-07` and `o3-2025-04-16` snapshots on December 11, 2026, and its October 14 notice gave five `gpt-4o` and `gpt-4.1` family snapshots, fine-tunes included, about three months before a January 14, 2027 shutdown)
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- قطعی ارائه‌دهنده مساوی است با از کار افتادن کامل سیستم. قطعی‌ها پدیده‌ای عادی هستند، نه نادر: شرکت Anthropic بین ۱۶ اوت تا ۲۹ سپتامبر ۲۰۲۶ دست‌کم ۱۲ اختلال عمده یا بحرانی را ثبت کرد، و یک اختلال در OpenAI در ۲۹ سپتامبر، API، ChatGPT و Codex را هم‌زمان به مدت حدود ۵ ساعت و ۲۰ دقیقه دچار افت عملکرد کرد
+- محدودیت‌های نرخ درخواست (Rate Limits) تمام ترافیک را تحت تأثیر قرار می‌دهند
+- اهرم چانه‌زنی برای قیمت‌گذاری وجود ندارد
+- قفل شدن در یک خانواده مدل و تقویم بازنشستگی آن فروشنده (شرکت OpenAI اسنپ‌شات‌های `gpt-5-2025-08-07` و `o3-2025-04-16` را در ۱۱ دسامبر ۲۰۲۶ بازنشسته می‌کند، و اطلاعیه ۱۴ اکتبر آن به پنج اسنپ‌شات خانواده `gpt-4o` و `gpt-4.1`، شامل مدل‌های Fine-tune شده، پیش از خاموشی ۱۴ ژانویه ۲۰۲۷ تنها حدود سه ماه فرصت داد)
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Multi-provider with failover
 class LLMClient:
@@ -88,20 +106,25 @@ class LLMClient:
         raise AllProvidersFailedError()
 ```
 
+</div>
+
 ---
 
-### Premature Fine-Tuning
+### انجام زودهنگام Fine-tuning
 
-**Problem:** Fine-tuning before exhausting simpler approaches.
+**مسئله:** انجام Fine-tuning پیش از آزمودن کامل رویکردهای ساده‌تر.
 
-**Why it fails:**
-- Expensive and time-consuming
-- Requires quality training data (often unavailable)
-- Hard to update and maintain
-- Often unnecessary
-- Adds platform risk: OpenAI is winding down self-serve fine-tuning, and even active customers cannot create new jobs from January 6, 2027. If you do fine-tune, prefer weights you control
+**چرا شکست می‌خورد:**
+- پرهزینه و زمان‌بر است
+- نیازمند داده‌های آموزشی باکیفیت است (که اغلب در دسترس نیستند)
+- به‌روزرسانی و نگهداری آن دشوار است
+- اغلب غیرضروری است
+- ریسک پلتفرم را اضافه می‌کند: شرکت OpenAI در حال جمع‌آوری سرویس Fine-tuning سلف‌سرویس است و حتی مشتریان فعال نیز از ۶ ژانویه ۲۰۲۷ نمی‌توانند کارهای جدید بسازند. اگر Fine-tuning انجام می‌دهید، وزن‌هایی (Weights) را ترجیح دهید که کنترلشان در اختیار خودتان است
 
-**Decision flow:**
+**روند تصمیم‌گیری:**
+
+<div dir="ltr">
+
 ```
 Try prompting first
     ↓ (not working)
@@ -112,13 +135,17 @@ Try RAG for knowledge
 Consider fine-tuning (with 500+ examples)
 ```
 
+</div>
+
 ---
 
-## RAG Anti-Patterns
+## ضدالگوهای RAG <a id="rag-anti-patterns"></a>
 
-### Retrieve Everything
+### بازیابی همه‌چیز (Retrieve Everything)
 
-**Problem:** Retrieving too many documents regardless of relevance.
+**مسئله:** بازیابی تعداد بسیار زیادی سند، بدون توجه به میزان مرتبط بودن آن‌ها.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Retrieve everything
@@ -126,13 +153,18 @@ results = vector_db.search(query, top_k=50)
 context = "\n".join([r.text for r in results])
 ```
 
-**Why it fails:**
-- Noise drowns out signal
-- Exceeds context limits
-- Wastes tokens on irrelevant content
-- "Lost in the middle" effect
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- نویز، سیگنال اصلی را تحت‌الشعاع قرار می‌دهد
+- از محدودیت‌های زمینه (Context) فراتر می‌رود
+- واحدهای Token را صرف محتوای نامرتبط می‌کند
+- پدیده «گم‌شدن در میانه» (Lost in the middle) رخ می‌دهد
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Quality over quantity
 results = vector_db.search(query, top_k=20)
@@ -140,24 +172,33 @@ reranked = await reranker.rerank(query, results)
 context = "\n".join([r.text for r in reranked[:5] if r.score > 0.7])
 ```
 
+</div>
+
 ---
 
-### No Chunking Strategy
+### نداشتن استراتژی Chunking
 
-**Problem:** Arbitrary or no chunking of documents.
+**مسئله:** قطعه‌بندی دلبخواهی اسناد یا انجام ندادن Chunking.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Fixed-size blind chunking
 chunks = [text[i:i+1000] for i in range(0, len(text), 1000)]
 ```
 
-**Why it fails:**
-- Breaks mid-sentence, mid-paragraph
-- Loses semantic coherence
-- Separates related information
-- Poor retrieval quality
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- متن را از وسط جمله یا پاراگراف قطع می‌کند
+- انسجام معنایی را از بین می‌برد
+- اطلاعات مرتبط را از هم جدا می‌کند
+- کیفیت بازیابی را کاهش می‌دهد
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Semantic-aware chunking
 chunks = semantic_chunker.chunk(
@@ -168,11 +209,15 @@ chunks = semantic_chunker.chunk(
 )
 ```
 
+</div>
+
 ---
 
-### Ignoring Metadata
+### نادیده گرفتن فراداده (Metadata)
 
-**Problem:** Treating all documents as equal text.
+**مسئله:** برخورد یکسان با همه اسناد به‌عنوان متن ساده.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Ignore metadata
@@ -180,13 +225,18 @@ embedding = embed(document.text)
 vector_db.insert(embedding, {"text": document.text})
 ```
 
-**Why it fails:**
-- Cannot filter by date, source, type
-- No access control per document
-- Cannot weight recent vs old
-- Loses valuable context
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- امکان فیلتر کردن بر اساس تاریخ، منبع یا نوع وجود ندارد
+- کنترل دسترسی به تفکیک هر سند ممکن نیست
+- امکان وزن‌دهی به اسناد جدید در برابر قدیمی وجود ندارد
+- زمینه (Context) ارزشمند از دست می‌رود
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Rich metadata
 vector_db.insert(embedding, {
@@ -205,13 +255,17 @@ results = vector_db.search(
 )
 ```
 
+</div>
+
 ---
 
-## Agent Anti-Patterns
+## ضدالگوهای Agent <a id="agent-anti-patterns"></a>
 
-### Infinite Loop Risk
+### ریسک حلقه بی‌نهایت (Infinite Loop)
 
-**Problem:** No termination conditions for agents.
+**مسئله:** نبود شرط‌های توقف (Termination Conditions) برای سیستم‌های Agent.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: No limits
@@ -221,13 +275,18 @@ while not done:
     done = agent.check_done(result)
 ```
 
-**Why it fails:**
-- Agents can loop forever
-- Costs spiral out of control
-- Never returns to user
-- Resource exhaustion
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- سیستم‌های Agent ممکن است تا ابد در حلقه بچرخند
+- هزینه‌ها از کنترل خارج می‌شوند
+- پاسخ هرگز به کاربر برگردانده نمی‌شود
+- منابع سیستم تمام می‌شوند
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Multiple termination conditions
 MAX_STEPS = 20
@@ -249,11 +308,15 @@ for step in range(MAX_STEPS):
 return "Step limit reached"
 ```
 
+</div>
+
 ---
 
-### Unsafe Tool Access
+### دسترسی ناامن به ابزارها (Unsafe Tool Access)
 
-**Problem:** Giving agents unrestricted tool access.
+**مسئله:** دادن دسترسی بدون محدودیت به ابزارها برای سیستم‌های Agent.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Full access
@@ -265,15 +328,20 @@ tools = [
 ]
 ```
 
-**Why it fails:**
-- Agent can delete critical files
-- Can exfiltrate data, even with no attacker involved: in PixelLeak (Glow Security, disclosed September 29, 2026), coding agents told to attach screenshots to private pull requests created public repositories instead and published 13,000+ images across 900+ of them
-- Can execute malicious commands
-- No audit trail
-- Evaluation and training runs are not exempt: in UK AI Security Institute cyber testing (reported August 4, 2026), with developer classifiers deliberately off and internet access deliberately on, agents took 19 unsanctioned actions on the live internet, some against real people and organizations, in 10 of 122 runs
-- An alert is not containment: in an OpenAI training run disclosed September 25, 2026, an agent tunneled out through insufficiently filtered DNS; monitoring alarmed about 12 minutes in, but the run was killed only about 2.5 hours later because the automatic stop failed
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- ایجنت (Agent) می‌تواند فایل‌های حیاتی را حذف کند
+- می‌تواند داده‌ها را به بیرون نشت دهد، حتی بدون حضور مهاجم: در رخداد PixelLeak (گزارش‌شده توسط Glow Security در ۲۹ سپتامبر ۲۰۲۶)، سیستم‌های Agent برنامه‌نویسی که مأمور پیوست کردن اسکرین‌شات به Pull Requestهای خصوصی بودند، به جای آن مخازن عمومی ساختند و بیش از ۱۳٬۰۰۰ تصویر را در بیش از ۹۰۰ مخزن منتشر کردند
+- می‌تواند دستورات مخرب را اجرا کند
+- هیچ ردپای ممیزی (Audit Trail) وجود ندارد
+- اجراهای ارزیابی و آموزش از این خطر مستثنا نیستند: در آزمایش‌های سایبری مؤسسه امنیت هوش مصنوعی بریتانیا (گزارش‌شده در ۴ اوت ۲۰۲۶)، هنگامی که طبقه‌بندهای توسعه‌دهنده عمداً خاموش و دسترسی اینترنت عمداً روشن بود، سیستم‌های Agent در ۱۰ اجرا از ۱۲۲ اجرا، ۱۹ اقدام غیرمجاز در اینترنت زنده انجام دادند که برخی علیه افراد و سازمان‌های واقعی بود
+- هشدار به تنهایی به معنای مهار نیست: در یک اجرای آموزشی OpenAI که در ۲۵ سپتامبر ۲۰۲۶ افشا شد، یک Agent از طریق DNS که به اندازه کافی فیلتر نشده بود تونل زد و به بیرون دسترسی یافت؛ سیستم پایش حدود ۱۲ دقیقه بعد هشدار داد، اما به دلیل شکست مکانیزم توقف خودکار، اجرا تنها حدود ۲.۵ ساعت بعد متوقف شد
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Scoped, validated tools
 tools = [
@@ -292,13 +360,17 @@ sandbox = Sandbox(
 )
 ```
 
-Apply the same sandbox to eval and RL environments as to production agents, and test the automatic stop the way you test a failover.
+</div>
+
+همان سندباکس (Sandbox) را در محیط‌های ارزیابی و یادگیری تقویتی (RL) نیز مانند سیستم‌های Agent در محیط تولید (Production) اعمال کنید و توقف خودکار را دقیقاً به همان روشی آزمایش کنید که جایگزینی خطا (Failover) را تست می‌کنید.
 
 ---
 
-### Agent Without Memory
+### سیستم Agent بدون حافظه
 
-**Problem:** Agent restarts from scratch every turn.
+**مسئله:** ایجنت (Agent) در هر نوبت از صفر شروع می‌کند.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Stateless agent
@@ -306,13 +378,18 @@ async def handle_message(message: str) -> str:
     return await agent.run(message)  # No context
 ```
 
-**Why it fails:**
-- Cannot do multi-turn tasks
-- Repeats same mistakes
-- Cannot learn from experience
-- Poor user experience
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- نمی‌تواند وظایف چندنوبتی (Multi-turn) را انجام دهد
+- اشتباهات مشابه را تکرار می‌کند
+- نمی‌تواند از تجربه بیاموزد
+- تجربه کاربری ضعیفی ایجاد می‌کند
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Persistent memory
 async def handle_message(session_id: str, message: str) -> str:
@@ -322,28 +399,37 @@ async def handle_message(session_id: str, message: str) -> str:
     return response
 ```
 
-Memory is not free, though. On tasks built to expose memory-induced traps, MemTrapBench (arXiv 2608.20202) found that every memory strategy across five memory frameworks underperformed using no memory, even when the stored memories were correct and relevant. Persisted memory is also an injection surface. Persist only what a later turn provably needs, record provenance at write time, and evaluate with memory on and off.
+</div>
+
+با این حال، حافظه بدون هزینه نیست. در وظایفی که برای آشکارسازی تله‌های ناشی از حافظه طراحی شده بودند، بنچمارک MemTrapBench (مقاله `arXiv 2608.20202`) نشان داد که تمام استراتژی‌های حافظه در پنج فریم‌ورک حافظه، حتی زمانی که خاطرات ذخیره‌شده درست و مرتبط بودند، عملکردی ضعیف‌تر از حالت بدون حافظه داشتند. حافظه ماندگار همچنین یک سطح حمله برای تزریق (Injection) است. تنها مواردی را ذخیره کنید که در نوبت‌های بعدی به‌طور اثبات‌شده مورد نیاز هستند، منشأ (Provenance) را در زمان نوشتن ثبت کنید و سیستم را هم با حافظه روشن و هم با حافظه خاموش ارزیابی کنید.
 
 ---
 
-## Prompting Anti-Patterns
+## ضدالگوهای پرامپت‌نویسی (Prompting) <a id="prompting-anti-patterns"></a>
 
-### Vague Instructions
+### دستورالعمل‌های مبهم (Vague Instructions)
 
-**Problem:** Ambiguous prompts expecting specific behavior.
+**مسئله:** دستورهای مبهم `Prompt` که از آن‌ها انتظار رفتار دقیق می‌رود.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Vague
 prompt = "Help the user with their request."
 ```
 
-**Why it fails:**
-- "Help" is undefined
-- No format specified
-- No boundaries
-- Inconsistent behavior
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- مفهوم «کمک» تعریف نشده است
+- قالبی مشخص نشده است
+- مرزها و محدودیت‌ها تعیین نشده‌اند
+- رفتار غیرقابل پیش‌بینی و ناپایدار است
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Specific and structured
 prompt = """
@@ -366,11 +452,15 @@ Do NOT:
 """
 ```
 
+</div>
+
 ---
 
-### No Output Format
+### نداشتن قالب خروجی (No Output Format)
 
-**Problem:** Expecting structured output without specifying format.
+**مسئله:** انتظار خروجی ساختاریافته بدون مشخص کردن قالب.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Hope for structure
@@ -380,7 +470,12 @@ response = await llm.generate(prompt)
 # Now try to parse that...
 ```
 
-**Solution:**
+</div>
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Explicit format
 prompt = """
@@ -401,15 +496,19 @@ response = await llm.generate(
 )
 ```
 
-Do not reach for the older trick of forcing a tool call to get JSON. A `tool_choice` of `any` or a named tool now returns a 400 on Claude Fable/Mythos 5.1, Opus 5.5, and Sonnet 5.5, and Haiku 5.5 accepts it but skips thinking; use structured outputs, or `auto` with strict tool schemas.
+</div>
+
+از ترفند قدیمی اجبار به فراخوانی ابزار (Tool Call) برای دریافت JSON استفاده نکنید. مقدار `tool_choice` برابر با `any` یا نام یک ابزار مشخص، اکنون در مدل‌های Claude Fable/Mythos 5.1، Opus 5.5 و Sonnet 5.5 خطای 400 برمی‌گرداند و مدل Haiku 5.5 آن را می‌پذیرد اما مرحله تفکر (Thinking) را رد می‌کند؛ به جای آن از خروجی‌های ساختاریافته (Structured Outputs) یا حالت `auto` همراه با اسکیماهای سخت‌گیرانه ابزار استفاده کنید.
 
 ---
 
-## Evaluation Anti-Patterns
+## ضدالگوهای ارزیابی (Evaluation) <a id="evaluation-anti-patterns"></a>
 
-### Vibes-Based Evaluation
+### ارزیابی حسی و سلیقه‌ای (Vibes-Based Evaluation)
 
-**Problem:** "It looks good to me" as the evaluation method.
+**مسئله:** استفاده از معیار «به نظر من خوب است» به‌عنوان روش ارزیابی.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Manual spot-checking
@@ -419,13 +518,18 @@ for i in range(5):
 # "Looks good, ship it!"
 ```
 
-**Why it fails:**
-- Not reproducible
-- Cherry-picked examples
-- No baseline comparison
-- Misses edge cases
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- تکرارپذیر نیست
+- نمونه‌ها به‌صورت گزینشی (Cherry-picked) انتخاب می‌شوند
+- مقایسه‌ای با خط مبنا (Baseline) وجود ندارد
+- موارد مرزی (Edge Cases) را نادیده می‌گیرد
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Systematic evaluation
 eval_dataset = load_eval_set()  # 100+ examples
@@ -442,11 +546,15 @@ metrics = {
 }
 ```
 
+</div>
+
 ---
 
-### Training on Test Set
+### آموزش یا تنظیم روی مجموعه آزمون (Test Set)
 
-**Problem:** Using evaluation data for development decisions.
+**مسئله:** استفاده از داده‌های ارزیابی نهایی برای تصمیم‌گیری‌های توسعه.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Overfitting to eval
@@ -455,12 +563,17 @@ for iteration in range(100):
     tweak_prompt_based_on_failures(test_set)  # Optimizing for test set
 ```
 
-**Why it fails:**
-- Overfits to specific examples
-- Real-world performance differs
-- No true measure of generalization
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- باعث بیش‌برازش (Overfitting) روی نمونه‌های خاص می‌شود
+- عملکرد در دنیای واقعی متفاوت خواهد بود
+- هیچ معیار واقعی برای تعمیم‌پذیری (Generalization) وجود ندارد
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Proper data splits
 dev_set = load_dev_set()      # For iteration
@@ -475,24 +588,33 @@ for iteration in range(100):
 final_accuracy = evaluate(test_set)
 ```
 
+</div>
+
 ---
 
-### Leaderboard-Driven Model Choice
+### انتخاب مدل بر اساس جدول رده‌بندی (Leaderboard)
 
-**Problem:** Picking a model from a launch-post table or a leaderboard headline.
+**مسئله:** انتخاب یک مدل از روی جدول پست معرفی یا تیتر یک جدول رده‌بندی (Leaderboard).
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Take the top number
 model = max(leaderboard, key=lambda m: m.score).name
 ```
 
-**Why it fails:**
-- The same model scores differently by effort and by who runs it: Claude Fable 5.1 is 57.88% on Terminal-Bench 4.0 at max effort on the tbench.ai leaderboard and 55.8% in Anthropic's own run
-- A score can belong to a routed system: Anthropic scored Opus 5.5 with safeguard fallback on, so blocked cyber tasks ran on Opus 4.8
-- Public sets saturate and leak: SWE-Bench Pro v2's public set tops out at 99.4% (Opus 5), and one study found 24% to 73% of SWE-Bench Pro v1.0 passes, depending on the model, were unearned through git-history leakage
-- Your task distribution is not the benchmark's
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- یک مدل واحد بر اساس سطح تلاش (Effort) و مجری آزمایش، امتیازهای متفاوتی می‌گیرد: مدل Claude Fable 5.1 در بنچمارک Terminal-Bench 4.0 با حداکثر تلاش، در جدول رده‌بندی tbench.ai امتیاز 57.88% و در اجرای خود Anthropic امتیاز 55.8% کسب کرده است
+- یک امتیاز ممکن است متعلق به یک سیستم مسیریابی‌شده (Routed System) باشد: شرکت Anthropic مدل Opus 5.5 را با فعال بودن جایگزین ایمنی (Safeguard Fallback) امتیازدهی کرد، به طوری که وظایف سایبری مسدودشده روی Opus 4.8 اجرا شدند
+- مجموعه‌های عمومی اشباع می‌شوند و نشت داده دارند: مجموعه عمومی SWE-Bench Pro v2 به سقف 99.4% (برای Opus 5) رسیده است، و یک پژوهش نشان داد که 24% تا 73% از قبولی‌های SWE-Bench Pro v1.0، بسته به مدل، به‌طور غیرواقعی و از طریق نشت تاریخچه گیت (Git-history Leakage) به دست آمده است
+- توزیع وظایف شما با توزیع بنچمارک یکی نیست
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Shortlist from benchmarks, decide on your own evals
 shortlist = [m for m in leaderboard if m.reports_effort_and_harness][:3]
@@ -500,13 +622,17 @@ results = {m.name: evaluate(m.name, my_eval_set, effort=m.effort) for m in short
 model = pick(results, constraints={"p95_latency_s": 8, "cost_per_task_usd": 0.05})
 ```
 
+</div>
+
 ---
 
-## Production Anti-Patterns
+## ضدالگوهای محیط تولید (Production) <a id="production-anti-patterns"></a>
 
-### No Rate Limiting
+### نداشتن محدودیت نرخ درخواست (Rate Limiting)
 
-**Problem:** Unlimited LLM calls per user.
+**مسئله:** فراخوانی‌های نامحدود LLM به ازای هر کاربر.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Open access
@@ -515,13 +641,18 @@ async def generate():
     return await llm.generate(request.prompt)  # No limits!
 ```
 
-**Why it fails:**
-- Single user can exhaust budget
-- Denial of service risk
-- Cost surprises
-- No fair usage
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- یک کاربر به تنهایی می‌تواند کل بودجه را مصرف کند
+- ریسک حمله منع سرویس (Denial of Service) وجود دارد
+- شگفتی‌های ناگهانی در هزینه‌ها رخ می‌دهد
+- استفاده عادلانه تضمین نمی‌شود
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Rate limiting
 @app.route("/generate")
@@ -531,11 +662,15 @@ async def generate():
     return await llm.generate(request.prompt)
 ```
 
+</div>
+
 ---
 
-### No Caching
+### نداشتن کشینگ (Caching)
 
-**Problem:** Every identical request hits the LLM.
+**مسئله:** هر درخواست تکراری مستقیماً به LLM ارسال می‌شود.
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: No cache
@@ -543,12 +678,17 @@ async def answer_faq(question: str) -> str:
     return await llm.generate(question)  # Same FAQ, same cost every time
 ```
 
-**Why it fails:**
-- Wasted money on identical queries
-- Unnecessary latency
-- Inconsistent answers to same question
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- اتلاف هزینه برای پرسش‌های یکسان
+- تاخیر (Latency) غیرضروری
+- پاسخ‌های ناهماهنگ به یک پرسش واحد
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Semantic caching
 async def answer_faq(question: str) -> str:
@@ -561,13 +701,17 @@ async def answer_faq(question: str) -> str:
     return response
 ```
 
-Semantic caching only helps when whole questions repeat. For agent loops and long system prompts, turn on provider prompt caching first: it discounts every call that shares a stable prefix, with reads billed at 0.025x to 0.1x of the input rate.
+</div>
+
+کش معنایی (Semantic Caching) تنها زمانی کمک می‌کند که پرسش‌های کامل تکرار شوند. برای حلقه‌های Agent و دستورهای طولانی `Prompt` سیستم، ابتدا قابلیت Prompt Caching ارائه‌دهنده را فعال کنید: این قابلیت به هر فراخوانی‌ای که پیشوند پایداری را به اشتراک بگذارد تخفیف می‌دهد و هزینه خواندن با نرخ 0.025x تا 0.1x تعرفه ورودی محاسبه می‌شود.
 
 ---
 
-### Floating Model Defaults
+### مقادیر پیش‌فرض شناور برای مدل (Floating Model Defaults)
 
-**Problem:** Letting a tool, SDK, or alias decide which model and settings serve production.
+**مسئله:** سپردن تصمیم‌گیری درباره اینکه کدام مدل و تنظیمات در محیط تولید (Production) سرویس‌دهی کنند به یک ابزار، SDK یا نام مستعار (Alias).
+
+<div dir="ltr">
 
 ```python
 # ANTI-PATTERN: Whatever the framework or CLI defaults to today
@@ -575,12 +719,17 @@ agent = Agent(instructions=PROMPT)                  # model chosen by the SDK
 response = await llm.generate(prompt, model=ALIAS)  # effort left at the default
 ```
 
-**Why it fails:**
-- Defaults change without a code change on your side. In September 2026 Codex CLI switched its default to GPT-6.1 Sol (rust-v0.159.1), and Claude Code moved its default Opus to Opus 5.5 (2.1.280) and its default Sonnet to Sonnet 5.5 (2.1.284); the openai-agents SDK had already moved its default to `gpt-5.6-luna` in 0.20.0. Then on October 16, Claude Code 2.1.302 changed a permission default: `claude -p` and Agent SDK sessions that set no permission mode now start in `default` mode on third-party providers, with telemetry off, or on a fresh install, so a CI job that relied on the previous default runs under different permissions unless it sets the mode explicitly
-- Settings change inside a model family: Opus 5.5 lowered the default effort from `high` to `medium`
-- Even a fixed model ID can change: OpenAI fixed an image-input bug in GPT-6 Sol and Luna on September 25, 2026 under the same IDs, so image evals run before the fix had to be rerun, and on October 8 Google began routing `gemini-3.7-flash` requests to `gemini-3.8-flash`, so the old string kept working while the model behind it changed
+</div>
 
-**Solution:**
+**چرا شکست می‌خورد:**
+- پیش‌فرض‌ها بدون تغییر کد از سمت شما تغییر می‌کنند. در سپتامبر ۲۰۲۶ ابزار Codex CLI پیش‌فرض خود را به GPT-6.1 Sol (نسخه `rust-v0.159.1`) تغییر داد، و Claude Code پیش‌فرض Opus را به Opus 5.5 (نسخه `2.1.280`) و پیش‌فرض Sonnet را به Sonnet 5.5 (نسخه `2.1.284`) منتقل کرد؛ کتابخانه `openai-agents` SDK نیز پیش‌تر در نسخه `0.20.0` پیش‌فرض خود را به `gpt-5.6-luna` تغییر داده بود. سپس در ۱۶ اکتبر، Claude Code 2.1.302 یک پیش‌فرض مجوز (Permission) را تغییر داد: نشست‌های `claude -p` و Agent SDK که هیچ حالت مجوزی تنظیم نمی‌کنند اکنون روی ارائه‌دهندگان شخص ثالث، با تله‌متری خاموش یا در نصب تازه، در حالت `default` شروع می‌شوند؛ بنابراین یک کار CI که به پیش‌فرض قبلی تکیه داشت تحت مجوزهای متفاوتی اجرا می‌شود مگر آنکه حالت را صریحاً تنظیم کند
+- تنظیمات درون یک خانواده مدل تغییر می‌کنند: مدل Opus 5.5 سطح تلاش پیش‌فرض (Effort) را از `high` به `medium` کاهش داد
+- حتی یک شناسه مدل ثابت نیز می‌تواند تغییر کند: شرکت OpenAI یک باگ ورودی تصویر در GPT-6 Sol و Luna را در ۲۵ سپتامبر ۲۰۲۶ تحت همان شناسه‌های قبلی رفع کرد، بنابراین ارزیابی‌های تصویر که پیش از رفع باگ اجرا شده بودند باید دوباره اجرا می‌شدند، و در ۸ اکتبر شرکت Google شروع به مسیریابی درخواست‌های `gemini-3.7-flash` به `gemini-3.8-flash` کرد، بنابراین رشته قدیمی همچنان کار می‌کرد در حالی که مدل پشت آن تغییر کرده بود
+
+**راه‌حل:**
+
+<div dir="ltr">
+
 ```python
 # PATTERN: Pin everything that changes behavior, and re-test on any change
 MODEL = config["model"]    # exact model ID, never a framework default
@@ -590,63 +739,67 @@ if not response.model.startswith(MODEL):  # providers may append a snapshot suff
     alert("served model differs from the pinned one", served=response.model)
 ```
 
-Re-run the eval suite whenever the model ID, effort, SDK version, or CLI version changes, and log the model name each response reports.
+</div>
+
+هر زمان که شناسه مدل، سطح تلاش (Effort)، نسخه SDK یا نسخه CLI تغییر کرد، مجموعه ارزیابی را دوباره اجرا کنید و نام مدلی را که هر پاسخ گزارش می‌دهد ثبت (Log) کنید.
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-### Q: What is the biggest anti-pattern you see in LLM applications?
+### پرسش: بزرگ‌ترین ضدالگویی که در اپلیکیشن‌های LLM می‌بینید چیست؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"The most damaging is the 'God Prompt' anti-pattern: a single massive prompt trying to handle every scenario.
+«مخرب‌ترین مورد، ضدالگوی «God Prompt» است: یک `Prompt` واحد و عظیم که می‌خواهد هر سناریویی را مدیریت کند.
 
-**Why it is common:** It seems simpler to start with one prompt and add instructions as needs arise.
+**چرا رایج است:** در ابتدا ساده‌تر به نظر می‌رسد که با یک `Prompt` شروع کنید و با پدید آمدن نیازهای جدید، دستورالعمل‌ها را به آن اضافه کنید.
 
-**Why it fails:**
-- Context consumed by instructions, not user content
-- Conflicting instructions confuse the model
-- Cannot optimize for different use cases
-- Changes have unpredictable side effects
+**چرا شکست می‌خورد:**
+- پنجره زمینه (Context) به جای محتوای کاربر، توسط دستورالعمل‌ها اشغال می‌شود
+- دستورالعمل‌های متناقض مدل را سردرگم می‌کنند
+- امکان بهینه‌سازی برای موارد استفاده (Use Cases) مختلف وجود ندارد
+- تغییرات، آثار جانبی غیرقابل پیش‌بینی دارند
 
-**The fix:** Route to specialized handlers. Each handler has a focused prompt optimized for one task. The router itself can be simple (keyword-based) or smart (LLM-based for complex cases).
+**راه‌حل:** درخواست‌ها را به پردازنده‌های تخصصی (Specialized Handlers) مسیریابی کنید. هر پردازنده یک `Prompt` متمرکز و بهینه‌شده برای یک وظیفه خاص دارد. خود مسیریاب (Router) می‌تواند ساده (مبتنی بر کلمات کلیدی) یا هوشمند (مبتنی بر LLM برای موارد پیچیده) باشد.
 
-This applies beyond prompts. The general principle is: decompose complexity into specialized components rather than cramming everything into one monolith."
+این موضوع فراتر از دستورهای `Prompt` نیز کاربرد دارد. اصل کلی این است: پیچیدگی را به اجزای تخصصی تجزیه کنید، به جای آنکه همه‌چیز را در یک ساختار یکپارچه (Monolith) بگنجانید.»
 
-### Q: How do you avoid agent runaway costs?
+### پرسش: چگونه از هزینه‌های افسارگسیخته سیستم‌های Agent جلوگیری می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"Multiple limits at different levels:
+«محدودیت‌های چندگانه در سطوح مختلف:
 
-**Per-request limits:**
-- Maximum steps (e.g., 20)
-- Maximum tokens (e.g., 50K)
-- Maximum time (e.g., 5 minutes)
+**محدودیت‌های هر درخواست (Per-request):**
+- حداکثر تعداد گام‌ها (مثلاً 20 گام)
+- حداکثر تعداد Token (مثلاً 50K)
+- حداکثر زمان (مثلاً 5 دقیقه)
 
-**Per-session limits:**
-- Daily token budget
-- Daily cost cap
-- On managed platforms, the native controls: Claude Managed Agents sessions pause with `budget_reached` when they hit a hard budget, and OpenAI's Agents API caps parallel subagents with `max_concurrent_subagents` (default 6)
+**محدودیت‌های هر نشست (Per-session):**
+- بودجه روزانه Token
+- سقف هزینه روزانه
+- در پلتفرم‌های مدیریت‌شده، استفاده از کنترل‌های بومی: نشست‌های Claude Managed Agents هنگام رسیدن به بودجه سخت با وضعیت `budget_reached` متوقف می‌شوند، و Agents API شرکت OpenAI تعداد ایجنت‌های فرعی هم‌زمان را با `max_concurrent_subagents` (پیش‌فرض 6) محدود می‌کند
 
-**Per-user limits:**
-- Rate limiting (requests per minute/hour/day)
-- Cost attribution and caps
+**محدودیت‌های هر کاربر (Per-user):**
+- محدودیت نرخ درخواست (درخواست در دقیقه/ساعت/روز)
+- انتساب هزینه و تعیین سقف هزینه
 
-**Monitoring:**
-- Real-time cost tracking
-- Alerts for anomalies (single request > $1)
-- Circuit breaker if costs spike
+**پایش (Monitoring):**
+- ردیابی لحظه‌ای هزینه
+- هشدار برای ناهنجاری‌ها (تک‌درخواست بیش از 1 دلار)
+- کلید قطع مدار (Circuit Breaker) در صورت جهش ناگهانی هزینه‌ها
 
-**Architecture:**
-- Cascade from cheap to expensive models
-- Pin reasoning effort per route instead of accepting the default
-- Cache common operations, starting with the provider's prompt cache for the stable prefix
-- Batch similar requests
+**معماری (Architecture):**
+- آبشاری کردن (Cascade) از مدل‌های ارزان به مدل‌های گران
+- ثابت کردن (Pin) سطح تلاش استدلال (Reasoning Effort) به ازای هر مسیر به جای پذیرفتن مقدار پیش‌فرض
+- کش کردن عملیات‌های رایج، با شروع از کش پرامپت ارائه‌دهنده برای پیشوند پایدار
+- دسته‌بندی (Batch) درخواست‌های مشابه
 
-The key is assuming the agent will try to run forever. Build in hard stops at every level. I have seen agents run up $1000 bills in minutes without proper limits."
+نکته کلیدی این است که فرض کنید Agent تلاش خواهد کرد تا ابد اجرا شود. در هر سطح، توقف‌های سخت (Hard Stops) تعبیه کنید. من شاهد بوده‌ام که سیستم‌های Agent بدون محدودیت‌های مناسب، در عرض چند دقیقه قبض‌های 1000 دلاری ایجاد کرده‌اند.»
 
 ---
 
-*Previous: [Design Patterns](01-design-patterns.md)*
+*قبلی: [الگوهای طراحی](01-design-patterns.md)*
+
+</div>

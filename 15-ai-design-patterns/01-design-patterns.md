@@ -1,48 +1,60 @@
-# AI Design Patterns
+<div dir="rtl">
 
-This chapter catalogs common patterns for building AI systems, similar to design patterns in software engineering. Each pattern includes when to use it, implementation guidance, and tradeoffs.
+# الگوهای طراحی هوش مصنوعی (AI Design Patterns)
 
-## Table of Contents
+این فصل الگوهای رایج برای ساخت سیستم‌های هوش مصنوعی را مشابه الگوهای طراحی در مهندسی نرم‌افزار دسته‌بندی می‌کند. هر الگو شامل زمان استفاده، راهنمای پیاده‌سازی و بده‌بستان‌ها (Tradeoffs) است.
 
-- [RAG Patterns](#rag-patterns)
-- [Agent Patterns](#agent-patterns)
-- [Optimization Patterns](#optimization-patterns)
-- [Reliability Patterns](#reliability-patterns)
-- [Cost Patterns](#cost-patterns)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
+
+- [الگوهای RAG](#rag-patterns)
+- [الگوهای Agent](#agent-patterns)
+- [الگوهای بهینه‌سازی](#optimization-patterns)
+- [الگوهای قابلیت اطمینان](#reliability-patterns)
+- [الگوهای هزینه](#cost-patterns)
+- [پرسش‌های مصاحبه](#interview-questions)
+- [منابع و مراجع](#references)
 
 ---
 
-## RAG Patterns
+## الگوهای RAG <a id="rag-patterns"></a>
 
-### Pattern: Naive RAG
+### الگو: Naive RAG
 
-The simplest RAG implementation:
+ساده‌ترین پیاده‌سازی RAG:
+
+<div dir="ltr">
 
 ```
 Query → Embed → Search → Top K → Stuff into prompt → Generate
 ```
 
-**When to use:**
-- MVP and prototyping
-- Simple question-answering
-- When retrieval quality is sufficient
+</div>
 
-**Limitations:**
-- No reranking
-- No query enhancement
-- May retrieve irrelevant chunks
+**زمان استفاده:**
+- ساخت MVP و نمونه‌سازی اولیه
+- پرسش‌وپاسخ ساده
+- زمانی که کیفیت بازیابی به اندازه کافی خوب باشد
+
+**محدودیت‌ها:**
+- نبود رتبه‌بندی مجدد (Reranking)
+- نبود بهبود پرس‌وجو (Query enhancement)
+- احتمال بازیابی Chunkهای نامرتبط
 
 ---
 
-### Pattern: Advanced RAG
+### الگو: Advanced RAG
 
-Enhanced pipeline with multiple stages:
+خط لوله ارتقایافته با چندین مرحله:
+
+<div dir="ltr">
 
 ```
 Query → Rewrite → Embed → Hybrid Search → Rerank → Filter → Generate
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class AdvancedRAG:
@@ -65,16 +77,20 @@ class AdvancedRAG:
         return await self.generate(user_query, context)
 ```
 
-**When to use:**
-- Production systems
-- When accuracy matters
-- Complex document sets
+</div>
+
+**زمان استفاده:**
+- سیستم‌های محیط عملیاتی (Production)
+- زمانی که دقت اهمیت دارد
+- مجموعه‌اسناد پیچیده
 
 ---
 
-### Pattern: Parent-Child Retrieval
+### الگو: بازیابی والد-فرزند (Parent-Child Retrieval)
 
-Retrieve small chunks, return larger parent chunks:
+بازیابی Chunkهای کوچک و بازگرداندن Chunkهای بزرگ‌تر والد:
+
+<div dir="ltr">
 
 ```
 Document
@@ -83,6 +99,10 @@ Document
             ├── Child chunk (200 tokens)
             └── Child chunk (200 tokens)
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class ParentChildRetriever:
@@ -105,16 +125,20 @@ class ParentChildRetriever:
         return parents
 ```
 
-**When to use:**
-- Need precision in retrieval
-- Need context in generation
-- Document structure is hierarchical
+</div>
+
+**زمان استفاده:**
+- نیاز به دقت بالا در بازیابی
+- نیاز به کانتکست غنی در تولید پاسخ
+- ساختار سلسله‌مراتبی اسناد
 
 ---
 
-### Pattern: Self-RAG
+### الگو: Self-RAG
 
-Model decides when and what to retrieve:
+مدل تصمیم می‌گیرد چه زمانی و چه چیزی را بازیابی کند:
+
+<div dir="ltr">
 
 ```python
 class SelfRAG:
@@ -142,16 +166,20 @@ class SelfRAG:
         return response
 ```
 
-**When to use:**
-- Mixed knowledge (parametric + retrieved)
-- Want model to be selective
-- Research and experimentation
+</div>
+
+**زمان استفاده:**
+- دانش ترکیبی (دانش پارامتریک + دانش بازیابی‌شده)
+- تمایل به گزینشی عمل کردن مدل
+- پژوهش و آزمایش
 
 ---
 
-### Pattern: Corrective RAG (CRAG)
+### الگو: RAG اصلاحی (Corrective RAG یا CRAG)
 
-Evaluate and correct retrieval quality:
+ارزیابی و اصلاح کیفیت بازیابی:
+
+<div dir="ltr">
 
 ```python
 class CorrectiveRAG:
@@ -184,35 +212,43 @@ class CorrectiveRAG:
         return await self.generate(user_query, context)
 ```
 
-**When to use:**
-- Unreliable document corpus
-- Need high accuracy
-- Can afford latency for quality checks
+</div>
+
+**زمان استفاده:**
+- پیکره اسناد نامطمئن
+- نیاز به دقت بالا
+- امکان پذیرش تاخیر (Latency) بیشتر برای بررسی‌های کیفیت
 
 ---
 
-## Agent Patterns
+## الگوهای Agent <a id="agent-patterns"></a>
 
-### Pattern: ReAct
+### الگو: ReAct
 
-Interleaved reasoning and acting:
+درهم‌آمیزی استدلال (Reasoning) و اقدام (Acting):
+
+<div dir="ltr">
 
 ```
 Thought → Action → Observation → Thought → Action → Observation → Answer
 ```
 
-See [Agent Architectures](../07-agentic-systems/01-agent-fundamentals.md) for implementation.
+</div>
 
-**When to use:**
-- General-purpose agents
-- Explainable decision making
-- Moderate complexity tasks
+برای پیاده‌سازی به [معماری‌های Agent](../07-agentic-systems/01-agent-fundamentals.md) مراجعه کنید.
+
+**زمان استفاده:**
+- سیستم‌های Agent همه‌منظوره
+- تصمیم‌گیری قابل توضیح (Explainable)
+- وظایف با پیچیدگی متوسط
 
 ---
 
-### Pattern: Plan-and-Execute
+### الگو: برنامه‌ریزی و اجرا (Plan-and-Execute)
 
-Create a plan first, then execute steps:
+ابتدا یک برنامه ایجاد کنید، سپس گام‌ها را اجرا نمایید:
+
+<div dir="ltr">
 
 ```python
 class PlanAndExecuteAgent:
@@ -248,16 +284,20 @@ class PlanAndExecuteAgent:
         return await self.llm.generate(prompt)
 ```
 
-**When to use:**
-- Complex multi-step tasks
-- Need visibility into plan
-- Tasks benefit from decomposition
+</div>
+
+**زمان استفاده:**
+- وظایف پیچیده چندمرحله‌ای
+- نیاز به دید و شفافیت روی برنامه اجرا
+- وظایفی که از تجزیه (Decomposition) سود می‌برند
 
 ---
 
-### Pattern: Critic/Verifier
+### الگو: منتقد/تاییدکننده (Critic/Verifier)
 
-One agent generates, another critiques:
+یک Agent تولید می‌کند و Agent دیگری نقد و بررسی می‌نماید:
+
+<div dir="ltr">
 
 ```python
 class CriticPattern:
@@ -281,16 +321,20 @@ class CriticPattern:
         return response
 ```
 
-**When to use:**
-- Quality is critical
-- Can afford extra latency
-- Tasks have clear success criteria
+</div>
+
+**زمان استفاده:**
+- زمانی که کیفیت حیاتی است
+- امکان پذیرش تاخیر اضافی وجود دارد
+- وظایف دارای معیارهای موفقیت شفاف هستند
 
 ---
 
-### Pattern: Hierarchical Agents
+### الگو: Agentهای سلسله‌مراتبی (Hierarchical Agents)
 
-Manager delegates to specialist workers:
+مدیر (Manager) وظایف را به کارگزاران متخصص محول می‌کند:
+
+<div dir="ltr">
 
 ```python
 class ManagerAgent:
@@ -315,18 +359,22 @@ class ManagerAgent:
         return await self.synthesize(task, results)
 ```
 
-**When to use:**
-- Complex tasks spanning domains
-- Different tools per subtask
-- Parallelization opportunities
+</div>
+
+**زمان استفاده:**
+- وظایف پیچیده در حوزه‌های مختلف
+- ابزارهای متفاوت برای هر زیرتسک
+- فرصت‌های موازی‌سازی (Parallelization)
 
 ---
 
-## Optimization Patterns
+## الگوهای بهینه‌سازی <a id="optimization-patterns"></a>
 
-### Pattern: Cascading Models
+### الگو: آبشار مدل‌ها (Cascading Models)
 
-Route to cheapest sufficient model:
+مسیریابی به ارزان‌ترین مدل کافی:
+
+<div dir="ltr">
 
 ```python
 class ModelCascade:
@@ -350,18 +398,22 @@ class ModelCascade:
             return await self.call_model("claude-opus-5-5", query)
 ```
 
-**When to use:**
-- High query volume
-- Variable query complexity
-- Cost optimization priority
+</div>
 
-**Routing versus cascading.** The code above routes up front on a classifier. A true cascade runs the cheap model first and escalates only when a verifier or confidence check fails, which pays when most requests are easy and failures are detectable. Two current complications: pin reasoning effort per tier, because defaults move between versions (Claude Opus 5.5 defaults to `medium`, where Opus 5 defaulted to `high`); and re-derive the tiers whenever prices move, because price is no longer a proxy for capability. On the Artificial Analysis Intelligence Index v5.0.1 (November 3, 2026), Opus 5.5 at $4/$20 per 1M scores 59 (max effort), above the $10/$50 GPT-6 Astra at 57 (max), and on v5.0 GPT-6.1 Terra at $1/$5 scored 51 at max effort (38 at its default `medium`), above Gemini 4 Argon at 50 (high effort), which lists at $4/$20 from December 1, 2026. Route on prompt length too: Claude Haiku 5.5 bills the whole request at 5x once a prompt passes 100K tokens, so a cheap tier can become the expensive one on long inputs.
+**زمان استفاده:**
+- حجم بالای پرس‌وجو
+- پیچیدگی متغیر پرس‌وجوها
+- اولویت با بهینه‌سازی هزینه
+
+**مسیریابی در برابر آبشار (Routing versus cascading).** کد بالا از همان ابتدا بر اساس یک دسته‌بندی‌کننده (Classifier) مسیریابی می‌کند. یک آبشار واقعی ابتدا مدل ارزان را اجرا می‌کند و تنها زمانی که یک تاییدکننده (Verifier) یا بررسی اطمینان شکست بخورد به مدل بالاتر ارجاع می‌دهد؛ این روش زمانی سودآور است که بیشتر درخواست‌ها ساده و شکست‌ها قابل تشخیص باشند. دو پیچیدگی رایج در سال ۲۰۲۶: اول، سطح تلاش استدلال (Reasoning effort) را در هر لایه پین کنید، زیرا مقادیر پیش‌فرض بین نسخه‌ها تغییر می‌کنند (مدل Claude Opus 5.5 به‌طور پیش‌فرض روی `medium` است، در حالی که Opus 5 روی `high` بود)؛ دوم، با هر تغییر قیمت، لایه‌ها را دوباره بازآرایی کنید، زیرا قیمت دیگر شاخص توانمندی نیست. در شاخص هوش Artificial Analysis نسخه v5.0.1 (۳ نوامبر ۲۰۲۶)، مدل Opus 5.5 با قیمت ۴/۲۰ دلار به ازای هر ۱ میلیون توکن امتیاز ۵۹ (حداکثر تلاش) می‌گیرد که بالاتر از GPT-6 Astra با قیمت ۱۰/۵۰ دلار و امتیاز ۵۷ (حداکثر) است؛ و در نسخه v5.0 مدل GPT-6.1 Terra با قیمت ۱/۵ دلار در حداکثر تلاش امتیاز ۵۱ گرفت (۳۸ در حالت پیش‌فرض `medium`) که بالاتر از Gemini 4 Argon با امتیاز ۵۰ (تلاش high) و قیمت رسمی ۴/۲۰ دلار از ۱ دسامبر ۲۰۲۶ بود. همچنین بر اساس طول Prompt نیز مسیریابی کنید: مدل Claude Haiku 5.5 به محض عبور Prompt از ۱۰۰ هزار Token کل درخواست را با ضریب ۵ برابر محاسبه می‌کند، بنابراین یک لایه ارزان می‌تواند در ورودی‌های طولانی به گران‌ترین گزینه تبدیل شود.
 
 ---
 
-### Pattern: Speculative Execution
+### الگو: اجرای گمانه‌زنانه (Speculative Execution)
 
-Draft with small model, verify with large:
+پیش‌نویس با مدل کوچک، راستی‌آزمایی با مدل بزرگ:
+
+<div dir="ltr">
 
 ```python
 class SpeculativeExecution:
@@ -390,18 +442,22 @@ class SpeculativeExecution:
         return "".join(output)
 ```
 
-**When to use:**
-- Latency-critical applications
-- Have aligned draft model
-- Predictable generation patterns
+</div>
 
-In production you rarely write this loop yourself; the serving engine runs it. vLLM and SGLang ship EAGLE-3 and native multi-token-prediction (MTP) heads plus DFlash block-diffusion drafters (Inco AI reports 2.7x to 3.4x throughput for DFlash 2 on Qwen3.8-27B), and vLLM also runs DeepSeek's DSpark modules, which ship bundled into the model checkpoint. Speedups shrink as batch size grows, so measure at production concurrency; vLLM says its adaptive verification keeps speculation beneficial up to a concurrency of 256. On a hosted API the equivalent lever is a paid speed tier: OpenAI Fast at 2x the standard rate and Ultrafast at 6x (on GPT-6 Astra, and on GPT-6.1 Sol since October 8, 2026), or Anthropic's fast mode for Opus 5.5 at 2x ($8/$40, out of research preview since October 15, 2026; on the Claude API, Claude Models on Google Cloud (Anthropic managed), and Foundry's Azure-hosted deployments). See [Speculative Decoding](../04-inference-optimization/03-speculative-decoding.md).
+**زمان استفاده:**
+- برنامه‌های حساس به تاخیر (Latency-critical)
+- وجود مدل پیش‌نویس هم‌راستا (Aligned draft model)
+- الگوهای تولید قابل پیش‌بینی
+
+در محیط عملیاتی به‌ندرت این حلقه را خودتان می‌نویسید؛ موتور سروینگ آن را اجرا می‌کند. موتورهای vLLM و SGLang دارای سرهای EAGLE-3 و پیش‌بینی چندتوکنی بومی (MTP) به همراه پیش‌نویس‌کننده‌های انتشار بلوکی DFlash هستند (شرکت Inco AI افزایش توان عملیاتی ۲.۷ تا ۳.۴ برابری را برای DFlash 2 روی Qwen3.8-27B گزارش کرده است)، و vLLM همچنین ماژول‌های DSpark شرکت DeepSeek را که درون چک‌پوینت مدل بسته‌بندی شده‌اند اجرا می‌کند. با بزرگ‌تر شدن اندازه دسته (Batch size)، شتاب کاهش می‌یابد، پس سرعت را در همزمانی محیط عملیاتی بسنجید؛ vLLM اعلام کرده راستی‌آزمایی تطبیقی آن گمانه‌زنی را تا همزمانی ۲۵۶ مفید نگه می‌دارد. در یک API میزبانی‌شده، اهرم معادل عبارت است از یک سطح سرعت پولی: سطح Fast شرکت OpenAI با ۲ برابر نرخ استاندارد و سطح Ultrafast با ۶ برابر (روی GPT-6 Astra، و از ۸ اکتبر ۲۰۲۶ روی GPT-6.1 Sol)، یا حالت سریع Anthropic برای Opus 5.5 با ۲ برابر نرخ (۸/۴۰ دلار، خارج‌شده از پیش‌نمایش پژوهشی از ۱۵ اکتبر ۲۰۲۶؛ در Claude API، مدل‌های Claude در Google Cloud با مدیریت Anthropic، و استقرارهای میزبانی‌شده در Foundry آژور). بخش [رمزگشایی گمانه‌زنانه](../04-inference-optimization/03-speculative-decoding.md) را ببینید.
 
 ---
 
-### Pattern: Caching Layers
+### الگو: لایه‌های کشینگ (Caching Layers)
 
-Multi-level caching strategy:
+استراتژی کشینگ چندسطحی:
+
+<div dir="ltr">
 
 ```python
 class CachingLLM:
@@ -430,18 +486,22 @@ class CachingLLM:
         return response
 ```
 
-**When to use:**
-- Repeated similar queries
-- Cost reduction priority
-- Can tolerate some staleness
+</div>
 
-**Put the provider's prompt cache under both layers.** Exact and semantic caches help only when whole questions repeat. Prompt (prefix) caching helps every request that shares a stable prefix, which in an agent loop is nearly every call: Anthropic reports that Claude Code traffic runs at 324 input tokens per output token. Cache reads bill at 0.1x input on most models, 0.05x on Claude Opus 5.5, Claude Sonnet 5.5, GPT-6.1 Sol, and GPT-6.1 Terra, and 0.025x on Claude Fable 5.1, against a write premium of 1.25x (2x for Anthropic's 1-hour cache; OpenAI GPT-5.6 and later offer a 30-minute entry at 1.25x and, since October 20, 2026, a 12-hour entry at 2.5x). Gemini 4 Argon caches only implicitly, so explicit cache-control code does nothing there. Order the prompt so stable parts (system prompt, tool definitions, persistent documents) come first, and treat cache hit rate as an SLO; OpenAI and Anthropic both made cache-miss diagnostics generally available in September 2026.
+**زمان استفاده:**
+- پرس‌وجوهای مشابه و تکراری
+- اولویت با کاهش هزینه
+- تحمل‌پذیری نسبت به اندکی کهنگی داده‌ها (Staleness)
+
+**کش Prompt ارائه‌دهنده را زیر هر دو لایه قرار دهید.** کش‌های تطابق دقیق و معنایی تنها زمانی کمک می‌کنند که کل پرسش‌ها تکرار شوند. کشینگ Prompt (یا پیشوند / Prefix caching) به هر درخواستی که پیشوند ثابتی را به اشتراک بگذارد کمک می‌کند، که در یک حلقه Agent تقریباً در تمام فراخوانی‌ها رخ می‌دهد: شرکت Anthropic گزارش داده که ترافیک Claude Code به ازای هر Token خروجی، ۳۲۴ Token ورودی مصرف می‌کند. خواندن از کش در بیشتر مدل‌ها ۰.۱ برابر ورودی محاسبه می‌شود، در مدل‌های Claude Opus 5.5، Claude Sonnet 5.5، GPT-6.1 Sol و GPT-6.1 Terra برابر با ۰.۰۵ برابر و در Claude Fable 5.1 برابر با ۰.۰۲۵ برابر است، در مقابل هزینه اضافی نوشتن برابر با ۱.۲۵ برابر (۲ برابر برای کش ۱ ساعته Anthropic؛ مدل‌های GPT-5.6 و جدیدتر OpenAI یک کش ۳۰ دقیقه‌ای با نرخ ۱.۲۵ برابر و از ۲۰ اکتبر ۲۰۲۶ یک کش ۱۲ ساعته با نرخ ۲.۵ برابر ارائه می‌دهند). مدل Gemini 4 Argon تنها به صورت ضمنی کش می‌کند، بنابراین کد کنترل کش صریح در آنجا اثری ندارد. Prompt را طوری مرتب کنید که بخش‌های ثابت (Prompt سیستمی، تعریف ابزارها، اسناد پایدار) در ابتدا بیایند، و با نرخ اصابت کش به عنوان یک SLO برخورد کنید؛ هر دو شرکت OpenAI و Anthropic در سپتامبر ۲۰۲۶ ابزارهای عیب‌یابی عدم اصابت کش (Cache-miss diagnostics) را به صورت عمومی (GA) عرضه کردند.
 
 ---
 
-## Reliability Patterns
+## الگوهای قابلیت اطمینان <a id="reliability-patterns"></a>
 
-### Pattern: Retry with Fallback
+### الگو: تلاش مجدد با بازگشت اضطراری (Retry with Fallback)
+
+<div dir="ltr">
 
 ```python
 class RetryWithFallback:
@@ -470,15 +530,19 @@ class RetryWithFallback:
         raise AllProvidersUnavailable()
 ```
 
-Three things make fallback harder than the loop suggests:
+</div>
 
-- **Fallbacks must cross vendors.** Anthropic logged at least 12 major or critical incidents between August 16 and September 29, 2026, and a single OpenAI incident on September 29 degraded the API, ChatGPT, and Codex for about 5 hours 20 minutes. A fallback to a second model from the same vendor shares its failure domain.
-- **A fallback is a behavior change.** Claude thinking blocks are bound to the model and conversation that produced them, so mid-conversation failover has to drop them and rebuild from the visible messages. Request shapes differ too: Opus 5.5, Sonnet 5.5, and Fable/Mythos 5.1 return a 400 for forced `tool_choice` (Haiku 5.5 accepts it but skips thinking), Claude API version `2026-10-21` rejects any `temperature` on every model, and GPT-6 Astra rejects custom `temperature`. Keep conversation state in a provider-neutral format and run the eval suite against every model in the chain.
-- **Refusals are not errors.** Route on `stop_reason`, not HTTP status, and since September 24, 2026 budget for them: Anthropic bills pre-output refusals in the `bio`, `frontier_llm`, and `reasoning_extraction` categories.
+سه نکته باعث می‌شود بازگشت اضطراری (Fallback) دشوارتر از چیزی باشد که در این حلقه به نظر می‌رسد:
+
+- **بازگشت اضطراری باید میان ارائه‌دهندگان مختلف انجام شود.** شرکت Anthropic بین ۱۶ اوت و ۲۹ سپتامبر ۲۰۲۶ حداقل ۱۲ حادثه بزرگ یا بحرانی ثبت کرد، و یک حادثه در OpenAI در ۲۹ سپتامبر همزمان API، سرویس ChatGPT و Codex را به مدت حدود ۵ ساعت و ۲۰ دقیقه دچار اختلال نمود. بازگشت اضطراری به مدل دوم از همان ارائه‌دهنده، حوزه شکست (Failure domain) یکسانی دارد.
+- **بازگشت اضطراری نوعی تغییر رفتار است.** بلوک‌های تفکر (Thinking blocks) در Claude به مدل و گفت‌وگوی تولیدکننده آن گره خورده‌اند، بنابراین انتقال در میانه گفت‌وگو باید آن‌ها را دور بریزد و تاریخچه را از پیام‌های قابل مشاهده بازسازی کند. ساختار درخواست‌ها نیز متفاوت است: مدل‌های Opus 5.5، Sonnet 5.5 و Fable/Mythos 5.1 برای `tool_choice` اجباری خطای ۴۰۰ برمی‌گردانند (Haiku 5.5 آن را می‌پذیرد اما از تفکر صرف‌نظر می‌کند)، نسخه `2026-10-21` از Claude API هرگونه مقدار `temperature` را روی تمام مدل‌ها رد می‌کند، و GPT-6 Astra مقدار سفارشی `temperature` را نمی‌پذیرد. وضعیت گفت‌وگو را در قالبی مستقل از ارائه‌دهنده نگهداری کنید و مجموعه ارزیابی خود را روی هر مدل موجود در زنجیره اجرا نمایید.
+- **امتناع‌ها خطا نیستند.** مسیریابی را بر اساس `stop_reason` انجام دهید نه وضعیت HTTP، و از ۲۴ سپتامبر ۲۰۲۶ برای آن‌ها بودجه در نظر بگیرید: شرکت Anthropic هزینه امتناع‌های پیش از خروجی را در دسته‌های `bio`، `frontier_llm` و `reasoning_extraction` محاسبه و دریافت می‌کند.
 
 ---
 
-### Pattern: Circuit Breaker
+### الگو: مدارشکن (Circuit Breaker)
+
+<div dir="ltr">
 
 ```python
 class CircuitBreaker:
@@ -509,11 +573,15 @@ class CircuitBreaker:
             raise
 ```
 
+</div>
+
 ---
 
-### Pattern: Bulkhead
+### الگو: دیواره آتشین ایزوله‌سازی (Bulkhead)
 
-Isolate failures between components:
+جداسازی شکست‌ها میان مولفه‌ها:
+
+<div dir="ltr">
 
 ```python
 class BulkheadExecutor:
@@ -529,11 +597,15 @@ rag_bulkhead = BulkheadExecutor(max_concurrent=20)
 agent_bulkhead = BulkheadExecutor(max_concurrent=5)
 ```
 
+</div>
+
 ---
 
-## Cost Patterns
+## الگوهای هزینه <a id="cost-patterns"></a>
 
-### Pattern: Token Budget
+### الگو: بودجه توکن (Token Budget)
+
+<div dir="ltr">
 
 ```python
 class TokenBudget:
@@ -555,9 +627,13 @@ class TokenBudget:
         return constrained
 ```
 
+</div>
+
 ---
 
-### Pattern: Cost Tracking Decorator
+### الگو: دکوراتور ردیابی هزینه (Cost Tracking Decorator)
+
+<div dir="ltr">
 
 ```python
 def track_cost(model: str):
@@ -586,54 +662,58 @@ async def generate_response(query: str):
     return await llm.generate(query)
 ```
 
-Price each token class separately, or the dashboard will be off by multiples: cache reads and writes bill at different rates, reasoning tokens bill as output, OpenAI bills the whole request at long-context rates once input passes 272K tokens, and service tier (Batch, Fast) and data residency multiply the total. See [Pricing and Costs](../02-model-landscape/03-pricing-and-costs.md) for the full formula.
+</div>
+
+هر کلاس Token را به صورت جداگانه قیمت‌گذاری کنید، وگرنه داشبورد شما چند برابر خطا خواهد داشت: خواندن و نوشتن کش نرخ‌های متفاوتی دارند، Tokenهای استدلال به عنوان خروجی حساب می‌شوند، OpenAI پس از عبور ورودی از ۲۷۲ هزار Token کل درخواست را با نرخ‌های کانتکست طولانی محاسبه می‌کند، و سطح سرویس (Batch، Fast) و اقامت داده کل مبلغ را ضرب می‌کنند. برای فرمول کامل به [قیمت‌گذاری و هزینه‌ها](../02-model-landscape/03-pricing-and-costs.md) مراجعه کنید.
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه <a id="interview-questions"></a>
 
-### Q: Describe three RAG patterns and when to use each.
+### پرسش: سه الگوی RAG را توضیح دهید و بگویید هرکدام چه زمانی کاربرد دارند.
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"I will describe Naive RAG, Advanced RAG, and Parent-Child Retrieval.
+«من سه الگوی Naive RAG، Advanced RAG و Parent-Child Retrieval را توضیح می‌دهم.
 
-**Naive RAG** is the simplest: embed query, search vectors, stuff top K into prompt, generate. I use this for MVPs and when retrieval quality is already good. It is fast to implement but has no reranking or query enhancement.
+**الگوی Naive RAG** ساده‌ترین حالت است: پرس‌وجو را امبد (Embed) کنید، بردارها را جست‌وجو کنید، K نتیجه برتر را در Prompt قرار دهید و تولید پاسخ انجام شود. من از این الگو برای ساخت MVP و زمانی که کیفیت بازیابی از قبل خوب است استفاده می‌کنم. پیاده‌سازی آن سریع است اما رتبه‌بندی مجدد (Reranking) یا بهبود پرس‌وجو ندارد.
 
-**Advanced RAG** adds multiple stages: query rewriting, hybrid search (semantic + keyword), reranking, and filtering. I use this in production when accuracy matters. The additional latency (100-200ms for reranking) is worth it for the 10-15% precision improvement.
+**الگوی Advanced RAG** چندین مرحله اضافه می‌کند: بازنویسی پرس‌وجو، جست‌وجوی ترکیبی (معنایی + کلیدواژه‌ای)، رتبه‌بندی مجدد و فیلتر کردن. من در محیط عملیاتی زمانی که دقت اهمیت دارد از آن استفاده می‌کنم. تاخیر اضافی (۱۰۰ تا ۲۰۰ میلی‌ثانیه برای Reranking) به ازای ۱۰ تا ۱۵ درصد بهبود دقت کاملاً ارزشش را دارد.
 
-**Parent-Child Retrieval** embeds small chunks for precise matching but returns larger parent chunks for context. I use this when documents have structure and I need both precision in retrieval and sufficient context for generation.
+**الگوی Parent-Child Retrieval** قطعه‌های کوچک را برای تطبیق دقیق امبد می‌کند اما Chunkهای بزرگ‌تر والد را برای کانتکست بازمی‌گرداند. من زمانی از آن استفاده می‌کنم که اسناد دارای ساختار سلسله‌مراتبی باشند و هم به دقت در بازیابی و هم به کانتکست کافی برای تولید نیاز داشته باشم.
 
-The pattern I choose depends on the accuracy requirements, latency budget, and document characteristics. I often start with Naive RAG to establish a baseline, then iterate to Advanced RAG."
+الگویی که انتخاب می‌کنم به الزامات دقت، بودجه تاخیر (Latency budget) و ویژگی‌های اسناد بستگی دارد. اغلب با Naive RAG شروع می‌کنم تا یک خط مبنا بسازم و سپس به سمت Advanced RAG تکامل می‌دهم.»
 
-### Q: What reliability patterns would you use for a production LLM system?
+### پرسش: برای یک سیستم LLM در محیط عملیاتی از چه الگوهای قابلیت اطمینانی استفاده می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"I implement multiple layers of reliability:
+«من چندین لایه قابلیت اطمینان پیاده‌سازی می‌کنم:
 
-**Retry with exponential backoff** for transient failures. Rate limits and temporary errors are common with LLM APIs.
+**تلاش مجدد با عقب‌نشینی نمایی (Retry with exponential backoff)** برای خطاهای گذرا. محدودیت‌های نرخ (Rate limits) و خطاهای موقت در APIهای LLM رایج هستند.
 
-**Multi-provider fallback** so if OpenAI is having issues, I automatically route to Anthropic or Google. This requires abstracting the LLM interface, keeping conversation state in a provider-neutral format (Claude thinking blocks cannot be replayed into another model), and running my eval suite against every model in the chain so a failover does not silently change quality. I treat safety refusals separately: they come back as successful responses with a refusal stop reason, so I route on the stop reason, not the HTTP status.
+**بازگشت اضطراری چندارائه‌دهنده‌ای (Multi-provider fallback)** تا اگر OpenAI دچار مشکل شد، به صورت خودکار به Anthropic یا Google مسیریابی کنم. این کار نیازمند انتزاعی‌سازی رابط LLM، نگهداری وضعیت گفت‌وگو در قالبی مستقل از ارائه‌دهنده (بلوک‌های تفکر Claude قابل پخش مجدد در مدل دیگری نیستند)، و اجرای مجموعه ارزیابی روی تمام مدل‌های زنجیره است تا انتقال خطا باعث افت بی‌سروصدای کیفیت نشود. با امتناع‌های ایمنی به صورت جداگانه برخورد می‌کنم: آن‌ها به عنوان پاسخ‌های موفق با دلیل توقف `refusal` برمی‌گردند، بنابراین بر اساس دلیل توقف مسیریابی می‌کنم نه کد وضعیت HTTP.
 
-**Circuit breaker** to stop hammering a failing service. After N failures, I open the circuit and route to fallback immediately, giving the primary time to recover.
+**مدارشکن (Circuit breaker)** برای متوقف کردن ارسال پیاپی درخواست به یک سرویس معیوب. پس از N خطا، مدار را باز می‌کنم و فوراً به مسیر جایگزین می‌فرستم تا سیستم اصلی فرصت بازیابی پیدا کند.
 
-**Graceful degradation** when all providers fail. Return cached responses, show fallback messages, or queue for later processing rather than erroring.
+**تنزل تدریجی کارایی (Graceful degradation)** زمانی که همه ارائه‌دهندگان با شکست مواجه می‌شوند. به جای نمایش خطا، پاسخ‌های کش‌شده برگردانید، پیام‌های جایگزین نشان دهید، یا برای پردازش بعدی در صف قرار دهید.
 
-**Bulkhead isolation** to prevent one component's failures from cascading. Agent workloads get separate thread pools from RAG workloads.
+**ایزوله‌سازی دیواره آتشین (Bulkhead isolation)** برای جلوگیری از آبشاری شدن خطاهای یک مولفه به کل سیستم. بارهای کاری Agent استخرهای پردازشی جداگانه‌ای از بارهای کاری RAG دریافت می‌کنند.
 
-**Timeouts** at every level. LLM calls can hang; I set aggressive timeouts and handle them gracefully.
+**مهلت‌های زمانی (Timeouts)** در هر سطح. فراخوانی‌های LLM ممکن است معلق بمانند؛ من مهلت‌های زمانی سخت‌گیرانه‌ای تنظیم و آن‌ها را با ظرافت مدیریت می‌کنم.
 
-The key is assuming failures will happen and designing for them rather than hoping they will not."
-
----
-
-## References
-
-- Gao et al. "Retrieval-Augmented Generation for Large Language Models: A Survey" (2024)
-- Yao et al. "ReAct: Synergizing Reasoning and Acting in Language Models" (2023)
-- Microsoft Patterns for AI: https://learn.microsoft.com/azure/architecture/patterns/
+نکته کلیدی این است که فرض کنیم شکست حتماً رخ می‌دهد و سیستم را برای مواجهه با آن طراحی کنیم، نه اینکه صرفاً امیدوار باشیم اتفاق نیفتد.»
 
 ---
 
-*Next: [Anti-Patterns to Avoid](02-anti-patterns.md)*
+## منابع و مراجع <a id="references"></a>
+
+- مقاله Gao و همکاران: «Retrieval-Augmented Generation for Large Language Models: A Survey» (۲۰۲۴)
+- مقاله Yao و همکاران: «ReAct: Synergizing Reasoning and Acting in Language Models» (۲۰۲۳)
+- مستندات الگوهای مایکروسافت برای هوش مصنوعی: https://learn.microsoft.com/azure/architecture/patterns/
+
+---
+
+*مبحث بعدی: [ضدالگوهایی که باید از آن‌ها پرهیز کرد (Anti-Patterns to Avoid)](02-anti-patterns.md)*
+
+</div>
