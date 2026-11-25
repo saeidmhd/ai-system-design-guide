@@ -1,33 +1,25 @@
 # 🧠 راهنمای طراحی سیستم‌های هوش مصنوعی
-### مرجع کامل مصاحبه و محیط تولید
+### مرجع کامل مصاحبه و محیط تولید — نسخه‌ی فارسی
 
 <p align="center">
-  <a href="https://www.aidaddy.tech"><img src="https://img.shields.io/badge/Read%20it%20online%20%E2%86%92-7C3AED?style=for-the-badge&logo=bookstack&logoColor=white" alt="Read the guide online at aidaddy.tech"></a>
-  <a href="https://enginebogie.com/u/ombharatiya"><img src="https://img.shields.io/badge/Book%20a%20mock%20interview%20%E2%86%92-0E7C66?style=for-the-badge&logo=googlecalendar&logoColor=white" alt="Book a 1:1 mock interview on EngineBogie"></a>
-  <a href="https://topmate.io/ombharatiya"><img src="https://img.shields.io/badge/Mentorship%20on%20Topmate-1F2937?style=for-the-badge&logoColor=white" alt="Book mentorship on Topmate"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-saeidmhd-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide/stargazers"><img src="https://img.shields.io/badge/%E2%AD%90%20%D8%A7%D8%B3%D8%AA%D8%A7%D8%B1%D9%87%20%D8%A8%D8%AF%D9%87%DB%8C%D8%AF-7C3AED?style=for-the-badge" alt="Star this repo"></a>
+  <a href="https://github.com/ombharatiya/ai-system-design-guide"><img src="https://img.shields.io/badge/Original%20Repo-ombharatiya-1F2937?style=for-the-badge&logo=github" alt="Original repository"></a>
 </p>
 <p align="center">
-  <sub>🌐 جست‌وجوی فوری در <b><a href="https://www.aidaddy.tech">aidaddy.tech</a></b>. 🎯 مصاحبه‌ی آزمایشی و منتورینگ یک‌به‌یک با Om. ⭐ برای حمایت از این کار، به مخزن ستاره بدهید.</sub>
-</p>
-
-<p align="center">
-  <a href="https://github.com/ombharatiya"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-ombharatiya-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
-  <a href="https://x.com/ombharatiya"><img src="https://img.shields.io/badge/Follow%20on%20Twitter-@ombharatiya-1DA1F2?style=for-the-badge&logo=x" alt="Follow on Twitter"></a>
-  <a href="https://linkedin.com/in/ombharatiya"><img src="https://img.shields.io/badge/Connect%20on%20LinkedIn-ombharatiya-0A66C2?style=for-the-badge&logo=linkedin" alt="Connect on LinkedIn"></a>
+  <sub>🇮🇷 ترجمه و نگهداری نسخه‌ی فارسی: <b><a href="https://github.com/saeidmhd">@saeidmhd</a></b> · 📦 محتوای اصلی: <b><a href="https://github.com/ombharatiya">Om Bharatiya</a></b> (مجوز MIT)</sub>
 </p>
 
 <p align="center">
-  <b>اگر این راهنما برایتان مفید بود، <a href="https://github.com/ombharatiya">@ombharatiya</a> را در GitHub، <a href="https://x.com/ombharatiya">X</a> و <a href="https://linkedin.com/in/ombharatiya">LinkedIn</a> دنبال کنید تا از انتشار فصل‌های جدید، به‌روزرسانی مدل‌ها و Promptهای مصاحبه باخبر شوید.</b>
-</p>
-
-<p align="center">
-  <a href="https://github.com/ombharatiya/ai-system-design-guide/commits/main"><img src="https://img.shields.io/github/last-commit/ombharatiya/ai-system-design-guide?label=updated&color=blue" alt="Last commit"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide/commits/main"><img src="https://img.shields.io/github/last-commit/saeidmhd/ai-system-design-guide?label=updated&color=blue" alt="Last commit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
-  <a href="#-contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="https://github.com/ombharatiya/ai-system-design-guide/stargazers"><img src="https://img.shields.io/github/stars/ombharatiya/ai-system-design-guide?style=social" alt="Stars"></a>
-  <a href="https://github.com/ombharatiya/ai-system-design-guide/graphs/contributors"><img src="https://img.shields.io/github/contributors/ombharatiya/ai-system-design-guide?color=blueviolet" alt="Contributors"></a>
-  <a href="https://github.com/ombharatiya/ai-system-design-guide/issues"><img src="https://img.shields.io/github/issues/ombharatiya/ai-system-design-guide?color=orange" alt="Open issues"></a>
+  <a href="#-مشارکت"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide/stargazers"><img src="https://img.shields.io/github/stars/saeidmhd/ai-system-design-guide?style=social" alt="Stars"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide/issues"><img src="https://img.shields.io/github/issues/saeidmhd/ai-system-design-guide?color=orange" alt="Open issues"></a>
 </p>
+
+> **این نسخه‌ی فارسی راهنمای [AI System Design Guide](https://github.com/ombharatiya/ai-system-design-guide) است.** ترجمه و نگهداری آن را من ([@saeidmhd](https://github.com/saeidmhd)) انجام می‌دهم تا مهندسان فارسی‌زبان بتوانند این مرجع را به زبان خودشان بخوانند. محتوا، ساختار و ایده‌های اصلی متعلق به نویسنده‌ی اصلی است؛ برای آخرین نسخه‌ی انگلیسی به [مخزن اصلی](https://github.com/ombharatiya/ai-system-design-guide) سر بزنید.
+
 
 > **مرجع زنده برای سیستم‌های هوش مصنوعی در محیط تولید.** به‌طور مداوم به‌روز می‌شود. با عمقی مناسب مصاحبه.
 
@@ -42,7 +34,6 @@
 | می‌خواهم... | از اینجا شروع کنید |
 |--------------|------------|
 | **برای مصاحبه آماده شوم** | [بانک سؤالات](00-interview-prep/01-question-bank.md) → [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) |
-| **با یک مصاحبه‌کننده‌ی واقعی تمرین کنم** | [رزرو مصاحبه‌ی آزمایشی یک‌به‌یک یا منتورینگ](https://enginebogie.com/u/ombharatiya) (در [Topmate](https://topmate.io/ombharatiya) هم موجود است) |
 | **سریع سیستم‌های هوش مصنوعی را یاد بگیرم** | [سازوکار داخلی LLM](01-foundations/01-llm-internals.md) → [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) |
 | **معماری RAG مناسب محیط تولید بسازم** | [Chunking](06-retrieval-systems/02-chunking-strategies.md) → [پایگاه‌های داده‌ی برداری (Vector Databases)](06-retrieval-systems/04-vector-databases.md) → [Reranking](06-retrieval-systems/06-reranking-strategies.md) → [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) |
 | **بازیابی پیشرفته** | [بازیابی زمینه‌ای](06-retrieval-systems/10-contextual-retrieval.md) → [ColBERT](06-retrieval-systems/11-late-interaction-colbert.md) → [RAG چندوجهی](06-retrieval-systems/12-multimodal-rag.md) |
@@ -256,12 +247,7 @@ mindmap
 
 ➡️ از [آمادگی مصاحبه](00-interview-prep/) شروع کنید
 
-**پیش از مصاحبه‌ی اصلی یک تمرین عملی می‌خواهید؟** خواندن پاسخ‌های قوی دانش می‌سازد، اما مصاحبه چیز دیگری را می‌سنجد: توضیح یک طراحی با صدای بلند، زیر فشار زمان، در حالی که کسی روی مصالحه‌هایتان فشار می‌آورد. Om مصاحبه‌های آزمایشی طراحی سیستم هوش مصنوعی یک‌به‌یک، بازبینی پاسخ‌ها و رزومه و منتورینگ بلندمدت را برای کسانی که به نقش‌های ارشد هوش مصنوعی می‌روند برگزار می‌کند. از طریق [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
-
-<p align="center">
-  <a href="https://enginebogie.com/u/ombharatiya"><img src="https://img.shields.io/badge/Book%20a%20mock%20interview%20%E2%86%92-0E7C66?style=for-the-badge&logo=googlecalendar&logoColor=white" alt="Book a mock interview on EngineBogie"></a>
-  <a href="https://topmate.io/ombharatiya"><img src="https://img.shields.io/badge/Mentorship%20on%20Topmate-1F2937?style=for-the-badge&logoColor=white" alt="Book mentorship on Topmate"></a>
-</p>
+**پیش از مصاحبه‌ی اصلی یک تمرین عملی می‌خواهید؟** خواندن پاسخ‌های قوی دانش می‌سازد، اما مصاحبه چیز دیگری را می‌سنجد: توضیح یک طراحی با صدای بلند، زیر فشار زمان، در حالی که کسی روی مصالحه‌هایتان فشار می‌آورد. پاسخ‌هایتان را با یک دوست یا همکار تمرین کنید، از او بخواهید حرفتان را قطع کند و مصالحه‌ها را زیر سؤال ببرد، و [تمرین‌های تخته‌سفید](00-interview-prep/04-whiteboard-exercises.md) را زمان‌دار حل کنید.
 
 ---
 
@@ -271,7 +257,7 @@ mindmap
 طراحی سیستم هوش مصنوعی شاخه‌ای است که به معماری سیستم‌های مناسب محیط تولید می‌پردازد که حول LLMها، بازیابی، Agentها و ارزیابی ساخته می‌شوند. این شاخه انتخاب مدل، pipelineهای RAG، ارکستراسیون Agent، حافظه، observability و ایمنی را پوشش می‌دهد. برای آشنایی اولیه، [سازوکار داخلی LLM](01-foundations/01-llm-internals.md) و [الگوهای طراحی هوش مصنوعی](15-ai-design-patterns/) را ببینید.
 
 ### چگونه برای مصاحبه‌ی مهندسی هوش مصنوعی آماده شوم؟
-از [بانک سؤالات](00-interview-prep/01-question-bank.md) (۱۹۳ سؤال تا نوامبر ۲۰۲۶) شروع کنید، سپس با [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) و [تمرین‌های تخته‌سفید](00-interview-prep/04-whiteboard-exercises.md) تمرین کنید. بیشتر مصاحبه‌های ارشد، طراحی RAG، اشکال‌زدایی Agent، ایزوله‌سازی چندمستأجره (multi-tenant) و مصالحه‌های هزینه/تاخیر (Latency) را می‌سنجند که همگی در [مطالعه‌ی موردی‌ها](16-case-studies/) پوشش داده شده‌اند. پیش از مصاحبه‌ی واقعی، دست‌کم یک مصاحبه‌ی آزمایشی زمان‌دار با کسی انجام دهید که حرفتان را قطع کند و زیر سؤال ببرد؛ می‌توانید با Om از طریق [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) رزرو کنید.
+از [بانک سؤالات](00-interview-prep/01-question-bank.md) (۱۹۳ سؤال تا نوامبر ۲۰۲۶) شروع کنید، سپس با [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md) و [تمرین‌های تخته‌سفید](00-interview-prep/04-whiteboard-exercises.md) تمرین کنید. بیشتر مصاحبه‌های ارشد، طراحی RAG، اشکال‌زدایی Agent، ایزوله‌سازی چندمستأجره (multi-tenant) و مصالحه‌های هزینه/تاخیر (Latency) را می‌سنجند که همگی در [مطالعه‌ی موردی‌ها](16-case-studies/) پوشش داده شده‌اند. پیش از مصاحبه‌ی واقعی، دست‌کم یک مصاحبه‌ی آزمایشی زمان‌دار با کسی انجام دهید که حرفتان را قطع کند و زیر سؤال ببرد.
 
 ### معماری RAG (Retrieval-Augmented Generation) چیست؟
 معماری RAG الگویی است که در آن یک LLM پیش از تولید پاسخ، زمینه‌ی مرتبط را از یک منبع دانش خارجی (پایگاه داده‌ی برداری (Vector Database)، شاخص جست‌وجو، گراف) بازیابی می‌کند؛ این کار توهم را کاهش می‌دهد و پاسخ‌ها را به داده‌های شما متکی می‌سازد. pipeline کامل در [مبانی RAG](06-retrieval-systems/01-rag-fundamentals.md) و مقیاس‌پذیر کردن آن در [RAG در محیط تولید](06-retrieval-systems/14-production-rag-at-scale.md) آمده است.
@@ -326,28 +312,25 @@ mindmap
 
 ## 👋 در ارتباط بمانید
 
-اگر این راهنما برایتان مفید است، ساده‌ترین راه حمایت این است که جایی را دنبال کنید که فصل‌های جدید و به‌روزرسانی‌ها ابتدا در آن اعلام می‌شوند:
+اگر این نسخه‌ی فارسی برایتان مفید است، ساده‌ترین راه حمایت این است که به مخزن ستاره بدهید و آن را Watch کنید تا از به‌روزرسانی‌ها باخبر شوید:
 
-- **وب‌سایت:** [aidaddy.tech](https://www.aidaddy.tech) - کل راهنما را با جست‌وجو، ناوبری تمیز و چیدمان سازگار با موبایل بخوانید.
-- **گیت‌هاب (GitHub):** [@ombharatiya](https://github.com/ombharatiya) - برای مخزن دنبال کنید، به پروژه ستاره بدهید و منتظر انتشارهای جدید بمانید.
-- **شبکه توییتر (X / Twitter):** [@ombharatiya](https://x.com/ombharatiya) - نکته‌های کوتاه درباره‌ی انتشار مدل‌ها، MCP، Agentها و مصاحبه‌ها.
-- **صفحه LinkedIn:** [ombharatiya](https://linkedin.com/in/ombharatiya) - نوشته‌های عمیق‌تر و نکات آمادگی مصاحبه برای نقش‌های ارشد هوش مصنوعی.
-- **مصاحبه‌ی آزمایشی و منتورینگ:** [EngineBogie](https://enginebogie.com/u/ombharatiya) یا [Topmate](https://topmate.io/ombharatiya) - یک مصاحبه‌ی آزمایشی یک‌به‌یک طراحی سیستم هوش مصنوعی، بازبینی پاسخ‌هایتان یا منتورینگ مستمر برای گذار به نقش‌های هوش مصنوعی رزرو کنید.
+- **گیت‌هاب (GitHub):** [@saeidmhd](https://github.com/saeidmhd) - نسخه‌ی فارسی و به‌روزرسانی‌های ترجمه.
+- **مخزن اصلی (انگلیسی):** [ombharatiya/ai-system-design-guide](https://github.com/ombharatiya/ai-system-design-guide) - منبع اصلی محتوا.
+- **وب‌سایت نسخه‌ی اصلی:** [aidaddy.tech](https://www.aidaddy.tech) - خواندن نسخه‌ی انگلیسی با جست‌وجو و ناوبری تمیز.
+- **گزارش اشکال ترجمه:** از طریق [Issues](https://github.com/saeidmhd/ai-system-design-guide/issues).
 
 <p align="center">
-  <a href="https://github.com/ombharatiya"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-ombharatiya-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
-  <a href="https://x.com/ombharatiya"><img src="https://img.shields.io/badge/Follow%20on%20Twitter-@ombharatiya-1DA1F2?style=for-the-badge&logo=x" alt="Follow on Twitter"></a>
-  <a href="https://linkedin.com/in/ombharatiya"><img src="https://img.shields.io/badge/Connect%20on%20LinkedIn-ombharatiya-0A66C2?style=for-the-badge&logo=linkedin" alt="Connect on LinkedIn"></a>
+  <a href="https://github.com/saeidmhd"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-saeidmhd-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
 </p>
 
 ---
 
 ## 📄 مجوز
 
-مجوز MIT. [LICENSE](LICENSE) را ببینید.
+مجوز MIT. [LICENSE](LICENSE) را ببینید. اعلان حق نشر و مجوز نویسنده‌ی اصلی در این مخزن حفظ شده است.
 
 ---
 
 <p align="center">
-  <b>ساخته و نگهداری‌شده توسط <a href="https://github.com/ombharatiya">Om Bharatiya</a> · <a href="https://github.com/ombharatiya">GitHub</a> · <a href="https://x.com/ombharatiya">Twitter</a> · <a href="https://linkedin.com/in/ombharatiya">LinkedIn</a></b>
+  <b>نسخه‌ی فارسی: <a href="https://github.com/saeidmhd">@saeidmhd</a> · نویسنده‌ی اصلی: <a href="https://github.com/ombharatiya">Om Bharatiya</a></b>
 </p>
