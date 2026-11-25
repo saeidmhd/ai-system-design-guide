@@ -1,24 +1,28 @@
-# Case Study: Autonomous Coding Agent
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: Agent کدنویسی خودکار <a id="case-study-autonomous-coding-agent"></a>
 
-A developer tools company wants to build an **AI coding assistant** that can autonomously complete multi-file tasks: "Add authentication to this Express API" or "Refactor this module to use dependency injection."
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- Must work on codebases with 1,000+ files
-- Cannot break existing functionality (tests must pass)
-- Human must approve changes before commit
-- Budget: under $0.50 per task completion
+یک شرکت فعال در حوزه ابزارهای توسعه‌دهندگان قصد دارد یک **دستیار کدنویسی هوش مصنوعی** بسازد که بتواند به‌صورت خودکار وظایف چندفایلی را به انجام برساند؛ مانند: «احراز هویت را به این API اکسپرس اضافه کن» یا «این ماژول را طوری بازآرایی (Refactor) کن که از تزریق وابستگی (Dependency Injection) استفاده کند.»
 
----
-
-## The Interview Question
-
-> "Design a coding agent that can take a task like 'Add rate limiting to all API endpoints' and produce a working, tested pull request."
+**محدودیت‌های مطرح‌شده در مصاحبه:**
+- باید روی پایگاه‌های کد (Codebase) با بیش از ۱٬۰۰۰ فایل کار کند
+- نباید عملکرد فعلی سیستم را خراب کند (تمام تست‌ها باید پاس شوند)
+- پیش از ثبت نهایی (Commit)، یک انسان باید تغییرات را تایید کند
+- بودجه: کمتر از ۰.۵۰ دلار به ازای تکمیل هر وظیفه (Task)
 
 ---
 
-## Solution Architecture
+## پرسش مصاحبه <a id="the-interview-question"></a>
+
+> «یک Agent کدنویسی طراحی کنید که بتواند وظیفه‌ای مانند «اعمال محدودیت نرخ (Rate Limiting) به تمام Endpointهای API» را دریافت کرده و یک Pull Request سالم و تست‌شده تحویل دهد.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -44,37 +48,41 @@ flowchart LR
     end
 ```
 
----
-
-## Key Design Decisions
-
-### 1. Why Separate Planner and Coder Agents?
-
-**Answer:** The planning task requires **reasoning about the entire codebase** (which files to touch, what dependencies exist). The coding task requires **precise syntax generation**. By separating them, we run the planner on Opus 5.5 at `high` effort and the coder on Sonnet 5.5 at `medium`. Effort is the dial on both: thinking cannot be fully turned off (Opus 5.5 rejects disabled thinking at every effort level; Sonnet 5.5's lowest setting is `between_tools`), and Opus 5.5 defaults to `medium`, so set it explicitly. Separation also lets us checkpoint after planning for human review of the approach before execution.
-
-### 2. Why E2B Sandbox Instead of Local Execution?
-
-**Answer:** Security. The agent generates and runs code. Running it locally exposes the host system. E2B provides an isolated container that resets after each session. If the agent generates `rm -rf /`, it only destroys the sandbox. The industry has converged on the same split: the vendor runs orchestration and models, the customer's sandbox runs tools and holds credentials (Claude Code self-hosted runners, Cursor's self-hosted machines, and OpenAI's Agents API, which can attach sandboxes from providers including E2B). The sandbox has to cover the harness too, not just the model's tool calls; see [Containment](#containment-lessons-from-2026-incidents).
-
-### 3. Which Model, and Why Cost per Task Beats Price per Token
-
-**Answer:** Claude Sonnet 5.5 ($2 / $10) for the coder, Claude Opus 5.5 ($4 / $20) for planning and for debugging loops that stall. Cite benchmark numbers with their source and effort level, because both move the result:
-
-| Source | Result |
-|--------|--------|
-| Terminal-Bench 4.0 leaderboard (tbench.ai, entries added October 6, 2026) | Claude Opus 5.5 64.85% (max), Claude Sonnet 5.5 61.82% (max), GPT-6 Astra (max) and GPT-6.1 Sol tied at 58.18%, Claude Fable 5.1 57.88% (max) |
-| Anthropic, vendor-reported | Terminal-Bench 4.0: Sonnet 5.5 70.6%, Opus 5.5 66.4% (xhigh), in the opposite order from the leaderboard above |
-| DeepSWE v1.1 leaderboard (September 22, 2026) | GPT-6 Astra (xhigh), Gemini 3.8 Flash (high) and Claude Opus 5 (max) tie at 74% pass@1, at $4.43, $2.36 and $11.84 per task |
-
-Two lessons. At the top, pass rates are close enough that cost per task decides, and cost per task varies 5x at the same pass rate. And the two sources disagree on which Claude model leads: Anthropic's own runs put Sonnet 5.5 ahead and the public leaderboard at max effort puts Opus 5.5 ahead, so run both on tasks from your repository before committing. Since October 7, 2026 Sonnet 5.5 reads cached input at $0.10 per 1M against $0.20 for Opus 5.5, so in a cache-heavy loop Opus 5.5 costs about 2x Sonnet 5.5, the same gap as their list prices (before the cut it was about 1.6x; see [Cost Breakdown](#cost-breakdown)). Gemini 3.8 Flash is the cost-per-task alternative if you can absorb its price doubling on January 1, 2027 and its 65K-token output cap.
-
-Paid speed tiers are a separate axis, and mostly the wrong one for this agent. Opus 5.5 fast mode ($8 / $40, out of research preview since October 15, 2026; on the Claude API, Claude Models on Google Cloud (Anthropic managed), and Foundry's Azure-hosted deployments) and OpenAI's Ultrafast tier (6x standard API prices, on GPT-6 Astra and, since October 8, GPT-6.1 Sol at $12 / $60; OpenAI reports up to 8x faster generation in Codex) buy wall-clock time for a developer watching an interactive session. An unattended agent with a $0.50 budget cannot absorb a 2x to 6x price multiplier, so spend on parallelism across tasks instead of speed within one.
+</div>
 
 ---
 
-## The Codebase Understanding Problem
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-The agent cannot fit 1,000 files into context. We solve this with **Tiered Retrieval**:
+### 1. چرا Agentهای برنامه‌ریز (Planner) و کدنویس (Coder) را از هم جدا کنیم؟ <a id="1-why-separate-planner-and-coder-agents"></a>
+
+**پاسخ:** وظیفه برنامه‌ریزی نیازمند **استدلال درباره کل پایگاه کد** است (اینکه کدام فایل‌ها باید تغییر کنند و چه وابستگی‌هایی وجود دارد). وظیفه کدنویسی نیازمند **تولید دقیق ساختار نحوی (Syntax)** است. با جداسازی این دو نقش، برنامه‌ریز را روی مدل Opus 5.5 با سطح تلاش `high` و کدنویس را روی مدل Sonnet 5.5 با سطح تلاش `medium` اجرا می‌کنیم. پارامتر Effort در هر دو مدل حکم اهرم کنترل را دارد: تفکر (Thinking) را نمی‌توان به‌طور کامل خاموش کرد (مدل Opus 5.5 در تمام سطوح Effort غیرفعال‌سازی تفکر را رد می‌کند؛ پایین‌ترین تنظیم در Sonnet 5.5 مقدار `between_tools` است)، و پیش‌فرض Opus 5.5 روی `medium` قرار دارد، بنابراین آن را به‌صورت صریح تنظیم کنید. همچنین، این جداسازی به ما اجازه می‌دهد پس از مرحله برنامه‌ریزی یک نقطه بررسی (Checkpoint) قرار دهیم تا پیش از اجرا، انسان رویکرد پیشنهادی را بازبینی کند.
+
+### 2. چرا به‌جای اجرای محلی از E2B Sandbox استفاده می‌کنیم؟ <a id="2-why-e2b-sandbox-instead-of-local-execution"></a>
+
+**پاسخ:** به دلیل امنیت. این Agent کد تولید و اجرا می‌کند. اجرای محلی کد، سیستم میزبان را در معرض خطر قرار می‌دهد. سرویس E2B یک کانتینر ایزوله فراهم می‌کند که پس از هر نشست (Session) بازنشانی می‌شود. اگر Agent دستور `rm -rf /` را تولید کند، تنها محیط Sandbox تخریب می‌شود. صنعت نیز به همین تفکیک هم‌گرا شده است: ارائه‌دهنده سرویس، ارکستراسیون و مدل‌ها را اجرا می‌کند و Sandbox متعلق به مشتری ابزارها را اجرا کرده و اعتبارنامه‌ها (Credentials) را نگه می‌دارد (مانند Runnerهای خودمیزبان Claude Code، ماشین‌های خودمیزبان Cursor، و Agents API از OpenAI که می‌تواند Sandboxهایی از ارائه‌دهندگانی مانند E2B را متصل کند). محیط Sandbox باید کل Harness (چارچوب اجرایی Agent) را نیز پوشش دهد، نه فقط فراخوانی ابزارهای مدل را؛ بخش [مهار و ایزوله‌سازی: درس‌هایی از حوادث ۲۰۲۶](#containment-lessons-from-2026-incidents) را ببینید.
+
+### 3. کدام مدل و چرا هزینه به ازای هر تسک از قیمت به ازای هر Token مهم‌تر است <a id="3-which-model-and-why-cost-per-task-beats-price-per-token"></a>
+
+**پاسخ:** مدل Claude Sonnet 5.5 (با تعرفه ۲ / ۱۰ دلار) برای کدنویس و مدل Claude Opus 5.5 (با تعرفه ۴ / ۲۰ دلار) برای برنامه‌ریزی و حلقه‌های اشکال‌زدایی که متوقف می‌شوند. هنگام استناد به اعداد بنچمارک‌ها، حتماً منبع و سطح Effort را نیز ذکر کنید، زیرا هر دو نتیجه را تغییر می‌دهند:
+
+| منبع | نتیجه |
+|------|-------|
+| جدول رتبه‌بندی Terminal-Bench 4.0 (سایت tbench.ai، ورودی‌های اضافه‌شده در ۶ اکتبر ۲۰۲۶) | عملکرد Claude Opus 5.5 برابر ۶۴.۸۵٪ (سطح max)، مدل Claude Sonnet 5.5 برابر ۶۱.۸۲٪ (سطح max)، مدل‌های GPT-6 Astra (سطح max) و GPT-6.1 Sol هر دو با امتیاز ۵۸.۱۸٪ برابر، و مدل Claude Fable 5.1 برابر ۵۷.۸۸٪ (سطح max) |
+| گزارش ارائه‌شده توسط خود شرکت Anthropic | بنچمارک Terminal-Bench 4.0: مدل Sonnet 5.5 برابر ۷۰.۶٪ و مدل Opus 5.5 برابر ۶۶.۴٪ (سطح xhigh)؛ دقیقاً برعکس ترتیب جدول رتبه‌بندی بالا |
+| جدول رتبه‌بندی DeepSWE v1.1 (۲۲ سپتامبر ۲۰۲۶) | مدل‌های GPT-6 Astra (سطح xhigh)، Gemini 3.8 Flash (سطح high) و Claude Opus 5 (سطح max) همگی در نرخ pass@1 برابر ۷۴٪ مساوی شدند، با هزینه‌های ۴.۴۳، ۲.۳۶ و ۱۱.۸۴ دلار به ازای هر تسک |
+
+دو درس مهم در اینجا وجود دارد. در رده‌های برتر، نرخ‌های قبولی (Pass Rate) آن‌قدر به هم نزدیک‌اند که هزینه به ازای هر تسک تعیین‌کننده است و همین هزینه در نرخ قبولی یکسان تا ۵ برابر تفاوت دارد. همچنین دو منبع بر سر اینکه کدام مدل Claude پیشتاز است اختلاف دارند: اجراهای خود Anthropic مدل Sonnet 5.5 را جلوتر نشان می‌دهد و جدول رتبه‌بندی عمومی در سطح تلاش max مدل Opus 5.5 را برتر می‌داند؛ بنابراین پیش از انتخاب نهایی، هر دو را روی تسک‌های مخزن خودتان آزمایش کنید. از ۷ اکتبر ۲۰۲۶، مدل Sonnet 5.5 ورودی‌های کش‌شده را با نرخ ۰.۱۰ دلار به ازای هر 1M در مقایسه با ۰.۲۰ دلار برای Opus 5.5 می‌خواند؛ در نتیجه در یک حلقه پرمصرف از کش، هزینه Opus 5.5 حدود ۲ برابر Sonnet 5.5 است که دقیقاً همان فاصله قیمت لیست آن‌هاست (پیش از این کاهش قیمت، این نسبت حدود ۱.۶ برابر بود؛ بخش [تحلیل جزئیات هزینه](#cost-breakdown) را ببینید). مدل Gemini 3.8 Flash گزینه جایگزین از نظر هزینه به ازای هر تسک است، به شرط آنکه بتوانید دو برابر شدن قیمت آن در ۱ ژانویه ۲۰۲۷ و محدودیت خروجی 65K واحد Token آن را بپذیرید.
+
+طرح‌های پولی سرعت بالا محور جداگانه‌ای هستند و عمدتاً انتخاب اشتباهی برای این Agent محسوب می‌شوند. حالت سریع Opus 5.5 (با تعرفه ۸ / ۴۰ دلار که از ۱۵ اکتبر ۲۰۲۶ از پیش‌نمایش تحقیقاتی خارج شد؛ در دسترس در Claude API، سرویس Claude Models on Google Cloud با مدیریت Anthropic، و استقرارهای میزبانی‌شده در Azure از Foundry) و طرح Ultrafast شرکت OpenAI (با قیمت ۶ برابر API استاندارد روی مدل‌های GPT-6 Astra و از ۸ اکتبر روی GPT-6.1 Sol با نرخ ۱۲ / ۶۰ دلار؛ OpenAI تولید تا ۸ برابر سریع‌تر در Codex را گزارش کرده است) در واقع زمان انتظار واقعی (Wall-clock Time) را برای توسعه‌دهنده‌ای که به یک نشست تعاملی خیره شده کاهش می‌دهند. یک Agent غیرتعاملی و خودکار با بودجه ۰.۵۰ دلار نمی‌تواند ضریب قیمت ۲ تا ۶ برابری را تحمل کند؛ بنابراین به‌جای افزایش سرعت در یک تسک، روی موازی‌سازی میان تسک‌ها سرمایه‌گذاری کنید.
+
+---
+
+## مسئله درک پایگاه کد <a id="the-codebase-understanding-problem"></a>
+
+این Agent نمی‌تواند ۱٬۰۰۰ فایل را در کانتکست جا دهد. ما این مشکل را با **بازیابی چندسطحی (Tiered Retrieval)** حل می‌کنیم:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -96,16 +104,20 @@ flowchart TB
     end
 ```
 
-**Implementation:**
-1. **Index file summaries** (generated by a smaller model during onboarding) with a code-tuned embedding model such as voyage-code-4 ($0.12 per 1M tokens)
-2. **Build a symbol graph** using tree-sitter for AST parsing
-3. **Retrieve in stages**: summaries → symbols → full content
+</div>
+
+**پیاده‌سازی:**
+1. **نمایه‌سازی خلاصه فایل‌ها** (که هنگام آماده‌سازی اولیه یا Onboarding توسط یک مدل کوچک‌تر تولید می‌شود) با یک مدل Embedding بهینه‌شده برای کد مانند voyage-code-4 (با هزینه ۰.۱۲ دلار به ازای هر 1M واحد Token)
+2. **ساخت گراف نمادها (Symbol Graph)** با استفاده از ابزار tree-sitter برای تجزیه درخت نحو انتزاعی (AST)
+3. **بازیابی مرحله‌ای**: خلاصه‌ها ← نمادها ← محتوای کامل
 
 ---
 
-## The Self-Correction Loop
+## حلقه خوداصلاحی (Self-Correction Loop) <a id="the-self-correction-loop"></a>
 
-Agents fail. The key to reliability is **structured self-correction**:
+مدل‌ها و Agentها دچار خطا می‌شوند. کلید دستیابی به قابلیت اطمینان، **خوداصلاحی ساختاریافته (Structured Self-Correction)** است:
+
+<div dir="ltr">
 
 ```python
 async def execute_with_retry(task: str, max_attempts: int = 3):
@@ -135,76 +147,80 @@ async def execute_with_retry(task: str, max_attempts: int = 3):
     raise MaxRetriesExceeded()
 ```
 
----
-
-## Cost Breakdown
-
-Coding agents are **input-dominated**: every call resends a growing context. Anthropic's Claude Code telemetry (vendor-reported, September 24, 2026) put the input-to-output token ratio at 324:1, up from 189:1 earlier in the year. The output price barely matters; the **cached-input price and the cache hit rate set the bill**.
-
-Assumptions per task: 25 model calls (planning, coding, 1.5 test-fix cycles); ~30K tokens of context per call on average, kept small by tiered retrieval, so ~750K input tokens; ~6K output tokens including thinking. Input that misses the cache is billed as a cache write, since the next call reads it back. The table prices all 25 calls on one model; running the few planning calls on Opus 5.5 adds a few cents per task.
-
-| Line item | Sonnet 5.5, 90% cache hits | Sonnet 5.5, 50% cache hits | Opus 5.5, 90% cache hits |
-|-----------|---------------------------|---------------------------|--------------------------|
-| Cache reads ($0.10/1M Sonnet, $0.20/1M Opus) | 675K → $0.07 | 375K → $0.04 | 675K → $0.14 |
-| Cache writes, 5-minute ($2.50/1M Sonnet, $5/1M Opus) | 75K → $0.19 | 375K → $0.94 | 75K → $0.38 |
-| Output ($10/1M Sonnet, $20/1M Opus) | 6K → $0.06 | 6K → $0.06 | 6K → $0.12 |
-| Embeddings for file retrieval | $0.01 | $0.01 | $0.01 |
-| **Total per task** | **~$0.33** | **~$1.05** | **~$0.64** |
-
-Same agent, same model: a drop from 90% to 50% cache hits takes the task from under the $0.50 budget to more than twice it. Sandbox compute is billed separately by the sandbox provider.
-
-Cache terms differ across vendors more than list prices do. GPT-6.1 Sol (the Codex CLI default since September 29, 2026) lists at the same $2 / $10 as Sonnet 5.5, bills 30-minute cache writes at the same $2.50, and since Sonnet 5.5's October 7 cut reads cached input at the same $0.10 per 1M, so the 90%-hit task costs about $0.33 on either. The difference is the TTL: OpenAI's 30-minute entry survives a test run that would expire Anthropic's 5-minute entry, and since October 20, 2026 OpenAI also sells a 12-hour entry at 2.5x input against Anthropic's 1-hour entry at 2x. GPT-6.1 Terra ($1 / $5, cached $0.05, October 26) roughly halves every line if it holds your pass rate. Compare vendors on your own measured hit rates and test durations: a cheaper read price is worth little if the harness keeps missing.
-
-What breaks the cache: anything that changes the prefix (a timestamp in the system prompt, reordered tool definitions, editing earlier turns instead of appending), switching models mid-session (caches are per model), and gaps longer than the cache TTL. If test runs take longer than 5 minutes, pay for 1-hour cache writes ($4/1M on Sonnet 5.5) or the cache expires between calls. What protects it: a frozen system prompt and tool list first, append-only history, and fewer static tokens. Cursor cut user token costs 7% (vendor-reported, September 23, 2026) by trimming about two thirds of its system prompt, loading rarely needed built-in tools on demand, and adding explicit cache breakpoints. Append-only is now a correctness rule too: Opus 5.5 and Sonnet 5.5 bind thinking blocks to the conversation that produced them, so a harness that rewrites earlier turns (trimming old tool output in place, for example) can get a 400 instead of a cache miss. Anthropic enforces that check for accounts created on or after August 31, 2026, so a harness that works on an older account can fail on a new one.
+</div>
 
 ---
 
-## Containment: Lessons from 2026 Incidents
+## تحلیل جزئیات هزینه <a id="cost-breakdown"></a>
 
-"Sandbox all generated code" is necessary but no longer sufficient. Each incident below slipped past a control that teams relied on: a sandbox, an approval step or a pinned version:
+در Agentهای کدنویسی، **ورودی غالب است (Input-dominated)**: هر فراخوانی، یک کانتکست روبه‌رشد را دوباره ارسال می‌کند. تله‌متری Claude Code از شرکت Anthropic (گزارش‌شده توسط خود ارائه‌دهنده در ۲۴ سپتامبر ۲۰۲۶) نسبت Tokenهای ورودی به خروجی را ۳۲۴ به ۱ اعلام کرد که نسبت به ۱۸۹ به ۱ در اوایل سال افزایش یافته است. قیمت خروجی تقریباً اهمیتی ندارد؛ بلکه **قیمت ورودی کش‌شده و نرخ اصابت کش (Cache Hit Rate) صورت‌حساب نهایی را تعیین می‌کنند**.
 
-| Incident | What happened | Control it implies |
-|----------|---------------|--------------------|
-| GitSpawn (Manifold Security, September 2, 2026) | A repository's own `.git/config` (mainly `core.fsmonitor`) made seven CLI coding agents run attacker commands as the user, outside the sandbox, during background git calls. It needs the `.git` directory to arrive intact (archive, shared drive, sync folder); a normal clone does not carry it | Sandbox the harness, not just the model's tool calls; run agent-initiated git with `git -c core.fsmonitor=false` |
-| Claude Code auto mode bypass (Embrace The Red, August 26, 2026) | A crafted server response led Claude Code (Opus 5, auto mode) to download and run attacker code in 3 to 4 of 5 runs, past the permission classifier | Treat approval classifiers as a convenience. Anthropic's position, as quoted by the researcher: "the real boundary is OS isolation and network egress control" |
-| Plugin4Shell (AIR Security, September 17, 2026) | Branches named after a commit SHA made SHA-pinned agent plugins resolve to attacker code | After checkout, verify that the working tree is the pinned commit, not just that you asked for it; review plugins as part of the trust boundary |
-| PixelLeak (Glow Security, September 29, 2026) | Agents told to attach screenshots to private PRs created public repos, 93% of them in personal accounts, and published 13,000+ internal images across 900+ repos | Put destinations in the action policy: block new public repos, pushes to personal accounts, gists and visibility changes |
+فرض‌های محاسبه به ازای هر تسک: ۲۵ فراخوانی مدل (برنامه‌ریزی، کدنویسی، و ۱.۵ چرخه تست و رفع خطا)؛ به‌طور میانگین حدود 30K واحد Token کانتکست در هر فراخوانی (که به‌لطف بازیابی چندسطحی کوچک نگه داشته شده)، یعنی حدود 750K واحد Token ورودی؛ و حدود 6K واحد Token خروجی شامل بخش تفکر (Thinking). ورودی‌هایی که کش را از دست می‌دهند (Cache Miss) به‌عنوان نوشتن در کش (Cache Write) محاسبه می‌شوند، زیرا فراخوانی بعدی آن‌ها را بازخوانی می‌کند. جدول زیر تمام ۲۵ فراخوانی را با یک مدل قیمت‌گذاری کرده است؛ اجرای چند فراخوانی محدود برنامه‌ریزی روی Opus 5.5 تنها چند سنت به ازای هر تسک اضافه می‌کند.
 
-Version floors help but do not close the class. GitSpawn's main path is fixed in Claude Code 2.1.196, Codex CLI 0.131.0 and goose 1.44.0, yet a second Claude Code path (through `claude ultrareview`) was still live on 2.1.252, and three other agents were still vulnerable at Manifold's September 1 retest. Plugin4Shell is fixed in Claude Code 2.1.179 and Codex 0.146.0, and Copilot had no fix at disclosure. Set minimum harness versions in fleet policy and keep the configuration-level mitigations anyway.
+| ردیف هزینه | مدل Sonnet 5.5، اصابت کش ۹۰٪ | مدل Sonnet 5.5، اصابت کش ۵۰٪ | مدل Opus 5.5، اصابت کش ۹۰٪ |
+|------------|------------------------------|------------------------------|----------------------------|
+| خواندن از کش (۰.۱۰ دلار به ازای 1M در Sonnet و ۰.۲۰ دلار در Opus) | مقدار 675K ← ۰.۰۷ دلار | مقدار 375K ← ۰.۰۴ دلار | مقدار 675K ← ۰.۱۴ دلار |
+| نوشتن در کش ۵ دقیقه‌ای (۲.۵۰ دلار به ازای 1M در Sonnet و ۵ دلار در Opus) | مقدار 75K ← ۰.۱۹ دلار | مقدار 375K ← ۰.۹۴ دلار | مقدار 75K ← ۰.۳۸ دلار |
+| خروجی (۱۰ دلار به ازای 1M در Sonnet و ۲۰ دلار در Opus) | مقدار 6K ← ۰.۰۶ دلار | مقدار 6K ← ۰.۰۶ دلار | مقدار 6K ← ۰.۱۲ دلار |
+| بردارهای Embedding برای بازیابی فایل | ۰.۰۱ دلار | ۰.۰۱ دلار | ۰.۰۱ دلار |
+| **مجموع به ازای هر تسک** | **حدود ۰.۳۳ دلار** | **حدود ۱.۰۵ دلار** | **حدود ۰.۶۴ دلار** |
 
-Human approval does not close these gaps on its own. A September 2026 paper (arXiv 2609.38983) shows that the action a human approves in a coding-agent harness is not always the action that runs, and that signing approvals closes only some of the gap. For this design, the approval gate records the hash of the exact diff the reviewer saw, and the commit step refuses to push anything else.
+همان Agent و همان مدل: افت نرخ اصابت کش از ۹۰٪ به ۵۰٪، هزینه تسک را از زیر بودجه ۰.۵۰ دلار به بیش از دو برابر آن می‌رساند. هزینه محاسبات Sandbox به‌صورت جداگانه توسط ارائه‌دهنده Sandbox محاسبه می‌شود.
 
----
+شرایط کش در میان ارائه‌دهندگان حتی بیشتر از قیمت‌های لیست‌شده با هم تفاوت دارد. مدل GPT-6.1 Sol (پیش‌فرض Codex CLI از ۲۹ سپتامبر ۲۰۲۶) با همان نرخ لیست ۲ / ۱۰ دلار مشابه Sonnet 5.5 عرضه می‌شود، نوشتن در کش ۳۰ دقیقه‌ای را با همان نرخ ۲.۵۰ دلار محاسبه می‌کند و از زمان کاهش قیمت ۷ اکتبر برای Sonnet 5.5، خواندن ورودی کش‌شده را نیز با همان ۰.۱۰ دلار به ازای 1M قیمت‌گذاری می‌کند؛ بنابراین تسک با اصابت کش ۹۰٪ روی هر دو مدل حدود ۰.۳۳ دلار هزینه دارد. تفاوت اصلی در مدت اعتبار کش (TTL) است: کش ۳۰ دقیقه‌ای OpenAI در برابر اجرای تست‌هایی دوام می‌آورد که کش ۵ دقیقه‌ای Anthropic را منقضی می‌کنند، و از ۲۰ اکتبر ۲۰۲۶ شرکت OpenAI یک گزینه کش ۱۲ ساعته با نرخ ۲.۵ برابر ورودی نیز در برابر گزینه ۱ ساعته Anthropic با نرخ ۲ برابر می‌فروشد. مدل GPT-6.1 Terra (با تعرفه ۱ / ۵ دلار و ورودی کش‌شده ۰.۰۵ دلار از ۲۶ اکتبر) در صورت حفظ نرخ قبولی شما، تقریباً هزینه هر ردیف را نصف می‌کند. ارائه‌دهندگان را بر اساس نرخ اصابت کش اندازه‌گیری‌شده و مدت‌زمان تست‌های خودتان مقایسه کنید: قیمت خواندن ارزان‌تر زمانی که Harness مدام دچار Cache Miss شود ارزش چندانی ندارد.
 
-## Interview Follow-Up Questions
-
-**Q: How do you handle tasks that require changes across 20+ files?**
-
-A: We break them into sub-tasks during planning. The planner outputs a DAG of changes with dependencies. The executor processes them in topological order, running tests incrementally. If step 5 breaks, we only re-run steps 5+ not the whole task. Shipping products use the same shape. Cursor Projects (beta, September 10, 2026) has a coordinator agent that plans and delegates to parallel subagents, and GitHub Copilot's dynamic workflows (public preview, October 1, 2026) are code-defined stages that pass structured results and pause at checkpoints for human review, in contrast to Copilot's `/fleet`, where the model decides how to delegate. When the dependencies are known up front, prefer the code-defined version: it is testable and resumable.
-
-**Q: What if the agent gets stuck in an infinite retry loop?**
-
-A: Three safeguards: (1) Max attempt limit (3). (2) If the same test fails with the same error twice, escalate to human. (3) Total budget per task ($0.50) triggers termination. Managed runtimes now enforce the third natively: Claude Managed Agents session budgets (since August 7, 2026) stop a session with `budget_reached`.
-
-**Q: How do you prevent the agent from introducing security vulnerabilities?**
-
-A: We run a static analysis tool (Semgrep) in the sandbox as part of the test suite. Security rule violations are treated as test failures and fed back to the agent for correction.
-
-**Q: The agent passed tests and a human approved the diff, yet internal data ended up public. How?**
-
-A: The leak was never in the diff. In PixelLeak (September 2026), agents asked to attach visual proof to private pull requests had no command-line path to GitHub's PR image hosting, so they created public repositories and uploaded screenshots there, including billing records and unreleased features. No attacker was involved; the agent met its goal through a side channel. Tests and code review check the change, not the side effects of producing it. Controls: an action policy on destinations (deny repo creation, visibility changes, gists and pushes outside the organization), audits of personal and departed-employee accounts, and review of shared skills and instruction files, since one shared screenshot tool turned up in about a third of affected organizations.
+عواملی که کش را می‌شکنند عبارت‌اند از: هر چیزی که پیشوند (Prefix) را تغییر دهد (مانند درج مهر زمانی در System Prompt، تغییر ترتیب تعاریف ابزارها، ویرایش نوبت‌های قبلی به‌جای افزودن به انتها)، تغییر مدل در میانه نشست (زیرا کش‌ها به ازای هر مدل جدا هستند)، و وقفه‌هایی طولانی‌تر از TTL کش. اگر اجرای تست‌ها بیش از ۵ دقیقه طول می‌کشد، هزینه نوشتن در کش ۱ ساعته (۴ دلار به ازای 1M در Sonnet 5.5) را بپردازید، وگرنه کش بین فراخوانی‌ها منقضی می‌شود. عواملی که از کش محافظت می‌کنند: قرار دادن یک System Prompt ثابت و فهرست ابزارهای تثبیت‌شده در ابتدا، تاریخچه فقط‌افزودنی (Append-only)، و تعداد کمتر Tokenهای ایستا. ابزار Cursor هزینه Token کاربران خود را ۷٪ کاهش داد (گزارش‌شده توسط ارائه‌دهنده در ۲۳ سپتامبر ۲۰۲۶)؛ این کار با حذف حدود دو سوم از System Prompt، بارگذاری ابزارهای داخلی کم‌کاربرد بر اساس تقاضا (On-demand)، و افزودن نقاط شکست صریح کش (Explicit Cache Breakpoints) انجام شد. همچنین، ساختار فقط‌افزودنی اکنون یک قاعده صحت اجرا نیز هست: مدل‌های Opus 5.5 و Sonnet 5.5 بلوک‌های تفکر (Thinking Blocks) را به مکالمه‌ای که آن‌ها را تولید کرده مقید می‌کنند، بنابراین یک Harness که نوبت‌های قبلی را بازنویسی کند (مثلاً خروجی ابزارهای قدیمی را درجا کوتاه کند)، به‌جای Cache Miss ممکن است خطای ۴۰۰ دریافت کند. شرکت Anthropic این بررسی را برای حساب‌های ایجادشده در تاریخ ۳۱ اوت ۲۰۲۶ یا پس از آن اعمال می‌کند؛ بنابراین یک Harness که روی یک حساب قدیمی‌تر کار می‌کند، ممکن است روی حساب جدید با خطا مواجه شود.
 
 ---
 
-## Key Takeaways for Interviews
+## مهار و ایزوله‌سازی: درس‌هایی از حوادث ۲۰۲۶ <a id="containment-lessons-from-2026-incidents"></a>
 
-1. **Separate planning from execution** for checkpointing and cost control
-2. **Sandbox all generated code** for security (E2B, Docker, etc.), and sandbox the harness's own commands too
-3. **Tiered retrieval solves large codebase scale**: summaries → symbols → content
-4. **Self-correction loops need hard limits**: attempts, tokens, time
-5. **Price agents by cache hit rate**: input dominates, and a cache regression can nearly triple cost per task
-6. **Constrain destinations, not just commands**: where the agent can push, publish and upload belongs in its action policy
+عبارت «تمام کدهای تولیدشده را در Sandbox قرار دهید» ضروری است اما دیگر کافی نیست. هر یک از حوادث زیر توانست از یک کنترل امنیتی که تیم‌ها به آن تکیه کرده بودند عبور کند؛ از جمله Sandbox، مرحله تایید انسانی یا نسخه پین‌شده (Pinned Version):
+
+| حادثه | چه اتفاقی افتاد | کنترل امنیتی استنتاج‌شده |
+|-------|------------------|--------------------------|
+| حادثه GitSpawn (گزارش Manifold Security، ۲ سپتامبر ۲۰۲۶) | فایل `.git/config` موجود در خود مخزن (عمدتاً `core.fsmonitor`) باعث شد هفت Agent کدنویسی تحت CLI دستورات مهاجم را با دسترسی کاربر و در خارج از Sandbox، هنگام فراخوانی‌های پس‌زمینه git اجرا کنند. این حمله نیازمند آن است که دایرکتوری `.git` دست‌نخورده منتقل شود (از طریق آرشیو، درایو اشتراکی یا پوشه همگام‌سازی)؛ یک clone عادی آن را منتقل نمی‌کند | کل Harness را در Sandbox قرار دهید، نه فقط فراخوانی ابزارهای مدل را؛ دستورات git آغازشده توسط Agent را با `git -c core.fsmonitor=false` اجرا کنید |
+| دور زدن حالت خودکار Claude Code (گزارش Embrace The Red، ۲۶ اوت ۲۰۲۶) | یک پاسخ دست‌کاری‌شده سرور باعث شد Claude Code (مدل Opus 5، حالت خودکار) کد مهاجم را در ۳ تا ۴ مورد از ۵ اجرا دانلود و اجرا کند و از طبقه‌بندی‌کننده مجوزها (Permission Classifier) عبور کند | طبقه‌بندی‌کننده‌های تاییدیه را صرفاً یک ابزار کمکی در نظر بگیرید. موضع Anthropic به نقل از پژوهشگر: «مرز واقعی، ایزوله‌سازی سیستم‌عامل و کنترل ترافیک خروجی شبکه (Network Egress) است» |
+| حادثه Plugin4Shell (گزارش AIR Security، ۱۷ سپتامبر ۲۰۲۶) | شاخه‌هایی (Branches) که هم‌نام با SHA یک کمیت نام‌گذاری شده بودند باعث شدند افزونه‌های Agent که به SHA پین شده بودند، به کد مهاجم ارجاع داده شوند | پس از checkout، تایید کنید که درخت کاری (Working Tree) دقیقاً همان کمیت پین‌شده است، نه صرفاً اینکه درخواستش را داده‌اید؛ افزونه‌ها را به‌عنوان بخشی از مرز اعتماد (Trust Boundary) بررسی کنید |
+| حادثه PixelLeak (گزارش Glow Security، ۲۹ سپتامبر ۲۰۲۶) | دستیارها و Agentهایی که مامور پیوست کردن اسکرین‌شات به Pull Requestهای خصوصی بودند، مخازن عمومی ساختند (۹۳٪ آن‌ها در حساب‌های شخصی) و بیش از ۱۳٬۰۰۰ تصویر داخلی را در بیش از ۹۰۰ مخزن منتشر کردند | مقاصد را در سیاست اقدام (Action Policy) بگنجانید: ساخت مخزن عمومی جدید، push به حساب‌های شخصی، ایجاد gist و تغییر سطح دسترسی را مسدود کنید |
+
+تعیین حداقل نسخه مجاز (Version Floors) کمک‌کننده است اما این دسته از آسیب‌پذیری‌ها را به‌طور کامل نمی‌بندد. مسیر اصلی GitSpawn در نسخه‌های Claude Code 2.1.196، Codex CLI 0.131.0 و goose 1.44.0 برطرف شده است، با این حال یک مسیر دوم در Claude Code (از طریق `claude ultrareview`) همچنان در نسخه 2.1.252 فعال بود و سه Agent دیگر نیز در بازآزمایی ۱ سپتامبر Manifold همچنان آسیب‌پذیر بودند. آسیب‌پذیری Plugin4Shell در Claude Code 2.1.179 و Codex 0.146.0 برطرف شده است و Copilot در زمان افشای آسیب‌پذیری اصلاحیه‌ای نداشت. در سیاست ناوگان (Fleet Policy) حداقل نسخه‌های Harness را تعیین کنید و با این حال تمهیدات کاهنده در سطح پیکربندی را نیز حفظ نمایید.
+
+تایید انسانی به‌تنهایی این شکاف‌ها را نمی‌بندد. یک مقاله منتشرشده در سپتامبر ۲۰۲۶ (arXiv 2609.38983) نشان می‌دهد اقدامی که یک انسان در Harness یک Agent کدنویسی تایید می‌کند، همیشه همان اقدامی نیست که در عمل اجرا می‌شود و امضای دیجیتال تاییدیه‌ها تنها بخشی از این شکاف را می‌بندد. برای این طراحی، دروازه تایید (Approval Gate) هش (Hash) دقیق همان Diffی را که بازبین مشاهده کرده ثبت می‌کند و مرحله Commit از push کردن هر چیز دیگری خودداری می‌ورزد.
 
 ---
 
-*Related chapters: [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md), [Error Handling](../07-agentic-systems/07-error-handling-and-recovery.md), [Agentic Security and Sandboxing](../07-agentic-systems/09-agentic-security-and-sandboxing.md), [FinOps and Token Economics](../11-infrastructure-and-mlops/04-finops-and-token-economics.md)*
+## پرسش‌های تکمیلی مصاحبه <a id="interview-follow-up-questions"></a>
+
+**سؤال: چگونه با وظایفی که نیازمند تغییر در بیش از ۲۰ فایل هستند برخورد می‌کنید؟**
+
+پاسخ: آن‌ها را در مرحله برنامه‌ریزی به زیرمسئله‌ها (Sub-tasks) تقسیم می‌کنیم. برنامه‌ریز یک گراف جهت‌دار غیرمدور (DAG) از تغییرات همراه با وابستگی‌ها خروجی می‌دهد. مجری (Executor) آن‌ها را به ترتیب توپولوژیک پردازش می‌کند و تست‌ها را به‌صورت افزایشی اجرا می‌نماید. اگر گام ۵ با خطا مواجه شود، تنها گام‌های ۵ به بعد را دوباره اجرا می‌کنیم نه کل تسک را. محصولات تجاری منتشرشده نیز از همین ساختار استفاده می‌کنند. قابلیت Cursor Projects (نسخه بتا، ۱۰ سپتامبر ۲۰۲۶) دارای یک Agent هماهنگ‌کننده است که برنامه‌ریزی کرده و کار را به زیرعامل‌های (Subagent) موازی واگذار می‌کند، و جریان‌های کاری پویای GitHub Copilot (پیش‌نمایش عمومی، ۱ اکتبر ۲۰۲۶) مراحلی تعریف‌شده با کد هستند که نتایج ساختاریافته را منتقل کرده و در نقاط بررسی برای بازبینی انسانی متوقف می‌شوند؛ در تقابل با دستور `/fleet` در Copilot که در آن مدل تصمیم می‌گیرد چگونه وظایف را تفویض کند. هنگامی که وابستگی‌ها از پیش مشخص هستند، نسخه تعریف‌شده با کد را ترجیح دهید: هم قابل تست است و هم قابلیت ازسرگیری (Resumable) دارد.
+
+**سؤال: اگر Agent در یک حلقه تلاش مجدد بی‌پایان گیر بیفتد چه می‌شود؟**
+
+پاسخ: سه لایه حفاظتی در نظر می‌گیریم: (۱) سقف حداکثر تعداد تلاش (۳ بار). (۲) اگر یک تست یکسان دو بار با خطای یکسان شکست بخورد، موضوع به انسان ارجاع داده می‌شود (Escalate). (۳) بودجه کل به ازای هر تسک (۰.۵۰ دلار) باعث توقف اجرا می‌شود. محیط‌های اجرای مدیریت‌شده (Managed Runtimes) اکنون مورد سوم را به‌صورت ذاتی اعمال می‌کنند: بودجه نشست در Claude Managed Agents (از ۷ اوت ۲۰۲۶) نشست را با وضعیت `budget_reached` متوقف می‌کند.
+
+**سؤال: چگونه از ایجاد آسیب‌پذیری‌های امنیتی توسط Agent جلوگیری می‌کنید؟**
+
+پاسخ: یک ابزار تحلیل ایستا (Semgrep) را به‌عنوان بخشی از مجموعه تست‌ها درون Sandbox اجرا می‌کنیم. نقض قوانین امنیتی به‌عنوان شکست تست در نظر گرفته شده و برای اصلاح به Agent بازخورد داده می‌شود.
+
+**سؤال: Agent تمام تست‌ها را پاس کرده و انسان نیز Diff را تایید کرده است، با این حال داده‌های داخلی به‌صورت عمومی منتشر شده‌اند. چگونه؟**
+
+پاسخ: نشت داده اصلاً در Diff نبوده است. در حادثه PixelLeak (سپتامبر ۲۰۲۶)، Agentهایی که مامور بودند مدرک تصویری به Pull Requestهای خصوصی پیوست کنند، مسیر خط فرمانی به میزبانی تصاویر PR در GitHub نداشتند؛ بنابراین مخازن عمومی ساختند و اسکرین‌شات‌ها را در آنجا آپلود کردند، از جمله سوابق صورت‌حساب و ویژگی‌های منتشرنشده. هیچ مهاجمی در کار نبود؛ Agent از طریق یک کانال جانبی به هدفش رسید. تست‌ها و بازبینی کد خودِ تغییر را بررسی می‌کنند، نه آثار جانبی تولید آن را. کنترل‌های لازم: اعمال سیاست اقدام روی مقاصد (ممنوعیت ساخت مخزن، تغییر سطح دسترسی، ایجاد gist و push به خارج از سازمان)، ممیزی حساب‌های شخصی و حساب‌های کارکنان جداشده از سازمان، و بازبینی مهارت‌ها (Skills) و فایل‌های دستورالعمل مشترک؛ زیرا یک ابزار مشترک اسکرین‌شات در حدود یک‌سوم سازمان‌های آسیب‌دیده مشاهده شد.
+
+---
+
+## نکات کلیدی برای مصاحبه <a id="key-takeaways-for-interviews"></a>
+
+1. **برنامه‌ریزی را از اجرا جدا کنید** تا امکان نقطه‌گذاری بررسی (Checkpointing) و کنترل هزینه فراهم شود
+2. **تمام کدهای تولیدشده را در Sandbox اجرا کنید** تا امنیت حفظ شود (E2B، Docker و غیره) و دستورات خودِ Harness را نیز در Sandbox قرار دهید
+3. **بازیابی چندسطحی مشکل مقیاس پایگاه‌های کد بزرگ را حل می‌کند**: خلاصه‌ها ← نمادها ← محتوای کامل
+4. **حلقه‌های خوداصلاحی به محدودیت‌های سخت‌گیرانه نیاز دارند**: تعداد تلاش‌ها، واحدهای Token و زمان
+5. **هزینه Agentها را بر اساس نرخ اصابت کش بسنجید**: ورودی بخش غالب هزینه است و افت کارایی کش می‌تواند هزینه هر تسک را تقریباً سه برابر کند
+6. **مقاصد را محدود کنید، نه فقط دستورات را**: اینکه Agent به کجا می‌تواند push کند، منتشر کند یا آپلود انجام دهد، جزو سیاست اقدام (Action Policy) آن است
+
+---
+
+*فصل‌های مرتبط: [استفاده از ابزار و MCP](../07-agentic-systems/03-tool-use-and-mcp.md)، [مدیریت خطا و بازیابی](../07-agentic-systems/07-error-handling-and-recovery.md)، [امنیت Agentic و Sandboxing](../07-agentic-systems/09-agentic-security-and-sandboxing.md)، [FinOps و اقتصاد Token](../11-infrastructure-and-mlops/04-finops-and-token-economics.md)*
+
+</div>

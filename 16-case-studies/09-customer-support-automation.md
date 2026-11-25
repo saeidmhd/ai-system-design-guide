@@ -1,26 +1,30 @@
-# Case Study: AI-Powered Customer Support
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: پشتیبانی مشتریان مبتنی بر هوش مصنوعی
 
-An e-commerce company handles **2 million support tickets per month**. They want an AI system that can automatically resolve 60% of tickets without human intervention, while handing complex issues to humans with full context.
+## بیان مسئله
 
-**Constraints given in the interview:**
-- 24/7 operation across 12 languages
-- Must integrate with existing Zendesk and Salesforce
-- Cannot make false promises (refunds, shipping dates)
-- Human agents must be able to take over mid-conversation
-- Cost target: $0.05 per resolved ticket
-- EU customers must be told they are talking to an AI (EU AI Act Article 50, applicable since August 2, 2026)
+یک شرکت تجارت الکترونیک ماهانه **۲ میلیون تیکت پشتیبانی** را پردازش می‌کند. این شرکت به دنبال طراحی یک سیستم هوش مصنوعی است که بتواند ۶۰ درصد تیکت‌ها را به‌صورت خودکار و بدون دخالت انسان حل‌وفصل کند و در عین حال مسائل پیچیده را همراه با کانتکست کامل (Full Context) به اپراتورهای انسانی تحویل دهد.
 
----
-
-## The Interview Question
-
-> "Design a customer support AI that handles 'Where is my order?' automatically but knows when to escalate 'I want to sue you for fraud' to a human."
+**محدودیت‌های مطرح‌شده در مصاحبه:**
+- فعالیت ۲۴/۷ (شبانه‌روزی) در ۱۲ زبان مختلف
+- الزام به یکپارچه‌سازی با سیستم‌های موجود Zendesk و Salesforce
+- عدم امکان دادن وعده‌های نادرست (در مورد بازپرداخت وجه یا تاریخ ارسال سفارش‌ها)
+- امکان تحویل گرفتن مکالمه توسط پشتیبان‌های انسانی در میانه گفتگو
+- هدف هزینه: ۰.۰۵ دلار به ازای هر تیکت حل‌شده
+- مشتریان اتحادیه اروپا باید مطلع شوند که در حال گفتگو با هوش مصنوعی هستند (ماده ۵۰ قانون هوش مصنوعی اتحادیه اروپا [EU AI Act Article 50]، لازم‌الاجرا از ۲ اوت ۲۰۲۶)
 
 ---
 
-## Solution Architecture
+## پرسش مصاحبه
+
+> «یک سیستم هوش مصنوعی پشتیبانی مشتریان طراحی کنید که پرسش‌هایی مانند «سفارش من کجاست؟» را به‌صورت خودکار پاسخ دهد، اما بداند چه زمانی پیامی مانند «می‌خواهم به جرم کلاهبرداری از شما شکایت کنم» را باید به یک پشتیبان انسانی ارجاع دهد.»
+
+---
+
+## معماری راه‌حل
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -53,23 +57,27 @@ flowchart TB
     end
 ```
 
+</div>
+
 ---
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی
 
-### 1. Three-Tier Routing (Auto / Hybrid / Escalate)
+### ۱. مسیریابی سه‌سطحی (خودکار / ترکیبی / ارجاع فوری)
 
-**Answer:** Not all tickets are equal. We classify into three paths:
+**پاسخ:** همه تیکت‌ها یکسان نیستند. ما آن‌ها را در سه مسیر طبقه‌بندی می‌کنیم:
 
-| Path | Criteria | Example | Human Involvement |
-|------|----------|---------|-------------------|
-| **Auto** | High confidence, low risk | "Where is my order?" | None |
-| **Hybrid** | Medium confidence or medium risk | "I want a refund" | Reviews AI draft |
-| **Escalate** | Legal, threats, VIP, low confidence | "This is fraud" | Full human handling |
+| مسیر | معیارها | نمونه | نقش پشتیبان انسانی |
+|------|---------|-------|---------------------|
+| **خودکار (Auto)** | اطمینان بالا، ریسک پایین | «سفارش من کجاست؟» | بدون دخالت |
+| **ترکیبی (Hybrid)** | اطمینان متوسط یا ریسک متوسط | «درخواست بازپرداخت دارم» | بررسی پیش‌نویس هوش مصنوعی |
+| **ارجاع فوری (Escalate)** | مسائل حقوقی، تهدید، مشتریان VIP، اطمینان پایین | «این کلاهبرداری است» | رسیدگی کامل توسط انسان |
 
-### 2. Tool-Based Resolution, Not Pure Generation
+### ۲. حل مسئله مبتنی بر ابزار (Tool-Based)، نه تولید متن محض
 
-**Answer:** The AI does not "know" where the order is. It calls the Order API tool. This is critical for accuracy:
+**پاسخ:** هوش مصنوعی به‌خودی‌خود «نمی‌داند» سفارش کجاست؛ بلکه ابزار Order API را فراخوانی می‌کند. این رویکرد برای حفظ دقت حیاتی است:
+
+<div dir="ltr">
 
 ```python
 @tool
@@ -84,23 +92,27 @@ def get_order_status(order_id: str) -> dict:
     }
 ```
 
-The LLM orchestrates tools but never fabricates data.
+</div>
 
-### 3. Why Safety Check Before Send?
+مدل LLM وظیفه هماهنگ‌سازی (Orchestration) ابزارها را بر عهده دارد، اما هرگز داده‌ای را از خود نمی‌سازد.
 
-**Answer:** Even auto-resolved tickets go through a safety filter:
+### ۳. چرا بررسی ایمنی پیش از ارسال ضروری است؟
 
-1. **Promise Detection**: Flags statements like "I guarantee" or "We will pay"
-2. **Sentiment Mismatch**: Catches if AI sounds happy when customer is angry
-3. **PII Leak**: Ensures no internal notes or other customer data appear
-4. **Competitor Mention**: Flags if AI recommends a competitor
-5. **Contact Allowlist**: Any phone number, URL or payment link in a draft must match a verified allowlist. In September 2026 a security researcher reported a phishing campaign that seeded fake support pages and PDFs to get ChatGPT, Gemini and Google AI Overviews to show fraudulent support numbers for airlines and banks; a support bot that retrieves from the open web or from customer-supplied text can repeat the same bait
+**پاسخ:** حتی تیکت‌هایی که به‌صورت خودکار حل می‌شوند نیز از یک فیلتر ایمنی عبور می‌کنند:
+
+1. **تشخیص وعده‌های الزام‌آور (Promise Detection)**: عباراتی مانند «تضمین می‌کنم» یا «ما خسارت را پرداخت خواهیم کرد» را پرچم‌گذاری می‌کند
+2. **ناهماهنگی لحن و احساسات (Sentiment Mismatch)**: مواردی را که لحن هوش مصنوعی در زمان عصبانیت مشتری بیش از حد شاد و خوش‌بینانه است، شناسایی می‌کند
+3. **نشت اطلاعات هویتی (PII Leak)**: اطمینان حاصل می‌کند که هیچ یادداشت داخلی یا داده‌ای از سایر مشتریان در پاسخ ظاهر نشود
+4. **ذکر نام رقبا (Competitor Mention)**: اگر هوش مصنوعی محصول یا خدمات رقیبی را پیشنهاد دهد، هشدار می‌دهد
+5. **فهرست مجاز اطلاعات تماس (Contact Allowlist)**: هر شماره تلفن، نشانی اینترنتی (URL) یا لینک پرداختی که در پیش‌نویس پاسخ می‌آید، باید با یک فهرست مجاز تأییدشده مطابقت داشته باشد. در سپتامبر ۲۰۲۶، یک پژوهشگر امنیت سایبری از کارزار فیشینگی گزارش داد که با کاشت صفحات پشتیبانی و فایل‌های PDF جعلی، کاری کرده بود سیستم‌های ChatGPT، Gemini و Google AI Overviews شماره‌های پشتیبانی تقلبی را برای خطوط هوایی و بانک‌ها نمایش دهند؛ ربات پشتیبانی که اطلاعات را از وب باز یا از متن ارسالی مشتری بازیابی می‌کند، ممکن است دقیقاً در همین تله بیفتد و همان طعمه را تکرار کند
 
 ---
 
-## The Escalation Intelligence
+## هوشمندی ارجاع (Escalation Intelligence)
 
-The hardest part is knowing **when** to escalate. We use a confidence score with multiple signals:
+دشوارترین بخش کار، تشخیص این است که **چه زمانی** باید مکالمه را به انسان ارجاع داد. ما برای این کار از یک امتیاز اطمینان (Confidence Score) مبتنی بر سیگنال‌های متعدد استفاده می‌کنیم:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -117,13 +129,17 @@ flowchart LR
     SCORE -->|< 0.5| ESCALATE[Immediate Escalate]
 ```
 
-**Key insight:** A VIP customer asking a simple question still goes to Hybrid path because the cost of a mistake is higher.
+</div>
+
+**نکته کلیدی:** اگر یک مشتری VIP حتی پرسش ساده‌ای بپرسد، باز هم به مسیر ترکیبی (Hybrid) هدایت می‌شود؛ زیرا هزینه بروز خطا برای این دسته از مشتریان بالاتر است.
 
 ---
 
-## Multilingual Support
+## پشتیبانی چندزبانه
 
-12 languages without 12 separate models, and without a translation pivot:
+پشتیبانی از ۱۲ زبان بدون نیاز به ۱۲ مدل مجزا و بدون استفاده از زبان میانی ترجمه (Translation Pivot):
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -134,15 +150,19 @@ flowchart LR
     PROCESS --> HANDOFF[Handoff summary<br/>for the human agent]
 ```
 
-**Why not translate to English and back?**
+</div>
 
-Earlier versions of this design pivoted through English to keep one prompt and one knowledge base. Current small models (GPT-6 Luna, Gemini 3.8 Flash, Claude Haiku 5.5) handle the major languages directly, so the pivot now costs more than it saves: two extra model calls per turn, more latency, and lost tone, which the escalation logic needs for its sentiment signal. Keep the knowledge base in English and retrieve across languages with a multilingual embedding model (Cohere Embed 5 covers 100+ languages). Translate only where a human needs it, such as the handoff summary for an agent who does not read the customer's language. Validate the long-tail languages on your own eval set; quality is not uniform across all 12.
+**چرا پیام را به انگلیسی ترجمه نکنیم و پاسخ را برنگردانیم؟**
+
+نسخه‌های اولیه این معماری برای حفظ یک Prompt واحد و یک پایگاه دانش (Knowledge Base) واحد، همه چیز را از طریق زبان انگلیسی ترجمه و جابه‌جا می‌کردند. مدل‌های کوچک امروزی (مانند GPT-6 Luna، Gemini 3.8 Flash و Claude Haiku 5.5) زبان‌های اصلی را به‌طور مستقیم پردازش می‌کنند؛ بنابراین ترجمه رفت‌وبرگشتی دیگر به‌صرفه نیست و هزینه‌اش از فایده‌اش بیشتر است: دو فراخوانی اضافی مدل در هر نوبت گفتگو، تاخیر (Latency) بیشتر، و از دست رفتن لحن پیام که منطق ارجاع برای تشخیص سیگنال احساسات به آن نیاز دارد. پایگاه دانش را به زبان انگلیسی نگه دارید و بازیابی اطلاعات را در میان زبان‌ها با یک مدل بردارسازی چندزبانه (Multilingual Embedding) انجام دهید (مدل Cohere Embed 5 بیش از ۱۰۰ زبان را پوشش می‌دهد). ترجمه را تنها در جایی انجام دهید که انسان به آن نیاز دارد؛ مانند خلاصه تحویل مکالمه برای پشتیبان انسانی که زبان مشتری را نمی‌داند. همچنین زبان‌های کم‌کاربردتر (Long-tail) را حتماً روی مجموعه ارزیابی (Eval Set) خودتان اعتبارسنجی کنید؛ کیفیت خروجی در همه ۱۲ زبان یکسان نیست.
 
 ---
 
-## Human Takeover (Mid-Conversation)
+## تحویل گرفتن مکالمه توسط انسان (در میانه گفتگو)
 
-When a human takes over, they need full context:
+هنگامی که یک پشتیبان انسانی مکالمه را تحویل می‌گیرد، به کانتکست (Context) کامل نیاز دارد:
+
+<div dir="ltr">
 
 ```python
 def handoff_to_human(conversation_id: str, agent_id: str):
@@ -169,51 +189,55 @@ def handoff_to_human(conversation_id: str, agent_id: str):
     }
 ```
 
-Treat the escalation reason as product data, not just routing data. Anthropic's write-up of its own inbound-sales agent (September 30, 2026, vendor-reported) is a useful reference: every conversation ends in one of three ways (direct checkout, a hand-off to a sales rep with the full conversation plus an explanation of why, or a quick informational answer), and Anthropic reports that the share of conversations needing a human fell by about half. Recording the reason at hand-off time is what makes escalations analyzable. Two practices from that write-up carry over directly: goal-oriented instructions outperformed long lists of granular rules, and every agent change was saved as a version so new sessions could be pointed back to an earlier one.
+</div>
+
+با دلیل ارجاع (Escalation Reason) به‌عنوان داده‌ی محصول (Product Data) برخورد کنید، نه صرفاً داده‌ی مسیریابی. گزارش فنی Anthropic درباره ایجنت فروش ورودی (Inbound-sales Agent) خود (۳۰ سپتامبر ۲۰۲۶، گزارش ارائه‌دهنده) مرجع مفیدی در این زمینه است: هر مکالمه در یکی از سه حالت زیر پایان می‌یابد (تکمیل مستقیم خرید، تحویل مکالمه به نماینده فروش همراه با متن کامل گفتگو و توضیح علت ارجاع، یا ارائه یک پاسخ اطلاعاتی سریع) و طبق گزارش Anthropic، سهم مکالماتی که به دخالت انسان نیاز داشتند تقریباً به نصف کاهش یافت. ثبت دلیل ارجاع در لحظه تحویل، همان چیزی است که ارجاع‌ها را قابل تحلیل می‌کند. دو تجربه کلیدی از آن گزارش مستقیماً در اینجا نیز کاربرد دارند: دستورالعمل‌های هدف‌محور (Goal-oriented) عملکرد بهتری نسبت به فهرست‌های طولانی از قوانین جزئی داشتند، و هر تغییر در Agent به‌عنوان یک نسخه (Version) جدید ذخیره می‌شد تا نشست‌های تازه بتوانند در صورت نیاز به نسخه قبلی بازگردانده شوند.
 
 ---
 
-## Cost Analysis
+## تحلیل هزینه
 
-November 2026 list prices; assumes ~3 turns per ticket at ~4K input tokens per turn.
+بر اساس تعرفه‌های فهرست‌شده در نوامبر ۲۰۲۶؛ با فرض حدود ۳ نوبت گفتگو به ازای هر تیکت و حدود ۴ هزار Token ورودی در هر نوبت.
 
-| Component | Cost per Ticket |
-|-----------|-----------------|
-| Intent classification (GPT-6 Luna, $0.10 / $0.50 per 1M) | $0.0001 |
-| Tool calls (Order API, FAQ search) | $0.001 |
-| Response generation (GPT-6 Luna: 3 × 4K in, ~750 out per turn including reasoning) | $0.0023 |
-| Safety check (classifier plus a GPT-6 Luna pass) | $0.0005 |
-| Handoff summary translation (when the agent needs it) | $0.0005 |
-| **Average total** | **~$0.0044** |
+| جزء | هزینه به ازای هر تیکت |
+|-----|------------------------|
+| طبقه‌بندی نیت کاربر (مدل GPT-6 Luna، نرخ ۰.۱۰ / ۰.۵۰ دلار به ازای هر ۱ میلیون Token) | ۰.۰۰۰۱ دلار |
+| فراخوانی ابزارها (Order API و جست‌وجوی پرسش‌های متداول) | ۰.۰۰۱ دلار |
+| تولید پاسخ (مدل GPT-6 Luna: ۳ × ۴ هزار Token ورودی، حدود ۷۵۰ Token خروجی در هر نوبت شامل استدلال) | ۰.۰۰۲۳ دلار |
+| بررسی ایمنی (طبقه‌بندی‌کننده به‌همراه یک گذر از GPT-6 Luna) | ۰.۰۰۰۵ دلار |
+| ترجمه خلاصه تحویل مکالمه (در صورت نیاز پشتیبان انسانی) | ۰.۰۰۰۵ دلار |
+| **میانگین کل** | **حدود ۰.۰۰۴۴ دلار** |
 
-At a 60% auto-resolution rate: **about $0.007 per resolved ticket**, well under the $0.05 target. Model spend is no longer the constraint at 2M tickets a month (under $10,000 in tokens). The money is in escalations and in wrong answers: a single wrong refund promise can cost more than a month of intent classification (about $200). Spend the headroom on a stronger model for the Hybrid path's drafts (a $2 / $10 model such as Claude Sonnet 5.5 or GPT-6 Sol) rather than squeezing the auto path further.
-
----
-
-## Interview Follow-Up Questions
-
-**Q: What if the AI keeps apologizing but never actually helps?**
-
-A: We track "resolution effectiveness" not just "response sent." If a customer replies again within 24 hours on the same issue, that ticket is marked as "unresolved" and the AI pattern is flagged for review. We also run weekly analysis: "What phrases correlate with customer follow-ups?"
-
-**Q: How do you handle a customer who insists on talking to a human?**
-
-A: Explicit escalation phrases ("talk to a human", "speak to manager") trigger immediate handoff regardless of confidence score. We never argue with escalation requests.
-
-**Q: What about customers who try to jailbreak the support AI?**
-
-A: Input sanitization plus a narrow, tool-scoped design. Assume the system prompt will leak, since summarizing tool output is still free-form generation, so nothing secret goes in it. The real protection is that tools are scoped to the authenticated customer (the order tool can only read that customer's orders) and refunds or account changes go through the Hybrid path, so a successful jailbreak yields words, not actions. The system prompt stays narrow for answer quality: "You help with order issues for [Company]. You cannot discuss other topics."
+با نرخ حل‌وفصل خودکار ۶۰ درصدی، هزینه به **حدود ۰.۰۰۷ دلار به ازای هر تیکت حل‌شده** می‌رسد که کاملاً پایین‌تر از هدف ۰.۰۵ دلاری است. در مقیاس ۲ میلیون تیکت در ماه، هزینه مدل دیگر گلوگاه اصلی نیست (کمتر از ۱۰٬۰۰۰ دلار بابت Tokenها). هزینه اصلی در ارجاع‌های انسانی و پاسخ‌های اشتباه نهفته است: حتی یک وعده بازپرداخت اشتباه می‌تواند بیش از هزینه یک ماه کامل طبقه‌بندی نیت (حدود ۲۰۰ دلار) خسارت بزند. بهتر است این حاشیه بودجه را صرف به‌کارگیری یک مدل قوی‌تر برای پیش‌نویس‌های مسیر ترکیبی (یک مدل با تعرفه ۲ / ۱۰ دلار مانند Claude Sonnet 5.5 یا GPT-6 Sol) کنید، به‌جای اینکه بیش از حد روی فشرده‌سازی هزینه مسیر خودکار تمرکز نمایید.
 
 ---
 
-## Key Takeaways for Interviews
+## پرسش‌های تکمیلی مصاحبه
 
-1. **Tiered routing balances automation with risk**: not every ticket should be auto-resolved
-2. **Tool-based grounding prevents hallucination**: the AI retrieves facts, it does not generate them
-3. **Confidence is multi-dimensional**: intent clarity + sentiment + customer tier + topic risk
-4. **Human handoff needs context**: summarize, do not just dump the transcript
-5. **Escalation reasons are product feedback**: log why every handoff happened and work down the top reasons
+**سوال: اگر هوش مصنوعی مدام عذرخواهی کند اما در عمل هیچ کمکی نکند چه می‌شود؟**
+
+پاسخ: ما «اثربخشی حل مسئله» (Resolution Effectiveness) را ردیابی می‌کنیم، نه صرفاً «ارسال پاسخ» را. اگر مشتری ظرف ۲۴ ساعت دوباره درباره همان موضوع پیام بدهد، آن تیکت به‌عنوان «حل‌نشده» علامت‌گذاری و الگوی رفتاری هوش مصنوعی برای بررسی پرچم‌گذاری می‌شود. همچنین تحلیل هفتگی با این پرسش انجام می‌دهیم: «چه عباراتی با پیگیری مجدد مشتریان همبستگی دارند؟»
+
+**سوال: با مشتری که اصرار دارد با یک انسان صحبت کند چگونه برخورد می‌کنید؟**
+
+پاسخ: عبارات صریح درخواست ارجاع (مانند «صحبت با انسان» یا «گفتگو با مدیر») بدون توجه به امتیاز اطمینان، بلافاصله تحویل مکالمه به انسان را فعال می‌کنند. ما هرگز با درخواست ارجاع مشتری بحث نمی‌کنیم.
+
+**سوال: درباره مشتریانی که تلاش می‌کنند هوش مصنوعی پشتیبانی را Jailbreak کنند چه تدبیری دارید؟**
+
+پاسخ: پاک‌سازی ورودی (Input Sanitization) به‌همراه طراحی محدود و مقید به ابزار (Tool-scoped). فرض را بر این بگذارید که System Prompt بالاخره نشت خواهد کرد، زیرا خلاصه‌سازی خروجی ابزار همچنان یک تولید متن آزاد است؛ بنابراین هیچ اطلاعات محرمانه‌ای را در آن قرار ندهید. حفاظت واقعی از اینجا می‌آید که دسترسی ابزارها صرفاً به مشتری احراز هویت‌شده محدود است (ابزار سفارش فقط می‌تواند سفارش‌های همان مشتری را بخواند) و بازپرداخت‌ها یا تغییرات حساب از مسیر ترکیبی (Hybrid) عبور می‌کنند؛ در نتیجه حتی یک Jailbreak موفق صرفاً به تولید کلمات منجر می‌شود، نه انجام اقدام واقعی. متن System Prompt نیز برای حفظ کیفیت پاسخ‌ها محدود نگه داشته می‌شود: «شما در مسائل مربوط به سفارش‌های شرکت [Company] کمک می‌کنید و اجازه بحث درباره موضوعات دیگر را ندارید.»
 
 ---
 
-*Related chapters: [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md), [Guardrails Implementation](../13-reliability-and-safety/01-guardrails.md)*
+## نکات کلیدی برای مصاحبه
+
+1. **مسیریابی چندلایه تعادل میان اتوماسیون و ریسک را برقرار می‌کند**: قرار نیست هر تیکتی به‌صورت خودکار حل شود
+2. **اتکا به ابزار (Tool-based Grounding) از توهم‌زایی جلوگیری می‌کند**: هوش مصنوعی واقعیت‌ها را بازیابی می‌کند، نه اینکه آن‌ها را بسازد
+3. **امتیاز اطمینان چندبعدی است**: وضوح نیت کاربر + لحن و احساسات + سطح مشتری + ریسک موضوع
+4. **تحویل مکالمه به انسان نیازمند کانتکست است**: مکالمه را خلاصه کنید، نه اینکه صرفاً متن کامل گفتگو را روی سر اپراتور بریزید
+5. **دلایل ارجاع بازخورد محصول هستند**: علت هر تحویل مکالمه را ثبت کنید و به ترتیب پرتکرارترین دلایل را برطرف نمایید
+
+---
+
+*فصل‌های مرتبط: [الگوهای انسان در چرخه (Human-in-the-Loop)](../07-agentic-systems/08-human-in-the-loop-patterns.md)، [پیاده‌سازی گاردریل‌ها (Guardrails)](../13-reliability-and-safety/01-guardrails.md)*
+
+</div>

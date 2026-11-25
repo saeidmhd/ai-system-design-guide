@@ -1,24 +1,28 @@
-# Case Study: Eval-Gated CI/CD for an AI Product
+<div dir="rtl">
 
-A 28-engineer AI product team replaces post-merge regression hunts with eval-gated CI: every PR runs golden sets, LLM-as-judge with statistical correction, and failure-mode taxonomies before a merge button appears.
+# مطالعه موردی: پایپ‌لاین CI/CD مبتنی بر ارزیابی (Eval-Gated) برای یک محصول هوش مصنوعی <a id="case-study-eval-gated-cicd-for-an-ai-product"></a>
 
-## The Business Problem
+یک تیم محصول هوش مصنوعی متشکل از ۲۸ مهندس، شکار پس‌رفت‌های (Regression) پس از ادغام را با یک پایپ‌لاین CI مبتنی بر ارزیابی جایگزین می‌کند: هر درخواست ادغام (PR) پیش از آنکه دکمه ادغام (Merge) ظاهر شود، مجموعه‌های طلایی (Golden Sets)، ارزیابی با روش LLM در نقش داور (LLM-as-judge) همراه با اصلاح آماری، و رده‌بندی حالت‌های شکست (Failure-Mode Taxonomies) را اجرا می‌کند.
 
-An AI-first SaaS company ships a customer-facing answer-bot built on a RAG pipeline plus an agent loop. Six months ago the team shipped a "small" prompt change that regressed answer-quality on questions about a specific contract type, and lost a $4M renewal when the customer noticed. The post-incident review found three things: the change had not been evaluated against the contract-specific test set; the LLM-as-judge metric used in spot checks had drifted by 11 points and no one noticed; and a fix that needed a 2-day rollback took 9 days because no one had a safe-to-revert baseline.
+## مسئله کسب‌وکار <a id="the-business-problem"></a>
 
-Constraints:
+یک شرکت SaaS مبتنی بر هوش مصنوعی، ربات پاسخ‌گوی روبه‌روی مشتری خود را بر پایه یک پایپ‌لاین RAG به همراه یک حلقه Agent عرضه می‌کند. شش ماه پیش، تیم یک تغییر «کوچک» در Prompt منتشر کرد که کیفیت پاسخ‌دهی به پرسش‌های مربوط به یک نوع قرارداد خاص را دچار پس‌رفت کرد و زمانی که مشتری متوجه شد، تمدید قرارداد ۴ میلیون دلاری از دست رفت. بررسی پس از حادثه سه موضوع را آشکار ساخت: تغییر مذکور روی مجموعه آزمون اختصاصی آن قرارداد ارزیابی نشده بود؛ معیار LLM-as-judge مورد استفاده در بررسی‌های مقطعی ۱۱ امتیاز انحراف (Drift) پیدا کرده بود و هیچ‌کس متوجه نشده بود؛ و اصلاحی که تنها به یک بازگشت (Rollback) دو روزه نیاز داشت، ۹ روز زمان برد زیرا هیچ‌کس خط مبنای مطمئنی برای بازگشت به آن نداشت.
 
-- 28 engineers across 4 teams; about 50 PRs per week touch the AI surface
-- Customers in regulated industries refuse to accept regression on their domain-specific queries
-- Per-PR eval budget: under $40 of model spend; total eval budget: about $15K per month
-- p95 PR-to-merge time goal: under 90 minutes including eval
-- Quarterly auditor signoff on the eval methodology
+محدودیت‌ها:
 
-Eval-gated CI is no longer a nice-to-have. Hamel Husain's [eval blog series](https://hamel.dev/blog/posts/evals/), Eugene Yan's writings ([evals](https://eugeneyan.com/writing/evals/)), and the [judgy library](https://github.com/ai-evals-course/judgy) for statistical correction have all converged on a playbook. Phoenix, Langfuse, Braintrust, and Galileo (now Splunk Agent Observability, after Cisco's acquisition) all support running evals from CI. The question is no longer "should we do this" but "how do we do this without doubling cycle time."
+- حضور ۲۸ مهندس در ۴ تیم؛ حدود ۵۰ درخواست PR در هفته بخش هوش مصنوعی را لمس می‌کنند
+- مشتریان در صنایع تحت نظارت و رگولاتوری، هیچ پس‌رفتی را در پرس‌وجوهای تخصصی حوزه خود نمی‌پذیرند
+- بودجه ارزیابی به ازای هر PR: کمتر از ۴۰ دلار هزینه مدل؛ بودجه کل ارزیابی: حدود ۱۵ هزار دلار در ماه
+- هدف زمانی صدک p95 از ایجاد PR تا ادغام: کمتر از ۹۰ دقیقه شامل زمان ارزیابی
+- تأییدیه فصلی حسابرس برای متدولوژی ارزیابی
 
-The tooling underneath churns, so own the assets. OpenAI's hosted Evals shuts down November 30, 2026 (OpenAI points users to Promptfoo, the open-source tool that is now part of OpenAI and remains MIT-licensed), and Dynatrace completed its acquisition of Arize, Phoenix's developer, on October 1, 2026. Golden sets, judge prompts, and calibration labels live in our repo, so the runner is replaceable in a sprint.
+امروزه پایپ‌لاین CI مبتنی بر ارزیابی دیگر یک قابلیت لوکس نیست. مجموعه مقالات [ارزیابی (eval blog series)](https://hamel.dev/blog/posts/evals/) حامد حسین (Hamel Husain)، نوشته‌های یوجین یان (Eugene Yan) درباره [ارزیابی‌ها (evals)](https://eugeneyan.com/writing/evals/)، و کتابخانه [judgy](https://github.com/ai-evals-course/judgy) برای اصلاح آماری، همگی به یک دستورالعمل اجرایی واحد رسیده‌اند. پلتفرم‌های Phoenix، Langfuse، Braintrust و Galileo (که پس از تملک توسط Cisco اکنون Splunk Agent Observability نام دارد) همگی از اجرای ارزیابی‌ها از داخل CI پشتیبانی می‌کنند. پرسش دیگر این نیست که «آیا باید این کار را انجام دهیم؟» بلکه این است که «چگونه بدون دو برابر شدن زمان چرخه توسعه، این کار را انجام دهیم؟»
 
-## Architecture
+ابزارهای زیرساختی دائماً در حال تغییر هستند، بنابراین مالکیت دارایی‌های اصلی را در اختیار خود نگه دارید. سرویس میزبانی‌شده Evals شرکت OpenAI در ۳۰ نوامبر ۲۰۲۶ خاموش می‌شود (OpenAI کاربران را به Promptfoo هدایت می‌کند؛ ابزار متن‌بازی که اکنون بخشی از OpenAI است و همچنان با مجوز MIT عرضه می‌شود)، و شرکت Dynatrace تملک Arize، توسعه‌دهنده Phoenix، را در ۱ اکتبر ۲۰۲۶ تکمیل کرد. مجموعه‌های طلایی، متن‌های Prompt داور و برچسب‌های کالیبراسیون در مخزن خودمان نگهداری می‌شوند، بنابراین اجراکننده (Runner) در یک اسپرینت قابل جایگزینی است.
+
+## معماری <a id="architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -49,82 +53,86 @@ flowchart TB
     BLOCK --> DEV
 ```
 
-### Components
+</div>
 
-| Layer | Tech | Purpose |
+### مؤلفه‌ها <a id="components"></a>
+
+| لایه | فناوری | هدف |
 |-------|------|---------|
-| Golden sets | YAML in repo, 1,200 to 4,000 cases per surface | Stable test base |
-| Code evaluators | Pytest with custom assertions | Cheap, deterministic checks |
-| LLM judges | Claude Sonnet 5.5 (pinned ID and effort), GPT-6 Sol as the calibrated backup | Subjective quality |
-| Statistical correction | [judgy](https://github.com/ai-evals-course/judgy) | Convert judge scores to estimates with CIs |
-| Pipeline | GitHub Actions plus custom runner | CI orchestration |
-| Trace store | Langfuse | Per-PR observability |
-| Annotation | Argilla self-hosted | Human re-labeling for judge calibration |
+| مجموعه‌های طلایی (Golden sets) | فایل YAML در مخزن؛ ۱٬۲۰۰ تا ۴٬۰۰۰ مورد برای هر بخش | پایه آزمون پایدار |
+| ارزیاب‌های کد (Code evaluators) | فریم‌ورک Pytest با ارزیابی‌های سفارشی | بررسی‌های ارزان و قطعی (Deterministic) |
+| داورهای LLM | مدل Claude Sonnet 5.5 (شناسه و سطح Effort تثبیت‌شده) و مدل GPT-6 Sol به‌عنوان پشتیبان کالیبره‌شده | ارزیابی کیفیت ذهنی |
+| اصلاح آماری | کتابخانه [judgy](https://github.com/ai-evals-course/judgy) | تبدیل امتیازهای داور به برآوردهایی با بازه اطمینان (CI) |
+| پایپ‌لاین | سرویس GitHub Actions به همراه اجراکننده (Runner) سفارشی | ارکستراسیون CI |
+| مخزن ردیابی (Trace store) | ابزار Langfuse | مشاهده‌پذیری به ازای هر PR |
+| برچسب‌گذاری (Annotation) | پلتفرم Argilla به‌صورت خودمیزبان | برچسب‌گذاری مجدد انسانی برای کالیبراسیون داور |
 
-### Data flow
+### جریان داده <a id="data-flow"></a>
 
-1. PR opens; GitHub Actions fires; Stage 1 (lint, unit, type checks) runs in 2 minutes.
-2. Stage 2 starts the golden-set eval against a representative subset (10 to 25 percent of the full set by default; 100 percent on protected branches or when labels say `full-eval`).
-3. Each golden-set case runs through the new build, generates an output, and is scored by (a) code-based evaluators where deterministic checks apply (JSON schema, regex, factual lookups) and (b) an LLM judge for quality dimensions.
-4. Stage 3 corrects the judge scores using `judgy` with the train/dev/test split for the judge prompt.
-5. The corrected estimate (with confidence interval) is compared against `main`'s last green build; if the lower bound of the CI is within tolerance, the PR merges; otherwise it blocks with a detailed report.
+1. درخواست PR باز می‌شود؛ GitHub Actions فعال می‌شود؛ مرحله اول (بررسی کد یا Lint، آزمون‌های واحد و بررسی نوع) در ۲ دقیقه اجرا می‌شود.
+2. مرحله دوم ارزیابی مجموعه طلایی را روی یک زیرمجموعه نماینده (به‌طور پیش‌فرض ۱۰ تا ۲۵ درصد کل مجموعه؛ ۱۰۰ درصد روی شاخه‌های محافظت‌شده یا زمانی که برچسب‌ها `full-eval` را مشخص کنند) آغاز می‌کند.
+3. هر مورد از مجموعه طلایی از طریق نسخه ساخت جدید اجرا می‌شود، خروجی تولید می‌کند و توسط (الف) ارزیاب‌های مبتنی بر کد در جاهایی که بررسی‌های قطعی کاربرد دارند (طرحواره JSON، عبارات باقاعده، جست‌وجوی داده‌های واقعی) و (ب) یک داور LLM برای ابعاد کیفی امتیازدهی می‌شود.
+4. مرحله سوم امتیازهای داور را با استفاده از `judgy` و با تقسیم‌بندی train/dev/test برای Prompt داور اصلاح می‌کند.
+5. برآورد اصلاح‌شده (به همراه بازه اطمینان) با آخرین نسخه موفق شاخه `main` مقایسه می‌شود؛ اگر کران پایین بازه اطمینان در محدوده مجاز باشد، PR ادغام می‌شود؛ در غیر این صورت با یک گزارش دقیق مسدود می‌شود.
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. Golden-set construction and rotation
+### ۱. ساخت و چرخش مجموعه طلایی <a id="1-golden-set-construction-and-rotation"></a>
 
-Each golden set is built from three sources: production trace samples from the last 90 days (stratified by failure modes from error analysis), synthetic adversarial cases generated by a separate red-team LLM, and curated edge cases from customer support tickets. We rotate 10 to 15 percent of cases quarterly; we never delete cases (cases get archived to a frozen "historical regressions" set that runs only nightly). This avoids the over-fitting trap where the eval set drifts with the product.
+هر مجموعه طلایی از سه منبع ساخته می‌شود: نمونه‌های ردیابی (Trace) محیط عملیاتی از ۹۰ روز گذشته (طبقه‌بندی‌شده بر اساس حالت‌های شکست حاصل از تحلیل خطا)، موارد تخاصمی مصنوعی (Adversarial) تولیدشده توسط یک LLM تیم قرمز (Red-team) مجزا، و موارد مرزی گزینش‌شده از تیکت‌های پشتیبانی مشتریان. ما به‌صورت فصلی ۱۰ تا ۱۵ درصد موارد را جابه‌جا می‌کنیم؛ هیچ‌گاه موردی را حذف نمی‌کنیم (موارد در یک مجموعه منجمد «پس‌رفت‌های تاریخی» بایگانی می‌شوند که فقط شبانه اجرا می‌گردد). این رویکرد از تله بیش‌برازش (Over-fitting) که در آن مجموعه ارزیابی هم‌گام با محصول منحرف می‌شود، جلوگیری می‌کند.
 
-Sizing: 1,200 cases per surface is the floor; below this, the corrected-score CI is too wide to detect a 2-point regression at 95 percent confidence. Eugene Yan covers this sizing math; we re-derived it for our metric.
+تعیین اندازه مجموعه: ۱٬۲۰۰ مورد به ازای هر سطح محصولی حداقل کف است؛ کمتر از این مقدار، بازه اطمینان نمره اصلاح‌شده بیش از حد عریض می‌شود و نمی‌تواند یک پس‌رفت ۲ امتیازی را با اطمینان ۹۵ درصد تشخیص دهد. یوجین یان ریاضیات تعیین این اندازه را پوشش داده است؛ ما آن را برای سنجه خودمان بازتولید کردیم.
 
-### 2. Train/dev/test split for the judge
+### ۲. تقسیم‌بندی train/dev/test برای داور <a id="2-traindevtest-split-for-the-judge"></a>
 
-The LLM judge is itself a model with prompt parameters and few-shot examples. We treat the judge prompt as a model and apply train/dev/test discipline: 60 percent of human-labeled cases tune the judge prompt, 20 percent select the best prompt variant, 20 percent are a hold-out we only consult before a major judge-prompt change. This pattern is the core of the [judgy methodology](https://github.com/ai-evals-course/judgy) and Hamel's eval posts.
+داور LLM خودش یک مدل با پارامترهای Prompt و مثال‌های Few-shot است. ما با Prompt داور همانند یک مدل رفتار می‌کنیم و انضباط train/dev/test را اعمال می‌کنیم: ۶۰ درصد موارد برچسب‌گذاری‌شده توسط انسان برای تنظیم Prompt داور، ۲۰ درصد برای انتخاب بهترین نسخه Prompt و ۲۰ درصد به‌عنوان مجموعه نگهداری‌شده (Hold-out) استفاده می‌شوند که تنها پیش از یک تغییر عمده در Prompt داور به آن مراجعه می‌کنیم. این الگو هسته [متدولوژی judgy](https://github.com/ai-evals-course/judgy) و نوشته‌های ارزیابی حامد حسین است.
 
-Re-calibration cadence: every 30 days, 50 fresh cases get re-labeled by 2 humans (Cohen's kappa over 0.7 required); if the judge's accuracy on dev set drops below 80 percent, we re-tune.
+دوره بازکالیبراسیون: هر ۳۰ روز، ۵۰ مورد تازه توسط ۲ انسان مجدداً برچسب‌گذاری می‌شوند (ضریب کاپای کوهن بالای ۰٫۷ الزامی است)؛ اگر دقت داور روی مجموعه dev به زیر ۸۰ درصد برسد، تنظیم مجدد انجام می‌دهیم.
 
-### 3. Statistical correction with judgy
+### ۳. اصلاح آماری با judgy <a id="3-statistical-correction-with-judgy"></a>
 
-Naive LLM-as-judge accuracy on subjective categories is around 75 to 88 percent in our domain. A raw judge score is biased. `judgy` computes a corrected estimate of the true pass rate using the judge's confusion matrix on the held-out set, and returns a confidence interval. We gate on the lower bound of the CI being within tolerance. This means we never block a PR on judge noise alone, and we never approve a regression that the judge merely failed to catch.
+دقت ساده روش LLM-as-judge در دسته‌بندی‌های ذهنی و کیفی در حوزه ما حدود ۷۵ تا ۸۸ درصد است. نمره خام داور سوگیری (Bias) دارد. کتابخانه `judgy` با استفاده از ماتریس درهم‌ریختگی (Confusion Matrix) داور روی مجموعه نگهداری‌شده، برآورد اصلاح‌شده‌ای از نرخ قبولی واقعی محاسبه کرده و یک بازه اطمینان بازمی‌گرداند. ما گیت کنترلی را روی کران پایین بازه اطمینان در محدوده مجاز تنظیم می‌کنیم. این یعنی هرگز یک PR را صرفاً به‌خاطر نویز داور مسدود نمی‌کنیم و هرگز پس‌رفتی را که داور تنها در تشخیص آن ناکام مانده است، تأیید نمی‌کنیم.
 
-The math: the correction uses the judge's true positive rate (it passes a good answer) and true negative rate (it fails a bad one), estimated on the held-out set: corrected = (observed + TNR - 1) / (TPR + TNR - 1). If the judge has a 99 percent TPR but only a 75 percent TNR (it rarely fails a good answer but passes a quarter of the bad ones), a judge-reported 89 percent pass rate corrects to about 86.5 percent, with a 95 percent CI of roughly 82 to 91 percent. Lenient judges inflate pass rates; the correction takes that back out. We allow merge if the CI lower bound is at most 2 points below `main`. ([Reference: judgy README math](https://github.com/ai-evals-course/judgy#how-it-works)).
+منطق ریاضی: این اصلاح از نرخ مثبت واقعی (TPR، قبولی دادن به یک پاسخ خوب) و نرخ منفی واقعی (TNR، رد کردن یک پاسخ بد) داور که روی مجموعه نگهداری‌شده برآورد شده‌اند استفاده می‌کند: `corrected = (observed + TNR - 1) / (TPR + TNR - 1)`. اگر داور دارای ۹۹ درصد TPR باشد اما تنها ۷۵ درصد TNR داشته باشد (به‌ندرت پاسخ خوب را رد می‌کند اما یک‌چهارم پاسخ‌های بد را قبول می‌کند)، نرخ قبولی ۸۹ درصدی گزارش‌شده توسط داور به حدود ۸۶٫۵ درصد اصلاح می‌شود که بازه اطمینان ۹۵ درصد آن تقریباً بین ۸۲ تا ۹۱ درصد خواهد بود. داوران سهل‌گیر نرخ قبولی را به‌طور مصنوعی بالا می‌برند؛ اصلاح آماری این اثر را برطرف می‌کند. ما اجازه ادغام را در صورتی می‌دهیم که کران پایین بازه اطمینان حداکثر ۲ امتیاز پایین‌تر از `main` باشد. ([مرجع: ریاضیات README کتابخانه judgy](https://github.com/ai-evals-course/judgy#how-it-works)).
 
-### 4. Failure-mode taxonomy as the assertion surface
+### ۴. رده‌بندی حالت‌های شکست به‌عنوان سطح ارزیابی (Assertion Surface) <a id="4-failure-mode-taxonomy-as-the-assertion-surface"></a>
 
-We do not score "quality" as a single number. We score along axes drawn from our failure-mode taxonomy: hallucination, retrieval-miss, format violation, refusal, persona break, citation error. The taxonomy is the output of error analysis ([Hamel's open-coding + axial-coding pipeline](https://hamel.dev/blog/posts/field-guide/)) applied to 800 production failures over 6 months. Per-axis scores let us block on a hallucination regression even if overall quality improved.
+ما «کیفیت» را به‌صورت یک عدد واحد امتیازدهی نمی‌کنیم. امتیازدهی را در امتداد محورهای برگرفته از رده‌بندی حالت‌های شکست خود انجام می‌دهیم: توهم (Hallucination)، خطای بازیابی (Retrieval-miss)، نقض قالب (Format Violation)، امتناع از پاسخ (Refusal)، شکست شخصیت (Persona Break) و خطای استناد (Citation Error). این رده‌بندی خروجی تحلیل خطا ([پایپ‌لاین کدگذاری باز و محوری حامد حسین](https://hamel.dev/blog/posts/field-guide/)) است که روی ۸۰۰ شکست محیط عملیاتی در طول ۶ ماه اعمال شده است. امتیازهای تفکیک‌شده بر اساس هر محور به ما اجازه می‌دهند حتی اگر کیفیت کلی بهبود یافته باشد، روی پس‌رفت توهم مسدودسازی انجام دهیم.
 
-### 5. Per-PR eval budget
+### ۵. بودجه ارزیابی به ازای هر PR <a id="5-per-pr-eval-budget"></a>
 
-A full eval-set run costs $80 to $200 depending on model spend. At 50 PRs per week, the naive cost is $4K to $10K per week. We bound this:
+یک اجرای کامل مجموعه ارزیابی بسته به هزینه مدل، ۸۰ تا ۲۰۰ دلار هزینه دارد. با ۵۰ PR در هفته، هزینه ساده و بدون بهینه‌سازی ۴ تا ۱۰ هزار دلار در هفته خواهد بود. ما این هزینه را این‌گونه مهار می‌کنیم:
 
-- Default PR runs 10 to 25 percent of the golden set, stratified by failure mode (so all failure modes are represented).
-- The `full-eval` label triggers 100 percent.
-- Nightly cron runs 100 percent on `main` to catch any drift we missed.
-- A new judge-prompt change triggers a 100 percent run on a frozen historical set.
+- در PR پیش‌فرض ۱۰ تا ۲۵ درصد از مجموعه طلایی به‌صورت طبقه‌بندی‌شده بر اساس حالت شکست اجرا می‌شود (تا همه حالت‌های شکست نماینده داشته باشند).
+- برچسب `full-eval` اجرای ۱۰۰ درصدی را فعال می‌کند.
+- کران (Cron) شبانه ۱۰۰ درصد مجموعه را روی شاخه `main` اجرا می‌کند تا هر انحرافی را که از دست داده‌ایم شکار کند.
+- یک تغییر جدید در Prompt داور، اجرای ۱۰۰ درصدی را روی یک مجموعه تاریخی منجمد فعال می‌کند.
 
-This bounds per-PR cost to under $40 and default PR traffic to about $1,250 per week (see the cost model below).
+این سازوکار هزینه هر PR را زیر ۴۰ دلار و ترافیک پیش‌فرض PRها را حدود ۱٬۲۵۰ دلار در هفته نگه می‌دارد (مدل هزینه را در ادامه ببینید).
 
-For binary axes there is now a cheaper judge tier: **decision models** that return a typed yes/no or category with a probability instead of generated text. A September 2026 comparison (arXiv 2609.29769) found LLM rubric judges cost 16 to 325x as much as TypeSafe's Jev decision model (early access, $0.042 per 1M input tokens), with significant accuracy differences in at most 8 of 27 paired comparisons; Jev was strongest on binary checklist criteria and behind on ordinal ones, and cascading the two gained at most 2.7 points. Hosted and self-hosted options now exist, including OpenAI's Decisions API (GA October 22, 2026) and native support in vLLM, SGLang, and Ollama (see [Decision Models](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). Published tests found their probabilities underconfident, so we set thresholds from our own labeled set rather than reading 0.5 as the boundary. We are piloting one on the format-violation and refusal axes, behind the same calibration gate as any judge. Graded axes, and anything where reviewers need a written rationale, stay on the LLM judge.
+برای محورهای دودویی (Binary) اکنون یک لایه داور ارزان‌تر وجود دارد: **مدل‌های تصمیم‌گیری (Decision Models)** که به‌جای تولید متن، یک بله/خیر نوع‌دار یا دسته‌بندی به همراه احتمال بازمی‌گردانند. یک مقایسه در سپتامبر ۲۰۲۶ (arXiv 2609.29769) نشان داد که داورهای مبتنی بر معیار (Rubric) در LLM نسبت به مدل تصمیم‌گیری Jev شرکت TypeSafe (دسترسی زودهنگام، ۰٫۰۴۲ دلار به ازای هر ۱ میلیون Token ورودی) ۱۶ تا ۳۲۵ برابر گران‌تر هستند، در حالی که تفاوت معنادار دقت حداکثر در ۸ مورد از ۲۷ مقایسه جفتی مشاهده شد؛ Jev روی معیارهای چک‌لیست دودویی بهترین عملکرد را داشت و در معیارهای ترتیبی عقب‌تر بود، و آبشاری کردن (Cascading) این دو حداکثر ۲٫۷ امتیاز بهبود ایجاد کرد. گزینه‌های میزبانی‌شده و خودمیزبان اکنون در دسترس هستند، از جمله Decisions API شرکت OpenAI (عرضه عمومی در ۲۲ اکتبر ۲۰۲۶) و پشتیبانی بومی در vLLM، SGLang و Ollama (ببینید: [مدل‌های تصمیم‌گیری](../RESEARCH-RADAR.md#16-decision-models-typed-answers-with-probabilities)). آزمون‌های منتشرشده نشان دادند که احتمال‌های این مدل‌ها دارای اطمینان کمتر از حد واقعی (Underconfident) هستند، بنابراین ما آستانه‌ها را به‌جای در نظر گرفتن ۰٫۵ به‌عنوان مرز، از روی مجموعه برچسب‌گذاری‌شده خودمان تنظیم می‌کنیم. ما در حال آزمایش یکی از این مدل‌ها روی محورهای نقض قالب و امتناع از پاسخ، پشت همان گیت کالیبراسیون سایر داورها هستیم. محورهای درجه‌بندی‌شده و هر موردی که بازبین‌ها به استدلال مکتوب نیاز دارند، همچنان روی داور LLM باقی می‌مانند.
 
-### 6. Judge-prompt drift detection
+### ۶. تشخیص انحراف (Drift) در Prompt داور <a id="6-judge-prompt-drift-detection"></a>
 
-Even with calibration, judge prompts drift: the underlying model updates, the few-shot examples become less representative, the prompt's vocabulary feels dated to the model. We monitor drift by:
+حتی با وجود کالیبراسیون، Promptهای داور دچار انحراف می‌شوند: مدل زیربنایی به‌روزرسانی می‌شود، مثال‌های Few-shot کمتر نماینده واقعیت باقی می‌مانند، و واژگان Prompt برای مدل قدیمی به نظر می‌رسد. ما انحراف را از این راه‌ها پایش می‌کنیم:
 
-- Re-running the held-out set monthly and reporting accuracy delta vs the previous month.
-- Tracking inter-judge agreement (we run two judge prompts in parallel; divergence over time signals drift in one).
-- Versioning the judge prompt in git; rolling back is a 1-commit operation.
+- بازاجرای ماهانه مجموعه نگهداری‌شده و گزارش اختلاف دقت نسبت به ماه قبل.
+- ردیابی توافق بین داورها (ما دو Prompt داور را به‌صورت موازی اجرا می‌کنیم؛ واگرایی در طول زمان نشانه انحراف در یکی از آن‌هاست).
+- نسخه‌بندی Prompt داور در git؛ بازگشت به نسخه قبل تنها یک عملیات تک‌کمیت (1-commit) است.
 
-When drift exceeds 3 points or kappa drops below 0.65, we open a maintenance ticket.
+زمانی که انحراف از ۳ امتیاز فراتر رود یا ضریب کاپا به زیر ۰٫۶۵ سقوط کند، یک تیکت نگهداری و اصلاح باز می‌کنیم.
 
-### 7. Caching the eval pipeline
+### ۷. کش کردن پایپ‌لاین ارزیابی <a id="7-caching-the-eval-pipeline"></a>
 
-A typical golden-set case generates an output, which is then judged. The output is not deterministic (Claude API version `2026-10-21` rejects any temperature on every model, and GPT-6 Astra accepts no temperature at all), but for caching we treat one recorded output per key as the reference. We cache (prompt-hash, model ID, effort, provider epoch) to (output, judge-score) so that re-running the same eval is nearly free. The provider epoch is a counter we bump whenever a vendor changelog reports a serving change under an unchanged model ID. On September 25, 2026 OpenAI fixed an image-encoding bug in GPT-6 Sol and Luna without changing the IDs and told customers to rerun image evaluations; a cache keyed on model ID alone would have kept serving launch-week results from the broken path. Aliases move too: on October 8 Google began routing `gemini-3.7-flash` requests to `gemini-3.8-flash`, so a pinned string can start returning a different model's outputs, and we bump the epoch for that as well. Cache hit rate on PRs that touch only orchestration code (not prompts) is around 70 percent; this is a 3x cost reduction on this class of changes.
+یک مورد معمولی در مجموعه طلایی ابتدا خروجی تولید می‌کند و سپس داوری می‌شود. خروجی قطعی (Deterministic) نیست (نسخه `2026-10-21` از API کلاد هرگونه مقدار temperature را روی تمام مدل‌ها رد می‌کند و GPT-6 Astra اصلاً temperature را نمی‌پذیرد)، اما برای کش کردن (Caching)، یک خروجی ثبت‌شده به ازای هر کلید را به‌عنوان مرجع در نظر می‌گیریم. ما نگاشت `(prompt-hash, model ID, effort, provider epoch)` به `(output, judge-score)` را کش می‌کنیم تا اجرای مجدد همان ارزیابی تقریباً رایگان باشد. پارامتر provider epoch یک شمارنده است که هر زمان گزارش تغییرات ارائه‌دهنده از یک تغییر در سرویس‌دهی (Serving) زیر همان شناسه مدل ثابت خبر دهد، آن را افزایش می‌دهیم. در ۲۵ سپتامبر ۲۰۲۶ شرکت OpenAI یک باگ رمزگذاری تصویر را در GPT-6 Sol و Luna بدون تغییر شناسه‌ها برطرف کرد و به مشتریان گفت ارزیابی‌های تصویر را مجدداً اجرا کنند؛ کشی که تنها بر اساس شناسه مدل کلیدگذاری شده بود، همچنان نتایج هفته اول عرضه را از مسیر معیوب بازمی‌گرداند. نام‌های مستعار (Aliases) نیز جابه‌جا می‌شوند: در ۸ اکتبر، گوگل مسیریابی درخواست‌های `gemini-3.7-flash` را به `gemini-3.8-flash` آغاز کرد، بنابراین یک رشته تثبیت‌شده می‌تواند ناگهان خروجی‌های مدل دیگری را بازگرداند و ما epoch را برای این مورد نیز افزایش می‌دهیم. نرخ اصابت کش (Cache hit rate) در PRهایی که فقط کد ارکستراسیون را تغییر می‌دهند (نه Promptها را) حدود ۷۰ درصد است؛ این یعنی ۳ برابر کاهش هزینه در این دسته از تغییرات.
 
-### 8. PR-level instrumentation
+### ۸. ابزارگذاری و گزارش‌دهی در سطح PR <a id="8-pr-level-instrumentation"></a>
 
-Each PR's eval report includes: per-axis pass-rate vs main, per-axis examples that newly failed, per-axis examples that newly passed, judge-correction CI bounds, total cost, and a link to the trace store so engineers can replay any failing case. The report is posted as a GitHub comment within 3 minutes of the run completing.
+گزارش ارزیابی هر PR شامل موارد زیر است: نرخ قبولی به ازای هر محور در مقایسه با main، مثال‌هایی در هر محور که به‌تازگی رد شده‌اند، مثال‌هایی در هر محور که به‌تازگی قبول شده‌اند، کران‌های بازه اطمینان اصلاح داور، هزینه کل، و پیوندی به مخزن ردیابی (Trace Store) تا مهندسان بتوانند هر مورد ناموفق را بازپخش کنند. این گزارش ظرف ۳ دقیقه پس از اتمام اجرا به‌صورت یک دیدگاه (Comment) در GitHub ثبت می‌شود.
 
-## CI Pipeline Sequence
+## ترتیب اجرای پایپ‌لاین CI <a id="ci-pipeline-sequence"></a>
+
+<div dir="ltr">
 
 ```mermaid
 sequenceDiagram
@@ -151,110 +159,114 @@ sequenceDiagram
     end
 ```
 
-## Failure Modes and Mitigations
+</div>
 
-### F1: Judge prompt drift goes unnoticed
+## حالت‌های شکست و راهکارهای کاهش ریسک <a id="failure-modes-and-mitigations"></a>
 
-The judge gradually under-detects hallucinations after a model upgrade. Mitigation: monthly held-out replay; inter-judge agreement tracking; a "freeze judge" mode for protected branches that pins the judge model version and its effort level even when newer models are available. Pin effort explicitly, because defaults move between versions (Claude Opus 5 defaulted to `high`, Opus 5.5 to `medium`), and a silent default change is a judge change. The drift incident that broke us before was caused by exactly this; we now catch drift within one cycle.
+### حالت شکست F1: پنهان ماندن انحراف Prompt داور <a id="f1-judge-prompt-drift-goes-unnoticed"></a>
 
-### F2: Eval set becomes overfit
+داور پس از ارتقای مدل به‌تدریج توهم‌ها را کمتر تشخیص می‌دهد. راهکار کاهش ریسک: بازپخش ماهانه مجموعه نگهداری‌شده؛ ردیابی توافق بین داورها؛ حالت «انجماد داور» (Freeze Judge) برای شاخه‌های محافظت‌شده که نسخه مدل داور و سطح Effort آن را حتی در زمان در دسترس بودن مدل‌های جدیدتر تثبیت می‌کند. سطح Effort را به‌صورت صریح تثبیت کنید، زیرا مقادیر پیش‌فرض بین نسخه‌ها تغییر می‌کنند (مدل Claude Opus 5 به‌طور پیش‌فرض روی `high` و Opus 5.5 روی `medium` بود) و تغییر بی‌سروصدای پیش‌فرض به‌معنای تغییر داور است. حادثه انحرافی که پیش‌تر به ما آسیب زد دقیقاً ناشی از همین موضوع بود؛ اکنون انحراف را در همان یک چرخه شناسایی می‌کنیم.
 
-A few cases get debugged repeatedly; the prompt is implicitly tuned to them. Mitigation: quarterly rotation; reserved adversarial cases that are never shown to engineers in failure reports (only outcomes). A separate red-team team owns the held-out set.
+### حالت شکست F2: بیش‌برازش (Overfit) شدن مجموعه ارزیابی <a id="f2-eval-set-becomes-overfit"></a>
 
-### F3: Single PR runs a corner of the eval that misses regressions
+چند مورد خاص به‌طور مکرر اشکال‌زدایی می‌شوند؛ Prompt به‌طور ضمنی برای آن‌ها تنظیم می‌شود. راهکار کاهش ریسک: چرخش فصلی؛ موارد تخاصمی رزروشده که هرگز در گزارش‌های خطا به مهندسان نشان داده نمی‌شوند (فقط نتایج نمایش داده می‌شوند). یک تیم قرمز مجزا مالکیت مجموعه نگهداری‌شده را بر عهده دارد.
 
-Stratified sampling: we ensure each PR's 10-percent sample includes at least 1 case from each of the 12 failure modes. The full nightly run still happens on `main`. Per-PR coverage is bounded but not zero.
+### حالت شکست F3: اجرای بخشی از ارزیابی در یک PR که پس‌رفت‌ها را از دست می‌دهد <a id="f3-single-pr-runs-a-corner-of-the-eval-that-misses-regressions"></a>
 
-### F4: Cost overrun from accidental full-runs
+نمونه‌برداری طبقه‌بندی‌شده (Stratified Sampling): ما اطمینان حاصل می‌کنیم که نمونه ۱۰ درصدی هر PR حداقل ۱ مورد از هر یک از ۱۲ حالت شکست را شامل شود. اجرای کامل شبانه همچنان روی `main` انجام می‌شود. پوشش به ازای هر PR محدود است اما صفر نیست.
 
-A `full-eval` label on every PR triples cost. Mitigation: the label requires an approval from a CODEOWNERS file; an automated reminder pings whoever applies it. We also cap monthly eval spend with a hard ceiling at $17K (about 13 percent above plan) and refuse to start a job that would exceed it.
+### حالت شکست F4: سرریز هزینه ناشی از اجراهای کامل تصادفی <a id="f4-cost-overrun-from-accidental-full-runs"></a>
 
-### F5: Block-rate too high; developers learn to ignore
+وجود برچسب `full-eval` روی هر PR هزینه را سه برابر می‌کند. راهکار کاهش ریسک: این برچسب نیازمند تأیید از فایل CODEOWNERS است؛ یک یادآور خودکار به هر کسی که آن را اعمال کند پیام می‌دهد. ما همچنین هزینه ماهانه ارزیابی را با یک سقف سخت ۱۷ هزار دلاری (حدود ۱۳ درصد بالاتر از برنامه) محدود می‌کنیم و از شروع کاری که از این سقف فراتر رود خودداری می‌کنیم.
 
-If 35 percent of PRs are blocked, developers stop reading reports and look for ways around. Mitigation: we tune the gating tolerance to keep block-rate at 5 to 12 percent; we treat block-rate as an SLI; when it spikes we investigate why (often the judge is too strict on a new failure mode). The goal is to surface real regressions, not act as a gatekeeping toy.
+### حالت شکست F5: بالا بودن بیش از حد نرخ مسدودسازی؛ بی‌اعتنایی توسعه‌دهندگان <a id="f5-block-rate-too-high-developers-learn-to-ignore"></a>
 
-### F6: Holdout set leakage into training or prompts
+اگر ۳۵ درصد از PRها مسدود شوند، توسعه‌دهندگان خواندن گزارش‌ها را متوقف می‌کنند و به دنبال راه‌هایی برای دور زدن آن می‌گردند. راهکار کاهش ریسک: ما آستانه گیت را طوری تنظیم می‌کنیم که نرخ مسدودسازی در بازه ۵ تا ۱۲ درصد بماند؛ با نرخ مسدودسازی به‌عنوان یک SLI رفتار می‌کنیم؛ هنگام افزایش ناگهانی آن دلیل را بررسی می‌کنیم (اغلب داور روی یک حالت شکست جدید بیش از حد سخت‌گیر است). هدف آشکارسازی پس‌رفت‌های واقعی است، نه تبدیل شدن به یک ابزار مانع‌تراشی نمایشی.
 
-A held-out case ends up as a few-shot example. Mitigation: the held-out set is stored in a separate repo with a separate access list; engineers cannot read it; only the eval runner has a deploy key. Failure reports include hashes, not raw cases, for held-out failures.
+### حالت شکست F6: نشت مجموعه نگهداری‌شده به آموزش یا Promptها <a id="f6-holdout-set-leakage-into-training-or-prompts"></a>
 
-Leakage also runs the other way once the system under test has tools: an agent that can search, read files, or run git can find the answers. A September 2026 audit of SWE-Bench Pro v1.0 (arXiv 2609.34262) found that 24% to 73% of passing runs, depending on the model, were unearned, mostly through access to reference solutions in git history. Our eval sandbox runs the agent against an index and filesystem that contain neither the eval repo nor its history.
+یک مورد از مجموعه نگهداری‌شده سر از مثال‌های Few-shot درمی‌آورد. راهکار کاهش ریسک: مجموعه نگهداری‌شده در یک مخزن جداگانه با فهرست دسترسی مجزا ذخیره می‌شود؛ مهندسان امکان خواندن آن را ندارند؛ تنها اجراکننده ارزیابی کلید استقرار (Deploy Key) دارد. گزارش‌های شکست برای خطاهای مجموعه نگهداری‌شده به‌جای موارد خام، هش‌ها (Hash) را شامل می‌شوند.
 
-### F7: Judge model deprecation
+نشت همچنین زمانی که سیستم تحت آزمون دارای ابزار باشد، در جهت معکوس نیز رخ می‌دهد: یک Agent که بتواند جست‌وجو کند، فایل‌ها را بخواند یا git اجرا کند می‌تواند پاسخ‌ها را پیدا کند. یک ممیزی در سپتامبر ۲۰۲۶ روی SWE-Bench Pro v1.0 (arXiv 2609.34262) نشان داد که ۲۴ تا ۷۳ درصد از اجراهای موفق، بسته به مدل، به‌طور غیرواقعی به دست آمده بودند که عمدتاً از طریق دسترسی به راه‌حل‌های مرجع در تاریخچه git رخ داده بود. محیط ایزوله (Sandbox) ارزیابی ما، Agent را در برابر یک اندیس (Index) و سیستم فایلی اجرا می‌کند که نه مخزن ارزیابی را دارد و نه تاریخچه آن را.
 
-The vendor announces end-of-life for the judge model. Anthropic's minimum notice is 60 days; OpenAI's is 6 months for GA models but can be 2 weeks for previews, so a preview model never judges a protected branch. Mitigation: we keep at least two judge models from different vendors calibrated in parallel; when a deprecation lands, we swap with kappa thresholds preserved. The git history of judge prompts plus the calibration data make this routine.
+### حالت شکست F7: منسوخ شدن مدل داور <a id="f7-judge-model-deprecation"></a>
 
-### F8: Eval runner queue saturation
+ارائه‌دهنده پایان عمر (End-of-life) مدل داور را اعلام می‌کند. حداقل اطلاع‌رسانی Anthropic برابر با ۶۰ روز است؛ برای OpenAI برای مدل‌های GA برابر با ۶ ماه است اما برای نسخه‌های پیش‌نمایش (Preview) می‌تواند ۲ هفته باشد، بنابراین یک مدل پیش‌نمایش هرگز یک شاخه محافظت‌شده را داوری نمی‌کند. راهکار کاهش ریسک: ما حداقل دو مدل داور از ارائه‌دهندگان مختلف را به‌صورت موازی کالیبره نگه می‌داریم؛ وقتی زمان منسوخ شدن فرا می‌رسد، با حفظ آستانه‌های کاپا جابه‌جایی را انجام می‌دهیم. تاریخچه git مربوط به Promptهای داور به همراه داده‌های کالیبراسیون این کار را به یک روال عادی تبدیل می‌کند.
 
-A surge of PRs around release time queues evals 30 minutes deep. Mitigation: dedicated eval-runner GPU pool with autoscaling; priority lanes for protected branches; if queue depth exceeds 20, we automatically downgrade non-protected PRs to a 5 percent sample to clear the backlog faster.
+### حالت شکست F8: اشباع صف اجراکننده ارزیابی <a id="f8-eval-runner-queue-saturation"></a>
 
-## Operational Considerations
+هجوم PRها در زمان انتشار نسخه، صف ارزیابی‌ها را ۳۰ دقیقه طولانی می‌کند. راهکار کاهش ریسک: استخر GPU اختصاصی برای اجراکننده ارزیابی با مقیاس‌پذیری خودکار (Autoscaling)؛ مسیرهای اولویت‌دار برای شاخه‌های محافظت‌شده؛ اگر عمق صف از ۲۰ فراتر رود، به‌طور خودکار PRهای غیرمحافظت‌شده را به نمونه ۵ درصدی تنزل می‌دهیم تا انباشت صف سریع‌تر تخلیه شود.
 
-### Monitoring
+## ملاحظات عملیاتی <a id="operational-considerations"></a>
 
-| SLO | Target |
+### پایش (Monitoring) <a id="monitoring"></a>
+
+| شاخص SLO | هدف |
 |-----|--------|
-| PR-to-merge p95 | under 90 minutes |
-| Eval-cost per PR p95 | under $40 |
-| Block-rate (false negatives + true regressions) | 5 to 12 percent |
-| Judge inter-rater kappa | over 0.7 |
-| Holdout-set replay accuracy delta month-over-month | under 3 points |
-| Production regression escapes (post-deploy) | under 1 per quarter |
+| صدک p95 زمان از باز شدن PR تا ادغام (Merge) | کمتر از ۹۰ دقیقه |
+| صدک p95 هزینه ارزیابی به ازای هر PR | کمتر از ۴۰ دلار |
+| نرخ مسدودسازی (منفی‌های کاذب + پس‌رفت‌های واقعی) | بین ۵ تا ۱۲ درصد |
+| ضریب کاپای بین ارزیاب‌ها (Inter-rater kappa) برای داور | بیش از ۰٫۷ |
+| اختلاف دقت بازپخش مجموعه نگهداری‌شده (Holdout) ماه‌به‌ماه | کمتر از ۳ امتیاز |
+| فرار پس‌رفت به محیط عملیاتی (پس از استقرار) | کمتر از ۱ مورد در هر فصل |
 
-### Cost model
+### مدل هزینه <a id="cost-model"></a>
 
-At 50 PRs per week:
+در مقیاس ۵۰ PR در هفته:
 
-- Default sampling: $25 per PR average; $1,250 per week
-- Full-eval runs (about 8 per week): $100 each; $800 per week
-- Nightly cron: $200 each; $1,400 per week
-- Judge re-calibration: $50 per month
-- Total: about $3,450 per week, or about $15K per month
+- نمونه‌برداری پیش‌فرض: میانگین ۲۵ دلار به ازای هر PR؛ ۱٬۲۵۰ دلار در هفته
+- اجراهای کامل `full-eval` (حدود ۸ مورد در هفته): هر کدام ۱۰۰ دلار؛ ۸۰۰ دلار در هفته
+- اجرای شبانه Cron: هر کدام ۲۰۰ دلار؛ ۱٬۴۰۰ دلار در هفته
+- بازکالیبراسیون داور: ۵۰ دلار در ماه
+- مجموع: حدود ۳٬۴۵۰ دلار در هفته، یا حدود ۱۵ هزار دلار در ماه
 
-This pays for itself with one prevented regression. Our post-incident estimate of the $4M renewal we lost suggests this is well-bounded by even one save per year.
+این هزینه با جلوگیری از حتی یک پس‌رفت، خود را جبران می‌کند. برآورد پس از حادثه ما برای تمدید ۴ میلیون دلاری ازدست‌رفته نشان می‌دهد که این هزینه حتی با یک مورد پیشگیری در سال به‌خوبی توجیه‌پذیر است.
 
-### On-call playbook
+### دستورالعمل کشیک (On-call Playbook) <a id="on-call-playbook"></a>
 
-- Block-rate spike: check if any recent change to judge prompt or golden set drove this; compare per-axis scores to baseline.
-- Eval cost spike: check sample rate config; rate-limit `full-eval` label.
-- Judge drift alert: trigger calibration cycle; rotate judge to backup model if drift is severe.
-- Holdout breach (hash collision): immediately quarantine, regenerate the affected cases.
-- Eval runner outage: PRs queue with a clear "eval pending" status; we never auto-merge while the runner is down; SRE pages within 15 minutes.
+- جهش ناگهانی نرخ مسدودسازی: بررسی کنید که آیا تغییر اخیری در Prompt داور یا مجموعه طلایی عامل آن بوده است؛ امتیازهای هر محور را با خط مبنا مقایسه کنید.
+- جهش هزینه ارزیابی: پیکربندی نرخ نمونه‌برداری را بررسی کنید؛ روی برچسب `full-eval` محدودیت نرخ (Rate-limit) اعمال کنید.
+- هشدار انحراف داور: چرخه کالیبراسیون را فعال کنید؛ در صورت شدید بودن انحراف، داور را به مدل پشتیبان تغییر دهید.
+- نقض مجموعه نگهداری‌شده (تداخل هش): بلافاصله قرنطینه کنید و موارد آسیب‌دیده را بازتولید نمایید.
+- از کار افتادن اجراکننده ارزیابی: PRها با وضعیت شفاف «در انتظار ارزیابی» در صف می‌مانند؛ تا زمانی که اجراکننده از کار افتاده است هرگز ادغام خودکار انجام نمی‌دهیم؛ تیم SRE ظرف ۱۵ دقیقه فراخوانده می‌شود.
 
-### Quarterly review
+### بازنگری فصلی <a id="quarterly-review"></a>
 
-Every quarter the AI team reviews: failure-mode taxonomy (do the categories still match real production errors?), golden set rotation (which 10 to 15 percent are stale?), judge calibration history (is drift accelerating?), and block-rate trend (is the gate becoming theater?). This review feeds into the next quarter's eval roadmap. We use the [Hamel field-guide](https://hamel.dev/blog/posts/field-guide/) ritual: open-coding sessions on the most recent 50 failures, then axial coding to update the taxonomy.
+هر فصل تیم هوش مصنوعی موارد زیر را بررسی می‌کند: رده‌بندی حالت‌های شکست (آیا دسته‌بندی‌ها همچنان با خطاهای واقعی محیط عملیاتی هم‌خوانی دارند؟)، چرخش مجموعه طلایی (کدام ۱۰ تا ۱۵ درصد قدیمی شده‌اند؟)، تاریخچه کالیبراسیون داور (آیا سرعت انحراف در حال افزایش است؟)، و روند نرخ مسدودسازی (آیا گیت به یک نمایش بی‌اثر تبدیل شده است؟). این بازنگری نقشه راه ارزیابی فصل بعد را تغذیه می‌کند. ما از آیین [راهنمای میدانی حامد حسین](https://hamel.dev/blog/posts/field-guide/) استفاده می‌کنیم: جلسات کدگذاری باز روی ۵۰ شکست اخیر، و سپس کدگذاری محوری برای به‌روزرسانی رده‌بندی.
 
-### Auditor pack
+### بسته حسابرسی <a id="auditor-pack"></a>
 
-The eval pipeline produces a quarterly auditor pack: methodology document (versioned in git), golden set summary (counts per failure mode), judge calibration results (Cohen's kappa over time), block-rate histogram, and a sample of failing PRs with the rationale. The pack is generated automatically and signed by the head of engineering.
+پایپ‌لاین ارزیابی یک بسته فصلی برای حسابرس تولید می‌کند: سند متدولوژی (نسخه‌بندی‌شده در git)، خلاصه مجموعه طلایی (تعداد به ازای هر حالت شکست)، نتایج کالیبراسیون داور (ضریب کاپای کوهن در طول زمان)، هیستوگرام نرخ مسدودسازی، و نمونه‌ای از PRهای ردشده به همراه استدلال. این بسته به‌طور خودکار تولید شده و توسط مدیر مهندسی امضا می‌شود.
 
-### Why we do not use a single composite quality score
+### چرا از یک نمره ترکیبی واحد کیفیت استفاده نمی‌کنیم <a id="why-we-do-not-use-a-single-composite-quality-score"></a>
 
-The temptation is to roll all axes into one number and gate on it. We do not. A composite hides regressions: a hallucination regression can be masked by a format-compliance improvement. We gate on per-axis scores so that each axis has its own confidence interval and its own block. The cost is more report noise; the benefit is that we never silently regress on a critical dimension.
+وسوسه‌انگیز است که همه محورها را در یک عدد ادغام کنیم و گیت را روی آن بگذاریم. ما این کار را نمی‌کنیم. یک نمره ترکیبی پس‌رفت‌ها را پنهان می‌کند: پس‌رفت در توهم می‌تواند پشت بهبود رعایت قالب (Format Compliance) پنهان شود. ما گیت را روی امتیازهای تفکیک‌شده هر محور می‌گذاریم تا هر محور بازه اطمینان و مسدودسازی مستقل خود را داشته باشد. بهای این کار شلوغ‌تر شدن گزارش‌هاست؛ اما فایده‌اش این است که هرگز به‌طور خاموش در یک بُعد حیاتی دچار پس‌رفت نمی‌شویم.
 
-## What Strong Interview Candidates Cover
+## آنچه داوطلبان قوی در مصاحبه پوشش می‌دهند <a id="what-strong-interview-candidates-cover"></a>
 
-- They distinguish code-based evaluators (cheap, deterministic) from LLM-as-judge (expensive, subjective) and use both in different stages.
-- They name statistical correction explicitly; they understand that a raw judge score is a biased estimate and that confidence intervals are the right abstraction for gating.
-- They define a failure-mode taxonomy from error analysis and gate on per-axis scores, not a single composite.
-- They specify the train/dev/test discipline for the judge itself, including kappa thresholds for re-calibration.
-- They bound eval cost explicitly; they know full runs cost too much for every PR and that stratified sampling is the lever.
-- They have a story for judge-prompt drift: they monitor it, they version-control the prompt, they have a roll-back plan.
-- They protect the held-out set with hashes and a separate access list to prevent leakage.
+- تفاوت میان ارزیاب‌های مبتنی بر کد (ارزان، قطعی) و روش LLM-as-judge (گران، ذهنی) را تشخیص می‌دهند و از هر دو در مراحل مختلف استفاده می‌کنند.
+- به اصلاح آماری به‌طور صریح اشاره می‌کنند؛ می‌دانند که نمره خام داور یک برآورد سوگیرانه است و بازه‌های اطمینان انتزاع درستی برای گیت کنترلی هستند.
+- یک رده‌بندی حالت‌های شکست از تحلیل خطا تعریف می‌کنند و گیت را بر اساس امتیازهای هر محور قرار می‌دهند، نه یک نمره ترکیبی واحد.
+- انضباط train/dev/test را برای خود داور مشخص می‌کنند، از جمله آستانه‌های کاپا برای بازکالیبراسیون.
+- هزینه ارزیابی را به‌طور صریح محدود می‌کنند؛ می‌دانند اجرای کامل برای هر PR بیش از حد گران است و نمونه‌برداری طبقه‌بندی‌شده اهرم کنترل آن است.
+- برنامه‌ای برای انحراف Prompt داور دارند: آن را پایش می‌کنند، Prompt را تحت کنترل نسخه نگه می‌دارند و برنامه بازگشت (Roll-back) دارند.
+- از مجموعه نگهداری‌شده با هش‌ها و فهرست دسترسی مجزا برای جلوگیری از نشت محافظت می‌کنند.
 
-## References
+## منابع <a id="references"></a>
 
-- Hamel Husain, [Your AI product needs evals](https://hamel.dev/blog/posts/evals/)
-- Hamel Husain, [A field guide to rapidly improving AI products](https://hamel.dev/blog/posts/field-guide/)
-- Eugene Yan, [Evals: Constructed for LLM apps](https://eugeneyan.com/writing/evals/)
-- Eugene Yan, [LLM-as-judge](https://eugeneyan.com/writing/llm-evaluators/)
-- [judgy library](https://github.com/ai-evals-course/judgy)
-- [Phoenix evals](https://docs.arize.com/phoenix/evaluation/concepts-evals)
-- [Langfuse evaluations](https://langfuse.com/docs/scores/overview)
-- [Braintrust](https://www.braintrust.dev/docs)
-- Galileo (now Splunk Agent Observability), [Run experiments in code](https://docs.galileo.ai/sdk-api/experiments/running-experiments)
-- Zheng et al., [Judging LLM-as-a-Judge](https://arxiv.org/abs/2306.05685)
-- [Argilla annotation platform](https://docs.argilla.io/)
-- [pytest-html report integration](https://pytest-html.readthedocs.io/)
+- نوشته حامد حسین (Hamel Husain)؛ [محصول هوش مصنوعی شما به ارزیابی نیاز دارد](https://hamel.dev/blog/posts/evals/)
+- نوشته حامد حسین (Hamel Husain)؛ [راهنمای میدانی برای بهبود سریع محصولات هوش مصنوعی](https://hamel.dev/blog/posts/field-guide/)
+- نوشته یوجین یان (Eugene Yan)؛ [ارزیابی‌ها: ساخته‌شده برای اپلیکیشن‌های LLM](https://eugeneyan.com/writing/evals/)
+- نوشته یوجین یان (Eugene Yan)؛ [داوری با LLM (LLM-as-judge)](https://eugeneyan.com/writing/llm-evaluators/)
+- کتابخانه [judgy](https://github.com/ai-evals-course/judgy)
+- مستندات [ارزیابی‌های Phoenix](https://docs.arize.com/phoenix/evaluation/concepts-evals)
+- مستندات [ارزیابی‌های Langfuse](https://langfuse.com/docs/scores/overview)
+- مستندات [Braintrust](https://www.braintrust.dev/docs)
+- مستندات Galileo (اکنون Splunk Agent Observability)؛ [اجرای آزمایش‌ها در کد](https://docs.galileo.ai/sdk-api/experiments/running-experiments)
+- مقاله ژنگ و همکاران (Zheng et al.)؛ [داوری با LLM-as-a-Judge](https://arxiv.org/abs/2306.05685)
+- مستندات [پلتفرم برچسب‌گذاری Argilla](https://docs.argilla.io/)
+- مستندات [یکپارچه‌سازی گزارش pytest-html](https://pytest-html.readthedocs.io/)
 
-Related chapters: [Evaluation and Observability](../14-evaluation-and-observability/01-llm-evaluation.md), [Reliability and Safety](../13-reliability-and-safety/01-guardrails.md), [AI Evals Comprehensive Guide](../ai_evals_comprehensive_study_guide.md).
+فصل‌های مرتبط: [ارزیابی و مشاهده‌پذیری](../14-evaluation-and-observability/01-llm-evaluation.md)، [قابلیت اطمینان و ایمنی](../13-reliability-and-safety/01-guardrails.md)، [راهنمای جامع ارزیابی هوش مصنوعی](../ai_evals_comprehensive_study_guide.md).
+
+</div>

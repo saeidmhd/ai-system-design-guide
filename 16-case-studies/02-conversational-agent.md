@@ -1,78 +1,82 @@
-# Case Study: Customer Support Conversational Agent
+<div dir="rtl">
 
-This case study walks through designing a production customer support agent for a B2B SaaS company.
+# مطالعه موردی: عامل گفت‌وگومحور پشتیبانی مشتریان (Customer Support Conversational Agent)
 
-## Table of Contents
+این مطالعه موردی مراحل طراحی یک عامل (Agent) پشتیبانی مشتریان در محیط تولید (Production) را برای یک شرکت B2B SaaS بررسی می‌کند.
 
-- [Problem Statement](#problem-statement)
-- [Requirements Analysis](#requirements-analysis)
-- [Architecture Design](#architecture-design)
-- [Component Deep Dives](#component-deep-dives)
-- [Reliability Patterns](#reliability-patterns)
-- [Evaluation and Monitoring](#evaluation-and-monitoring)
-- [Cost Analysis](#cost-analysis)
-- [Lessons Learned](#lessons-learned)
-- [Interview Walkthrough](#interview-walkthrough)
+## فهرست مطالب
 
----
-
-## Problem Statement
-
-**Company:** B2B SaaS platform with 50K enterprise customers
-
-**Current state:**
-- 500K support tickets per month
-- Average response time: 4 hours
-- Customer satisfaction (CSAT): 72%
-- Support team: 100 agents
-
-**Goal:**
-- Reduce response time to < 5 minutes for common queries
-- Improve CSAT to > 85%
-- Handle 60% of tickets without human intervention
-- Maintain quality for escalated tickets
+- [بیان مسئله](#problem-statement)
+- [تحلیل نیازمندی‌ها](#requirements-analysis)
+- [طراحی معماری](#architecture-design)
+- [بررسی عمیق اجزا](#component-deep-dives)
+- [الگوهای قابلیت اطمینان](#reliability-patterns)
+- [ارزیابی و پایش](#evaluation-and-monitoring)
+- [تحلیل هزینه](#cost-analysis)
+- [درس‌های آموخته‌شده](#lessons-learned)
+- [مرور مصاحبه](#interview-walkthrough)
 
 ---
 
-## Requirements Analysis
+## بیان مسئله <a id="problem-statement"></a>
 
-### Functional Requirements
+**شرکت:** پلتفرم B2B SaaS با ۵۰ هزار مشتری سازمانی
 
-| Requirement | Description | Priority |
-|-------------|-------------|----------|
-| Query understanding | Classify intent, extract entities | P0 |
-| Knowledge retrieval | Search product docs, FAQs, past tickets | P0 |
-| Account context | Access user's subscription, history | P0 |
-| Response generation | Natural, accurate, helpful responses | P0 |
-| Conversation memory | Multi-turn context | P0 |
-| Action execution | Create tickets, trigger workflows | P1 |
-| Human escalation | Handoff with full context when needed | P0 |
-| Billing inquiries | Handle sensitive financial data | P1 |
+**وضعیت فعلی:**
+- ۵۰۰ هزار تیکت پشتیبانی در ماه
+- میانگین زمان پاسخ‌گویی: ۴ ساعت
+- رضایت مشتری (CSAT): ۷۲٪
+- تیم پشتیبانی: ۱۰۰ کارشناس
 
-### Non-Functional Requirements
-
-| Requirement | Target | Rationale |
-|-------------|--------|-----------|
-| Latency (TTFT) | < 1s | User expectation for chat |
-| Latency (full) | < 5s | Maintain engagement |
-| Availability | 99.9% | Business-critical |
-| Accuracy | > 95% | Customer trust |
-| Escalation rate | < 40% | Cost efficiency |
-| CSAT | > 85% | Business goal |
-
-### Security Requirements
-
-- No PII in logs
-- Tenant isolation (customers only see their data)
-- Audit trail for all actions
-- SOC 2 compliance
-- Tell users they are talking to an AI: the EU AI Act's Article 50 transparency duties have applied since August 2, 2026, and the Commission's guidelines say general public awareness of AI does not make an interaction obvious
+**هدف:**
+- کاهش زمان پاسخ‌گویی به کمتر از ۵ دقیقه برای پرس‌وجوهای متداول
+- بهبود CSAT به بیش از ۸۵٪
+- رسیدگی به ۶۰٪ تیکت‌ها بدون دخالت انسان
+- حفظ کیفیت برای تیکت‌های ارجاع‌داده‌شده به پشتیبان انسانی
 
 ---
 
-## Architecture Design
+## تحلیل نیازمندی‌ها <a id="requirements-analysis"></a>
 
-### High-Level Architecture
+### نیازمندی‌های عملکردی
+
+| نیازمندی | توضیحات | اولویت |
+|----------|---------|--------|
+| درک پرس‌وجو | دسته‌بندی قصد کاربر (Intent)، استخراج موجودیت‌ها (Entities) | اولویت P0 |
+| بازیابی دانش | جست‌وجو در مستندات محصول، سوالات متداول (FAQ) و تیکت‌های گذشته | اولویت P0 |
+| زمینه حساب کاربری | دسترسی به وضعیت اشتراک و تاریخچه کاربر | اولویت P0 |
+| تولید پاسخ | پاسخ‌های طبیعی، دقیق و کاربردی | اولویت P0 |
+| حافظه مکالمه | حفظ زمینه در مکالمات چندنوبتی (Multi-turn) | اولویت P0 |
+| اجرای عملیات | ایجاد تیکت، راه‌اندازی گردش‌کارها (Workflows) | اولویت P1 |
+| ارجاع به پشتیبان انسانی | تحویل مکالمه با زمینه کامل در صورت نیاز | اولویت P0 |
+| استعلام‌های مالی و صورتحساب | پردازش داده‌های حساس مالی | اولویت P1 |
+
+### نیازمندی‌های غیرعملکردی
+
+| نیازمندی | هدف | دلیل و منطق |
+|----------|-----|-------------|
+| تاخیر (TTFT) | کمتر از ۱ ثانیه (< 1s) | انتظار کاربر در گفت‌وگوی آنلاین |
+| تاخیر (کامل) | کمتر از ۵ ثانیه (< 5s) | حفظ تعامل و درگیری کاربر |
+| دسترس‌پذیری | ۹۹٫۹ درصد (99.9%) | حیاتی برای کسب‌وکار |
+| دقت | بیش از ۹۵ درصد (> 95%) | حفظ اعتماد مشتری |
+| نرخ ارجاع به انسان | کمتر از ۴۰ درصد (< 40%) | بهره‌وری هزینه |
+| رضایت مشتری (CSAT) | بیش از ۸۵ درصد (> 85%) | هدف کسب‌وکار |
+
+### نیازمندی‌های امنیتی
+
+- نبود اطلاعات شناسایی شخصی (PII) در لاگ‌ها
+- جداسازی داده‌های مستاجران (Tenant isolation؛ مشتریان فقط داده‌های خودشان را می‌بینند)
+- ثبت ردپای ممیزی (Audit trail) برای تمامی عملیات‌ها
+- انطباق با استاندارد SOC 2
+- اطلاع‌رسانی به کاربران درباره اینکه با یک هوش مصنوعی صحبت می‌کنند: تکالیف شفافیت ماده ۵۰ قانون هوش مصنوعی اتحادیه اروپا (EU AI Act) از ۲ اوت ۲۰۲۶ لازم‌الاجرا شده است و رهنمودهای کمیسیون تصریح می‌کنند که آگاهی عمومی جامعه از هوش مصنوعی، ماهیت یک تعامل را به‌خودی‌خود بدیهی نمی‌سازد
+
+---
+
+## طراحی معماری <a id="architecture-design"></a>
+
+### معماری سطح بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -104,7 +108,11 @@ This case study walks through designing a production customer support agent for 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-Rendered as a layered flow. The orchestration layer dispatches to three parallel context sources, then assembles them in the response generator:
+</div>
+
+این معماری در قالب یک جریان لایه‌ای نمایش داده شده است. لایه ارکستراسیون (Orchestration Layer) درخواست را به سه منبع زمینه موازی ارسال می‌کند و سپس آن‌ها را در مولد پاسخ تجمیع می‌نماید:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -128,7 +136,11 @@ flowchart TD
     AT --> RG
 ```
 
-### Conversation Flow
+</div>
+
+### جریان مکالمه
+
+<div dir="ltr">
 
 ```
 User Message
@@ -173,7 +185,11 @@ User Message
     Response / Escalation
 ```
 
-A turn is a state machine. The two gates that matter for cost and trust are *safety* (must pass before leaving the system) and *confidence* (decides escalation vs auto-reply):
+</div>
+
+هر نوبت مکالمه یک ماشین وضعیت (State Machine) است. دو دروازه‌ای که برای هزینه و اعتماد اهمیت دارند عبارت‌اند از *ایمنی* (پیش از خروج پاسخ از سیستم باید تایید شود) و *اطمینان* (تعیین می‌کند مکالمه به انسان ارجاع شود یا به‌صورت خودکار پاسخ داده شود):
+
+<div dir="ltr">
 
 ```mermaid
 stateDiagram-v2
@@ -195,11 +211,15 @@ stateDiagram-v2
     Block --> [*]
 ```
 
+</div>
+
 ---
 
-## Component Deep Dives
+## بررسی عمیق اجزا <a id="component-deep-dives"></a>
 
-### Intent Classification
+### دسته‌بندی قصد کاربر (Intent Classification)
+
+<div dir="ltr">
 
 ```python
 INTENT_SCHEMA = {
@@ -233,7 +253,11 @@ class IntentClassifier:
         return json.loads(result.output_text)
 ```
 
-### Knowledge Base (Hybrid Retrieval Plus Rerank)
+</div>
+
+### پایگاه دانش (بازیابی ترکیبی به همراه رتبه‌بندی مجدد)
+
+<div dir="ltr">
 
 ```python
 class SupportKnowledgeBase:
@@ -247,9 +271,13 @@ class SupportKnowledgeBase:
         return await self.reranker.rerank(query, candidates, top_k=top_k)
 ```
 
-### Response Generation (Tiered: Claude Haiku 5.5 and Sonnet 5.5)
+</div>
 
-The 2025 version of this design toggled extended thinking per request on one model. That knob is gone on the newest models: Sonnet 5.5 runs adaptive thinking by default and returns 400 on `thinking: {type: "disabled"}`, and depth is set with `output_config.effort`. Haiku 5.5 also runs adaptive thinking by default, at `medium` effort unless told otherwise, so the routine path sets `low` explicitly instead of inheriting a default that spends thinking tokens on password resets. The per-request dial is now **model routing plus effort**.
+### تولید پاسخ (لایه‌بندی‌شده: Claude Haiku 5.5 و Sonnet 5.5)
+
+نسخه ۲۰۲۵ این طراحی، قابلیت استدلال گسترده (Extended Thinking) را به‌صورت درخواستی روی یک مدل فعال و غیرفعال می‌کرد. این تنظیم در جدیدترین مدل‌ها حذف شده است: مدل Sonnet 5.5 به‌صورت پیش‌فرض از استدلال تطبیقی (Adaptive Thinking) استفاده می‌کند و در صورت دریافت `thinking: {type: "disabled"}` خطای 400 برمی‌گرداند، و عمق استدلال از طریق `output_config.effort` تعیین می‌شود. مدل Haiku 5.5 نیز به‌صورت پیش‌فرض استدلال تطبیقی را در سطح تلاش `medium` اجرا می‌کند مگر آنکه خلاف آن مشخص شود؛ بنابراین مسیر عادی (Routine) به‌طور صریح مقدار `low` را تنظیم می‌کند تا به‌جای به ارث بردن مقدار پیش‌فرض، برای کارهای ساده‌ای مانند بازنشانی رمز عبور Token استدلال مصرف نشود. اکنون اهرم کنترل در سطح هر درخواست، **مسیریابی مدل (Model Routing) به همراه سطح تلاش (Effort)** است.
+
+<div dir="ltr">
 
 ```python
 class ResponseGenerator:
@@ -270,16 +298,20 @@ class ResponseGenerator:
         return {"response": text, "model": request["model"]}
 ```
 
-Budget latency per path, not per system. Thinking tokens arrive before the first visible token, and ~1K of them take seconds at typical output speeds, so the complex path cannot meet the 1-second TTFT target. Give complex billing turns their own latency target and stream a status line while the model works, or send `thinking: {type: "between_tools"}` on routes that do not need up-front reasoning and measure whether quality holds.
+</div>
+
+بودجه تاخیر (Latency) را برای هر مسیر به‌صورت جداگانه در نظر بگیرید، نه برای کل سیستم. واحدهای Token استدلال پیش از اولین Token قابل مشاهده تولید می‌شوند و حدود ۱ هزار Token از آن‌ها با سرعت‌های معمول خروجی چند ثانیه زمان می‌برد؛ بنابراین مسیر پیچیده نمی‌تواند به هدف TTFT یک‌ثانیه‌ای برسد. برای نوبت‌های پیچیده مالی و صورتحساب، هدف تاخیر اختصاصی تعریف کنید و هم‌زمان با کار مدل یک خط وضعیت (Status line) استریم کنید، یا در مسیرهایی که نیازی به استدلال پیشینی ندارند `thinking: {type: "between_tools"}` را ارسال کرده و حفظ کیفیت را اندازه‌گیری نمایید.
 
 > [!NOTE]
-> **Production wisdom: budget for forced migrations.** Support teams spend months tuning guardrails around one model's tone and refusal patterns, and that tuning does not transfer for free. Sonnet 4.5 retires November 30, 2026 on the Claude API and Foundry (Bedrock moved it to Legacy on October 8, with end of life April 8, 2027). Haiku 4.5 is still Active with no deprecation notice, so under Anthropic's 60-day minimum it cannot retire on the Claude API before about January 2027. Moving this design's routine path to Haiku 5.5 (list price about 90% below Haiku 4.5) took that line from about $0.014 to under $0.002 per conversation, but it is not a model-string swap: `temperature`, `top_p`, `top_k`, `budget_tokens`, and assistant prefill return 400, the newer tokenizer counts about 30% more tokens for the same text, and tone and refusal behavior can shift with the generation. Keep a regression set of real conversations with expected tone, escalation and refusal behavior, and run it on every model change.
+> **تجربه عملیاتی در محیط تولید: برای مهاجرت‌های اجباری بودجه در نظر بگیرید.** تیم‌های پشتیبانی ماه‌ها صرف تنظیم گاردریل‌ها (Guardrails) پیرامون لحن و الگوهای امتناع یک مدل می‌کنند و این تنظیمات به‌صورت رایگان به مدل بعدی منتقل نمی‌شوند. مدل Sonnet 4.5 در تاریخ ۳۰ نوامبر ۲۰۲۶ در Claude API و Foundry بازنشسته می‌شود (سرویس Bedrock آن را در ۸ اکتبر به وضعیت Legacy منتقل کرده و پایان عمر آن ۸ آوریل ۲۰۲۷ است). مدل Haiku 4.5 همچنان فعال است و اطلاعیه منسوخ شدن (Deprecation) ندارد؛ بنابراین طبق حداقل دوره ۶۰ روزه Anthropic، پیش از حدود ژانویه ۲۰۲۷ در Claude API بازنشسته نخواهد شد. انتقال مسیر عادی این طراحی به مدل Haiku 5.5 (با قیمت رسمی حدود ۹۰٪ کمتر از Haiku 4.5) هزینه آن خط را از حدود $0.014 به کمتر از $0.002 به ازای هر مکالمه کاهش داد، اما این کار صرفاً یک جایگزینی ساده رشته نام مدل نیست: پارامترهای `temperature`، `top_p`، `top_k`، `budget_tokens` و پیش‌تکمیل دستیار (Assistant prefill) خطای 400 برمی‌گردانند، Token-شمار (Tokenizer) جدید برای متن یکسان حدود ۳۰٪ Token بیشتری شمارش می‌کند و لحن و رفتار امتناع مدل می‌تواند با تغییر نسل تغییر یابد. یک مجموعه رگرسیون از مکالمات واقعی همراه با لحن، ارجاع و رفتار امتناع مورد انتظار نگه دارید و با هر تغییر مدل آن را اجرا کنید.
 
 ---
 
-## Reliability Patterns
+## الگوهای قابلیت اطمینان <a id="reliability-patterns"></a>
 
-### Confidence-Based Escalation
+### ارجاع به پشتیبان انسانی مبتنی بر اطمینان (Confidence-Based Escalation)
+
+<div dir="ltr">
 
 ```python
 class EscalationHandler:
@@ -324,7 +356,11 @@ class EscalationHandler:
         return any(kw in message.lower() for kw in sensitive_keywords)
 ```
 
-The escalation decision combines three independent signals. Any one of them triggers handoff. Visualizing it as a decision tree makes the OR semantics obvious and easy to extend with a fourth signal:
+</div>
+
+تصمیم ارجاع سه سیگنال مستقل را ترکیب می‌کند. هر یک از آن‌ها به‌تنهایی باعث تحویل به پشتیبان انسانی می‌شود. مصورسازی آن به‌عنوان یک درخت تصمیم، منطق «یا» (OR) را آشکار می‌سازد و افزودن سیگنال چهارم را ساده می‌کند:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -341,7 +377,11 @@ flowchart TD
     E --> H[Queue for Human Agent<br/>with context bundle]
 ```
 
-### Multi-Turn Memory
+</div>
+
+### حافظه چندنوبتی (Multi-Turn Memory)
+
+<div dir="ltr">
 
 ```python
 class ConversationMemory:
@@ -378,11 +418,15 @@ class ConversationMemory:
         )
 ```
 
+</div>
+
 ---
 
-## Evaluation and Monitoring
+## ارزیابی و پایش <a id="evaluation-and-monitoring"></a>
 
-### Quality Metrics
+### معیارهای کیفیت (Quality Metrics)
+
+<div dir="ltr">
 
 ```python
 class QualityMonitor:
@@ -411,111 +455,115 @@ class QualityMonitor:
             metrics.record(f"quality_{criterion}", score)
 ```
 
+</div>
+
 > [!WARNING]
-> **Check that your traces still see the model calls.** OpenAI's Python SDK 3.0 (August 12, 2026) and Anthropic's Python SDK 1.0 (August 20, 2026) both moved to `httpx2`. Anthropic's migration guide warns that OpenTelemetry's HTTPX instrumentation, Sentry's httpx integration, respx, pytest-httpx and vcrpy can silently miss SDK requests unless `httpx2.alias_httpx()` runs before anything imports httpx. A sampling monitor like the one above then reports healthy numbers on a shrinking sample. Upgrade the SDKs as a set and compare span counts against request counts before and after.
+> **بررسی کنید که ردیابی‌های (Traces) شما همچنان فراخوانی‌های مدل را مشاهده کنند.** نسخه 3.0 پکیج Python SDK شرکت OpenAI (۱۲ اوت ۲۰۲۶) و نسخه 1.0 پکیج Python SDK شرکت Anthropic (۲۰ اوت ۲۰۲۶) هر دو به `httpx2` مهاجرت کرده‌اند. راهنمای مهاجرت Anthropic هشدار می‌دهد که ابزارسازی HTTPX در OpenTelemetry، یکپارچه‌سازی httpx در Sentry، و کتابخانه‌های respx، pytest-httpx و vcrpy ممکن است به‌صورت خاموش درخواست‌های SDK را از دست بدهند، مگر آنکه `httpx2.alias_httpx()` پیش از وارد کردن (Import) هر ماژولی که از httpx استفاده می‌کند اجرا شود. در غیر این صورت، یک پایشگر نمونه‌بردار مانند نمونه بالا روی نمونه‌ای رو به کاهش، اعداد سالم گزارش می‌دهد. بسته‌های SDK را به‌صورت یکجا ارتقا دهید و تعداد Spanها را با تعداد درخواست‌ها پیش و پس از ارتقا مقایسه کنید.
 
-### Dashboard Metrics
+### معیارهای داشبورد
 
-| Metric | Target | Actual |
-|--------|--------|--------|
-| Latency (TTFT) | < 1s | 0.8s |
-| Latency (full) | < 5s | 3.2s |
-| Accuracy | > 95% | 94.3% |
-| Escalation rate | < 40% | 38% |
-| CSAT | > 85% | 87% |
-| Resolution rate | > 60% | 62% |
-
----
-
-## Cost Analysis
-
-### Per-Conversation Cost Breakdown (November 2026 List Prices)
-
-Assumes 4 turns per conversation and about 3K input tokens per turn (system prompt, retrieved chunks, account context, history).
-
-| Component | Cost | Notes |
-|-----------|------|-------|
-| Intent classification | $0.0003 | GPT-6 Luna ($0.10 / $0.50): one call per turn, ~500 in / 50 out |
-| Retrieval and reranking | $0.0040 | Query embeddings plus 50 candidates × ~400 tokens reranked per turn (Voyage rerank-3, $0.05 per 1M tokens): ~$0.001 per turn |
-| Generation, routine path | $0.0017 | Claude Haiku 5.5 at `low` effort on 80% of conversations: 4 × (3K in / 250 out plus ~200 thinking tokens) = $0.0021, weighted 0.8 |
-| Generation, complex path | $0.0148 | Claude Sonnet 5.5 on 20%: same turns plus ~1K thinking tokens per turn = $0.074, weighted 0.2 |
-| Quality sampling | $0.0013 | 5% of conversations scored by a mid-tier judge |
-| **Total** | **~$0.022** | **Per conversation, before prompt caching** |
-
-The complex path is 20% of traffic and about two-thirds of the model spend, mostly thinking tokens billed at the output rate. Prompt caching the static system prompt and tool definitions trims the input share (cache reads bill at 0.1x on Haiku 5.5 and 0.05x on Sonnet 5.5). Every routine turn stays far below Haiku 5.5's 100K-token price threshold; a design that stuffed whole account histories into the prompt would cross it and pay 5x on the entire request.
-
-### Monthly Cost Projection
-
-| Item | Calculation | Cost |
-|------|-------------|------|
-| Conversations | 500K × $0.022 | $11,000 |
-| Infrastructure | Fixed | $2,000 |
-| Human escalations | 190K × $5 (human cost) | $950,000 |
-| **Total** | | $963,000 |
-| **Savings vs all-human** | 500K × $5 - $963K | ~$1.54M/month |
-
-Model spend is under 2% of the total. The lever that matters is the escalation rate: every point of escalation moved to a correct auto-resolution saves about $25,000 a month (5K conversations × $5), more than the entire model bill.
+| معیار | هدف | مقدار واقعی |
+|-------|-----|-------------|
+| تاخیر (TTFT) | کمتر از ۱ ثانیه (< 1s) | ۰٫۸ ثانیه (0.8s) |
+| تاخیر (کامل) | کمتر از ۵ ثانیه (< 5s) | ۳٫۲ ثانیه (3.2s) |
+| دقت | بیش از ۹۵ درصد (> 95%) | ۹۴٫۳ درصد (94.3%) |
+| نرخ ارجاع به انسان | کمتر از ۴۰ درصد (< 40%) | ۳۸ درصد (38%) |
+| رضایت مشتری (CSAT) | بیش از ۸۵ درصد (> 85%) | ۸۷ درصد (87%) |
+| نرخ حل مسئله | بیش از ۶۰ درصد (> 60%) | ۶۲ درصد (62%) |
 
 ---
 
-## Lessons Learned
+## تحلیل هزینه <a id="cost-analysis"></a>
 
-### What Worked
+### تفکیک هزینه به ازای هر مکالمه (قیمت‌های رسمی نوامبر ۲۰۲۶)
 
-1. **Intent-based routing** reduced latency by focusing retrieval on relevant sources
-2. **Confidence-based escalation** maintained quality while reducing human load
-3. **Account context** made responses more personalized and accurate
-4. **Structured outputs and pinned prompt versions** improved consistency more than sampling settings did. Temperature is no longer a dependable knob: under API version `2026-10-21` every Claude model returns 400 on any `temperature`, even the default, and GPT-6 Astra does not accept the parameter
+فرض بر ۴ نوبت به ازای هر مکالمه و حدود ۳ هزار Token ورودی در هر نوبت است (شامل Prompt سیستمی، قطعات بازیابی‌شده (Chunks)، زمینه حساب کاربری و تاریخچه مکالمه).
 
-### What Did Not Work Initially
+| جزء | هزینه | یادداشت‌ها |
+|-----|-------|------------|
+| دسته‌بندی قصد کاربر | مبلغ $0.0003 | مدل GPT-6 Luna ($0.10 / $0.50): یک فراخوانی به ازای هر نوبت، حدود ۵۰۰ ورودی / ۵۰ خروجی |
+| بازیابی و رتبه‌بندی مجدد | مبلغ $0.0040 | تولید Embedding پرس‌وجو به علاوه رتبه‌بندی مجدد ۵۰ نامزد × حدود ۴۰۰ Token در هر نوبت (مدل Voyage rerank-3، مبلغ $0.05 به ازای هر ۱ میلیون Token): حدود $0.001 به ازای هر نوبت |
+| تولید پاسخ، مسیر عادی | مبلغ $0.0017 | مدل Claude Haiku 5.5 در سطح تلاش `low` روی ۸۰٪ مکالمات: ۴ × (۳ هزار ورودی / ۲۵۰ خروجی به علاوه حدود ۲۰۰ Token استدلال) = $0.0021، با وزن ۰٫۸ |
+| تولید پاسخ، مسیر پیچیده | مبلغ $0.0148 | مدل Claude Sonnet 5.5 روی ۲۰٪ مکالمات: همان تعداد نوبت به علاوه حدود ۱ هزار Token استدلال در هر نوبت = $0.074، با وزن ۰٫۲ |
+| نمونه‌برداری کیفیت | مبلغ $0.0013 | ارزیابی ۵٪ مکالمات توسط یک داور میان‌رده |
+| **مجموع** | **حدود $0.022** | **به ازای هر مکالمه، پیش از کش کردن Prompt (Prompt Caching)** |
 
-1. **Single model for everything** - routing to different models for different tasks improved quality
-2. **Too high escalation threshold** - started at 0.9 confidence, causing too many escalations
-3. **Full conversation history** - exceeded context limits, switched to summarization
+مسیر پیچیده ۲۰٪ ترافیک و حدود دو سوم هزینه مدل را تشکیل می‌دهد که عمدتاً ناشی از Tokenهای استدلال است که با نرخ خروجی محاسبه می‌شوند. کش کردن Prompt (Prompt Caching) برای Prompt سیستمی ایستا و تعریف ابزارها، سهم ورودی را کاهش می‌دهد (خواندن از کش در Haiku 5.5 با ضریب 0.1x و در Sonnet 5.5 با ضریب 0.05x محاسبه می‌شود). هر نوبت عادی بسیار پایین‌تر از آستانه قیمتی 100K Token در Haiku 5.5 باقی می‌ماند؛ طراحی‌ای که کل تاریخچه حساب کاربری را در Prompt بگنجاند از این آستانه عبور کرده و ۵ برابر هزینه بیشتر روی کل درخواست پرداخت خواهد کرد.
 
-### Recommendations
+### برآورد هزینه ماهانه
 
-1. Start with high escalation rate and lower gradually as confidence improves
-2. Monitor CSAT by escalation reason to identify weak areas
-3. Retrain embeddings on support-specific vocabulary
-4. Build feedback loop: agents tag escalated conversations for training data
+| مورد | محاسبه | هزینه |
+|------|--------|-------|
+| مکالمات | ۵۰۰ هزار × $0.022 | مبلغ $11,000 |
+| زیرساخت | ثابت | مبلغ $2,000 |
+| ارجاع‌های انسانی | ۱۹۰ هزار × $5 (هزینه نیروی انسانی) | مبلغ $950,000 |
+| **مجموع** | | مبلغ $963,000 |
+| **صرفه‌جویی در مقایسه با پشتیبانی تمام‌انسانی** | محاسبه: ۵۰۰ هزار × $5 - $963K | حدود $1.54M در ماه |
 
----
-
-## Interview Walkthrough
-
-**Interviewer:** "Design an AI customer support system for a SaaS company."
-
-**Strong response pattern:**
-
-1. **Clarify requirements** (2 min)
-   - "What's the ticket volume? What channels? What's the current CSAT?"
-
-2. **State constraints explicitly**
-   - "Key constraints: accuracy over speed, escalation without lost context, tenant isolation"
-
-3. **High-level architecture** (3 min)
-   - Draw the flow: intent → routing → RAG → generation → safety → response/escalation
-
-4. **Deep dive on critical component** (5 min)
-   - "Let me detail the confidence-based escalation..."
-
-5. **Address reliability** (3 min)
-   - "For reliability, I would use self-consistency for billing queries and a multi-provider fallback. The fallback has to cross vendors: Anthropic's status feed shows at least 12 major or critical incidents from mid-August to late September 2026, and one OpenAI incident on September 29 degraded its API for over 5 hours, so a 99.9% target cannot rest on one provider"
-
-6. **Metrics and monitoring** (2 min)
-   - "Key metrics: CSAT, resolution rate, escalation rate, accuracy sampling"
-
-7. **Cost consideration** (1 min)
-   - "At 500K conversations/month, cost per conversation matters. Model routing helps."
+هزینه مدل کمتر از ۲٪ کل هزینه است. اهرمی که بیشترین تاثیر را دارد نرخ ارجاع به انسان است: هر یک درصد ارجاعی که به حل خودکار و صحیح تبدیل شود، حدود $25,000 در ماه صرفه‌جویی ایجاد می‌کند (۵ هزار مکالمه × $5) که از کل صورتحساب مدل بیشتر است.
 
 ---
 
-## References
+## درس‌های آموخته‌شده <a id="lessons-learned"></a>
 
-- Anthropic Customer Support Agent Guide: https://platform.claude.com/docs/en/about-claude/use-case-guides/customer-support-chat
-- LangChain Agents: https://docs.langchain.com/oss/python/langchain/agents
+### آنچه موفق بود
+
+1. **مسیریابی مبتنی بر قصد کاربر (Intent-based routing)** با متمرکز کردن بازیابی روی منابع مرتبط، تاخیر را کاهش داد
+2. **ارجاع مبتنی بر اطمینان (Confidence-based escalation)** ضمن حفظ کیفیت، بار کاری نیروی انسانی را کاهش داد
+3. **زمینه حساب کاربری (Account context)** باعث شخصی‌سازی و افزایش دقت پاسخ‌ها شد
+4. **خروجی‌های ساختاریافته و نسخه‌های تثبیت‌شده Prompt** بیش از تنظیمات نمونه‌برداری (Sampling) به بهبود ثبات کمک کردند. پارامتر Temperature دیگر یک اهرم قابل اتکا نیست: در نسخه API تاریخ `2026-10-21` هر مدل Claude روی هر مقدار `temperature` (حتی مقدار پیش‌فرض) خطای 400 برمی‌گرداند و مدل GPT-6 Astra اصلاً این پارامتر را نمی‌پذیرد
+
+### آنچه در ابتدا جواب نداد
+
+1. **استفاده از یک مدل واحد برای همه کارها** - مسیریابی به مدل‌های مختلف برای وظایف متفاوت، کیفیت را بهبود داد
+2. **آستانه بیش‌ازحد بالای ارجاع** - شروع با اطمینان 0.9 باعث ارجاع‌های بیش‌ازحد به انسان شد
+3. **ارسال تاریخچه کامل مکالمه** - از محدودیت‌های پنجره زمینه (Context) فراتر رفت و به خلاصه‌سازی تغییر یافت
+
+### توصیه‌ها
+
+1. با نرخ ارجاع بالا شروع کنید و هم‌زمان با افزایش اطمینان سیستم، آن را به‌تدریج کاهش دهید
+2. رضایت مشتری (CSAT) را بر اساس دلیل ارجاع پایش کنید تا نقاط ضعف شناسایی شوند
+3. مدل‌های Embedding را روی واژگان اختصاصی پشتیبانی بازآموزی (Retrain) کنید
+4. حلقه بازخورد بسازید: کارشناسان پشتیبانی مکالمات ارجاع‌شده را برای تهیه داده آموزشی برچسب‌گذاری کنند
 
 ---
 
-*Next: [Financial Analysis Case Study](03-financial-analysis.md)*
+## مرور مصاحبه <a id="interview-walkthrough"></a>
+
+**مصاحبه‌گر:** «یک سیستم پشتیبانی مشتریان مبتنی بر هوش مصنوعی برای یک شرکت SaaS طراحی کنید.»
+
+**الگوی پاسخ قوی:**
+
+1. **شفاف‌سازی نیازمندی‌ها** (۲ دقیقه)
+   - «حجم تیکت‌ها چقدر است؟ چه کانال‌هایی وجود دارد؟ میزان CSAT فعلی چقدر است؟»
+
+2. **بیان صریح محدودیت‌ها**
+   - «محدودیت‌های کلیدی: اولویت دقت بر سرعت، ارجاع به پشتیبان بدون از دست رفتن زمینه مکالمه، جداسازی داده‌های مستاجران (Tenant isolation)»
+
+3. **معماری سطح بالا** (۳ دقیقه)
+   - ترسیم جریان: قصد کاربر ← مسیریابی ← RAG ← تولید پاسخ ← بررسی ایمنی ← پاسخ / ارجاع به پشتیبان
+
+4. **بررسی عمیق جزء کلیدی** (۵ دقیقه)
+   - «اجازه دهید جزئیات ارجاع مبتنی بر اطمینان را تشریح کنم...»
+
+5. **پرداختن به قابلیت اطمینان** (۳ دقیقه)
+   - «برای قابلیت اطمینان، از خودسازگاری (Self-consistency) برای پرس‌وجوهای مالی و یک مکانیزم جایگزین چندفراهم‌کننده‌ای (Multi-provider fallback) استفاده می‌کنم. این مکانیزم جایگزین باید میان شرکت‌های مختلف برقرار شود: فید وضعیت Anthropic دست‌کم ۱۲ حادثه عمده یا بحرانی را از اواسط اوت تا اواخر سپتامبر ۲۰۲۶ نشان می‌دهد و یک حادثه در OpenAI در ۲۹ سپتامبر، API آن را بیش از ۵ ساعت دچار افت کیفیت کرد؛ بنابراین هدف دسترس‌پذیری ۹۹٫۹٪ نمی‌تواند بر یک ارائه‌دهنده واحد متکی باشد.»
+
+6. **معیارها و پایش** (۲ دقیقه)
+   - «معیارهای کلیدی: CSAT، نرخ حل مسئله، نرخ ارجاع به پشتیبان، نمونه‌برداری دقت»
+
+7. **ملاحظات هزینه** (۱ دقیقه)
+   - «در مقیاس ۵۰۰ هزار مکالمه در ماه، هزینه به ازای هر مکالمه اهمیت حیاتی دارد. مسیریابی مدل‌ها (Model routing) به کنترل آن کمک می‌کند.»
+
+---
+
+## منابع و مراجع
+
+- راهنمای عامل پشتیبانی مشتریان Anthropic: https://platform.claude.com/docs/en/about-claude/use-case-guides/customer-support-chat
+- راهنمای ایجنت‌های LangChain: https://docs.langchain.com/oss/python/langchain/agents
+
+---
+
+*بعدی: [مطالعه موردی تحلیل مالی](03-financial-analysis.md)*
+
+</div>

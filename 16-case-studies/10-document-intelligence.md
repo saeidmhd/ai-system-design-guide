@@ -1,25 +1,29 @@
-# Case Study: Document Intelligence Pipeline
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: پایپ‌لاین هوش اسناد <a id="case-study-document-intelligence-pipeline"></a>
 
-A legal tech company needs to process **50,000 contracts per month**, extracting key terms (parties, dates, obligations, termination clauses) and loading them into a searchable database.
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- Documents range from 2 to 200 pages
-- Mix of scanned PDFs and native digital
-- Multi-language (English, German, French, Spanish)
-- Extraction accuracy: 95%+ on key fields
-- Cost target: under $0.50 per document
+یک شرکت فناوری حقوقی (Legal Tech) نیاز دارد ماهانه **۵۰٬۰۰۰ قرارداد** را پردازش کرده، شروط کلیدی (طرفین قرارداد، تاریخ‌ها، تعهدات، بندهای فسخ) را استخراج کند و آن‌ها را در یک پایگاه داده قابل جست‌وجو بارگذاری نماید.
 
----
-
-## The Interview Question
-
-> "Design a pipeline that takes a 100-page contract PDF and extracts structured data like parties, effective date, termination conditions, and payment terms into JSON."
+**محدودیت‌های ارائه‌شده در مصاحبه:**
+- اسناد بین ۲ تا ۲۰۰ صفحه متغیر هستند
+- ترکیبی از فایل‌های PDF اسکن‌شده و اسناد دیجیتال بومی (Native)
+- چندزبانه (انگلیسی، آلمانی، فرانسوی، اسپانیایی)
+- دقت استخراج: بالای ۹۵٪ در فیلدهای کلیدی
+- هدف هزینه: کمتر از ۰.۵۰ دلار به ازای هر سند
 
 ---
 
-## Solution Architecture
+## پرسش مصاحبه <a id="the-interview-question"></a>
+
+> «یک پایپ‌لاین طراحی کنید که یک فایل PDF قرارداد ۱۰۰ صفحه‌ای را دریافت کند و داده‌های ساختاریافته مانند طرفین قرارداد، تاریخ اجرا، شرایط فسخ و شرایط پرداخت را در قالب JSON استخراج نماید.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -55,29 +59,33 @@ flowchart TB
     end
 ```
 
+</div>
+
 ---
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. Tiered Parsing: A Parsing VLM for Every Page, a Frontier VLM for Hard Pages
+### ۱. پارس لایه‌بندی‌شده: یک مدل VLM پارس اسناد برای هر صفحه و یک مدل VLM پیشرو برای صفحات دشوار <a id="1-tiered-parsing-a-parsing-vlm-for-every-page-a-frontier-vlm-for-hard-pages"></a>
 
-**Answer:** Scanned contracts often have stamps, handwritten annotations, and complex layouts (tables, multi-column). Traditional OCR (Tesseract) produces garbled output. Vision-language models "see" the layout and produce clean Markdown with tables preserved. In 2026 the choice is no longer OCR versus a frontier model: specialized parsing VLMs sit in between, return reading order and bounding boxes, and cost a fraction of a frontier call.
+**پاسخ:** قراردادهای اسکن‌شده اغلب دارای مهر، حاشیه‌نویسی‌های دست‌نویس و چیدمان‌های پیچیده (جداول، چندستونه) هستند. ابزارهای OCR سنتی (مانند Tesseract) خروجی به‌هم‌ریخته‌ای تولید می‌کنند. مدل‌های بینایی-زبانی (VLM) چیدمان صفحه را «می‌بینند» و خروجی Markdown تمیز با حفظ ساختار جداول تولید می‌کنند. در سال ۲۰۲۶، انتخاب دیگر صرفاً بین OCR و یک مدل پیشرو (Frontier) نیست: مدل‌های تخصصی VLM پارس اسناد در میانه این دو قرار می‌گیرند، ترتیب خوانش و کادرهای مرزی (Bounding Box) را برمی‌گردانند و کسری از هزینه فراخوانی یک مدل پیشرو را دارند.
 
-| Method | 100-page Scanned Contract | Cost per 100 Pages | Benchmark Signal |
+| روش | قرارداد اسکن‌شده ۱۰۰ صفحه‌ای | هزینه به ازای ۱۰۰ صفحه | سیگنال بنچمارک |
 |--------|---------------------------|--------------------|------------------|
-| Tesseract | Noisy, broken tables | ~$0.02 (CPU) | Not competitive on layout |
-| AWS Textract | Better text, still struggles with layout | ~$0.15 | ParseBench 53.3 (Cohere-run) |
-| Parsing VLM via API (Cohere parse-v5.0) | Markdown with HTML tables, or blocks with bounding boxes | $0.15 ($1.50 per 1,000 pages) | ParseBench 79.2 (vendor-run) |
-| Parsing VLM, self-hosted (MinerU 4.0, PaddleOCR-VL, NVIDIA Nemotron 3.5 Parse) | Reading order, layout classes, bounding boxes | GPU time only | Nemotron 3.5 Parse (October 17, 2026, about 0.63B, OpenMDW-1.1): ParseBench 72.74 single pass, 75.20 triple pass, against 63.91 for Nemotron Parse 2.0 (NVIDIA-run, different runner from Cohere's, so not comparable with the rows above); also OmniDocBench v1.6 and olmOCR-Bench; check each license (jina-ocr-v1, for example, is CC BY-NC) |
-| Frontier VLM (Gemini 3.8 Flash) | Clean Markdown; strongest fallback for stamps and handwriting | ~$0.43 introductory, ~$0.86 from January 1, 2027 | ParseBench for frontier VLMs: GPT-5.5 84.4, Gemini 3.5 Flash 81.8 (Cohere-run; 3.8 Flash not listed) |
+| موتور Tesseract | پرنویز، جداول شکسته | حدود ۰.۰۲ دلار (روی CPU) | در چیدمان رقابت‌پذیر نیست |
+| سرویس AWS Textract | متن بهتر، اما همچنان در تشخیص چیدمان مشکل دارد | حدود ۰.۱۵ دلار | امتیاز ۵۳.۳ در بنچمارک ParseBench (اجراشده توسط Cohere) |
+| مدل VLM پارس اسناد از طریق API (مدل Cohere parse-v5.0) | خروجی Markdown با جداول HTML، یا بلوک‌ها همراه با کادرهای مرزی | ۰.۱۵ دلار (۱.۵۰ دلار به ازای ۱٬۰۰۰ صفحه) | امتیاز ۷۹.۲ در بنچمارک ParseBench (اجراشده توسط ارائه‌دهنده) |
+| مدل VLM پارس اسناد به‌صورت سلف‌هاستد (MinerU 4.0، PaddleOCR-VL، NVIDIA Nemotron 3.5 Parse) | ترتیب خوانش، کلاس‌های چیدمان و کادرهای مرزی | فقط هزینه زمان GPU | مدل Nemotron 3.5 Parse (۱۷ اکتبر ۲۰۲۶، حدود ۰.۶۳B پارامتر، مجوز OpenMDW-1.1): امتیاز ۷۲.۷۴ تک‌گذری و ۷۵.۲۰ سه‌گذری در ParseBench، در مقایسه با ۶۳.۹۱ برای Nemotron Parse 2.0 (اجراشده توسط NVIDIA؛ اجراکننده متفاوت از Cohere است، بنابراین با ردیف‌های بالا قابل مقایسه نیست)؛ همچنین بنچمارک‌های OmniDocBench نسخه ۱.۶ و olmOCR-Bench؛ مجوز هر مدل را بررسی کنید (برای مثال، jina-ocr-v1 دارای مجوز CC BY-NC است) |
+| مدل VLM پیشرو (Gemini 3.8 Flash) | خروجی Markdown تمیز؛ قوی‌ترین گزینه جایگزین (Fallback) برای مهرها و دست‌خط‌ها | حدود ۰.۴۳ دلار قیمت معرفی، حدود ۰.۸۶ دلار از ۱ ژانویه ۲۰۲۷ | امتیاز ParseBench برای مدل‌های VLM پیشرو: GPT-5.5 با ۸۴.۴، Gemini 3.5 Flash با ۸۱.۸ (اجراشده توسط Cohere؛ نسخه 3.8 Flash فهرست نشده است) |
 
-The frontier row uses the same per-page assumption as the [OCR and Layout chapter](../10-document-processing/01-ocr-and-layout.md#cost-and-latency-tradeoffs): ~1.7K input tokens (page image plus prompt) and ~800 output tokens, before reasoning tokens. Even at the introductory price, running every scanned page of a 100-page scan through Gemini 3.8 Flash would eat almost the whole $0.50 budget before extraction starts; at the January 2027 list price it would blow it. So the pipeline routes: every scanned page goes through the parsing VLM, and only the ~15% of pages that come back low-confidence or fail layout checks (stamps, handwriting, broken tables) escalate to the frontier VLM. MinerU 4.0 builds the same idea into its parser with four quality tiers, from model-free extraction for digital PDFs up to an "advanced" tier for hard documents. Apart from the NVIDIA-run Nemotron figures in the self-hosted row, all ParseBench numbers here come from Cohere's launch post (vendor-run), so treat the 3- to 5-point gap between frontier VLMs and Cohere Parse as indicative and re-measure on your contracts. Nemotron 3.5 Parse also adds a dial the router can use: single, double, or triple pass trades GPU time for accuracy, and Docling supports it since v2.141.0.
+ردیف مدل پیشرو از همان فرض به ازای هر صفحه در [فصل OCR و چیدمان](../10-document-processing/01-ocr-and-layout.md#cost-and-latency-tradeoffs) استفاده می‌کند: حدود ۱.۷ هزار Token ورودی (تصویر صفحه به‌علاوه Prompt) و حدود ۸۰۰ Token خروجی، پیش از محاسبه Tokenهای استدلال. حتی با قیمت معرفی، عبور دادن هر صفحه اسکن‌شده از یک اسکن ۱۰۰ صفحه‌ای از طریق Gemini 3.8 Flash تقریباً کل بودجه ۰.۵۰ دلاری را پیش از شروع استخراج مصرف می‌کند؛ و با قیمت مصوب ژانویه ۲۰۲۷ از این بودجه فراتر می‌رود. بنابراین پایپ‌لاین مسیربندی انجام می‌دهد: هر صفحه اسکن‌شده از مدل VLM پارس اسناد عبور می‌کند و تنها حدود ۱۵٪ صفحاتی که با اطمینان پایین برمی‌گردند یا در بررسی‌های چیدمان رد می‌شوند (مهرها، دست‌خط‌ها، جداول شکسته) به مدل VLM پیشرو ارجاع داده می‌شوند. ابزار MinerU 4.0 همین ایده را با چهار سطح کیفیت در پارسر خود تعبیه کرده است؛ از استخراج بدون مدل برای فایل‌های PDF دیجیتال تا سطح «پیشرفته» (Advanced) برای اسناد دشوار. به‌جز ارقام Nemotron اجراشده توسط NVIDIA در ردیف سلف‌هاستد، تمام اعداد ParseBench در اینجا از پست معرفی Cohere (اجراشده توسط ارائه‌دهنده) گرفته شده‌اند؛ بنابراین فاصله ۳ تا ۵ امتیازی میان مدل‌های VLM پیشرو و Cohere Parse را صرفاً به‌عنوان یک شاخص کلی در نظر بگیرید و روی قراردادهای خودتان دوباره اندازه‌گیری کنید. همچنین مدل Nemotron 3.5 Parse یک اهرم تنظیمی در اختیار مسیریاب (Router) قرار می‌دهد: اجرای تک‌گذری، دوگذری یا سه‌گذری که زمان GPU را با دقت معاوضه می‌کند، و Docling از نسخه v2.141.0 به بعد از آن پشتیبانی می‌کند.
 
-Parser workers are an attack surface, not just a cost line. Reducto's self-hosted release v1.12.21 (October 29, 2026) carried an advisory: on nodes where pods could reach the cloud instance metadata service, LibreOffice parsing of an untrusted Office file could reach the node's instance role. Run parser workers with no metadata access (IMDSv2 hop limit 1, or block 169.254.169.254 from the namespace) and no node role, because every contract in this pipeline is untrusted input.
+ورکرهای پارسر یک سطح حمله (Attack Surface) محسوب می‌شوند، نه فقط یک ردیف هزینه. نسخه سلف‌هاستد v1.12.21 ابزار Reducto (۲۹ اکتبر ۲۰۲۶) شامل یک هشدار امنیتی بود: در گره‌هایی (Node) که پادها به سرویس فراداده نمونه ابری (Cloud Instance Metadata Service) دسترسی داشتند، پارس کردن یک فایل آفیس غیرقابل‌اعتماد توسط LibreOffice می‌توانست به نقش (Role) آن نمونه روی گره دست یابد. ورکرهای پارسر را بدون دسترسی به فراداده (محدودیت hop نسخه IMDSv2 برابر با ۱، یا مسدودسازی 169.254.169.254 از فضای نام) و بدون نقش گره اجرا کنید، زیرا هر قراردادی در این پایپ‌لاین ورودی غیرقابل‌اعتماد است.
 
-### 2. Parallel Extractors vs Single-Pass
+### ۲. استخراج‌گرهای موازی در برابر پردازش تک‌مرحله‌ای (Single-Pass) <a id="2-parallel-extractors-vs-single-pass"></a>
 
-**Answer:** A single prompt asking for all fields produces worse results than specialized extractors. Each extractor has a focused prompt and schema:
+**پاسخ:** یک Prompt منفرد که تمام فیلدها را درخواست کند، نتایج ضعیف‌تری نسبت به استخراج‌گرهای تخصصی تولید می‌کند. هر استخراج‌گر یک Prompt و اسکیما (Schema) متمرکز دارد:
+
+<div dir="ltr">
 
 ```python
 parties_schema = {
@@ -103,18 +111,22 @@ async def extract_all(document: str):
     return merge_results(results)
 ```
 
-### 3. Cross-Field Validation
+</div>
 
-**Answer:** Extraction errors often reveal themselves through inconsistencies:
-- If `effective_date` is after `termination_date`, something is wrong
-- If `party_a` name appears in `obligations` but spelled differently, flag for review
-- If `payment_amount` is extracted but `payment_frequency` is null, incomplete
+### ۳. اعتبارسنجی متقابل بین فیلدها <a id="3-cross-field-validation"></a>
+
+**پاسخ:** خطاهای استخراج اغلب خود را از طریق ناسازگاری‌ها نشان می‌دهند:
+- اگر `effective_date` پس از `termination_date` باشد، ایرادی وجود دارد
+- اگر نام `party_a` در `obligations` ظاهر شود اما با املای متفاوتی نوشته شده باشد، برای بازبینی علامت‌گذاری می‌شود
+- اگر `payment_amount` استخراج شده باشد اما `payment_frequency` تهی (null) باشد، استخراج ناقص است
 
 ---
 
-## Handling 200-Page Documents
+## مدیریت اسناد ۲۰۰ صفحه‌ای <a id="handling-200-page-documents"></a>
 
-The context window challenge:
+چالش پنجره کانتکست (Context Window):
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -137,13 +149,17 @@ flowchart LR
     end
 ```
 
-**Key insight:** Not all 200 pages contain extractable fields. Exhibits (attached original documents) are stored as references, not processed. The "Terms and Conditions" section is often 80% of the document but contains most key fields.
+</div>
+
+**نکته کلیدی:** تمام ۲۰۰ صفحه شامل فیلدهای قابل استخراج نیستند. پیوست‌ها (Exhibits — اسناد اصلی ضمیمه‌شده) به‌عنوان ارجاع ذخیره می‌شوند و پردازش نمی‌شوند. بخش «شرایط و ضوابط» (Terms and Conditions) اغلب ۸۰٪ سند را تشکیل می‌دهد اما بیشتر فیلدهای کلیدی را در خود جای داده است.
 
 ---
 
-## Multilingual Handling
+## مدیریت چندزبانگی <a id="multilingual-handling"></a>
 
-German contracts use different structures than English ones. We maintain language-specific extractors:
+قراردادهای آلمانی از ساختارهای متفاوتی نسبت به قراردادهای انگلیسی استفاده می‌کنند. ما استخراج‌گرهای ویژه هر زبان را نگهداری می‌کنیم:
+
+<div dir="ltr">
 
 ```python
 EXTRACTORS = {
@@ -160,48 +176,52 @@ EXTRACTORS = {
 }
 ```
 
+</div>
+
 ---
 
-## Cost Breakdown
+## تفکیک هزینه‌ها <a id="cost-breakdown"></a>
 
-November 2026 prices, with Gemini 3.8 Flash at its January 1, 2027 list rate.
+قیمت‌های نوامبر ۲۰۲۶، با محاسبه Gemini 3.8 Flash بر اساس نرخ مصوب ۱ ژانویه ۲۰۲۷.
 
-| Stage | Cost per 100-page Doc |
+| مرحله | هزینه به ازای هر سند ۱۰۰ صفحه‌ای |
 |-------|----------------------|
-| Parsing, scanned only: parsing VLM on all pages ($0.15) plus Gemini 3.8 Flash on ~15 hard pages (~$0.13) | $0.28 |
-| Section detection (GPT-6 Luna, ~50K tokens in) | $0.01 |
-| Field extraction (4 parallel on GPT-6 Luna; ~10% of documents escalate low-confidence fields to a $2 / $10 model) | $0.03 |
-| Validation | $0.01 |
-| **Total (scanned)** | **$0.33** |
-| **Total (native PDF)** | **$0.05** |
+| پارس کردن، فقط اسناد اسکن‌شده: مدل VLM پارس اسناد روی همه صفحات (۰.۱۵ دلار) به‌علاوه مدل Gemini 3.8 Flash روی حدود ۱۵ صفحه دشوار (حدود ۰.۱۳ دلار) | ۰.۲۸ دلار |
+| تشخیص بخش‌ها (مدل GPT-6 Luna، حدود ۵۰K Token ورودی) | ۰.۰۱ دلار |
+| استخراج فیلدها (۴ مورد موازی روی مدل GPT-6 Luna؛ حدود ۱۰٪ اسناد فیلدهای با اطمینان پایین را به یک مدل ۲ / ۱۰ دلاری ارجاع می‌دهند) | ۰.۰۳ دلار |
+| اعتبارسنجی | ۰.۰۱ دلار |
+| **مجموع (اسکن‌شده)** | **۰.۳۳ دلار** |
+| **مجموع (PDF بومی)** | **۰.۰۵ دلار** |
 
-Average (60% native, 40% scanned): **about $0.16 per document** (under the $0.50 target). The scanned path costs about 6.5x the native one, almost all of it parsing, so the cheapest lever is getting native PDFs from the source system wherever possible.
-
----
-
-## Interview Follow-Up Questions
-
-**Q: What if the extraction confidence is low?**
-
-A: We output a confidence score per field. Fields below 0.8 are flagged for human review. The UI shows a "review queue" where humans validate only uncertain fields, not entire documents. This reduces human effort to an average of 30 seconds per document. Every extracted field also carries its source location (page plus the parser's block ID and bounding box), so the reviewer sees the highlighted clause instead of hunting for it. Parsers now emit these locators directly; MinerU 4.0, for example, returns stable page and block references meant for verifiable citations.
-
-**Q: How do you handle contracts with non-standard layouts?**
-
-A: We maintain a "layout library" of known contract templates. The section detector first tries to match against known templates. If no match, it falls back to heuristic detection (looking for numbered sections, ALL CAPS headers, etc.). Unknown layouts are flagged and added to the library after human review.
-
-**Q: What about contracts where key terms are defined in exhibits?**
-
-A: We detect cross-references ("as defined in Exhibit A") and resolve them. The extraction prompt includes relevant exhibit content when the main document references it. This prevents "null" extractions when the answer is in an attachment.
+میانگین (۶۰٪ بومی، ۴۰٪ اسکن‌شده): **حدود ۰.۱۶ دلار به ازای هر سند** (کمتر از هدف ۰.۵۰ دلاری). مسیر اسکن‌شده حدود ۶.۵ برابر مسیر بومی هزینه دارد که تقریباً تمام آن مربوط به پارس کردن است؛ بنابراین ارزان‌ترین اهرم بهینه‌سازی، دریافت فایل‌های PDF بومی از سیستم مبدأ در هر زمان ممکن است.
 
 ---
 
-## Key Takeaways for Interviews
+## پرسش‌های تکمیلی مصاحبه <a id="interview-follow-up-questions"></a>
 
-1. **Route pages by difficulty**: parsing VLMs beat traditional OCR on layout, and only the hard pages need a frontier VLM
-2. **Parallel specialized extractors outperform single-pass** for structured extraction
-3. **Cross-field validation catches extraction errors** before they reach the database
-4. **Not all pages need processing**: detect relevant sections, skip exhibits
+**پرسش: اگر اطمینان استخراج (Confidence) پایین باشد چه می‌شود؟**
+
+پاسخ: ما برای هر فیلد یک امتیاز اطمینان خروجی می‌دهیم. فیلدهای زیر ۰.۸ برای بازبینی انسانی علامت‌گذاری می‌شوند. رابط کاربری یک «صف بازبینی» (Review Queue) نشان می‌دهد که در آن افراد تنها فیلدهای نامطمئن را تأیید می‌کنند، نه کل اسناد را. این کار تلاش انسانی را به میانگین ۳۰ ثانیه به ازای هر سند کاهش می‌دهد. همچنین هر فیلد استخراج‌شده مکان منبع خود (شماره صفحه به‌علاوه شناسه بلوک و کادر مرزی پارسر) را به همراه دارد، بنابراین بازبین به‌جای جست‌وجو برای بند مورد نظر، آن را به‌صورت برجسته‌شده (Highlighted) می‌بیند. پارسرها اکنون این مکان‌یاب‌ها را مستقیماً تولید می‌کنند؛ برای مثال، MinerU 4.0 ارجاعات پایدار صفحه و بلوک را برمی‌گرداند که برای استنادهای قابل راستی‌آزمایی طراحی شده‌اند.
+
+**پرسش: با قراردادهایی که چیدمان غیراستاندارد دارند چگونه برخورد می‌کنید؟**
+
+پاسخ: ما یک «کتابخانه چیدمان» (Layout Library) از الگوهای شناخته‌شده قراردادها نگهداری می‌کنیم. تشخیص‌دهنده بخش (Section Detector) ابتدا تلاش می‌کند با الگوهای شناخته‌شده تطبیق دهد. در صورت عدم تطابق، به تشخیص ابتکاری (Heuristic Detection) روی می‌آورد (جست‌وجوی بخش‌های شماره‌گذاری‌شده، سرتیترهای تماماً با حروف بزرگ و موارد مشابه). چیدمان‌های ناشناخته علامت‌گذاری شده و پس از بازبینی انسانی به کتابخانه اضافه می‌شوند.
+
+**پرسش: در مورد قراردادهایی که شروط کلیدی آن‌ها در پیوست‌ها (Exhibits) تعریف شده‌اند چطور؟**
+
+پاسخ: ما ارجاعات متقابل («مطابق تعریف در پیوست A») را تشخیص داده و آن‌ها را برطرف (Resolve) می‌کنیم. هنگامی که سند اصلی به پیوستی ارجاع می‌دهد، Prompt استخراج شامل محتوای پیوست مرتبط نیز می‌شود. این کار از خروجی‌های «تهی» (null) در مواردی که پاسخ در ضمیمه قرار دارد جلوگیری می‌کند.
 
 ---
 
-*Related chapters: [OCR and Layout](../10-document-processing/01-ocr-and-layout.md), [Structured Generation](../05-prompting-and-context/06-structured-generation.md)*
+## نکات کلیدی برای مصاحبه <a id="key-takeaways-for-interviews"></a>
+
+1. **صفحات را بر اساس دشواری مسیریابی کنید**: مدل‌های VLM پارس اسناد در چیدمان بر OCR سنتی برتری دارند و تنها صفحات دشوار به یک مدل VLM پیشرو نیاز دارند
+2. **استخراج‌گرهای تخصصی موازی برای استخراج ساختاریافته بهتر از پردازش تک‌مرحله‌ای عمل می‌کنند**
+3. **اعتبارسنجی متقابل بین فیلدها خطاهای استخراج را پیش از رسیدن به پایگاه داده شکار می‌کند**
+4. **همه صفحات به پردازش نیاز ندارند**: بخش‌های مرتبط را تشخیص دهید و پیوست‌ها را نادیده بگیرید
+
+---
+
+*فصل‌های مرتبط: [OCR و چیدمان](../10-document-processing/01-ocr-and-layout.md)، [تولید ساختاریافته](../05-prompting-and-context/06-structured-generation.md)*
+
+</div>

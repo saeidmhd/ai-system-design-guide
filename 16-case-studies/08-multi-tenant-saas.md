@@ -1,25 +1,29 @@
-# Case Study: Multi-Tenant AI SaaS Platform
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: پلتفرم SaaS هوش مصنوعی چندمستاجری (Multi-Tenant) <a id="case-study-multi-tenant-ai-saas-platform"></a>
 
-A B2B startup is building an **AI-powered document analysis platform** where each customer uploads their own contracts, and the AI answers questions about them. Customers include competitors who must never see each other's data.
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- 500 enterprise customers, each with 10,000-100,000 documents
-- Absolute data isolation: Customer A's data cannot leak to Customer B
-- Shared infrastructure for cost efficiency
-- Compliance: SOC 2 Type II, GDPR
-- Query latency under 2 seconds
+یک استارتاپ B2B در حال ساخت یک **پلتفرم تحلیل اسناد مبتنی بر هوش مصنوعی** است که در آن هر مشتری قراردادهای خود را بارگذاری می‌کند و هوش مصنوعی به پرسش‌های مربوط به آن‌ها پاسخ می‌دهد. مشتریان شامل رقبایی هستند که هرگز نباید داده‌های یکدیگر را ببینند.
 
----
-
-## The Interview Question
-
-> "Design a multi-tenant RAG system where Coca-Cola and Pepsi can both be customers, and there is zero risk of cross-tenant data leakage."
+**محدودیت‌های ارائه‌شده در مصاحبه:**
+- ۵۰۰ مشتری سازمانی، هرکدام با ۱۰٬۰۰۰ تا ۱۰۰٬۰۰۰ سند
+- ایزوله‌سازی مطلق داده: داده‌های مشتری A به هیچ وجه نباید به مشتری B نشت کند
+- زیرساخت مشترک برای بهره‌وری هزینه
+- انطباق مقرراتی: استانداردهای SOC 2 Type II و GDPR
+- تاخیر (Latency) پرس‌وجو زیر ۲ ثانیه
 
 ---
 
-## Solution Architecture
+## پرسش مصاحبه <a id="the-interview-question"></a>
+
+> «یک سیستم RAG چندمستاجری (Multi-Tenant) طراحی کنید که در آن کوکاکولا و پپسی هر دو بتوانند مشتری باشند و ریسک نشت داده بین مستاجران صفر باشد.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -48,43 +52,47 @@ flowchart TB
     end
 ```
 
----
-
-## Key Design Decisions
-
-### 1. Hybrid Isolation: Namespace vs Physical
-
-**Answer:** Pure physical isolation (one database per tenant) is expensive. Pure namespace isolation (shared database with tenant_id filter) has leakage risk if a filter bug occurs. We use a **tiered approach**:
-
-| Tier | Tenant Size | Isolation Method | Why |
-|------|-------------|------------------|-----|
-| Standard | <50K docs | Namespace in shared Qdrant | Cost efficient |
-| Premium | 50K-500K docs | Dedicated Qdrant collection | Performance isolation |
-| Enterprise | >500K docs | Dedicated Qdrant pod, or a data plane in the customer's own cloud | Physical + regulatory |
-
-Two details matter in the shared tier. Keyword search scores with corpus statistics, so in a shared collection one tenant's documents shift another tenant's BM25 ranking; Qdrant 1.19 added per-tenant IDF statistics for sparse and BM25 search to fix exactly this. And the customer-cloud option is now a product, not a custom project: Pinecone's BYOC went GA on September 23, 2026 on AWS, Google Cloud and Azure, with vectors, documents and request payloads staying in the customer's account.
-
-Namespace isolation also fails open on encoding bugs, not only on missing filters: LangGraph's Postgres and SQLite stores let a dotted label alias another tenant's namespace (CVE-2026-115883, October 21, 2026; see [LangGraph Orchestration](../09-frameworks-and-tools/02-langgraph-orchestration.md#persistence-and-checkpointing) for the mechanism and fixed versions). Derive the tenant segment from the authenticated identity, never from a caller-supplied string, and keep RLS underneath.
-
-### 2. Defense in Depth for Data Isolation
-
-**Answer:** We never trust a single layer. Our isolation stack:
-
-1. **API Gateway**: Validates tenant_id from JWT, rejects cross-tenant requests
-2. **Database Layer**: Row-level security (RLS) enforces tenant_id filter at DB level
-3. **Application Layer**: ORM wrapper automatically injects tenant filter
-4. **LLM Layer**: System prompt explicitly states "You are answering for Tenant X only". This frames answers; it is not a control, and isolation must never depend on it
-5. **Output Layer**: Post-generation filter scans for any document IDs not belonging to tenant
-6. **Inference Layer**: If you self-host models, the prefix cache is shared state. vLLM isolates tenants with a per-request `cache_salt`, and in September 2026 one code path that dropped the salt reopened a cross-tenant prefix-cache membership oracle until 0.30.0 (GHSA-935w-9g4m-p28p). Pin vLLM >= 0.32.0 (the current security floor) and test the salt on every endpoint you expose. See [Access Control](../12-security-and-access/02-access-control.md) for the cache-isolation details
-7. **Provider Account Layer**: Every tenant's traffic reaches the model vendor under your one organization, so one abusive tenant can get all 500 restricted. Since October 20, 2026, Anthropic lets platforms register each end customer (`POST /v1/user_profiles`) and send the profile ID with each request (the `anthropic-user-profile-id` header, or a `user_profile_id` body field on Bedrock), so a safety restriction or ban lands on that customer instead of the organization; without one, Anthropic's docs warn, one end customer can trigger enforcement on your whole organization. Attach a profile per tenant at the gateway, and alert on the organization webhooks (beta, on request) that report when a restriction opens or ends. Profiles are created only on Anthropic-run platforms (the Claude API, Claude Platform on AWS, Anthropic-hosted Foundry, and Anthropic-managed Claude on Google Cloud) and are only format-checked on Bedrock and Google-managed Vertex
-
-### 3. Why Not One Vector DB Per Tenant?
-
-**Answer:** 500 tenants × $100/month per managed instance = $50K/month just for databases. By using namespace isolation for 80% of tenants, we reduce this to $8K/month. The remaining 20% on dedicated infrastructure pay a premium tier price.
+</div>
 
 ---
 
-## The Data Ingestion Pipeline
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
+
+### 1. ایزوله‌سازی ترکیبی: فضای نام (Namespace) در برابر فیزیکی <a id="1-hybrid-isolation-namespace-vs-physical"></a>
+
+**پاسخ:** ایزوله‌سازی فیزیکی خالص (یک پایگاه داده به ازای هر مستاجر) پرهزینه است. ایزوله‌سازی فضای نام خالص (پایگاه داده مشترک با فیلتر tenant_id) در صورت بروز باگ در فیلتر، ریسک نشت داده دارد. ما از یک **رویکرد سطح‌بندی‌شده** استفاده می‌کنیم:
+
+| سطح | اندازه مستاجر | روش ایزوله‌سازی | دلیل |
+|------|-------------|------------------|------|
+| استاندارد (Standard) | کمتر از ۵۰ هزار سند | فضای نام (Namespace) در Qdrant مشترک | مقرون‌به‌صرفه از نظر هزینه |
+| پریمیوم (Premium) | ۵۰ هزار تا ۵۰۰ هزار سند | کالکشن اختصاصی Qdrant | ایزوله‌سازی عملکرد |
+| سازمانی (Enterprise) | بیش از ۵۰۰ هزار سند | پاد (Pod) اختصاصی Qdrant یا یک صفحه داده (Data Plane) در ابر اختصاصی خود مشتری | فیزیکی + انطباق مقرراتی |
+
+دو جزئیات در سطح مشترک اهمیت دارند. جست‌وجوی کلیدواژه‌ای امتیازدهی را با آمار کل پیکره (Corpus) انجام می‌دهد، بنابراین در یک کالکشن مشترک، اسناد یک مستاجر رتبه‌بندی BM25 مستاجر دیگر را جابه‌جا می‌کنند؛ نسخه 1.19 پایگاه داده Qdrant آمار IDF به ازای هر مستاجر را برای جست‌وجوی تنک (Sparse) و BM25 اضافه کرده است تا دقیقاً همین مشکل را برطرف کند. همچنین گزینه ابر اختصاصی مشتری اکنون یک محصول آماده است، نه یک پروژه سفارشی: سرویس BYOC شرکت Pinecone در ۲۳ سپتامبر ۲۰۲۶ روی AWS، Google Cloud و Azure به دسترس‌پذیری عمومی (GA) رسید که در آن بردارها، اسناد و محموله درخواست‌ها (Payloads) در حساب خود مشتری باقی می‌مانند.
+
+ایزوله‌سازی فضای نام تنها به‌دلیل فیلترهای جاافتاده دچار شکست باز (Fail-open) نمی‌شود، بلکه در اثر باگ‌های کدگذاری (Encoding) نیز آسیب‌پذیر است: ذخیره‌سازهای Postgres و SQLite در LangGraph به یک برچسب نقطه‌دار اجازه می‌دادند به نام مستعار فضای نام مستاجر دیگری اشاره کند (CVE-2026-115883 در ۲۱ اکتبر ۲۰۲۶؛ برای مکانیزم و نسخه‌های اصلاح‌شده، بخش [ارکستراسیون LangGraph](../09-frameworks-and-tools/02-langgraph-orchestration.md#persistence-and-checkpointing) را ببینید). بخش مربوط به مستاجر را همیشه از هویت احرازشده استخراج کنید، هرگز از رشته‌ای که فراخواننده ارسال کرده استفاده نکنید، و امنیت در سطح سطر (RLS) را در لایه زیرین حفظ نمایید.
+
+### 2. دفاع لایه‌به‌لایه (Defense in Depth) برای ایزوله‌سازی داده <a id="2-defense-in-depth-for-data-isolation"></a>
+
+**پاسخ:** ما هرگز به یک لایه اعتماد نمی‌کنیم. پشته ایزوله‌سازی ما شامل موارد زیر است:
+
+1. **درگاه API (API Gateway)**: مقدار tenant_id را از JWT اعتبارسنجی می‌کند و درخواست‌های بین‌مستاجری را رد می‌کند
+2. **لایه پایگاه داده**: امنیت در سطح سطر (RLS) فیلتر tenant_id را در سطح پایگاه داده اعمال می‌کند
+3. **لایه برنامه**: پوشش‌دهنده ORM به‌صورت خودکار فیلتر مستاجر را تزریق می‌کند
+4. **لایه LLM**: در دستور سیستمی (System Prompt) به‌صراحت بیان می‌شود «شما فقط برای مستاجر X پاسخ می‌دهید». این کار پاسخ‌ها را چارچوب‌بندی می‌کند؛ یک کنترل امنیتی نیست و ایزوله‌سازی هرگز نباید به آن وابسته باشد
+5. **لایه خروجی**: فیلتر پس از تولید، خروجی را برای یافتن هرگونه شناسه سندی که متعلق به مستاجر نیست پویش می‌کند
+6. **لایه استنتاج (Inference)**: اگر مدل‌ها را به‌صورت خودمیزبان (Self-host) اجرا می‌کنید، کش پیشوند (Prefix Cache) یک وضعیت مشترک است. موتور vLLM مستاجران را با یک `cache_salt` اختصاصی به ازای هر درخواست ایزوله می‌کند و در سپتامبر ۲۰۲۶ یک مسیر کد که این مقدار salt را حذف کرده بود، تا نسخه 0.30.0 دوباره یک اوراکل عضویت کش پیشوند بین‌مستاجری را باز کرد (GHSA-935w-9g4m-p28p). نسخه vLLM >= 0.32.0 (کف امنیتی فعلی) را تثبیت (Pin) کنید و مقدار salt را روی تمام نقاط پایانی (Endpoint) که در دسترس قرار می‌دهید آزمایش کنید. برای جزئیات ایزوله‌سازی کش، بخش [کنترل دسترسی](../12-security-and-access/02-access-control.md) را ببینید
+7. **لایه حساب ارائه‌دهنده**: ترافیک همه مستاجران تحت یک سازمان واحد به فروشنده مدل می‌رسد، بنابراین یک مستاجر متخلف می‌تواند باعث محدود شدن هر ۵۰۰ مستاجر شود. از ۲۰ اکتبر ۲۰۲۶، شرکت Anthropic به پلتفرم‌ها اجازه می‌دهد هر مشتری نهایی را ثبت کنند (`POST /v1/user_profiles`) و شناسه پروفایل را همراه با هر درخواست ارسال کنند (هدر `anthropic-user-profile-id` یا فیلد بدنه `user_profile_id` در Bedrock)، تا محدودیت یا مسدودیت ایمنی فقط متوجه آن مشتری شود و نه کل سازمان؛ مستندات Anthropic هشدار می‌دهد که بدون این شناسه، یک مشتری نهایی می‌تواند باعث اعمال جریمه روی کل سازمان شما شود. در درگاه، برای هر مستاجر یک پروفایل متصل کنید و روی وب‌هوک‌های سازمان (در نسخه بتا، در صورت درخواست) که باز یا بسته شدن یک محدودیت را گزارش می‌دهند، هشدار (Alert) تنظیم کنید. پروفایل‌ها فقط روی پلتفرم‌های تحت مدیریت Anthropic (شامل Claude API، Claude Platform on AWS، Anthropic-hosted Foundry و Anthropic-managed Claude on Google Cloud) ایجاد می‌شوند و روی Bedrock و Vertex تحت مدیریت گوگل فقط فرمت آن‌ها بررسی می‌شود
+
+### 3. چرا برای هر مستاجر یک پایگاه داده برداری جداگانه نسازیم؟ <a id="3-why-not-one-vector-db-per-tenant"></a>
+
+**پاسخ:** ۵۰۰ مستاجر × ۱۰۰ دلار در ماه برای هر نمونه مدیریت‌شده = ۵۰ هزار دلار در ماه فقط برای پایگاه‌های داده. با استفاده از ایزوله‌سازی فضای نام برای ۸۰٪ مستاجران، این هزینه را به ۸ هزار دلار در ماه کاهش می‌دهیم. ۲۰٪ باقی‌مانده روی زیرساخت اختصاصی، تعرفه سطح پریمیوم را پرداخت می‌کنند.
+
+---
+
+## خط لوله دریافت و پردازش داده (Data Ingestion Pipeline) <a id="the-data-ingestion-pipeline"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -106,22 +114,26 @@ flowchart LR
     end
 ```
 
-**Critical:** The tenant_id is attached at the **earliest possible point** (upload validation) and travels with the document through every stage. It is not derived or looked up later.
+</div>
+
+**نکته حیاتی:** شناسه tenant_id در **زودترین نقطه ممکن** (اعتبارسنجی بارگذاری) متصل می‌شود و در تمام مراحل همراه سند حرکت می‌کند. این شناسه در مراحل بعدی استخراج یا جست‌وجو نمی‌شود.
 
 ---
 
-## Handling the Compliance Requirements
+## پیاده‌سازی الزامات انطباق (Compliance) <a id="handling-the-compliance-requirements"></a>
 
-### SOC 2 Type II
+### استاندارد SOC 2 Type II <a id="soc-2-type-ii"></a>
 
-| Control | Implementation |
-|---------|----------------|
-| Access logging | Every query logged with tenant_id, user_id, timestamp |
-| Encryption at rest | AES-256 for blob storage, database-native for vector DB |
-| Encryption in transit | TLS 1.3 everywhere |
-| Access reviews | Automated quarterly reports from audit logs |
+| کنترل | پیاده‌سازی |
+|-------|------------|
+| ثبت وقایع دسترسی (Access Logging) | ثبت هر پرس‌وجو همراه با tenant_id، user_id و برچسب زمان |
+| رمزنگاری داده‌های ذخیره‌شده (At Rest) | الگوریتم AES-256 برای ذخیره‌سازی آبجکت (Blob Storage) و رمزنگاری بومی پایگاه داده برای پایگاه داده برداری |
+| رمزنگاری در حال انتقال (In Transit) | پروتکل TLS 1.3 در تمام ارتباطات |
+| بازبینی‌های دسترسی | گزارش‌های فصلی خودکار از لاگ‌های ممیزی (Audit Logs) |
 
-### GDPR Right to Deletion
+### حق حذف داده‌ها در GDPR <a id="gdpr-right-to-deletion"></a>
+
+<div dir="ltr">
 
 ```python
 async def delete_tenant_data(tenant_id: str):
@@ -138,54 +150,58 @@ async def delete_tenant_data(tenant_id: str):
     return generate_deletion_certificate(tenant_id)
 ```
 
-### Data Residency
+</div>
 
-EU tenants often contract for in-region processing, and model vendors now price it as a line item of about +10% per token: regional Claude endpoints on Bedrock and Google Cloud, OpenAI's data-residency endpoints and Mistral's EU inference all carry roughly that premium, and Anthropic's US-only `inference_geo` setting bills 1.1x. Check what "regional" means per model and platform: on Google-managed Vertex, regional endpoints serve only Claude Sonnet 4.6 and earlier, so Opus 5.5, Sonnet 5.5, Haiku 5.5, and Fable 5.1 need the global endpoint or the `us` or `eu` multi-region endpoint (geography-level residency, not a single region), at the same 10% premium over global, and provisioned throughput there requires a regional endpoint. Pin geography per tenant at the gateway and charge it to the tier that needs it, rather than paying 10% on every tenant's traffic.
+### محل استقرار داده (Data Residency) <a id="data-residency"></a>
 
----
-
-## Cost Analysis (500 Tenants)
-
-| Component | Monthly Cost |
-|-----------|--------------|
-| Shared Vector DB (Qdrant Cloud) | $2,500 |
-| Dedicated pods (20 enterprise tenants) | $4,000 |
-| LLM costs (pooled; GPT-6 Luna by default, a $2 / $10 model for hard questions; volume-dependent) | $8,000 |
-| Blob storage (S3) | $1,500 |
-| Audit logging (CloudWatch) | $500 |
-| **Total** | **$16,500/month** |
-| **Per tenant average** | **$33/month** |
+مستاجران اتحادیه اروپا (EU) اغلب در قراردادهای خود پردازش در همان منطقه را شرط می‌کنند و اکنون فروشندگان مدل این قابلیت را به‌عنوان یک ردیف هزینه‌ای با حدود ۱۰٪ افزایش قیمت به ازای هر Token قیمت‌گذاری می‌کنند: نقاط پایانی منطقه‌ای Claude روی Bedrock و Google Cloud، نقاط پایانی اقامت داده (Data-residency) شرکت OpenAI و استنتاج اتحادیه اروپا در Mistral همگی تقریباً چنین حق‌بیمه‌ای دارند و تنظیم `inference_geo` مختص ایالات متحده در Anthropic نیز با ضریب ۱.۱ برابر صورت‌حساب می‌شود. بررسی کنید منظور از «منطقه‌ای» برای هر مدل و پلتفرم چیست: در Vertex تحت مدیریت گوگل، نقاط پایانی منطقه‌ای تنها از Claude Sonnet 4.6 و نسخه‌های پیش از آن پشتیبانی می‌کنند، بنابراین مدل‌های Opus 5.5، Sonnet 5.5، Haiku 5.5 و Fable 5.1 به نقطه پایانی سراسری (Global) یا نقطه پایانی چندمنطقه‌ای `us` یا `eu` (اقامت داده در سطح جغرافیایی، نه یک منطقه واحد) نیاز دارند که همان ۱۰٪ افزایش قیمت نسبت به حالت سراسری را دارد، و توان عملیاتی تخصیص‌یافته (Provisioned Throughput) در آنجا نیازمند نقطه پایانی منطقه‌ای است. جغرافیای هر مستاجر را در درگاه تثبیت کنید و هزینه آن را از همان سطحی که به آن نیاز دارد دریافت کنید، به‌جای اینکه ۱۰٪ هزینه اضافه برای ترافیک تمام مستاجران بپردازید.
 
 ---
 
-## Interview Follow-Up Questions
+## تحلیل هزینه (۵۰۰ مستاجر) <a id="cost-analysis-500-tenants"></a>
 
-**Q: What if a bug in your ORM bypasses the tenant filter?**
-
-A: Defense in depth. Even if the ORM fails, the database enforces RLS (Row-Level Security). The query `SELECT * FROM documents` internally becomes `SELECT * FROM documents WHERE tenant_id = current_tenant()`. This is enforced at the Postgres level, not the application level.
-
-**Q: How do you handle a tenant who wants to export all their data?**
-
-A: We provide a data portability API that streams all documents with their embeddings and metadata. The export is triggered by an admin, logged in the audit trail, and delivered to a customer-controlled S3 bucket (not our infrastructure).
-
-**Q: What if the LLM hallucinates information from its training data that matches a competitor's confidential info?**
-
-A: This is a real risk. We mitigate by: (1) Using only retrieval-grounded generation (the LLM cannot answer without retrieved docs). (2) Filtering outputs for any content that does not trace back to the tenant's uploaded documents. (3) Offering a "private model" tier where we fine-tune a tenant-specific model on their data only. Build that tier on open weights (one LoRA adapter per tenant on a shared base model) or a cloud provider's tuning service, not OpenAI's self-serve fine-tuning, which stops accepting new jobs on January 6, 2027.
-
-**Q: A customer asks whether their users can pay for AI usage with their own ChatGPT plan. Do you support it?**
-
-A: OpenAI announced Sign in with ChatGPT at DevDay on September 29, 2026, as a limited trial for selected partners: OAuth 2.0 with PKCE plus OpenID Connect, and an optional scope that lets eligible ChatGPT Plus and Pro users run eligible Responses API requests on their own plan. That scope is documented for open-source apps and selected private clients, so a hosted SaaS has to apply for it. It moves inference cost off our books, but for this product I would not make it the default. Tenant contract data would be processed under an individual user's ChatGPT relationship that the tenant's admin does not control, rate limits become per user plan instead of per tenant, and those requests are tied to one vendor's models. If we offer it at all, it is per tenant, off by default, enabled by the tenant admin, and logged like any other model route.
+| جزء | هزینه ماهانه |
+|-----|--------------|
+| پایگاه داده برداری مشترک (Qdrant Cloud) | مبلغ ۲٬۵۰۰ دلار |
+| پادهای اختصاصی (۲۰ مستاجر سازمانی) | مبلغ ۴٬۰۰۰ دلار |
+| هزینه‌های LLM (اشتراکی؛ مدل پیش‌فرض GPT-6 Luna، مدلی با تعرفه ۲ دلار / ۱۰ دلار برای پرسش‌های دشوار؛ وابسته به حجم) | مبلغ ۸٬۰۰۰ دلار |
+| ذخیره‌سازی آبجکت (S3) | مبلغ ۱٬۵۰۰ دلار |
+| ثبت وقایع ممیزی (CloudWatch) | مبلغ ۵۰۰ دلار |
+| **مجموع** | **ماهانه ۱۶٬۵۰۰ دلار** |
+| **میانگین به ازای هر مستاجر** | **ماهانه ۳۳ دلار** |
 
 ---
 
-## Key Takeaways for Interviews
+## پرسش‌های تکمیلی مصاحبه <a id="interview-follow-up-questions"></a>
 
-1. **Multi-tenancy is about layers**: never rely on a single isolation mechanism
-2. **Tiered isolation balances cost and security**: not all tenants need dedicated infrastructure
-3. **Tenant ID must be immutable and early**: tag at upload, not at query time
-4. **Compliance is an architecture concern**: design for audit, deletion, and portability from day one
-5. **Shared inference is shared state**: prefix caches and ranking statistics leak across tenants unless they are partitioned per tenant
+**پرسش: اگر باگی در ORM شما فیلتر مستاجر را دور بزند چه اتفاقی می‌افتد؟**
+
+**پاسخ:** دفاع لایه‌به‌لایه. حتی اگر ORM دچار خطا شود، پایگاه داده امنیت در سطح سطر (RLS) را اعمال می‌کند. پرس‌وجوی `SELECT * FROM documents` در باطن به `SELECT * FROM documents WHERE tenant_id = current_tenant()` تبدیل می‌شود. این موضوع در سطح Postgres اعمال می‌شود، نه در سطح برنامه.
+
+**پرسش: با مستاجری که بخواهد تمام داده‌های خود را خروجی (Export) بگیرد چگونه برخورد می‌کنید؟**
+
+**پاسخ:** ما یک API انتقال‌پذیری داده (Data Portability) ارائه می‌دهیم که تمام اسناد را همراه با بردارهای تعبیه‌شده (Embeddings) و فراداده‌هایشان به‌صورت جریانی (Stream) ارسال می‌کند. این خروجی‌گیری توسط یک مدیر (Admin) آغاز می‌شود، در مسیر ممیزی (Audit Trail) ثبت می‌گردد و به یک باکت S3 تحت کنترل مشتری (و نه زیرساخت ما) تحویل داده می‌شود.
+
+**پرسش: اگر LLM اطلاعاتی را از داده‌های آموزشی خود توهم (Hallucinate) بزند که با اطلاعات محرمانه یک رقیب مطابقت داشته باشد چه؟**
+
+**پاسخ:** این یک ریسک واقعی است. ما آن را با روش‌های زیر کاهش می‌دهیم: (1) استفاده صرف از تولید مبتنی بر بازیابی (Retrieval-Grounded Generation) که در آن LLM بدون اسناد بازیابی‌شده نمی‌تواند پاسخ دهد. (2) فیلتر کردن خروجی‌ها برای هر محتوایی که رد آن به اسناد بارگذاری‌شده خود مستاجر برنمی‌گردد. (3) ارائه یک سطح «مدل خصوصی» که در آن عملیات Fine-tuning را روی یک مدل اختصاصی مستاجر فقط با داده‌های خود او انجام می‌دهیم. آن سطح را روی مدل‌های با وزن باز (Open Weights، به‌صورت یک آداپتور LoRA به ازای هر مستاجر روی یک مدل پایه مشترک) یا سرویس تنظیم (Tuning) یک ارائه‌دهنده ابری بسازید، نه سرویس Fine-tuning سلف‌سرویس OpenAI که از ۶ ژانویه ۲۰۲۷ دیگر درخواست‌های جدید را نمی‌پذیرد.
+
+**پرسش: یک مشتری می‌پرسد آیا کاربرانش می‌توانند هزینه استفاده از هوش مصنوعی را با اشتراک ChatGPT شخصی خود بپردازند. آیا از این قابلیت پشتیبانی می‌کنید؟**
+
+**پاسخ:** شرکت OpenAI قابلیت Sign in with ChatGPT را در رویداد DevDay در ۲۹ سپتامبر ۲۰۲۶ به‌عنوان یک آزمایش محدود برای شرکای منتخب معرفی کرد: OAuth 2.0 با PKCE به همراه OpenID Connect و یک دامنه اختیاری (Scope) که به کاربران واجد شرایط ChatGPT Plus و Pro اجازه می‌دهد درخواست‌های واجد شرایط Responses API را روی اشتراک شخصی خود اجرا کنند. این دامنه برای برنامه‌های متن‌باز و کلاینت‌های خصوصی منتخب مستندسازی شده است، بنابراین یک SaaS میزبانی‌شده باید برای دریافت آن درخواست دهد. این روش هزینه استنتاج (Inference) را از دوش ما برمی‌دارد، اما برای این محصول آن را به‌عنوان پیش‌فرض انتخاب نمی‌کنم. داده‌های قرارداد مستاجر تحت رابطه شخصی کاربر با ChatGPT پردازش می‌شوند که مدیر مستاجر کنترلی بر آن ندارد، محدودیت‌های نرخ (Rate Limits) به‌جای سطح مستاجر به ازای اشتراک هر کاربر اعمال می‌شوند، و این درخواست‌ها به مدل‌های یک فروشنده خاص وابسته می‌شوند. اگر اصلاً چنین قابلیتی ارائه دهیم، در سطح هر مستاجر خواهد بود، به‌صورت پیش‌فرض خاموش است، توسط مدیر مستاجر فعال می‌شود و مانند هر مسیر مدل دیگری ثبت وقایع (Log) می‌گردد.
 
 ---
 
-*Related chapters: [LLM Security](../12-security-and-access/01-llm-security.md), [Access Control & Multi-Tenant Isolation](../12-security-and-access/02-access-control.md)*
+## نکات کلیدی برای مصاحبه‌ها <a id="key-takeaways-for-interviews"></a>
+
+1. **چندمستاجری (Multi-tenancy) درباره لایه‌هاست**: هرگز به یک مکانیزم ایزوله‌سازی واحد تکیه نکنید
+2. **ایزوله‌سازی سطح‌بندی‌شده بین هزینه و امنیت تعادل برقرار می‌کند**: همه مستاجران به زیرساخت اختصاصی نیاز ندارند
+3. **شناسه مستاجر باید تغییرناپذیر و زودهنگام باشد**: برچسب‌گذاری را هنگام بارگذاری انجام دهید، نه در زمان پرس‌وجو
+4. **انطباق (Compliance) یک دغدغه معماری است**: از روز اول برای ممیزی، حذف و انتقال‌پذیری طراحی کنید
+5. **استنتاج مشترک یعنی وضعیت مشترک**: کش‌های پیشوند و آمارهای رتبه‌بندی بین مستاجران نشت می‌کنند مگر اینکه به ازای هر مستاجر پارتیشن‌بندی شوند
+
+---
+
+*فصل‌های مرتبط: [امنیت LLM](../12-security-and-access/01-llm-security.md)، [کنترل دسترسی و ایزوله‌سازی چندمستاجری](../12-security-and-access/02-access-control.md)*
+
+</div>

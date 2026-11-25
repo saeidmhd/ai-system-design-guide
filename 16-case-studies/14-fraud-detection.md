@@ -1,25 +1,29 @@
-# Case Study: Real-Time Fraud Detection
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: تشخیص بلادرنگ تقلب
 
-A payment processor handles **10 million transactions per day**. They need to detect fraudulent transactions in real-time, blocking them before they complete, while minimizing false positives that frustrate legitimate customers.
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- Decision latency: under 100ms
-- False positive rate: under 0.1% (1 in 1,000)
-- Must explain why a transaction was flagged
-- Regulations require 7-year audit trail
-- Fraud patterns evolve constantly
+یک پردازشگر پرداخت، روزانه **۱۰ میلیون تراکنش** را مدیریت می‌کند. این سیستم باید تراکنش‌های متقلبانه را به‌صورت بلادرنگ شناسایی کرده و پیش از تکمیل، آن‌ها را مسدود کند؛ در عین حال باید موارد مثبت کاذب (False Positives) را که باعث نارضایتی مشتریان قانونی می‌شود، به حداقل برساند.
 
----
-
-## The Interview Question
-
-> "Design a system that decides within 100ms whether to approve, reject, or escalate a credit card transaction, and can explain that decision."
+**محدودیت‌های مطرح‌شده در مصاحبه:**
+- تاخیر (Latency) تصمیم‌گیری: زیر ۱۰۰ میلی‌ثانیه
+- نرخ مثبت کاذب: زیر ۰٫۱ درصد (۱ مورد از هر ۱٬۰۰۰ تراکنش)
+- باید بتواند توضیح دهد چرا یک تراکنش مشکوک تشخیص داده شده است
+- مقررات مستلزم نگهداری سوابق حسابرسی (Audit Trail) به مدت ۷ سال است
+- الگوهای تقلب به‌طور مداوم تغییر می‌کنند
 
 ---
 
-## Solution Architecture
+## سوال مصاحبه <a id="the-interview-question"></a>
+
+> «سیستمی طراحی کنید که ظرف ۱۰۰ میلی‌ثانیه تصمیم بگیرد یک تراکنش کارت اعتباری را تایید، رد یا ارجاع (Escalate) دهد و بتواند آن تصمیم را توضیح دهد.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -49,25 +53,29 @@ flowchart TB
     end
 ```
 
+</div>
+
 ---
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. Why ML + Rules, Not Just ML?
+### 1. چرا ترکیب یادگیری ماشین (ML) و قواعد، نه فقط ML؟ <a id="1-why-ml--rules-not-just-ml"></a>
 
-**Answer:** Pure ML models are black boxes. Regulators require explainable decisions for disputes. We use ML for scoring, then apply transparent rules for final decisions:
+**پاسخ:** مدل‌های خالص یادگیری ماشین (ML) مانند جعبه سیاه (Black Box) هستند. نهادهای نظارتی برای رسیدگی به اختلافات مالی، نیازمند تصمیم‌های قابل توضیح هستند. ما از ML برای امتیازدهی استفاده می‌کنیم و سپس قواعد شفاف را برای تصمیم‌گیری نهایی اعمال می‌کنیم:
 
-| Layer | Role | Speed | Explainability |
-|-------|------|-------|----------------|
-| ML Ensemble | Catch complex patterns | 10ms | Low |
-| Business Rules | Encode known fraud types | 5ms | High |
-| Combined | Best of both | 15ms | Medium-High |
+| لایه | نقش | سرعت | توضیح‌پذیری |
+|------|-----|------|-------------|
+| مجموعه مدل‌های ML (ML Ensemble) | کشف الگوهای پیچیده | ۱۰ میلی‌ثانیه | پایین |
+| قواعد کسب‌وکار (Business Rules) | کدگذاری انواع تقلب شناخته‌شده | ۵ میلی‌ثانیه | بالا |
+| ترکیب هر دو (Combined) | بهره‌مندی از مزایای هر دو | ۱۵ میلی‌ثانیه | متوسط تا بالا |
 
-Rules examples: "Block if 5+ transactions in different countries within 1 hour" is explainable to regulators.
+نمونه قواعد: قاعده «اگر ۵ تراکنش یا بیشتر در کشورهای مختلف طی ۱ ساعت انجام شد، مسدود شود» برای نهادهای نظارتی کاملاً قابل توضیح است.
 
-### 2. Three-Way Decision: Approve / Escalate / Reject
+### 2. تصمیم سه‌حالته: تایید / ارجاع / رد <a id="2-three-way-decision-approve--escalate--reject"></a>
 
-**Answer:** Binary approve/reject is too blunt. The "gray zone" (0.3-0.7 score) goes to rule-based escalation or human review for high-value transactions:
+**پاسخ:** تصمیم‌گیری دودویی (تایید/رد) بیش از حد انعطاف‌ناپذیر است. «ناحیه خاکستری» (امتیاز بین ۰٫۳ تا ۰٫۷) برای تراکنش‌های با مبلغ بالا به ارجاع مبتنی بر قواعد یا بررسی انسانی سپرده می‌شود:
+
+<div dir="ltr">
 
 ```python
 def decide(transaction, fraud_score):
@@ -86,11 +94,15 @@ def decide(transaction, fraud_score):
         return "APPROVE", None
 ```
 
-### 3. Why LLM for Explanation, Not SHAP/LIME?
+</div>
 
-**Answer:** SHAP values tell you "feature X contributed 0.3 to the score." Customers and regulators want "This transaction was flagged because it was made from a new device in a country you have never visited, for an amount 10x your usual purchase."
+### 3. چرا از LLM برای توضیح‌دهی استفاده می‌کنیم و نه SHAP/LIME؟ <a id="3-why-llm-for-explanation-not-shaplime"></a>
 
-We generate natural language explanations using the feature importance as input. The LLM call never sits inside the 100ms decision: the decision returns with a reason code, and the cardholder-facing explanation is generated asynchronously from the logged features (a small model such as GPT-6 Luna, at $0.10/$0.50 per 1M tokens, is fast and cheap enough for every decline):
+**پاسخ:** مقادیر SHAP به شما می‌گویند «ویژگی X به اندازه ۰٫۳ در امتیاز نقش داشته است». اما مشتریان و نهادهای نظارتی چنین توضیحی می‌خواهند: «این تراکنش مشکوک تشخیص داده شد زیرا از یک دستگاه جدید در کشوری که هرگز به آن سفر نکرده‌اید و برای مبلغی ۱۰ برابر خرید معمول شما انجام شده است.»
+
+ما توضیحات به زبان طبیعی را با استفاده از اهمیت ویژگی‌ها (Feature Importance) به‌عنوان ورودی تولید می‌کنیم. فراخوانی مدل LLM هرگز در مسیر تصمیم‌گیری ۱۰۰ میلی‌ثانیه‌ای قرار نمی‌گیرد: تصمیم با یک کد دلیل (Reason Code) بازگردانده می‌شود و توضیح قابل نمایش به دارنده کارت، به‌صورت ناهمگام (Asynchronous) از روی ویژگی‌های ثبت‌شده تولید می‌شود (یک مدل کوچک مانند GPT-6 Luna با هزینه $0.10/$0.50 به ازای هر ۱ میلیون Token، به اندازه کافی سریع و ارزان است که برای هر تراکنش ردشده اجرا شود):
+
+<div dir="ltr">
 
 ```python
 prompt = f"""
@@ -111,13 +123,17 @@ Write a 2-sentence explanation for the cardholder.
 """
 ```
 
-A post-check rejects any explanation that cites a factor not in the supplied list and falls back to a templated reason, because an invented reason is worse in a dispute than a generic one.
+</div>
+
+یک بررسی نهایی (Post-check) هر توضیحی را که به عاملی خارج از فهرست ارسالی اشاره کند رد کرده و به یک دلیل قالبی (Templated Reason) برمی‌گردد، زیرا یک دلیل ساختگی در اختلافات مالی بدتر از یک دلیل کلی است.
 
 ---
 
-## Feature Engineering for Speed
+## مهندسی ویژگی برای سرعت بالا <a id="feature-engineering-for-speed"></a>
 
-100ms budget means features must be pre-computed:
+بودجه ۱۰۰ میلی‌ثانیه‌ای به این معناست که ویژگی‌ها باید از پیش محاسبه شوند:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -140,13 +156,17 @@ flowchart LR
     COMBINE --> MODEL[ML Model]
 ```
 
-**Key insight:** User profile (average spend, typical merchants, home geography) is computed offline. Real-time only adds transaction-specific features.
+</div>
+
+**نکته کلیدی:** پروفایل کاربر (میانگین هزینه، پذیرندگان معمول، موقعیت جغرافیایی محل سکونت) به‌صورت آفلاین محاسبه می‌شود. پردازش بلادرنگ تنها ویژگی‌های خاص همان تراکنش را اضافه می‌کند.
 
 ---
 
-## Handling Evolving Fraud Patterns
+## مدیریت الگوهای در حال تغییر تقلب <a id="handling-evolving-fraud-patterns"></a>
 
-Fraudsters adapt. Last month's model misses this month's attacks.
+کلاهبرداران خود را تطبیق می‌دهند. مدل ماه گذشته، حملات این ماه را از دست می‌دهد.
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -164,33 +184,37 @@ flowchart TB
     end
 ```
 
-**Emergency rules** can be deployed in minutes (just a config update). Model retraining takes days but catches more subtle patterns.
+</div>
+
+**قواعد اضطراری** را می‌توان در عرض چند دقیقه مستقر کرد (فقط یک به‌روزرسانی پیکربندی). بازآموزی مدل (Model Retraining) چند روز طول می‌کشد اما الگوهای ظریف‌تر را شکار می‌کند.
 
 ---
 
-## Interview Follow-Up Questions
+## سوالات پیگیری مصاحبه <a id="interview-follow-up-questions"></a>
 
-**Q: How do you handle model latency spikes?**
+**سوال: چگونه جهش‌های ناگهانی تاخیر (Latency) مدل را مدیریت می‌کنید؟**
 
-A: We have a **fallback stack**. If the ML model does not respond within 50ms, we fall back to rule-based scoring only. The rules cover the most common fraud patterns. We also have a "default approve" for transactions under $10 if all systems are slow.
+**پاسخ:** ما یک **پشته پشتیبان (Fallback Stack)** داریم. اگر مدل ML ظرف ۵۰ میلی‌ثانیه پاسخ ندهد، تنها به امتیازدهی مبتنی بر قواعد برمی‌گردیم. این قواعد رایج‌ترین الگوهای تقلب را پوشش می‌دهند. همچنین اگر همه سیستم‌ها کند شوند، یک «تایید پیش‌فرض» برای تراکنش‌های زیر ۱۰ دلار داریم.
 
-**Q: What about coordinated fraud attacks?**
+**سوال: در مورد حملات تقلب هماهنگ چطور؟**
 
-A: We maintain global velocity counters (not just per-user). If we see 100 transactions to the same obscure merchant in 1 minute from different cards, that triggers a merchant-level block even if individual transactions look clean.
+**پاسخ:** ما شمارنده‌های سرعت سراسری (Global Velocity Counters) را نگه می‌داریم (نه فقط به ازای هر کاربر). اگر در ۱ دقیقه ۱۰۰ تراکنش از کارت‌های مختلف به سمت یک پذیرنده گمنام مشاهده کنیم، این وضعیت باعث مسدودسازی در سطح پذیرنده می‌شود؛ حتی اگر تک‌تک تراکنش‌ها عادی به نظر برسند.
 
-**Q: How do you balance fraud prevention with customer experience?**
+**سوال: چگونه بین جلوگیری از تقلب و تجربه مشتری تعادل برقرار می‌کنید؟**
 
-A: We track the "insult rate": percentage of legitimate customers blocked. Each product team has an insult budget. If the fraud model's insult rate exceeds budget, we loosen thresholds automatically and alert the team. Better to accept slightly more fraud than to anger loyal customers.
-
----
-
-## Key Takeaways for Interviews
-
-1. **ML for scoring, rules for explainability**: combine both for regulated domains
-2. **Three-way decisions reduce false positives**: gray zone gets extra scrutiny
-3. **Pre-compute everything possible**: real-time budget is for combination only
-4. **Continuous retraining is essential**: fraud patterns evolve weekly
+**پاسخ:** ما «نرخ خطای آزاردهنده» (Insult Rate) یعنی درصد مشتریان قانونی مسدودشده را ردیابی می‌کنیم. هر تیم محصول یک بودجه مجاز برای این نرخ دارد. اگر نرخ خطای مدل تقلب از بودجه فراتر رود، آستانه‌ها را به‌طور خودکار شل‌تر می‌کنیم و به تیم هشدار می‌دهیم. پذیرش مقدار کمی تقلب بیشتر، بهتر از عصبانی کردن مشتریان وفادار است.
 
 ---
 
-*Related chapters: [Evaluation and Observability](../14-evaluation-and-observability/), [Reliability Patterns](../13-reliability-and-safety/03-reliability-patterns.md)*
+## نکات کلیدی برای مصاحبه‌ها <a id="key-takeaways-for-interviews"></a>
+
+1. **یادگیری ماشین (ML) برای امتیازدهی، قواعد برای توضیح‌پذیری**: در دامنه‌های تحت نظارت، هر دو را ترکیب کنید
+2. **تصمیم‌گیری سه‌حالته موارد مثبت کاذب را کاهش می‌دهد**: ناحیه خاکستری تحت بررسی بیشتر قرار می‌گیرد
+3. **هر چه را ممکن است از پیش محاسبه کنید**: بودجه بلادرنگ فقط برای ترکیب ویژگی‌هاست
+4. **بازآموزی مستمر ضروری است**: الگوهای تقلب به‌صورت هفتگی تغییر می‌کنند
+
+---
+
+*فصل‌های مرتبط: [ارزیابی و مشاهده‌پذیری (Evaluation and Observability)](../14-evaluation-and-observability/)، [الگوهای پایداری (Reliability Patterns)](../13-reliability-and-safety/03-reliability-patterns.md)*
+
+</div>

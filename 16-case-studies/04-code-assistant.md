@@ -1,65 +1,69 @@
-# Case Study: AI Code Assistant
+<div dir="rtl">
 
-This case study covers designing a production code assistant that provides real-time suggestions, code generation, and debugging help.
+# مطالعه موردی: دستیار کد هوش مصنوعی
 
-## Table of Contents
+این مطالعه موردی به طراحی یک دستیار کد عملیاتی (Production) می‌پردازد که پیشنهادهای بلادرنگ، تولید کد و کمک به اشکال‌زدایی (Debugging) را ارائه می‌دهد.
 
-- [Problem Statement](#problem-statement)
-- [Requirements Analysis](#requirements-analysis)
-- [Architecture Design](#architecture-design)
-- [Code Generation Pipeline](#code-generation-pipeline)
-- [Quality Assurance](#quality-assurance)
-- [Performance Optimization](#performance-optimization)
-- [Results and Metrics](#results-and-metrics)
-- [Interview Walkthrough](#interview-walkthrough)
+## فهرست مطالب
 
----
-
-## Problem Statement
-
-**Company:** Developer tools company building IDE extension
-
-**Goal:**
-- Real-time code completion as developers type
-- Multi-line code generation from natural language
-- Code explanation and debugging assistance
-- Support for 20+ programming languages
-
-**Constraints:**
-- Latency < 200ms for completions (typing flow)
-- Latency < 3s for generation (acceptable pause)
-- Security: no code leaves customer infrastructure (enterprise option)
-- Cost: sustainable at scale (millions of developers)
+- [بیان مسئله](#problem-statement)
+- [تحلیل نیازمندی‌ها](#requirements-analysis)
+- [طراحی معماری](#architecture-design)
+- [خط لوله تولید کد](#code-generation-pipeline)
+- [تضمین کیفیت](#quality-assurance)
+- [بهینه‌سازی عملکرد](#performance-optimization)
+- [نتایج و معیارها](#results-and-metrics)
+- [مرور مصاحبه سیستم دیزاین](#interview-walkthrough)
 
 ---
 
-## Requirements Analysis
+## <a id="problem-statement"></a>بیان مسئله
 
-### Functional Requirements
+**شرکت:** شرکت ابزارهای توسعه‌دهنده که افزونه IDE می‌سازد
 
-| Feature | Description | Latency Target |
-|---------|-------------|----------------|
-| Inline completion | Complete current line/block | < 200ms |
-| Multi-line generation | Generate function/class from comment | < 3s |
-| Code explanation | Explain selected code | < 5s |
-| Error fixing | Suggest fixes for errors | < 2s |
-| Refactoring | Suggest improvements | < 5s |
-| Documentation | Generate docstrings | < 2s |
+**هدف:**
+- تکمیل کد بلادرنگ هم‌زمان با تایپ توسعه‌دهندگان
+- تولید کد چندخطی از زبان طبیعی
+- توضیح کد و کمک به اشکال‌زدایی
+- پشتیبانی از بیش از ۲۰ زبان برنامه‌نویسی
 
-### Quality Requirements
-
-| Dimension | Target | Measurement |
-|-----------|--------|-------------|
-| Acceptance rate | > 30% | Suggestions accepted / shown |
-| Syntax correctness | > 99% | Compiles/parses successfully |
-| Security | 0 vulnerabilities | SAST scan pass rate |
-| Relevance | > 85% | User ratings |
+**محدودیت‌ها:**
+- تاخیر (Latency) کمتر از ۲۰۰ میلی‌ثانیه برای تکمیل کد (حفظ جریان تایپ)
+- تاخیر کمتر از ۳ ثانیه برای تولید کد (مکث قابل قبول)
+- امنیت: هیچ کدی از زیرساخت مشتری خارج نشود (گزینه سازمانی / Enterprise)
+- هزینه: پایدار در مقیاس بالا (میلیون‌ها توسعه‌دهنده)
 
 ---
 
-## Architecture Design
+## <a id="requirements-analysis"></a>تحلیل نیازمندی‌ها
 
-### High-Level Architecture
+### نیازمندی‌های عملکردی
+
+| قابلیت | توضیحات | هدف تاخیر (Latency) |
+|--------|---------|---------------------|
+| تکمیل درون‌خطی | تکمیل خط یا بلوک فعلی | کمتر از ۲۰۰ میلی‌ثانیه |
+| تولید چندخطی | تولید تابع یا کلاس از روی کامنت | کمتر از ۳ ثانیه |
+| توضیح کد | توضیح دادن کد انتخاب‌شده | کمتر از ۵ ثانیه |
+| رفع خطا | پیشنهاد راه‌حل برای خطاها | کمتر از ۲ ثانیه |
+| بازآرایی (Refactoring) | پیشنهاد بهبودهای ساختاری کد | کمتر از ۵ ثانیه |
+| مستندسازی | تولید رشته‌های مستندات (Docstring) | کمتر از ۲ ثانیه |
+
+### نیازمندی‌های کیفی
+
+| بُعد کیفی | هدف | نحوه اندازه‌گیری |
+|-----------|-----|------------------|
+| نرخ پذیرش (Acceptance rate) | بیش از ۳۰٪ | نسبت پیشنهادهای پذیرفته‌شده به نمایش‌داده‌شده |
+| صحت نحوی (Syntax) | بیش از ۹۹٪ | کامپایل یا پارس موفق کد |
+| امنیت | صفر آسیب‌پذیری | نرخ قبولی در اسکن امنیت ایستا (SAST) |
+| مرتبط بودن | بیش از ۸۵٪ | امتیازدهی کاربران |
+
+---
+
+## <a id="architecture-design"></a>طراحی معماری
+
+### معماری سطح بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -98,7 +102,11 @@ This case study covers designing a production code assistant that provides real-
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-The architecture as a flow. Three service tiers split by latency vs quality (completion is sub-200ms, generation and explanation are quality-prioritized) all share one model layer:
+</div>
+
+این معماری به‌صورت یک جریان کار عمل می‌کند. سه لایه سرویسی که بر اساس موازنه بین تاخیر و کیفیت تقسیم شده‌اند (تکمیل کد با تاخیر زیر ۲۰۰ میلی‌ثانیه، و تولید و توضیح کد با اولویت کیفیت)، همگی از یک لایه مدل مشترک استفاده می‌کنند:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -120,7 +128,11 @@ flowchart TD
     ES --> ML
 ```
 
-### Context Assembly
+</div>
+
+### مونتاژ زمینه (Context Assembly)
+
+<div dir="ltr">
 
 ```python
 class CodeContextAssembler:
@@ -195,7 +207,11 @@ class CodeContextAssembler:
         return f"{before_text}\n<CURSOR>\n{after_text}"
 ```
 
-Context assembly is a priority-driven budget allocation. The model only sees what survives the 4000-token cap, so the order matters: immediate code first (always fits), then related definitions, then other open files only if budget remains:
+</div>
+
+مونتاژ زمینه یک تخصیص بودجه اولویت‌محور است. مدل تنها چیزی را می‌بیند که از سقف ۴۰۰۰ واحد Token عبور کند؛ بنابراین ترتیب اهمیت دارد: ابتدا کد بلافصل در اطراف مکان‌نما (که همیشه جا می‌گیرد)، سپس تعاریف مرتبط، و در نهایت سایر فایل‌های باز تنها در صورت باقی ماندن بودجه:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -210,13 +226,17 @@ flowchart TD
     P3 --> Final
 ```
 
+</div>
+
 ---
 
-## Code Generation Pipeline
+## <a id="code-generation-pipeline"></a>خط لوله تولید کد
 
-### Completion Service
+### سرویس تکمیل کد (Completion Service)
 
-Reasoning models are the wrong tool for keystroke-level completions: thinking tokens alone blow a 200ms budget. Inline completion runs on a small fill-in-the-middle (FIM) model that you host, which also satisfies the "no code leaves customer infrastructure" option.
+مدل‌های استدلالی (Reasoning models) ابزار مناسبی برای تکمیل کد در سطح فشردن کلیدها نیستند: واحدهای Token مربوط به تفکر به‌تنهایی بودجه ۲۰۰ میلی‌ثانیه‌ای را مصرف می‌کنند. تکمیل درون‌خطی بر روی یک مدل کوچک پرکردن میانه (Fill-in-the-middle یا FIM) اجرا می‌شود که خودتان میزبانی می‌کنید و همین موضوع گزینه «هیچ کدی از زیرساخت مشتری خارج نمی‌شود» را نیز محقق می‌کند.
+
+<div dir="ltr">
 
 ```python
 class InlineCompletion:
@@ -241,9 +261,13 @@ class InlineCompletion:
         return resp.choices[0].text
 ```
 
-**Base model and license.** Candidates are small permissively licensed models such as IBM Granite 4.2 (3B and 8B dense, Apache 2.0), or Qwen3.8-27B (Apache 2.0) if the latency budget allows. Read the license before the benchmark: Qwen3.8-Flash-Next ships under Qwen Community License 1.0, which requires a separate license for any coding-assistant business regardless of revenue, and that is exactly this product. On the serving side, speculative decoding has moved past Medusa (vLLM removed Medusa and the MLP speculator outright in v0.33.0, November 2026, so an old `medusa` config fails on upgrade): vLLM supports EAGLE-3, MTP, draft-model and DFlash methods, and Inco AI reports 2.7x to 3.4x speedups for DFlash 2 on Qwen3.8-27B (vendor-reported).
+</div>
 
-### Generation Service (Agentic Refactors)
+**مدل پایه و مجوز (License).** گزینه‌های مناسب، مدل‌های کوچک با مجوز آزاد مانند IBM Granite 4.2 (مدل‌های متراکم 3B و 8B با مجوز Apache 2.0) یا در صورت اجازه بودجه تاخیر، Qwen3.8-27B (با مجوز Apache 2.0) هستند. پیش از بنچمارک کردن، حتماً مجوز مدل را بخوانید: مدل Qwen3.8-Flash-Next تحت مجوز Qwen Community License 1.0 عرضه می‌شود که برای هر کسب‌وکار دستیار کدنویسی، صرف‌نظر از میزان درآمد، نیازمند مجوز جداگانه است؛ و محصول ما دقیقاً همین است. در سمت سروینگ (Serving)، رمزگشایی حدسی (Speculative decoding) از روش Medusa عبور کرده است (فریم‌ورک vLLM پشتیبانی از Medusa و حدس‌زننده MLP را در نسخه v0.33.0 در نوامبر ۲۰۲۶ به‌طور کامل حذف کرد، بنابراین پیکربندی قدیمی `medusa` هنگام ارتقا با خطا مواجه می‌شود): موتور vLLM از روش‌های EAGLE-3، MTP، مدل پیش‌نویس (Draft-model) و DFlash پشتیبانی می‌کند و شرکت Inco AI افزایش سرعت ۲.۷ تا ۳.۴ برابری را برای DFlash 2 روی Qwen3.8-27B گزارش کرده است (گزارش ارائه‌دهنده).
+
+### سرویس تولید کد (بازآرایی‌های عاملی یا Agentic Refactors)
+
+<div dir="ltr">
 
 ```python
 class AgenticGeneration:
@@ -261,24 +285,28 @@ class AgenticGeneration:
         return await agent.run(f"Refactor {folder_path} to use async/await.")
 ```
 
+</div>
+
 > [!TIP]
-> **Production choice (November 2026).** Claude Sonnet 5.5 ($2 / $10) is the default for in-IDE agentic work. On the tbench.ai Terminal-Bench 4.0 leaderboard (entries added October 6, 2026), Opus 5.5 leads at 64.85% and Sonnet 5.5 follows at 61.82%, both at max effort, ahead of GPT-6 Astra and GPT-6.1 Sol tied at 58.18%. Anthropic's own runs report 70.6% for Sonnet 5.5 and 66.4% for Opus 5.5 at xhigh (vendor-reported), the reverse order, so bake both off on your repository. The 2025 "toggle thinking" pattern does not carry over: `thinking: {type: "disabled"}` returns 400 on Sonnet 5.5, so effort is the dial, with `between_tools` as the lowest thinking setting. Price capability per task, not per token: on DeepSWE v1.1, GPT-6 Astra (xhigh), Gemini 3.8 Flash (high) and Claude Opus 5 (max) tie at 74% pass@1, at $4.43, $2.36 and $11.84 per task.
+> **انتخاب عملیاتی (نوامبر ۲۰۲۶).** مدل Claude Sonnet 5.5 (با تعرفه ۲ دلار / ۱۰ دلار) گزینه پیش‌فرض برای کارهای Agent درون محیط IDE است. در جدول رده‌بندی Terminal-Bench 4.0 در سایت tbench.ai (ورودی‌های اضافه‌شده در ۶ اکتبر ۲۰۲۶)، مدل Opus 5.5 با ۶۴.۸۵٪ پیشتاز است و Sonnet 5.5 با ۶۱.۸۲٪ در رتبه بعدی قرار دارد که هر دو در سطح تلاش حداکثری (max effort) هستند و جلوتر از GPT-6 Astra و GPT-6.1 Sol با امتیاز مساوی ۵۸.۱۸٪ قرار می‌گیرند. آزمایش‌های خود شرکت Anthropic امتیاز ۷۰.۶٪ را برای Sonnet 5.5 و ۶۶.۴٪ را برای Opus 5.5 در حالت xhigh گزارش کرده‌اند (گزارش ارائه‌دهنده) که ترتیب برعکس دارد؛ بنابراین هر دو را روی مخزن کد خودتان بسنجید. الگوی «تغییر وضعیت تفکر» (toggle thinking) در سال ۲۰۲۵ دیگر کاربرد ندارد: تنظیم `thinking: {type: "disabled"}` روی Sonnet 5.5 خطای 400 برمی‌گرداند، بنابراین پارامتر effort اهرم کنترل است و `between_tools` پایین‌ترین تنظیم تفکر محسوب می‌شود. قابلیت‌ها را بر اساس هزینه به ازای هر تسک قیمت‌گذاری کنید، نه به ازای هر Token: در بنچمارک DeepSWE v1.1، مدل‌های GPT-6 Astra (در حالت xhigh)، Gemini 3.8 Flash (در حالت high) و Claude Opus 5 (در حالت max) همگی به امتیاز مساوی ۷۴٪ در معیار pass@1 می‌رسند، با هزینه‌های ۴.۴۳ دلار، ۲.۳۶ دلار و ۱۱.۸۴ دلار به ازای هر تسک.
 
-### Model Provider Strategy
+### استراتژی انتخاب ارائه‌دهنده مدل
 
-Enterprise buyers now ask who owns the model behind the assistant, and model suppliers ask who owns the assistant. Cursor announced it had become part of SpaceX on August 14, 2026 (a deal reported at about $60 billion in stock), and Grok model launches now appear on Cursor's blog. Two weeks later, on August 28, OpenAI told SpaceX it would wind down its contract supplying OpenAI models to Cursor, with a proposed shutoff of November 12, 2026, and that it would not provide future models to Cursor before then, which rules out GPT-6 Astra (shipped September 3; OpenAI named Astra in the notice). A change of ownership is set to take a frontier model family out of a leading coding product on about 11 weeks' notice. That makes **model neutrality a product requirement** in both directions:
+خریداران سازمانی اکنون می‌پرسند چه کسی مالک مدل پشت دستیار است، و تامین‌کنندگان مدل نیز می‌پرسند چه کسی مالک خود دستیار است. شرکت Cursor در ۱۴ اوت ۲۰۲۶ اعلام کرد که بخشی از SpaceX شده است (معامله‌ای که حدود ۶۰ میلیارد دلار به‌صورت سهام گزارش شد)، و معرفی مدل‌های Grok اکنون در وبلاگ Cursor منتشر می‌شود. دو هفته بعد، در ۲۸ اوت، شرکت OpenAI به SpaceX اطلاع داد که قرارداد تامین مدل‌های OpenAI برای Cursor را با تاریخ قطع پیشنهادی ۱۲ نوامبر ۲۰۲۶ خاتمه می‌دهد و پیش از آن نیز مدل‌های آینده خود را در اختیار Cursor نخواهد گذاشت؛ موضوعی که مدل GPT-6 Astra (عرضه‌شده در ۳ سپتامبر؛ OpenAI در اطلاعیه خود نام Astra را ذکر کرده بود) را کنار می‌گذارد. تغییر مالکیت قرار است یک خانواده مدل پیشرو را تنها با حدود ۱۱ هفته اطلاع قبلی از یک محصول کدنویسی مطرح خارج کند. این موضوع **بی‌طرفی نسبت به مدل (Model Neutrality) را به یک نیازمندی محصول** در هر دو جهت تبدیل می‌کند:
 
-- Route every model call through a gateway with per-tenant model allowlists, so an enterprise can exclude a provider without a code change, and losing a provider is a routing change rather than a rewrite. Keep the eval suite runnable against at least two model families so a forced swap starts from measured quality. The same gateway serves the code-stays-in-VPC tenants: it sends their generation and refactor traffic to models in the tenant's own Bedrock, Google Cloud or Foundry account, or to a self-hosted open-weight model, never to a vendor's public endpoint.
-- Track each provider's data-use and retention terms per tenant. Discounted endpoints that let the vendor use your traffic (Meta's Muse Spark 1.3 contributor tier at $0.10 / $0.20, for example) must be opt-in.
-- Expect assurance questions beyond SOC 2. AIUC-1 is one emerging answer: an agent-specific security, safety and reliability certification, audited with adversarial testing and kept only through at least quarterly testing plus an annual audit (Cursor announced its certification on August 13, 2026).
+- تمام فراخوانی‌های مدل را از طریق یک درگاه (Gateway) با فهرست مجاز مدل به ازای هر مستاجر (Per-tenant allowlist) مسیریابی کنید، تا یک سازمان بتواند بدون تغییر کد یک ارائه‌دهنده را حذف کند و از دست دادن یک ارائه‌دهنده به جای بازنویسی سیستم، تنها یک تغییر مسیریابی باشد. مجموعه ارزیابی (Eval suite) را طوری نگه دارید که روی حداقل دو خانواده مدل قابل اجرا باشد تا در صورت تعویض اجباری، کار از یک کیفیت اندازه‌گیری‌شده شروع شود. همین درگاه به مستاجران دارای سیاست ماندن کد در VPC نیز سرویس می‌دهد: ترافیک تولید و بازآرایی کد آن‌ها را به مدل‌های داخل حساب Bedrock، Google Cloud یا Foundry خود مستاجر، یا به یک مدل وزن-باز (Open-weight) خودمیزبان می‌فرستد و هرگز به نقطه پایانی عمومی ارائه‌دهنده ارسال نمی‌کند.
+- شرایط استفاده و نگهداری داده هر ارائه‌دهنده را به تفکیک هر مستاجر ردیابی کنید. نقاط پایانی تخفیف‌دار که به ارائه‌دهنده اجازه می‌دهند از ترافیک شما استفاده کند (برای مثال، سطح مشارکت‌کننده Muse Spark 1.3 شرکت Meta با قیمت ۰.۱۰ دلار / ۰.۲۰ دلار) باید حتماً به‌صورت انتخابی و با تایید صریح کاربر (Opt-in) فعال شوند.
+- انتظار سوالات اطمینان‌بخشی فراتر از استاندارد SOC 2 را داشته باشید. استاندارد AIUC-1 یکی از پاسخ‌های نوظهور است: یک گواهینامه امنیت، ایمنی و قابلیت اطمینان ویژه Agentها که با تست‌های خصمانه (Adversarial testing) ممیزی می‌شود و تنها از طریق تست‌های حداقل فصلی به همراه یک ممیزی سالانه حفظ می‌گردد (Cursor گواهینامه خود را در ۱۳ اوت ۲۰۲۶ اعلام کرد).
 
 ---
 
-## Quality Assurance
+## <a id="quality-assurance"></a>تضمین کیفیت
 
-### Multi-Stage Verification
+### راستی‌آزمایی چندمرحله‌ای (Multi-Stage Verification)
 
-The verifier is a fail-fast gauntlet. Cheap checks (syntax) run first and block hard; expensive checks (test execution) run last and only when context allows. Any blocking failure short-circuits the rest:
+بخش راستی‌آزمایی مانند یک فیلتر سریع در برابر خطا (Fail-fast gauntlet) عمل می‌کند. بررسی‌های ارزان (نحو یا Syntax) ابتدا اجرا می‌شوند و به‌صورت سخت‌گیرانه مسدود می‌کنند؛ بررسی‌های پرهزینه (اجرای تست‌ها) در آخر و تنها زمانی اجرا می‌شوند که زمینه اجازه دهد. هر شکست مسدودکننده‌ای اجرای بقیه مراحل را متوقف می‌کند:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -293,6 +321,10 @@ flowchart TD
     TR -->|pass| PASS
     TR -->|fail| WARN[Present to user<br/>with test-fail label]
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class CodeVerifier:
@@ -360,7 +392,11 @@ class CodeVerifier:
         return result
 ```
 
-### Acceptance Optimization
+</div>
+
+### بهینه‌سازی نرخ پذیرش (Acceptance Optimization)
+
+<div dir="ltr">
 
 ```python
 class AcceptanceOptimizer:
@@ -406,21 +442,25 @@ class AcceptanceOptimizer:
         return (confidence * historical_rate) > threshold
 ```
 
+</div>
+
 ---
 
-## Performance Optimization
+## <a id="performance-optimization"></a>بهینه‌سازی عملکرد
 
-### Latency Optimization
+### بهینه‌سازی تاخیر (Latency Optimization)
 
-| Technique | Impact | Implementation |
-|-----------|--------|----------------|
-| Request debouncing | -50ms | 150ms debounce in IDE |
-| Connection pooling | -30ms | Persistent HTTP/2 |
-| Model warm-up | -100ms | Pre-loaded models |
-| Speculative decoding | -40% | Draft model + verify |
-| Edge caching | -80ms | CDN for common patterns |
+| تکنیک | تاثیر | نحوه پیاده‌سازی |
+|--------|-------|------------------|
+| تاخیراندازی درخواست (Request debouncing) | کاهش ۵۰ میلی‌ثانیه | اعمال ۱۵۰ میلی‌ثانیه debounce در محیط IDE |
+| تجمیع اتصال‌ها (Connection pooling) | کاهش ۳۰ میلی‌ثانیه | استفاده از اتصال پایدار HTTP/2 |
+| گرم کردن مدل (Model warm-up) | کاهش ۱۰۰ میلی‌ثانیه | مدل‌های پیش‌بارگذاری‌شده (Pre-loaded) |
+| رمزگشایی حدسی (Speculative decoding) | کاهش ۴۰٪ | مدل پیش‌نویس (Draft model) + راستی‌آزمایی |
+| کش کردن در لبه (Edge caching) | کاهش ۸۰ میلی‌ثانیه | استفاده از CDN برای الگوهای پرتکرار |
 
-### Caching Strategy
+### استراتژی کش‌کردن (Caching Strategy)
+
+<div dir="ltr">
 
 ```python
 class CompletionCache:
@@ -465,79 +505,83 @@ class CompletionCache:
         )
 ```
 
----
-
-## Results and Metrics
-
-### Performance Results
-
-| Metric | Target | Achieved |
-|--------|--------|----------|
-| Completion latency (p50) | < 200ms | 145ms |
-| Completion latency (p99) | < 500ms | 380ms |
-| Generation latency (p50) | < 3s | 2.1s |
-| Syntax correctness | > 99% | 99.5% |
-| Security (0 high severity) | 100% | 99.8% |
-| Acceptance rate | > 30% | 34% |
-
-### Cost Analysis (November 2026)
-
-| Request type | Assumption | Cost per 1M requests | Notes |
-|--------------|------------|----------------------|-------|
-| **Inline completion, self-hosted 8B model** | ~2K in / 30 out; ~15 completions/s per H100 within the 200ms SLO | ~$55 | H100 at $2.93 per GPU-hour (Silicon Data index, November 1, 2026). Measure your own throughput; prefix caching across keystrokes raises it |
-| **Inline completion via API (GPT-6 Luna)** | Same tokens at $0.10 / $0.50 per 1M | ~$215 | Overflow path when the self-hosted pool saturates; not available to code-stays-in-VPC tenants |
-| **Multi-line generation (Claude Sonnet 5.5)** | 8K in / 500 out, up-front thinking off (`between_tools`) to hold the 3s budget | ~$21,000 | $0.021 per request; letting it think ~1K tokens adds about $0.01 and seconds of latency |
-| **Agentic refactor (Claude Sonnet 5.5)** | ~750K in at 90% cache hits, ~6K out | ~$330,000 | $0.33 per task; derivation in the [Autonomous Coding Agent cost breakdown](07-autonomous-coding-agent.md#cost-breakdown) |
-
-*Blended (98% completions, 2% agentic refactors): about $6,650 per 1M requests, and over 99% of it is the agentic tasks. The completion fleet is a rounding error; the agent's prompt-cache hit rate is the budget. At a 50% hit rate the same refactor costs about $1.05, more than three times as much.*
+</div>
 
 ---
 
-## Interview Walkthrough
+## <a id="results-and-metrics"></a>نتایج و معیارها
 
-**Interviewer:** "Design an AI code assistant for an IDE."
+### نتایج عملکردی
 
-**Strong response:**
+| معیار | هدف | دستاورد |
+|-------|-----|---------|
+| تاخیر تکمیل کد (p50) | کمتر از ۲۰۰ میلی‌ثانیه | ۱۴۵ میلی‌ثانیه |
+| تاخیر تکمیل کد (p99) | کمتر از ۵۰۰ میلی‌ثانیه | ۳۸۰ میلی‌ثانیه |
+| تاخیر تولید کد (p50) | کمتر از ۳ ثانیه | ۲.۱ ثانیه |
+| صحت نحوی (Syntax) | بیش از ۹۹٪ | ۹۹.۵٪ |
+| امنیت (صفر آسیب‌پذیری بحرانی) | ۱۰۰٪ | ۹۹.۸٪ |
+| نرخ پذیرش (Acceptance rate) | بیش از ۳۰٪ | ۳۴٪ |
 
-1. **Clarify requirements** (1 min)
-   - "What's the target latency for completions vs generations?"
-   - "Enterprise deployment with on-prem option?"
-   - "Do enterprise customers exclude any model providers or require specific data-use terms?"
-   - "What languages need support?"
+### تحلیل هزینه (نوامبر ۲۰۲۶)
 
-2. **Identify the key challenge** (1 min)
-   - "The core tension is latency vs quality. Completions need < 200ms for typing flow, but good code requires rich context and verification."
+| نوع درخواست | فرض‌ها | هزینه به ازای هر 1M درخواست | توضیحات |
+|-------------|--------|-----------------------------|---------|
+| **تکمیل درون‌خطی، مدل خودمیزبان 8B** | حدود 2K ورودی / 30 خروجی؛ حدود ۱۵ تکمیل بر ثانیه به ازای هر H100 در محدوده SLO دویست میلی‌ثانیه‌ای | حدود ۵۵ دلار | پردازنده گرافیکی H100 با هزینه ۲.۹۳ دلار به ازای هر GPU-ساعت (شاخص Silicon Data، ۱ نوامبر ۲۰۲۶). توان عملیاتی (Throughput) خود را اندازه‌گیری کنید؛ استفاده از prefix caching در طول فشردن کلیدها این مقدار را افزایش می‌دهد |
+| **تکمیل درون‌خطی از طریق API (مدل GPT-6 Luna)** | تعداد Token مشابه با تعرفه ۰.۱۰ / ۰.۵۰ دلار به ازای هر 1M | حدود ۲۱۵ دلار | مسیر سرریز (Overflow) هنگام اشباع شدن استخر خودمیزبان؛ برای مستاجران با سیاست ماندن کد در VPC در دسترس نیست |
+| **تولید چندخطی (مدل Claude Sonnet 5.5)** | مقدار 8K ورودی / 500 خروجی، تفکر اولیه خاموش (`between_tools`) برای حفظ بودجه ۳ ثانیه‌ای | حدود ۲۱,۰۰۰ دلار | هزینه ۰.۰۲۱ دلار به ازای هر درخواست؛ اجازه دادن به تفکر حدود 1K واحد Token، حدود ۰.۰۱ دلار و چند ثانیه تاخیر اضافه می‌کند |
+| **بازآرایی عاملی یا Agentic refactor (مدل Claude Sonnet 5.5)** | حدود 750K ورودی با نرخ اصابت کش ۹۰٪، حدود 6K خروجی | حدود ۳۳۰,۰۰۰ دلار | هزینه ۰.۳۳ دلار به ازای هر تسک؛ محاسبه جزئیات در [تحلیل هزینه ایجنت کدنویسی خودکار](07-autonomous-coding-agent.md#cost-breakdown) |
 
-3. **Two-tier architecture** (3 min)
-   - "I would separate completions (fast) from generations (quality):"
-   - "Completions: smaller model, minimal context, speculative decoding"
-   - "Generations: frontier model, best-of-N, syntax and security verification"
-
-4. **Context assembly** (2 min)
-   - "Context is critical. I prioritize: immediate code > imports/definitions > open files"
-   - "For completions, I cap at 2K tokens for speed"
-   - "For generations, I can use 8K+ tokens for better understanding"
-
-5. **Quality assurance** (2 min)
-   - "Every suggestion runs through: syntax check, security scan, optionally type check"
-   - "For generations, I use best-of-N with 8 candidates, filter invalid, score and select"
-   - "This catches security vulnerabilities before they reach the developer"
-
-6. **Latency optimization** (2 min)
-   - "Request debouncing in IDE, connection pooling, model warm-up"
-   - "Speculative decoding for 40% latency reduction"
-   - "Caching common patterns (imports, boilerplate)"
+*حالت ترکیبی (۹۸٪ تکمیل کد، ۲٪ بازآرایی عاملی): حدود ۶,۶۵۰ دلار به ازای هر 1M درخواست، و بیش از ۹۹٪ آن مربوط به تسک‌های Agentic است. ناوگان تکمیل کد در برابر آن یک خطای گردکردن ناچیز است؛ نرخ اصابت کش Prompt در Agent تعیین‌کننده کل بودجه است. در نرخ اصابت کش ۵۰٪، همین بازآرایی حدود ۱.۰۵ دلار هزینه دارد که بیش از سه برابر بیشتر است.*
 
 ---
 
-## References
+## <a id="interview-walkthrough"></a>مرور مصاحبه سیستم دیزاین
 
-- GitHub Copilot Architecture: https://github.blog/
-- Codestral: https://mistral.ai/news/codestral/
-- CodeLlama: https://ai.meta.com/blog/code-llama-large-language-model-coding/
-- OpenAI, "Our decision on Cursor following its acquisition by SpaceX" (August 28, 2026): https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex
-- Cursor, "Cursor is now a part of SpaceX" (August 14, 2026): https://cursor.com/blog/joining-spacex
+**مصاحبه‌گر:** «یک دستیار کد هوش مصنوعی برای محیط IDE طراحی کنید.»
+
+**پاسخ قوی:**
+
+1. **شفاف‌سازی نیازمندی‌ها** (۱ دقیقه)
+   - «تاخیر هدف برای تکمیل کد در مقایسه با تولید کد چقدر است؟»
+   - «آیا استقرار (Deployment) سازمانی با گزینه نصب درون‌سازمانی (On-prem) نیاز است؟»
+   - «آیا مشتریان سازمانی ارائه‌دهندگان خاصی از مدل‌ها را مستثنی می‌کنند یا شرایط خاصی برای استفاده از داده دارند؟»
+   - «از چه زبان‌هایی باید پشتیبانی شود؟»
+
+2. **شناسایی چالش کلیدی** (۱ دقیقه)
+   - «تنش اصلی بین تاخیر و کیفیت است. تکمیل کد برای حفظ جریان تایپ به تاخیر کمتر از ۲۰۰ میلی‌ثانیه نیاز دارد، اما تولید کد باکیفیت نیازمند زمینه غنی و راستی‌آزمایی است.»
+
+3. **معماری دولایه (Two-tier architecture)** (۳ دقیقه)
+   - «من بخش تکمیل کد (سریع) را از بخش تولید کد (باکیفیت) جدا می‌کنم:»
+   - «تکمیل کد: مدل کوچک‌تر، زمینه حداقلی، رمزگشایی حدسی (Speculative decoding)»
+   - «تولید کد: مدل پیشرو (Frontier)، روش best-of-N، راستی‌آزمایی نحوی و امنیتی»
+
+4. **مونتاژ زمینه (Context assembly)** (۲ دقیقه)
+   - «زمینه حیاتی است. اولویت‌بندی من به این شکل است: کد بلافصل > تعاریف و importها > فایل‌های باز»
+   - «برای تکمیل کد، سقف را برای حفظ سرعت روی 2K واحد Token می‌گذارم»
+   - «برای تولید کد، می‌توانم برای درک بهتر از 8K+ واحد Token استفاده کنم»
+
+5. **تضمین کیفیت** (۲ دقیقه)
+   - «هر پیشنهاد از این مراحل عبور می‌کند: بررسی نحوی، اسکن امنیتی، و در صورت امکان بررسی نوع (Type check)»
+   - «برای تولید کد، از روش best-of-N با ۸ کاندیدا استفاده می‌کنم، موارد نامعتبر را فیلتر کرده، امتیازدهی می‌کنم و بهترین را برمی‌گزینم»
+   - «این کار آسیب‌پذیری‌های امنیتی را پیش از رسیدن به دست توسعه‌دهنده شناسایی می‌کند»
+
+6. **بهینه‌سازی تاخیر** (۲ دقیقه)
+   - «تاخیراندازی درخواست (Debouncing) در IDE، تجمیع اتصال‌ها (Connection pooling)، گرم کردن مدل»
+   - «رمزگشایی حدسی برای کاهش ۴۰ درصدی تاخیر»
+   - «کش کردن الگوهای پرتکرار (importها و کدهای تکراری یا Boilerplate)»
 
 ---
 
-*Next: [Content Moderation Case Study](05-content-moderation.md)*
+## منابع
+
+- معماری GitHub Copilot: https://github.blog/
+- مدل Codestral: https://mistral.ai/news/codestral/
+- مدل CodeLlama: https://ai.meta.com/blog/code-llama-large-language-model-coding/
+- بیانیه OpenAI با عنوان «تصمیم ما درباره Cursor پس از خریداری آن توسط SpaceX» (۲۸ اوت ۲۰۲۶): https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex
+- پست وبلاگ Cursor با عنوان «Cursor اکنون بخشی از SpaceX است» (۱۴ اوت ۲۰۲۶): https://cursor.com/blog/joining-spacex
+
+---
+
+*بعدی: [مطالعه موردی مدیریت محتوا (Content Moderation)](05-content-moderation.md)*
+
+</div>

@@ -1,24 +1,28 @@
-# Case Study: Real-Time AI Search Engine
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: موتور جستجوی بلادرنگ مبتنی بر هوش مصنوعی
 
-A fintech startup needs to build a **real-time market intelligence platform** that lets analysts ask natural language questions about live market data, news, and company filings.
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- Data freshness: queries must reflect information from the last 5 minutes
-- Scale: 10,000 concurrent users, 50,000 queries/hour
-- Accuracy: financial data cannot be hallucinated
-- Latency: p95 response time under 3 seconds
+یک استارتاپ فین‌تک (Fintech) نیاز به ساخت یک **پلتفرم هوشمند تحلیل بازار به‌صورت بلادرنگ** دارد که به تحلیلگران اجازه دهد سوالات خود را به زبان طبیعی درباره داده‌های زنده بازار، اخبار و گزارش‌های رسمی شرکت‌ها (Company Filings) بپرسند.
 
----
-
-## The Interview Question
-
-> "Design a system that lets users ask 'What is the sentiment around Tesla in the last hour?' and get an accurate, sourced answer in under 3 seconds."
+**محدودیت‌های مطرح‌شده در مصاحبه:**
+- تازگی داده‌ها (Data Freshness): پرس‌وجوها باید اطلاعات ۵ دقیقه اخیر را بازتاب دهند
+- مقیاس (Scale): ۱۰٬۰۰۰ کاربر هم‌زمان، ۵۰٬۰۰۰ پرس‌وجو در ساعت
+- دقت: داده‌های مالی نباید دچار توهم (Hallucination) شوند
+- تاخیر (Latency): زمان پاسخ در صدک ۹۵ (p95) زیر ۳ ثانیه
 
 ---
 
-## Solution Architecture
+## سوال مصاحبه <a id="the-interview-question"></a>
+
+> «سیستمی طراحی کنید که به کاربران اجازه دهد بپرسند "احساسات (Sentiment) پیرامون تسلا در یک ساعت گذشته چگونه بوده است؟" و در کمتر از ۳ ثانیه یک پاسخ دقیق و مستند دریافت کنند.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -49,31 +53,35 @@ flowchart TB
     end
 ```
 
----
-
-## Key Design Decisions
-
-### 1. Why Kafka for Ingestion?
-
-The interviewer wants to know you understand **streaming vs batch**.
-
-**Answer:** Kafka gives durable, replayable streams with independent consumer groups. We have one consumer writing to the vector DB and another to Elasticsearch. If the vector indexing falls behind, the full-text index still serves queries. This is the **dual-write pattern** for resilience. Kafka's exactly-once semantics cover Kafka-to-Kafka processing, not writes to external stores, so each sink consumer treats delivery as at-least-once and makes it effectively-once with idempotent upserts keyed by document ID.
-
-### 2. Why Hybrid Search (Vector + Full-Text)?
-
-**Answer:** Financial queries mix semantic ("sentiment around Tesla") with keyword ("TSLA 10-K filing"). Pure vector search would miss exact ticker matches. We use **Reciprocal Rank Fusion (RRF)** to combine results.
-
-### 3. Why a Small Model Instead of a Frontier Model?
-
-**Answer:** For a 3-second p95 latency target at 50K queries/hour, we need fast, cheap synthesis. GPT-6 Luna ($0.10 / $0.50 per 1M tokens) covers it; the reranker handles accuracy, and the LLM only synthesizes already-verified content. Gemini 3.8 Flash at low thinking works as a cross-vendor fallback, but price it first: at its introductory $0.75 / $3.75 the generation line below would rise from about $6K to about $45K a month, and at the $1.50 / $7.50 list price from January 1, 2027 to about $91K, before counting thinking tokens, which it bills as output. Two cautions. Both models can spend tokens thinking before they answer, so check the default and set the lowest reasoning effort or thinking level that holds quality, or thinking time eats the latency budget. And measure time to first token and tokens per second on your own prompts rather than quoting vendor figures. If p95 still slips at peak, price a paid speed tier (OpenAI's Fast tier bills 2x, where offered for the model) against the alternatives; it is often cheaper than moving every query to a bigger model.
+</div>
 
 ---
 
-## Handling the Freshness Requirement
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-The hardest part of this problem is ensuring the index reflects data from the last 5 minutes.
+### 1. چرا از Kafka برای دریافت داده (Ingestion) استفاده می‌کنیم؟ <a id="1-why-kafka-for-ingestion"></a>
 
-**Solution: TTL-Based Indexing**
+مصاحبه‌کننده می‌خواهد ببیند که آیا تفاوت **پردازش جریانی در برابر پردازش دسته‌ای (Streaming vs. Batch)** را درک می‌کنید یا خیر.
+
+**پاسخ:** ابزار Kafka جریان‌های داده پایدار (Durable) و قابل بازپخش (Replayable) را با گروه‌های مصرف‌کننده (Consumer Groups) مستقل فراهم می‌کند. ما یک مصرف‌کننده برای نوشتن در پایگاه داده برداری (Vector Database) و یک مصرف‌کننده دیگر برای Elasticsearch داریم. اگر نمایه‌سازی برداری عقب بیفتد، شاخص تمام‌متن (Full-Text Index) همچنان به پرس‌وجوها پاسخ می‌دهد. این الگو برای تاب‌آوری به عنوان **الگوی نوشتن دوگانه (Dual-Write Pattern)** شناخته می‌شود. تضمین‌های دقیقاً یک‌بار (Exactly-Once Semantics) در Kafka تنها پردازش‌های بین Kafka به Kafka را پوشش می‌دهند و شامل نوشتن در مخازن خارجی نمی‌شوند؛ بنابراین هر مصرف‌کننده نهایی (Sink Consumer) تحویل را به‌صورت حداقل یک‌بار (At-Least-Once) در نظر می‌گیرد و با استفاده از به‌روزرسانی‌های درج‌شونده هم‌توان (Idempotent Upserts) بر اساس شناسه سند، آن را عملاً به یک‌بار (Effectively-Once) تبدیل می‌کند.
+
+### 2. چرا جستجوی ترکیبی (برداری + تمام‌متن)؟ <a id="2-why-hybrid-search-vector--full-text"></a>
+
+**پاسخ:** پرس‌وجوهای مالی ترکیبی از جستجوی معنایی («احساسات پیرامون تسلا») و کلیدواژه‌ای («گزارش 10-K شرکت TSLA») هستند. جستجوی برداریِ خالص ممکن است تطابق‌های دقیق نمادهای بورسی (Ticker) را از دست بدهد. ما برای ترکیب نتایج از روش **Reciprocal Rank Fusion (RRF)** استفاده می‌کنیم.
+
+### 3. چرا یک مدل کوچک به‌جای یک مدل پیشرفته (Frontier Model)؟ <a id="3-why-a-small-model-instead-of-a-frontier-model"></a>
+
+**پاسخ:** برای دستیابی به هدف تاخیر (Latency) ۳ ثانیه در صدک ۹۵ (p95) با نرخ ۵۰ هزار پرس‌وجو در ساعت، به سنتز سریع و ارزان نیاز داریم. مدل GPT-6 Luna (با هزینه $0.10 / $0.50 به ازای هر ۱ میلیون Token) این نیاز را پوشش می‌دهد؛ مرتب‌کننده مجدد (Reranker) دقت را تضمین می‌کند و مدل LLM تنها محتوای از پیش تاییدشده را ترکیب می‌کند. مدل Gemini 3.8 Flash با سطح تفکر پایین (Low Thinking) به‌عنوان یک گزینه پشتیبان از تامین‌کننده دیگر عمل می‌کند، اما ابتدا هزینه آن را محاسبه کنید: با قیمت معرفی $0.75 / $3.75، خط هزینه تولید (Generation) در جدول زیر از حدود $6K به حدود $45K در ماه افزایش می‌یابد و با قیمت فهرست $1.50 / $7.50 از تاریخ ۱ ژانویه ۲۰۲۷ به حدود $91K می‌رسد، آن هم پیش از محاسبه واحدهای Token تفکر (Thinking Tokens) که به‌عنوان خروجی محاسبه می‌شوند. دو نکته احتیاطی وجود دارد: هر دو مدل ممکن است پیش از پاسخ دادن، واحدهای Token را صرف تفکر کنند؛ بنابراین تنظیمات پیش‌فرض را بررسی کرده و کمترین سطح تلاش استدلالی (Reasoning Effort) یا سطح تفکر را که کیفیت را حفظ می‌کند تنظیم کنید، وگرنه زمان تفکر بودجه تاخیر را می‌بلعد. همچنین به‌جای استناد به اعداد اعلام‌شده توسط فروشنده، زمان تا اولین توکن (Time to First Token) و تعداد توکن بر ثانیه را روی دستورهای Prompt خودتان اندازه‌گیری کنید. اگر تاخیر p95 در اوج مصرف همچنان از حد مجاز فراتر رفت، هزینه یک لایه سرعت پولی (Paid Speed Tier — مانند لایه Fast در OpenAI که در صورت ارائه برای مدل، ۲ برابر محاسبه می‌شود) را در برابر سایر گزینه‌ها بسنجید؛ این کار اغلب از انتقال تمام پرس‌وجوها به یک مدل بزرگ‌تر ارزان‌تر است.
+
+---
+
+## مدیریت نیازمندی تازگی داده (Freshness) <a id="handling-the-freshness-requirement"></a>
+
+سخت‌ترین بخش این مسئله، اطمینان از این است که شاخص (Index) داده‌های ۵ دقیقه اخیر را بازتاب دهد.
+
+**راه‌حل: نمایه‌سازی مبتنی بر TTL (TTL-Based Indexing)**
+
+<div dir="ltr">
 
 ```python
 # Each document gets a timestamp field
@@ -98,51 +106,55 @@ def search_recent(query: str, minutes: int = 60, limit: int = 50):
     ).points
 ```
 
-Create a datetime payload index on `timestamp`; without one, Qdrant has to read payloads to evaluate the range filter, and time-filtered queries slow down as the collection grows.
+</div>
+
+یک شاخص Payload از نوع datetime روی فیلد `timestamp` ایجاد کنید؛ بدون آن، سرویس Qdrant مجبور است برای ارزیابی فیلتر بازه‌ای، تمام Payloadها را بخواند و پرس‌وجوهای فیلترشده بر اساس زمان با بزرگ‌تر شدن مجموعه داده (Collection) کند می‌شوند.
 
 ---
 
-## Cost Analysis
+## تحلیل هزینه <a id="cost-analysis"></a>
 
-Assumes 50K queries/hour during market hours (about 10 hours a day, 22 trading days), so about 11M queries a month, each with ~4K input and ~300 output tokens.
+در این برآورد، نرخ ۵۰ هزار پرس‌وجو در ساعت طی ساعات کاری بازار (حدود ۱۰ ساعت در روز و ۲۲ روز معاملاتی) فرض شده است؛ یعنی حدود ۱۱ میلیون پرس‌وجو در ماه، که هر کدام به‌طور میانگین حدود ۴ هزار Token ورودی و ۳۰۰ Token خروجی دارند.
 
-| Component | Monthly Cost (at 50K queries/hour) |
+| مولفه | هزینه ماهانه (در نرخ ۵۰ هزار پرس‌وجو در ساعت) |
 |-----------|-----------------------------------|
-| Kafka (MSK) | $2,500 |
-| Qdrant (managed) | $1,800 |
-| Elasticsearch | $2,000 |
-| GPT-6 Luna (generation): 44B input × $0.10/1M + 3.3B output × $0.50/1M | $6,050 |
-| Cross-encoder reranking | $800 |
-| **Total** | **$13,150/month** |
+| سرویس Kafka (مدیریت‌شده MSK) | مبلغ $2,500 |
+| پایگاه داده برداری Qdrant (مدیریت‌شده) | مبلغ $1,800 |
+| موتور جستجوی Elasticsearch | مبلغ $2,000 |
+| مدل GPT-6 Luna (تولید پاسخ): ۴۴ میلیارد ورودی × $0.10 به ازای ۱ میلیون + ۳٫۳ میلیارد خروجی × $0.50 به ازای ۱ میلیون | مبلغ $6,050 |
+| رتبه‌بندی مجدد با Cross-encoder | مبلغ $800 |
+| **مجموع** | **مبلغ $13,150 در ماه** |
 
-The generation line assumes list prices and no prompt caching. If the same queries ran around the clock (36M a month), generation alone would be about $19,800.
-
----
-
-## Interview Follow-Up Questions
-
-**Q: How do you prevent hallucinated financial data?**
-
-A: Three layers: (1) The LLM only summarizes retrieved content, never generates facts. (2) Every claim must cite a source document. (3) A post-generation validator checks that any number in the response exists verbatim in a source.
-
-**Q: What if Kafka falls behind during a news spike?**
-
-A: We implement backpressure with consumer lag monitoring. If lag exceeds 2 minutes, we shed load on the ingestion side using sampling. Real-time queries hit a "recent" index with only the last hour of data; batch jobs backfill the full index.
-
-**Q: Someone floods X and Reddit with fake posts to move your sentiment answers. What stops it?**
-
-A: Treat retrieval as an attack surface, because answer poisoning is already happening: in September 2026 a security researcher reported a phishing campaign that flooded the web with posts, PDFs and fake support pages to get ChatGPT, Gemini and Google AI Overviews to show fraudulent phone numbers for airlines and banks. Defenses: (1) score source reputation at ingestion (account age, follower graph, burst detection on near-duplicate posts) and store it as a filterable field; (2) cap the share of any answer that can come from low-reputation social sources, and show the source mix; (3) never let social posts be the citation for a number, a filing date or a contact detail; only primary sources such as SEC filings and wire services can carry those.
+ردیف هزینه تولید پاسخ بر اساس قیمت‌های فهرست (List Prices) و بدون کش کردن Prompt (Prompt Caching) محاسبه شده است. اگر همین پرس‌وجوها به‌صورت شبانه‌روزی اجرا شوند (۳۶ میلیون پرس‌وجو در ماه)، هزینه تولید پاسخ به‌تنهایی حدود $19,800 خواهد بود.
 
 ---
 
-## Key Takeaways for Interviews
+## سوالات پیگیری مصاحبه <a id="interview-follow-up-questions"></a>
 
-1. **Real-time AI search requires streaming infrastructure**, not batch ETL
-2. **Hybrid search (semantic + keyword) outperforms pure vector** for structured domains
-3. **Latency budgets drive model selection**: use fast models for synthesis, save expensive models for reasoning
-4. **Freshness is a filter, not a feature**: implement at the index level, not the prompt level
-5. **Fresh sources are the easiest to poison**: weight by source reputation and keep facts tied to primary sources
+**سوال: چگونه از توهم (Hallucination) در داده‌های مالی جلوگیری می‌کنید؟**
+
+**پاسخ:** در سه لایه: (۱) مدل LLM تنها محتوای بازیابی‌شده را خلاصه می‌کند و هرگز واقعیت جدیدی تولید نمی‌کند. (۲) هر ادعا باید به یک سند منبع ارجاع دهد. (۳) یک اعتبارسنج پس از تولید (Post-generation Validator) بررسی می‌کند که هر عددی که در پاسخ آمده است، عیناً در یکی از منابع وجود داشته باشد.
+
+**سوال: اگر سرویس Kafka در زمان اوج اخبار عقب بیفتد چه می‌شود؟**
+
+**پاسخ:** مکانیزم کنترل فشار معکوس (Backpressure) را همراه با پایش تاخیر مصرف‌کننده (Consumer Lag Monitoring) پیاده‌سازی می‌کنیم. اگر تاخیر از ۲ دقیقه بیشتر شود، در سمت دریافت داده (Ingestion) با استفاده از نمونه‌برداری (Sampling) بار را کاهش می‌دهیم (Load Shedding). پرس‌وجوهای بلادرنگ به یک شاخص «اخیر» (Recent) متصل می‌شوند که تنها داده‌های یک ساعت گذشته را نگه می‌دارد؛ در حالی که کارهای دسته‌ای (Batch Jobs) شاخص کامل را به‌صورت پس‌زمینه تکمیل می‌کنند.
+
+**سوال: اگر شخصی شبکه X و Reddit را با پست‌های جعلی پر کند تا پاسخ‌های تحلیل احساسات شما را تغییر دهد، چه چیزی جلوی آن را می‌گیرد؟**
+
+**پاسخ:** لایه بازیابی (Retrieval) را به‌عنوان یک سطح حمله (Attack Surface) در نظر بگیرید، زیرا مسموم‌سازی پاسخ (Answer Poisoning) همین الان هم در حال رخ دادن است: در سپتامبر ۲۰۲۶ یک پژوهشگر امنیتی از یک کارزار فیشینگ گزارش داد که وب را با پست‌ها، فایل‌های PDF و صفحات پشتیبانی جعلی پر کرده بود تا ChatGPT، Gemini و Google AI Overviews شماره‌های تلفن جعلی را برای خطوط هوایی و بانک‌ها نمایش دهند. دفاع‌ها: (۱) در زمان دریافت داده، اعتبار منبع را امتیازدهی کنید (سن حساب کاربری، گراف دنبال‌کنندگان، تشخیص موج ناگهانی برای پست‌های شبه‌تکراری) و آن را به‌عنوان یک فیلد قابل فیلتر ذخیره کنید؛ (۲) سهم هر پاسخ را که می‌تواند از منابع اجتماعی کم‌اعتبار بیاید محدود کنید و ترکیب منابع را نمایش دهید؛ (۳) هرگز اجازه ندهید پست‌های شبکه‌های اجتماعی مرجع استناد برای یک عدد، تاریخ ثبت گزارش (Filing Date) یا اطلاعات تماس باشند؛ تنها منابع اولیه مانند گزارش‌های SEC و خبرگزاری‌های رسمی می‌توانند این موارد را تامین کنند.
 
 ---
 
-*Related chapters: [Hybrid Search](../06-retrieval-systems/05-hybrid-search.md), [Serving Infrastructure](../04-inference-optimization/06-serving-infrastructure.md)*
+## نکات کلیدی برای مصاحبه‌ها <a id="key-takeaways-for-interviews"></a>
+
+1. **جستجوی بلادرنگ مبتنی بر هوش مصنوعی نیازمند زیرساخت جریانی (Streaming) است**، نه خط لوله‌های ETL دسته‌ای
+2. **جستجوی ترکیبی (معنایی + کلیدواژه‌ای) برای دامنه‌های ساختاریافته عملکرد بهتری نسبت به جستجوی برداری خالص دارد**
+3. **بودجه تاخیر (Latency) تعیین‌کننده انتخاب مدل است**: برای سنتز از مدل‌های سریع استفاده کنید و مدل‌های گران‌قیمت را برای استدلال نگه دارید
+4. **تازگی داده یک فیلتر است، نه یک ویژگی**: آن را در سطح شاخص (Index) پیاده‌سازی کنید، نه در سطح Prompt
+5. **مسموم‌سازی منابع تازه از همه ساده‌تر است**: بر اساس اعتبار منبع وزن‌دهی کنید و حقایق را به منابع اولیه گره بزنید
+
+---
+
+*فصل‌های مرتبط: [جستجوی ترکیبی (Hybrid Search)](../06-retrieval-systems/05-hybrid-search.md)، [زیرساخت سرویس‌دهی (Serving Infrastructure)](../04-inference-optimization/06-serving-infrastructure.md)*
+
+</div>

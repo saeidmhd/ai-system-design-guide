@@ -1,25 +1,29 @@
-# Case Study: Enterprise Knowledge Management
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: مدیریت دانش سازمانی <a id="case-study-enterprise-knowledge-management"></a>
 
-A consulting firm with **10,000 employees** has decades of project reports, methodology documents, and expertise scattered across SharePoint, Confluence, and file shares. They want an AI system where consultants can ask "How did we approach supply chain optimization for automotive clients?" and get answers synthesized from internal knowledge.
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- 2 million documents across 15 data sources
-- Access control: associates cannot see partner-level content
-- Must cite sources for every claim
-- Stale data handling: old methodologies should not override new ones
-- Knowledge gaps should be identified, not hallucinated
+یک شرکت مشاوره با **۱۰٬۰۰۰ کارمند** دهه‌ها گزارش پروژه، اسناد متدولوژی و دانش تخصصی دارد که در SharePoint، Confluence و اشتراک‌های فایل (File Shares) پراکنده شده‌اند. آن‌ها یک سیستم هوش مصنوعی می‌خواهند که در آن مشاوران بتوانند بپرسند «رویکرد ما برای بهینه‌سازی زنجیره تأمین در مشتریان خودروسازی چه بود؟» و پاسخ‌هایی ترکیبی از دانش داخلی دریافت کنند.
 
----
-
-## The Interview Question
-
-> "Design an internal knowledge assistant where a junior consultant can ask questions and get answers based only on documents they're authorized to see."
+**محدودیت‌های ارائه‌شده در مصاحبه:**
+- ۲ میلیون سند در ۱۵ منبع داده
+- کنترل دسترسی: کارشناسان تازه‌کار (Associates) نباید محتوای سطح شرکا (Partner) را ببینند
+- الزام به استناد به منابع برای هر ادعا
+- مدیریت داده‌های قدیمی: متدولوژی‌های قدیمی نباید بر متدولوژی‌های جدید غلبه کنند
+- شکاف‌های دانشی باید شناسایی شوند، نه اینکه با توهم (Hallucination) پاسخ داده شوند
 
 ---
 
-## Solution Architecture
+## پرسش مصاحبه <a id="the-interview-question"></a>
+
+> «یک دستیار دانش داخلی طراحی کنید که در آن یک مشاور تازه‌کار بتواند پرسش‌هایی مطرح کند و تنها بر اساس اسنادی که مجاز به مشاهده آن‌هاست پاسخ دریافت کند.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -52,13 +56,17 @@ flowchart TB
     end
 ```
 
+</div>
+
 ---
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. Permission-Aware Retrieval
+### ۱. بازیابی آگاه از سطح دسترسی (Permission-Aware Retrieval) <a id="1-permission-aware-retrieval"></a>
 
-**Answer:** Every chunk carries its permission metadata from the source system:
+**پاسخ:** هر بخش (Chunk) فراداده سطح دسترسی خود را از سیستم مبدأ به همراه دارد:
+
+<div dir="ltr">
 
 ```python
 chunk = {
@@ -73,7 +81,11 @@ chunk = {
 }
 ```
 
-At query time, we filter before retrieval:
+</div>
+
+در زمان اجرای پرس‌وجو، پیش از بازیابی فیلتر اعمال می‌کنیم:
+
+<div dir="ltr">
 
 ```python
 def search(query: str, user: User):
@@ -87,9 +99,13 @@ def search(query: str, user: User):
     )
 ```
 
-### 2. Recency-Weighted Ranking
+</div>
 
-**Answer:** A 2024 methodology document should rank higher than a 2019 one for the same topic. We use a **decay function**:
+### ۲. رتبه‌بندی وزن‌دار بر اساس تازگی (Recency-Weighted Ranking) <a id="2-recency-weighted-ranking"></a>
+
+**پاسخ:** یک سند متدولوژی مربوط به سال ۲۰۲۴ باید برای همان موضوع رتبه بالاتری نسبت به سند سال ۲۰۱۹ بگیرد. ما از یک **تابع زوال (Decay Function)** استفاده می‌کنیم:
+
+<div dir="ltr">
 
 ```python
 def recency_boost(doc_date):
@@ -100,11 +116,15 @@ def recency_boost(doc_date):
 final_score = semantic_score * 0.7 + recency_boost(doc.date) * 0.3
 ```
 
-This prevents outdated practices from drowning out current guidance.
+</div>
 
-### 3. Knowledge Gap Detection
+این کار از غلبه شیوه‌های منسوخ بر راهنمایی‌های فعلی جلوگیری می‌کند.
 
-**Answer:** We must distinguish "I found nothing" from "I'm making something up":
+### ۳. تشخیص شکاف دانشی (Knowledge Gap Detection) <a id="3-knowledge-gap-detection"></a>
+
+**پاسخ:** باید میان «چیزی پیدا نکردم» و «در حال ساختن پاسخ از خودم هستم» تمایز قائل شویم:
+
+<div dir="ltr">
 
 ```python
 def generate_answer(query: str, retrieved_docs: list):
@@ -120,9 +140,13 @@ def generate_answer(query: str, retrieved_docs: list):
     return {"answer": answer, "confidence": "high", "sources": [d.source for d in retrieved_docs]}
 ```
 
+</div>
+
 ---
 
-## Multi-Source Synchronization
+## همگام‌سازی چندمنبعی <a id="multi-source-synchronization"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -146,13 +170,17 @@ flowchart LR
     end
 ```
 
-**Key insight:** SharePoint supports change tokens (Microsoft Graph delta queries). Confluence does not, so poll CQL on `lastmodified` since a stored watermark (or subscribe to webhooks) and run a periodic full pass to catch deletions and permission changes. File shares require hash comparison. All three feed a unified processing queue.
+</div>
+
+**نکته کلیدی:** سرویس SharePoint از Tokenهای تغییر (پرس‌وجوهای delta در Microsoft Graph) پشتیبانی می‌کند. سرویس Confluence این قابلیت را ندارد، بنابراین با CQL روی `lastmodified` از آخرین نشانگر (Watermark) ذخیره‌شده سرکشی (Poll) کنید (یا در Webhookها مشترک شوید) و یک پیمایش کامل دوره‌ای برای یافتن موارد حذف‌شده و تغییرات سطح دسترسی اجرا کنید. اشتراک‌های فایل (File Shares) به مقایسه هش (Hash) نیاز دارند. هر سه منبع به یک صف پردازش یکپارچه تغذیه می‌شوند.
 
 ---
 
-## Handling Conflicting Information
+## مدیریت اطلاعات متناقض <a id="handling-conflicting-information"></a>
 
-Different documents may have conflicting guidance. We surface this:
+اسناد مختلف ممکن است راهنمایی‌های متناقضی داشته باشند. ما این موضوع را آشکار می‌سازیم:
+
+<div dir="ltr">
 
 ```python
 def detect_conflicts(retrieved_docs):
@@ -171,45 +199,49 @@ def detect_conflicts(retrieved_docs):
             }
 ```
 
----
-
-## Cost Analysis
-
-| Component | Monthly Cost |
-|-----------|--------------|
-| Embedding (2M docs × updates) | $500 |
-| Vector DB (Pinecone Enterprise) | $2,000 |
-| LLM generation (50K queries) | $3,000 |
-| Sync infrastructure (connectors) | $500 |
-| **Total** | **$6,000/month** |
-
-ROI: Consultants save an average of 2 hours/week searching for information. At 10,000 consultants × $100/hour × 2 hours × 4 weeks = $8M/month in productivity. System pays for itself 1,300x over.
+</div>
 
 ---
 
-## Interview Follow-Up Questions
+## تحلیل هزینه <a id="cost-analysis"></a>
 
-**Q: How do you handle documents with mixed permissions?**
+| مؤلفه | هزینه ماهانه |
+|-------|-------------|
+| تولید Embedding (۲ میلیون سند × به‌روزرسانی‌ها) | ۵۰۰ دلار |
+| پایگاه داده برداری (Pinecone Enterprise) | ۲٬۰۰۰ دلار |
+| تولید پاسخ با LLM (۵۰ هزار پرس‌وجو) | ۳٬۰۰۰ دلار |
+| زیرساخت همگام‌سازی (اتصال‌دهنده‌ها) | ۵۰۰ دلار |
+| **مجموع** | **۶٬۰۰۰ دلار/ماه** |
 
-A: We chunk at the section level, and each section inherits the most restrictive permission from its ancestors. A paragraph in a "confidential" section within an otherwise "internal" document is tagged "confidential."
-
-**Q: What about real-time collaboration documents (Google Docs, live Confluence pages)?**
-
-A: We have a separate "live document" pipeline with more frequent sync (every 5 minutes vs daily for static files). These documents are flagged as "draft" in search results until they are finalized.
-
-**Q: How do you prevent the system from becoming a leaky abstraction for unauthorized data?**
-
-A: We never include unauthorized content in the LLM context, even to say "I cannot show you this." The system behaves as if unauthorized documents do not exist. This prevents inference attacks where users probe "do you have info about X?" to discover the existence of confidential projects.
+بازگشت سرمایه (ROI): مشاوران به‌طور میانگین هفته‌ای ۲ ساعت در جست‌وجوی اطلاعات صرفه‌جویی می‌کنند. با نرخ ۱۰٬۰۰۰ مشاور × ۱۰۰ دلار/ساعت × ۲ ساعت × ۴ هفته = ۸ میلیون دلار/ماه بهره‌وری ایجاد می‌شود. این سیستم بیش از ۱٬۳۰۰ برابر هزینه خود بازدهی دارد.
 
 ---
 
-## Key Takeaways for Interviews
+## پرسش‌های تکمیلی مصاحبه <a id="interview-follow-up-questions"></a>
 
-1. **Permissions must be enforced at retrieval, not generation**: filter before the LLM sees content
-2. **Recency weighting prevents stale knowledge**: old documents decay in relevance
-3. **Admit gaps instead of hallucinating**: confidence thresholds and fallback messaging
-4. **Multi-source sync is complex**: different APIs need different strategies
+**پرسش: چگونه با اسنادی که سطوح دسترسی ترکیبی دارند برخورد می‌کنید؟**
+
+پاسخ: ما Chunking را در سطح بخش (Section) انجام می‌دهیم و هر بخش محدودکننده‌ترین سطح دسترسی را از والدهای خود به ارث می‌برد. یک پاراگراف در بخش «محرمانه» (Confidential) درون سندی که در حالت کلی «داخلی» (Internal) است، با برچسب «محرمانه» نشانه‌گذاری می‌شود.
+
+**پرسش: در مورد اسناد همکاری بلادرنگ (Google Docs، صفحات زنده Confluence) چطور؟**
+
+پاسخ: ما یک پایپ‌لاین جداگانه برای «اسناد زنده» (Live Document) با همگام‌سازی مکررتر (هر ۵ دقیقه در مقایسه با روزانه برای فایل‌های ایستا) داریم. این اسناد تا زمانی که نهایی شوند، در نتایج جست‌وجو با برچسب «پیش‌نویس» (Draft) علامت‌گذاری می‌شوند.
+
+**پرسش: چگونه از تبدیل شدن سیستم به یک انتزاع نشت‌کننده (Leaky Abstraction) برای داده‌های غیرمجاز جلوگیری می‌کنید؟**
+
+پاسخ: ما هرگز محتوای غیرمجاز را وارد زمینه (Context) مدل LLM نمی‌کنیم، حتی برای اینکه بگوییم «نمی‌توانم این را به شما نشان دهم.» سیستم طوری رفتار می‌کند که گویی اسناد غیرمجاز اصلاً وجود ندارند. این کار از حملات استنتاجی (Inference Attacks) که در آن کاربران با پرسیدن «آیا اطلاعاتی درباره X دارید؟» وجود پروژه‌های محرمانه را کشف می‌کنند، جلوگیری می‌کند.
 
 ---
 
-*Related chapters: [RAG Fundamentals](../06-retrieval-systems/01-rag-fundamentals.md), [Multi-Tenant Isolation](../12-security-and-access/02-access-control.md)*
+## نکات کلیدی برای مصاحبه <a id="key-takeaways-for-interviews"></a>
+
+1. **سطوح دسترسی باید در مرحله بازیابی اعمال شوند، نه تولید**: پیش از آنکه مدل LLM محتوا را ببیند فیلتر کنید
+2. **وزن‌دهی بر اساس تازگی از دانش منسوخ جلوگیری می‌کند**: اهمیت اسناد قدیمی با گذشت زمان کاهش می‌یابد
+3. **به‌جای توهم، شکاف‌های دانشی را بپذیرید**: از آستانه‌های اطمینان و پیام‌های جایگزین استفاده کنید
+4. **همگام‌سازی چندمنبعی پیچیده است**: APIهای مختلف به راهبردهای متفاوتی نیاز دارند
+
+---
+
+*فصل‌های مرتبط: [مبانی RAG](../06-retrieval-systems/01-rag-fundamentals.md)، [جداسازی چندمستأجری](../12-security-and-access/02-access-control.md)*
+
+</div>

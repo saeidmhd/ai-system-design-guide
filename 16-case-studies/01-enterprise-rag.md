@@ -1,74 +1,78 @@
-# Case Study: Enterprise RAG System
+<div dir="rtl">
 
-This case study walks through designing a production RAG system for enterprise document search. It covers requirements gathering, architecture decisions, and implementation details.
+# مطالعه موردی: سیستم RAG سازمانی
 
-## Table of Contents
+این مطالعه موردی فرآیند طراحی یک سیستم RAG در مقیاس عملیاتی (Production) را برای جست‌وجو در اسناد سازمانی بررسی می‌کند و شامل جمع‌آوری نیازمندی‌ها، تصمیم‌های معماری و جزئیات پیاده‌سازی است.
 
-- [Problem Statement](#problem-statement)
-- [Requirements Analysis](#requirements-analysis)
-- [System Architecture](#system-architecture)
-- [Component Deep Dives](#component-deep-dives)
-- [Scaling Considerations](#scaling-considerations)
-- [Cost Analysis](#cost-analysis)
-- [Lessons Learned](#lessons-learned)
-- [Interview Walkthrough](#interview-walkthrough)
+## فهرست مطالب
 
----
-
-## Problem Statement
-
-### Scenario
-
-A financial services company wants to build an AI-powered search system for their internal documentation:
-- 500,000 documents (policies, procedures, research reports)
-- 5,000 employees across multiple departments
-- Documents updated daily
-- Strict compliance and audit requirements
-- Need to answer questions with cited sources
-
-### Current Pain Points
-
-- Employees spend 2+ hours/day searching for information
-- Keyword search returns too many irrelevant results
-- Knowledge is siloed across departments
-- New employees take months to become productive
+- [بیان مسئله](#problem-statement)
+- [تحلیل نیازمندی‌ها](#requirements-analysis)
+- [معماری سیستم](#system-architecture)
+- [بررسی عمیق اجزا](#component-deep-dives)
+- [ملاحظات مقیاس‌پذیری](#scaling-considerations)
+- [تحلیل هزینه](#cost-analysis)
+- [درس‌های آموخته‌شده](#lessons-learned)
+- [راهنمای ارائه در مصاحبه](#interview-walkthrough)
 
 ---
 
-## Requirements Analysis
+## بیان مسئله <a id="problem-statement"></a>
 
-### Functional Requirements
+### سناریو
 
-| Requirement | Priority | Notes |
-|-------------|----------|-------|
-| Natural language Q&A | P0 | Core feature |
-| Source citations | P0 | Compliance requirement |
-| Multi-document reasoning | P1 | Connect information across docs |
-| Follow-up questions | P1 | Conversational context |
-| Document summarization | P2 | Quick overview of long docs |
+یک شرکت خدمات مالی قصد دارد یک سیستم جست‌وجوی مبتنی بر هوش مصنوعی برای مستندات داخلی خود بسازد:
+- ۵۰۰٬۰۰۰ سند (سیاست‌ها، رویه‌ها و گزارش‌های پژوهشی)
+- ۵٬۰۰۰ کارمند در بخش‌های مختلف سازمان
+- به‌روزرسانی روزانه اسناد
+- الزامات سخت‌گیرانه انطباق (Compliance) و ممیزی (Audit)
+- نیاز به پاسخ‌گویی به پرسش‌ها همراه با ذکر منابع استنادی
 
-### Non-Functional Requirements
+### چالش‌ها و گلوگاه‌های فعلی
 
-| Requirement | Target | Rationale |
-|-------------|--------|-----------|
-| Latency (P95) | < 5 seconds | User experience |
-| Accuracy | > 90% | Trust and adoption |
-| Availability | 99.9% | Business critical |
-| Concurrent users | 500 | Peak usage |
-| Document freshness | < 1 hour | Policy updates |
-
-### Security Requirements
-
-- Role-based access control (RBAC)
-- Audit logging of all queries
-- No data leaves the company's cloud boundary: model calls go through private endpoints (Bedrock, Google Cloud or Foundry) under zero data retention, and US-only processing where compliance requires it (about a 10% premium; see [Cost Analysis](#cost-analysis))
-- PII detection and handling
+- کارمندان روزانه بیش از ۲ ساعت را صرف جست‌وجوی اطلاعات می‌کنند
+- جست‌وجوی کلیدواژه‌ای نتایج نامرتبط بسیار زیادی برمی‌گرداند
+- دانش در بخش‌های مختلف سازمان به‌صورت جزیره‌ای پراکنده است
+- کارمندان جدید ماه‌ها زمان نیاز دارند تا به بهره‌وری کامل برسند
 
 ---
 
-## System Architecture
+## تحلیل نیازمندی‌ها <a id="requirements-analysis"></a>
 
-### High-Level Architecture
+### نیازمندی‌های عملکردی
+
+| نیازمندی | اولویت | توضیحات |
+|----------|--------|---------|
+| پرسش‌وپاسخ به زبان طبیعی | سطح P0 | قابلیت اصلی |
+| ارجاع و استناد به منابع | سطح P0 | الزام انطباق (Compliance) |
+| استدلال چندسندی | سطح P1 | اتصال اطلاعات در میان چند سند |
+| پرسش‌های تکمیلی (Follow-up) | سطح P1 | حفظ کانتکست مکالمه |
+| خلاصه‌سازی اسناد | سطح P2 | مرور سریع اسناد طولانی |
+
+### نیازمندی‌های غیرعملکردی
+
+| نیازمندی | هدف | دلیل |
+|----------|-----|------|
+| تاخیر (Latency P95) | کمتر از ۵ ثانیه | تجربه کاربری |
+| دقت | بیش از ۹۰٪ | اعتماد و پذیرش کاربران |
+| دسترس‌پذیری | ۹۹.۹٪ | حیاتی برای کسب‌وکار |
+| کاربران هم‌زمان | ۵۰۰ کاربر | اوج مصرف (Peak usage) |
+| تازگی اسناد | کمتر از ۱ ساعت | به‌روزرسانی سیاست‌ها |
+
+### نیازمندی‌های امنیتی
+
+- کنترل دسترسی مبتنی بر نقش (RBAC)
+- ثبت گزارش ممیزی (Audit logging) برای تمام پرس‌وجوها
+- خروج هیچ داده‌ای از مرزهای ابری شرکت مجاز نیست: فراخوانی مدل‌ها از طریق نقاط پایانی خصوصی (Bedrock، Google Cloud یا Foundry) تحت سیاست عدم نگهداری داده (Zero Data Retention) انجام می‌شود و در مواردی که الزامات انطباق ایجاب کند، پردازش منحصراً در ایالات متحده انجام می‌گیرد (با حدود ۱۰٪ هزینه اضافی؛ بخش [تحلیل هزینه](#cost-analysis) را ببینید)
+- شناسایی و مدیریت داده‌های قابل شناسایی شخصی (PII)
+
+---
+
+## معماری سیستم <a id="system-architecture"></a>
+
+### معماری سطح بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -117,7 +121,11 @@ A financial services company wants to build an AI-powered search system for thei
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-Rendered as a flow diagram (the layered system fans out through the query pipeline and converges through the data layer):
+</div>
+
+نمای کلی در قالب نمودار جریان (این سیستم لایه‌بندی‌شده از طریق خط لوله پرس‌وجو منشعب می‌شود و در لایه داده همگرا می‌گردد):
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -151,25 +159,29 @@ flowchart TD
     GS --> UI
 ```
 
-### Technology Choices (November 2026)
+</div>
 
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| **Primary LLM** | Claude Sonnet 5.5 ($2 / $10 per 1M tokens) | Flat pricing to 1M tokens, so multi-document contexts carry no long-context surcharge; zero data retention available; reachable through Bedrock, Google Cloud and Foundry private endpoints; retirement not before September 28, 2027 |
-| **Hard cross-document analysis** | Claude Opus 5.5 ($4 / $20) or GPT-6.1 Sol ($2 / $10) | Escalation path for the few percent of queries that need multi-step reasoning across many documents. Keep GPT-6.1 Sol prompts under 272K input tokens, above which OpenAI bills the whole request at $4 / $15 |
-| **Summarization and bulk tier** | Gemini 3.8 Flash ($0.75 / $3.75 introductory; $1.50 / $7.50 from January 1, 2027) | Cheap 1M-token context for document summaries and ingestion-time enrichment. Budget on the 2027 price |
-| **Embeddings** | text-embedding-3-large ($0.13 per 1M) | Proven and unchanged. If you expect to change models, Cohere Embed 5 (Pro and Fast) and the Voyage 4 family each share one embedding space across sizes, so you can index with the large model and query with the cheap one without re-indexing |
-| **Vector DB** | Qdrant 1.19 or later (self-hosted) | Performance, payload filtering and on-prem compliance. The `memory` setting (pinned, cached, cold) replaces `on_disk` and `always_ram` for tiering |
-| **Reranker** | Qwen3-Reranker-8B (self-hosted, Apache 2.0) or an API reranker: Cohere Rerank 5 (Pro $0.05, Fast $0.02 per 1M tokens) or Voyage rerank-3 | Both accept 32K tokens per document, which removes the old 512-token truncation of long chunks; check the limit before swapping in a newer model |
+### انتخاب فناوری‌ها (نوامبر ۲۰۲۶)
+
+| جزء | انتخاب | دلیل |
+|-----|--------|------|
+| **مدل LLM اصلی** | مدل Claude Sonnet 5.5 (۲ دلار / ۱۰ دلار به ازای ۱ میلیون Token) | قیمت‌گذاری یکنواخت تا ۱ میلیون Token، بنابراین کانتکست‌های چندسندی هزینه اضافی کانتکست طولانی ندارند؛ امکان عدم نگهداری داده (Zero Data Retention) فراهم است؛ از طریق نقاط پایانی خصوصی Bedrock، Google Cloud و Foundry در دسترس است؛ زمان بازنشستگی پیش از ۲۸ سپتامبر ۲۰۲۷ نخواهد بود |
+| **تحلیل دشوار میان‌سندی** | مدل Claude Opus 5.5 (۴ دلار / ۲۰ دلار) یا GPT-6.1 Sol (۲ دلار / ۱۰ دلار) | مسیر ارتقا برای چند درصد از پرس‌وجوهایی که به استدلال چندمرحله‌ای در میان اسناد متعدد نیاز دارند. طول Prompt در GPT-6.1 Sol را زیر ۲۷۲ هزار Token ورودی نگه دارید، زیرا بالاتر از آن OpenAI کل درخواست را با نرخ ۴ دلار / ۱۵ دلار محاسبه می‌کند |
+| **لایه خلاصه‌سازی و پردازش انبوه** | مدل Gemini 3.8 Flash (۰.۷۵ دلار / ۳.۷۵ دلار در دوره معرفی؛ ۱.۵۰ دلار / ۷.۵۰ دلار از ۱ ژانویه ۲۰۲۷) | کانتکست ارزان‌قیمت ۱ میلیون Token برای خلاصه‌سازی اسناد و غنی‌سازی در زمان دریافت داده (Ingestion). بودجه‌بندی را بر اساس قیمت سال ۲۰۲۷ انجام دهید |
+| **مدل‌های Embedding** | مدل text-embedding-3-large (۰.۱۳ دلار به ازای ۱ میلیون) | آزموده‌شده و بدون تغییر. اگر انتظار تغییر مدل دارید، خانواده Cohere Embed 5 (نسخه‌های Pro و Fast) و خانواده Voyage 4 هر یک فضای برداری مشترکی بین اندازه‌های مختلف دارند؛ بنابراین می‌توانید با مدل بزرگ ایندکس کنید و با مدل ارزان بدون ایندکس‌گذاری مجدد جست‌وجو نمایید |
+| **پایگاه داده برداری (Vector Database)** | سرویس Qdrant 1.19 یا جدیدتر (میزبانی اختصاصی) | کارایی بالا، فیلتر کردن Payload و انطباق با استقرار درون‌سازمانی (On-prem). تنظیم `memory` (با مقادیر pinned، cached و cold) برای لایه‌بندی جایگزین `on_disk` و `always_ram` شده است |
+| **موتور بازرتبه‌بندی (Reranker)** | مدل Qwen3-Reranker-8B (میزبانی اختصاصی، مجوز Apache 2.0) یا یک API بازرتبه‌بندی: Cohere Rerank 5 (نسخه Pro با ۰.۰۵ دلار و نسخه Fast با ۰.۰۲ دلار به ازای ۱ میلیون Token) یا Voyage rerank-3 | هر دو تا ۳۲ هزار Token به ازای هر سند را می‌پذیرند که مشکل قدیمی برش ۵۱۲ Token برای بخش‌های طولانی را برطرف می‌کند؛ پیش از جایگزینی با یک مدل جدیدتر، این محدودیت را بررسی کنید |
 
 > [!NOTE]
-> **Shift: bigger retrieval units, priced deliberately.** With 1M-token windows on the main frontier models, teams retrieve whole document sections (10K to 50K tokens) for multi-document questions instead of hunting for the perfect 512-token chunk. The bill scales with it: at 1.5M queries a month, every extra 10K input tokens per query costs about $30,000 a month on Sonnet 5.5. Route by query type: small chunks for lookups, large sections only for synthesis questions. Pricing rules differ by model, not just by vendor: Sonnet 5.5 and Opus 5.5 bill flat to 1M, Claude Haiku 5.5 bills the whole request at 5x once the prompt passes 100K tokens, and OpenAI reprices the whole request above 272K input tokens.
+> **تغییر رویکرد: واحدهای بازیابی بزرگ‌تر، با قیمت‌گذاری حساب‌شده.** با وجود پنجره‌های ۱ میلیون Token در مدل‌های پیشرو، تیم‌ها به‌جای جست‌وجو برای یافتن قطعه ۵۱۲ Token بی‌نقص، کل بخش‌های سند (۱۰ تا ۵۰ هزار Token) را برای پرسش‌های چندسندی بازیابی می‌کنند. صورت‌حساب نیز متناسب با آن رشد می‌کند: در ۱.۵ میلیون پرس‌وجو در ماه، هر ۱۰ هزار Token ورودی اضافه به ازای هر پرس‌وجو حدود ۳۰٬۰۰۰ دلار در ماه روی Sonnet 5.5 هزینه دارد. مسیریابی را بر اساس نوع پرس‌وجو انجام دهید: قطعات کوچک برای جست‌وجوهای نقطه‌ای (Lookups) و بخش‌های بزرگ فقط برای پرسش‌های ترکیبی (Synthesis). قوانین قیمت‌گذاری نه تنها بر اساس ارائه‌دهنده، بلکه بر اساس مدل نیز متفاوت است: Sonnet 5.5 و Opus 5.5 تا ۱ میلیون قیمت یکنواخت دارند، Claude Haiku 5.5 به محض عبور Prompt از ۱۰۰ هزار Token کل درخواست را با نرخ ۵ برابر محاسبه می‌کند و OpenAI بالای ۲۷۲ هزار Token ورودی کل درخواست را دوباره قیمت‌گذاری می‌کند.
 
 ---
 
-## Component Deep Dives
+## بررسی عمیق اجزا <a id="component-deep-dives"></a>
 
-### Document Ingestion Pipeline
+### خط لوله دریافت و پردازش اسناد (Ingestion Pipeline)
+
+<div dir="ltr">
 
 ```python
 class IngestionPipeline:
@@ -229,7 +241,11 @@ class IngestionPipeline:
         )
 ```
 
-The code reads as a linear sequence, but four of the writes happen in parallel. A sequence diagram makes the fanout explicit, which matters for understanding partial-failure modes:
+</div>
+
+کد بالا مانند یک توالی خطی به نظر می‌رسد، اما چهار مورد از عملیات نوشتن به‌صورت موازی انجام می‌شوند. نمودار توالی (Sequence Diagram) این انشعاب موازی (Fanout) را به‌وضوح نشان می‌دهد که برای درک حالت‌های شکست جزئی (Partial-failure modes) اهمیت دارد:
+
+<div dir="ltr">
 
 ```mermaid
 sequenceDiagram
@@ -254,7 +270,11 @@ sequenceDiagram
     Note over V,M: Document is queryable only<br/>after all four writes commit
 ```
 
-### Query Processing
+</div>
+
+### پردازش پرس‌وجو (Query Processing)
+
+<div dir="ltr">
 
 ```python
 class QueryService:
@@ -329,7 +349,11 @@ class QueryService:
         }
 ```
 
-### Hybrid Retrieval
+</div>
+
+### بازیابی ترکیبی (Hybrid Retrieval)
+
+<div dir="ltr">
 
 ```python
 class HybridRetriever:
@@ -399,7 +423,11 @@ class HybridRetriever:
         return [docs[id] for id in sorted_ids]
 ```
 
-The hybrid retrieval flow at a glance. Two parallel retrievers, then RRF fuses them with weighted ranks, then a cross-encoder reranks the top candidates before context formatting:
+</div>
+
+نمای کلی جریان بازیابی ترکیبی: دو موتور بازیابی موازی اجرا می‌شوند، سپس الگوریتم RRF آن‌ها را با رتبه‌های وزن‌دار ترکیب می‌کند، و در نهایت یک Cross-encoder پیش از قالب‌بندی کانتکست، بهترین گزینه‌ها را بازرتبه‌بندی می‌نماید:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -417,7 +445,11 @@ flowchart LR
     CTX --> LLM[Generation<br/>Claude Sonnet 5.5, 1M ctx]
 ```
 
-### Generation with Long Context
+</div>
+
+### تولید پاسخ با کانتکست طولانی (Long Context)
+
+<div dir="ltr">
 
 ```python
 import anthropic
@@ -469,19 +501,23 @@ class LongContextGenerator:
         return "".join(b.text for b in response.content if b.type == "text")
 ```
 
+</div>
+
 > [!TIP]
-> **Production choice vs. newest release**
-> Sonnet 5.5 shipped September 28, 2026. Teams with prompts and guardrails tuned on Sonnet 5 or Sonnet 4.6 should run their eval set before switching, because the upgrade is not drop-in:
-> - **Request shape**: forced `tool_choice` (`any` or `tool`) returns 400, `thinking: {type: "disabled"}` returns 400 (the lowest setting is `between_tools`), and non-default `temperature` returns 400 (already true on Sonnet 5); under API version `2026-10-21`, which the new SDK majors send by default, any `temperature`, `top_p`, or `top_k` returns 400 on every model, even at the default value.
-> - **Behavior**: effort levels were recalibrated, so re-run the effort sweep instead of carrying settings over.
-> - **Deadlines**: anything still pinned to Sonnet 4.5 has to move regardless; it retires November 30, 2026 on the Claude API and Foundry.
-> - **SDK**: Anthropic's Python SDK 1.0 (August 20, 2026) moved to `httpx2`, and httpx-based tracing and test mocks can silently miss calls; Python SDK 2.0.0 then switched the default API version to `2026-10-21` and the license to Apache 2.0. Verify span counts and request shapes after upgrading.
+> **انتخاب محیط تولید در برابر جدیدترین نسخه**
+> مدل Sonnet 5.5 در ۲۸ سپتامبر ۲۰۲۶ منتشر شد. تیم‌هایی که الگوهای Prompt و سازوکارهای محافظتی (Guardrails) خود را روی Sonnet 5 یا Sonnet 4.6 تنظیم کرده‌اند، پیش از مهاجرت باید مجموعه ارزیابی (Eval set) خود را اجرا کنند، زیرا این ارتقا بدون نیاز به تغییر (Drop-in) نیست:
+> - **ساختار درخواست (Request shape)**: مقدار اجباری `tool_choice` (`any` یا `tool`) خطای ۴۰۰ برمی‌گرداند، تنظیم `thinking: {type: "disabled"}` خطای ۴۰۰ می‌دهد (پایین‌ترین سطح مجاز `between_tools` است)، و مقدار غیرپیش‌فرض `temperature` خطای ۴۰۰ برمی‌گرداند (که در Sonnet 5 نیز برقرار بود)؛ تحت نسخه `2026-10-21` از API که نسخه‌های اصلی جدید SDK به‌صورت پیش‌فرض ارسال می‌کنند، هرگونه مقدار `temperature`، `top_p` یا `top_k` روی تمام مدل‌ها خطای ۴۰۰ برمی‌گرداند، حتی اگر مقدار پیش‌فرض باشد.
+> - **رفتار مدل**: سطوح تلاش (Effort levels) بازتنظیم شده‌اند؛ بنابراین به‌جای انتقال مستقیم تنظیمات قبلی، ارزیابی سطوح تلاش (Effort sweep) را مجدداً اجرا کنید.
+> - **مهلت‌های بازنشستگی**: هر سرویسی که هنوز روی Sonnet 4.5 قفل شده است به‌هرحال باید منتقل شود؛ این مدل در ۳۰ نوامبر ۲۰۲۶ در Claude API و Foundry بازنشسته می‌شود.
+> - **به‌روزرسانی SDK**: نسخه ۱.۰ از Python SDK شرکت Anthropic (۲۰ اوت ۲۰۲۶) به `httpx2` مهاجرت کرد و ردیابی (Tracing) و تست‌های Mock مبتنی بر httpx ممکن است به‌صورت بی‌صدا فراخوانی‌ها را از دست بدهند؛ سپس نسخه ۲.۰.۰ از Python SDK نسخه پیش‌فرض API را به `2026-10-21` و مجوز را به Apache 2.0 تغییر داد. پس از ارتقا، تعداد Spanها و ساختار درخواست‌ها را بررسی کنید.
 
 ---
 
-## Scaling Considerations
+## ملاحظات مقیاس‌پذیری <a id="scaling-considerations"></a>
 
-### Handling 500K Documents
+### مدیریت ۵۰۰ هزار سند
+
+<div dir="ltr">
 
 ```python
 # Sharding strategy for Qdrant
@@ -499,7 +535,11 @@ qdrant_config = {
 }
 ```
 
-### Handling 500 Concurrent Users
+</div>
+
+### مدیریت ۵۰۰ کاربر هم‌زمان
+
+<div dir="ltr">
 
 ```
 Load Balancer
@@ -514,7 +554,11 @@ Load Balancer
             └──► Elasticsearch (3-node cluster)
 ```
 
-### Caching Strategy
+</div>
+
+### استراتژی کشینگ (Caching)
+
+<div dir="ltr">
 
 ```python
 class QueryCache:
@@ -544,94 +588,98 @@ class QueryCache:
         return response
 ```
 
----
-
-## Cost Analysis
-
-### Monthly Cost Estimate (500 Users, 100 Queries/User/Day, November 2026 List Prices)
-
-| Component | Calculation | Monthly Cost |
-|-----------|-------------|--------------|
-| LLM (Claude Sonnet 5.5, US-only processing at 1.1x) | 1.5M queries × (2K input tokens × $2.20/1M + 500 output tokens × $11/1M) | ~$14,850 |
-| Embeddings | ~75M query tokens plus re-embedding ~2% of the corpus daily (~50M tokens a day, ~1.5B a month) at $0.13/1M | ~$200 |
-| Reranking (Voyage rerank-3) | 1.5M queries × 50 candidates × ~400 tokens × $0.05/1M | ~$1,500 |
-| Vector DB (Qdrant) | 3-node cluster | ~$1,500 |
-| Elasticsearch | 3-node cluster | ~$2,000 |
-| Compute (Query Service) | 4 instances | ~$1,000 |
-| **Total** | | **~$21,000/month** |
-
-Model lines use Claude API list prices; Bedrock and Google Cloud price Claude on their own rate cards, so confirm the regional rate on the platform you deploy to. The embedding and reranking lines also send document text to a vendor, so they count against the cloud-boundary requirement: reach them through a private endpoint in your cloud or self-host them. Two assumptions carry this table. First, 2K-token contexts: if 20% of queries pull 20K-token sections for synthesis, add about $12,000 a month (300K queries × 18K extra tokens × $2.20/1M). Second, 500 output tokens: Sonnet 5.5 runs adaptive thinking by default and thinking bills as output, so measure real output per query before trusting the LLM line.
-
-### Cost Optimization Opportunities
-
-1. **Response caching**: 30% cache hit rate → ~$4,500 savings on LLM
-2. **Prompt caching**: Cache the static system prompt and instructions; on Sonnet 5.5, cache reads bill at 0.05x the input price since October 7, 2026
-3. **Model routing**: Route simple lookups to a cheaper tier (Claude Haiku 5.5 at $0.10 / $0.50, or Gemini 3.8 Flash) → up to 40% LLM savings. Keep Haiku 5.5 on short-context lookups: once a prompt passes 100K tokens the whole request bills at $0.50 / $2.50, and it rejects `temperature` and assistant prefill, so run the eval set before moving traffic
-4. **Residency only where required**: Pin US-only processing for the departments that need it and run the rest on global endpoints → recovers up to ~$1,350 (the 10% uplift)
-5. **Batch re-embedding**: Run nightly re-embedding through OpenAI's Batch API → 50% off that line
-6. **Self-hosted reranker**: Replace the API reranker with Qwen3-Reranker → eliminates ~$1,500 of API spend, but one dedicated H100 runs about $2,100 a month at the November 1 Silicon Data index ($2.93 per GPU-hour), so this saves money only on GPU capacity you already have. It is also the default if compliance rules out sending candidate passages to a reranking API
+</div>
 
 ---
 
-## Lessons Learned
+## تحلیل هزینه <a id="cost-analysis"></a>
 
-### What Worked Well
+### برآورد هزینه ماهانه (۵۰۰ کاربر، ۱۰۰ پرس‌وجو به ازای هر کاربر در روز، تعرفه‌های نوامبر ۲۰۲۶)
 
-1. **Hybrid search**: Combined semantic + keyword significantly improved recall
-2. **Reranking**: 15% improvement in top-5 precision
-3. **Clear citations**: Built trust with users
-4. **Permission filtering at retrieval**: No post-hoc filtering needed
+| جزء | محاسبه | هزینه ماهانه |
+|-----|--------|--------------|
+| مدل LLM (مدل Claude Sonnet 5.5، پردازش صرفاً در آمریکا با ضریب ۱.۱ برابر) | حدود ۱.۵ میلیون پرس‌وجو × (۲ هزار Token ورودی × ۲.۲۰ دلار/۱ میلیون + ۵۰۰ Token خروجی × ۱۱ دلار/۱ میلیون) | حدود ۱۴٬۸۵۰ دلار |
+| بردارسازی (Embeddings) | حدود ۷۵ میلیون Token پرس‌وجو به‌علاوه بردارسازی مجدد روزانه حدود ۲٪ از کل مجموعه اسناد (حدود ۵۰ میلیون Token در روز، حدود ۱.۵ میلیارد در ماه) با نرخ ۰.۱۳ دلار/۱ میلیون | حدود ۲۰۰ دلار |
+| بازرتبه‌بندی (Voyage rerank-3) | حدود ۱.۵ میلیون پرس‌وجو × ۵۰ کاندیدا × حدود ۴۰۰ Token × ۰.۰۵ دلار/۱ میلیون | حدود ۱٬۵۰۰ دلار |
+| پایگاه داده برداری (Qdrant) | کلاستر ۳ نودی | حدود ۱٬۵۰۰ دلار |
+| موتور جست‌وجوی Elasticsearch | کلاستر ۳ نودی | حدود ۲٬۰۰۰ دلار |
+| منابع پردازشی (سرویس Query) | تعداد ۴ نمونه (Instance) | حدود ۱٬۰۰۰ دلار |
+| **مجموع** | | **حدود ۲۱٬۰۰۰ دلار/ماه** |
 
-### Challenges Encountered
+ردیف‌های مربوط به مدل‌ها بر اساس قیمت فهرست Claude API محاسبه شده‌اند؛ Bedrock و Google Cloud قیمت‌گذاری اختصاصی خود را برای Claude دارند، بنابراین تعرفه منطقه‌ای پلتفرمی را که روی آن استقرار می‌دهید، تأیید کنید. ردیف‌های بردارسازی و بازرتبه‌بندی نیز متن سند را برای یک ارائه‌دهنده ارسال می‌کنند و بنابراین مشمول الزام مرز ابری (Cloud-boundary) می‌شوند: آن‌ها را از طریق یک نقطه پایانی خصوصی در فضای ابری خود فراخوانی کنید یا به‌صورت اختصاصی میزبانی نمایید. دو فرض پایه پشت این جدول قرار دارد. نخست، کانتکست‌های ۲ هزار Token: اگر ۲۰٪ پرس‌وجوها برای ترکیب اطلاعات بخش‌هایی با طول ۲۰ هزار Token واکشی کنند، حدود ۱۲٬۰۰۰ دلار در ماه اضافه می‌شود (۳۰۰ هزار پرس‌وجو × ۱۸ هزار Token اضافه × ۲.۲۰ دلار/۱ میلیون). دوم، ۵۰۰ Token خروجی: مدل Sonnet 5.5 به‌صورت پیش‌فرض از استدلال تطبیقی (Adaptive thinking) استفاده می‌کند و Tokenهای تفکر به عنوان خروجی محاسبه می‌شوند، بنابراین پیش از اتکا به عدد ردیف LLM، خروجی واقعی به ازای هر پرس‌وجو را اندازه‌گیری کنید.
 
-1. **Table extraction**: PDFs with complex tables required custom parsing
-2. **Acronyms**: Domain-specific acronyms needed expansion
-3. **Freshness**: 1-hour freshness required streaming ingestion
-4. **Long documents**: 100+ page documents needed hierarchical chunking
+### فرصت‌های بهینه‌سازی هزینه
 
-### What We Would Do Differently
-
-1. Start with better document parsing earlier
-2. Build evaluation pipeline before scaling
-3. Implement query logging from day one
-4. Create feedback loop with users sooner
-
----
-
-## Interview Walkthrough
-
-### How to Present This in an Interview
-
-**Opening (2 min):**
-"I will design an enterprise RAG system for internal document search. Let me clarify a few requirements first..."
-
-**Requirements (3 min):**
-- Ask about scale, latency, accuracy targets
-- Clarify security requirements
-- Understand document types and update frequency
-
-**High-Level Design (5 min):**
-- Draw the architecture diagram
-- Explain key components
-- Justify technology choices
-
-**Deep Dive (10 min):**
-- Retrieval strategy (hybrid search, why)
-- Security (permission filtering at query time)
-- Generation (prompt engineering, citations)
-- Scaling (sharding, caching, replicas)
-
-**Tradeoffs (5 min):**
-- Cost vs latency (model selection)
-- Context size vs cost (whole sections help synthesis but multiply input spend)
-- Accuracy vs latency (reranking adds time)
-- Freshness vs cost (streaming vs batch)
-
-**Monitoring (2 min):**
-- Key metrics (latency, accuracy, user feedback)
-- How to detect issues
-- Continuous improvement loop
+1. **کش کردن پاسخ‌ها (Response caching)**: نرخ اصابت کش ۳۰٪ ← صرفه‌جویی حدود ۴٬۵۰۰ دلار در هزینه LLM
+2. **کش کردن Prompt**: کش کردن دستورالعمل‌ها و System Prompt ایستا؛ در Sonnet 5.5 از ۷ اکتبر ۲۰۲۶ به بعد، خواندن از کش با ضریب ۰.۰۵ برابر قیمت ورودی محاسبه می‌شود
+3. **مسیریابی مدل (Model routing)**: هدایت جست‌وجوهای ساده به یک رده ارزان‌تر (مدل Claude Haiku 5.5 با نرخ ۰.۱۰ / ۰.۵۰ دلار، یا Gemini 3.8 Flash) ← تا ۴۰٪ صرفه‌جویی در هزینه LLM. مدل Haiku 5.5 را برای جست‌وجوهای کوتاه‌کانتکست نگه دارید: به محض اینکه یک Prompt از ۱۰۰ هزار Token عبور کند، کل درخواست با نرخ ۰.۵۰ / ۲.۵۰ دلار محاسبه می‌شود و همچنین پارامتر `temperature` و پیش‌پرکردن پاسخ دستیار (Assistant prefill) را رد می‌کند؛ بنابراین پیش از انتقال ترافیک، مجموعه ارزیابی را اجرا کنید
+4. **اقامت داده صرفاً در موارد الزامی**: فعال‌سازی پردازش منحصراً در آمریکا فقط برای بخش‌هایی که نیاز دارند و اجرای بقیه روی نقاط پایانی سراسری ← بازگرداندن تا حدود ۱٬۳۵۰ دلار (همان ۱۰٪ هزینه اضافی)
+5. **بردارسازی مجدد دسته‌ای (Batch re-embedding)**: اجرای بردارسازی مجدد شبانه از طریق Batch API شرکت OpenAI ← ۵۰٪ تخفیف روی آن ردیف هزینه
+6. **موتور بازرتبه‌بندی با میزبانی اختصاصی**: جایگزینی API بازرتبه‌بندی با Qwen3-Reranker ← حذف حدود ۱٬۵۰۰ دلار هزینه API، اما یک کارت H100 اختصاصی بر اساس شاخص ۱ نوامبر Silicon Data (۲.۹۳ دلار به ازای هر ساعت GPU) ماهانه حدود ۲٬۱۰۰ دلار هزینه دارد؛ بنابراین این کار فقط روی ظرفیت GPU که از قبل در اختیار دارید صرفه اقتصادی دارد. همچنین اگر قوانین انطباق ارسال بخش‌های کاندیدا به یک API بازرتبه‌بندی را ممنوع کنند، این روش گزینه پیش‌فرض خواهد بود
 
 ---
 
-*Next: [Case Study: Conversational AI Agent](02-conversational-agent.md)*
+## درس‌های آموخته‌شده <a id="lessons-learned"></a>
+
+### مواردی که به‌خوبی کار کردند
+
+1. **جست‌وجوی ترکیبی**: ترکیب جست‌وجوی معنایی و کلیدواژه‌ای به‌طور چشمگیری نرخ بازیابی (Recall) را بهبود داد
+2. **بازرتبه‌بندی (Reranking)**: بهبود ۱۵ درصدی در دقت ۵ نتیجه برتر (Top-5 precision)
+3. **استنادهای شفاف**: اعتماد کاربران را جلب کرد
+4. **فیلتر کردن دسترسی در زمان بازیابی**: نیاز به فیلتر کردن پس از بازیابی (Post-hoc) را از بین برد
+
+### چالش‌های پیش‌آمده
+
+1. **استخراج جدول**: فایل‌های PDF دارای جدول‌های پیچیده نیازمند تجزیه (Parsing) سفارشی بودند
+2. **سرواژه‌ها (Acronyms)**: سرواژه‌های تخصصی دامنه به بسط و توضیح نیاز داشتند
+3. **تازگی داده‌ها**: دستیابی به تازگی زیر ۱ ساعت مستلزم دریافت جریانی (Streaming ingestion) بود
+4. **اسناد طولانی**: اسناد بیش از ۱۰۰ صفحه به Chunking سلسله‌مراتبی نیاز داشتند
+
+### کارهایی که در صورت تکرار متفاوت انجام می‌دادیم
+
+1. شروع زودتر با تجزیه (Parsing) بهتر اسناد
+2. ساخت خط لوله ارزیابی پیش از مقیاس‌دهی
+3. پیاده‌سازی ثبت گزارش (Logging) پرس‌وجوها از روز نخست
+4. ایجاد حلقه بازخورد با کاربران در مراحل زودتر
+
+---
+
+## راهنمای ارائه در مصاحبه <a id="interview-walkthrough"></a>
+
+### نحوه ارائه این طراحی در مصاحبه
+
+**شروع (۲ دقیقه):**
+«قصد دارم یک سیستم RAG سازمانی برای جست‌وجوی اسناد داخلی طراحی کنم. اجازه دهید ابتدا چند نیازمندی را شفاف‌سازی کنم...»
+
+**نیازمندی‌ها (۳ دقیقه):**
+- درباره مقیاس، تاخیر (Latency) و اهداف دقت بپرسید
+- نیازمندی‌های امنیتی را شفاف کنید
+- انواع اسناد و بسامد به‌روزرسانی آن‌ها را مشخص کنید
+
+**طراحی سطح بالا (۵ دقیقه):**
+- نمودار معماری را رسم کنید
+- اجزای کلیدی را توضیح دهید
+- انتخاب فناوری‌ها را توجیه کنید
+
+**بررسی عمیق (۱۰ دقیقه):**
+- استراتژی بازیابی (جست‌وجوی ترکیبی و دلیل انتخاب آن)
+- امنیت (فیلتر کردن مجوزها در زمان پرس‌وجو)
+- تولید پاسخ (مهندسی Prompt و استنادها)
+- مقیاس‌پذیری (Sharding، کشینگ و تکرارپذیری)
+
+**موازنه‌ها (Tradeoffs) (۵ دقیقه):**
+- هزینه در برابر تاخیر (انتخاب مدل)
+- اندازه کانتکست در برابر هزینه (بخش‌های کامل به ترکیب اطلاعات کمک می‌کنند اما هزینه ورودی را چندبرابر می‌کنند)
+- دقت در برابر تاخیر (بازرتبه‌بندی زمان می‌برد)
+- تازگی داده‌ها در برابر هزینه (پردازش جریانی در برابر دسته‌ای)
+
+**پایش و مانیتورینگ (۲ دقیقه):**
+- معیارهای کلیدی (تاخیر، دقت، بازخورد کاربران)
+- نحوه تشخیص مشکلات
+- حلقه بهبود مستمر
+
+---
+
+*بخش بعدی: [مطالعه موردی: Agent مکالمه‌ای هوش مصنوعی](02-conversational-agent.md)*
+
+</div>

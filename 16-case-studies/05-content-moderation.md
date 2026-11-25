@@ -1,67 +1,71 @@
-# Case Study: Content Moderation at Scale
+<div dir="rtl">
 
-This case study covers designing an AI-powered content moderation system for a social platform handling millions of posts daily.
+# مطالعه موردی: پایش محتوا در مقیاس بزرگ
 
-## Table of Contents
+این مطالعه موردی به طراحی یک سیستم پایش محتوای (Content Moderation) مبتنی بر هوش مصنوعی برای یک پلتفرم اجتماعی می‌پردازد که روزانه میلیون‌ها پست را پردازش می‌کند.
 
-- [Problem Statement](#problem-statement)
-- [Requirements Analysis](#requirements-analysis)
-- [Architecture Design](#architecture-design)
-- [Classification Pipeline](#classification-pipeline)
-- [Human-in-the-Loop](#human-in-the-loop)
-- [Adversarial Robustness](#adversarial-robustness)
-- [Results and Metrics](#results-and-metrics)
-- [Interview Walkthrough](#interview-walkthrough)
+## فهرست مطالب
 
----
-
-## Problem Statement
-
-**Company:** Social media platform with 50M daily active users
-
-**Current state:**
-- 10M posts per day
-- 500 human moderators
-- Average review time: 4 hours
-- False positive rate: 15%
-- Harmful content reaching users: 2%
-
-**Goals:**
-- Reduce harmful content exposure to < 0.1%
-- Review priority content in < 15 minutes
-- Reduce false positive rate to < 5%
-- Scale without linear moderator growth
+- [بیان مسئله](#problem-statement)
+- [تحلیل نیازمندی‌ها](#requirements-analysis)
+- [طراحی معماری](#architecture-design)
+- [خط لوله طبقه‌بندی](#classification-pipeline)
+- [انسان در چرخه (Human-in-the-Loop)](#human-in-the-loop)
+- [مقاومت در برابر حملات خصمانه](#adversarial-robustness)
+- [نتایج و معیارها](#results-and-metrics)
+- [مرور مصاحبه سیستم دیزاین](#interview-walkthrough)
 
 ---
 
-## Requirements Analysis
+## بیان مسئله <a id="problem-statement"></a>
 
-### Content Categories
+**شرکت:** پلتفرم شبکه اجتماعی با ۵۰ میلیون کاربر فعال روزانه
 
-| Category | Severity | Action | Latency |
-|----------|----------|--------|---------|
-| CSAM | Critical | Block + Report | Immediate |
-| Violence/Gore | High | Block + Review | < 1 min |
-| Hate speech | High | Block + Review | < 5 min |
-| Harassment | Medium | Review + Warn | < 15 min |
-| Spam | Medium | Deprioritize | < 1 hour |
-| Misinformation | Medium | Label + Review | < 1 hour |
-| Adult content | Low | Age-gate | < 1 hour |
+**وضعیت فعلی:**
+- روزانه ۱۰ میلیون پست
+- تعداد ۵۰۰ ناظر انسانی
+- میانگین زمان بررسی: ۴ ساعت
+- نرخ مثبت کاذب (False Positive): ۱۵٪
+- میزان محتوای مضرِ رسیده به کاربران: ۲٪
 
-### Accuracy Requirements
-
-| Metric | Target | Rationale |
-|--------|--------|-----------|
-| Recall (harmful) | > 99% | Minimize harm exposure |
-| Precision | > 95% | Minimize false positives |
-| Latency (critical) | < 1 min | Prevent spread |
-| Latency (standard) | < 15 min | Balance resources |
+**اهداف:**
+- کاهش مواجهه با محتوای مضر به کمتر از ۰.۱٪
+- بررسی محتوای دارای اولویت در کمتر از ۱۵ دقیقه
+- کاهش نرخ مثبت کاذب به کمتر از ۵٪
+- مقیاس‌پذیری بدون رشد خطی تعداد ناظران انسانی
 
 ---
 
-## Architecture Design
+## تحلیل نیازمندی‌ها <a id="requirements-analysis"></a>
 
-### High-Level Architecture
+### دسته‌بندی محتوا
+
+| دسته‌بندی | شدت | اقدام | تاخیر (Latency) |
+|----------|------|-------|-----------------|
+| محتوای سوءاستفاده جنسی از کودکان (CSAM) | بحرانی | مسدودسازی + گزارش | فوری |
+| خشونت و تصاویر دلخراش (Violence/Gore) | بالا | مسدودسازی + بررسی | کمتر از ۱ دقیقه |
+| نفرت‌پراکنی (Hate speech) | بالا | مسدودسازی + بررسی | کمتر از ۵ دقیقه |
+| آزار و اذیت (Harassment) | متوسط | بررسی + هشدار | کمتر از ۱۵ دقیقه |
+| هرزنامه (Spam) | متوسط | کاهش اولویت | کمتر از ۱ ساعت |
+| اطلاعات نادرست (Misinformation) | متوسط | برچسب‌گذاری + بررسی | کمتر از ۱ ساعت |
+| محتوای بزرگسالان (Adult content) | کم | اعمال محدودیت سنی | کمتر از ۱ ساعت |
+
+### نیازمندی‌های دقت
+
+| معیار | هدف | دلیل و توجیه |
+|-------|-----|--------------|
+| نرخ بازخوانی (Recall) برای محتوای مضر | بیش از ۹۹٪ | به حداقل رساندن مواجهه کاربران با محتوای آسیب‌زا |
+| نرخ دقت (Precision) | بیش از ۹۵٪ | به حداقل رساندن موارد مثبت کاذب |
+| تاخیر (موارد بحرانی) | کمتر از ۱ دقیقه | جلوگیری از انتشار گسترده |
+| تاخیر (موارد استاندارد) | کمتر از ۱۵ دقیقه | ایجاد تعادل میان منابع پردازشی و انسانی |
+
+---
+
+## طراحی معماری <a id="architecture-design"></a>
+
+### معماری سطح بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -112,7 +116,11 @@ This case study covers designing an AI-powered content moderation system for a s
 └──────────────────────────────────────────────────────────┘│    │
 ```
 
-The tiered pipeline as a decision tree. Each tier escalates only what it cannot decide cheaply; percentages are shares of all posts. The cost per decision spans roughly 1:50,000 from Tier 1 to Tier 4, so getting routing right is the main lever for unit economics:
+</div>
+
+این خط لوله چندلایه به شکل یک درخت تصمیم عمل می‌کند. هر لایه تنها مواردی را به لایه بالاتر ارجاع می‌دهد که نتواند با هزینه پایین درباره آن‌ها تصمیم بگیرد؛ درصدها نشان‌دهنده سهم از کل پست‌ها هستند. هزینه هر تصمیم از لایه ۱ تا لایه ۴ حدود ۱ به ۵۰٬۰۰۰ متغیر است، بنابراین مسیریابی (Routing) صحیح، اهرم اصلی بهینه‌سازی اقتصاد واحد (Unit Economics) به شمار می‌رود:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -127,20 +135,24 @@ flowchart TD
     T3 -->|uncertain: 1%| HR[Human Review<br/>minutes, $0.50]
 ```
 
-### Processing Tiers
+</div>
 
-| Tier | Method | Latency | Cost per decision | Coverage (share of all posts) |
-|------|--------|---------|-------------------|-------------------------------|
-| 1 | Hash/keyword/pattern | < 10ms | ~$0.00001 | 5% blocked |
-| 2 | Self-hosted safety classifiers | < 100ms | ~$0.0002 | 85% auto-decided |
-| 3 | LLM review (Gemini 3.8 Flash) | < 3s | ~$0.005 | 10% reviewed, 9% decided |
-| 4 | Human review | Minutes | $0.50 | 1% escalated |
+### لایه‌های پردازش
+
+| لایه | روش پردازش | تاخیر | هزینه به‌ازای هر تصمیم | پوشش (سهم از کل پست‌ها) |
+|------|------------|-------|------------------------|-------------------------|
+| لایه ۱ | تطبیق هش، کلیدواژه و الگو | کمتر از ۱۰ میلی‌ثانیه | حدود ۰.۰۰۰۰۱ دلار | ۵٪ مسدودشده |
+| لایه ۲ | طبقه‌بندی‌کننده‌های ایمنی خودمیزبان (Self-hosted) | کمتر از ۱۰۰ میلی‌ثانیه | حدود ۰.۰۰۰۲ دلار | ۸۵٪ تصمیم‌گیری خودکار |
+| لایه ۳ | بررسی با مدل LLM (مدل Gemini 3.8 Flash) | کمتر از ۳ ثانیه | حدود ۰.۰۰۵ دلار | ۱۰٪ بررسی‌شده، ۹٪ تصمیم‌گیری‌شده |
+| لایه ۴ | بررسی انسانی | چند دقیقه | ۰.۵۰ دلار | ۱٪ ارجاع‌شده به انسان |
 
 ---
 
-## Classification Pipeline
+## خط لوله طبقه‌بندی <a id="classification-pipeline"></a>
 
-### Tier 1: Fast Filters
+### لایه ۱: فیلترهای سریع
+
+<div dir="ltr">
 
 ```python
 class FastFilters:
@@ -190,7 +202,11 @@ class FastFilters:
         return FilterResult(action="continue", tier=1)
 ```
 
-### Tier 2: Self-Hosted Safety Classifiers
+</div>
+
+### لایه ۲: طبقه‌بندی‌کننده‌های ایمنی خودمیزبان
+
+<div dir="ltr">
 
 ```python
 class SafetyClassifiers:
@@ -210,7 +226,11 @@ class SafetyClassifiers:
         return {"verdict": verdict.label, "confidence": verdict.confidence, "tier": 2}
 ```
 
-### Tier 3: Nuanced LLM Review (Gemini 3.8 Flash)
+</div>
+
+### لایه ۳: بررسی ظریف با LLM (مدل Gemini 3.8 Flash)
+
+<div dir="ltr">
 
 ```python
 from google.genai import types
@@ -239,13 +259,17 @@ class NuanceReviewer:
         return json.loads(response.text)
 ```
 
+</div>
+
 ---
 
-## Human-in-the-Loop
+## انسان در چرخه (Human-in-the-Loop) <a id="human-in-the-loop"></a>
 
-### Review Queue Management
+### مدیریت صف بررسی
 
-Every piece of content traverses a lifecycle from submission to a terminal state. The lifecycle as a state machine makes SLOs concrete: each priority lane has a different target time-to-terminal, and an appeal can transition back to pending:
+هر محتوا چرخه حیاتی را از لحظه ارسال تا رسیدن به وضعیت نهایی طی می‌کند. نمایش این چرخه حیات به عنوان یک ماشین حالت (State Machine)، اهداف سطح خدمت (SLO) را ملموس می‌کند: هر صف اولویت، زمان هدف متفاوتی برای رسیدن به وضعیت نهایی دارد و درخواست تجدیدنظر می‌تواند محتوا را دوباره به وضعیت در انتظار بررسی بازگرداند:
+
+<div dir="ltr">
 
 ```mermaid
 stateDiagram-v2
@@ -269,6 +293,10 @@ stateDiagram-v2
     Appealed --> AppealQueue
     AppealQueue --> HumanReview : SLO 7 days
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class ReviewQueueManager:
@@ -318,7 +346,11 @@ class ReviewQueueManager:
         return priority
 ```
 
-### Moderator Interface
+</div>
+
+### رابط کاربری ناظران
+
+<div dir="ltr">
 
 ```python
 class ModeratorDecision:
@@ -352,23 +384,27 @@ class ModeratorDecision:
         )
 ```
 
+</div>
+
 ---
 
-## Adversarial Robustness
+## مقاومت در برابر حملات خصمانه <a id="adversarial-robustness"></a>
 
-### Evasion Techniques and Defenses
+### تکنیک‌های دور زدن سیستم و دفاع‌ها
 
-| Evasion Technique | Defense |
-|-------------------|---------|
-| Character substitution (h@te) | Normalization + homoglyph mapping |
-| Image text (text in images) | OCR pipeline |
-| Invisible characters | Unicode normalization |
-| Context manipulation | Multi-turn analysis |
-| Encoded content | Decoding pipeline |
-| Adversarial images | Robust vision models |
-| AI-generated imagery passed off as real | Read provenance metadata and watermark detectors; label per policy |
+| تکنیک دور زدن سیستم | راهکار دفاعی |
+|----------------------|--------------|
+| جایگزینی کاراکتر (مانند h@te) | نرمال‌سازی (Normalization) + نگاشت هموگلیف (Homoglyph) |
+| قرار دادن متن درون تصویر | خط لوله تشخیص متن در تصویر (OCR) |
+| استفاده از کاراکترهای نامرئی | نرمال‌سازی یونیکد (Unicode) |
+| دستکاری بافت و زمینه (Context) | تحلیل چندنوبتی (Multi-turn) |
+| محتوای رمزگذاری‌شده (Encoded) | خط لوله رمزگشایی (Decoding) |
+| تصاویر خصمانه (Adversarial) | مدل‌های بینایی مقاوم (Robust) |
+| جا زدن تصاویر تولیدشده با هوش مصنوعی به عنوان تصویر واقعی | خواندن فراداده اصالت (Provenance) و آشکارسازهای واترمارک؛ برچسب‌گذاری طبق خط‌مشی |
 
-### Defensive Pipeline
+### خط لوله دفاعی
+
+<div dir="ltr">
 
 ```python
 class AdversarialDefense:
@@ -410,93 +446,97 @@ class AdversarialDefense:
         return text
 ```
 
-### Provenance and AI-Generated Content
+</div>
 
-Two 2026 rule sets turn content provenance into a pipeline requirement for a platform this size:
+### اصالت (Provenance) و محتوای تولیدشده با هوش مصنوعی
 
-| Rule | Timing | What it means for the pipeline |
-|------|--------|--------------------------------|
-| California AI Transparency Act, as amended by AB 2713 (signed September 30, 2026) | Large-platform duties apply from January 1, 2027 | Detect provenance data and digital signatures, show users whether they are present and which GenAI system or capture device made the content, let users inspect or download that data, and do not knowingly strip standards-compliant provenance data on upload, distribution or download |
-| EU AI Act Article 50 and the marking Code of Practice | In force since August 2, 2026; systems already on the market have until December 2, 2026 to mark output | Generators must mark output in a machine-readable way; the Code asks signatories for signed metadata plus an imperceptible watermark (text under 200 tokens is exempt from watermarking) and a free detection tool, with watermark-detection interoperability due February 2, 2027. More uploads will arrive carrying markers your pipeline can read |
+دو مجموعه مقررات در سال ۲۰۲۶، بررسی اصالت محتوا (Content Provenance) را برای پلتفرمی در این مقیاس به یک الزام در خط لوله پردازش تبدیل کرده‌اند:
 
-The engineering consequence: image and video transcoders in the ingestion path, which usually discard metadata, must carry provenance through, and the moderation record should store detected provenance next to the classifier verdicts. Treat provenance as a signal, not a verdict: absent metadata proves nothing, because most content was never marked. If the platform also ships its own image generator, the AI Act's new Article 5 prohibition on generating non-consensual intimate imagery and CSAM applies from December 2, 2026, including to general-purpose generators without adequate safeguards.
+| مقررات | زمان‌بندی | پیامد برای خط لوله پردازش |
+|---------|-----------|----------------------------|
+| قانون شفافیت هوش مصنوعی کالیفرنیا، اصلاح‌شده با AB 2713 (امضاشده در ۳۰ سپتامبر ۲۰۲۶) | الزامات پلتفرم‌های بزرگ از ۱ ژانویه ۲۰۲۷ اعمال می‌شود | شناسایی داده‌های اصالت و امضاهای دیجیتال، نمایش وجود آن‌ها و اینکه کدام سیستم هوش مصنوعی مولد یا دستگاه ضبط، محتوا را ساخته است به کاربران، امکان مشاهده یا دانلود این داده‌ها توسط کاربران و عدم حذف آگاهانه داده‌های اصالت منطبق با استاندارد هنگام بارگذاری، توزیع یا دانلود |
+| ماده ۵۰ قانون هوش مصنوعی اتحادیه اروپا (EU AI Act) و آیین‌نامه علامت‌گذاری (Code of Practice) | لازم‌الاجرا از ۲ اوت ۲۰۲۶؛ سیستم‌های موجود در بازار تا ۲ دسامبر ۲۰۲۶ برای علامت‌گذاری خروجی فرصت دارند | تولیدکنندگان باید خروجی را به صورت ماشین‌خوان علامت‌گذاری کنند؛ آیین‌نامه از امضاکنندگان می‌خواهد فراداده امضاشده به همراه واترمارک نامحسوس (متن‌های زیر ۲۰۰ Token از واترمارک معاف هستند) و ابزار تشخیص رایگان ارائه دهند و سازگاری متقابل تشخیص واترمارک تا ۲ فوریه ۲۰۲۷ الزامی است. در نتیجه، بارگذاری‌های بیشتری با نشانگرهای قابل خواندن توسط خط لوله شما وارد سیستم می‌شوند |
+
+نتیجه مهندسی این مقررات آن است که مبدل‌های تصویر و ویدیو (Transcoders) در مسیر دریافت محتوا—که معمولاً فراداده‌ها را دور می‌ریزند—باید داده‌های اصالت را حفظ و منتقل کنند، و رکورد پایش محتوا باید اصالت شناسایی‌شده را در کنار رای طبقه‌بندی‌کننده‌ها ذخیره کند. اصالت را به عنوان یک سیگنال در نظر بگیرید، نه یک حکم قطعی: نبود فراداده هیچ چیزی را اثبات نمی‌کند، زیرا بخش عمده‌ای از محتواها اساساً علامت‌گذاری نشده‌اند. اگر پلتفرم خود نیز تولیدکننده تصویر ارائه می‌دهد، ممنوعیت جدید ماده ۵ قانون هوش مصنوعی اتحادیه اروپا درباره تولید تصاویر خصوصی بدون رضایت و CSAM از ۲ دسامبر ۲۰۲۶ اعمال می‌شود و شامل تولیدکننده‌های همه‌منظوره فاقد حفاظ‌های کافی نیز خواهد شد.
 
 ---
 
-## Results and Metrics
+## نتایج و معیارها <a id="results-and-metrics"></a>
 
-### Performance Comparison
+### مقایسه عملکرد
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Harmful content exposure | 2% | 0.08% | 96% reduction |
-| Review latency (critical) | 4 hours | 8 minutes | 30x faster |
-| False positive rate | 15% | 4.2% | 72% reduction |
-| Moderator efficiency | 50/day | 200/day | 4x increase |
+| معیار | پیش از پیاده‌سازی | پس از پیاده‌سازی | میزان بهبود |
+|-------|-------------------|------------------|-------------|
+| نرخ مواجهه با محتوای مضر | ۲٪ | ۰.۰۸٪ | ۹۶٪ کاهش |
+| تاخیر بررسی (موارد بحرانی) | ۴ ساعت | ۸ دقیقه | ۳۰ برابر سریع‌تر |
+| نرخ مثبت کاذب | ۱۵٪ | ۴.۲٪ | ۷۲٪ کاهش |
+| بهره‌وری ناظران | ۵۰ مورد در روز | ۲۰۰ مورد در روز | ۴ برابر افزایش |
 
-### Cost Analysis (November 2026, per Day at 10M Posts)
+### تحلیل هزینه (نوامبر ۲۰۲۶، به‌ازای هر روز با ۱۰ میلیون پست)
 
-| Component | Calculation | Daily Cost | Notes |
-|-----------|-------------|------------|-------|
-| Tier 1 filters | 10M × ~$0.00001 | ~$100 | CPU hash and pattern matching |
-| Tier 2 classifiers | 9.5M × ~$0.0002 | ~$2,000 | About 28 self-hosted H100s around the clock at $2.93 per GPU-hour (Silicon Data index, November 1, 2026), sized for peak load |
-| Tier 3 LLM review | 1M × ~$0.005 | ~$5,000 | Gemini 3.8 Flash, ~2.5K in (policy prompt plus image) / ~150 out at the January 2027 list price ($1.50 / $7.50); about half at the introductory price |
-| Human review | 100K × $0.50 | ~$50,000 | 500 moderators × 200 decisions/day |
-| **Total** | | **~$57,000/day** | Human review is ~88% |
+| بخش | محاسبه | هزینه روزانه | توضیحات |
+|-----|--------|--------------|---------|
+| فیلترهای لایه ۱ | ۱۰ میلیون × حدود ۰.۰۰۰۰۱ دلار | حدود ۱۰۰ دلار | تطبیق هش و الگو روی CPU |
+| طبقه‌بندی‌کننده‌های لایه ۲ | ۹.۵ میلیون × حدود ۰.۰۰۰۲ دلار | حدود ۲٬۰۰۰ دلار | حدود ۲۸ پردازنده H100 خودمیزبان به صورت شبانه‌روزی با نرخ ۲.۹۳ دلار به‌ازای هر ساعت GPU (شاخص Silicon Data، اول نوامبر ۲۰۲۶)، ظرفیت‌سنجی‌شده برای اوج بار |
+| بررسی با LLM در لایه ۳ | ۱ میلیون × حدود ۰.۰۰۵ دلار | حدود ۵٬۰۰۰ دلار | مدل Gemini 3.8 Flash، حدود ۲.۵ هزار Token ورودی (شامل Prompt خط‌مشی به‌علاوه تصویر) و حدود ۱۵۰ Token خروجی با قیمت فهرست ژانویه ۲۰۲۷ (۱.۵۰ دلار / ۷.۵۰ دلار)؛ در قیمت معرفی اولیه حدود نصف این مقدار است |
+| بررسی انسانی | ۱۰۰ هزار × ۰.۵۰ دلار | حدود ۵۰٬۰۰۰ دلار | ۵۰۰ ناظر انسانی × ۲۰۰ تصمیم در روز |
+| **مجموع** | | **حدود ۵۷٬۰۰۰ دلار در روز** | بررسی انسانی حدود ۸۸٪ کل هزینه است |
 
-**Why not send everything to the LLM?** At ~$0.005 per post, LLM review of all 10M posts would cost about $50,000 a day, as much as the whole human review budget, and would add seconds of latency to every post. Tier 2 classifiers cost about 25x less per post and answer in milliseconds. Flash-tier prices move fast in both directions, so re-run this comparison when they change; Gemini 3.8 Flash doubles on January 1, 2027.
+**چرا همه محتوا را به LLM نفرستیم؟** با هزینه حدود ۰.۰۰۵ دلار به‌ازای هر پست، بررسی تمام ۱۰ میلیون پست با LLM حدود ۵۰٬۰۰۰ دلار در روز هزینه دارد—هم‌اندازه کل بودجه بررسی انسانی—و چند ثانیه تاخیر به هر پست اضافه می‌کند. طبقه‌بندی‌کننده‌های لایه ۲ حدود ۲۵ برابر ارزان‌تر هستند و در چند میلی‌ثانیه پاسخ می‌دهند. قیمت‌های رده Flash به سرعت در هر دو جهت تغییر می‌کنند، بنابراین هنگام تغییر قیمت‌ها این مقایسه را دوباره انجام دهید؛ قیمت Gemini 3.8 Flash در ۱ ژانویه ۲۰۲۷ دو برابر می‌شود.
 
 > [!TIP]
-> **Production wisdom:** Native multimodal LLMs remove the separate OCR step at Tier 3, because the model reads text inside images directly. Keep normalization and OCR in front of Tiers 1 and 2: hash lists, keyword filters and small classifiers cannot read an image, and text-in-image evasion targets exactly those cheap layers.
+> **تجربه عملی در محیط تولید:** مدل‌های LLM چندوجهی بومی، نیاز به گام OCR جداگانه در لایه ۳ را برطرف می‌کنند، زیرا مدل مستقیماً متن داخل تصاویر را می‌خواند. با این حال، نرمال‌سازی و OCR را پیش از لایه‌های ۱ و ۲ نگه دارید: فهرست‌های هش، فیلترهای کلیدواژه و طبقه‌بندی‌کننده‌های کوچک قادر به خواندن تصویر نیستند و دور زدن سیستم با قرار دادن متن در تصویر دقیقاً همین لایه‌های ارزان را هدف می‌گیرد.
 
 ---
 
-## Interview Walkthrough
+## مرور مصاحبه سیستم دیزاین <a id="interview-walkthrough"></a>
 
-**Interviewer:** "Design a content moderation system for a social media platform."
+**مصاحبه‌کننده:** «یک سیستم پایش محتوا برای یک پلتفرم شبکه اجتماعی طراحی کنید.»
 
-**Strong response:**
+**پاسخ قوی:**
 
-1. **Clarify scale and requirements** (1 min)
-   - "What's the volume? What content types? What's acceptable false positive rate?"
-   - "Any regulatory requirements (CSAM reporting, GDPR, provenance display under California's AI Transparency Act from January 2027)?"
+1. **شفاف‌سازی مقیاس و نیازمندی‌ها** (۱ دقیقه)
+   - «حجم ورودی چقدر است؟ چه نوع محتواهایی داریم؟ نرخ مثبت کاذب قابل قبول چقدر است؟»
+   - «آیا الزامات نظارتی وجود دارد (مانند گزارش‌دهی CSAM، قانون GDPR، یا نمایش داده‌های اصالت طبق قانون شفافیت هوش مصنوعی کالیفرنیا از ژانویه ۲۰۲۷)؟»
 
-2. **Multi-tier architecture** (3 min)
-   - "I would use a cascade of increasing sophistication:"
-   - "Tier 1: Hash matching, keyword filters - instant, certain"
-   - "Tier 2: ML classifiers - fast, specialized"
-   - "Tier 3: LLM review - nuanced, context-aware"
-   - "Tier 4: Human review - final arbiter"
-   - "Each tier handles what the previous cannot"
+2. **معماری چندلایه** (۳ دقیقه)
+   - «از یک آبشار (Cascade) با پیچیدگی افزایشی استفاده می‌کنم:»
+   - «لایه ۱: تطبیق هش و فیلترهای کلیدواژه — آنی و قطعی»
+   - «لایه ۲: طبقه‌بندی‌کننده‌های یادگیری ماشین — سریع و تخصصی»
+   - «لایه ۳: بررسی با LLM — ظریف و آگاه از بافت و زمینه»
+   - «لایه ۴: بررسی انسانی — داور نهایی»
+   - «هر لایه مواردی را مدیریت می‌کند که لایه قبلی قادر به تصمیم‌گیری درباره آن‌ها نیست»
 
-3. **Prioritization is key** (2 min)
-   - "Not all harmful content is equal. CSAM and violence need immediate action. Hate speech is priority but not instant. Spam can wait."
-   - "Priority queue based on severity, reach, and confidence"
+3. **اولویت‌بندی کلید موفقیت است** (۲ دقیقه)
+   - «همه محتواهای مضر یکسان نیستند. محتوای CSAM و خشونت نیازمند اقدام فوری هستند. نفرت‌پراکنی اولویت دارد اما نه به شکل آنی. هرزنامه می‌تواند منتظر بماند.»
+   - «صف اولویت بر اساس شدت تخلف، میزان گستردگی بازدید (Reach) و سطح اطمینان مدل تنظیم می‌شود»
 
-4. **Human-in-the-loop design** (2 min)
-   - "Humans for low-confidence decisions and appeals"
-   - "AI decides about 99% automatically, which keeps human review at a size 500 moderators can staff"
-   - "Feedback loop: human decisions improve ML models"
+4. **طراحی انسان در چرخه** (۲ دقیقه)
+   - «حضور انسان برای تصمیمات با اطمینان پایین و درخواست‌های تجدیدنظر»
+   - «هوش مصنوعی حدود ۹۹٪ موارد را به صورت خودکار تصمیم‌گیری می‌کند که این امر حجم بررسی انسانی را در حدی نگه می‌دارد که ۵۰۰ ناظر از عهده آن برآیند»
+   - «حلقه بازخورد: تصمیمات انسانی مدل‌های یادگیری ماشین را بهبود می‌دهند»
 
-5. **Adversarial robustness** (2 min)
-   - "Users will evade detection. Defenses include:"
-   - "Text normalization for obfuscation"
-   - "OCR for text in images"
-   - "Continuous model updates as evasion evolves"
+5. **مقاومت در برابر حملات خصمانه** (۲ دقیقه)
+   - «کاربران تلاش می‌کنند شناسایی را دور بزنند. راهکارهای دفاعی شامل موارد زیر است:»
+   - «نرمال‌سازی متن برای مقابله با مبهم‌سازی (Obfuscation)»
+   - «فناوری OCR برای استخراج متن درون تصاویر»
+   - «به‌روزرسانی مستمر مدل‌ها همگام با تکامل روش‌های دور زدن سیستم»
 
-6. **Metrics** (1 min)
-   - "Primary: harmful content exposure rate (target < 0.1%)"
-   - "Secondary: false positive rate (user experience)"
-   - "Operational: review latency, moderator throughput"
-
----
-
-## References
-
-- Meta Content Moderation: https://transparency.meta.com/
-- Google Perspective API (sunsetting; service ends December 31, 2026, so do not build new dependencies on it): https://perspectiveapi.com/
-- OpenAI Moderation: https://developers.openai.com/api/docs/guides/moderation
+6. **معیارهای ارزیابی** (۱ دقیقه)
+   - «معیار اصلی: نرخ مواجهه با محتوای مضر (هدف کمتر از ۰.۱٪)»
+   - «معیار ثانویه: نرخ مثبت کاذب (تجربه کاربری)»
+   - «معیارهای عملیاتی: تاخیر بررسی، توان عملیاتی (Throughput) ناظران»
 
 ---
 
-*Next: [Real-Time AI Search Case Study](06-real-time-search.md). For current model prices, see the [LLM Pricing Reference](../02-model-landscape/03-pricing-and-costs.md).*
+## منابع
+
+- سیستم پایش محتوای متا (Meta Content Moderation): https://transparency.meta.com/
+- سرویس Google Perspective API (در حال بازنشستگی؛ این سرویس در ۳۱ دسامبر ۲۰۲۶ متوقف می‌شود، بنابراین وابستگی جدیدی روی آن نسازید): https://perspectiveapi.com/
+- مستندات OpenAI Moderation: https://developers.openai.com/api/docs/guides/moderation
+
+---
+
+*بعدی: [مطالعه موردی جستجوی بلادرنگ مبتنی بر هوش مصنوعی](06-real-time-search.md). برای اطلاع از قیمت‌های به‌روز مدل‌ها، به [مرجع قیمت‌گذاری LLM](../02-model-landscape/03-pricing-and-costs.md) مراجعه کنید.*
+
+</div>

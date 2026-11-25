@@ -1,28 +1,32 @@
-# Case Study: Voice AI Assistant for Healthcare
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: دستیار صوتی هوش مصنوعی برای حوزه سلامت <a id="case-study-voice-ai-assistant-for-healthcare"></a>
 
-A hospital network wants a **voice-based AI assistant** that helps nurses document patient encounters. The nurse speaks naturally; the AI shows a live transcript and produces a structured clinical note for review.
+## بیان مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- HIPAA compliance (PHI handling)
-- Works in noisy hospital environments
-- Real-time transcription (under 500ms latency)
-- Must use medical terminology correctly
-- Integration with existing EHR (Epic or Oracle Health, formerly Cerner)
-- Patient consent to recording, and disclosure of AI use where state law requires it (Texas has required health-care providers to disclose AI use since January 1, 2026)
+یک شبکه بیمارستانی به دنبال یک **دستیار هوش مصنوعی مبتنی بر صدا** است که به پرستاران در مستندسازی ویزیت‌های بیماران کمک کند. پرستار به‌صورت طبیعی صحبت می‌کند؛ هوش مصنوعی متن زنده (Live Transcript) را نمایش می‌دهد و یک یادداشت بالینی ساختاریافته برای بازبینی تولید می‌کند.
 
-This is the **ambient scribe** pattern, now a mainstream product category: EHR vendors are building it in (Epic's AI Charting), and published outcome studies set realistic expectations (see [Measuring Success](#measuring-success)).
+**محدودیت‌های مطرح‌شده در مصاحبه:**
+- انطباق با قانون HIPAA (مدیریت اطلاعات سلامت محافظت‌شده یا PHI)
+- عملکرد صحیح در محیط‌های پرسر‌وصدای بیمارستان
+- رونویسی بلادرنگ (با تاخیر (Latency) زیر ۵۰۰ میلی‌ثانیه)
+- استفاده دقیق و صحیح از اصطلاحات پزشکی
+- یکپارچه‌سازی با سیستم پرونده الکترونیک سلامت (EHR) موجود (سیستم Epic یا Oracle Health، که پیش‌تر Cerner نام داشت)
+- اخذ رضایت بیمار برای ضبط صدا، و اعلام استفاده از هوش مصنوعی در مواردی که قانون ایالتی الزامی کرده است (ایالت تگزاس از ۱ ژانویه ۲۰۲۶ ارائه‌دهندگان خدمات درمانی را ملزم به افشای استفاده از هوش مصنوعی کرده است)
 
----
-
-## The Interview Question
-
-> "Design a voice assistant that a nurse can speak to during a patient visit, and it generates a structured clinical note in the EHR."
+این همان الگوی **نویسنده محیطی (Ambient Scribe)** است که اکنون به یک رده محصول رایج تبدیل شده است: فروشندگان EHR آن را به‌صورت داخلی تعبیه می‌کنند (مانند قابلیت AI Charting در Epic)، و مطالعات منتشرشده درباره نتایج، انتظارات واقع‌بینانه‌ای را مشخص می‌کنند (بخش [سنجش موفقیت](#measuring-success) را ببینید).
 
 ---
 
-## Solution Architecture
+## سوال مصاحبه <a id="the-interview-question"></a>
+
+> «یک دستیار صوتی طراحی کنید که پرستار بتواند هنگام ویزیت بیمار با آن صحبت کند و این دستیار یک یادداشت بالینی ساختاریافته در سیستم EHR تولید کند.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -53,33 +57,37 @@ flowchart TB
     end
 ```
 
+</div>
+
 ---
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. Where ASR Runs: Cloud Under a BAA, or On-Prem
+### ۱. محل اجرای ASR: ابر تحت قرارداد BAA یا درون‌سازمانی (On-Prem) <a id="1-where-asr-runs-cloud-under-a-baa-or-on-prem"></a>
 
-**Answer:** HIPAA does not require on-premises processing. It requires safeguards and a **business associate agreement (BAA)** with every vendor that handles PHI, and most commercial ambient scribes are cloud-delivered. So the choice turns on hospital policy, ward connectivity, cost, and accuracy, not legality:
+**پاسخ:** قانون HIPAA پردازش درون‌سازمانی (On-Premises) را الزامی نمی‌کند. این قانون وجود تدابیر حفاظتی و انعقاد یک **توافق‌نامه همکار تجاری (BAA)** با هر فروشنده‌ای که اطلاعات PHI را پردازش می‌کند الزامی می‌داند، و بیشتر محصولات تجاری نویسنده محیطی به‌صورت ابری ارائه می‌شوند. بنابراین، انتخاب میان این دو گزینه به سیاست بیمارستان، وضعیت اتصال بخش‌ها، هزینه و دقت بستگی دارد، نه الزام قانونی:
 
-| Option | Examples | HIPAA posture | Cost | Watch for |
+| گزینه | نمونه‌ها | وضعیت HIPAA | هزینه | نکات قابل توجه |
 |--------|----------|---------------|------|-----------|
-| Cloud streaming STT under a BAA | OpenAI `gpt-live-transcribe` ($0.017/min); AssemblyAI Universal-3.6 Pro Realtime ($0.45/hr, September 2026; it replaced Universal-3.5 Pro Realtime); ElevenLabs Scribe v2 Realtime ($0.39/hr) | BAA plus zero retention. OpenAI's file-transcription endpoint retains no data, but streaming runs on a separate Realtime endpoint, so confirm its retention; ElevenLabs signs a BAA only on Enterprise and requires zero retention | Per minute, no GPUs | Confirm the exact endpoint is in BAA scope; streaming redaction gaps (AssemblyAI redacts final turns only, and no audio) |
-| Medical-tuned cloud STT | ElevenLabs Scribe v2 Medical (GA September 11, 2026); Deepgram `nova-3-medical` (clinical), with `nova-3-pharma` (September 17, 2026) for medication-name-heavy workflows; AssemblyAI Medical Mode (`"domain": "medical-v1"`, +$0.15/hr on Universal-3.6 Pro Realtime, about 20% fewer missed clinical entities, vendor-reported) | Same BAA requirement | Per minute | Better clinical vocabulary; validate on your own ward recordings |
-| On-prem streaming model | NVIDIA `nemotron-3.5-asr-streaming-0.6b` (OpenMDW license, commercial use allowed; chunk size selectable from 80 to 1,120 ms) | No audio leaves the network | GPU fleet plus operations; cheap only at high utilization | You own updates, scaling, failover, and the accuracy eval |
+| سرویس STT جریانی (Streaming) ابری تحت قرارداد BAA | مدل `gpt-live-transcribe` از OpenAI ($0.017 در دقیقه)؛ سرویس AssemblyAI Universal-3.6 Pro Realtime ($0.45 در ساعت، سپتامبر ۲۰۲۶؛ جایگزین Universal-3.5 Pro Realtime شد)؛ سرویس ElevenLabs Scribe v2 Realtime ($0.39 در ساعت) | قرارداد BAA به همراه عدم نگهداری داده (Zero Retention). نقطه پایانی رونویسی فایل OpenAI هیچ داده‌ای نگه نمی‌دارد، اما پردازش جریانی روی یک Endpoint جداگانه به نام Realtime اجرا می‌شود، بنابراین وضعیت نگهداری داده آن را تایید کنید؛ شرکت ElevenLabs فقط در پلن Enterprise قرارداد BAA امضا می‌کند و نیازمند فعال‌سازی Zero Retention است | پرداخت دقیقه‌ای، بدون نیاز به GPU | حتماً مطمئن شوید که Endpoint دقیق در محدوده BAA قرار دارد؛ شکاف‌های حذف اطلاعات حساس (Redaction) در حالت جریانی (سرویس AssemblyAI فقط نوبت‌های نهایی را سانسور می‌کند و فایل صوتی را سانسور نمی‌کند) |
+| سرویس STT ابری بهینه‌شده برای پزشکی | سرویس ElevenLabs Scribe v2 Medical (عرضه عمومی ۱۱ سپتامبر ۲۰۲۶)؛ مدل `nova-3-medical` از Deepgram (بالینی)، به همراه `nova-3-pharma` (۱۷ سپتامبر ۲۰۲۶) برای جریان‌های کاری سرشار از نام داروها؛ حالت پزشکی AssemblyAI (`"domain": "medical-v1"`، به علاوه $0.15 در ساعت روی Universal-3.6 Pro Realtime، حدود ۲۰٪ موارد از قلم‌افتاده کمتر در موجودیت‌های بالینی بنا بر گزارش فروشنده) | همان الزام قرارداد BAA | پرداخت دقیقه‌ای | واژگان بالینی بهتر؛ روی فایل‌های ضبط‌شده بخش خودتان اعتبارسنجی کنید |
+| مدل جریانی (Streaming) درون‌سازمانی (On-Prem) | مدل `nemotron-3.5-asr-streaming-0.6b` از NVIDIA (مجوز OpenMDW، استفاده تجاری مجاز است؛ اندازه Chunk قابل انتخاب از ۸۰ تا ۱٬۱۲۰ میلی‌ثانیه) | هیچ فایل صوتی از شبکه خارج نمی‌شود | ناوگان GPU به همراه هزینه‌های عملیاتی؛ تنها در بهره‌برداری بالا به‌صرفه است | مسئولیت به‌روزرسانی‌ها، مقیاس‌پذیری، بازیابی از خطا (Failover) و ارزیابی دقت بر عهده خودتان است |
 
-**Our choice:** medical cloud STT under a BAA with zero retention by default, and the on-prem streaming model for sites whose security policy forbids audio egress or whose ward connectivity is unreliable. Both sit behind one interface, so a site can switch without touching the rest of the pipeline. The on-prem model's chunk size is the latency dial: smaller chunks cut delay and cost accuracy.
+**انتخاب ما:** استفاده از سرویس STT ابری پزشکی تحت قرارداد BAA با عدم نگهداری داده به‌صورت پیش‌فرض، و مدل جریانی درون‌سازمانی برای مراکزی که سیاست امنیتی آن‌ها خروج صدا را ممنوع کرده یا اتصال شبکه در بخش‌هایشان ناپایدار است. هر دو پشت یک رابط (Interface) واحد قرار می‌گیرند تا هر مرکز بتواند بدون تغییر سایر بخش‌های پایپلاین بین آن‌ها جابه‌جا شود. اندازه Chunk در مدل درون‌سازمانی اهرم تنظیم تاخیر است: Chunkهای کوچک‌تر تاخیر را کاهش می‌دهند اما از دقت می‌کاهند.
 
-**Why not Whisper Large v3 on local GPUs**, the default for this design a couple of years ago:
+**چرا از Whisper Large v3 روی GPUهای محلی استفاده نمی‌کنیم**، در حالی که چند سال پیش انتخاب پیش‌فرض برای این طراحی بود:
 
-- It is not natively streaming, so meeting a 500 ms transcript budget means chunking workarounds.
-- It now trails open models on accuracy: 5.78% average WER on the Open ASR Leaderboard (October 2026 snapshot) against 4.31% for Qwen3-ASR-1.7B and 4.70% for parakeet-tdt-0.6b-v2.
-- It **hallucinates in silence**. The Careless Whisper study (FAccT 2024) found entirely fabricated phrases in about 1% of transcriptions, 38% of them harmful, and disproportionately for speakers with long non-vocal stretches. A clinical encounter is full of pauses while the nurse examines the patient.
+- این مدل به‌صورت ذاتی جریانی (Streaming) نیست؛ بنابراین دستیابی به بودجه ۵۰۰ میلی‌ثانیه‌ای رونویسی نیازمند ترفندهای Chunking است.
+- اکنون از نظر دقت از مدل‌های متن‌باز عقب‌تر است: میانگین نرخ خطای کلمه (WER) معادل ۵.۷۸٪ در رتبه‌بندی Open ASR Leaderboard (آمار اکتبر ۲۰۲۶) در مقایسه با ۴.۳۱٪ برای Qwen3-ASR-1.7B و ۴.۷۰٪ برای parakeet-tdt-0.6b-v2.
+- این مدل **در سکوت دچار توهم (Hallucination) می‌شود**. مطالعه Careless Whisper (کنفرانس FAccT 2024) نشان داد در حدود ۱٪ از رونویسی‌ها عبارات کاملاً ساختگی ظاهر می‌شود که ۳۸٪ آن‌ها آسیب‌زا هستند و این مشکل به‌طور نامتناسبی برای گویندگانی رخ می‌دهد که بخش‌های غیرگفتاری طولانی دارند. یک ویزیت بالینی پر از مکث‌هایی است که پرستار مشغول معاینه بیمار است.
 
-OpenAI's hosted Whisper is going away too: `whisper-1`, along with the `gpt-4o-*-transcribe` models, shuts down February 26, 2027 (replacements: `gpt-transcribe` and `gpt-live-transcribe`).
+نسخه میزبانی‌شده Whisper توسط OpenAI نیز در حال کنار گذاشته شدن است: مدل `whisper-1` به همراه مدل‌های `gpt-4o-*-transcribe` در تاریخ ۲۶ فوریه ۲۰۲۷ خاموش می‌شوند (جایگزین‌ها: `gpt-transcribe` و `gpt-live-transcribe`).
 
-### 2. Speaker Diarization: Who Said What
+### ۲. تفکیک گوینده (Speaker Diarization): چه کسی چه گفت <a id="2-speaker-diarization-who-said-what"></a>
 
-**Answer:** The note must distinguish "Patient reports headache" from "Nurse observes patient grimacing." We use:
+**پاسخ:** یادداشت باید میان «بیمار از سردرد شکایت دارد» و «پرستار چهره درهم‌کشیده بیمار را مشاهده می‌کند» تمایز قائل شود. ما از این روش استفاده می‌کنیم:
+
+<div dir="ltr">
 
 ```python
 # Pyannote for speaker diarization
@@ -91,11 +99,15 @@ roles = identify_roles(diarization, known_nurse_voiceprint)
 # Output: {"SPEAKER_0": "nurse", "SPEAKER_1": "patient"}
 ```
 
-The nurse's device enrolls their voiceprint at setup for role identification. A voiceprint is a **biometric identifier** under Illinois BIPA and Texas law, so enrollment needs written consent, a retention schedule, and deletion when the nurse leaves. Never enroll patients. If you use a vendor's built-in diarization instead, check its lifecycle: OpenAI's `gpt-4o-transcribe-diarize` shuts down February 26, 2027.
+</div>
 
-### 3. Medical NER for Structured Extraction
+دستگاه پرستار هنگام راه‌اندازی، اثر صدای (Voiceprint) او را برای تشخیص نقش ثبت می‌کند. اثر صدا طبق قانون BIPA ایلینوی و قوانین تگزاس یک **شناسه بیومتریک** محسوب می‌شود؛ بنابراین ثبت آن نیازمند رضایت کتبی، برنامه زمان‌بندی نگهداری داده و حذف آن هنگام ترک کار پرستار است. هرگز اثر صدای بیماران را ثبت نکنید. اگر به‌جای آن از قابلیت تفکیک گوینده داخلی یک فروشنده استفاده می‌کنید، چرخه عمر آن را بررسی کنید: مدل `gpt-4o-transcribe-diarize` از OpenAI در تاریخ ۲۶ فوریه ۲۰۲۷ متوقف می‌شود.
 
-**Answer:** We need structured data, not just prose. Medical NER extracts:
+### ۳. شناسایی موجودیت‌های پزشکی (Medical NER) برای استخراج ساختاریافته <a id="3-medical-ner-for-structured-extraction"></a>
+
+**پاسخ:** ما به داده‌های ساختاریافته نیاز داریم، نه صرفاً متن پیوسته. ماژول Medical NER موارد زیر را استخراج می‌کند:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -108,25 +120,29 @@ flowchart LR
     NER --> VITALS[Vitals: None mentioned]
 ```
 
-We use a fine-tuned BioBERT model for NER, not the LLM, because NER needs to be fast and deterministic.
+</div>
+
+ما برای NER از یک مدل BioBERT که Fine-tuning شده استفاده می‌کنیم و نه از LLM، زیرا NER باید سریع و قطعی (Deterministic) باشد.
 
 ---
 
-## Handling Noisy Environments
+## مدیریت محیط‌های پرسر‌وصدا <a id="handling-noisy-environments"></a>
 
-Hospitals are loud, and the dangerous failure is not a garbled word but a confident sentence nobody said. We use multiple strategies:
+بیمارستان‌ها شلوغ و پرسر‌وصدا هستند، و خطای خطرناک یک کلمه نامفهوم نیست، بلکه یک جمله با اطمینان بالاست که هیچ‌کس آن را نگفته است. ما از چندین راهبرد استفاده می‌کنیم:
 
-1. **Directional microphones** on nurse devices focus on nearby speech
-2. **VAD gating**: silence and non-speech never reach the ASR, which keeps long pauses, where hallucinated phrases concentrate, away from the model
-3. **Speaker isolation**: suppress background voices so the next bed's conversation does not enter the note (AssemblyAI's Voice Focus, for example, adds $0.10/hr)
-4. **Confidence thresholds**: if ASR confidence is <0.7, we flag the span for nurse review rather than guessing
-5. **Vocabulary biasing**: medical terms and the unit's formulary go to the ASR as keyterms (Gemini 3.5 Transcribe, for example, accepts up to 1,000 biasing terms)
+1. **میکروفون‌های جهت‌دار (Directional Microphones)** روی دستگاه‌های پرستار، بر گفتار نزدیک تمرکز می‌کنند
+2. **دروازه‌بندی تشخیص فعالیت گفتار (VAD Gating)**: سکوت و اصوات غیرگفتاری هرگز به ASR نمی‌رسند که این کار مکث‌های طولانی — یعنی جایی که عبارات توهمی متمرکز می‌شوند — را از مدل دور نگه می‌دارد
+3. **جداسازی گوینده (Speaker Isolation)**: صداهای پس‌زمینه را سرکوب می‌کند تا مکالمه تخت کناری وارد یادداشت نشود (به‌عنوان مثال، قابلیت Voice Focus در AssemblyAI هزینه‌ای معادل $0.10 در ساعت اضافه می‌کند)
+4. **آستانه‌های اطمینان (Confidence Thresholds)**: اگر اطمینان ASR کمتر از ۰.۷ باشد، به‌جای حدس زدن، آن بازه را برای بازبینی پرستار علامت‌گذاری می‌کنیم
+5. **سوگیری واژگان (Vocabulary Biasing)**: اصطلاحات پزشکی و فهرست داروهای (Formulary) بخش به‌عنوان کلیدواژه به ASR ارسال می‌شوند (برای مثال، مدل Gemini 3.5 Transcribe تا ۱٬۰۰۰ عبارت سوگیری را می‌پذیرد)
 
 ---
 
-## The Structured Note Format
+## قالب یادداشت ساختاریافته <a id="the-structured-note-format"></a>
 
-The LLM produces SOAP-format notes:
+مدل LLM یادداشت‌هایی در قالب SOAP تولید می‌کند:
+
+<div dir="ltr">
 
 ```python
 note_prompt = f"""
@@ -148,13 +164,17 @@ P (Plan): Next steps, orders
 """
 ```
 
-Generate into a JSON schema with the provider's structured outputs rather than parsing prose, and run a **grounding check** before review: every clinical statement in the draft must point to a transcript span, and unsupported statements are highlighted on the review screen. The note model runs under the same BAA and zero-retention terms as the ASR; keep the model name in configuration, because hosted model lines turn over several times a year.
+</div>
+
+به‌جای تجزیه متن پیوسته، خروجی را با استفاده از قابلیت Structured Outputs ارائه‌دهنده در یک اسکیمای JSON تولید کنید و پیش از بازبینی، یک **بررسی استناد (Grounding Check)** اجرا کنید: هر عبارت بالینی در پیش‌نویس باید به یک بخش از رونوشت اشاره کند و عبارات بدون پشتوانه در صفحه بازبینی برجسته می‌شوند. مدل تولید یادداشت تحت همان شرایط BAA و عدم نگهداری داده (Zero Retention) مدل ASR اجرا می‌شود؛ نام مدل را در فایل پیکربندی نگه دارید، زیرا نسل‌های مدل‌های میزبانی‌شده چندین بار در سال تغییر می‌کنند.
 
 ---
 
-## EHR Integration (FHIR)
+## یکپارچه‌سازی با سیستم EHR (استاندارد FHIR) <a id="ehr-integration-fhir"></a>
 
-The output must be machine-readable for the EHR:
+خروجی باید برای سیستم EHR قابل خواندن توسط ماشین باشد:
+
+<div dir="ltr">
 
 ```json
 {
@@ -177,58 +197,62 @@ The output must be machine-readable for the EHR:
 }
 ```
 
+</div>
+
 ---
 
-## Latency Budget
+## بودجه تاخیر (Latency Budget) <a id="latency-budget"></a>
 
-The constraint says "real-time," but only one path needs to be real time. Splitting the budget is the staff-level move:
+محدودیت مسئله از عبارت «بلادرنگ» (Real-Time) نام می‌برد، اما تنها یک مسیر نیاز به بلادرنگ بودن دارد. تقسیم بودجه تاخیر همان تصمیم در سطح مهندس ارشد (Staff-Level) است:
 
-| Path | Budget | What sets it |
+| مسیر | بودجه تاخیر | عامل تعیین‌کننده |
 |------|--------|--------------|
-| Live transcript on the nurse's screen | Partials under 500 ms | Streaming STT partials. Measure p95, not median: for Universal-3.6 Pro Realtime (September 2026), AssemblyAI reports streaming latency of about 150 ms P50 and 240 ms P90 after VAD, but a median end-of-turn latency of 537 ms across 12,460 English voice-agent conversations (vendor-reported), so a 500 ms requirement has to apply to partial transcripts, not finalized text |
-| Draft note ready after the encounter ends | Under 60 seconds | Diarization, NER, LLM structuring, and grounding checks run once on the full transcript |
-| Nurse review and sign | Human time | The review screen, not the model, is the bottleneck |
+| متن زنده روی صفحه پرستار | نتایج جزئی (Partials) زیر ۵۰۰ میلی‌ثانیه | نتایج جزئی STT جریانی. معیار p95 را بسنجید، نه میانه (Median) را: برای Universal-3.6 Pro Realtime (سپتامبر ۲۰۲۶)، شرکت AssemblyAI تاخیر جریانی حدود ۱۵۰ میلی‌ثانیه در P50 و ۲۴۰ میلی‌ثانیه در P90 را پس از VAD گزارش می‌کند، اما میانه تاخیر پایان نوبت (End-of-Turn) در ۱۲٬۴۶۰ مکالمه صوتی انگلیسی ایجنت‌های صوتی ۵۳۷ میلی‌ثانیه بوده است (گزارش فروشنده)؛ بنابراین الزام ۵۰۰ میلی‌ثانیه‌ای باید روی رونوشت‌های جزئی اعمال شود، نه متن نهایی‌شده |
+| آماده شدن پیش‌نویس یادداشت پس از پایان ویزیت | زیر ۶۰ ثانیه | تفکیک گوینده (Diarization)، استخراج موجودیت‌ها (NER)، ساختاردهی با LLM و بررسی‌های استناد (Grounding) یک بار روی کل رونوشت اجرا می‌شوند |
+| بازبینی و امضای پرستار | زمان انسانی | گلوگاه واقعی صفحه بازبینی است، نه مدل |
 
-Generating the note **asynchronously** after the encounter, rather than sentence by sentence, gives the structurer the whole conversation (corrections, later vitals) and removes the LLM from the latency-critical path entirely.
-
----
-
-## Measuring Success
-
-**Quality: the draft-to-signed diff.** Every nurse edit is a labeled correction. Track edit distance per SOAP section, per unit, and per nurse; a jump after a vendor or model change is the regression alarm. Pair it with the grounding check's unsupported-statement rate.
-
-**Value depends on adoption, not licenses.** A JAMA study across five academic health systems (April 2026, as summarized in trade coverage) found ambient scribes cut documentation by 16.0 minutes per 8-hour shift on average and 27.3 minutes for heavy users (half or more of visits), but only 32% of adopters were heavy users and after-hours EHR time did not fall significantly. An earlier JAMA Network Open study (October 2025, n=263) found burnout fell from 51.9% to 38.8% after 30 days. Both studied ambulatory physicians and advanced practice clinicians, not inpatient nurses, so measure your own: minutes documented per shift, after-hours charting, and usage per nurse.
+تولید یادداشت به‌صورت **ناهمگام (Asynchronous)** پس از پایان ویزیت، به‌جای تولید جمله به جمله، کل مکالمه (اصلاحات و علائم حیاتی بعدی) را در اختیار ساختاردهنده قرار می‌دهد و LLM را به‌طور کامل از مسیر بحرانی تاخیر حذف می‌کند.
 
 ---
 
-## Interview Follow-Up Questions
+## سنجش موفقیت <a id="measuring-success"></a>
 
-**Q: How do you handle medical abbreviations and jargon?**
+**کیفیت: تفاوت میان پیش‌نویس و نسخه امضاشده (Draft-to-Signed Diff).** هر ویرایش پرستار یک اصلاح برچسب‌گذاری‌شده محسوب می‌شود. فاصله ویرایشی (Edit Distance) را به تفکیک هر بخش SOAP، هر بخش بیمارستان و هر پرستار ردیابی کنید؛ جهش ناگهانی پس از تغییر فروشنده یا مدل، زنگ خطر افت کیفیت (Regression) است. این معیار را در کنار نرخ عبارات بدون پشتوانه در بررسی استناد قرار دهید.
 
-A: We maintain a custom vocabulary list that maps abbreviations (PRN, BID, SOB) to full terms. This is injected into both the ASR model (for better recognition) and the LLM prompt (for correct expansion in notes).
-
-**Q: What if the nurse makes a correction mid-sentence?**
-
-A: We detect correction patterns ("actually, I mean...", "no wait, it's...") and use only the corrected version. The LLM is instructed to prefer later statements when conflicts exist, which is another reason to structure the note after the encounter rather than live.
-
-**Q: How do you ensure the AI does not miss critical information?**
-
-A: We have a "completeness check" that verifies the note includes all extracted entities. If NER found "chest pain" but the SOAP note does not mention it, we flag for nurse review. We also run a "safety critical" detector that escalates mentions of suicidal ideation, abuse, or other mandatory reporting triggers.
-
-**Q: Six months after launch, how do you prove the system is safe and worth paying for?**
-
-A: Safety: the grounding check's unsupported-statement rate, the draft-to-signed edit distance by section, and a monthly human audit of a sample of signed notes against audio, with extra scrutiny on encounters with long silences, where ASR hallucination concentrates. Value: documentation minutes per shift and after-hours charting per nurse, segmented by how often each nurse actually uses the tool, because published savings are concentrated in heavy users. If adoption is low, the fix is workflow and training, not a better model.
+**ارزش واقعی به پذیرش و استفاده کاربران وابسته است، نه تعداد لایسنس‌ها.** یک مطالعه در نشریه JAMA در پنج سیستم سلامت دانشگاهی (آوریل ۲۰۲۶، طبق خلاصه‌های رسانه‌های تخصصی) نشان داد که نویسنده‌های محیطی به‌طور میانگین ۱۶.۰ دقیقه در هر شیفت ۸ ساعته و ۲۷.۳ دقیقه برای کاربران پرمصرف (نیمی از ویزیت‌ها یا بیشتر) زمان مستندسازی را کاهش دادند، اما تنها ۳۲٪ از پذیرندگان کاربر پرمصرف بودند و زمان کار با EHR در خارج از ساعات کاری به‌طور معناداری کاهش نیافت. یک مطالعه پیشین در JAMA Network Open (اکتبر ۲۰۲۵، با تعداد نمونه ۲۶۳ یا n=263) نشان داد که فرسودگی شغلی پس از ۳۰ روز از ۵۱.۹٪ به ۳۸.۸٪ کاهش یافت. هر دو پژوهش روی پزشکان سرپایی و درمانگران پیشرفته انجام شده بودند، نه پرستاران بستری؛ بنابراین معیارهای خودتان را بسنجید: دقایق مستندسازی در هر شیفت، ثبت پرونده در خارج از ساعات کاری و میزان استفاده به ازای هر پرستار.
 
 ---
 
-## Key Takeaways for Interviews
+## سوالات تکمیلی مصاحبه <a id="interview-follow-up-questions"></a>
 
-1. **HIPAA means a BAA, not a server room**: cloud ASR under a BAA with zero retention can meet HIPAA; on-prem is a policy or connectivity choice
-2. **Silence is a hazard**: gate the ASR with VAD, because speech models hallucinate during pauses
-3. **Diarization is essential**: who said what matters clinically, and nurse voiceprints need biometric consent
-4. **Hybrid extraction**: fast NER for structure, LLM for prose generation, grounded in transcript spans
-5. **Always have human review**, and log the draft-to-signed diff as the quality metric
+**سوال: با اختصارات و اصطلاحات تخصصی پزشکی چگونه برخورد می‌کنید؟**
+
+پاسخ: ما یک فهرست واژگان سفارشی نگه می‌داریم که اختصارات (مانند PRN، BID، SOB) را به عبارات کامل نگاشت می‌کند. این فهرست هم به مدل ASR (برای تشخیص بهتر) و هم به Prompt مدل LLM (برای بسط صحیح در یادداشت‌ها) تزریق می‌شود.
+
+**سوال: اگر پرستار در میانه جمله حرف خود را اصلاح کند چه می‌شود؟**
+
+پاسخ: ما الگوهای اصلاح گفتار (مانند «در واقع منظورم این است...»، «نه صبر کن، مقدارش...») را شناسایی می‌کنیم و تنها از نسخه اصلاح‌شده استفاده می‌کنیم. به مدل LLM دستور داده می‌شود در صورت وجود تعارض، اظهارات بعدی را ترجیح دهد؛ که این خود دلیل دیگری برای ساختاردهی یادداشت پس از پایان ویزیت به‌جای انجام زنده آن است.
+
+**سوال: چگونه اطمینان حاصل می‌کنید که هوش مصنوعی اطلاعات حیاتی را از قلم نمی‌اندازد؟**
+
+پاسخ: ما یک «بررسی کامل بودن» (Completeness Check) داریم که بررسی می‌کند آیا یادداشت تمام موجودیت‌های استخراج‌شده را شامل می‌شود یا خیر. اگر NER عبارت «درد قفسه سینه» (chest pain) را پیدا کرده باشد اما در یادداشت SOAP ذکری از آن نباشد، مورد را برای بازبینی پرستار علامت‌گذاری می‌کنیم. همچنین یک آشکارساز «موارد بحرانی ایمنی» (Safety Critical) اجرا می‌کنیم که اشاره‌ها به افکار خودکشی، آزار و اذیت یا سایر محرک‌های گزارش‌دهی اجباری را بلافاصله ارجاع می‌دهد.
+
+**سوال: شش ماه پس از راه‌اندازی، چگونه ثابت می‌کنید که سیستم ایمن است و ارزش پرداخت هزینه را دارد؟**
+
+پاسخ: از نظر ایمنی: نرخ عبارات بدون پشتوانه در بررسی استناد، فاصله ویرایشی میان پیش‌نویس و نسخه امضاشده به تفکیک بخش‌ها، و ممیزی انسانی ماهانه روی نمونه‌ای از یادداشت‌های امضاشده در مقایسه با فایل صوتی، با دقت ویژه بر ویزیت‌هایی که سکوت‌های طولانی داشته‌اند (جایی که توهم ASR متمرکز می‌شود). از نظر ارزش: دقایق مستندسازی در هر شیفت و ثبت پرونده در خارج از ساعات کاری به ازای هر پرستار، که بر اساس دفعات استفاده واقعی هر پرستار از ابزار دسته‌بندی می‌شود، زیرا صرفه‌جویی‌های گزارش‌شده در کاربران پرمصرف متمرکز است. اگر پذیرش پایین باشد، راه‌حل در بهبود جریان کار و آموزش است، نه در یک مدل بهتر.
 
 ---
 
-*Related chapters: [Real-Time Voice Agents](../18-voice-and-audio-agents/01-realtime-voice-agents.md), [Model Taxonomy](../02-model-landscape/01-model-taxonomy.md), [Reliability Patterns](../13-reliability-and-safety/03-reliability-patterns.md)*
+## نکات کلیدی برای مصاحبه <a id="key-takeaways-for-interviews"></a>
+
+1. **قانون HIPAA به معنای قرارداد BAA است، نه اتاق سرور**: سرویس ASR ابری تحت قرارداد BAA با عدم نگهداری داده می‌تواند با HIPAA منطبق باشد؛ استقرار (Deployment) درون‌سازمانی یک انتخاب مبتنی بر سیاست یا وضعیت اتصال است
+2. **سکوت یک خطر است**: ورودی ASR را با VAD محدود (Gate) کنید، زیرا مدل‌های گفتار در طول مکث‌ها دچار توهم می‌شوند
+3. **تفکیک گوینده (Diarization) ضروری است**: از نظر بالینی مهم است که چه کسی چه چیزی گفته است، و اثر صدای پرستار نیازمند رضایت بیومتریک است
+4. **استخراج ترکیبی (Hybrid Extraction)**: استفاده از NER سریع برای ساختار، و مدل LLM برای تولید متن پیوسته، با استناد دقیق به بخش‌های رونوشت
+5. **همواره بازبینی انسانی داشته باشید**، و اختلاف میان پیش‌نویس و نسخه امضاشده را به‌عنوان معیار کیفیت ثبت کنید
+
+---
+
+*فصل‌های مرتبط: [ایجنت‌های صوتی بلادرنگ](../18-voice-and-audio-agents/01-realtime-voice-agents.md)، [طبقه‌بندی مدل‌ها](../02-model-landscape/01-model-taxonomy.md)، [الگوهای قابلیت اطمینان](../13-reliability-and-safety/03-reliability-patterns.md)*
+
+</div>

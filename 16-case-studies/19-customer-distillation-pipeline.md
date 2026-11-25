@@ -1,22 +1,26 @@
-# Case Study: Customer-Specific Distillation Pipeline
+<div dir="rtl">
 
-A Series-B AI product cuts frontier-model spend from $50K per month to $4 to 6K by distilling an 8B student model on 6 months of production traces, with an under-3-month payback and a 4 to 6 month re-distillation cadence.
+# مطالعه موردی: پایپ‌لاین تقطیر دانش اختصاصی مشتری <a id="case-study-customer-specific-distillation-pipeline"></a>
 
-## The Business Problem
+یک محصول هوش مصنوعی در مرحله Series-B هزینه‌های مدل مرزی (Frontier Model) خود را با تقطیر (Distillation) یک مدل دانش‌آموز (Student) ۸ میلیاردی (8B) روی ۶ ماه از ردهای تولید (Production Traces)، از ۵۰ هزار دلار در ماه به ۴ تا ۶ هزار دلار کاهش می‌دهد؛ این پروژه با دوره بازگشت سرمایه کمتر از ۳ ماه و چرخه بازتقطیر ۴ تا ۶ ماهه اجرا می‌شود.
 
-A scaled AI product (about 8M user requests per month) runs on a frontier model. The cost line crossed $50K per month in early 2026, growth is 18 percent quarter over quarter, and finance asked for a plan. The team had one clean realization: roughly 90 percent of production traffic falls into a small number of recurring task patterns (intent classification, structured extraction, document summarization, three categories of triage). A frontier model is overkill for these; a much smaller model fine-tuned on the frontier's own outputs can serve them at a fraction of the cost.
+## مسئله کسب‌وکار <a id="the-business-problem"></a>
 
-Constraints:
+یک محصول هوش مصنوعی مقیاس‌پذیر (با حدود ۸ میلیون درخواست کاربر در ماه) روی یک مدل مرزی (Frontier Model) اجرا می‌شود. خط هزینه این سرویس در اوایل سال ۲۰۲۶ از ۵۰ هزار دلار در ماه عبور کرد، رشد فصل‌به‌فصل آن ۱۸ درصد است و تیم مالی درخواست ارائه یک برنامه کرده است. تیم مهندسی به یک بینش شفاف رسید: تقریباً ۹۰ درصد از ترافیک محیط تولید در تعداد محدودی از الگوهای وظیفه تکراری جای می‌گیرد (طبقه‌بندی نیت کاربر، استخراج ساختاریافته، خلاصه‌سازی اسناد و سه دسته اولویت‌بندی و تریاژ). استفاده از یک مدل مرزی برای این وظایف بیش از حد نیاز (Overkill) است؛ یک مدل بسیار کوچک‌تر که روی خروجی‌های خود مدل مرزی Fine-tuning شده باشد، می‌تواند این درخواست‌ها را با کسری از هزینه سرویس‌دهی کند.
 
-- $50K per month frontier-model spend, growing
-- Latency budget: under 350 ms p95 for the high-volume tasks
-- Quality bar: less than 2 percent regression on the customer's golden set
-- Compliance: customer data cannot leave a specific cloud region
-- Headcount: 1 ML engineer plus part-time platform support
+محدودیت‌ها:
 
-The distillation pattern is mature: DistilBERT ([Sanh et al., 2019](https://arxiv.org/abs/1910.01108)), TinyBERT, Alpaca-style instruction distillation ([Taori et al., 2023](https://github.com/tatsu-lab/stanford_alpaca)), and more recent work on chain-of-thought distillation ([Hsieh et al., 2023](https://arxiv.org/abs/2305.02301)) all show that a 7 to 13B student can recover 92 to 98 percent of teacher performance on focused tasks. The budget numbers below are illustrative; rerun them on your own traffic and current prices, because both moved sharply in 2026 (see Key Design Decision 7).
+- هزینه ۵۰ هزار دلار در ماه برای مدل مرزی که در حال رشد است
+- بودجه تاخیر (Latency): زیر ۳۵۰ میلی‌ثانیه در صدک p95 برای وظایف پرترافیک
+- معیار کیفیت: کمتر از ۲ درصد افت کیفیت روی مجموعه طلایی (Golden Set) مشتری
+- انطباق (Compliance): داده‌های مشتری نمی‌توانند از یک منطقه ابری (Cloud Region) مشخص خارج شوند
+- تعداد نیرو: ۱ مهندس یادگیری ماشین به همراه پشتیبانی پاره‌وقت پلتفرم
 
-## Architecture
+الگوی تقطیر دانش (Distillation) کاملاً بالغ شده است: مدل‌هایی مانند DistilBERT ([سانه و همکاران، ۲۰۱۹](https://arxiv.org/abs/1910.01108))، TinyBERT، تقطیر دستورالعملی به سبک Alpaca ([تائوری و همکاران، ۲۰۲۳](https://github.com/tatsu-lab/stanford_alpaca)) و پژوهش‌های جدیدتر درباره تقطیر زنجیره استدلال (Chain-of-Thought Distillation) ([هسیه و همکاران، ۲۰۲۳](https://arxiv.org/abs/2305.02301)) همگی نشان می‌دهند که یک مدل دانش‌آموز ۷ تا ۱۳ میلیاردی (7-13B) می‌تواند ۹۲ تا ۹۸ درصد از عملکرد مدل معلم (Teacher) را در وظایف متمرکز بازیابی کند. اعداد بودجه در ادامه جنبه نمایشی دارند؛ آن‌ها را بر اساس ترافیک و قیمت‌های روز خودتان دوباره محاسبه کنید، زیرا هر دو در سال ۲۰۲۶ تغییر شدیدی داشته‌اند (نگاه کنید به تصمیم کلیدی طراحی ۷).
+
+## معماری <a id="architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -46,105 +50,109 @@ flowchart LR
     end
 ```
 
-### Components
+</div>
 
-| Layer | Tech | Purpose |
-|-------|------|---------|
-| Teacher | Frontier model (Claude Opus 5.5 or equivalent), labeled through the Batch API at half price | Source of labels |
-| Student | IBM Granite 4.2 8B or Llama 3.1 8B, int4 | Production serving; Apache 2.0 or Llama license, no commercial gate at our size |
-| Trace store | S3 plus Langfuse | Sampling and replay |
-| Trainer | DeepSpeed plus FSDP on 8x H100 | One-week training run |
-| Eval | Per-task golden set, on-call paged on regression | Quality gate |
-| Serving | vLLM 0.32+ (security floor), int4 weights, FP8 KV cache | 350 ms p95 |
+### مؤلفه‌ها <a id="components"></a>
 
-### Data flow
+| لایه | فناوری | هدف |
+|------|--------|-----|
+| مدل معلم (Teacher) | مدل مرزی (Claude Opus 5.5 یا معادل)، برچسب‌گذاری‌شده از طریق Batch API با نصف قیمت | منبع برچسب‌ها |
+| مدل دانش‌آموز (Student) | مدل IBM Granite 4.2 8B یا Llama 3.1 8B با کوانتیزاسیون int4 | سرویس‌دهی محیط تولید؛ مجوز Apache 2.0 یا Llama، بدون محدودیت تجاری در مقیاس ما |
+| مخزن ردها (Trace Store) | سرویس S3 به همراه Langfuse | نمونه‌گیری و بازپخش (Replay) |
+| آموزش‌دهنده (Trainer) | فریم‌ورک DeepSpeed به همراه FSDP روی 8x H100 | اجرای آموزش یک‌هفته‌ای |
+| ارزیابی (Eval) | مجموعه طلایی (Golden Set) به ازای هر وظیفه، هشدار به مهندس کشیک (On-call) در صورت افت کیفیت | دروازه کنترل کیفیت (Quality Gate) |
+| سرویس‌دهی (Serving) | موتور vLLM نسخه 0.32+ (کف امنیتی)، وزن‌های int4 و حافظه کش FP8 KV | تاخیر p95 معادل ۳۵۰ میلی‌ثانیه |
 
-1. Six months of production traces accumulate in Langfuse plus S3.
-2. The sampler pulls stratified samples by task category, with rebalancing to ensure rare categories are represented.
-3. The teacher (frontier model) generates target outputs for each sample, often with chain-of-thought reasoning traces if the task benefits from reasoning distillation.
-4. A 5 percent human spot-check by domain experts catches teacher mistakes; we apply rejection sampling, keeping only pairs where human reviewers agree with the teacher.
-5. The student is fine-tuned for about 1 week on 8x H100 (~$3.9K to $5.4K compute: 1,344 H100-hours at $2.93 to $3.99 per GPU-hour; Lambda's 8x H100 on-demand rate is scheduled to rise to $4.59 on November 16, 2026, which takes the top of that range to about $6.2K), producing an 8B model.
-6. The model passes per-task evals, runs in shadow against production for 2 weeks, then gradual rollout: 5 percent, 20 percent, 50 percent, 90 percent over 3 weeks, with auto-rollback wired to live quality metrics.
+### جریان داده <a id="data-flow"></a>
 
-## Key Design Decisions
+1. ردهای محیط تولید (Production Traces) به مدت شش ماه در Langfuse به همراه S3 انباشته می‌شوند.
+2. نمونه‌گیر (Sampler) نمونه‌های طبقه‌بندی‌شده (Stratified) را بر اساس دسته وظیفه استخراج می‌کند و با بازتوزین (Rebalancing) اطمینان می‌دهد که دسته‌های نادر نیز پوشش داده شوند.
+3. مدل معلم (مدل مرزی) خروجی‌های هدف را برای هر نمونه تولید می‌کند؛ در صورت بهره‌مندی وظیفه از تقطیر استدلال (Reasoning Distillation)، این خروجی‌ها اغلب همراه با ردهای استدلال زنجیره‌ای (Chain-of-Thought) هستند.
+4. یک بازبینی نمونه‌ای انسانی (Human Spot-Check) به میزان ۵ درصد توسط متخصصان دامنه، خطاهای مدل معلم را شکار می‌کند؛ ما نمونه‌گیری ردی (Rejection Sampling) را اعمال کرده و تنها جفت‌هایی را نگه می‌داریم که بازبین‌های انسانی با خروجی معلم موافق باشند.
+5. مدل دانش‌آموز حدود ۱ هفته روی 8x H100 (حدود ۳.۹ تا ۵.۴ هزار دلار هزینه محاسباتی: ۱٬۳۴۴ ساعت-H100 با نرخ ۲.۹۳ تا ۳.۹۹ دلار به ازای هر GPU-ساعت؛ تعرفه درخواستی 8x H100 در Lambda قرار است در ۱۶ نوامبر ۲۰۲۶ به ۴.۵۹ دلار افزایش یابد که سقف این بازه را به حدود ۶.۲ هزار دلار می‌رساند) Fine-tuning می‌شود و یک مدل ۸ میلیاردی (8B) تولید می‌کند.
+6. مدل ارزیابی‌های هر وظیفه را پشت سر می‌گذارد، به مدت ۲ هفته به صورت سایه (Shadow) در برابر ترافیک تولید اجرا می‌شود و سپس با عرضه تدریجی (Gradual Rollout) به پیش می‌رود: ۵ درصد، ۲۰ درصد، ۵۰ درصد و ۹۰ درصد در طول ۳ هفته، همراه با بازگشت خودکار (Auto-rollback) متصل به معیارهای کیفیت زنده.
 
-### 1. Distill on real production traces, not synthetic data
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-The temptation is to generate synthetic prompts via an LLM and label them with the teacher. We tried this; it produces a model that excels at synthetic prompts and degrades 4 to 7 points on real traffic. Production traces capture the distribution shift, oddities, and tail cases that matter. We collect 6 months of traces, sample stratified by task category, and use real prompts as the distillation source.
+### 1. تقطیر روی ردهای واقعی محیط تولید، نه داده‌های مصنوعی <a id="1-distill-on-real-production-traces-not-synthetic-data"></a>
 
-Read the teacher's terms before you start. Frontier vendors' commercial terms restrict using outputs to build competing models, so get written confirmation that a task-specific student serving your own product is in bounds, and record which teacher and version labeled every pair.
+وسوسه این است که از طریق یک LLM دستورهای Prompt مصنوعی تولید کرده و با مدل معلم برچسب‌گذاری کنیم. ما این کار را امتحان کردیم؛ نتیجه مدلی است که در Promptهای مصنوعی عالی عمل می‌کند اما روی ترافیک واقعی ۴ تا ۷ امتیاز افت دارد. ردهای محیط تولید، تغییر توزیع (Distribution Shift)، موارد عجیب و حالت‌های انتهایی (Tail Cases) مهم را ثبت می‌کنند. ما ۶ ماه از ردها را جمع‌آوری می‌کنیم، بر اساس دسته وظیفه به‌صورت طبقه‌بندی‌شده نمونه‌گیری می‌کنیم و از Promptهای واقعی به عنوان منبع تقطیر استفاده می‌کنیم.
 
-### 2. Reject-sample with human spot-check
+پیش از شروع، شرایط استفاده مدل معلم را بخوانید. شرایط تجاری ارائه‌دهندگان مدل‌های مرزی استفاده از خروجی‌ها برای ساخت مدل‌های رقیب را محدود می‌کند؛ بنابراین تاییدیه کتبی بگیرید که یک مدل دانش‌آموز مختص وظیفه که محصول خودتان را سرویس‌دهی می‌کند مجاز است، و ثبت کنید که هر جفت داده توسط کدام مدل معلم و چه نسخه‌ای برچسب‌گذاری شده است.
 
-Teacher errors propagate into the student. A 92 percent teacher precision becomes a 90 percent student precision if you train on every teacher output. We have a 5 percent human spot-check on a random sample of teacher labels, and we reject pairs where the human disagrees. This catches roughly 4 percent of labels and lifts the final student's quality by 2 to 4 points on our composite metric. Cost: about $1,800 in human labeling per re-distillation, on top of compute.
+### 2. نمونه‌گیری ردی همراه با بازبینی نمونه‌ای انسانی <a id="2-reject-sample-with-human-spot-check"></a>
 
-### 3. Chain-of-thought distillation where it pays
+خطاهای مدل معلم به مدل دانش‌آموز منتقل می‌شوند. دقت ۹۲ درصدی معلم در صورت آموزش روی تمام خروجی‌های معلم، به دقت ۹۰ درصدی دانش‌آموز تبدیل می‌شود. ما یک بازبینی نمونه‌ای انسانی ۵ درصدی روی نمونه‌ای تصادفی از برچسب‌های معلم انجام می‌دهیم و جفت‌هایی را که انسان با آن‌ها مخالف است رد می‌کنیم. این کار حدود ۴ درصد از برچسب‌ها را شناسایی و حذف می‌کند و کیفیت نهایی مدل دانش‌آموز را ۲ تا ۴ امتیاز روی معیار ترکیبی ما افزایش می‌دهد. هزینه این کار حدود ۱٬۸۰۰ دلار برای برچسب‌گذاری انسانی در هر بار بازتقطیر، علاوه بر هزینه محاسباتی است.
 
-For reasoning-heavy tasks (the triage category in our case), we use Hsieh et al.'s [distillation with rationales](https://arxiv.org/abs/2305.02301) approach: the teacher emits both the answer and a reasoning trace; the student is trained to emit both. This gives the student structured thinking it would not develop from input-output pairs alone. We do not use this for classification or extraction tasks (no gain, extra latency).
+### 3. تقطیر زنجیره استدلال در جایی که به‌صرفه باشد <a id="3-chain-of-thought-distillation-where-it-pays"></a>
 
-### 4. Eval-set construction with human labeling
+برای وظایف نیازمند استدلال سنگین (در مورد ما، دسته تریاژ)، از رویکرد هسیه و همکاران یعنی [تقطیر همراه با استدلال (Distillation with Rationales)](https://arxiv.org/abs/2305.02301) استفاده می‌کنیم: مدل معلم هم پاسخ و هم یک رد استدلالی تولید می‌کند؛ مدل دانش‌آموز نیز برای تولید هر دو آموزش داده می‌شود. این روش به دانش‌آموز تفکر ساختاریافته‌ای می‌دهد که تنها از طریق جفت‌های ورودی-خروجی به دست نمی‌آورد. ما از این روش برای وظایف طبقه‌بندی یا استخراج استفاده نمی‌کنیم (بدون بهبود کیفیت و با تاخیر اضافه).
 
-Our eval set is curated separately from the training set. It contains 1,800 cases across the high-volume task categories, labeled by 3 domain experts with majority vote. We re-label 200 cases every quarter to track distribution drift. The eval set is the gating signal for canary rollout; a 2-point regression on the composite blocks production deployment. We never look at eval-set examples during training-data sampling.
+### 4. ساخت مجموعه ارزیابی با برچسب‌گذاری انسانی <a id="4-eval-set-construction-with-human-labeling"></a>
 
-### 5. Canary rollout and shadow traffic
+مجموعه ارزیابی (Eval Set) ما به‌صورت جداگانه از مجموعه آموزش تدوین می‌شود. این مجموعه شامل ۱٬۸۰۰ نمونه در میان دسته‌های وظایف پرترافیک است که توسط ۳ متخصص دامنه با رای اکثریت برچسب‌گذاری شده‌اند. ما هر فصل ۲۰۰ نمونه را دوباره برچسب‌گذاری می‌کنیم تا انحراف توزیع (Distribution Drift) را ردیابی کنیم. مجموعه ارزیابی سیگنال دروازه‌بانی (Gating Signal) برای عرضه تدریجی (Canary Rollout) است؛ افت ۲ امتیازی روی معیار ترکیبی، استقرار (Deployment) در محیط تولید را مسدود می‌کند. ما هرگز هنگام نمونه‌گیری داده‌های آموزشی به نمونه‌های مجموعه ارزیابی نگاه نمی‌کنیم.
 
-Even with eval passing, production has tail behavior the eval set misses. Our rollout:
+### 5. عرضه تدریجی (Canary) و ترافیک سایه (Shadow) <a id="5-canary-rollout-and-shadow-traffic"></a>
 
-- Week 1: shadow traffic only, no user impact. We compare student vs teacher outputs on 100 percent of traffic, with a delta classifier flagging divergences for human review.
-- Week 2: 5 percent live traffic. Auto-rollback if any of (a) latency p95 exceeds 500 ms, (b) live user thumbs-up rate drops more than 1 point, (c) a domain-specific guardrail trips at higher rate.
-- Week 3: 20 percent. Same guardrails.
-- Week 4: 50 percent.
-- Week 5: 90 percent. 10 percent permanently routes to the teacher for ongoing trace collection and re-distillation.
+حتی با عبور از ارزیابی، محیط تولید رفتارهای انتهایی (Tail Behavior) دارد که مجموعه ارزیابی آن‌ها را نمی‌بیند. برنامه عرضه ما به این شکل است:
 
-This conservative ramp has caught two regressions in the past year that the eval set missed.
+- هفته ۱: تنها ترافیک سایه، بدون هیچ تاثیری بر کاربر. ما خروجی‌های دانش‌آموز را در برابر معلم روی ۱۰۰ درصد ترافیک مقایسه می‌کنیم و یک طبقه‌بند اختلاف (Delta Classifier) موارد واگرایی را برای بازبینی انسانی علامت‌گذاری می‌کند.
+- هفته ۲: ۵ درصد ترافیک زنده. بازگشت خودکار (Auto-rollback) در صورت رخ دادن هر یک از موارد: (الف) تاخیر p95 از ۵۰۰ میلی‌ثانیه فراتر برود، (ب) نرخ پسند (Thumbs-up) کاربران زنده بیش از ۱ امتیاز افت کند، (ج) یک محافظ دامنه‌محور (Domain-specific Guardrail) با نرخ بالاتری فعال شود.
+- هفته ۳: ۲۰ درصد ترافیک. با همان محافظ‌ها.
+- هفته ۴: ۵۰ درصد ترافیک.
+- هفته ۵: ۹۰ درصد ترافیک. ۱۰ درصد به‌طور دائمی برای جمع‌آوری مداوم ردها و بازتقطیر به سمت مدل معلم مسیریابی می‌شود.
 
-### 6. Re-distillation cadence
+این شیب ملایم و محتاطانه در سال گذشته دو افت کیفیت را شکار کرد که از چشم مجموعه ارزیابی پنهان مانده بودند.
 
-The world drifts. New product features change task distributions; users learn new behaviors; the teacher itself improves with new model releases. We re-distill every 4 to 6 months, which only works if the training path stays available. We fine-tune open weights in our own account rather than through a vendor's hosted fine-tuning: OpenAI is winding down its fine-tuning platform (organizations that never fine-tuned can no longer create jobs, and existing customers lose new-job creation on January 6, 2027), and a student you can no longer retrain becomes a liability on the next drift. The pipeline is partially automated: trace sampling, teacher labeling, and training are scripted; human spot-check and eval review still need a person. Each re-distillation costs about $9K all-in (about $5K compute, $1,800 labeling, plus overhead) and takes 4 to 6 weeks.
+### 6. چرخه زمانی بازتقطیر <a id="6-re-distillation-cadence"></a>
 
-### 7. When distillation does NOT make sense
+جهان تغییر می‌کند. ویژگی‌های جدید محصول توزیع وظایف را تغییر می‌دهند؛ کاربران رفتارهای جدیدی یاد می‌گیرند؛ و خود مدل معلم نیز با انتشار نسخه‌های جدید بهبود می‌یابد. ما هر ۴ تا ۶ ماه یک‌بار بازتقطیر انجام می‌دهیم که تنها در صورتی ممکن است که مسیر آموزش همچنان در دسترس بماند. ما مدل‌های وزن‌باز (Open Weights) را در حساب خودمان Fine-tuning می‌کنیم، نه از طریق سرویس Fine-tuning میزبانی‌شده یک ارائه‌دهنده: شرکت OpenAI در حال تعطیل کردن پلتفرم Fine-tuning خود است (سازمان‌هایی که هرگز Fine-tuning انجام نداده‌اند دیگر نمی‌توانند کار جدید بسازند و مشتریان فعلی نیز در ۶ ژانویه ۲۰۲۷ امکان ایجاد کار جدید را از دست می‌دهند) و مدل دانش‌آموزی که دیگر نتوانید بازآموزش دهید، در تغییر توزیع بعدی به یک بدهی فنی (Liability) تبدیل می‌شود. این پایپ‌لاین به‌صورت نیمه‌خودکار است: نمونه‌گیری ردها، برچسب‌گذاری معلم و آموزش به‌صورت اسکریپت‌نویسی‌شده انجام می‌شوند؛ اما بازبینی نمونه‌ای انسانی و بررسی ارزیابی همچنان به انسان نیاز دارند. هر بار بازتقطیر در مجموع حدود ۹ هزار دلار هزینه دارد (حدود ۵ هزار دلار محاسبات، ۱٬۸۰۰ دلار برچسب‌گذاری، به علاوه سربار) و ۴ تا ۶ هفته زمان می‌برد.
 
-Distillation is not always right. Signals against:
+### 7. چه زمانی تقطیر دانش منطقی نیست <a id="7-when-distillation-does-not-make-sense"></a>
 
-- Traffic is low volume (under 200K requests per month). The payback never materializes.
-- Tasks are highly variable. If every request is unique, the student cannot learn a useful distribution.
-- The teacher itself is unstable or rapidly evolving. Re-distilling against a moving target wastes effort.
-- Quality bar is very tight (over 99 percent fidelity required). The distillation gap is real; if you cannot tolerate it, stick with the teacher.
-- A small hosted model already passes your golden set. Hosted prices fell hard in 2026: GPT-6 Luna launched at $0.10/$0.50 per 1M tokens, 40x below Claude Opus 5.5's $4/$20, Claude Haiku 5.5 matched that price on October 7 for prompts up to 100K tokens, GPT-6.1 Terra opened a $1/$5 tier, and the mid tier settled at $2/$10. For high-volume classification and extraction, routing to a small hosted model with a good prompt can land below the student's $9K monthly run rate with no training pipeline at all. Distill when the small hosted models fail your golden set, when latency or residency rules them out, or when volume makes self-hosting cheaper.
+تقطیر همیشه راه‌حل درستی نیست. نشانه‌های ضدتقطیر عبارت‌اند از:
 
-We use a quick-screen heuristic: at least 60 percent of traffic falls into 5 or fewer task patterns, and monthly spend on those tasks exceeds $20K. If both fail, we pass on distillation.
+- حجم ترافیک پایین است (زیر ۲۰۰ هزار درخواست در ماه). بازگشت سرمایه هرگز محقق نمی‌شود.
+- وظایف بسیار متغیر هستند. اگر هر درخواست منحصربه‌فرد باشد، مدل دانش‌آموز نمی‌تواند توزیع مفیدی را یاد بگیرد.
+- خود مدل معلم ناپایدار است یا به‌سرعت در حال تغییر است. بازتقطیر روی یک هدف متحرک، تلاش را هدر می‌دهد.
+- معیار کیفیت بسیار سخت‌گیرانه است (نیاز به بیش از ۹۹ درصد وفاداری به معلم). شکاف تقطیر واقعی است؛ اگر نمی‌توانید آن را تحمل کنید، نزد مدل معلم بمانید.
+- یک مدل کوچک میزبانی‌شده (Hosted) همین الان هم مجموعه طلایی شما را پاس می‌کند. قیمت مدل‌های میزبانی‌شده در سال ۲۰۲۶ به‌شدت سقوط کرد: مدل GPT-6 Luna با قیمت ۰.۱۰/۰.۵۰ دلار به ازای هر ۱ میلیون Token عرضه شد که ۴۰ برابر ارزان‌تر از قیمت ۴/۲۰ دلاری Claude Opus 5.5 است؛ مدل Claude Haiku 5.5 در ۷ اکتبر برای Promptهای تا ۱۰۰ هزار Token با همین قیمت هم‌تراز شد؛ مدل GPT-6.1 Terra رده قیمتی ۱/۵ دلاری را باز کرد و رده میانی روی ۲/۱۰ دلار تثبیت شد. برای طبقه‌بندی و استخراج پرترافیک، مسیریابی به یک مدل کوچک میزبانی‌شده با یک Prompt خوب می‌تواند با هزینه‌ای کمتر از نرخ اجرای ماهانه ۹ هزار دلاری مدل دانش‌آموز و بدون هیچ پایپ‌لاین آموزشی انجام شود. تنها زمانی تقطیر کنید که مدل‌های کوچک میزبانی‌شده در مجموعه طلایی شما رد شوند، یا محدودیت تاخیر و اقامت داده (Data Residency) آن‌ها را از گزینه خارج کند، یا حجم درخواست‌ها میزبانی اختصاصی (Self-hosting) را ارزان‌تر کند.
 
-### 8. Quantization choice
+ما از یک قاعده سرانگشتی غربالگری سریع استفاده می‌کنیم: حداقل ۶۰ درصد ترافیک در ۵ الگوی وظیفه یا کمتر قرار بگیرد و هزینه ماهانه آن وظایف از ۲۰ هزار دلار بیشتر باشد. اگر هر دو شرط برقرار نباشند، از تقطیر صرف‌نظر می‌کنیم.
 
-We serve the 8B student in int4 (GPTQ via vLLM with FP8 KV cache). int4 cuts memory roughly 4x and improves throughput by about 2.3x on H100 vs FP16. We measured an accuracy hit of 0.4 points on our composite, well within tolerance. We considered int8 (smaller hit, smaller speedup) and FP8 weights (near-lossless and well supported on H100, but only half the memory saving of int4); int4 won on cost-per-request.
+### 8. انتخاب کوانتیزاسیون (Quantization) <a id="8-quantization-choice"></a>
 
-### 9. Privacy considerations on training data
+ما مدل دانش‌آموز ۸ میلیاردی (8B) را با فرمت int4 سرویس‌دهی می‌کنیم (روش GPTQ از طریق vLLM با حافظه کش FP8 KV). فرمت int4 مصرف حافظه را تقریباً ۴ برابر کاهش می‌دهد و توان عملیاتی (Throughput) را روی H100 نسبت به FP16 حدود ۲.۳ برابر بهبود می‌بخشد. ما افت دقتی معادل ۰.۴ امتیاز روی معیار ترکیبی خود اندازه‌گیری کردیم که کاملاً در محدوده قابل قبول است. گزینه‌های int8 (افت کمتر، افزایش سرعت کمتر) و وزن‌های FP8 (تقریباً بدون افت و با پشتیبانی خوب روی H100، اما تنها با نصف صرفه‌جویی حافظه int4) را نیز بررسی کردیم؛ در نهایت int4 بر اساس هزینه به ازای هر درخواست برنده شد.
 
-Production traces contain user PII by definition. Before training we run a redaction pass: a fine-tuned NER model flags PII spans, and we replace them with category tokens (`[EMAIL]`, `[PERSON_NAME]`). The student learns the structural patterns without memorizing specific identities. The redaction model itself is evaluated on a labeled sample with precision over 98 percent and recall over 95 percent.
+### 9. ملاحظات حریم خصوصی در داده‌های آموزشی <a id="9-privacy-considerations-on-training-data"></a>
 
-## Cost and Payback
+ردهای محیط تولید به‌طور پیش‌فرض حاوی اطلاعات شناسایی شخصی (PII) کاربران هستند. پیش از آموزش، یک مرحله پالایش و سانسور (Redaction) اجرا می‌کنیم: یک مدل NER که Fine-tuning شده است بازه‌های PII را علامت‌گذاری می‌کند و ما آن‌ها را با Tokenهای دسته‌بندی‌شده (`[EMAIL]`، `[PERSON_NAME]`) جایگزین می‌کنیم. به این ترتیب مدل دانش‌آموز الگوهای ساختاری را یاد می‌گیرد بدون اینکه هویت‌های مشخص را حفظ کند. خود مدل پالایشگر نیز روی یک نمونه برچسب‌گذاری‌شده با دقت (Precision) بالای ۹۸ درصد و فراخوانی (Recall) بالای ۹۵ درصد ارزیابی می‌شود.
 
-| Line item | Amount |
-|-----------|--------|
-| Trace collection (6 months) | Already paid as part of observability spend |
-| Teacher labeling (about 800K pairs) | $42K one-time |
-| Human spot-check | $8K one-time |
-| Compute (8x H100 for 1 week, plus retries) | ~$8K one-time |
-| Eval set curation | $14K one-time |
-| Platform engineering (overhead) | $24K one-time |
-| **Total upfront** | **$96K** |
+## هزینه و بازگشت سرمایه <a id="cost-and-payback"></a>
 
-| Monthly run-rate | Before | After |
-|------------------|--------|-------|
-| Frontier model (10 percent of traffic, plus re-distillation harness) | $50K | $5K |
-| Student model serving (vLLM on two dedicated H100s, one for redundancy, about $2,100 each per month at the $2.93/GPU-hr November 1 Silicon Data index) | $0 | ~$4.3K |
-| **Monthly total** | **$50K** | **~$9.3K** |
+| ردیف هزینه | مبلغ |
+|------------|------|
+| جمع‌آوری ردها (۶ ماه) | از قبل به عنوان بخشی از هزینه مشاهده‌پذیری (Observability) پرداخت شده است |
+| برچسب‌گذاری معلم (حدود ۸۰۰ هزار جفت) | ۴۲ هزار دلار (یک‌بار) |
+| بازبینی نمونه‌ای انسانی | ۸ هزار دلار (یک‌بار) |
+| محاسبات (8x H100 به مدت ۱ هفته، به همراه تکرارها) | حدود ۸ هزار دلار (یک‌بار) |
+| تدوین مجموعه ارزیابی | ۱۴ هزار دلار (یک‌بار) |
+| مهندسی پلتفرم (سربار) | ۲۴ هزار دلار (یک‌بار) |
+| **مجموع هزینه اولیه** | **۹۶ هزار دلار** |
 
-Monthly savings: roughly $41K. Payback: 96K / 40.7K, about 2.4 months. We quote "under 3-month payback" to finance.
+| نرخ هزینه ماهانه | پیش از تقطیر | پس از تقطیر |
+|-------------------|-------------|-------------|
+| مدل مرزی (۱۰ درصد ترافیک، به همراه بستر بازتقطیر) | ۵۰ هزار دلار | ۵ هزار دلار |
+| سرویس‌دهی مدل دانش‌آموز (vLLM روی دو H100 اختصاصی، یکی برای افزونگی، حدود ۲٬۱۰۰ دلار برای هر کدام در ماه با شاخص ۲.۹۳ دلار به ازای هر GPU-ساعت در ۱ نوامبر Silicon Data) | ۰ دلار | حدود ۴.۳ هزار دلار |
+| **مجموع ماهانه** | **۵۰ هزار دلار** | **حدود ۹.۳ هزار دلار** |
 
-Re-distillation costs about $9K every 5 months on average, which we amortize against the same savings line. Net annual savings: about $470K.
+صرفه‌جویی ماهانه: تقریباً ۴۱ هزار دلار. بازگشت سرمایه: ۹۶ هزار تقسیم بر ۴۰.۷ هزار، حدود ۲.۴ ماه. ما به تیم مالی عبارت «بازگشت سرمایه زیر ۳ ماه» را گزارش می‌دهیم.
 
-## Distillation Pipeline
+بازتقطیر به‌طور میانگین هر ۵ ماه حدود ۹ هزار دلار هزینه دارد که آن را در همین ردیف صرفه‌جویی مستهلک می‌کنیم. صرفه‌جویی خالص سالانه: حدود ۴۷۰ هزار دلار.
+
+## پایپ‌لاین تقطیر دانش <a id="distillation-pipeline"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -165,97 +173,101 @@ flowchart TD
     N --> O[90pct Student 10pct Teacher]
 ```
 
-## Failure Modes and Mitigations
+</div>
 
-### F1: Teacher upgrade renders student stale
+## حالت‌های شکست و راهکارهای کاهش ریسک <a id="failure-modes-and-mitigations"></a>
 
-The frontier-model vendor releases a new generation, the teacher quality jumps, and our student now underperforms users' expectations relative to what the rest of the market ships. Mitigation: we monitor a comparative eval of teacher vs student monthly; when the gap exceeds 4 points, we accelerate the re-distillation calendar. Re-distilling against a stronger teacher is straightforward; the pipeline is the same.
+### حالت شکست F1: ارتقای مدل معلم باعث قدیمی شدن مدل دانش‌آموز می‌شود <a id="f1-teacher-upgrade-renders-student-stale"></a>
 
-### F2: Distribution shift between training and serving
+ارائه‌دهنده مدل مرزی نسل جدیدی را منتشر می‌کند، کیفیت معلم جهش می‌یابد و اکنون مدل دانش‌آموز ما نسبت به آنچه بقیه بازار عرضه می‌کنند، پایین‌تر از انتظار کاربران عمل می‌کند. راهکار کاهش ریسک: ما به‌صورت ماهانه یک ارزیابی مقایسه‌ای بین معلم و دانش‌آموز اجرا می‌کنیم؛ هنگامی که شکاف از ۴ امتیاز فراتر برود، تقویم بازتقطیر را جلو می‌اندازیم. بازتقطیر در برابر یک معلم قوی‌تر سرراست است؛ پایپ‌لاین همان قبلی است.
 
-A new product feature changes user behavior overnight (a notification campaign drives unusual queries, a new pricing tier shifts user types). The student's training distribution no longer matches production. Mitigation: an online drift monitor flags when the input embedding distribution moves more than a threshold; if drift is structural, we trigger an emergency re-distillation; if transient, we route the affected slice to the teacher.
+### حالت شکست F2: تغییر توزیع بین آموزش و سرویس‌دهی <a id="f2-distribution-shift-between-training-and-serving"></a>
 
-### F3: Teacher hallucinations baked into student
+یک ویژگی جدید محصول رفتار کاربران را یک‌شبه تغییر می‌دهد (یک کمپین اعلان‌ها پرس‌وجوهای غیرعادی ایجاد می‌کند، یا یک پلن قیمتی جدید نوع کاربران را تغییر می‌دهد). توزیع آموزشی مدل دانش‌آموز دیگر با محیط تولید همخوانی ندارد. راهکار کاهش ریسک: یک پایشگر آنلاین انحراف (Online Drift Monitor) هنگام عبور توزیع بردارهای ورودی (Input Embedding) از یک آستانه هشدار می‌دهد؛ اگر انحراف ساختاری باشد، یک بازتقطیر اضطراری را فعال می‌کنیم؛ و اگر موقتی باشد، بخش متاثر را به سمت مدل معلم هدایت می‌کنیم.
 
-The teacher occasionally hallucinates; reject sampling catches most but not all. The student then hallucinates more confidently because the pattern is in the training distribution. Mitigation: a faithfulness check on the eval set; any growth in hallucination rate over baseline triggers a re-cleanup of training data.
+### حالت شکست F3: نهادینه شدن توهم‌های معلم در مدل دانش‌آموز <a id="f3-teacher-hallucinations-baked-into-student"></a>
 
-### F4: Cost regression from over-routing to teacher
+مدل معلم گاهی دچار توهم (Hallucination) می‌شود؛ نمونه‌گیری ردی بیشتر موارد را می‌گیرد اما نه همه آن‌ها را. در نتیجه مدل دانش‌آموز با اعتمادبه‌نفس بیشتری توهم تولید می‌کند، زیرا این الگو در توزیع آموزشی آن قرار گرفته است. راهکار کاهش ریسک: اجرای بررسی وفاداری به واقعیت (Faithfulness Check) روی مجموعه ارزیابی؛ هرگونه افزایش نرخ توهم نسبت به خط پایه، پاک‌سازی مجدد داده‌های آموزشی را کلید می‌زند.
 
-The 10 percent teacher fallback creeps up as engineers add fallbacks for various edge cases. Mitigation: budget alarm on teacher spend; quarterly audit of fallback routes; each fallback rule requires justification and an expiry.
+### حالت شکست F4: بازگشت هزینه‌ها به دلیل مسیریابی بیش از حد به مدل معلم <a id="f4-cost-regression-from-over-routing-to-teacher"></a>
 
-### F5: Canary rollout misses a tail regression
+سهم ۱۰ درصدی ارجاع به معلم (Fallback) به‌تدریج با اضافه کردن مسیرهای جایگزین توسط مهندسان برای حالت‌های خاص مختلف، افزایش می‌یابد. راهکار کاهش ریسک: تنظیم هشدار بودجه روی هزینه معلم؛ ممیزی فصلی مسیرهای ارجاع؛ هر قانون ارجاع باید توجیه مشخص و تاریخ انقضا داشته باشد.
 
-The eval set and shadow traffic both look fine, but 5 percent live exposes a regression that hurts a specific customer segment. Mitigation: per-segment quality metrics on live traffic with auto-rollback per segment; we segmentation-watch by customer tier, by language, and by task category.
+### حالت شکست F5: عرضه تدریجی یک افت کیفیت انتهایی (Tail Regression) را از دست می‌دهد <a id="f5-canary-rollout-misses-a-tail-regression"></a>
 
-### F6: Compliance violation: training data residency
+مجموعه ارزیابی و ترافیک سایه هر دو خوب به نظر می‌رسند، اما ۵ درصد ترافیک زنده افت کیفیتی را آشکار می‌کند که به یک بخش خاص از مشتریان آسیب می‌زند. راهکار کاهش ریسک: تعریف معیارهای کیفیت به ازای هر بخش (Per-segment) روی ترافیک زنده همراه با بازگشت خودکار به ازای هر بخش؛ ما بخش‌بندی را بر اساس سطح اشتراک مشتری، زبان و دسته وظیفه رصد می‌کنیم.
 
-The customer's contract requires data residency in a specific region; our default training compute is in a different region. Mitigation: we maintain region-local training capacity; per-customer training data is bound to the customer's region; we never copy raw traces outside the region. The orchestrator refuses to launch a job that would violate residency.
+### حالت شکست F6: نقض انطباق: اقامت داده‌های آموزشی (Data Residency) <a id="f6-compliance-violation-training-data-residency"></a>
 
-### F7: Catastrophic forgetting on rarely-seen tasks
+قرارداد مشتری ایجاب می‌کند داده‌ها در یک منطقه جغرافیایی مشخص باقی بمانند؛ در حالی که زیرساخت پردازش آموزشی پیش‌فرض ما در منطقه دیگری است. راهکار کاهش ریسک: ما ظرفیت آموزشی محلی در همان منطقه را نگه می‌داریم؛ داده‌های آموزشی هر مشتری به منطقه خودش مقید می‌شود؛ ما هرگز ردهای خام را به خارج از منطقه کپی نمی‌کنیم. هماهنگ‌کننده (Orchestrator) از اجرای کاری که اقامت داده را نقض کند جلوگیری می‌کند.
 
-The student forgets a category it saw only twice in training. Mitigation: stratified sampling guarantees minimum coverage of rare categories; the eval suite explicitly includes rare-category cases; the canary rollout monitors per-category quality separately.
+### حالت شکست F7: فراموشی فاجعه‌بار در وظایف کم‌تکرار <a id="f7-catastrophic-forgetting-on-rarely-seen-tasks"></a>
 
-### F8: Cost-tracking failure across teacher and student
+مدل دانش‌آموز دسته‌ای را که تنها دو بار در آموزش دیده است فراموش می‌کند. راهکار کاهش ریسک: نمونه‌گیری طبقه‌بندی‌شده حداقل پوشش دسته‌های نادر را تضمین می‌کند؛ مجموعه ارزیابی به‌طور صریح شامل نمونه‌های دسته‌های نادر است؛ و عرضه تدریجی، کیفیت هر دسته را به‌صورت جداگانه پایش می‌کند.
 
-Some queries are routed both to the student and the teacher (during shadow); cost accounting double-counts unless explicit. Mitigation: cost tags on every call (shadow, primary, fallback) with a daily reconciliation report that catches mis-tagged traffic.
+### حالت شکست F8: خطای ردیابی هزینه بین مدل معلم و دانش‌آموز <a id="f8-cost-tracking-failure-across-teacher-and-student"></a>
 
-## Operational Considerations
+برخی پرس‌وجوها هم‌زمان هم به مدل دانش‌آموز و هم به مدل معلم ارسال می‌شوند (در طول ترافیک سایه)؛ در این حالت حسابداری هزینه، مگر اینکه صراحتاً تفکیک شود، دو بار هزینه ثبت می‌کند. راهکار کاهش ریسک: درج برچسب هزینه روی هر فراخوانی (سایه، اصلی، جایگزین) همراه با یک گزارش تطبیق روزانه که ترافیک‌های بدبرچسب‌گذاری‌شده را شناسایی می‌کند.
 
-### Monitoring
+## ملاحظات عملیاتی <a id="operational-considerations"></a>
 
-| SLO | Target |
-|-----|--------|
-| Student p95 latency | under 350 ms |
-| Quality delta vs teacher (corrected) | within 2 points |
-| Teacher fallback rate | 10 percent target, alert at over 15 percent |
-| Cost per 1K requests | under 30 percent of pre-distillation |
-| Re-distillation cadence | every 4 to 6 months |
+### پایش (Monitoring) <a id="monitoring"></a>
 
-### Cost model
+| هدف سطح سرویس (SLO) | مقدار هدف |
+|-----------------------|-----------|
+| تاخیر p95 مدل دانش‌آموز | کمتر از ۳۵۰ میلی‌ثانیه |
+| اختلاف کیفیت نسبت به معلم (اصلاح‌شده) | حداکثر ۲ امتیاز |
+| نرخ ارجاع به معلم (Fallback) | هدف ۱۰ درصد، هشدار در بالای ۱۵ درصد |
+| هزینه به ازای هر ۱ هزار درخواست | کمتر از ۳۰ درصد پیش از تقطیر |
+| چرخه بازتقطیر | هر ۴ تا ۶ ماه |
 
-Monthly steady-state: $9K run rate plus amortized re-distillation ($1.8K per month). Compared to $50K teacher-only, savings of about $39K per month after full amortization. Annualized: ~$470K saved net.
+### مدل هزینه <a id="cost-model"></a>
 
-### On-call playbook
+نرخ پایدار ماهانه: ۹ هزار دلار هزینه جاری به علاوه بازتقطیر مستهلک‌شده (۱.۸ هزار دلار در ماه). در مقایسه با ۵۰ هزار دلار هزینه فقط-معلم، پس از استهلاک کامل حدود ۳۹ هزار دلار در ماه صرفه‌جویی می‌شود. در مقیاس سالانه: حدود ۴۷۰ هزار دلار صرفه‌جویی خالص.
 
-- Quality regression alarm: confirm with a manual eval-set replay; if real, route the affected segment to teacher until next training cycle; open a priority ticket.
-- Cost overrun: check fallback routes; if traffic patterns shifted, schedule re-distillation; throttle if needed.
-- Latency spike: check GPU utilization; if a noisy neighbor, isolate the student node.
-- Drift alarm: check input embedding histograms; if drift is large and persistent, trigger emergency re-distillation.
-- Eval-set leak: if a held-out eval case is found in training data, retire the case immediately and run a deduplication pass; refresh the eval set within the quarter.
+### کتابچه راهنمای کشیک (On-call Playbook) <a id="on-call-playbook"></a>
 
-### Comparative eval cadence
+- هشدار افت کیفیت: با بازپخش دستی مجموعه ارزیابی تایید کنید؛ اگر واقعی بود، بخش متاثر را تا چرخه آموزش بعدی به سمت معلم مسیریابی کنید؛ یک تیکت اولویت‌دار ثبت کنید.
+- سرریز هزینه: مسیرهای ارجاع (Fallback) را بررسی کنید؛ اگر الگوهای ترافیک تغییر کرده‌اند، بازتقطیر را زمان‌بندی کنید؛ در صورت نیاز محدودیت نرخ (Throttle) اعمال کنید.
+- جهش تاخیر (Latency Spike): میزان مصرف GPU را بررسی کنید؛ اگر همسایه پرمصرف مزاحم (Noisy Neighbor) وجود دارد، گره (Node) مدل دانش‌آموز را ایزوله کنید.
+- هشدار انحراف (Drift Alarm): هیستوگرام‌های بردار ورودی (Input Embedding) را بررسی کنید؛ اگر انحراف بزرگ و پایدار است، بازتقطیر اضطراری را فعال کنید.
+- نشت مجموعه ارزیابی (Eval-set Leak): اگر یک نمونه ارزیابی کنارگذاشته‌شده (Held-out) در داده‌های آموزشی پیدا شد، بلافاصله آن نمونه را بازنشسته کنید و یک مرحله حذف تکراری (Deduplication) اجرا کنید؛ مجموعه ارزیابی را در طول همان فصل تازه‌سازی کنید.
 
-Once per month we run a comparative eval: a 500-case sample, student vs teacher, scored by the LLM-as-judge plus a 50-case human sample. The output is a single dashboard tile that the AI team owns. A widening gap is the early warning that re-distillation is needed.
+### چرخه ارزیابی مقایسه‌ای <a id="comparative-eval-cadence"></a>
 
-### Re-distillation ritual
+ماهی یک‌بار یک ارزیابی مقایسه‌ای اجرا می‌کنیم: یک نمونه ۵۰۰ تایی، دانش‌آموز در برابر معلم، که توسط مدل داور (LLM-as-judge) به همراه یک نمونه ۵۰ تایی انسانی امتیازدهی می‌شود. خروجی یک کاشی (Tile) داشبورد واحد است که تیم هوش مصنوعی مالک آن است. بزرگ شدن شکاف، هشدار زودهنگام برای نیاز به بازتقطیر است.
 
-When a re-distillation is scheduled, we follow a 4-week ritual: week 1, sample fresh traces and label with the current teacher; week 2, train and evaluate; week 3, shadow traffic; week 4, gradual rollout. The full ritual is checklisted; the ML engineer runs it solo with platform support for the gradual-rollout phase.
+### آیین‌نامه بازتقطیر <a id="re-distillation-ritual"></a>
 
-### Customer-facing communication
+هنگامی که یک بازتقطیر زمان‌بندی می‌شود، ما یک آیین‌نامه ۴ هفته‌ای را دنبال می‌کنیم: هفته ۱، نمونه‌گیری ردهای تازه و برچسب‌گذاری با معلم فعلی؛ هفته ۲، آموزش و ارزیابی؛ هفته ۳، ترافیک سایه؛ هفته ۴، عرضه تدریجی. کل این آیین‌نامه دارای چک‌لیست است؛ مهندس یادگیری ماشین آن را به‌تنهایی و با پشتیبانی پلتفرم برای فاز عرضه تدریجی اجرا می‌کند.
 
-When we move a customer's traffic to a distilled student, we tell them. The customer-facing wording: "Your high-volume queries are now served by a model we fine-tuned on your traffic, optimized for latency and cost. Eval evidence in your quarterly report shows quality is within 2 points of the frontier baseline." Most customers do not care as long as quality holds; a few (financial services, healthcare) require explicit signoff and we route those queries through the teacher unless they opt in.
+### ارتباط با مشتری <a id="customer-facing-communication"></a>
 
-## What Strong Interview Candidates Cover
+هنگامی که ترافیک یک مشتری را به مدل دانش‌آموز تقطیرشده منتقل می‌کنیم، به آن‌ها اطلاع می‌دهیم. متن پیام به مشتری این است: «پرس‌وجوهای پرترافیک شما اکنون توسط مدلی سرویس‌دهی می‌شوند که روی ترافیک خودتان Fine-tuning شده و برای تاخیر و هزینه بهینه‌سازی شده است. شواهد ارزیابی در گزارش فصلی شما نشان می‌دهد که کیفیت در محدوده ۲ امتیازی خط پایه مرزی قرار دارد.» بیشتر مشتریان تا زمانی که کیفیت حفظ شود اهمیتی نمی‌دهند؛ تعداد معدودی (خدمات مالی، سلامت) نیازمند تاییدیه صریح هستند و ما پرس‌وجوهای آن‌ها را از طریق مدل معلم مسیریابی می‌کنیم مگر اینکه خودشان انتخاب کنند (Opt in).
 
-- They make the budget math explicit and front-load the conversation: upfront cost, payback period, ongoing re-distillation cost.
-- They cite distillation papers by name (DistilBERT, Alpaca, distillation with rationales) and use the language of "student", "teacher", and "rejection sampling".
-- They explain why production traces beat synthetic data, and why human spot-check on teacher labels matters.
-- They walk through canary rollout with concrete percentages and auto-rollback gates; they name the regression types that shadow-only traffic misses.
-- They say where distillation does NOT help, demonstrating they have done this and not just read about it.
-- They handle the teacher-upgrade scenario: when frontier improves, the gap to student widens, and re-distillation is the fix.
-- They include privacy work (PII redaction in training data) as part of the pipeline, not as an afterthought.
+## داوطلبان قوی مصاحبه چه مواردی را پوشش می‌دهند <a id="what-strong-interview-candidates-cover"></a>
 
-## References
+- محاسبات بودجه را صریح انجام می‌دهند و گفتگو را با آن آغاز می‌کنند: هزینه اولیه، دوره بازگشت سرمایه و هزینه بازتقطیر مداوم.
+- مقالات تقطیر دانش را با نام ذکر می‌کنند (DistilBERT، Alpaca، تقطیر همراه با استدلال) و از ادبیات «دانش‌آموز» (Student)، «معلم» (Teacher) و «نمونه‌گیری ردی» (Rejection Sampling) استفاده می‌کنند.
+- توضیح می‌دهند که چرا ردهای محیط تولید بر داده‌های مصنوعی برتری دارند و چرا بازبینی نمونه‌ای انسانی روی برچسب‌های معلم اهمیت دارد.
+- عرضه تدریجی (Canary Rollout) را با درصدهای مشخص و دروازه‌های بازگشت خودکار توضیح می‌دهند؛ و انواع افت کیفیتی را نام می‌برند که ترافیک صرفاً سایه قادر به کشف آن‌ها نیست.
+- می‌گویند در چه جاهایی تقطیر کمکی نمی‌کند، که نشان می‌دهد این کار را در عمل انجام داده‌اند و صرفاً درباره آن نخوانده‌اند.
+- سناریوی ارتقای معلم را مدیریت می‌کنند: وقتی مدل مرزی بهبود می‌یابد، شکاف با دانش‌آموز بیشتر می‌شود و راه‌حل، بازتقطیر است.
+- اقدامات حریم خصوصی (پالایش PII در داده‌های آموزشی) را به عنوان بخشی از پایپ‌لاین در نظر می‌گیرند، نه به عنوان یک فکر بعدی.
 
-- Sanh et al., [DistilBERT, a distilled version of BERT](https://arxiv.org/abs/1910.01108)
-- Hinton et al., [Distilling the Knowledge in a Neural Network](https://arxiv.org/abs/1503.02531)
-- Taori et al., [Stanford Alpaca: An Instruction-following LLaMA model](https://github.com/tatsu-lab/stanford_alpaca)
-- Hsieh et al., [Distilling Step-by-Step](https://arxiv.org/abs/2305.02301)
-- Jiao et al., [TinyBERT: Distilling BERT for Natural Language Understanding](https://arxiv.org/abs/1909.10351)
-- OpenAI, [Distilling from a larger model](https://developers.openai.com/api/docs/guides/supervised-fine-tuning#distilling-from-a-larger-model) (built on OpenAI fine-tuning, which is being wound down)
-- [vLLM FP8 W8A8](https://docs.vllm.ai/en/latest/features/quantization/llm_compressor/fp8/) and [quantized KV cache](https://docs.vllm.ai/en/latest/features/quantization/quantized_kvcache/)
-- [Langfuse trace sampling](https://langfuse.com/docs/observability/features/sampling)
-- Hamel Husain, [Field guide to rapidly improving AI products](https://hamel.dev/blog/posts/field-guide/)
-- [DeepSpeed for training](https://www.deepspeed.ai/training/)
+## منابع <a id="references"></a>
 
-Related chapters: [Fine-Tuning and Distillation](../03-training-and-adaptation/05-knowledge-distillation.md), [Inference Optimization](../04-inference-optimization/01-inference-fundamentals.md), [Cost Management](../04-inference-optimization/07-cost-optimization-playbook.md).
+- مقاله Sanh و همکاران، [DistilBERT، نسخه‌ای تقطیرشده از BERT](https://arxiv.org/abs/1910.01108)
+- مقاله Hinton و همکاران، [تقطیر دانش در یک شبکه عصبی (Distilling the Knowledge in a Neural Network)](https://arxiv.org/abs/1503.02531)
+- پروژه Taori و همکاران، [Stanford Alpaca: یک مدل LLaMA پیرو دستورالعمل](https://github.com/tatsu-lab/stanford_alpaca)
+- مقاله Hsieh و همکاران، [تقطیر گام‌به‌گام (Distilling Step-by-Step)](https://arxiv.org/abs/2305.02301)
+- مقاله Jiao و همکاران، [TinyBERT: تقطیر BERT برای درک زبان طبیعی](https://arxiv.org/abs/1909.10351)
+- راهنمای OpenAI، [تقطیر از یک مدل بزرگ‌تر](https://developers.openai.com/api/docs/guides/supervised-fine-tuning#distilling-from-a-larger-model) (مبتنی بر Fine-tuning در OpenAI که در حال تعطیل شدن است)
+- مستندات [کوانتیزاسیون FP8 W8A8 در vLLM](https://docs.vllm.ai/en/latest/features/quantization/llm_compressor/fp8/) و [حافظه کش KV کوانتیزه‌شده](https://docs.vllm.ai/en/latest/features/quantization/quantized_kvcache/)
+- مستندات [نمونه‌گیری رد در Langfuse](https://langfuse.com/docs/observability/features/sampling)
+- نوشته Hamel Husain، [راهنمای میدانی برای بهبود سریع محصولات هوش مصنوعی](https://hamel.dev/blog/posts/field-guide/)
+- مستندات [فریم‌ورک DeepSpeed برای آموزش](https://www.deepspeed.ai/training/)
+
+فصل‌های مرتبط: [Fine-Tuning و تقطیر دانش](../03-training-and-adaptation/05-knowledge-distillation.md)، [بهینه‌سازی استنتاج (Inference)](../04-inference-optimization/01-inference-fundamentals.md)، [مدیریت هزینه](../04-inference-optimization/07-cost-optimization-playbook.md).
+
+</div>

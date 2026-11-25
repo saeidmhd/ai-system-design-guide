@@ -1,63 +1,67 @@
-# Case Study: Financial Analysis with Ensemble Verification
+<div dir="rtl">
 
-This case study covers designing a high-reliability AI system for generating equity research reports where accuracy is critical.
+# مطالعه موردی: تحلیل مالی با راستی‌آزمایی تجمیعی (Ensemble Verification)
 
-## Table of Contents
+این مطالعه موردی طراحی یک سیستم هوش مصنوعی با قابلیت اطمینان بالا برای تولید گزارش‌های پژوهش سهام (equity research) را پوشش می‌دهد؛ جایی که دقت از اهمیت حیاتی برخوردار است.
 
-- [Problem Statement](#problem-statement)
-- [Requirements Analysis](#requirements-analysis)
-- [Architecture Design](#architecture-design)
-- [Ensemble Pipeline](#ensemble-pipeline)
-- [Fact Verification](#stage-3b-fact-verification-with-multi-agent-debate)
-- [Quality Gates](#quality-gates)
-- [Results and Metrics](#results-and-metrics)
-- [Interview Walkthrough](#interview-walkthrough)
+## فهرست مطالب
 
----
-
-## Problem Statement
-
-**Company:** Investment firm generating equity research reports
-
-**Challenge:**
-- Reports influence multi-million dollar investment decisions
-- Zero tolerance for hallucinated financial data
-- Regulatory scrutiny on AI-generated analysis
-- Current manual process: 8 hours per report, $500 cost
-
-**Goal:**
-- Reduce report generation time to < 30 minutes
-- Maintain accuracy at 99.5%+
-- Clear audit trail for compliance
-- Cost target: < $50 per report
+- [صورت مسئله](#problem-statement)
+- [تحلیل نیازمندی‌ها](#requirements-analysis)
+- [طراحی معماری](#architecture-design)
+- [خط لوله تجمیعی (Ensemble Pipeline)](#ensemble-pipeline)
+- [راستی‌آزمایی حقایق](#stage-3b-fact-verification-with-multi-agent-debate)
+- [دروازه‌های کیفیت](#quality-gates)
+- [نتایج و معیارها](#results-and-metrics)
+- [مرور سناریوی مصاحبه](#interview-walkthrough)
 
 ---
 
-## Requirements Analysis
+## صورت مسئله <a id="problem-statement"></a>
 
-### Accuracy Requirements
+**شرکت:** یک موسسه سرمایه‌گذاری که گزارش‌های پژوهش سهام تولید می‌کند
 
-| Data Type | Tolerance | Verification Method |
-|-----------|-----------|---------------------|
-| Financial metrics (EPS, PE) | 0% error | Source verification |
-| Percentage changes | ±0.1% | Cross-validation |
-| Date references | 100% accuracy | Source extraction |
-| Company names | 100% accuracy | Entity matching |
-| Analyst quotes | Verbatim or flagged | Quote extraction |
+**چالش:**
+- گزارش‌ها بر تصمیم‌های سرمایه‌گذاری چند میلیون دلاری تاثیر می‌گذارند
+- تحمل صفر برای داده‌های مالی توهم‌زده (hallucinated)
+- نظارت و سخت‌گیری قانونی بر تحلیل‌های تولیدشده توسط هوش مصنوعی
+- فرایند دستی فعلی: ۸ ساعت به ازای هر گزارش، ۵۰۰ دلار هزینه
 
-### Compliance Requirements
-
-- All claims must cite source documents
-- No forward-looking statements without disclaimers
-- Clear AI-generated disclosure
-- Full audit trail of generation process
-- Human review for publication
+**هدف:**
+- کاهش زمان تولید گزارش به کمتر از ۳۰ دقیقه
+- حفظ دقت در سطح ۹۹٫۵٪ به بالا
+- مسیر ممیزی (audit trail) شفاف برای انطباق قانونی
+- هدف هزینه: کمتر از ۵۰ دلار به ازای هر گزارش
 
 ---
 
-## Architecture Design
+## تحلیل نیازمندی‌ها <a id="requirements-analysis"></a>
 
-### High-Level Pipeline
+### نیازمندی‌های دقت
+
+| نوع داده | تلورانس مجاز | روش راستی‌آزمایی |
+|----------|--------------|-------------------|
+| معیارهای مالی (EPS، PE) | خطای ۰٪ | راستی‌آزمایی از منبع |
+| تغییرات درصدی | بازه ۰٫۱٪± | اعتبارسنجی متقاطع (Cross-validation) |
+| ارجاعات تاریخی | دقت ۱۰۰٪ | استخراج از منبع |
+| نام شرکت‌ها | دقت ۱۰۰٪ | تطبیق موجودیت (Entity matching) |
+| نقل‌قول تحلیلگران | عین متن یا علامت‌گذاری‌شده | استخراج نقل‌قول |
+
+### نیازمندی‌های انطباق قانونی (Compliance)
+
+- تمام ادعاها باید به اسناد منبع ارجاع داده شوند
+- عدم درج اظهارات آینده‌نگرانه بدون سلب مسئولیت (disclaimer)
+- افشای شفاف تولید محتوا توسط هوش مصنوعی
+- ثبت کامل مسیر ممیزی (audit trail) فرایند تولید
+- بازبینی انسانی پیش از انتشار
+
+---
+
+## طراحی معماری <a id="architecture-design"></a>
+
+### خط لوله سطح بالا
+
+<div dir="ltr">
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -82,7 +86,11 @@ This case study covers designing a high-reliability AI system for generating equ
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-The pipeline as a flow. Each stage uses a different model class on purpose: extraction wants multimodal (charts and tables), generation wants narrative quality, audit wants reasoning depth, panel wants cheap-but-many for diversity:
+</div>
+
+این خط لوله در قالب یک جریان پردازشی نشان داده شده است. هر مرحله به‌طور هدفمند از کلاس مدل متفاوتی استفاده می‌کند: مرحله استخراج به قابلیت چندوجهی (نمودارها و جدول‌ها) نیاز دارد، مرحله تولید کیفیت روایت‌پردازی می‌طلبد، مرحله ممیزی به عمق استدلال نیاز دارد و پنل داوری برای دستیابی به تنوع، از مدل‌های ارزان‌تر اما متعدد بهره می‌برد:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -94,7 +102,11 @@ flowchart LR
     D -->|no| H[Human Review Queue]
 ```
 
-### Data Flow
+</div>
+
+### جریان داده
+
+<div dir="ltr">
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -148,7 +160,11 @@ flowchart LR
         └─────────────┘         └─────────────┘
 ```
 
-The data lineage in Mermaid, showing how three input sources converge into one verified output:
+</div>
+
+تبار داده (data lineage) در نمودار Mermaid زیر نشان می‌دهد که چگونه سه منبع ورودی در نهایت به یک خروجی راستی‌آزمایی‌شده همگرا می‌شوند:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TD
@@ -164,11 +180,15 @@ flowchart TD
     PAN --> HR[Human Review<br/>low confidence]
 ```
 
+</div>
+
 ---
 
-## Ensemble Pipeline
+## خط لوله تجمیعی (Ensemble Pipeline) <a id="ensemble-pipeline"></a>
 
-### Stage 1: Multimodal Data Extraction (Gemini 3.8 Flash)
+### مرحله اول: استخراج چندوجهی داده (Gemini 3.8 Flash)
+
+<div dir="ltr">
 
 ```python
 from google import genai
@@ -198,7 +218,11 @@ class FinancialDataExtractor:
         return json.loads(response.text)
 ```
 
-### Stage 2: Analysis Generation (Claude Opus 5.5)
+</div>
+
+### مرحله دوم: تولید تحلیل (Claude Opus 5.5)
+
+<div dir="ltr">
 
 ```python
 class AnalysisEngine:
@@ -215,7 +239,11 @@ class AnalysisEngine:
         return "".join(b.text for b in response.content if b.type == "text")
 ```
 
-### Stage 3a: Reasoning Audit (GPT-6.1 Sol)
+</div>
+
+### مرحله 3a: ممیزی استدلال (GPT-6.1 Sol)
+
+<div dir="ltr">
 
 ```python
 class AuditorAgent:
@@ -234,9 +262,13 @@ class AuditorAgent:
         return self.parse_audit(response.output_text)
 ```
 
-### Stage 3b: Fact Verification with Multi-Agent Debate
+</div>
 
-The debate stage is what catches the subtle hallucinations a single model misses. Three independent debaters verify each claim in parallel; consensus wins, dissent flags the claim for human review:
+### مرحله 3b: راستی‌آزمایی حقایق با مناظره چندایجنتی <a id="stage-3b-fact-verification-with-multi-agent-debate"></a>
+
+مرحله مناظره همان بخشی است که توهم‌های ظریفی را که یک مدل منفرد از دست می‌دهد، شکار می‌کند. سه مناظره‌کننده مستقل هر ادعا را به‌صورت موازی راستی‌آزمایی می‌کنند؛ اجماع برنده می‌شود و اختلاف‌نظر، ادعا را برای بازبینی انسانی علامت‌گذاری می‌کند:
+
+<div dir="ltr">
 
 ```mermaid
 sequenceDiagram
@@ -268,6 +300,10 @@ sequenceDiagram
         CON->>OUT: low confidence
     end
 ```
+
+</div>
+
+<div dir="ltr">
 
 ```python
 class FactVerificationDebate:
@@ -332,11 +368,15 @@ Provide your verdict with evidence.
         }
 ```
 
+</div>
+
 ---
 
-## Quality Gates
+## دروازه‌های کیفیت <a id="quality-gates"></a>
 
-### Automated Quality Checks
+### بررسی‌های خودکار کیفیت
+
+<div dir="ltr">
 
 ```python
 class QualityGate:
@@ -385,7 +425,11 @@ class QualityGate:
         }
 ```
 
-### Human Review Interface
+</div>
+
+### رابط بازبینی انسانی
+
+<div dir="ltr">
 
 ```python
 class HumanReviewQueue:
@@ -406,105 +450,109 @@ class HumanReviewQueue:
         await self.notify_reviewers(review_item)
 ```
 
----
-
-## Results and Metrics
-
-### Performance Comparison
-
-| Metric | Manual Process | AI Pipeline | Improvement |
-|--------|---------------|-------------|-------------|
-| Time per report | 8 hours | 25 minutes | 19x faster |
-| Cost per report | $500 | $41 | 92% reduction |
-| Factual error rate | 2.1% | 0.4% | 81% reduction |
-| Human review load | 100% | 28% | 72% reduction |
-
-### Quality Metrics
-
-| Quality Dimension | Target | Achieved |
-|-------------------|--------|----------|
-| Data extraction accuracy | 99% | 99.3% |
-| Claim verification rate | 95% | 96.8% |
-| Panel quality score | 4.0/5.0 | 4.2/5.0 |
-| Regulatory compliance | 100% | 100% |
-
-### Cost Breakdown (November 2026 List Prices)
-
-Assumes ~200K tokens of source material per report (10-K, two 10-Qs, an earnings call transcript) and ~150 extracted claims. Gemini 3.8 Flash is priced at its January 1, 2027 list rate ($1.50 / $7.50), not the introductory rate.
-
-| Component | Assumption | Cost | Share |
-|-----------|------------|------|-------|
-| Extraction (Gemini 3.8 Flash, k=5) | 5 × 200K tokens in, ~75K out in total | $2.06 | 5% |
-| Analysis (Claude Opus 5.5, Mixture of Agents) | 3 proposers × 220K in plus an aggregator; ~48K out including thinking | $3.78 | 9% |
-| Reasoning audit (GPT-6.1 Sol, high effort) | ~300K in across per-claim calls (each well under the 272K long-context threshold), ~50K out | $1.10 | 3% |
-| Debate verification (3 model families) | 150 claims × 3 debaters × 2 rounds × ~8K in / 1K out | $29.25 | 70% |
-| Panel review | 3 mid-tier judges × ~40K in / 2K out | $0.28 | 1% |
-| Infrastructure and vector ops | | $5.00 | 12% |
-| **Total** | | **~$41** | 100% |
-
-*Note: Generation is cheap; verification is the bill. Debate fan-out (claims × debaters × rounds) is about 70% of spend, and Opus 5.5 alone accounts for $15.60 of it. The lever is the claim count: deduplicate claims, and skip debate for numbers that already match the Stage 1 structured data exactly. Prompt caching the source excerpts between debate rounds cuts the input side further (caches are per model, so each debater keeps its own).*
+</div>
 
 ---
 
-## Interview Walkthrough
+## نتایج و معیارها <a id="results-and-metrics"></a>
 
-**Interviewer:** "Design an AI system for generating financial research reports with very high accuracy requirements."
+### مقایسه عملکرد
 
-**Strong response:**
+| معیار | فرایند دستی | خط لوله هوش مصنوعی | بهبود |
+|-------|-------------|---------------------|-------|
+| زمان به ازای هر گزارش | ۸ ساعت | ۲۵ دقیقه | ۱۹ برابر سریع‌تر |
+| هزینه به ازای هر گزارش | ۵۰۰ دلار | ۴۱ دلار | ۹۲٪ کاهش |
+| نرخ خطای واقعی (Factual) | ۲٫۱٪ | ۰٫۴٪ | ۸۱٪ کاهش |
+| بار کاری بازبینی انسانی | ۱۰۰٪ | ۲۸٪ | ۷۲٪ کاهش |
 
-1. **Clarify accuracy requirements** (1 min)
-   - "What's the acceptable error rate for financial data?"
-   - "What's the regulatory compliance requirement?"
-   - "Is latency or accuracy the priority?"
+### معیارهای کیفیت
 
-2. **Acknowledge the core challenge** (1 min)
-   - "The key challenge is that hallucinations are unacceptable for financial data. A single wrong number could mislead investment decisions. I need ensemble methods for reliability."
+| بُعد کیفیت | هدف | دستاورد |
+|------------|-----|---------|
+| دقت استخراج داده | ۹۹٪ | ۹۹٫۳٪ |
+| نرخ راستی‌آزمایی ادعاها | ۹۵٪ | ۹۶٫۸٪ |
+| امتیاز کیفیت پنل | ۴٫۰ از ۵٫۰ | ۴٫۲ از ۵٫۰ |
+| انطباق مقرراتی | ۱۰۰٪ | ۱۰۰٪ |
 
-3. **High-level architecture** (3 min)
-   - "I would use a multi-stage pipeline with different ensemble techniques at each stage:"
-   - "Data extraction: Self-consistency with k=5 for unanimous agreement on numbers"
-   - "Analysis: Mixture of Agents for diverse perspectives"
-   - "Verification: Multi-agent debate to catch hallucinations"
-   - "Quality gate: Panel of judges to score before publishing"
+### تفکیک هزینه‌ها (تعرفه‌های رسمی نوامبر ۲۰۲۶)
 
-4. **Deep dive on fact verification** (3 min)
-   - "For fact verification, I extract every factual claim from the report"
-   - "Three diverse models debate whether each claim is supported by sources"
-   - "If they disagree, the claim is flagged for human review"
-   - "This catches subtle errors that single-model verification misses"
+این برآورد بر مبنای حدود ۲۰۰ هزار Token محتوای منبع به ازای هر گزارش (یک گزارش 10-K، دو گزارش 10-Q و متن پیاده‌شده یک نشست گزارش درآمد) و حدود ۱۵۰ ادعای استخراج‌شده انجام شده است. قیمت‌گذاری مدل Gemini 3.8 Flash بر اساس تعرفه رسمی ۱ ژانویه ۲۰۲۷ (۱٫۵۰ دلار / ۷٫۵۰ دلار) محاسبه شده است، نه تعرفه معرفی اولیه.
 
-5. **Cost-quality tradeoff** (2 min)
-   - "This pipeline is 10-20x more expensive than single-model generation"
-   - "But for financial reports, the cost of errors (legal, reputational) far exceeds the cost of verification"
-   - "I would implement confidence-based routing: auto-publish high-confidence reports, human-review low-confidence ones"
+| جزء | فرضیه | هزینه | سهم |
+|-----|-------|-------|-----|
+| استخراج (Gemini 3.8 Flash، با k=5) | تعداد ۵ × ۲۰۰ هزار Token ورودی، در مجموع حدود ۷۵ هزار خروجی | ۲٫۰۶ دلار | ۵٪ |
+| تحلیل (Claude Opus 5.5، معماری Mixture of Agents) | تعداد ۳ پیشنهاددهنده × ۲۲۰ هزار ورودی به علاوه یک تجمیع‌کننده؛ حدود ۴۸ هزار خروجی شامل فرایند تفکر | ۳٫۷۸ دلار | ۹٪ |
+| ممیزی استدلال (GPT-6.1 Sol، با تلاش بالا) | حدود ۳۰۰ هزار ورودی در فراخوانی‌های به ازای هر ادعا (هر کدام بسیار کمتر از آستانه زمینه طولانی ۲۷۲ هزار Token)، حدود ۵۰ هزار خروجی | ۱٫۱۰ دلار | ۳٪ |
+| راستی‌آزمایی مناظره (۳ خانواده مدل) | تعداد ۱۵۰ ادعا × ۳ مناظره‌کننده × ۲ دور × حدود ۸ هزار ورودی / ۱ هزار خروجی | ۲۹٫۲۵ دلار | ۷۰٪ |
+| بازبینی پنل داوران | تعداد ۳ داور میان‌رده × حدود ۴۰ هزار ورودی / ۲ هزار خروجی | ۰٫۲۸ دلار | ۱٪ |
+| زیرساخت و عملیات برداری | | ۵٫۰۰ دلار | ۱۲٪ |
+| **مجموع** | | **حدود ۴۱ دلار** | ۱۰۰٪ |
 
-6. **Monitoring** (1 min)
-   - "I would track extraction accuracy, claim verification rate, and panel scores continuously"
-   - "Drift detection would alert if accuracy drops"
-   - "Full audit trail for compliance"
-
----
-
-## Key Learnings
-
-1. **Self-consistency alone is insufficient** for numerical data extraction. Unanimous agreement (k/k votes) should be required.
-
-2. **Multi-agent debate most effective** for catching subtle reasoning errors and hallucinations.
-
-3. **Source attribution is critical** for both accuracy and compliance. Every claim must link to source documents.
-
-4. **Confidence-based routing** is essential for cost management. Not every report needs full ensemble verification.
-
-5. **Human-in-the-loop is still necessary** for disputed claims and edge cases. Design for graceful escalation.
+*نکته: تولید متن ارزان است؛ هزینه اصلی مربوط به راستی‌آزمایی است. انشعاب مناظره (ادعاها × مناظره‌کنندگان × دورها) حدود ۷۰٪ از هزینه را تشکیل می‌دهد و مدل Opus 5.5 به‌تنهایی ۱۵٫۶۰ دلار از آن را به خود اختصاص می‌دهد. اهرم کنترل هزینه، تعداد ادعاهاست: ادعاهای تکراری را حذف کنید و برای اعدادی که دقیقاً با داده‌های ساختاریافته مرحله اول مطابقت دارند، از مناظره صرف‌نظر کنید. استفاده از کش کردن Prompt (Prompt caching) برای بخش‌های منبع بین دورهای مناظره، هزینه سمت ورودی را بیش از پیش کاهش می‌دهد (کش‌ها به‌صورت اختصاصی برای هر مدل نگهداری می‌شوند، بنابراین هر مناظره‌کننده کش خود را دارد).*
 
 ---
 
-## References
+## مرور سناریوی مصاحبه <a id="interview-walkthrough"></a>
 
-- Verga et al. "Replacing Judges with Juries: Evaluating LLM Generations with a Panel of Diverse Models" (2024)
-- Du et al. "Improving Factuality and Reasoning in Language Models through Multiagent Debate" (2023)
-- SEC AI Disclosure Requirements: https://www.sec.gov/
+**مصاحبه‌گر:** «یک سیستم هوش مصنوعی برای تولید گزارش‌های پژوهش مالی با نیازمندی‌های دقت بسیار بالا طراحی کنید.»
+
+**پاسخ قوی:**
+
+1. **شفاف‌سازی نیازمندی‌های دقت** (۱ دقیقه)
+   - «نرخ خطای قابل قبول برای داده‌های مالی چقدر است؟»
+   - «الزامات انطباق قانونی و مقرراتی چیست؟»
+   - «اولویت با تاخیر (Latency) است یا دقت؟»
+
+2. **پذیرش چالش اصلی** (۱ دقیقه)
+   - «چالش کلیدی این است که توهم (hallucination) در داده‌های مالی غیرقابل قبول است. تنها یک عدد اشتباه می‌تواند تصمیم‌های سرمایه‌گذاری را گمراه کند. برای دستیابی به قابلیت اطمینان، به روش‌های تجمیعی (ensemble) نیاز دارم.»
+
+3. **معماری سطح بالا** (۳ دقیقه)
+   - «من از یک خط لوله چندمرحله‌ای با تکنیک‌های تجمیعی متفاوت در هر مرحله استفاده می‌کنم:»
+   - «استخراج داده: خودسازگاری (Self-consistency) با k=5 برای دستیابی به اجماع صددرصدی روی اعداد»
+   - «تحلیل: ترکیب ایجنت‌ها (Mixture of Agents) برای دیدگاه‌های متنوع»
+   - «راستی‌آزمایی: مناظره چندایجنتی (Multi-agent debate) برای شکار توهم‌ها»
+   - «دروازه کیفیت: پنل داوران (Panel of judges) برای امتیازدهی پیش از انتشار»
+
+4. **بررسی عمیق راستی‌آزمایی حقایق** (۳ دقیقه)
+   - «برای راستی‌آزمایی حقایق، تمام ادعاهای واقعی (factual) را از گزارش استخراج می‌کنم»
+   - «سه مدل متنوع درباره اینکه آیا هر ادعا توسط منابع پشتیبانی می‌شود یا خیر، مناظره می‌کنند»
+   - «در صورت اختلاف‌نظر، ادعا برای بازبینی انسانی علامت‌گذاری می‌شود»
+   - «این روش خطاهای ظریفی را که راستی‌آزمایی تک‌مدلی از دست می‌دهد، شناسایی می‌کند»
+
+5. **موازنه هزینه و کیفیت** (۲ دقیقه)
+   - «این خط لوله ۱۰ تا ۲۰ برابر گران‌تر از تولید با یک مدل منفرد است»
+   - «اما برای گزارش‌های مالی، هزینه خطا (حقوقی و اعتباری) بسیار فراتر از هزینه راستی‌آزمایی است»
+   - «من مسیریابی مبتنی بر اطمینان (confidence-based routing) را پیاده‌سازی می‌کنم: انتشار خودکار برای گزارش‌های با اطمینان بالا و بازبینی انسانی برای موارد با اطمینان پایین»
+
+6. **پایش و نظارت** (۱ دقیقه)
+   - «دقت استخراج، نرخ راستی‌آزمایی ادعاها و امتیازات پنل داوری را به‌صورت مستمر رصد می‌کنم»
+   - «تشخیص انحراف (Drift detection) در صورت افت دقت هشدار می‌دهد»
+   - «ثبت کامل مسیر ممیزی (audit trail) برای انطباق قانونی»
 
 ---
 
-*Next: [Code Assistant Case Study](04-code-assistant.md)*
+## نکات کلیدی آموخته‌شده
+
+1. **خودسازگاری (Self-consistency) به‌تنهایی کافی نیست** برای استخراج داده‌های عددی. باید اجماع کامل (رای k از k) الزامی شود.
+
+2. **مناظره چندایجنتی بیشترین کارایی را دارد** برای شناسایی خطاهای استدلالی ظریف و توهم‌ها.
+
+3. **اسناد منبع و ارجاع‌دهی حیاتی است** هم برای دقت و هم برای انطباق قانونی. هر ادعا باید به اسناد منبع متصل باشد.
+
+4. **مسیریابی مبتنی بر اطمینان** برای مدیریت هزینه ضروری است. هر گزارشی به راستی‌آزمایی کامل تجمیعی نیاز ندارد.
+
+5. **حضور انسان در حلقه (Human-in-the-loop) همچنان ضروری است** برای ادعاهای مورد مناقشه و موارد مرزی. سیستم را برای ارجاع تدریجی و اصولی (graceful escalation) طراحی کنید.
+
+---
+
+## منابع
+
+- مقاله ورگا و همکاران: «جایگزینی داوران با هیئت منصفه: ارزیابی خروجی‌های LLM با پنلی از مدل‌های متنوع» (Replacing Judges with Juries: Evaluating LLM Generations with a Panel of Diverse Models، سال ۲۰۲۴)
+- مقاله دو و همکاران: «بهبود واقع‌گرایی و استدلال در مدل‌های زبانی از طریق مناظره چندایجنتی» (Improving Factuality and Reasoning in Language Models through Multiagent Debate، سال ۲۰۲۳)
+- الزامات افشای هوش مصنوعی کمیسیون بورس و اوراق بهادار آمریکا (SEC): https://www.sec.gov/
+
+---
+
+*بعدی: [مطالعه موردی: دستیار کدنویسی هوش مصنوعی](04-code-assistant.md)*
+
+</div>

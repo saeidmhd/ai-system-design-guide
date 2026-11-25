@@ -1,25 +1,29 @@
-# Case Study: AI-Powered Recommendation Engine
+<div dir="rtl">
 
-## The Problem
+# مطالعه موردی: موتور توصیه‌گر مبتنی بر هوش مصنوعی <a id="case-study-ai-powered-recommendation-engine"></a>
 
-A streaming platform with **50 million users** needs to build a recommendation system that combines collaborative filtering with LLM-generated explanations: "Because you enjoyed Inception, you might like Tenet for its mind-bending time mechanics."
+## مسئله <a id="the-problem"></a>
 
-**Constraints given in the interview:**
-- Real-time recommendations (under 200ms p95)
-- Must explain why each recommendation was made
-- Cold-start handling for new users
-- Privacy: cannot leak viewing history between users
-- Daily active: 5M users, each viewing 10+ recommendation sets
+یک پلتفرم استریم با **۵۰ میلیون کاربر** نیاز به ساخت یک سیستم توصیه‌گر دارد که فیلتر مشارکتی (Collaborative Filtering) را با توضیحات تولیدشده توسط LLM ترکیب کند: «از آنجا که از فیلم Inception لذت بردید، ممکن است فیلم Tenet را نیز به دلیل مکانیک‌های ذهنی و پیچیده زمانی آن بپسندید.»
 
----
-
-## The Interview Question
-
-> "Design a system that recommends movies AND explains the recommendation in natural language, at scale."
+**محدودیت‌های ارائه‌شده در مصاحبه:**
+- توصیه‌های بلادرنگ (Real-time) با تاخیر زیر ۲۰۰ میلی‌ثانیه در صدک ۹۵ (p95)
+- باید دلیل ارائه هر توصیه را توضیح دهد
+- مدیریت شروع سرد (Cold-Start) برای کاربران جدید
+- حریم خصوصی: عدم نشت تاریخچه تماشای کاربران به یکدیگر
+- کاربران فعال روزانه: ۵ میلیون کاربر که هر یک بیش از ۱۰ مجموعه توصیه را مشاهده می‌کنند
 
 ---
 
-## Solution Architecture
+## پرسش مصاحبه <a id="the-interview-question"></a>
+
+> «سیستمی طراحی کنید که فیلم‌ها را توصیه کند و دلیل توصیه را در مقیاس بالا به زبان طبیعی توضیح دهد.»
+
+---
+
+## معماری راه‌حل <a id="solution-architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -43,27 +47,31 @@ flowchart TB
     end
 ```
 
+</div>
+
 ---
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. Why Not Just Use LLM for Everything?
+### ۱. چرا برای همه‌چیز فقط از LLM استفاده نکنیم؟ <a id="1-why-not-just-use-llm-for-everything"></a>
 
-**Answer:** Scale economics and latency. Ranking with an LLM means one call per recommendation set: 5M daily active users × 10 sets = 50M calls per day, each carrying the user's history plus about 100 candidate descriptions (call it 15K input tokens). Even on a small model like GPT-6 Luna ($0.10/$0.50 per 1M tokens) that is about $0.0016 per call, or roughly $80K per day, and a 15K-token prefill does not fit a 200ms p95. Instead:
+**پاسخ:** اقتصاد مقیاس و تاخیر (Latency). رتبه‌بندی با یک LLM یعنی یک فراخوانی به ازای هر مجموعه توصیه: ۵ میلیون کاربر فعال روزانه × ۱۰ مجموعه = ۵۰ میلیون فراخوانی در روز، که هر کدام تاریخچه کاربر به‌علاوه حدود ۱۰۰ توضیح گزینه کاندید را حمل می‌کند (تقریباً ۱۵K Token ورودی). حتی روی یک مدل کوچک مانند GPT-6 Luna (با هزینه ۰.۱۰ / ۰.۵۰ دلار به ازای هر ۱ میلیون Token)، این مقدار حدود ۰.۰۰۱۶ دلار به ازای هر فراخوانی یا تقریباً ۸۰ هزار دلار در روز می‌شود، و پیش‌پردازش (Prefill) ۱۵K Token در بودجه تاخیر ۲۰۰ میلی‌ثانیه در صدک ۹۵ (p95) جا نمی‌گیرد. در عوض:
 
-| Component | Role | Cost per User/Day |
-|-----------|------|-------------------|
-| Embedding lookup | Fetch precomputed vector | $0.00001 |
-| ANN search | Find candidates | $0.0001 |
-| Cross-encoder rerank | Score top 100 | $0.001 |
-| LLM explanation | 100 explanations/day, 95% from cache, ~500 input + 40 output tokens per miss on GPT-6 Luna | $0.0004 |
-| **Total** | | **~$0.0015** |
+| بخش | نقش | هزینه به ازای هر کاربر/روز |
+|-----|-----|---------------------------|
+| جست‌وجوی بردار (Embedding Lookup) | دریافت بردار ازپیش‌محاسبه‌شده | ۰.۰۰۰۰۱ دلار |
+| جست‌وجوی ANN | یافتن گزینه‌های کاندید | ۰.۰۰۰۱ دلار |
+| رتبه‌بندی مجدد Cross-Encoder | امتیازدهی به ۱۰۰ گزینه برتر | ۰.۰۰۱ دلار |
+| توضیح با LLM | ۱۰۰ توضیح در روز، ۹۵٪ از کش، حدود ۵۰۰ Token ورودی + ۴۰ Token خروجی در هر عدم اصابت (Miss) روی GPT-6 Luna | ۰.۰۰۰۴ دلار |
+| **مجموع** | | **حدود ۰.۰۰۱۵ دلار** |
 
-The LLM is only used for the final explanation, not the ranking itself. At a 95% cache hit rate on a small model, the explanation is no longer the largest line; the cross-encoder is. About $7.5K per day across 5M daily active users.
+از LLM فقط برای توضیح نهایی استفاده می‌شود، نه خود رتبه‌بندی. با نرخ اصابت کش (Cache Hit Rate) ۹۵٪ روی یک مدل کوچک، بخش توضیح دیگر بزرگ‌ترین قلم هزینه نیست؛ بلکه Cross-Encoder بیشترین سهم را دارد. این رقم در مجموع حدود ۷.۵ هزار دلار در روز برای ۵ میلیون کاربر فعال روزانه است.
 
-### 2. Explanation Caching
+### ۲. کش‌کردن توضیحات <a id="2-explanation-caching"></a>
 
-**Answer:** Most explanations can be cached. "Because you watched Inception" applies to thousands of users. We cache explanations at the (content_pair, reason_type) level:
+**پاسخ:** بیشتر توضیحات قابل کش‌کردن هستند. جمله «چون فیلم Inception را تماشا کردید» برای هزاران کاربر صدق می‌کند. ما توضیحات را در سطح `(content_pair, reason_type)` کش می‌کنیم:
+
+<div dir="ltr">
 
 ```python
 cache_key = f"{source_movie}:{target_movie}:{reason_type}"
@@ -75,11 +83,15 @@ if not explanation:
     cache.set(cache_key, explanation, ttl=86400)
 ```
 
-Cache hit rate: 85%+ after warmup. Pre-generating explanations for new content pairs offline, through the Batch or Flex tier (50% off list on GPT-6 Luna), is what lifts it to the 95% the latency budget needs.
+</div>
 
-### 3. Cold-Start Handling
+نرخ اصابت کش (Cache Hit Rate): بیش از ۸۵٪ پس از گرم‌شدن کش (Warmup). پیش‌تولید توضیحات برای جفت‌های محتوای جدید به‌صورت آفلاین، از طریق سطح Batch یا Flex (با ۵۰٪ تخفیف نسبت به قیمت لیست در GPT-6 Luna)، همان چیزی است که این نرخ را به ۹۵٪ مورد نیاز بودجه تاخیر (Latency Budget) می‌رساند.
 
-**Answer:** New users have no history for collaborative filtering. We use a **Hybrid Approach**:
+### ۳. مدیریت شروع سرد (Cold-Start) <a id="3-cold-start-handling"></a>
+
+**پاسخ:** کاربران جدید هیچ تاریخچه‌ای برای فیلتر مشارکتی ندارند. ما از یک **رویکرد ترکیبی (Hybrid Approach)** استفاده می‌کنیم:
+
+<div dir="ltr">
 
 ```mermaid
 flowchart LR
@@ -93,16 +105,20 @@ flowchart LR
     COLLAB --> RECS
 ```
 
+</div>
+
 ---
 
-## The Personalized Explanation Challenge
+## چالش توضیح شخصی‌سازی‌شده <a id="the-personalized-explanation-challenge"></a>
 
-The explanation must feel personal, not generic:
+توضیح باید حسی شخصی داشته باشد، نه کلیشه‌ای و عمومی:
 
-**Bad:** "Tenet is a popular thriller."
-**Good:** "Because you enjoyed Inception's mind-bending plot, Tenet offers similar time-manipulation puzzles from the same director."
+**بد:** «فیلم Tenet یک تریلر محبوب است.»
+**خوب:** «از آنجا که از داستان پیچیده و ذهن‌درگیرکن Inception لذت بردید، فیلم Tenet معماهای مشابهی در زمینه دست‌کاری زمان را از همان کارگردان ارائه می‌دهد.»
 
-We achieve this by including user context in the prompt:
+ما این هدف را با گنجاندن زمینه کاربر (User Context) در Prompt به دست می‌آوریم:
+
+<div dir="ltr">
 
 ```python
 prompt = f"""
@@ -120,49 +136,53 @@ Explanation:
 """
 ```
 
-Note the tension with the pair-level cache: cached text cannot mention this user's other titles. Personalization comes from choosing the source movie from the user's own recent history (the source movie is part of the cache key). Per-user wording like the prompt above is generated only for high-value surfaces and is **never written to the shared pair cache**: a cached sentence that names one user's recent watches would be served to everyone who hits that key, which breaks the privacy constraint. Cache it per user, or not at all.
+</div>
+
+به تعارض موجود با کش در سطح جفت‌محتوا (Pair-Level Cache) توجه کنید: متن کش‌شده نمی‌تواند به سایر فیلم‌های تماشاشده توسط این کاربر اشاره کند. شخصی‌سازی از انتخاب فیلم مبدأ از تاریخچه اخیر خود کاربر ناشی می‌شود (فیلم مبدأ بخشی از کلید کش است). عبارت‌پردازی اختصاصی به ازای هر کاربر مانند Prompt بالا فقط برای بخش‌های باارزش بالا تولید می‌شود و **هرگز در کش مشترک جفت‌محتوا نوشته نمی‌شود**: یک جمله کش‌شده که فیلم‌های اخیر یک کاربر را نام ببرد، به هر کسی که به آن کلید اصابت کند نمایش داده می‌شود و این موضوع محدودیت حریم خصوصی را نقض می‌کند. چنین متنی را یا به‌صورت اختصاصی برای هر کاربر کش کنید، یا اصلاً کش نکنید.
 
 ---
 
-## Latency Budget
+## بودجه تاخیر (Latency Budget) <a id="latency-budget"></a>
 
-| Stage | Target | Actual p95 |
-|-------|--------|------------|
-| User embedding lookup | 5ms | 3ms |
-| ANN search (top 100) | 20ms | 15ms |
-| Cross-encoder rerank | 50ms | 45ms |
-| LLM explanation (cached) | 10ms | 8ms |
-| LLM explanation (miss) | 500ms | 450ms |
-| **Total (cache hit)** | **85ms** | **71ms** |
-| **Total (cache miss)** | **575ms** | **513ms** |
+| مرحله | هدف | مقدار واقعی p95 |
+|-------|-----|-----------------|
+| جست‌وجوی بردار کاربر (User Embedding Lookup) | ۵ میلی‌ثانیه | ۳ میلی‌ثانیه |
+| جست‌وجوی ANN (۱۰۰ گزینه برتر) | ۲۰ میلی‌ثانیه | ۱۵ میلی‌ثانیه |
+| رتبه‌بندی مجدد Cross-Encoder | ۵۰ میلی‌ثانیه | ۴۵ میلی‌ثانیه |
+| توضیح LLM (کش‌شده) | ۱۰ میلی‌ثانیه | ۸ میلی‌ثانیه |
+| توضیح LLM (عدم اصابت / Miss) | ۵۰۰ میلی‌ثانیه | ۴۵۰ میلی‌ثانیه |
+| **مجموع (اصابت کش / Cache Hit)** | **۸۵ میلی‌ثانیه** | **۷۱ میلی‌ثانیه** |
+| **مجموع (عدم اصابت کش / Cache Miss)** | **۵۷۵ میلی‌ثانیه** | **۵۱۳ میلی‌ثانیه** |
 
-To meet 200ms p95, we ensure 95%+ cache hit rate for explanations and generate explanations asynchronously for new content pairs.
-
----
-
-## Interview Follow-Up Questions
-
-**Q: How do you prevent the LLM from hallucinating facts about movies?**
-
-A: The LLM receives a structured fact sheet for each movie (director, cast, themes, awards) as context. It can only use information from this sheet. We also have a post-generation validator that checks claims against our catalog metadata.
-
-**Q: What if a user's taste changes rapidly?**
-
-A: We use a **recency-weighted embedding update**. Recent watches are weighted 3x more than older ones. For real-time responsiveness, we maintain a "session embedding" that captures current-session behavior and blends it with the historical embedding.
-
-**Q: How do you A/B test recommendation algorithms?**
-
-A: We hash user_id to consistently assign users to experiment buckets. Each bucket can have different candidate generation, ranking, or explanation strategies. We track engagement metrics (click-through, watch time, skip rate) per bucket.
+برای دستیابی به تاخیر زیر ۲۰۰ میلی‌ثانیه در صدک ۹۵ (p95)، نرخ اصابت کش بالای ۹۵٪ را برای توضیحات تضمین می‌کنیم و توضیحات را برای جفت‌های محتوای جدید به‌صورت ناهمگام (Asynchronous) تولید می‌کنیم.
 
 ---
 
-## Key Takeaways for Interviews
+## پرسش‌های تکمیلی مصاحبه <a id="interview-follow-up-questions"></a>
 
-1. **LLMs for explanation, not ranking**: use traditional ML for scale, LLMs for personalization
-2. **Cache aggressively**: explanations for content pairs are reusable across users
-3. **Cold-start is a spectrum**: new users → content-based; some history → hybrid; full history → collaborative
-4. **Latency budgets require cache hit rate targets**: design the cache around your latency SLA
+**پرسش: چگونه از توهم (Hallucination) مدل LLM درباره حقایق فیلم‌ها جلوگیری می‌کنید؟**
+
+پاسخ: مدل LLM یک برگه اطلاعات ساختاریافته (Fact Sheet) برای هر فیلم (کارگردان، بازیگران، مضامین، جوایز) به‌عنوان زمینه دریافت می‌کند و تنها مجاز به استفاده از اطلاعات این برگه است. همچنین یک اعتبارسنج پس از تولید (Post-Generation Validator) داریم که ادعاها را با فراداده (Metadata) کاتالوگ ما تطبیق داده و بررسی می‌کند.
+
+**پرسش: اگر سلیقه کاربر به سرعت تغییر کند چه می‌شود؟**
+
+پاسخ: ما از **به‌روزرسانی بردار با وزن‌دهی تازگی (Recency-Weighted Embedding Update)** استفاده می‌کنیم. تماشاهای اخیر ۳ برابر بیشتر از تماشاهای قدیمی‌تر وزن‌دهی می‌شوند. برای پاسخ‌گویی بلادرنگ، یک «بردار نشست» (Session Embedding) نگهداری می‌کنیم که رفتار نشست فعلی را ثبت کرده و آن را با بردار تاریخی ترکیب می‌کند.
+
+**پرسش: الگوریتم‌های توصیه‌گر را چگونه تست A/B می‌کنید؟**
+
+پاسخ: ما مقدار `user_id` را هش (Hash) می‌کنیم تا کاربران به‌صورت پایدار به باکت‌های آزمایش (Experiment Buckets) اختصاص یابند. هر باکت می‌تواند استراتژی‌های متفاوتی برای تولید کاندید، رتبه‌بندی یا تولید توضیح داشته باشد. معیارهای تعامل (نرخ کلیک، زمان تماشا، نرخ ردکردن) را برای هر باکت ردیابی می‌کنیم.
 
 ---
 
-*Related chapters: [Semantic Caching](../08-memory-and-state/05-semantic-caching.md), [Cost Optimization](../04-inference-optimization/07-cost-optimization-playbook.md)*
+## نکات کلیدی برای مصاحبه <a id="key-takeaways-for-interviews"></a>
+
+1. **مدل‌های LLM برای توضیح هستند، نه رتبه‌بندی**: از یادگیری ماشین سنتی برای مقیاس‌پذیری و از مدل‌های LLM برای شخصی‌سازی استفاده کنید
+2. **به‌طور تهاجمی کش کنید**: توضیحات مربوط به جفت‌های محتوا در میان کاربران قابل استفاده مجدد هستند
+3. **شروع سرد یک طیف است**: کاربران جدید ← مبتنی بر محتوا؛ تاریخچه محدود ← ترکیبی؛ تاریخچه کامل ← مشارکتی
+4. **بودجه‌های تاخیر نیازمند اهداف نرخ اصابت کش هستند**: کش را بر اساس SLA تاخیر خود طراحی کنید
+
+---
+
+*فصل‌های مرتبط: [کش معنایی](../08-memory-and-state/05-semantic-caching.md)، [بهینه‌سازی هزینه](../04-inference-optimization/07-cost-optimization-playbook.md)*
+
+</div>

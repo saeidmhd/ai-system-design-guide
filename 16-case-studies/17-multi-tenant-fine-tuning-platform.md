@@ -1,22 +1,26 @@
-# Case Study: Multi-Tenant Fine-Tuning Platform
+<div dir="rtl">
 
-A vertical-AI vendor serves 280 customers from a single base model plus per-tenant LoRA adapters, with isolated training, eval-as-PRD per tenant, and noisy-neighbor mitigation that keeps p99 latency under 1.2 seconds.
+# مطالعه موردی: پلتفرم Fine-tuning چندمستأجره <a id="case-study-multi-tenant-fine-tuning-platform"></a>
 
-## The Business Problem
+یک ارائه‌دهنده هوش مصنوعی عمودی (Vertical-AI)، به ۲۸۰ مشتری از طریق یک مدل پایه مشترک به همراه آداپتورهای LoRA اختصاصی به ازای هر مستأجر سرویس‌دهی می‌کند؛ با آموزش ایزوله، ارزیابی به‌عنوان سند نیازمندی‌های محصول (Eval-as-PRD) برای هر مستأجر و کاهش اثر همسایه پرسرصدا (Noisy-Neighbor) که تاخیر (Latency) در صدک p99 را زیر ۱.۲ ثانیه نگه می‌دارد.
 
-A vertical SaaS vendor in legal-tech runs a contract-analysis product. Each of its 280 enterprise customers expects the model to respect their templates, their precedent corpus, and their preferred drafting style. Off-the-shelf prompting is not enough: customers run blind A/B tests against generic models and reject the product when output diverges from their house style. A separate fine-tuned model per tenant is also not viable: at 70B parameters, each model is 140 GB in BF16 and would need at least two dedicated H100s just to load, blowing the unit economics.
+## مسئله کسب‌وکار <a id="the-business-problem"></a>
 
-Constraints:
+یک ارائه‌دهنده SaaS عمودی در حوزه فناوری حقوقی (Legal-Tech)، محصول تحلیل قرارداد را اجرا می‌کند. هر یک از ۲۸۰ مشتری سازمانی آن انتظار دارند مدل به قالب‌ها، پیکره سوابق (Precedent Corpus) و سبک نگارش ترجیحی آن‌ها احترام بگذارد. استفاده از دستورهای Prompt آماده کافی نیست: مشتریان آزمون‌های A/B کور را در برابر مدل‌های عمومی اجرا می‌کنند و زمانی که خروجی از سبک اختصاصی سازمان آن‌ها فاصله بگیرد، محصول را رد می‌کنند. داشتن یک مدل Fine-tuning‌شده جداگانه برای هر مستأجر نیز مقرون‌به‌صرفه نیست: در مقیاس ۷۰ میلیارد پارامتر (70B)، هر مدل در قالب BF16 برابر با ۱۴۰ گیگابایت است و تنها برای بارگذاری به حداقل دو عدد GPU از نوع H100 اختصاصی نیاز دارد که اقتصاد واحد (Unit Economics) را از بین می‌برد.
 
-- 280 paid tenants, doubling annually
-- Each tenant has 1,000 to 250,000 historical contract pairs (input plus preferred edit)
-- Tenants demand eval reports proving fit on their own test sets
-- Per-query latency budget: under 1.2 seconds p99
-- Tenants on different compliance regimes: SOC 2, ISO 27001, HIPAA, FedRAMP Moderate
+محدودیت‌ها:
 
-The team picks per-tenant LoRA adapters on a shared base model. LoRA ([Hu et al., 2021](https://arxiv.org/abs/2106.09685)) and QLoRA ([Dettmers et al., 2023](https://arxiv.org/abs/2305.14314)) are mature; vLLM's multi-LoRA serving ([docs](https://docs.vllm.ai/en/latest/features/lora/)) and SGLang's adapter swapping let many adapters share one base model in GPU memory. Anyscale published a LoRA-versus-full-fine-tuning comparison ([Anyscale 2024 post](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis)), and managed providers sell the pattern with tight caps: Together AI's dedicated endpoints hold at most 16 loaded adapters per endpoint for Llama 3.3 70B ([docs](https://docs.together.ai/docs/dedicated-endpoints/lora-adapter)), so 280 tenants would mean 18 endpoints. Hosted fine-tuning is not a dependable alternative: OpenAI is winding down its fine-tuning platform (organizations that never fine-tuned can no longer start, and existing customers lose new-job creation on January 6, 2027), so per-tenant customization belongs on weights the platform controls.
+- ۲۸۰ مستأجر دارای اشتراک پولی، با رشد دو برابری سالانه
+- هر مستأجر بین ۱٬۰۰۰ تا ۲۵۰٬۰۰۰ جفت قرارداد تاریخی دارد (ورودی به همراه ویرایش ترجیحی)
+- مستأجران گزارش‌های ارزیابی می‌خواهند که تناسب مدل را روی مجموعه‌آزمون‌های خودشان اثبات کند
+- بودجه تاخیر به ازای هر پرس‌وجو: زیر ۱.۲ ثانیه در صدک p99
+- مستأجران تحت رژیم‌های انطباق (Compliance) متفاوت: SOC 2، ISO 27001، HIPAA و FedRAMP Moderate
 
-## Architecture
+این تیم آداپتورهای LoRA به ازای هر مستأجر را روی یک مدل پایه مشترک انتخاب می‌کند. روش‌های LoRA ([Hu و همکاران، ۲۰۲۱](https://arxiv.org/abs/2106.09685)) و QLoRA ([Dettmers و همکاران، ۲۰۲۳](https://arxiv.org/abs/2305.14314)) به بلوغ رسیده‌اند؛ قابلیت سرویس‌دهی multi-LoRA در vLLM ([مستندات](https://docs.vllm.ai/en/latest/features/lora/)) و جابه‌جایی آداپتور (Adapter Swapping) در SGLang امکان اشتراک‌گذاری یک مدل پایه میان آداپتورهای متعدد را در حافظه GPU فراهم می‌کنند. شرکت Anyscale مقایسه‌ای میان LoRA و Fine-tuning کامل منتشر کرده است ([پست ۲۰۲۴ Anyscale](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis)) و ارائه‌دهندگان مدیریت‌شده نیز این الگو را با سقف‌های محدود به فروش می‌رسانند: نقطه پایانی اختصاصی Together AI برای مدل Llama 3.3 70B حداکثر ۱۶ آداپتور بارگذاری‌شده در هر نقطه پایانی را نگه می‌دارد ([مستندات](https://docs.together.ai/docs/dedicated-endpoints/lora-adapter))، بنابراین ۲۸۰ مستأجر به ۱۸ نقطه پایانی نیاز خواهد داشت. سرویس Fine-tuning میزبانی‌شده نیز گزینه قابل اتکایی نیست: OpenAI در حال تعطیل کردن پلتفرم Fine-tuning خود است (سازمان‌هایی که هرگز Fine-tuning انجام نداده‌اند دیگر نمی‌توانند شروع کنند و مشتریان فعلی نیز از ۶ ژانویه ۲۰۲۷ امکان ایجاد کار جدید را از دست می‌دهند)، بنابراین سفارشی‌سازی به ازای هر مستأجر باید روی وزن‌هایی انجام شود که خود پلتفرم کنترل می‌کند.
+
+## معماری <a id="architecture"></a>
+
+<div dir="ltr">
 
 ```mermaid
 flowchart TB
@@ -48,74 +52,78 @@ flowchart TB
     end
 ```
 
-### Components
+</div>
 
-| Layer | Tech | Purpose |
+### اجزا <a id="components"></a>
+
+| لایه | فناوری | هدف |
 |-------|------|---------|
-| Base model | Llama 3.3 70B, 4-bit (AWQ) | Shared across all tenants |
-| Adapter | LoRA r=16 on attention layers, ~120 MB per tenant | Per-tenant adaptation |
-| Training | DeepSpeed ZeRO-3 on 8x H100 nodes | Tenant-isolated jobs |
-| Serving | vLLM 0.33+ with PagedAttention and multi-LoRA | One base, many adapters; 0.32.0 is the general security floor (it also made Python 3.11 the minimum and closed CORS by default), and 0.33.0 (November 2, 2026) is the floor for hosts that load untrusted repositories, at the cost of CUDA 13.0-only builds that need driver 580 or newer |
-| Adapter store | S3 with per-tenant KMS keys | Encrypted at rest |
-| Eval store | Per-tenant golden set, run on every retrain | Eval-as-PRD per tenant |
+| مدل پایه | مدل Llama 3.3 70B، ۴-بیتی (AWQ) | مشترک میان همه مستأجران |
+| آداپتور | آداپتور LoRA با رتبه r=16 روی لایه‌های Attention، حدود ۱۲۰ مگابایت به ازای هر مستأجر | سازگاری اختصاصی هر مستأجر |
+| آموزش | فریم‌ورک DeepSpeed ZeRO-3 روی نودهای 8x H100 | کارهای ایزوله به ازای هر مستأجر |
+| سرویس‌دهی | موتور vLLM 0.33+ با PagedAttention و multi-LoRA | یک مدل پایه، آداپتورهای متعدد؛ نسخه 0.32.0 حداقل سطح امنیتی عمومی است (همچنین Python 3.11 را به‌عنوان حداقل نسخه تعیین کرده و CORS را به‌صورت پیش‌فرض بسته است)، و نسخه 0.33.0 (۲ نوامبر ۲۰۲۶) حداقل نسخه برای میزبان‌هایی است که مخازن نامطمئن را بارگذاری می‌کنند، به بهای ساخت‌های منحصراً CUDA 13.0 که به درایور ۵۸۰ یا جدیدتر نیاز دارند |
+| مخزن آداپتور | سرویس S3 با کلیدهای KMS اختصاصی هر مستأجر | رمزنگاری‌شده در حالت سکون (At Rest) |
+| مخزن ارزیابی | مجموعه طلایی اختصاصی هر مستأجر، اجرا در هر بازآموزش | ارزیابی به‌عنوان سند نیازمندی‌های محصول (Eval-as-PRD) برای هر مستأجر |
 
-### Data flow at training time
+### جریان داده در زمان آموزش <a id="data-flow-at-training-time"></a>
 
-1. Customer uploads training pairs through a per-tenant S3 bucket with a dedicated IAM role; KMS keys are per-tenant.
-2. The ETL job runs in a Kubernetes namespace scoped to that tenant; the node selector ensures it does not co-schedule with another tenant's job.
-3. Training runs on an 8x H100 pod for typically 4 to 10 hours per tenant; LoRA at r=16 fits in 80 GB per H100, leaving room for activation memory.
-4. Eval is run automatically against the tenant's golden set; if metrics regress beyond a threshold, the artifact is held in staging.
-5. The adapter artifact (about 120 MB for a 70B base with r=16 attention adapters) is uploaded to the registry and the metadata index is updated.
+1. مشتری جفت‌های آموزشی را از طریق یک باکت S3 اختصاصی مستأجر با یک نقش IAM جداگانه بارگذاری می‌کند؛ کلیدهای KMS برای هر مستأجر اختصاصی هستند.
+2. کار ETL در یک فضای نام (Namespace) در Kubernetes اجرا می‌شود که محدود به همان مستأجر است؛ انتخاب‌گر نود (Node Selector) تضمین می‌کند که این کار با کار مستأجر دیگری هم‌زمان روی یک نود زمان‌بندی نشود.
+3. آموزش روی یک پاد 8x H100 معمولاً ۴ تا ۱۰ ساعت برای هر مستأجر طول می‌کشد؛ آداپتور LoRA با رتبه r=16 در ۸۰ گیگابایت حافظه هر H100 جا می‌گیرد و فضا برای حافظه فعال‌سازی (Activation Memory) باقی می‌گذارد.
+4. ارزیابی به‌صورت خودکار روی مجموعه طلایی مستأجر اجرا می‌شود؛ اگر معیارها فراتر از یک آستانه افت کنند، مصنوع (Artifact) در محیط Staging نگه داشته می‌شود.
+5. مصنوع آداپتور (حدود ۱۲۰ مگابایت برای مدل پایه 70B با آداپتورهای Attention در رتبه r=16) در رجیستری بارگذاری و شاخص فراداده به‌روزرسانی می‌شود.
 
-### Data flow at serving time
+### جریان داده در زمان سرویس‌دهی <a id="data-flow-at-serving-time"></a>
 
-1. Request hits the gateway with a tenant JWT.
-2. The router resolves the adapter version for that tenant.
-3. If the adapter is hot in GPU memory (LRU cache of 200 adapters per node), inference proceeds.
-4. If cold, the adapter is hot-swapped from S3 in 200 to 600 ms. We hide this latency by pre-warming based on tenant traffic patterns.
-5. vLLM runs the request with the adapter applied; tenants share the GPU safely because PagedAttention keeps KV blocks request-scoped, not adapter-scoped, and a per-tenant cache salt stops prefix-cache reuse across tenants (see Key Design Decision 5).
+1. درخواست همراه با یک JWT مستأجر به درگاه (Gateway) می‌رسد.
+2. مسیریاب (Router) نسخه آداپتور را برای آن مستأجر مشخص می‌کند.
+3. اگر آداپتور در حافظه GPU گرم باشد (کش LRU با ۲۰۰ آداپتور در هر نود)، استنتاج (Inference) انجام می‌شود.
+4. اگر سرد باشد، آداپتور طی ۲۰۰ تا ۶۰۰ میلی‌ثانیه به‌صورت گرم (Hot-swap) از S3 جایگزین می‌شود. ما این تاخیر را با پیش‌گرم‌سازی (Pre-warming) مبتنی بر الگوهای ترافیک مستأجر پنهان می‌کنیم.
+5. موتور vLLM درخواست را با اعمال آداپتور اجرا می‌کند؛ مستأجران به‌صورت ایمن GPU را به اشتراک می‌گذارند زیرا PagedAttention بلوک‌های KV را محدود به درخواست نگه می‌دارد نه محدود به آداپتور، و یک نمک کش (Cache Salt) اختصاصی به ازای هر مستأجر از استفاده مجدد کش پیشوند (Prefix Cache) میان مستأجران جلوگیری می‌کند (تصمیم کلیدی طراحی ۵ را ببینید).
 
-## Key Design Decisions
+## تصمیم‌های کلیدی طراحی <a id="key-design-decisions"></a>
 
-### 1. LoRA r=16 over full fine-tuning
+### 1. انتخاب LoRA با رتبه r=16 به جای Fine-tuning کامل <a id="1-lora-r16-over-full-fine-tuning"></a>
 
-A full 70B fine-tune per tenant costs about $4,500 in compute, produces a 140 GB artifact, and pins dedicated GPUs. LoRA at r=16 costs $80 to $400 per tenant per retrain, produces a 120 MB artifact, and shares the GPU. The accuracy gap on our internal contract-analysis eval is 1.6 points on a 100-point composite. We accept that gap because the cost differential is 50x and the operational story (hot-swap, ephemeral artifacts) is dramatically simpler. The Anyscale post linked above ran a similar comparison and reached the same conclusion.
+یک Fine-tuning کامل مدل 70B به ازای هر مستأجر حدود ۴٬۵۰۰ دلار هزینه محاسباتی دارد، یک مصنوع ۱۴۰ گیگابایتی تولید می‌کند و واحدهای GPU اختصاصی را قفل می‌کند. روش LoRA با رتبه r=16 بین ۸۰ تا ۴۰۰ دلار برای هر مستأجر در هر بازآموزش هزینه دارد، یک مصنوع ۱۲۰ مگابایتی تولید می‌کند و GPU را به اشتراک می‌گذارد. شکاف دقت روی ارزیابی تحلیل قرارداد داخلی ما ۱.۶ امتیاز در یک معیار ترکیبی ۱۰۰ امتیازی است. ما این شکاف را می‌پذیریم زیرا اختلاف هزینه ۵۰ برابر است و وضعیت عملیاتی (جایگزینی گرم، مصنوعات موقت) به‌طور چشمگیری ساده‌تر است. پست Anyscale که در بالا پیوند داده شد مقایسه مشابهی انجام داده و به همین نتیجه رسیده است.
 
-### 2. Adapter swap budget and the noisy-neighbor problem
+### 2. بودجه جایگزینی آداپتور و مشکل همسایه پرسرصدا <a id="2-adapter-swap-budget-and-the-noisy-neighbor-problem"></a>
 
-vLLM's multi-LoRA support keeps resident adapters in GPU memory, and each one costs about its artifact size: roughly 120 MB for r=16 on Q, K, V and O across the 70B base's 80 layers. On an 80 GB H100 running a 70B base in 4-bit (about 40 GB), we have roughly 30 GB for adapters and KV cache, and KV cache needs most of it: 200 adapters on one GPU would eat about 24 GB. So we cap each GPU at 25 resident adapters (about 3 GB) and route with adapter affinity, sending a tenant only to the GPUs that already hold its adapter, which gives an 8-GPU node roughly 200 distinct adapters resident at once. We use LRU with traffic-aware pre-warming and tail-tenant pinning: the 30 tenants with strict latency SLAs are pinned and never evicted; the rest rotate. A tenant whose adapter is cold pays a 200 to 600 ms tail penalty. We surface that explicitly in the tenant SLA as a cold-start budget. Adapters train against the BF16 weights but serve on the 4-bit base, so the eval gate runs on the 4-bit serving stack to catch quantization drift before promotion.
+پشتیبانی multi-LoRA در vLLM آداپتورهای مقیم را در حافظه GPU نگه می‌دارد و هر یک تقریباً به اندازه حجم مصنوع خود فضا اشغال می‌کند: حدود ۱۲۰ مگابایت برای r=16 روی Q، K، V و O در تمام ۸۰ لایه مدل پایه 70B. روی یک H100 با حافظه ۸۰ گیگابایتی که یک مدل پایه 70B را به‌صورت ۴-بیتی (حدود ۴۰ گیگابایت) اجرا می‌کند، تقریباً ۳۰ گیگابایت برای آداپتورها و کش KV داریم و کش KV به بیشتر آن نیاز دارد: ۲۰۰ آداپتور روی یک GPU حدود ۲۴ گیگابایت مصرف می‌کند. بنابراین ما هر GPU را به ۲۵ آداپتور مقیم (حدود ۳ گیگابایت) محدود می‌کنیم و مسیریابی را با پیوند آداپتور (Adapter Affinity) انجام می‌دهیم، یعنی مستأجر را فقط به GPUهایی می‌فرستیم که از قبل آداپتور او را در اختیار دارند؛ این کار به یک نود ۸-GPU امکان می‌دهد هم‌زمان حدود ۲۰۰ آداپتور متمایز را مقیم نگه دارد. ما از LRU همراه با پیش‌گرم‌سازی آگاه از ترافیک و سنجاق کردن مستأجران دم (Tail-Tenant Pinning) استفاده می‌کنیم: ۳۰ مستأجر دارای SLA سخت‌گیرانه تاخیر سنجاق می‌شوند و هرگز از کش اخراج نمی‌شوند؛ بقیه می‌چرخند. مستأجری که آداپتور او سرد باشد جریمه دمی بین ۲۰۰ تا ۶۰۰ میلی‌ثانیه می‌پردازد. ما این موضوع را به‌صراحت در SLA مستأجر به‌عنوان بودجه شروع سرد (Cold-start Budget) منعکس می‌کنیم. آداپتورها روی وزن‌های BF16 آموزش می‌بینند اما روی مدل پایه ۴-بیتی سرویس‌دهی می‌شوند، بنابراین دروازه ارزیابی (Eval Gate) روی پشته سرویس‌دهی ۴-بیتی اجرا می‌شود تا انحراف کوانتیزاسیون (Quantization Drift) را پیش از ارتقا شکار کند.
 
-The noisy-neighbor failure: one tenant suddenly bursts to 10x normal traffic, pushing other adapters out of cache. Mitigation: per-tenant token-bucket rate limit at the gateway, plus dynamic adapter eviction protection for any adapter that served traffic in the last 60 seconds.
+شکست همسایه پرسرصدا: یک مستأجر ناگهان جهش ترافیکی ۱۰ برابری نسبت به حالت عادی پیدا می‌کند و آداپتورهای دیگر را از کش بیرون می‌راند. راهکار مقابله: محدودسازی نرخ با سطل Token (Token-bucket Rate Limit) به ازای هر مستأجر در درگاه، به‌علاوه محافظت پویا از اخراج (Eviction Protection) برای هر آداپتوری که در ۶۰ ثانیه گذشته ترافیکی را سرویس‌دهی کرده است.
 
-### 3. Per-tenant eval suite as the gate
+### 3. مجموعه ارزیابی اختصاصی هر مستأجر به‌عنوان دروازه کنترل <a id="3-per-tenant-eval-suite-as-the-gate"></a>
 
-We treat the tenant's golden set as the product requirements document. The training pipeline runs the new adapter against that set after every retrain; if metrics regress more than 2 points on the composite, the artifact is held and a Slack ping goes to the tenant's CSM. This is the "eval-as-PRD" pattern Hamel Husain has written about ([How to construct domain-specific evals](https://hamel.dev/blog/posts/evals/)) and we extend it to be per-tenant. Each tenant's golden set is curated jointly with their legal team during onboarding (a 60- to 90-minute workshop) and refreshed quarterly.
+ما مجموعه طلایی مستأجر را به‌عنوان سند نیازمندی‌های محصول (PRD) در نظر می‌گیریم. پایپ‌لاین آموزش پس از هر بازآموزش، آداپتور جدید را در برابر آن مجموعه اجرا می‌کند؛ اگر معیارها بیش از ۲ امتیاز در شاخص ترکیبی افت کنند، مصنوع متوقف می‌شود و یک اعلان Slack برای مدیر موفقیت مشتری (CSM) آن مستأجر ارسال می‌گردد. این همان الگوی «ارزیابی به‌عنوان سند نیازمندی‌های محصول» (Eval-as-PRD) است که همل حسین (Hamel Husain) درباره آن نوشته است ([نحوه ساخت ارزیابی‌های خاص دامنه](https://hamel.dev/blog/posts/evals/)) و ما آن را به سطح هر مستأجر تعمیم می‌دهیم. مجموعه طلایی هر مستأجر به‌طور مشترک با تیم حقوقی او در طول دوره پذیرش (یک کارگاه ۶۰ تا ۹۰ دقیقه‌ای) تدوین شده و به‌صورت فصلی به‌روزرسانی می‌شود.
 
-### 4. Training-time isolation via Kubernetes namespaces plus network policy
+### 4. ایزوله‌سازی زمان آموزش از طریق فضاهای نام Kubernetes و سیاست شبکه <a id="4-training-time-isolation-via-kubernetes-namespaces-plus-network-policy"></a>
 
-Multi-tenancy is a defense-in-depth problem. Training jobs run in per-tenant namespaces; network policies prevent egress to anything other than that tenant's S3 prefix and the central metric service; node selectors prevent co-scheduling. We also use a dedicated KMS key per tenant for both bucket encryption and model artifact encryption. A leaked artifact decryption key would expose one tenant, not all.
+چندمستأجری (Multi-tenancy) یک مسئله دفاع لایه‌به‌لایه است. کارهای آموزش در فضاهای نام اختصاصی هر مستأجر اجرا می‌شوند؛ سیاست‌های شبکه (Network Policies) از خروج ترافیک به هر مقصدی غیر از پیشوند S3 آن مستأجر و سرویس مرکزی معیارها جلوگیری می‌کنند؛ انتخاب‌گرهای نود از زمان‌بندی هم‌زمان جلوگیری می‌کنند. همچنین از یک کلید KMS اختصاصی برای هر مستأجر هم برای رمزنگاری باکت و هم برای رمزنگاری مصنوع مدل استفاده می‌کنیم. افشای یک کلید رمزگشایی مصنوع تنها یک مستأجر را در معرض خطر قرار می‌دهد، نه همه را.
 
-### 5. Serving-time isolation: shared GPU is okay, KV cache is not
+### 5. ایزوله‌سازی زمان سرویس‌دهی: GPU مشترک بلامانع است، اما کش KV نه <a id="5-serving-time-isolation-shared-gpu-is-okay-kv-cache-is-not"></a>
 
-The base model is shared. The adapter is per-tenant. The KV cache is per-request. PagedAttention ([vLLM paper](https://arxiv.org/abs/2309.06180)) ensures KV blocks are isolated per request, so even though Tenant A and Tenant B share a GPU during a single inference batch, their attention computations and KV state do not mix. We audited this with red-team prompts: no cross-tenant leakage in 50K adversarial pairs.
+مدل پایه مشترک است. آداپتور اختصاصی هر مستأجر است. کش KV اختصاصی هر درخواست است. سازوکار PagedAttention ([مقاله vLLM](https://arxiv.org/abs/2309.06180)) تضمین می‌کند که بلوک‌های KV به ازای هر درخواست ایزوله هستند، بنابراین حتی اگر مستأجر A و مستأجر B در یک دسته استنتاج (Inference Batch) واحد یک GPU را به اشتراک بگذارند، محاسبات Attention و وضعیت KV آن‌ها با هم مخلوط نمی‌شود. ما این موضوع را با دستورهای Prompt تیم قرمز (Red-team) ممیزی کردیم: هیچ نشت بین‌مستاجری در ۵۰ هزار جفت خصمانه رخ نداد.
 
-One feature breaks that guarantee on purpose: **automatic prefix caching** reuses KV blocks across requests that share a prefix, and a cache hit shows up as lower latency. That turns the prefix cache into a membership oracle: a tenant can time requests to learn whether someone else recently sent a given contract clause. We set a per-tenant `cache_salt` on every request so prefix blocks are never shared across tenants, and we pin vLLM at 0.33.0 or later, the floor for hosts that load untrusted repositories (0.32.0 is the general security floor). The salt lesson came from a September 2026 advisory (GHSA-935w-9g4m-p28p, fixed in 0.30.0): tool-continuation turns on vLLM's GPT-OSS `/v1/responses` path dropped the salt and reopened the oracle. We do not serve that path, but the lesson carries: salt handling lives in each code path, so every endpoint we enable gets its own cross-tenant timing test. The same floor also carries the 0.28.0 fixes, including CVE-2026-90553, where a malicious model repository's processor code ran even with `trust_remote_code` off; on a server that loads new artifacts all day, treat every artifact as untrusted input. The 0.33.0 floor comes from a November advisory: in GHSA-qrj2-j723-m6w8 (fixed in 0.33.0, affecting every earlier release, no `trust_remote_code` needed), a crafted repository's `speculators_config` could point vLLM at any directory on the host, after which an unauthenticated client could read that directory's tokenizer vocabulary through `/detokenize` or query a private checkpoint. On a shared serving host, that is another tenant's model, so we also mount each tenant's model directories into its own filesystem view rather than trusting path validation. And 0.33.0 turns on a `/v1/decisions` endpoint by default, which our gateway allowlist blocks until we need it.
+یک قابلیت به‌عمد این تضمین را می‌شکند: **کش پیشوند خودکار (Automatic Prefix Caching)** بلوک‌های KV را میان درخواست‌هایی که پیشوند مشترکی دارند دوباره استفاده می‌کند و برخورد به کش (Cache Hit) به‌صورت تاخیر کمتر ظاهر می‌شود. این ویژگی کش پیشوند را به یک اوراکل عضویت (Membership Oracle) تبدیل می‌کند: یک مستأجر می‌تواند با زمان‌سنجی درخواست‌ها بفهمد که آیا شخص دیگری اخیراً بند قرارداد مشخصی را ارسال کرده است یا خیر. ما روی هر درخواست یک مقدار `cache_salt` اختصاصی به ازای هر مستأجر تنظیم می‌کنیم تا بلوک‌های پیشوند هرگز میان مستأجران به اشتراک گذاشته نشوند و نسخه vLLM را روی 0.33.0 یا جدیدتر قفل می‌کنیم، که حداقل نسخه برای میزبان‌هایی است که مخازن نامطمئن را بارگذاری می‌کنند (نسخه 0.32.0 حداقل سطح امنیتی عمومی است). درس نمک کش از یک اطلاعیه امنیتی در سپتامبر ۲۰۲۶ (GHSA-935w-9g4m-p28p، اصلاح‌شده در 0.30.0) آمد: دورهای ادامه ابزار (Tool-continuation) در مسیر `/v1/responses` مربوط به GPT-OSS در vLLM نمک را حذف می‌کردند و اوراکل را دوباره باز می‌کردند. ما آن مسیر را سرویس‌دهی نمی‌کنیم، اما درس آن پابرجاست: مدیریت نمک در هر مسیر کد زندگی می‌کند، بنابراین هر نقطه پایانی که فعال می‌کنیم آزمون زمان‌سنجی بین‌مستاجری مخصوص به خود را دریافت می‌کند. همین حداقل نسخه اصلاحات 0.28.0 را نیز در بر دارد، از جمله CVE-2026-90553 که در آن کد پردازشگر یک مخزن مدل مخرب حتی با غیرفعال بودن `trust_remote_code` اجرا می‌شد؛ در سروری که تمام روز مصنوعات جدید را بارگذاری می‌کند، با هر مصنوع مانند ورودی نامطمئن رفتار کنید. حداقل نسخه 0.33.0 از یک اطلاعیه نوامبر نشأت می‌گیرد: در GHSA-qrj2-j723-m6w8 (اصلاح‌شده در 0.33.0، مؤثر بر تمام نسخه‌های پیشین، بدون نیاز به `trust_remote_code`)، مقدار `speculators_config` در یک مخزن دست‌کاری‌شده می‌توانست vLLM را به هر دایرکتوری روی میزبان هدایت کند و پس از آن یک کلاینت احرازهویت‌نشده می‌توانست واژگان Tokenization آن دایرکتوری را از طریق `/detokenize` بخواند یا از یک چک‌پوینت خصوصی پرس‌وجو کند. روی یک میزبان سرویس‌دهی مشترک، این به معنای مدل مستأجر دیگری است، بنابراین ما دایرکتوری‌های مدل هر مستأجر را به‌جای اعتماد به اعتبارسنجی مسیر، در نمای فایل‌سیستم اختصاصی خودش Mount می‌کنیم. همچنین نسخه 0.33.0 نقطه پایانی `/v1/decisions` را به‌صورت پیش‌فرض فعال می‌کند که فهرست مجاز درگاه ما تا زمان نیاز، آن را مسدود می‌کند.
 
-### 6. Model lifecycle and base-model refresh
+### 6. چرخه حیات مدل و نوسازی مدل پایه <a id="6-model-lifecycle-and-base-model-refresh"></a>
 
-The base model is upgraded every 6 to 9 months. When the upgrade happens, all adapters must be re-trained against the new base. We run the re-train automatically using each tenant's stored training data; we run their eval suite; we ask the tenant to sign off before promoting. The full base-refresh cycle takes about 3 weeks for 280 tenants on 4 dedicated training nodes; we share the schedule publicly. Adapters that fail eval are flagged for manual review and the previous base+adapter pair stays in service until resolution.
+مدل پایه هر ۶ تا ۹ ماه یک‌بار ارتقا داده می‌شود. هنگام ارتقا، همه آداپتورها باید روی مدل پایه جدید بازآموزش ببینند. ما بازآموزش را به‌صورت خودکار با استفاده از داده‌های آموزشی ذخیره‌شده هر مستأجر اجرا می‌کنیم؛ مجموعه ارزیابی آن‌ها را اجرا می‌کنیم؛ و پیش از ارتقا از مستأجر تاییدیه (Sign-off) می‌گیریم. چرخه کامل نوسازی مدل پایه برای ۲۸۰ مستأجر روی ۴ نود آموزش اختصاصی حدود ۳ هفته زمان می‌برد؛ ما زمان‌بندی را به‌صورت عمومی به اشتراک می‌گذاریم. آداپتورهایی که در ارزیابی رد شوند برای بررسی دستی علامت‌گذاری می‌شوند و جفت مدل پایه و آداپتور قبلی تا زمان حل مشکل در سرویس باقی می‌ماند.
 
-**The license is a base-selection criterion, not a footnote.** We sell a model-backed product to 280 companies, which several 2026 open-weight licenses treat as a separate commercial case. Qwen's Community License 1.0 (used for Qwen3.8-Flash-Next) requires a separate license for any model-as-a-service or coding or office-assistant business, with no revenue floor; Moonshot's Kimi K3 license requires a deal for model-as-a-service businesses above US$20M revenue in 12 months; Mistral Medium 3.5's modified MIT license grants no rights above US$20M in monthly revenue. Qwen3.8-27B and IBM Granite 4.2 (Apache 2.0) and GLM-5.3 (MIT, with a security review only for model-as-a-service businesses above US$10B in revenue) carry no gate at our size. Our current base, Llama 3.3 70B, ships under the Llama 3.3 Community License, whose gate (700 million monthly active users) is far above our size but which adds an acceptable-use policy and attribution terms we pass through to tenants. Legal reviews every candidate base's license before the eval bake-off, not after.
+**مجوز (License) یک معیار انتخاب مدل پایه است، نه یک پاورقی.** ما یک محصول مبتنی بر مدل را به ۲۸۰ شرکت می‌فروشیم که چندین مجوز وزن باز در سال ۲۰۲۶ آن را به‌عنوان یک پرونده تجاری جداگانه در نظر می‌گیرند. مجوز Qwen Community License 1.0 (استفاده‌شده برای Qwen3.8-Flash-Next) برای هر کسب‌وکار Model-as-a-Service یا دستیار کدنویسی یا اداری بدون هیچ کف درآمدی نیاز به مجوز جداگانه دارد؛ مجوز Kimi K3 شرکت Moonshot برای کسب‌وکارهای Model-as-a-Service با درآمد بالای ۲۰ میلیون دلار در ۱۲ ماه نیاز به قرارداد دارد؛ مجوز MIT اصلاح‌شده Mistral Medium 3.5 بالای ۲۰ میلیون دلار درآمد ماهانه هیچ حقی اعطا نمی‌کند. مدل‌های Qwen3.8-27B و IBM Granite 4.2 (تحت Apache 2.0) و GLM-5.3 (تحت MIT، با بررسی امنیتی صرفاً برای کسب‌وکارهای Model-as-a-Service با درآمد بالای ۱۰ میلیارد دلار) در مقیاس ما هیچ مانعی ندارند. مدل پایه فعلی ما، Llama 3.3 70B، تحت مجوز Llama 3.3 Community License عرضه می‌شود که سقف آن (۷۰۰ میلیون کاربر فعال ماهانه) بسیار فراتر از مقیاس ماست، اما یک سیاست استفاده قابل قبول و شرایط استناد (Attribution) را اضافه می‌کند که ما به مستأجران منتقل می‌کنیم. تیم حقوقی پیش از رقابت ارزیابی (Eval Bake-off)، مجوز هر مدل پایه کاندید را بررسی می‌کند، نه پس از آن.
 
-### 7. Why r=16 specifically
+### 7. چرا مشخصاً رتبه r=16 <a id="7-why-r16-specifically"></a>
 
-Reading the LoRA paper carelessly suggests r=4 or r=8 is the standard choice. We did the sweep on our domain: r=4 underfits on tenants with 50K+ training pairs; r=8 is acceptable; r=16 captures 95 percent of the gain available from going to r=32. r=32 doubles artifact size and training cost for less than 1 point of metric. We standardized at r=16 across attention layers (Q, K, V, O) and skip the MLP layers. This is the same configuration the [Anyscale post](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis) recommends for similar workloads.
+خواندن سطحی مقاله LoRA این تصور را ایجاد می‌کند که r=4 یا r=8 انتخاب استاندارد است. ما روی دامنه خودمان پیمایش (Sweep) انجام دادیم: r=4 روی مستأجران با بیش از ۵۰ هزار جفت آموزشی دچار کم‌برازش (Underfitting) می‌شود؛ r=8 قابل قبول است؛ r=16 حدود ۹۵ درصد از بهبود حاصل از رفتن به r=32 را به دست می‌آورد. رتبه r=32 حجم مصنوع و هزینه آموزش را برای کمتر از ۱ امتیاز معیار دو برابر می‌کند. ما روی r=16 در لایه‌های Attention (Q، K، V، O) استانداردسازی کردیم و از لایه‌های MLP صرف‌نظر کردیم. این دقیقاً همان پیکربندی است که [پست Anyscale](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis) برای بارهای کاری مشابه توصیه می‌کند.
 
-### 8. Cold start engineering
+### 8. مهندسی شروع سرد <a id="8-cold-start-engineering"></a>
 
-Hot-swap from S3 takes 200 to 600 ms cold. We hide this with traffic-aware pre-warming: a sidecar process reads the previous 60 minutes of tenant traffic and pre-loads the top 50 cold adapters at minute boundaries. Pre-warm hit rate is 78 percent measured against tail latency; the remaining cold misses are usually new tenants or tenants returning from idle, both of which are acceptable to penalize.
+جایگزینی گرم (Hot-swap) از S3 در حالت سرد ۲۰۰ تا ۶۰۰ میلی‌ثانیه طول می‌کشد. ما این زمان را با پیش‌گرم‌سازی آگاه از ترافیک پنهان می‌کنیم: یک فرایند جانبی (Sidecar) ترافیک ۶۰ دقیقه گذشته مستأجر را می‌خواند و ۵۰ آداپتور سرد برتر را در مرزهای دقیقه‌ای پیش‌بارگذاری می‌کند. نرخ برخورد پیش‌گرم‌سازی (Pre-warm Hit Rate) در برابر تاخیر دمی ۷۸ درصد اندازه‌گیری شده است؛ خطاهای سرد باقی‌مانده معمولاً مربوط به مستأجران جدید یا مستأجرانی است که از حالت بیکاری برمی‌گردند که جریمه شدن هر دو قابل قبول است.
 
-## Tenant Lifecycle Sequence
+## توالی چرخه حیات مستأجر <a id="tenant-lifecycle-sequence"></a>
+
+<div dir="ltr">
 
 ```mermaid
 sequenceDiagram
@@ -141,117 +149,121 @@ sequenceDiagram
     P->>T: Promote and sign-off
 ```
 
-## Failure Modes and Mitigations
+</div>
 
-### F1: Adapter quality regression after retrain
+## حالت‌های شکست و راهکارهای مقابله <a id="failure-modes-and-mitigations"></a>
 
-A retrain produces a worse model on the tenant's golden set than the previous version. Mitigation: the eval-gate blocks promotion; the previous adapter stays live; an alert goes to the team and the tenant. We retain the previous 3 adapter versions per tenant for rollback. Median time to rollback: 6 minutes.
+### حالت F1: افت کیفیت آداپتور پس از بازآموزش <a id="f1-adapter-quality-regression-after-retrain"></a>
 
-### F2: Cross-tenant data bleed at training time
+یک بازآموزش مدلی تولید می‌کند که روی مجموعه طلایی مستأجر عملکرد بدتری نسبت به نسخه قبلی دارد. راهکار مقابله: دروازه ارزیابی از ارتقا جلوگیری می‌کند؛ آداپتور قبلی در حال سرویس‌دهی باقی می‌ماند؛ هشداری به تیم و مستأجر ارسال می‌شود. ما ۳ نسخه آداپتور قبلی را به ازای هر مستأجر برای بازگشت به عقب (Rollback) نگه می‌داریم. میانه زمان بازگشت به عقب: ۶ دقیقه.
 
-A bug in the ETL pipeline reads from the wrong tenant's S3 bucket. Mitigation: IAM roles scoped per tenant; the training job assumes the tenant's role on launch and has zero credentials to other buckets. A regression test verifies that a job running under Tenant A's role cannot list Tenant B's bucket; it runs on every CI build.
+### حالت F2: نشت داده بین‌مستاجری در زمان آموزش <a id="f2-cross-tenant-data-bleed-at-training-time"></a>
 
-### F3: Adapter cache thrash under traffic spike
+یک باگ در پایپ‌لاین ETL از باکت S3 مستأجر اشتباهی می‌خواند. راهکار مقابله: نقش‌های IAM محدود به هر مستأجر؛ کار آموزش هنگام راه‌اندازی نقش آن مستأجر را می‌گیرد و هیچ مجوز دسترسی به باکت‌های دیگر ندارد. یک آزمون رگرسیون تأیید می‌کند که کاری که تحت نقش مستأجر A اجرا می‌شود نمی‌تواند فهرست باکت مستأجر B را بگیرد؛ این آزمون در هر بیلد CI اجرا می‌شود.
 
-A trade-show drives 30 tenants to spike simultaneously, evicting most other adapters. p99 latency spikes from 1.1 s to 4.8 s. Mitigation: gateway rate-limits each tenant; the cache uses pinned slots for top-tier tenants; we keep 20 percent of cache capacity in reserve. When a known event is on the calendar, we pre-warm at off-peak.
+### حالت F3: فرسایش کش آداپتور در اوج ترافیک <a id="f3-adapter-cache-thrash-under-traffic-spike"></a>
 
-### F4: Bad training data poisons the adapter
+یک نمایشگاه تجاری باعث جهش هم‌زمان ترافیک ۳۰ مستأجر می‌شود و بیشتر آداپتورهای دیگر را از کش بیرون می‌راند. تاخیر p99 از ۱.۱ ثانیه به ۴.۸ ثانیه جهش می‌کند. راهکار مقابله: درگاه نرخ هر مستأجر را محدود می‌کند؛ کش از جایگاه‌های سنجاق‌شده (Pinned Slots) برای مستأجران سطح بالا استفاده می‌کند؛ ما ۲۰ درصد از ظرفیت کش را به‌عنوان ذخیره نگه می‌داریم. وقتی یک رویداد شناخته‌شده در تقویم باشد، در ساعات کم‌بار پیش‌گرم‌سازی انجام می‌دهیم.
 
-A tenant accidentally uploads contracts that contain customer PII or are from the wrong jurisdiction. The adapter overfits to bad patterns. Mitigation: an automated PII detector runs on inputs before training; eval suite catches drift on jurisdiction-specific cases; tenants can sample-inspect their training set in the dashboard before kicking off a retrain.
+### حالت F4: داده‌های آموزشی معیوب آداپتور را مسموم می‌کنند <a id="f4-bad-training-data-poisons-the-adapter"></a>
 
-### F5: Base-model upgrade breaks legacy adapters
+یک مستأجر به‌طور تصادفی قراردادهایی را بارگذاری می‌کند که حاوی اطلاعات هویتی شخصی (PII) مشتریان یا مربوط به حوزه قضایی اشتباهی است. آداپتور به الگوهای نادرست بیش‌برازش (Overfit) می‌شود. راهکار مقابله: یک تشخیص‌دهنده خودکار PII پیش از آموزش روی ورودی‌ها اجرا می‌شود؛ مجموعه ارزیابی انحراف روی موارد خاص حوزه قضایی را شکار می‌کند؛ مستأجران می‌توانند پیش از شروع بازآموزش، نمونه داده‌های آموزشی خود را در داشبورد بازبینی کنند.
 
-The new base model has a different tokenizer or layer naming, and the adapter's matrix shapes no longer apply. Mitigation: every base upgrade is treated as a mandatory retrain. We never serve an adapter against a base it was not trained on. A guard in the serving plane refuses to load an adapter without a matching base version.
+### حالت F5: ارتقای مدل پایه آداپتورهای قدیمی را از کار می‌اندازد <a id="f5-base-model-upgrade-breaks-legacy-adapters"></a>
 
-### F6: Cost runaway in training plane
+مدل پایه جدید Tokenizer یا نام‌گذاری لایه‌های متفاوتی دارد و ابعاد ماتریس‌های آداپتور دیگر اعمال نمی‌شوند. راهکار مقابله: هر ارتقای مدل پایه به‌عنوان یک بازآموزش اجباری تلقی می‌شود. ما هرگز آداپتوری را روی مدل پایه‌ای که روی آن آموزش ندیده سرویس‌دهی نمی‌کنیم. یک محافظ در صفحه سرویس‌دهی از بارگذاری آداپتور بدون نسخه مدل پایه منطبق جلوگیری می‌کند.
 
-A misconfigured job loops in a training step and consumes 80 H100-hours without producing a checkpoint. Mitigation: per-tenant monthly training budget; per-job timeout (24 hours hard cap); a watchdog that pages SRE if loss plateau is detected for more than 2 hours. We have aborted 14 such jobs in the last 6 months.
+### حالت F6: رشد مهارگسیخته هزینه در صفحه آموزش <a id="f6-cost-runaway-in-training-plane"></a>
 
-### F7: GPU node failure mid-training
+یک کار با پیکربندی نادرست در یک گام آموزشی در حلقه می‌افتد و ۸۰ ساعت-H100 را بدون تولید چک‌پوینت مصرف می‌کند. راهکار مقابله: بودجه آموزش ماهانه به ازای هر مستأجر؛ محدودیت زمانی به ازای هر کار (سقف سخت ۲۴ ساعته)؛ یک نگهبان (Watchdog) که اگر صاف شدن نمودار خطا (Loss Plateau) برای بیش از ۲ ساعت تشخیص داده شود به SRE هشدار می‌دهد. ما در ۶ ماه گذشته ۱۴ مورد از این کارها را متوقف کرده‌ایم.
 
-A hardware fault on one of the 8 H100s mid-training crashes the job. Mitigation: DeepSpeed checkpointing every 30 minutes; auto-resume on a fresh node; we maintain a small reserve pool of warm spare nodes. Mean recovery time: 18 minutes. Job-level retry budget: 3 attempts before alerting humans.
+### حالت F7: خرابی نود GPU در میانه آموزش <a id="f7-gpu-node-failure-mid-training"></a>
 
-### F8: Adapter signing key rotation breaks legacy clients
+یک نقص سخت‌افزاری روی یکی از ۸ عدد H100 در میانه آموزش باعث سقوط کار می‌شود. راهکار مقابله: ذخیره‌سازی چک‌پوینت DeepSpeed هر ۳۰ دقیقه؛ ادامه خودکار روی یک نود تازه؛ ما یک استخر ذخیره کوچک از نودهای آماده (Warm Spare) نگه می‌داریم. میانگین زمان بازیابی: ۱۸ دقیقه. بودجه تلاش مجدد در سطح کار: ۳ تلاش پیش از هشدار به انسان‌ها.
 
-We sign adapter manifests for tamper detection. Rotating the signing key without coordination breaks the serving plane's verification step. Mitigation: dual-signing during the rotation window; clients accept either old or new key for 7 days; only after all clients verify on the new key do we retire the old.
+### حالت F8: چرخش کلید امضای آداپتور کلاینت‌های قدیمی را مختل می‌کند <a id="f8-adapter-signing-key-rotation-breaks-legacy-clients"></a>
 
-### F9: Tenant cross-contamination via shared eval infrastructure
+ما مانیفست‌های آداپتور را برای تشخیص دست‌کاری امضا می‌کنیم. چرخش کلید امضا بدون هماهنگی، مرحله تأیید صفحه سرویس‌دهی را مختل می‌کند. راهکار مقابله: امضای دوگانه در پنجره چرخش؛ کلاینت‌ها به مدت ۷ روز کلید قدیمی یا جدید را می‌پذیرند؛ تنها پس از اینکه همه کلاینت‌ها روی کلید جدید تأیید شدند کلید قدیمی را بازنشسته می‌کنیم.
 
-The eval runner accidentally writes eval results to the wrong tenant's metric bucket. Mitigation: per-tenant credentials for eval result publishing; a write-time tenant-id check verifies the destination matches the running job's tenant; mismatches refuse the write and alert.
+### حالت F9: آلودگی متقابل مستأجران از طریق زیرساخت ارزیابی مشترک <a id="f9-tenant-cross-contamination-via-shared-eval-infrastructure"></a>
 
-### F10: Adapter version sprawl
+اجراکننده ارزیابی به‌طور تصادفی نتایج ارزیابی را در باکت معیارهای مستأجر اشتباهی می‌نویسد. راهکار مقابله: گواهی‌نامه‌های (Credentials) اختصاصی هر مستأجر برای انتشار نتایج ارزیابی؛ یک بررسی شناسه مستأجر در زمان نوشتن تأیید می‌کند که مقصد با مستأجر کار در حال اجرا مطابقت دارد؛ عدم تطابق باعث رد نوشتن و ارسال هشدار می‌شود.
 
-After 3 years and 280 tenants we have over 10,000 adapter versions in the registry. Storage is cheap but the metadata service grinds. Mitigation: tiered storage with old versions auto-archived to cold storage after 90 days; metadata service indexes only current plus previous-3 versions per tenant; cold-archive retrieval has a 1-minute SLA for rollback scenarios.
+### حالت F10: گسترش بی‌رویه نسخه‌های آداپتور <a id="f10-adapter-version-sprawl"></a>
 
-### F11: Adapter checksum mismatch on serving load
+پس از ۳ سال و ۲۸۰ مستأجر، بیش از ۱۰٬۰۰۰ نسخه آداپتور در رجیستری داریم. ذخیره‌سازی ارزان است اما سرویس فراداده کند می‌شود. راهکار مقابله: ذخیره‌سازی سطح‌بندی‌شده با بایگانی خودکار نسخه‌های قدیمی به فضای ذخیره‌سازی سرد پس از ۹۰ روز؛ سرویس فراداده فقط نسخه فعلی به علاوه ۳ نسخه قبلی هر مستأجر را نمایه‌سازی می‌کند؛ بازیابی از بایگانی سرد برای سناریوهای بازگشت به عقب دارای SLA ۱ دقیقه‌ای است.
 
-A network blip during S3 hot-swap corrupts the adapter bytes; vLLM loads it but inference produces nonsense. Mitigation: every adapter has a SHA-256 checksum in the metadata; the serving plane verifies the checksum on load and refuses to serve a mismatched adapter; an alert pages SRE and the load is retried.
+### حالت F11: عدم تطابق جمع کنترلی آداپتور هنگام بارگذاری سرویس‌دهی <a id="f11-adapter-checksum-mismatch-on-serving-load"></a>
 
-## Operational Considerations
+یک اختلال شبکه هنگام جایگزینی گرم از S3 بایت‌های آداپتور را خراب می‌کند؛ vLLM آن را بارگذاری می‌کند اما استنتاج خروجی بی‌معنی تولید می‌کند. راهکار مقابله: هر آداپتور یک جمع کنترلی (Checksum) SHA-256 در فراداده دارد؛ صفحه سرویس‌دهی هنگام بارگذاری جمع کنترلی را بررسی کرده و از سرویس‌دهی آداپتور نامنطبق خودداری می‌کند؛ یک هشدار به SRE ارسال می‌شود و بارگذاری دوباره تلاش می‌شود.
 
-### Monitoring and SLOs
+## ملاحظات عملیاتی <a id="operational-considerations"></a>
 
-| SLO | Target | What we measure |
+### پایش و توافق‌نامه‌های سطح هدف (SLO) <a id="monitoring-and-slos"></a>
+
+| هدف سطح سرویس (SLO) | مقدار هدف | آنچه اندازه‌گیری می‌کنیم |
 |-----|--------|-----------------|
-| Serving p99 latency | under 1.2 s, warm | 95 percent of tenants warm-cached at any time |
-| Cold-start p99 | under 1.0 s additive | adapter S3 load time |
-| Train-job success rate | over 98 percent | jobs reaching adapter promotion |
-| Eval gate pass rate | over 90 percent | adapters clearing tenant golden set |
-| Cross-tenant audit findings | 0 | automated quarterly red-team |
+| تاخیر p99 سرویس‌دهی | زیر ۱.۲ ثانیه، حالت گرم | در هر لحظه ۹۵ درصد مستأجران در کش گرم هستند |
+| تاخیر p99 شروع سرد | زیر ۱.۰ ثانیه اضافی | زمان بارگذاری آداپتور از S3 |
+| نرخ موفقیت کارهای آموزش | بالای ۹۸ درصد | کارهایی که به ارتقای آداپتور می‌رسند |
+| نرخ عبور از دروازه ارزیابی | بالای ۹۰ درصد | آداپتورهایی که مجموعه طلایی مستأجر را می‌گذرانند |
+| یافته‌های ممیزی بین‌مستاجری | صفر | تست تیم قرمز خودکار فصلی |
 
-### Cost model
+### مدل هزینه <a id="cost-model"></a>
 
-Per-tenant economics at our blended traffic:
+اقتصاد به ازای هر مستأجر در ترافیک ترکیبی ما:
 
-- Training: $80 to $400 per retrain; quarterly refresh
-- Serving: shared GPUs; per-token cost $0.18 per million input, $0.36 per million output (close to vendor-equivalent on Llama 3.3 70B)
-- Adapter storage: $0.04 per tenant per month at 120 MB
-- Eval: $5 per retrain
-- Total per tenant: $80 to $800 per quarter, depending on traffic
+- آموزش: ۸۰ تا ۴۰۰ دلار به ازای هر بازآموزش؛ نوسازی فصلی
+- سرویس‌دهی: GPUهای مشترک؛ هزینه به ازای هر Token برابر با ۰.۱۸ دلار به ازای یک میلیون Token ورودی و ۰.۳۶ دلار به ازای یک میلیون Token خروجی (نزدیک به معادل ارائه‌دهنده روی Llama 3.3 70B)
+- ذخیره‌سازی آداپتور: ۰.۰۴ دلار به ازای هر مستأجر در ماه با حجم ۱۲۰ مگابایت
+- ارزیابی: ۵ دلار به ازای هر بازآموزش
+- مجموع به ازای هر مستأجر: ۸۰ تا ۸۰۰ دلار در هر فصل، بسته به ترافیک
 
-At 280 tenants, monthly compute is approximately $180K, against gross revenue of $720K, which is on plan for a 75 percent gross margin.
+در مقیاس ۲۸۰ مستأجر، هزینه محاسباتی ماهانه حدود ۱۸۰ هزار دلار در برابر درآمد ناخالص ۷۲۰ هزار دلار است که در مسیر حاشیه سود ناخالص ۷۵ درصد قرار دارد.
 
-### On-call playbook
+### دفترچه راهنمای کشیک (On-call) <a id="on-call-playbook"></a>
 
-- p99 spike across many tenants: check adapter cache hit rate; if low, throttle bursty tenants and pre-warm hot set.
-- Single-tenant regression alert: check eval delta; if real, roll back to previous adapter; ping CSM.
-- Training queue backlog: scale up training nodes (we keep 2 standby); if persistent, page platform team for capacity planning.
-- Training job stuck: check checkpoint timestamps; if no progress in 2 hours, kill and resume from last checkpoint; loss-curve anomaly may indicate bad data.
-- Tenant onboarding bottleneck: the eval workshop is the long pole; we schedule with 3-week lead time and keep a backlog of pre-built golden-set templates.
+- جهش تاخیر p99 در بسیاری از مستأجران: نرخ برخورد کش آداپتور را بررسی کنید؛ اگر پایین است، ترافیک مستأجران پرجهش را محدود کنید و مجموعه داغ را پیش‌گرم نمایید.
+- هشدار افت کیفیت تک‌مستأجر: اختلاف ارزیابی (Eval Delta) را بررسی کنید؛ اگر واقعی بود، به آداپتور قبلی برگردید و به CSM اطلاع دهید.
+- انباشت صف آموزش: نودهای آموزش را افزایش دهید (۲ نود آماده به‌کار نگه می‌داریم)؛ اگر ماندگار بود، برای برنامه‌ریزی ظرفیت به تیم پلتفرم اطلاع دهید.
+- گیر کردن کار آموزش: برچسب‌های زمانی چک‌پوینت را بررسی کنید؛ اگر در ۲ ساعت گذشته پیشرفتی نبود، کار را متوقف کرده و از آخرین چک‌پوینت ادامه دهید؛ ناهنجاری در نمودار خطا ممکن است نشانه داده معیوب باشد.
+- گلوگاه پذیرش مستأجر جدید: کارگاه ارزیابی طولانی‌ترین مرحله است؛ ما با ۳ هفته زمان پیش‌نیاز برنامه‌ریزی می‌کنیم و یک ذخیره از قالب‌های آماده مجموعه طلایی نگه می‌داریم.
 
-### Onboarding ritual
+### آیین پذیرش مستأجر جدید (Onboarding) <a id="onboarding-ritual"></a>
 
-New tenant onboarding takes 4 to 6 weeks: 1 week for legal and DPA review, 1 week for the eval-set workshop, 2 weeks for first training, 1 week for canary rollout. We document each tenant's onboarding in a runbook and the CSM owns the calendar. The eval workshop is the highest-leverage hour: it is where the customer's domain experts encode their judgments into our test set.
+پذیرش مستأجر جدید ۴ تا ۶ هفته طول می‌کشد: ۱ هفته برای بررسی حقوقی و DPA، یک هفته برای کارگاه مجموعه ارزیابی، ۲ هفته برای اولین آموزش و ۱ هفته برای انتشار قناری (Canary Rollout). ما پذیرش هر مستأجر را در یک دفترچه راهنما (Runbook) مستند می‌کنیم و CSM مالک تقویم آن است. کارگاه ارزیابی پربازده‌ترین ساعت این فرایند است: جایی که متخصصان دامنه مشتری قضاوت‌های خود را در مجموعه‌آزمون ما کدگذاری می‌کنند.
 
-### Tenant offboarding
+### خروج مستأجر (Offboarding) <a id="tenant-offboarding"></a>
 
-Offboarding is a clean operation: we delete the tenant's training data, retire all adapter versions to a 90-day cold archive (in case of dispute), revoke their KMS keys after 90 days, and provide a deletion certificate. The pipeline is automated; the CSM signs off.
+خروج مستأجر یک عملیات پاک است: داده‌های آموزشی مستأجر را حذف می‌کنیم، همه نسخه‌های آداپتور را به یک بایگانی سرد ۹۰ روزه بازنشسته می‌کنیم (برای موارد اختلاف حقوقی)، کلیدهای KMS آن‌ها را پس از ۹۰ روز باطل می‌کنیم و گواهی حذف ارائه می‌دهیم. پایپ‌لاین خودکار است؛ CSM آن را تأیید نهایی می‌کند.
 
-### Compliance posture
+### وضعیت انطباق مقرراتی <a id="compliance-posture"></a>
 
-We hold SOC 2 Type II and are certified for ISO 27001. Customer audit packs include: per-tenant data residency proof, encryption-at-rest evidence with KMS key IDs, training-job logs, and eval reports. We auto-generate the pack from the platform monthly.
+ما دارای گواهینامه SOC 2 Type II و ISO 27001 هستیم. بسته‌های ممیزی مشتری شامل موارد زیر است: گواهی اقامت داده به ازای هر مستأجر، شواهد رمزنگاری در حالت سکون همراه با شناسه‌های کلید KMS، گزارش‌های کارهای آموزش و گزارش‌های ارزیابی. ما این بسته را به‌صورت ماهانه و خودکار از پلتفرم تولید می‌کنیم.
 
-## What Strong Interview Candidates Cover
+## مواردی که داوطلبان قوی مصاحبه پوشش می‌دهند <a id="what-strong-interview-candidates-cover"></a>
 
-- They cite vLLM's multi-LoRA serving and PagedAttention by name, explain why KV cache isolation is the linchpin for shared-GPU multi-tenancy, and know that prefix caching needs a per-tenant salt to stay isolated.
-- They distinguish eval-as-PRD per tenant from a single global eval; the former is mandatory for vertical AI.
-- They size the LoRA-vs-full-FT tradeoff with concrete numbers (cost ratio, accuracy gap, artifact size).
-- They name the noisy-neighbor problem and at least three mitigations (rate limit, pinning, eviction protection).
-- They walk through the base-model refresh ritual; this is the unsexy operational reality that distinguishes shipped platforms from prototypes.
-- They explicitly handle the rank-selection question (why r=16 and not r=4 or r=32) with empirical numbers, not folklore.
+- نام بردن از قابلیت سرویس‌دهی multi-LoRA در vLLM و PagedAttention، توضیح اینکه چرا ایزوله‌سازی کش KV سنگ‌بنای چندمستأجری روی GPU مشترک است، و دانستن اینکه کش پیشوند برای ایزوله ماندن به یک نمک اختصاصی به ازای هر مستأجر نیاز دارد.
+- تفکیک Eval-as-PRD به ازای هر مستأجر از یک ارزیابی سراسری واحد؛ مورد اول برای هوش مصنوعی عمودی الزامی است.
+- اندازه‌گیری مبادله (Tradeoff) بین LoRA و Fine-tuning کامل با اعداد ملموس (نسبت هزینه، شکاف دقت، حجم مصنوع).
+- نام بردن از مشکل همسایه پرسرصدا و دست‌کم سه راهکار مقابله (محدودیت نرخ، سنجاق کردن، محافظت در برابر اخراج).
+- تشریح آیین نوسازی مدل پایه؛ این واقعیت عملیاتی غیرجذاب همان چیزی است که پلتفرم‌های عملیاتی‌شده را از نمونه‌های اولیه متمایز می‌کند.
+- پاسخ‌گویی صریح به پرسش انتخاب رتبه (چرا r=16 و نه r=4 یا r=32) با اعداد تجربی، نه شنیده‌ها.
 
-## References
+## مراجع <a id="references"></a>
 
-- Hu et al., [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)
-- Dettmers et al., [QLoRA: Efficient Finetuning of Quantized LLMs](https://arxiv.org/abs/2305.14314)
-- [vLLM LoRA adapters docs](https://docs.vllm.ai/en/latest/features/lora/)
-- Kwon et al., [Efficient Memory Management for LLM Serving with PagedAttention](https://arxiv.org/abs/2309.06180)
-- Anyscale, [Fine-tuning LLMs: LoRA or full-parameter](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis)
-- Together AI, [Serve multiple LoRA adapters on one endpoint](https://docs.together.ai/docs/dedicated-endpoints/lora-adapter)
-- Hamel Husain, [How to construct domain-specific evals](https://hamel.dev/blog/posts/evals/)
-- Eugene Yan, [Evals: Constructed for LLM Apps](https://eugeneyan.com/writing/evals/)
-- Microsoft, [DeepSpeed ZeRO-3](https://www.deepspeed.ai/training/)
-- [SGLang adapter swapping](https://github.com/sgl-project/sglang)
-- [Kubernetes Multi-Tenancy WG patterns](https://github.com/kubernetes-sigs/multi-tenancy)
+- مقاله Hu و همکاران، [LoRA: سازگاری کم‌رتبه مدل‌های زبانی بزرگ](https://arxiv.org/abs/2106.09685)
+- مقاله Dettmers و همکاران، [QLoRA: Fine-tuning بهینه مدل‌های LLM کوانتیزه‌شده](https://arxiv.org/abs/2305.14314)
+- مستندات [آداپتورهای LoRA در vLLM](https://docs.vllm.ai/en/latest/features/lora/)
+- مقاله Kwon و همکاران، [مدیریت بهینه حافظه برای سرویس‌دهی LLM با PagedAttention](https://arxiv.org/abs/2309.06180)
+- پست Anyscale، [Fine-tuning مدل‌های LLM: روش LoRA یا تمام‌پارامتر](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis)
+- مستندات Together AI، [سرویس‌دهی چندین آداپتور LoRA روی یک نقطه پایانی](https://docs.together.ai/docs/dedicated-endpoints/lora-adapter)
+- نوشته Hamel Husain، [نحوه ساخت ارزیابی‌های خاص دامنه](https://hamel.dev/blog/posts/evals/)
+- نوشته Eugene Yan، [ارزیابی‌ها: ساخته‌شده برای برنامه‌های LLM](https://eugeneyan.com/writing/evals/)
+- پروژه Microsoft، [فریم‌ورک DeepSpeed ZeRO-3](https://www.deepspeed.ai/training/)
+- مخزن [جابه‌جایی آداپتور در SGLang](https://github.com/sgl-project/sglang)
+- الگوهای [گروه کاری چندمستأجری Kubernetes](https://github.com/kubernetes-sigs/multi-tenancy)
 
-Related chapters: [LoRA and Fine-Tuning](../03-training-and-adaptation/03-lora-qlora-peft.md), [Multi-Tenant Isolation](../12-security-and-access/02-access-control.md), [Inference Optimization](../04-inference-optimization/01-inference-fundamentals.md).
+فصل‌های مرتبط: [روش LoRA و Fine-tuning](../03-training-and-adaptation/03-lora-qlora-peft.md)، [جداسازی چندمستأجری](../12-security-and-access/02-access-control.md)، [بهینه‌سازی استنتاج](../04-inference-optimization/01-inference-fundamentals.md).
+
+</div>
