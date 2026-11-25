@@ -1,43 +1,47 @@
-# LLM Observability
+<div dir="rtl">
 
-Observability for LLM systems requires adapting the three pillars of logs, metrics, and traces for the unique characteristics of AI applications.
+# مشاهده‌پذیری مدل‌های LLM (LLM Observability)
 
-## Table of Contents
+مشاهده‌پذیری (Observability) برای سیستم‌های LLM نیازمند سازگار کردن سه رکن لاگ‌ها، متریک‌ها و ردیابی‌ها (Traces) با ویژگی‌های منحصربه‌فرد برنامه‌های هوش مصنوعی است.
 
-- [Why LLM Observability is Different](#why-llm-observability-is-different)
-- [The Three Pillars](#the-three-pillars)
-  - [Tracing LLM Pipelines](#traces)
-  - [When Instrumentation Goes Silent](#when-instrumentation-goes-silent)
-- [Key Metrics](#key-metrics)
-- [Quality Monitoring](#quality-monitoring)
-- [Cost Tracking](#cost-tracking)
-- [Alerting Strategy](#alerting-strategy)
-- [Observability Tools](#observability-tools)
-- [Interview Questions](#interview-questions)
-- [References](#references)
+## فهرست مطالب
 
----
-
-## Why LLM Observability is Different
-
-Traditional observability focuses on:
-- Request/response patterns
-- Latency and throughput
-- Error rates
-- Resource utilization
-
-LLM systems add:
-- **Quality is a first-class metric**: A fast, available system producing bad outputs is failing
-- **Non-determinism**: Same input can produce different outputs
-- **Token economics**: Cost scales with usage in complex ways
-- **Multi-component pipelines**: RAG has retrieval, reranking, generation steps
-- **Subjective correctness**: Often no ground truth to compare against
+- [چرا مشاهده‌پذیری LLM متفاوت است](#why-llm-observability-is-different)
+- [سه رکن اصلی مشاهده‌پذیری](#the-three-pillars)
+  - [ردیابی خطوط لوله LLM](#traces)
+  - [زمانی که ابزار دقیق خاموش می‌شود](#when-instrumentation-goes-silent)
+- [متریک‌های کلیدی](#key-metrics)
+- [پایش کیفیت (Quality Monitoring)](#quality-monitoring)
+- [ردیابی هزینه (Cost Tracking)](#cost-tracking)
+- [استراتژی هشداردهی (Alerting Strategy)](#alerting-strategy)
+- [ابزارهای مشاهده‌پذیری](#observability-tools)
+- [پرسش‌های مصاحبه (Interview Questions)](#interview-questions)
+- [منابع و مراجع (References)](#references)
 
 ---
 
-## The Three Pillars
+## چرا مشاهده‌پذیری LLM متفاوت است <a id="why-llm-observability-is-different"></a>
 
-### Logging
+مشاهده‌پذیری سنتی بر موارد زیر تمرکز دارد:
+- الگوهای درخواست/پاسخ
+- تاخیر (Latency) و توان عملیاتی (Throughput)
+- نرخ خطاها
+- میزان بهره‌وری منابع
+
+سیستم‌های LLM موارد زیر را نیز اضافه می‌کنند:
+- **کیفیت یک متریک درجه یک است:** یک سیستم سریع و همیشه در دسترس که خروجی‌های بد تولید کند، در عمل شکست خورده است
+- **عدم قطعیت (Non-determinism):** یک ورودی یکسان می‌تواند خروجی‌های متفاوتی تولید کند
+- **اقتصاد توکن (Token economics):** هزینه به شکل‌های پیچیده‌ای متناسب با میزان مصرف افزایش می‌یابد
+- **خطوط لوله چندمولفه‌ای:** معماری RAG دارای مراحل بازیابی، رتبه‌بندی مجدد (Reranking) و تولید است
+- **درستی ذهنی و کیفی (Subjective correctness):** اغلب هیچ حقیقت مبنایی (Ground truth) برای مقایسه مستقیم وجود ندارد
+
+---
+
+## سه رکن اصلی مشاهده‌پذیری <a id="the-three-pillars"></a>
+
+### لاگ‌گیری (Logging)
+
+<div dir="ltr">
 
 ```python
 class LLMLogger:
@@ -80,15 +84,19 @@ class LLMLogger:
         self.logger.info(json.dumps(log_entry))
 ```
 
-**What to log:**
-- Request ID for correlation
-- Model and parameters, including effort level, and the model ID the response says actually served the request (defaults and routing change under you)
-- Token counts split into uncached input, cache reads, cache writes, output, and reasoning tokens (reasoning bills as output but is often invisible in the response text)
-- Latency (TTFT and total)
-- SDK and prompt versions, so a regression can be tied to a change
-- Content (hashed if privacy-sensitive)
+</div>
 
-### Metrics
+**مواردی که باید لاگ شوند:**
+- شناسه درخواست (Request ID) برای همبستگی و ردیابی
+- نام مدل و پارامترها، شامل سطح تلاش (Effort level) و شناسه مدلی که پاسخ واقعاً اعلام می‌کند درخواست را پردازش کرده است (تنظیمات پیش‌فرض و مسیریابی ممکن است بدون اطلاع تغییر کنند)
+- تعداد Tokenها به تفکیک ورودی بدون کش، خواندن از کش، نوشتن در کش، خروجی و Tokenهای استدلال (Reasoning؛ که در صورت‌حساب به عنوان خروجی محاسبه می‌شوند اما اغلب در متن پاسخ دیده نمی‌شوند)
+- تاخیر (شامل TTFT و زمان کل)
+- نسخه‌های SDK و Prompt تا هرگونه افت کیفیت به تغییر مشخصی متصل شود
+- محتوا (در صورت حساسیت حریم خصوصی، به صورت هش‌شده)
+
+### متریک‌ها (Metrics)
+
+<div dir="ltr">
 
 ```python
 from prometheus_client import Counter, Histogram, Gauge
@@ -136,9 +144,13 @@ quality_score = Gauge(
 )
 ```
 
-### Traces
+</div>
 
-End-to-end tracing for RAG pipelines:
+### ردیابی‌ها (Traces) <a id="traces"></a>
+
+ردیابی سرتاسری برای خطوط لوله RAG:
+
+<div dir="ltr">
 
 ```python
 from opentelemetry import trace
@@ -174,59 +186,63 @@ async def rag_query(query: str) -> str:
         return response
 ```
 
-For attribute names, follow the OpenTelemetry GenAI semantic conventions (`gen_ai.*`) rather than inventing your own; LLM-specific backends key their views on them, and Langfuse's v4 and v5 SDKs export only Langfuse, `gen_ai.*`, and known LLM-instrumentation spans by default (v5's filter requires the `gen_ai.` prefix including the dot).
+</div>
 
-### When Instrumentation Goes Silent
+برای نام‌گذاری ویژگی‌ها (Attributes)، به جای ابداع نام‌های اختصاصی، از قراردادهای معنایی GenAI در OpenTelemetry (`gen_ai.*`) پیروی کنید؛ بک‌اندهای تخصصی LLM نماهای خود را بر پایه آن‌ها تنظیم می‌کنند، و SDKهای نسخه ۴ و ۵ ابزار Langfuse به صورت پیش‌فرض تنها Spanهای مربوط به Langfuse، `gen_ai.*` و ابزاردقیق‌های شناخته‌شده LLM را صادر می‌کنند (فیلتر نسخه ۵ نیازمند پیشوند `gen_ai.` همراه با نقطه است).
 
-The most dangerous observability failure is a quiet dashboard that looks healthy. In August 2026 both major Python provider SDKs changed the HTTP layer that tracing and test tooling hook into: OpenAI Python SDK 3.0.0 (August 12) made `httpx2` its default client and stopped installing `httpx`, and Anthropic Python SDK 1.0.0 (August 20) moved to `httpx2` as well. Anthropic's migration guide warns that OpenTelemetry's HTTPX instrumentor, Sentry's httpx integration, `respx`, `pytest-httpx`, and `vcrpy` can silently miss SDK requests unless `httpx2.alias_httpx()` runs before anything imports `httpx`. The result is missing spans in production and unmocked live calls in tests, with no error anywhere.
+### زمانی که ابزار دقیق خاموش می‌شود <a id="when-instrumentation-goes-silent"></a>
 
-Two controls catch this class of failure:
+خطرناک‌ترین شکست در مشاهده‌پذیری، یک داشبورد ساکت است که ظاهر سالمی دارد. در اوت ۲۰۲۶ هر دو SDK اصلی پایتون ارائه‌دهندگان مدل، لایه HTTP خود را که ابزارهای ردیابی و تست به آن متصل می‌شدند تغییر دادند: پایتون SDK شرکت OpenAI نسخه 3.0.0 (۱۲ اوت) کلاینت پیش‌فرض خود را به `httpx2` تغییر داد و نصب `httpx` را متوقف کرد، و پایتون SDK شرکت Anthropic نسخه 1.0.0 (۲۰ اوت) نیز به `httpx2` مهاجرت نمود. راهنمای مهاجرت Anthropic هشدار می‌دهد که ابزاردقیق HTTPX در OpenTelemetry، یکپارچه‌سازی httpx در Sentry، و کتابخانه‌های `respx`، `pytest-httpx` و `vcrpy` ممکن است درخواست‌های SDK را بدون هیچ خطایی از دست بدهند، مگر اینکه پیش از وارد کردن (Import) ماژول `httpx` تابع `httpx2.alias_httpx()` اجرا شود. نتیجه این اتفاق، ناپدید شدن Spanها در محیط عملیاتی و اجرای درخواست‌های واقعی بدون Mock شدن در تست‌هاست، آن هم بدون نمایش هیچ خطایی.
 
-- **A telemetry canary in CI.** One test makes a real (or recorded) model call through the production client and asserts that the expected span, token counts, and cost metric were emitted. Run it on every dependency bump.
-- **Daily reconciliation.** Compare tokens and dollars in your telemetry against the provider's usage or billing export. A gap of more than a few percent means something stopped reporting.
+دو کنترل جلوی این دسته از خطاها را می‌گیرد:
 
----
-
-## Key Metrics
-
-### Operational Metrics
-
-| Metric | Description | Typical Alert Threshold |
-|--------|-------------|------------------------|
-| Request rate | Requests per second | Anomaly detection |
-| Error rate | Failed requests / total | > 5% |
-| Latency p50 | Median response time | > 2s |
-| Latency p95 | 95th percentile | > 5s |
-| Latency p99 | 99th percentile | > 10s |
-| TTFT | Time to first token | > 1s |
-| Token throughput | Tokens per second | < baseline |
-
-### Quality Metrics
-
-| Metric | Description | Collection Method |
-|--------|-------------|-------------------|
-| Quality score | LLM-as-judge rating | Sampled (1-5%) |
-| Faithfulness | RAG answer grounded in context | Sampled |
-| Relevance | Answer addresses the question | Sampled |
-| User satisfaction | Thumbs up/down, ratings | User feedback |
-| Task completion | Did user achieve goal? | Implicit signals |
-
-### Cost Metrics
-
-| Metric | Description | Granularity |
-|--------|-------------|-------------|
-| Cost per request | Average cost | Per model |
-| Daily cost | Total daily spend | Overall + per model |
-| Cost per user action | Cost to complete user goal | Per task type |
-| Cost per resolved task | Spend divided by tasks that actually succeeded | Per agent and model |
-| Cache hit rate | Cached input tokens / total input tokens | Per model and prompt template |
-| Token efficiency | Value delivered per token | Per use case |
+- **قناری تله‌متری در CI (Telemetry canary):** یک تست در خط لوله CI، یک فراخوانی واقعی (یا ضبط‌شده) به مدل از طریق کلاینت محیط عملیاتی انجام داده و بررسی می‌کند که Span مورد انتظار، تعداد Tokenها و متریک هزینه حتماً صادر شده باشند. این تست را روی هر ارتقای وابستگی‌ها اجرا کنید.
+- **تطبیق روزانه (Daily reconciliation):** تعداد Tokenها و هزینه‌های دلاری ثبت‌شده در تله‌متری خود را با خروجی مصرف یا صورتحساب ارائه‌دهنده مقایسه نمایید. اختلاف بیش از چند درصد به معنای توقف گزارش‌دهی در بخشی از سیستم است.
 
 ---
 
-## Quality Monitoring
+## متریک‌های کلیدی <a id="key-metrics"></a>
 
-### Sampling Strategy
+### متریک‌های عملیاتی
+
+| متریک | توضیحات | آستانه هشدار متداول |
+|-------|---------|---------------------|
+| نرخ درخواست (Request rate) | تعداد درخواست در ثانیه | تشخیص ناهنجاری (Anomaly detection) |
+| نرخ خطا (Error rate) | درخواست‌های ناموفق / کل درخواست‌ها | بیش از ۵٪ |
+| تاخیر صدک ۵۰ (Latency p50) | میانه زمان پاسخ‌دهی | بیش از ۲ ثانیه |
+| تاخیر صدک ۹۵ (Latency p95) | صدک ۹۵ام زمان پاسخ‌دهی | بیش از ۵ ثانیه |
+| تاخیر صدک ۹۹ (Latency p99) | صدک ۹۹ام زمان پاسخ‌دهی | بیش از ۱۰ ثانیه |
+| زمان تا اولین توکن (TTFT) | زمان رسیدن اولین Token | بیش از ۱ ثانیه |
+| توان عملیاتی توکن (Token throughput) | تعداد Token در ثانیه | کمتر از خط مبنا (Baseline) |
+
+### متریک‌های کیفیت
+
+| متریک | توضیحات | روش جمع‌آوری |
+|-------|---------|--------------|
+| امتیاز کیفیت (Quality score) | امتیازدهی به روش LLM به عنوان داور | نمونه‌برداری‌شده (۱ تا ۵ درصد) |
+| وفاداری به متن (Faithfulness) | اتکای پاسخ RAG به کانتکست بازیابی‌شده | نمونه‌برداری‌شده |
+| مرتبط بودن (Relevance) | میزان پاسخ‌گویی به پرسش اصلی | نمونه‌برداری‌شده |
+| رضایت کاربر (User satisfaction) | لایک/دیس‌لایک و امتیازهای کاربران | بازخورد مستقیم کاربر |
+| تکمیل وظیفه (Task completion) | آیا کاربر به هدف خود رسید؟ | سیگنال‌های ضمنی |
+
+### متریک‌های هزینه
+
+| متریک | توضیحات | سطح تفکیک (Granularity) |
+|-------|---------|-------------------------|
+| هزینه به ازای هر درخواست (Cost per request) | میانگین هزینه | به تفکیک مدل |
+| هزینه روزانه (Daily cost) | کل هزینه مصرفی روزانه | کلی + به تفکیک مدل |
+| هزینه به ازای هر اقدام کاربر (Cost per user action) | هزینه لازم برای تکمیل هدف کاربر | به تفکیک نوع تسک |
+| هزینه به ازای هر تسک حل‌شده (Cost per resolved task) | مجموع هزینه تقسیم بر تسک‌هایی که واقعاً با موفقیت انجام شدند | به تفکیک Agent و مدل |
+| نرخ اصابت کش (Cache hit rate) | تعداد Token ورودی کش‌شده / کل Tokenهای ورودی | به تفکیک مدل و قالب Prompt |
+| بهره‌وری توکن (Token efficiency) | ارزش ارائه‌شده به ازای هر Token | به تفکیک مورد کاربرد |
+
+---
+
+## پایش کیفیت (Quality Monitoring) <a id="quality-monitoring"></a>
+
+### استراتژی نمونه‌برداری
+
+<div dir="ltr">
 
 ```python
 class QualitySampler:
@@ -265,7 +281,11 @@ class QualitySampler:
         await self.store_evaluation(request_id, scores)
 ```
 
-### Drift Detection
+</div>
+
+### تشخیص انحراف (Drift Detection)
+
+<div dir="ltr">
 
 ```python
 class QualityDriftDetector:
@@ -305,11 +325,15 @@ class QualityDriftDetector:
         self.send_alert(alert)
 ```
 
+</div>
+
 ---
 
-## Cost Tracking
+## ردیابی هزینه (Cost Tracking) <a id="cost-tracking"></a>
 
-### Real-Time Cost Calculation
+### محاسبه بلادرنگ هزینه
+
+<div dir="ltr">
 
 ```python
 from dataclasses import dataclass
@@ -363,16 +387,20 @@ class CostTracker:
         return total_cost
 ```
 
-Four billing rules break naive per-token math:
+</div>
 
-- **Cache reads dominate agent bills.** Anthropic's aggregate Claude Code usage data (published September 24, 2026, vendor-reported) puts the input-to-output token ratio at 324:1, up from 189:1 in March. At that ratio the cached-input price and your cache hit rate move cost far more than the output price. Cache-read discounts also vary by model: most Claude models bill reads at 0.1x input, Opus 5.5 and Sonnet 5.5 at 0.05x (Sonnet's dropped from 0.1x on October 7, 2026), and Fable 5.1 at 0.025x. Write multipliers vary too: OpenAI's 12-hour cache option (October 20, 2026) bills writes at 2.5x input.
-- **Long-context tiers reprice the whole request.** OpenAI bills the entire request at long-context rates once input passes 272K tokens (GPT-6 Sol goes from $2/$10 to $4/$15), and xAI bills every token at 2x on Grok 4.7 prompts of 200K tokens or more. Anthropic's 4.6-and-later models are flat to 1M with one exception: Claude Haiku 5.5 bills $0.10/$0.50 up to a 100K-token prompt and $0.50/$2.50 on the whole request above it, and the prompt length counts cache reads and writes. Log prompt length per request, or a cheap model's bill will jump 5x without a traffic change.
-- **Speed and residency tiers multiply the rate.** OpenAI's Fast tier is 2x (Ultrafast is 6x on GPT-6 Astra, and GPT-6.1 Sol Ultrafast is $12/$60 for all API users since October 8, 2026), and data-residency options run about 10% above list (Anthropic's `inference_geo: "us"` is 1.1x).
-- **Promotions expire.** Gemini 4 Argon's $2/$10 runs through November 30, 2026 and becomes $4/$20 on December 1; Gemini 3.8 Flash's introductory $0.75/$3.75 runs through December 31, 2026 and becomes $1.50/$7.50 on January 1, 2027. Budget on list prices.
+چهار قاعده صورتحساب، محاسبات ساده‌انگارانه به ازای هر Token را بر هم می‌زنند:
 
-So tag every cost record with the tier, the region, and the cache buckets, and put cache hit rate on the same dashboard as spend.
+- **خواندن از کش بر صورتحساب Agentها مسلط است.** داده‌های تجمیعی استفاده از Claude Code شرکت Anthropic (منتشرشده در ۲۴ سپتامبر ۲۰۲۶، گزارش‌شده توسط ارائه‌دهنده) نسبت Token ورودی به خروجی را ۳۲۴ به ۱ نشان می‌دهد که نسبت به ۱۸۹ به ۱ در ماه مارس افزایش یافته است. در چنین نسبتی، قیمت ورودی کش‌شده و نرخ اصابت کش (Cache hit rate) بسیار بیشتر از قیمت خروجی بر هزینه نهایی اثر می‌گذارند. تخفیف‌های خواندن از کش نیز بر اساس مدل متفاوت است: بیشتر مدل‌های Claude خواندن از کش را با ضریب ۰.۱ برابر ورودی محاسبه می‌کنند، مدل‌های Opus 5.5 و Sonnet 5.5 با ضریب ۰.۰۵ (ضریب Sonnet در ۷ اکتبر ۲۰۲۶ از ۰.۱ به این عدد کاهش یافت) و Fable 5.1 با ضریب ۰.۰۲۵ محاسبه می‌شوند. ضرایب نوشتن در کش نیز متغیرند: گزینه کش ۱۲ ساعته OpenAI (۲۰ اکتبر ۲۰۲۶) نوشتن را با ضریب ۲.۵ برابر ورودی محاسبه می‌کند.
+- **سطوح کانتکست طولانی (Long-context tiers) کل درخواست را دوباره قیمت‌گذاری می‌کنند.** شرکت OpenAI به محض عبور ورودی از ۲۷۲ هزار Token کل درخواست را با نرخ‌های کانتکست طولانی محاسبه می‌کند (GPT-6 Sol از ۲/۱۰ دلار به ۴/۱۵ دلار می‌رسد)، و xAI در مدل Grok 4.7 برای Promptهای ۲۰۰ هزار Token به بالا هر Token را ۲ برابر حساب می‌کند. مدل‌های ۴.۶ و جدیدتر Anthropic تا ۱ میلیون Token نرخ ثابتی دارند با یک استثنا: مدل Claude Haiku 5.5 تا سقف Prompt صد هزار توکنی ۰.۱۰/۰.۵۰ دلار محاسبه می‌کند و بالای آن کل درخواست را ۰.۵۰/۲.۵۰ دلار حساب می‌نماید، و طول Prompt شامل خواندن و نوشتن کش نیز می‌شود. طول Prompt را به ازای هر درخواست لاگ کنید، وگرنه بدون تغییر ترافیک، قبض یک مدل ارزان‌قیمت ناگهان ۵ برابر جهش خواهد کرد.
+- **سطوح سرعت و محل استقرار داده (Speed and residency tiers) نرخ را ضرب می‌کنند.** سطح Fast شرکت OpenAI دو برابر است (سطح Ultrafast در GPT-6 Astra شش برابر است و GPT-6.1 Sol Ultrafast از ۸ اکتبر ۲۰۲۶ برای تمام کاربران API با قیمت ۱۲/۶۰ دلار عرضه می‌شود)، و گزینه‌های اقامت داده (Data-residency) حدود ۱۰ درصد بالاتر از نرخ عادی هستند (تنظیم `inference_geo: "us"` در Anthropic دارای ضریب ۱.۱ برابر است).
+- **تخفیف‌های تبلیغاتی منقضی می‌شوند.** قیمت ۲/۱۰ دلاری مدل Gemini 4 Argon تا ۳۰ نوامبر ۲۰۲۶ اعتبار دارد و در ۱ دسامبر به ۴/۲۰ دلار تبدیل می‌شود؛ قیمت معرفی ۰.۷۵/۳.۷۵ دلاری Gemini 3.8 Flash تا ۳۱ دسامبر ۲۰۲۶ برقرار است و در ۱ ژانویه ۲۰۲۷ به ۱.۵۰/۷.۵۰ دلار می‌رسد. بودجه‌بندی خود را بر اساس قیمت‌های رسمی لیست (List prices) انجام دهید.
 
-### Cost Attribution
+بنابراین هر رکورد هزینه را با برچسب‌های سطح (Tier)، منطقه جغرافیایی و دسته‌های کش (Cache buckets) نشانه‌گذاری کنید و نرخ اصابت کش را در همان داشبورد هزینه‌ها قرار دهید.
+
+### تخصیص هزینه (Cost Attribution)
+
+<div dir="ltr">
 
 ```python
 class CostAttributor:
@@ -405,11 +433,15 @@ class CostAttributor:
             self.alert_budget_exceeded(team)
 ```
 
+</div>
+
 ---
 
-## Alerting Strategy
+## استراتژی هشداردهی (Alerting Strategy) <a id="alerting-strategy"></a>
 
-### Alert Configuration
+### پیکربندی هشدارها
+
+<div dir="ltr">
 
 ```yaml
 alerts:
@@ -461,36 +493,40 @@ alerts:
     runbook: "Consider model routing, implement backpressure"
 ```
 
-### Alert Prioritization
+</div>
 
-| Severity | Response Time | Examples |
-|----------|---------------|----------|
-| Critical | < 15 min | Service down, > 50% error rate |
-| High | < 1 hour | > 10% error rate, P99 > 30s |
-| Warning | < 4 hours | Quality degradation, cost spike |
-| Info | Next business day | Trend changes, capacity planning |
+### اولویت‌بندی هشدارها
 
-Plan the critical tier around vendor-wide outages, not single-model failures. Between August 16 and September 29, 2026, Anthropic's status feed logged at least 12 major or critical incidents, and OpenAI's September 29 incident degraded the API, ChatGPT, and Codex together for about 5 hours 20 minutes. When an outage takes out a vendor's API and its coding agent at once, a fallback chain that stays inside one vendor does not help; route across vendors, and alert on the fallback rate so you know when you are running on the backup.
+| شدت (Severity) | زمان پاسخ‌گویی | نمونه‌ها |
+|----------------|----------------|----------|
+| بحرانی (Critical) | کمتر از ۱۵ دقیقه | از کار افتادن سرویس، نرخ خطای بالای ۵۰٪ |
+| بالا (High) | کمتر از ۱ ساعت | نرخ خطای بالای ۱۰٪، تاخیر P99 بالای ۳۰ ثانیه |
+| هشدار (Warning) | کمتر از ۴ ساعت | افت کیفیت، جهش ناگهانی هزینه |
+| اطلاع‌رسانی (Info) | روز کاری بعدی | تغییرات روند، برنامه‌ریزی ظرفیت |
+
+سطح بحرانی خود را بر اساس قطعی‌های سراسری ارائه‌دهنده برنامه‌ریزی کنید، نه صرفاً خطای یک مدل منفرد. بین ۱۶ اوت تا ۲۹ سپتامبر ۲۰۲۶، صفحه وضعیت Anthropic حداقل ۱۲ حادثه بزرگ یا بحرانی را ثبت کرد، و حادثه ۲۹ سپتامبر OpenAI همزمان API، سرویس ChatGPT و Codex را حدود ۵ ساعت و ۲۰ دقیقه دچار اختلال نمود. هنگامی که یک قطعی همزمان API و عامل کدنویسی یک ارائه‌دهنده را از کار می‌اندازد، زنجیره بازگشت اضطراری (Fallback) که درون همان ارائه‌دهنده باقی بماند کمکی نمی‌کند؛ مسیریابی را میان ارائه‌دهندگان مختلف انجام دهید و روی نرخ استفاده از Fallback هشدار تنظیم کنید تا متوجه شوید چه زمانی سیستم روی مسیر پشتیبان قرار دارد.
 
 ---
 
-## Observability Tools
+## ابزارهای مشاهده‌پذیری <a id="observability-tools"></a>
 
-### LLM-Specific Tools
+### ابزارهای تخصصی LLM
 
-| Tool | Focus | Best For | Watch |
-|------|-------|----------|-------|
-| LangSmith | Tracing and evals; trace-to-fine-tune in public beta since September 24, 2026 | LangChain and LangGraph apps | Usage-based pricing in LangChain Standard Units (1 LSU = $1) replaced per-run and uptime pricing on October 1, 2026, so re-forecast trace volume; SaaS traces with extended retention are kept at most 180 days from September 14, 2026 (self-hosted and BYOC unchanged) |
-| Langfuse | Open-source, OpenTelemetry-based tracing and evals; AI Gateway in public beta since November 4, 2026 | Self-hosted, privacy | Part of ClickHouse since January 2026; Python SDK v5 (October 14, 2026) is now what `pip install langfuse` installs and breaks v4 code paths (see below). The gateway forwards native OpenAI and Anthropic requests with provider keys stored in Langfuse and traces every call: simpler cost attribution, but key custody and every prompt now sit with your tracing vendor |
-| Weights & Biases | Experiment tracking; Weave for LLM tracing and evals | ML teams that also track training and fine-tuning runs | Part of CoreWeave since 2025 |
-| Arize Phoenix | LLM tracing and evals | Production monitoring | Elastic-2.0 license (source-available, not OSI open source); Dynatrace completed its $915M acquisition of Arize on October 1, 2026 and says Phoenix remains available |
-| Helicone | API proxy logging | Simple integration | Acquired by Mintlify (announced March 2026); confirm the roadmap before adopting |
+| ابزار | تمرکز اصلی | بهترین کاربرد | نکات قابل توجه |
+|-------|------------|---------------|-----------------|
+| ابزار LangSmith | ردیابی و ارزیابی؛ قابلیت تبدیل Trace به Fine-tuning در بتای عمومی از ۲۴ سپتامبر ۲۰۲۶ | برنامه‌های LangChain و LangGraph | قیمت‌گذاری مبتنی بر مصرف بر حسب واحد استاندارد LangChain (معادل ۱ LSU = ۱ دلار) از ۱ اکتبر ۲۰۲۶ جایگزین قیمت‌گذاری به ازای اجرا و آپتایم شد، بنابراین حجم Trace خود را دوباره برآورد کنید؛ Traceهای نسخه SaaS با نگهداری توسعه‌یافته از ۱۴ سپتامبر ۲۰۲۶ حداکثر ۱۸۰ روز نگهداری می‌شوند (نسخه‌های self-hosted و BYOC بدون تغییر مانده‌اند) |
+| ابزار Langfuse | ردیابی و ارزیابی متن‌باز مبتنی بر OpenTelemetry؛ درگاه AI Gateway در بتای عمومی از ۴ نوامبر ۲۰۲۶ | استقرار خودمیزبان (Self-hosted) و حریم خصوصی | از ژانویه ۲۰۲۶ بخشی از ClickHouse شده است؛ اکنون با دستور `pip install langfuse` نسخه ۵ پایتون SDK (منتشرشده در ۱۴ اکتبر ۲۰۲۶) نصب می‌شود که مسیرهای کد نسخه ۴ را می‌شکند (توضیحات پایین را ببینید). این درگاه درخواست‌های بومی OpenAI و Anthropic را با کلیدهای ذخیره‌شده در Langfuse هدایت و هر فراخوانی را ردیابی می‌کند: تخصیص هزینه ساده‌تر است، اما نگهداری کلیدها و هر Prompt اکنون نزد ارائه‌دهنده ابزار ردیابی شما قرار می‌گیرد |
+| ابزار Weights & Biases | ردیابی آزمایش‌ها؛ ابزار Weave برای ردیابی و ارزیابی LLM | تیم‌های ML که اجراهای آموزش و Fine-tuning را نیز ردیابی می‌کنند | از سال ۲۰۲۵ بخشی از CoreWeave است |
+| ابزار Arize Phoenix | ردیابی و ارزیابی LLM | پایش محیط عملیاتی | دارای مجوز Elastic-2.0 (کد منبع در دسترس، نه متن‌باز با تاییدیه OSI)؛ شرکت Dynatrace در ۱ اکتبر ۲۰۲۶ خرید ۹۱۵ میلیون دلاری Arize را تکمیل کرد و اعلام کرده که Phoenix همچنان در دسترس باقی می‌ماند |
+| ابزار Helicone | لاگ‌گیری پروکسی API | یکپارچه‌سازی ساده | توسط Mintlify تصاحب شده است (اعلام‌شده در مارس ۲۰۲۶)؛ پیش از انتخاب از نقشه راه آن مطمئن شوید |
 
-**Choose for exit, not just features.** This layer is consolidating fast, so vendor risk is a selection criterion. Emit OpenTelemetry with `gen_ai.*` attributes from your own code so you can switch backends, keep the traces you need for audit or compliance in storage you control (a SaaS tracing store with a 180-day cap is not an audit log), and export eval datasets and judge prompts in a format you own.
+**بر اساس قابلیت خروج (Exit) انتخاب کنید، نه صرفاً ویژگی‌ها.** این لایه به سرعت در حال ادغام است، بنابراین ریسک ارائه‌دهنده یکی از معیارهای اصلی انتخاب محسوب می‌شود. داده‌های OpenTelemetry را با ویژگی‌های `gen_ai.*` مستقیماً از کد خود صادر کنید تا بتوانید بک‌اندها را تعویض نمایید، Traceهای مورد نیاز برای ممیزی یا انطباق قانونی را در فضای ذخیره‌سازی تحت کنترل خود نگه دارید (یک مخزن ردیابی SaaS با سقف ۱۸۰ روزه جایگزین لاگ ممیزی نیست)، و مجموعه‌داده‌های ارزیابی و Promptهای داور را در فرمتی که مالک آن هستید خروجی بگیرید.
 
-### Integration Example: Langfuse (Python SDK v4)
+### مثال یکپارچه‌سازی: ابزار Langfuse (پایتون SDK نسخه ۴)
 
-The Langfuse Python SDK has been OpenTelemetry-based since the v3 rewrite (June 2025). The example below is v4 code, so pin `langfuse>=4,<5` to run it as written: v5 shipped October 14, 2026, and `pip install langfuse` now resolves to v5 (5.2.0 on November 5) on Python 3.11 or later. v5 needs Langfuse Cloud or a self-hosted server at v4.59.0 or newer (self-hosted v3 is unsupported), removes `api.scores_v3.get_many_v3()` with no alias (use `api.scores.get_many()`) along with `api.trace.get/list`, `api.sessions`, `api.legacy.*`, `api.ingestion.batch`, `set_current_trace_io()` and `span.set_trace_io()`, JSON-encodes metadata values on span attributes, and gzip-compresses span batches. Read the [v4 to v5 upgrade guide](https://langfuse.com/docs/observability/sdk/upgrade-path/python-v4-to-v5) before porting. The v2 pattern in older tutorials (`langfuse.trace()`, `trace.span()`, `trace.generation()`, `span.end()`) is obsolete; use the `@observe()` decorator and `start_as_current_observation()`:
+نسخه پایتون SDK ابزار Langfuse از زمان بازنویسی v3 (ژوئن ۲۰۲۵) مبتنی بر OpenTelemetry بوده است. مثال زیر مربوط به کد نسخه ۴ است، بنابراین برای اجرای آن به همین شکل نسخه `langfuse>=4,<5` را پین کنید: نسخه ۵ در ۱۴ اکتبر ۲۰۲۶ منتشر شد و دستور `pip install langfuse` اکنون روی پایتون ۳.۱۱ و بالاتر به نسخه ۵ (5.2.0 در ۵ نوامبر) اشاره می‌کند. نسخه ۵ نیازمند سرور Langfuse Cloud یا سرور خودمیزبان نسخه 4.59.0 به بالا است (نسخه ۳ خودمیزبان پشتیبانی نمی‌شود)، متد `api.scores_v3.get_many_v3()` را بدون نام مستعار حذف کرده (از `api.scores.get_many()` استفاده کنید) به همراه حذف `api.trace.get/list`، `api.sessions`، `api.legacy.*`، `api.ingestion.batch`، `set_current_trace_io()` و `span.set_trace_io()`، مقادیر متادیتا را در ویژگی‌های Span به صورت JSON کدگذاری می‌کند، و دسته‌های Span را با gzip فشرده می‌سازد. پیش از انتقال کد، [راهنمای ارتقای نسخه ۴ به ۵](https://langfuse.com/docs/observability/sdk/upgrade-path/python-v4-to-v5) را بخوانید. الگوی نسخه ۲ در آموزش‌های قدیمی (`langfuse.trace()`، `trace.span()`، `trace.generation()`، `span.end()`) منسوخ شده است؛ از دکوریتور `@observe()` و متد `start_as_current_observation()` استفاده کنید:
+
+<div dir="ltr">
 
 ```python
 # pip install "langfuse>=4,<5"  (v4 API; see the v5 notes above)
@@ -525,91 +561,95 @@ async def traced_rag_query(query: str, user_id: str, session_id: str) -> str:
     return response.text
 ```
 
-Two v4 behaviors to know. Decorated functions record their arguments and return values, so keep embeddings, raw documents, and sensitive fields out of observed signatures or mask them. And v4 exports only Langfuse, `gen_ai.*`, and known LLM-instrumentation spans by default, so database and HTTP spans from the same process will not appear unless you widen the filter.
+</div>
+
+دو رفتار نسخه ۴ که باید بدانید: توابع دارای دکوریتور، آرگومان‌ها و مقادیر بازگشتی خود را ضبط می‌کنند، بنابراین بردارهای امبدینگ، اسناد خام و فیلدهای حساس را خارج از امضای توابع تحت ردیابی نگه دارید یا آن‌ها را ماسک کنید. همچنین نسخه ۴ به صورت پیش‌فرض فقط Spanهای Langfuse، `gen_ai.*` و ابزاردقیق‌های شناخته‌شده LLM را صادر می‌کند، پس Spanهای پایگاه داده و HTTP از همان پردازش نمایش داده نخواهند شد مگر اینکه فیلتر را گسترش دهید.
 
 ---
 
-## Interview Questions
+## پرسش‌های مصاحبه (Interview Questions) <a id="interview-questions"></a>
 
-### Q: What metrics would you track for a production LLM system?
+### پرسش: چه متریک‌هایی را برای یک سیستم LLM عملیاتی ردیابی می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"I organize metrics into three categories:
+«من متریک‌ها را در سه دسته سازمان‌دهی می‌کنم:
 
-**Operational metrics:** These are table stakes for any service.
-- Request rate and error rate
-- Latency percentiles: p50, p95, p99
-- Time to first token (TTFT) for streaming
-- Availability
+**متریک‌های عملیاتی:** این موارد پایه و اساس هر سرویس نرم‌افزاری هستند.
+- نرخ درخواست و نرخ خطا
+- صدک‌های تاخیر (Latency): p50، p95 و p99
+- زمان تا اولین توکن (TTFT) برای استریمینگ
+- دسترسی‌پذیری (Availability)
 
-**Quality metrics:** This is what makes LLM observability unique.
-- Sampled quality scores using LLM-as-judge (1-5% sample rate)
-- Binary checks (policy violations, missing citations) on all traffic with a distilled or decision-model judge, which is now cheap enough to run at 100%
-- For RAG: faithfulness and relevance scores
-- User feedback: thumbs up/down, explicit ratings
-- Task completion rate where measurable
+**متریک‌های کیفیت:** این همان بخشی است که مشاهده‌پذیری LLM را منحصربه‌فرد می‌سازد.
+- امتیازهای کیفیت نمونه‌برداری‌شده با روش LLM به عنوان داور (نرخ نمونه‌برداری ۱ تا ۵ درصد)
+- بررسی‌های دودویی (نقض خط‌مشی‌ها، استنادهای جاافتاده) بر روی کل ترافیک با یک مدل داور تقطیرشده (Distilled) یا تصمیم‌گیر که اکنون آن‌قدر ارزان شده که اجرای آن روی ۱۰۰٪ ترافیک به‌صرفه است
+- برای RAG: امتیازهای وفاداری به متن (Faithfulness) و مرتبط بودن (Relevance)
+- بازخورد کاربر: لایک/دیس‌لایک و امتیازهای صریح
+- نرخ تکمیل وظیفه در مواردی که قابل اندازه‌گیری باشد
 
-**Cost metrics:**
-- Cost per request by model
-- Daily/weekly cost trends
-- Cost per successful user action
-- Token efficiency
+**متریک‌های هزینه:**
+- هزینه به ازای هر درخواست بر اساس مدل
+- روندهای هزینه روزانه و هفتگی
+- هزینه به ازای هر اقدام موفق کاربر
+- بهره‌وری توکن (Token efficiency)
 
-I set alerts for operational issues (error rate > 5%, P95 > SLA) and quality drift (average score drops 10% from baseline). Cost alerts for spikes help catch runaway usage.
+من هشدارهایی را برای مسائل عملیاتی (نرخ خطا بیشتر از ۵٪، P95 فراتر از SLA) و انحراف کیفیت (افت ۱۰ درصدی میانگین امتیاز از خط مبنا) تنظیم می‌کنم. هشدارهای جهش هزینه نیز به شناسایی مصرف بی‌رویه کمک می‌کنند.
 
-The key insight is that a fast, available LLM system producing bad outputs is still failing. Quality must be a first-class metric."
+نکته کلیدی این است که یک سیستم LLM سریع و همیشه در دسترس که خروجی‌های بد تولید کند همچنان یک سیستم شکست‌خورده است. کیفیت باید یک متریک درجه یک باشد.»
 
-### Q: How do you detect quality degradation in production?
+### پرسش: چگونه افت کیفیت را در محیط عملیاتی تشخیص می‌دهید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"I use several approaches:
+«من از چندین رویکرد ترکیبی استفاده می‌کنم:
 
-**Continuous sampling:** I evaluate 1-5% of requests using LLM-as-judge. This gives me a quality signal without evaluating everything.
+**نمونه‌برداری مستمر:** ۱ تا ۵ درصد از درخواست‌ها را با استفاده از LLM به عنوان داور ارزیابی می‌کنم. این کار بدون نیاز به ارزیابی کل ترافیک، یک سیگنال کیفی به من می‌دهد.
 
-**Drift detection:** I maintain a baseline quality distribution and use statistical tests to detect when current scores drift significantly. A 10% degradation triggers a warning.
+**تشخیص انحراف (Drift detection):** یک توزیع پایه از کیفیت را نگهداری می‌کنم و از آزمون‌های آماری برای تشخیص انحراف معنادار امتیازهای فعلی بهره می‌برم. افت ۱۰ درصدی یک هشدار فعال می‌کند.
 
-**User feedback:** Thumbs up/down, explicit ratings if available. This is ground truth for user satisfaction.
+**بازخورد کاربر:** دکمه‌های لایک/دیس‌لایک یا امتیازهای صریح در صورت وجود. این داده‌ها حقیقت مبنا برای رضایت واقعی کاربر هستند.
 
-**Implicit signals:** Task completion, retry rate, escalation rate, session length. If users are struggling more, quality may have dropped.
+**سیگنال‌های ضمنی:** تکمیل وظیفه، نرخ تلاش مجدد، نرخ ارجاع به پشتیبان انسانی و طول نشست. اگر کاربران بیشتر به مشکل برمی‌خورند، احتمالاً کیفیت افت کرده است.
 
-**What to do when I detect degradation:**
-1. Check for recent deployments or prompt changes
-2. Sample specific responses to diagnose the issue
-3. Check if it is model-specific (provider issue) or universal
-4. Roll back if necessary, then investigate
+**اقدامات لازم هنگام تشخیص افت کیفیت:**
+1. بررسی استقرارهای اخیر یا تغییرات Promptها
+2. نمونه‌برداری از پاسخ‌های خاص برای عیب‌یابی مشکل
+3. بررسی اینکه مشکل مختص یک مدل خاص (مسئله ارائه‌دهنده) است یا همگانی است
+4. بازگرداندن نسخه (Rollback) در صورت لزوم و سپس بررسی ریشه‌ای
 
-I also maintain a golden test set of queries with expected behaviors that I run on every deployment to catch regressions before production."
+من همچنین یک مجموعه تست طلایی (Golden test set) از پرسش‌ها با رفتارهای مورد انتظار را نگه می‌دارم که روی هر استقرار اجرا می‌شود تا افت کیفیت پیش از رسیدن به محیط عملیاتی شناسایی گردد.»
 
-### Q: After a routine dependency upgrade, your LLM dashboards go quiet: fewer spans, lower token counts. Traffic and the provider bill are unchanged. What happened, and how do you stop it from happening again?
+### پرسش: پس از یک ارتقای معمول وابستگی‌ها، داشبوردهای LLM شما ساکت می‌شوند: Spanهای کمتر و شمارش توکن پایین‌تر، در حالی که ترافیک و صورتحساب ارائه‌دهنده تغییر نکرده است. چه اتفاقی افتاده و چگونه از تکرار آن جلوگیری می‌کنید؟
 
-**Strong answer:**
+**پاسخ قوی:**
 
-"Unchanged bills with falling telemetry means the instrumentation broke, not the traffic. My first suspect is the HTTP transport. In August 2026 the OpenAI Python SDK 3.0 and Anthropic Python SDK 1.0 both moved to `httpx2`, and instrumentation that hooks `httpx` (the OpenTelemetry HTTPX instrumentor, Sentry's integration, and mocking libraries like `respx` and `vcrpy`) can silently stop seeing SDK calls unless `httpx2.alias_httpx()` runs before anything imports `httpx`. Other suspects with the same symptom: a tracing SDK major version that changed its API or its default span filter, or a sampling config that shipped with the upgrade.
+«ثابت ماندن صورتحساب همزمان با کاهش تله‌متری به معنای شکستن ابزاردقیق (Instrumentation) است، نه افت ترافیک. نخستین مظنون من لایه انتقال HTTP است. در اوت ۲۰۲۶، هر دو پایتون SDK شرکت OpenAI نسخه 3.0 و پایتون SDK شرکت Anthropic نسخه 1.0 به `httpx2` مهاجرت کردند، و ابزاردقیقی که به `httpx` متصل می‌شود (ابزاردقیق HTTPX در OpenTelemetry، یکپارچه‌سازی Sentry و کتابخانه‌های Mock مثل `respx` و `vcrpy`) می‌تواند فراخوانی‌های SDK را بی‌سروصدا از دست بدهد، مگر اینکه `httpx2.alias_httpx()` پیش از وارد کردن `httpx` اجرا شود. سایر مظنون‌های دارای علائم مشابه عبارتند از: ارتقای نسخه اصلی SDK ردیابی که API یا فیلتر پیش‌فرض Span خود را تغییر داده باشد، یا تغییر پیکربندی نمونه‌برداری (Sampling) همراه با ارتقا.
 
-To confirm, I compare a day of provider usage exports against my token metrics, then make one call in staging and check whether its span appears.
+برای تایید، یک روز از خروجی مصرف ارائه‌دهنده را با متریک‌های Token خود مقایسه می‌کنم، سپس یک فراخوانی آزمایشی در محیط Staging انجام می‌دهم و بررسی می‌کنم آیا Span آن ظاهر می‌شود یا خیر.
 
-To prevent a repeat:
-1. **Telemetry canary in CI**: one test makes a model call through the production client and asserts the span, token counts, and cost metric were emitted. It runs on every dependency bump.
-2. **Daily reconciliation**: telemetry tokens and dollars versus the provider's billing export, alerting on a gap over a few percent.
-3. **Upgrade as a set**: provider SDKs, the HTTP client, and instrumentation packages are pinned together and bumped together.
+برای جلوگیری از تکرار این مشکل:
+1. **قناری تله‌متری در CI:** یک تست فراخوانی مدل را از طریق کلاینت محیط عملیاتی انجام داده و تضمین می‌کند که Span، شمارش Tokenها و متریک هزینه صادر شده‌اند. این تست روی هر به‌روزرسانی وابستگی‌ها اجرا می‌شود.
+2. **تطبیق روزانه:** مقایسه Tokenها و هزینه‌های دلاری تله‌متری با خروجی صورتحساب ارائه‌دهنده، و ارسال هشدار در صورت اختلاف بیش از چند درصد.
+3. **ارتقا به صورت یک بسته واحد:** SDKهای ارائه‌دهنده، کلاینت HTTP و بسته‌های ابزاردقیق با هم پین (Pin) شده و همزمان با هم ارتقا می‌یابند.
 
-The general lesson is that observability needs its own tests. A dashboard with no errors is only good news if you have proven it would show them."
-
----
-
-## References
-
-- OpenTelemetry: https://opentelemetry.io/
-- OpenTelemetry GenAI semantic conventions: https://opentelemetry.io/docs/specs/semconv/gen-ai/
-- Langfuse: https://langfuse.com/docs
-- Langfuse Python SDK v3 to v4 upgrade guide: https://langfuse.com/docs/observability/sdk/upgrade-path/python-v3-to-v4
-- Langfuse Python SDK v4 to v5 upgrade guide: https://langfuse.com/docs/observability/sdk/upgrade-path/python-v4-to-v5
-- Langfuse. "AI Gateway public beta" (November 4, 2026): https://langfuse.com/changelog/2026-11-04-ai-gateway-public-beta
-- LangSmith: https://docs.smith.langchain.com/
-- OpenAI Python SDK `httpx2` notes: https://github.com/openai/openai-python/blob/main/httpx2.md
+درس کلی این است که مشاهده‌پذیری نیز به تست‌های اختصاصی خود نیاز دارد. داشبوردی بدون خطا تنها زمانی خبر خوب است که ثابت کرده باشید در صورت بروز خطا آن را نمایش می‌دهد.»
 
 ---
 
-*Next: [Benchmarks and Leaderboards](03-benchmarks-and-leaderboards.md)*
+## منابع و مراجع (References) <a id="references"></a>
+
+- پلتفرم OpenTelemetry: https://opentelemetry.io/
+- قراردادهای معنایی GenAI در OpenTelemetry: https://opentelemetry.io/docs/specs/semconv/gen-ai/
+- مستندات ابزار Langfuse: https://langfuse.com/docs
+- راهنمای ارتقای نسخه ۳ به ۴ پایتون SDK در Langfuse: https://langfuse.com/docs/observability/sdk/upgrade-path/python-v3-to-v4
+- راهنمای ارتقای نسخه ۴ به ۵ پایتون SDK در Langfuse: https://langfuse.com/docs/observability/sdk/upgrade-path/python-v4-to-v5
+- مقاله Langfuse پیرامون «نسخه بتای عمومی AI Gateway» (۴ نوامبر ۲۰۲۶): https://langfuse.com/changelog/2026-11-04-ai-gateway-public-beta
+- مستندات ابزار LangSmith: https://docs.smith.langchain.com/
+- یادداشت‌های `httpx2` در پایتون SDK شرکت OpenAI: https://github.com/openai/openai-python/blob/main/httpx2.md
+
+---
+
+*بعدی: [بنچمارک‌ها و رتبه‌بندی‌ها (Benchmarks and Leaderboards)](03-benchmarks-and-leaderboards.md)*
+
+</div>
