@@ -499,6 +499,8 @@ class CachingLLM:
 
 ## الگوهای قابلیت اطمینان <a id="reliability-patterns"></a>
 
+<a id="pattern-retry-with-fallback"></a>
+
 ### الگو: تلاش مجدد با بازگشت اضطراری (Retry with Fallback)
 
 <div dir="ltr">

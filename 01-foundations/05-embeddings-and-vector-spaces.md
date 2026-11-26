@@ -21,6 +21,8 @@
 
 ---
 
+<a id="what-are-embeddings"></a>
+
 ## امبدینگ‌ها چه هستند
 
 امبدینگ‌ها متن گسسته (کلمات، جملات، اسناد) را به فضاهای برداری پیوسته نگاشت می‌کنند، جایی که شباهت معنایی متناظر با نزدیکی هندسی است.
@@ -34,6 +36,8 @@
 امبدینگ‌ها را به عنوان مختصات در یک فضای با ابعاد بسیار بالا (high-dimensional) در نظر بگیرید. ابعاد (۵۱۲ تا ۴۰۹۶) قدرت بیان (expressiveness) را فراهم می‌کنند. هر بُعد جنبه‌ای از معنا را ثبت می‌کند، اگرچه ابعاد منفرد قابل تفسیر نیستند.
 
 ---
+
+<a id="embedding-model-architectures"></a>
 
 ## معماری‌های مدل امبدینگ
 
@@ -120,6 +124,8 @@ Similarity = cosine(doc_embedding, query_embedding)
 
 ---
 
+<a id="training-objectives"></a>
+
 ## اهداف آموزش (Training Objectives)
 
 ### یادگیری مقابله‌ای (Contrastive Learning)
@@ -174,6 +180,8 @@ doc_embedding = embed("Represent this document for retrieval: RAG combines...")
 این قابلیت از طریق مشخص کردن نحوه استفاده مورد نظر، کارایی و عملکرد را بهبود می‌بخشد.
 
 ---
+
+<a id="distance-metrics"></a>
 
 ## سنجه‌های فاصله (Distance Metrics)
 
@@ -243,6 +251,8 @@ def euclidean_distance(a, b):
 
 ---
 
+<a id="embedding-model-comparison"></a>
+
 ## مقایسه مدل‌های امبدینگ
 
 ### مدل‌های میزبانی‌شده (اکتبر ۲۰۲۶)
@@ -287,6 +297,8 @@ def euclidean_distance(a, b):
 | فضای مشترک (Shared space) | خانواده‌ای که از یک فضای مشترک استفاده می‌کند به شما امکان می‌دهد مدل سمت کوئری را بدون نیاز به ایندکس‌گذاری مجدد تغییر دهید |
 
 ---
+
+<a id="matryoshka-and-adaptive-dimensions"></a>
 
 ## ابعاد ماتریوشکا و تطبیقی (Matryoshka and Adaptive Dimensions)
 
@@ -345,6 +357,8 @@ response = client.embeddings.create(
 
 ---
 
+<a id="late-chunking-and-late-interaction"></a>
+
 ## تکه‌بندی دیرهنگام (Late Chunking) و تعامل دیرهنگام (Late Interaction)
 
 ### تکه‌بندی دیرهنگام (Late Chunking)
@@ -397,6 +411,8 @@ results = model.search(query="What is RAG?", k=10)
 
 ---
 
+<a id="quantization-for-scale"></a>
+
 ## کوانتیزاسیون برای مقیاس‌پذیری (Quantization for Scale)
 
 برای مدیریت میلیاردها بردار، کوانتیزاسیون **باینری (Binary)** و **اسکالر (Int8)** استانداردهای رایج هستند، و طرح‌های ۱ تا ۴ بیتی مبتنی بر چرخش (rotation-based) موارد افزوده‌شده در سال ۲۰۲۶ به شمار می‌روند.
@@ -415,6 +431,8 @@ results = model.search(query="What is RAG?", k=10)
 2. بازرتبه‌بندی ۵۰ مورد برتر با استفاده از Float32 (یا مقادیر اصلی int8 نگهداری‌شده روی دیسک) یا یک Cross-Encoder (برای رسیدن به بالاترین دقت).
 
 ---
+
+<a id="practical-considerations"></a>
 
 ## ملاحظات عملی (Practical Considerations)
 
@@ -503,6 +521,8 @@ def get_embedding(text: str, cache: dict) -> np.array:
 
 ---
 
+<a id="embedding-drift-and-versioning"></a>
+
 ## انحراف Embedding (Embedding Drift) و نسخه‌بندی
 
 ### مسئله
@@ -566,6 +586,8 @@ Query -> Both indexes -> Merge or switch
 تولید Embedding درون پایگاه داده (مانند MongoDB Atlas Automated Embedding با عرضه عمومی در ۱۳ آگوست ۲۰۲۶؛ قابلیت بومی turbopuffer با عرضه عمومی در ۲۹ سپتامبر ۲۰۲۶؛ فیلد `semantic_text` در Elasticsearch) پایپ‌لاین همگام‌سازی را حذف می‌کند، اما نمایه شما را به نسخه مدلی که ارائه‌دهنده سرویس انتخاب کرده وابسته (کوپل) می‌سازد. مدل را پین (pin) کنید و دریابید که ارائه‌دهنده ارتقای مدل‌ها را چگونه مدیریت می‌کند و هزینه باز-تولید Embeddingها بر عهده چه کسی خواهد بود.
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه (Interview Questions)
 
@@ -647,6 +669,8 @@ Query -> Both indexes -> Merge or switch
 - **قضاوت با LLM تنها در گام نهایی**، بر روی چند کاندیدای انگشت‌شمار، و صرفاً برای کوئری‌های نیازمند استدلال سنگین که مقاله نشان داده LLMها در آن‌ها واقعاً پیشتاز هستند. از آنجا که بودجه‌های استدلال پایین‌تر معمولاً کیفیت بازیابی را حفظ می‌کنند، می‌توان آن فرآیند قضاوت را با سطح تلاش (effort) پایین اجرا کرد.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع
 

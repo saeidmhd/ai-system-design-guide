@@ -22,6 +22,8 @@
 
 ---
 
+<a id="the-memory-hierarchy"></a>
+
 ## سلسله‌مراتب حافظه
 
 ایجنت‌ها (Agentها) از یک رویکرد لایه‌بندی‌شده برای ذخیره‌سازی استفاده می‌کنند:
@@ -52,6 +54,8 @@
 
 ---
 
+<a id="short-term-the-reasoning-trace"></a>
+
 ## کوتاه‌مدت: ردپای استدلال
 
 ایجنت‌های (Agentهای) پروداکشن دیگر صرفاً «پیام‌ها» (Messages) را ذخیره نمی‌کنند؛ آن‌ها **شیء وضعیت (State Object)** را ذخیره می‌کنند.
@@ -62,6 +66,8 @@
 
 ---
 
+<a id="episodic-memory-past-experiences"></a>
+
 ## حافظه رویدادی: تجربیات گذشته
 
 حافظه رویدادی (Episodic Memory) «اجراها» (Runs) یا «مسیرها» (Trajectories) را ذخیره می‌کند.
@@ -69,6 +75,8 @@
 - **الگو (Pattern)**: هنگامی که یک وظیفه به پایان می‌رسد، «درس‌های آموخته‌شده» (Lessons Learned) را خلاصه کرده و آن‌ها را در یک پایگاه داده برداری (Vector Database) ذخیره کنید. در شروع یک وظیفه جدید، یک **جستجوی خودکار (Self-Search)** برای وظایف مشابه قبلی انجام دهید.
 
 ---
+
+<a id="semantic-memory-the-persona"></a>
 
 ## حافظه معنایی: پرسنونا
 
@@ -81,6 +89,8 @@
 پایگاه داده گرافی را به عنوان انتخابی در نظر بگیرید که نیاز به توجیه دارد، نه یک گزینه پیش‌فرض. پلتفرم Mem0 v2 درایورهای Neo4j، Memgraph، Kuzu و Apache AGE خود را حذف کرد و اکنون پیوندهای موجودیت را در یک مجموعه (Collection) موازی در دل ذخیره‌ساز برداری موجود نگهداری می‌کند که بیشتر جستجوهای شخصی‌سازی را بدون نیاز به اجرای یک پایگاه داده دوم پوشش می‌دهد. تنها زمانی به سراغ یک گراف اختصاصی بروید که پیمایش چندمرحله‌ای (Multi-hop) یا پرسش‌های زمانی («در ۱۲ مارس چه چیزی درست بود؟») هسته اصلی محصول شما باشند، مانند یال‌های دو-زمانی (Bitemporal edges) در Graphiti.
 
 ---
+
+<a id="procedural-memory-learned-skills-and-workflows"></a>
 
 ## حافظه رویه‌ای: مهارت‌ها و گردش‌کارهای آموخته‌شده
 
@@ -99,6 +109,8 @@
 حافظه رویه‌ای به‌ویژه برای سیستم‌های Agentic از اهمیت بالایی برخوردار است، زیرا بسیاری از وظایف صرفاً به خاطر سپردن فکت‌ها نیستند؛ بلکه مستلزم دنبال کردن توالی درستی از اقدامات هستند.
 
 ---
+
+<a id="tradeoffs-where-does-fact-x-go"></a>
 
 ## موازنه‌ها: فکت X در کجا قرار می‌گیرد؟
 
@@ -147,6 +159,8 @@
 
 ---
 
+<a id="production-implementations"></a>
+
 ## پیاده‌سازی‌های محیط تولید (Production Implementations)
 
 سیستم‌های نام‌برده کمتر در «چه چیزی ذخیره می‌کنند» و بیشتر در *انضباط نوشتن (write discipline)*، *الگوریتم بازیابی (retrieval algorithm)* و *رویکرد حاکمیتی (governance posture)* با یکدیگر تفاوت دارند.
@@ -171,6 +185,8 @@
 **فریم‌ورک‌های نوظهور شایسته پیگیری**: [Supermemory](https://supermemory.ai)، [Recallr](https://recallrai.com)، [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-integrate-lang.html) از AWS، [Oracle AI Agent Memory](https://blogs.oracle.com/developers/oracle-ai-agent-memory-a-governed-unified-memory-core-for-enterprise-ai-agents).
 
 ---
+
+<a id="failure-modes-and-mitigations"></a>
 
 ## حالت‌های شکست و راهکارهای کاهش ریسک (Failure Modes and Mitigations)
 
@@ -250,6 +266,8 @@
 
 ---
 
+<a id="mem0-and-agentic-personalization"></a>
+
 ## پلتفرم Mem0 و شخصی‌سازی Agentic (Agentic Personalization)
 
 ابزارهای **Mem0**، Zep، Letta و Cognee فریم‌ورک‌های استاندارد برای «حافظه هوشمند» در استک‌های Agent هستند.
@@ -258,6 +276,8 @@
 - **تأثیرگذاری**: Agentها حس «زنده بودن» را القا می‌کنند زیرا جزئیاتی را که ۳ ماه پیش در یک نشست دیگر بیان کرده‌اید به خاطر می‌آورند.
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -376,6 +396,8 @@
 چارچوب‌بندی صحیح این است: روش TTT-E2E حاکمیت حافظه را از لایه ذخیره‌سازی به خط لوله آموزش و استقرار (Deployment) منتقل می‌کند. هزینه حذف نشده، بلکه جابه‌جا شده است. برای اغلب تیم‌های فعال در محیط عملیاتی در سال ۲۰۲۶، این یک مسیر پژوهشی برای پیگیری است و هنوز یک معماری قابل استقرار (Deployment) به شمار نمی‌رود. خانواده گسترده‌تر آموزش در زمان تست (Test-Time Training) در [رادار پژوهش، محور ۱۲](../RESEARCH-RADAR.md#12-test-time-training-learning-at-inference) ترسیم شده است.
 
 ---
+
+<a id="references"></a>
 
 ## منابع
 

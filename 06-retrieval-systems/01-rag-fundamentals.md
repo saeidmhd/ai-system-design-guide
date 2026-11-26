@@ -19,6 +19,8 @@
 
 ---
 
+<a id="the-core-philosophy-grounding-vs-training"></a>
+
 ## فلسفه اصلی: استناد در برابر آموزش
 
 | جنبه | Fine-Tuning | RAG |
@@ -31,6 +33,8 @@
 **قاعده سرانگشتی**: فرآیند Fine-tuning برای **فرم** (سبک، لحن، نحو) است؛ در حالی که RAG برای **واقعیت** (دانش، داده، استناد/grounding) به کار می‌رود.
 
 ---
+
+<a id="the-rag-taxonomy"></a>
 
 ## دسته‌بندی (تاکسونومی) RAG
 
@@ -79,6 +83,8 @@ flowchart TD
 </div>
 
 ---
+
+<a id="rag-vs-long-context-the-hybrid-era"></a>
 
 ## مقایسه RAG و کانتکست طولانی (عصر «ترکیبی»)
 
@@ -137,6 +143,8 @@ flowchart TD
 
 ---
 
+<a id="the-retrieval-quality-gap"></a>
+
 ## شکاف کیفیت بازیابی
 
 «شکاف بازیابی» (Retrieval Gap) عامل رتبه یک شکست RAG است.
@@ -145,6 +153,8 @@ flowchart TD
 - **شکاف ۳: گم شدن در میانه (Lost-in-the-Middle)**: اطلاعات در Prompt وجود دارد، اما LLM متوجه آن نمی‌شود. این مشکل با **فشرده‌سازی کانتکست (Context Compression)** و قرار دادن قوی‌ترین شواهد در ابتدای متن حل می‌شود.
 
 ---
+
+<a id="poisoned-sources"></a>
 
 ## منابع مسموم
 
@@ -158,6 +168,8 @@ flowchart TD
 برای بررسی تزریق غیرمستقیم Prompt (indirect prompt injection) از طریق محتوای بازیابی‌شده، به بخش [امنیت LLM](../12-security-and-access/01-llm-security.md) مراجعه کنید.
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -177,6 +189,8 @@ flowchart TD
 
 ---
 
+<a id="key-takeaways"></a>
+
 ## نکات کلیدی
 
 - روش Naive RAG (جستجوی برداری + top-K + ‏LLM) برای محیط عملیاتی منسوخ شده است؛ روش Advanced RAG (ترکیبی + RRF + بازرتبه‌بندی) را به عنوان خط پایه جدید پیاده‌سازی کنید.
@@ -187,6 +201,8 @@ flowchart TD
 - مقایسه Agentic RAG در برابر Advanced RAG انتخابی بین یک حلقه تصادفی در برابر یک خط لوله قطعی است؛ تنها زمانی رویکرد Agentic را به کار بگیرید که الگوهای پرسش برای یک خط لوله ثابت بیش از حد متنوع باشند.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع
 - مقاله Gao و همکاران. "Retrieval-Augmented Generation for LLMs: A Survey" (به‌روزرسانی ۲۰۲۴)

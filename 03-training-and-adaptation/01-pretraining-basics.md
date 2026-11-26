@@ -16,6 +16,8 @@
 
 ---
 
+<a id="the-pretraining-objective"></a>
+
 ## هدف پیش‌آموزش (The Pretraining Objective)
 
 اکثر LLMهای مدرن از معماری **فقط دیکودر (Decoder-only)** هستند و از **مدل‌سازی زبانی علّی (Causal Language Modeling یا CLM)** استفاده می‌کنند:
@@ -32,6 +34,8 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 مدل، Token بعدی را بر اساس متن زمینه (context) پیش‌بینی می‌کند. این هدف ساده، در مقیاس بزرگ، منجر به قابلیت‌های استدلال نوظهور (emergent reasoning) می‌شود. بسیاری از مدل‌های کنونی یک هدف کمکی به نام **پیش‌بینی چند Token هم‌زمان (multi-token prediction یا MTP)** را اضافه می‌کنند (که DeepSeek-V3 آن را محبوب کرد)؛ این کار هم سیگنال آموزش را بهبود می‌بخشد و هم هدهای پیش‌نویسی (draft heads) بر جای می‌گذارد که موتورهای سرویس‌دهی از آن‌ها برای [کدگشایی حدسی (speculative decoding)](../04-inference-optimization/03-speculative-decoding.md) مجدداً استفاده می‌کنند.
 
 ---
+
+<a id="data-curriculum-and-quality"></a>
 
 ## برنامه آموزشی و کیفیت داده (Data Curriculum and Quality)
 
@@ -58,6 +62,8 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 
 ---
 
+<a id="scaling-laws-training-vs-inference-optimal"></a>
+
 ## قوانین مقیاس‌پذیری: بهینگی در آموزش در برابر بهینگی در استنتاج (Scaling Laws: Training vs. Inference Optimal)
 
 ### پارادایم چینچیلا (Chinchilla Paradigm: 2022-2024)
@@ -76,6 +82,8 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 
 ---
 
+<a id="computational-requirements"></a>
+
 ## الزامات محاسباتی (Computational Requirements)
 
 محاسبه سرانگشتی استاندارد: **training FLOPs ≈ 6 × N × D**، که در آن N تعداد پارامترهای فعال به ازای هر Token و D تعداد Tokenهای آموزش است (2ND برای گذر رو به جلو (forward pass) و 4ND برای گذر رو به عقب (backward pass)).
@@ -90,6 +98,8 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 - **رابطه GPU-hours = FLOPs / (peak FLOPs × MFU)**: نرخ بهره‌وری FLOPs مدل (معادل MFU) حدود ۳۵ تا ۴۵ درصد برای اجراهای بزرگ متراکم و تنظیم‌شده در فرمت BF16 معمول است؛ Meta برای Llama 4 Behemoth توان 390 TFLOPs به ازای هر GPU را در دقت FP8 روی ۳۲ هزار GPU گزارش داده است. حافظه مورد نیاز برای آموزش (وزن‌ها، گرادیان‌ها، وضعیت بهینه‌ساز در حدود ۱۶ بایت به ازای هر پارامتر در دقت ترکیبی پیش از شاردینگ)، عاملی است که استفاده از شاردینگ ZeRO/FSDP و موازی‌سازی پایپ‌لاین (pipeline parallelism) را بسیار پیش از اتمام ظرفیت FLOPs ضروری می‌سازد.
 
 ---
+
+<a id="training-stability"></a>
 
 ## پایداری آموزش (Training Stability)
 
@@ -106,6 +116,8 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 - **فرمت FP4 (NVFP4 / MXFP4)**: مرز نوظهور فناوری. شرکت NVIDIA یک مدل 12B را روی 10T Token در فرمت NVFP4 با استفاده از تبدیلات تصادفی هادامارد (random Hadamard transforms) و گرد کردن تصادفی (stochastic rounding) آموزش داد که نتایجی قابل مقایسه با مبنای FP8 داشت (arXiv:2509.25149). شرکت NVIDIA توان یک رک Vera Rubin NVL72 را معادل 2,520 PFLOPS در NVFP4 برای آموزش ارزیابی کرده است، و وب‌سایت The Register گزارش می‌دهد که شتاب‌دهنده MTIA 400 شرکت Meta به عنوان قطعه‌ای با اولویت آموزش با توان 12 PFLOPS در MXFP4 رتبه‌بندی شده است. انتظار داشته باشید که دستورالعمل‌های پیش‌آموزش FP4 تا پایان سال ۲۰۲۷ فراگیر شوند؛ البته باید به آن‌ها به چشم یک مسئله مربوط به دستورالعمل و کرنل (recipe-and-kernel) نگریست، نه یک ارتقای ۲ برابری رایگان.
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه (Interview Questions)
 
@@ -130,6 +142,8 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 محاسبه به صورت 6 × 70e9 × 15e12 ≈ 6.3 × 10^24 FLOPs است. یک پردازنده H100 در حالت اوج در فرمت dense BF16 حدود 1 PFLOPS توان محاسباتی ارائه می‌دهد؛ با MFU معادل ۴۰٪، این مقدار تقریباً ~4 × 10^14 FLOPs در هر ثانیه خواهد بود، که معادل حدود 1.6 × 10^10 ثانیه-GPU، یا حدود 4.4M ساعت-GPU (GPU-hours) است. در یک کلاستر دارای ۱۶ هزار GPU، این میزان تقریباً ۱۱ تا ۱۲ روز محاسبات خالص زمان می‌برد؛ پیش از احتساب راه‌اندازی‌های مجدد، ارزیابی‌ها (evals) و اجراهای ناموفق که معمولاً ۲۰ تا ۵۰ درصد به این زمان اضافه می‌کنند. برای اعتبارسنجی (sanity check)، شرکت Meta برای Llama 3.1 70B رقم 7.0M ساعت-GPU با H100 را گزارش کرده است. اگر این مدل یک MoE با همان تعداد پارامتر فعال می‌بود، میزان FLOPs یکسان می‌ماند، اما حافظه و ارتباطات بین پردازنده‌ای (موازی‌سازی کارشناسان یا expert parallelism، ارتباطات all-to-all) به چالش‌های اصلی مهندسی تبدیل می‌شدند.
 
 ---
+
+<a id="references"></a>
 
 ## منابع (References)
 

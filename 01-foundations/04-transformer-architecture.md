@@ -19,6 +19,8 @@
 
 ---
 
+<a id="architecture-overview"></a>
+
 ## نمای کلی معماری
 
 یک ترنسفورمر فقط-دیکودر (Decoder-only) (معماری نهفته در GPT-3، Llama و اکثر مدل‌های متن‌باز، و مدلی که به‌طور گسترده برای مدل‌های پیشروی بسته که طراحی آن‌ها منتشر نشده نیز فرض می‌شود) از بخش‌های زیر تشکیل شده است:
@@ -81,6 +83,8 @@
 
 ---
 
+<a id="input-processing"></a>
+
 ## پردازش ورودی
 
 ### بازنمایی Token (Token Embedding)
@@ -140,6 +144,8 @@ x = token_embeddings + position_embeddings(positions)
 **مدل‌های متن‌باز مدرن (Llama، Mistral، Qwen، DeepSeek و Gemma) از RoPE استفاده می‌کنند** تا تعمیم‌پذیری به طول‌های بیشتر (Length Generalization) بهبود یابد؛ این مدل‌ها اغلب از روش‌های مقیاس‌بندی نظیر YaRN برای گسترش پنجره کانتکست آموزش‌دیده بهره می‌برند. آزمایشگاه‌های سازنده مدل‌های بسته، اطلاعات مربوط به روش‌های کدگذاری موقعیت خود را منتشر نمی‌کنند.
 
 ---
+
+<a id="the-transformer-block"></a>
 
 ## بلاک ترنسفورمر
 
@@ -270,6 +276,8 @@ class RMSNorm(nn.Module):
 
 ---
 
+<a id="output-processing"></a>
+
 ## پردازش خروجی
 
 ### نرمال‌سازی نهایی
@@ -318,6 +326,8 @@ loss = cross_entropy(logits, targets)
 
 </div>
 
+<a id="untied-vs-tied-embeddings"></a>
+
 ## مقایسه Embeddingهای متصل و غیرمتصل (Untied vs. Tied Embeddings)
 
 **متصل یا Tied (مدل‌های GPT-2، T5، Gemma، و مدل‌های کوچک Llama 3.2 و Qwen):** اشتراک وزن (Weight Tying)
@@ -331,6 +341,8 @@ loss = cross_entropy(logits, targets)
 - **تأثیر بر سیستم (System Impact)**: جدا کردن وزن‌ها (Untying) تعداد vocab_size x d_model پارامتر اضافی برای بارگذاری و ارائه سرویس (Serving) اضافه می‌کند؛ برای مدل‌های لبه (Edge Models)، اتصال وزن‌ها اغلب مرز بین جا شدن یا نشدن مدل در حافظه دستگاه است.
 
 ---
+
+<a id="modern-architecture-variations"></a>
 
 ## گونه‌های معماری مدرن
 
@@ -374,6 +386,8 @@ loss = cross_entropy(logits, targets)
 | بایاس (Bias) | با بایاس | بدون بایاس | پارامترهای کمتر، کیفیت مشابه |
 
 ---
+
+<a id="scaling-properties"></a>
 
 ## ویژگی‌های مقیاس‌پذیری (Scaling Properties)
 
@@ -425,6 +439,8 @@ D (data tokens) ≈ 20 * N (parameters)
 
 ---
 
+<a id="architecture-comparison-table"></a>
+
 ## جدول مقایسه معماری‌ها
 
 | مدل | پارامترها | لایه‌ها | d_model | هدها | هدهای KV | FFN | زمینه (Context) |
@@ -441,6 +457,8 @@ D (data tokens) ≈ 20 * N (parameters)
 دو روند برجسته از ردیف‌های پایینی جدول مشخص است: پارامترهای فعال دیگر همراه با کل پارامترها رشد نمی‌کنند، و طراحی KV (شامل MLA، فشرده و هیبریدی) اکنون نسبت به تعداد لایه‌ها یا عرض مدل، تنوع بسیار بیشتری میان مدل‌های گوناگون دارد. پیکربندی‌های GPT، Claude و Gemini عمومی نیستند.
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -552,6 +570,8 @@ x = x + Sublayer(LayerNorm(x))
 این تغییرات، آموزش پایدارتر مدل‌های بزرگ‌تر و خدمت‌رسانی با بهره‌وری بالاتر را امکان‌پذیر می‌سازند.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع
 

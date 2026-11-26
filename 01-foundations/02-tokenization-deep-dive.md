@@ -20,6 +20,8 @@
 
 ---
 
+<a id="why-tokenization-matters"></a>
+
 ## چرا Tokenization اهمیت دارد
 
 ### برای طراحی سیستم
@@ -36,6 +38,8 @@
 زیرا "strawberry" به چندین زیرکلمه (Subword) تقسیم (Tokenize) می‌شود. مدل هرگز کاراکترهای منفرد را نمی‌بیند؛ بلکه واحدهای زیرکلمه‌ای را می‌بیند. شمارش حروف نیازمند استدلال درباره ساختار داخلی Tokenها است.
 
 ---
+
+<a id="tokenization-algorithms"></a>
 
 ## الگوریتم‌های Tokenization
 
@@ -126,6 +130,8 @@ Score = freq(AB) / (freq(A) * freq(B))
 
 ---
 
+<a id="vocabulary-design-tradeoffs"></a>
+
 ## موازنه‌های طراحی واژگان
 
 ### اندازه واژگان
@@ -174,6 +180,8 @@ text = "cafe"  # Becomes bytes, then BPE operates on bytes
 </div>
 
 ---
+
+<a id="special-tokens"></a>
 
 ## واحدهای Token ویژه
 
@@ -227,6 +235,8 @@ Hi there!<|im_end|>
 
 ---
 
+<a id="multilingual-tokenization"></a>
+
 ## فرآیند Tokenization چندزبانه
 
 ### چالش
@@ -264,6 +274,8 @@ Hi there!<|im_end|>
 
 ---
 
+<a id="multimodal-tokenization-pixels-to-tokens"></a>
+
 ## فرآیند Tokenization چندوجهی (pixels-to-tokens)
 
 مدل‌های چندوجهی بومی (Native Multimodal) مدرن فقط تصاویر را «نمی‌بینند»؛ بلکه آن‌ها را Tokenize می‌کنند.
@@ -280,6 +292,8 @@ Hi there!<|im_end|>
 - **پردازش ایجنتی ویدیو (Agentic video processing):** از ۱ سپتامبر ۲۰۲۶،‏ Gemini API یک حالت اختیاری `"processing": "agentic"` را روی Gemini 3.8 Flash،‏ 3.6 Flash و 3.5 Flash-Lite ارائه می‌دهد (درخواست‌های ارسالی به `gemini-3.7-flash` که در زمان عرضه نیز پشتیبانی می‌شدند، از ۸ اکتبر به 3.8 Flash هدایت شده‌اند). مدل به‌جای نمونه‌برداری با نرخ ثابت، تصمیم می‌گیرد کدام بخش‌ها را با چه سرعتی و از طریق کدام وجه یا مُدالیتی (فریم‌ها، صدا یا رونوشت متنی) بررسی کند. گوگل گزارش می‌دهد که این رویکرد در بنچمارک‌های استاندارد ویدیو تا ۸۸٪ Token کمتر و تا ۶۶٪ هزینه پایین‌تر به همراه دارد که با قیمت‌های معمولی Token محاسبه می‌شود. نمونه‌برداری ایستا با نرخ 1 FPS همچنان حالت پیش‌فرض باقی مانده است، بنابراین یک مدل هزینه که بر اساس نمونه‌برداری با نرخ ثابت ساخته شده باشد می‌تواند Tokenهای حالت ایجنتی را تا حدود ۸ برابر بیش‌ازحد برآورد کند.
 
 ---
+
+<a id="token-counting-for-cost-estimation"></a>
 
 ## شمارش Token برای برآورد هزینه
 
@@ -370,6 +384,8 @@ def calculate_cost(input_tokens: int, output_tokens: int, model: str) -> float:
 
 ---
 
+<a id="common-tokenization-issues"></a>
+
 ## مشکلات رایج Tokenization
 
 ### مشکل ۱: عدم انطباق مرز Tokenها (Token Boundary Misalignment)
@@ -448,6 +464,8 @@ text = "Hello world"
 **بهترین شیوه (Best practice):** پیش از Tokenize کردن، فاصله‌های خالی را نرمال‌سازی کنید.
 
 ---
+
+<a id="practical-tokenization-patterns"></a>
 
 ## الگوهای کاربردی Tokenization
 
@@ -551,6 +569,8 @@ budget.allocate("output_reserve", 2000)
 
 ---
 
+<a id="interview-questions"></a>
+
 ## سوالات مصاحبه
 
 ### سوال: چرا LLMها در شمارش ساده کاراکترها به مشکل می‌خورند؟
@@ -629,6 +649,8 @@ for chunk in ranked_chunks:
 </div>
 
 ---
+
+<a id="references"></a>
 
 ## منابع
 

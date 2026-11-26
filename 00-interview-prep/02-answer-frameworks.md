@@ -19,6 +19,8 @@
 
 ---
 
+<a id="system-design-framework-spider"></a>
+
 ## چارچوب طراحی سیستم (SPIDER)
 
 از این چارچوب برای هر سؤال طراحی سیستمی که شامل مولفه‌های هوش مصنوعی است استفاده کنید. حرکت کامل همراه با بودجه زمانی تقریبی برای هر فاز:
@@ -187,6 +189,8 @@ Cost optimization will be a second-order concern once we have the basic system w
 
 ---
 
+<a id="worked-example-spider-in-a-45-minute-session"></a>
+
 ## نمونه پیاده‌سازی‌شده: SPIDER در یک جلسه ۴۵ دقیقه‌ای
 
 یک متن گفت‌وگوی فشرده که نشان می‌دهد این چارچوب در یک مصاحبه واقعی چگونه به نظر می‌رسد. موضوع: «طراحی سیستم پرسش و پاسخ اسناد برای شرکتی با ۱۰,۰۰۰ کارمند». یادداشت‌های درون براکت مراحل چارچوب و زمان‌سنج را نشان می‌دهند.
@@ -272,6 +276,8 @@ second. Anything else you'd like me to go deeper on?"
 
 ---
 
+<a id="concept-explanation-framework-eta"></a>
+
 ## چارچوب توضیح مفاهیم (ETA)
 
 از این چارچوب برای سؤالات مفهومی مانند «RAG را توضیح دهید» یا «Speculative Decoding چیست؟» استفاده کنید.
@@ -345,6 +351,8 @@ reads bill at 0.1x the input price or less on current models."
 
 ---
 
+<a id="tradeoff-analysis-framework"></a>
+
 ## چارچوب تحلیل موازنه‌ها (Tradeoff Analysis)
 
 هنگامی که از شما خواسته می‌شود گزینه‌ها را با هم مقایسه کنید یا تصمیمی را توجیه نمایید، از این ساختار استفاده کنید.
@@ -410,6 +418,8 @@ keeping the raw chunks so a re-embed is a batch job, not a project."
 </div>
 
 ---
+
+<a id="debugging-and-troubleshooting-framework"></a>
 
 ## چارچوب اشکال‌زدایی و عیب‌یابی (Debugging)
 
@@ -487,6 +497,8 @@ flowchart TD
 
 ---
 
+<a id="behavioral-questions-framework-star-l"></a>
+
 ## چارچوب سؤالات رفتاری (STAR-L)
 
 برای سؤالات رفتاری در نقش‌های هوش مصنوعی، از STAR-L (شامل STAR به اضافه آموخته‌ها یا Learnings) استفاده کنید.
@@ -561,6 +573,8 @@ launching. I also build evaluation suites earlier in the process."
 
 ---
 
+<a id="handling-unknown-topics"></a>
+
 ## مدیریت مباحث ناشناخته
 
 ندانستن همه چیز کاملاً طبیعی و پذیرفته‌شده است. مباحث ناشناخته را به‌صورت حرفه‌ای مدیریت کنید.
@@ -602,6 +616,8 @@ find them and what questions to ask when evaluating it."
 </div>
 
 ---
+
+<a id="common-mistakes-and-how-to-avoid-them"></a>
 
 ## اشتباهات رایج و نحوه اجتناب از آن‌ها
 

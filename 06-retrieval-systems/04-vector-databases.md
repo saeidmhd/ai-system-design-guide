@@ -21,6 +21,8 @@
 
 ---
 
+<a id="what-is-a-vector-database"></a>
+
 ## پایگاه داده برداری چیست
 
 یک پایگاه داده برداری (Vector Database)، Embeddingها (بردارهای متراکم یا Dense) را ذخیره کرده و جستجوی سریع شباهت را روی آن‌ها امکان‌پذیر می‌سازد.
@@ -54,6 +56,8 @@ Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_emb
 | ایندکس ANN (پایگاه داده برداری اختصاصی) | پیچیدگی O(log n) یا O(1) | بله، در مقیاس میلیاردها |
 
 ---
+
+<a id="vector-search-fundamentals"></a>
 
 ## اصول پایه‌ای جستجوی برداری
 
@@ -101,6 +105,8 @@ Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_emb
 ایندکس‌های ANN بخشی از دقت را با سرعت معاوضه می‌کنند. آن را بر اساس نیازمندی‌های خود تنظیم کنید.
 
 ---
+
+<a id="indexing-algorithms"></a>
 
 ## الگوریتم‌های ایندکس‌گذاری
 
@@ -193,6 +199,8 @@ Layer 0:   ********************  (all vectors)
 
 **مصالحه:** دقت پایین‌تر به دلیل اتلاف کوانتیزاسیون
 
+<a id="low-bit-and-rotation-based-quantization"></a>
+
 ### کوانتیزاسیون کم‌بیت و مبتنی بر چرخش
 
 بین ماه مه و اکتبر ۲۰۲۶، چندین موتور قابلیت ذخیره‌سازی بردارهای ۱ تا ۸ بیتی را ارائه داده یا گسترش دادند که عمدتاً به عنوان گزینه‌های اختیاری (Opt-in) یا پیش‌نمایش (Preview) بودند تا حالت پیش‌فرض. جدیدترین ترفند، **ابتدا چرخش، سپس کوانتیزاسیون** است. ابعاد Embedding دارای واریانس بسیار ناهمگونی هستند، بنابراین کوانتیزاسیون اسکالر به ازای هر بعد، بیت‌ها را روی ابعاد آرام هدر می‌دهد و ابعاد با تغییرات شدید را برش می‌دهد (Clip می‌کند). ضرب در یک ماتریس چرخش تصادفی یا هادامارد (Hadamard)، انرژی را به‌طور یکنواخت در میان ابعاد پخش می‌کند؛ پس از آن یک شبکه یکنواخت ۴ بیتی یا ۱ بیتی اطلاعات بسیار کمتری را از دست می‌دهد.
@@ -229,6 +237,8 @@ Layer 0:   ********************  (all vectors)
 
 ---
 
+<a id="competitive-landscape"></a>
+
 ## چشم‌انداز رقابتی
 
 ### اختصاصی برداری (Vector-Native)
@@ -263,6 +273,8 @@ Layer 0:   ********************  (all vectors)
 
 ---
 
+<a id="detailed-database-comparison"></a>
+
 ## مقایسه تفصیلی پایگاه‌های داده
 
 ### ماتریس ویژگی‌ها
@@ -280,6 +292,8 @@ Layer 0:   ********************  (all vectors)
 | ایندکس HNSW | بله | بله | بله | بله | بله |
 
 ---
+
+<a id="metadata-filtering"></a>
 
 ## فیلتر کردن بر اساس فراداده (Metadata Filtering)
 
@@ -318,6 +332,8 @@ results = client.query_points(
 **فراداده مبتنی بر دیسک (Disk-Native Metadata):** پایگاه‌های داده مدرن، داده‌ها را به ازای هر مؤلفه بین RAM و دیسک لایه‌بندی (tier) می‌کنند. نسخه 1.19 کیودرنت (Qdrant) فلگ‌های قدیمی `on_disk` و `always_ram` را با یک تنظیم واحد به نام `memory` (با حالت‌های pinned، cached یا cold) جایگزین کرد که روی بردارها، گراف‌های HNSW، ایندکس‌های پراکنده و ایندکس‌های payload اعمال می‌شود؛ بدین ترتیب فیلترهای پیچیده (مانند تمام‌متن + مکانی [geo] + برداری) بدون نیاز به نگهداری همه ایندکس‌های payload در حافظه RAM اجرا می‌شوند.
 
 ---
+
+<a id="query-patterns"></a>
 
 ## الگوهای کوئری (Query Patterns)
 
@@ -416,6 +432,8 @@ def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
 </div>
 
 ---
+
+<a id="production-operations"></a>
 
 ## عملیات محیط تولید (Production Operations)
 
@@ -570,6 +588,8 @@ def alert_rules():
 
 ---
 
+<a id="managed-vs-self-hosted-tco-analysis"></a>
+
 ## مدیریت‌شده در مقابل خودمیزبان (تحلیل TCO)
 
 ### مقایسه هزینه‌ها (Cost Comparison)
@@ -651,6 +671,8 @@ def estimate_self_hosted_cost(
 
 ---
 
+<a id="selection-framework"></a>
+
 ## چارچوب انتخاب (Selection Framework)
 
 ### درخت تصمیم‌گیری (Decision Tree)
@@ -698,6 +720,8 @@ Need < 100K vectors?
 - [ ] محاسبه هزینه کل مالکیت (TCO)
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه (Interview Questions)
 
@@ -815,6 +839,8 @@ results = index.query(vector=query, namespace=tenant_id)
 **نکته ظریف جستجوی ترکیبی (Hybrid-search):** امتیازات BM25 به آمار IDF در سطح کل پیکره متنی (corpus-wide) وابسته است. در یک کالکشن مشترک، دایره واژگان یک مستأجر بزرگ (large tenant / multi-tenant)، امتیازات کلیدواژه‌ای سایر مستأجران (other tenants / multi-tenant) را تغییر می‌دهد و آمار اصطلاحات از مرزهای تعیین‌شده نشت می‌کند. از موتوری استفاده کنید که دارای قابلیت IDF به ازای هر مستأجر (per-tenant / multi-tenant) باشد (Qdrant 1.19 آن را برای جستجوی sparse و BM25 اضافه کرده است) یا به مستأجران بزرگ (large tenants / multi-tenant) کالکشن اختصاصی خودشان را بدهید.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع (References)
 

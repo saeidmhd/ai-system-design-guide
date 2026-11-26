@@ -17,6 +17,8 @@
 
 ---
 
+<a id="the-teacher-student-paradigm"></a>
+
 ## پارادایم معلم-شاگرد (The Teacher-Student Paradigm)
 
 بسیاری از مدل‌های کوچک صرفاً بر روی داده‌های خام وب آموزش نمی‌بینند، بلکه بر روی خروجی‌ها، لاجیت‌ها (Logits) یا ردپاهای استدلال (reasoning traces) حاصل از یک مدل بسیار بزرگ‌تر آموزش می‌بینند. نمونه‌های مستندشده مربوط به مدل‌های باز عبارتند از:
@@ -34,6 +36,8 @@
 | **شاگرد (Student)** | کوچک (1B تا 30B پارامتر) | خروجی‌های فیلترشده، لاجیت‌ها یا ردپاهای استدلال معلم |
 
 ---
+
+<a id="how-distillation-works"></a>
 
 ## نحوه عملکرد تقطیر (How Distillation Works)
 
@@ -58,6 +62,8 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
+<a id="feature-vs-output-distillation"></a>
+
 ## تقطیر ویژگی در برابر تقطیر خروجی (Feature vs. Output Distillation)
 
 ### تقطیر خروجی - استاندارد (Output Distillation)
@@ -73,6 +79,8 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
+<a id="self-distillation-via-rejection-sampling"></a>
+
 ## خودتقطیری از طریق نمونه‌برداری حذفی (Self-Distillation via Rejection Sampling)
 
 **یک تکنیک بنیادین در آموزش استدلال.** در ادبیات علمی از آن با عناوینی چون Fine-tuning مبتنی بر نمونه‌برداری حذفی (rejection-sampling fine-tuning)، تکرار خبره (expert iteration) یا STaR یاد می‌شود. در این رویکرد، مدل بدون نیاز به داده‌های انسانی جدید ارتقا می‌یابد:
@@ -85,12 +93,16 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
+<a id="quantization-aware-distillation"></a>
+
 ## تقطیر آگاه از کوانتیزاسیون (Quantization-Aware Distillation)
 
 کوانتیزاسیون استاندارد (به‌عنوان مثال، کاهش از 16-bit به 4-bit) موجب افت اندکی در دقت می‌شود.
 **راهکار (The Fix)**: استفاده از تقطیر دانش *در حین* فرآیند کوانتیزاسیون. مدل 16-bit به‌عنوان معلم عمل کرده و مدل 4-bit را هدایت می‌کند تا خطای خود را به حداقل برساند. در کنار آموزش آگاه از کوانتیزاسیون (Quantization-Aware Training)، این روش همان شیوه‌ای است که سازندگان برای عرضه مدل‌های با بیت پایین با کیفیتی بسیار نزدیک به کیفیت 16-bit به کار می‌برند؛ مانند نسخه‌های QAT int4 مدل Gemma شرکت گوگل. بخش [بررسی عمیق کوانتیزاسیون](07-quantization-deep-dive.md) را ببینید.
 
 ---
+
+<a id="distillation-as-a-threat-extraction-via-api"></a>
 
 ## تقطیر به‌عنوان یک تهدید: استخراج از طریق API (Distillation as a Threat: Extraction via API)
 
@@ -104,6 +116,8 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 **پیامدهای طراحی برای ارائه‌دهندگان API:** شکل‌دهی به نرخ درخواست‌ها (rate shaping)، انگشت‌نگاری رفتاری بر اساس هر حساب کاربری (شامل شناسایی الگوهای تحریک زنجیره تفکر یا CoT-elicitation)، اعتبارسنجی قوی‌تر حساب‌ها، اشتراک‌گذاری داده‌های امنیتی (intelligence sharing)، و محدودسازی میزان استدلالی که فاش می‌شود؛ سپس ارزیابی امنیتی تیم قرمز (red-teaming) روی تمام مسیرهایی که ممکن است استدلال را آشکار سازند (فراخوانی ابزارها یا tool calls، خروجی‌های ساختاریافته، و بلوک‌های بازپخش‌شده)، نه فقط متن نهایی پاسخ. این تدابیر متقابل تغییراتی را در APIها توضیح می‌دهند که شما به‌عنوان مصرف‌کننده با آن‌ها مواجه می‌شوید: تفکر خلاصه‌شده (summarized thinking) و بلوک‌های تفکری که منحصراً به مدل و گفتگوی تولیدکننده‌ی خود مقید شده‌اند (مدل‌های Claude Fable 5.1، Opus 5.5 و Sonnet 5.5؛ همچنین بلوک‌های Sonnet 5.5 به حساب کاربری تولیدکننده نیز مقید هستند).
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه (Interview Questions)
 
@@ -124,6 +138,8 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 الگوی امن‌تر، استفاده از یک معلم با وزن‌های باز (open-weight) و با مجوزی سهل‌گیرانه (مانند MIT یا Apache 2.0) است، به‌طوری که هویت معلم و نوع مجوز آن برای هر ردیف از داده‌های آموزشی ثبت و مستند شود.
 
 ---
+
+<a id="references"></a>
 
 ## منابع (References)
 - هینتون و همکاران. "Distilling the Knowledge in a Neural Network" (2015)

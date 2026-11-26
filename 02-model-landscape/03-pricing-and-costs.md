@@ -18,6 +18,8 @@
 
 ---
 
+<a id="pricing-models"></a>
+
 ## مدل‌های قیمت‌گذاری (Pricing Models)
 
 ### قیمت‌گذاری مبتنی بر Token (Token-Based Pricing)
@@ -93,6 +95,8 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 **ظرفیت اکنون جدا از قیمت خریداری می‌شود.** شرکت Anthropic دیگر تعهدات سطح اولویت (Priority Tier) را نمی‌فروشد (قراردادهای موجود تا پایان دوره خود ادامه می‌یابند، و Claude Haiku 5.5 در Priority Tier پشتیبانی نمی‌شود، بنابراین تعهد Haiku 4.5 به آن منتقل نمی‌گردد)؛ در نتیجه ظرفیت تضمین‌شده از طریق توافق‌نامه‌های سفارشی یا رزروهای ابری نظیر Bedrock Reserved (دوره‌های ۱ یا ۳ ماهه) حاصل می‌شود. سطوح سلف‌سرویس Anthropic (شامل Start،‏ Build و Scale) دارای سقف‌های هزینه ماهانه قطعی به میزان ۵۰۰ دلار، ۱,۰۰۰ دلار و ۲۰۰,۰۰۰ دلار هستند؛ رسیدن به این سقف‌ها خطای HTTP 429 با کد `enforced_spend_limit_reached` را برمی‌گرداند و فاقد هدر `retry-after` تا ساعت 00:00 به وقت UTC روز اول ماه بعد است. سقف بودجه اکنون یک ریسک در دسترس‌پذیری (availability risk) محسوب می‌شود، بنابراین بسیار پیش از رسیدن به آن سیستم‌های هشدار را تنظیم کنید.
 
 ---
+
+<a id="current-api-pricing"></a>
 
 ## قیمت‌گذاری فعلی API (Current API Pricing)
 
@@ -334,6 +338,8 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 
 ---
 
+<a id="cost-calculation"></a>
+
 ## محاسبه هزینه (Cost Calculation)
 
 ### فرمول پایه محاسبه هزینه (Basic Cost Formula)
@@ -481,6 +487,8 @@ costs = project_monthly_cost(
 </div>
 
 ---
+
+<a id="cost-optimization-strategies"></a>
 
 ## استراتژی‌های بهینه‌سازی هزینه (Cost Optimization Strategies)
 
@@ -654,6 +662,8 @@ response = model.generate(
 
 ---
 
+<a id="context-caching-economics"></a>
+
 ## اقتصاد کش‌گذاری کانتکست (Context Caching Economics)
 
 **قاعده کلی همچنان برقرار است:** اگر یک پیشوند پایدار (Prompt سیستم، تعاریف ابزار، یا یک بدنه متنی مشترک) بیش از چند هزار Token بوده و در بازه زمانی ماندگاری (TTL) مجدداً استفاده می‌شود، آن را Cache کنید. آنچه در سال ۲۰۲۶ تغییر کرده این است که شرایط Cache بسته به هر مدل متفاوت است، بنابراین محاسبات ریاضی باید به ازای هر مدل به‌طور مستقل انجام شود.
@@ -701,6 +711,8 @@ response = model.generate(
 تخفیف‌های پردازش دسته‌ای (Batch discounts معادل ۵۰٪) با کش‌گذاری در هر دو ارائه‌دهنده OpenAI و Anthropic هم‌پوشانی داشته و ترکیب می‌شوند. برای درک چگونگی نگاشت این تخفیف‌ها به استفاده مجدد از KV در پشته سرویس‌دهی، به [KV Cache و کش‌گذاری کانتکست](../04-inference-optimization/02-kv-cache-and-context-caching.md) مراجعه کنید.
 
 ---
+
+<a id="self-hosting--gpu-cloud-arbitrage"></a>
 
 ## میزبانی شخصی و آربیتراژ ابری GPU (Self-Hosting & GPU Cloud Arbitrage)
 
@@ -800,6 +812,8 @@ Before either, check the license:
 
 ---
 
+<a id="total-cost-of-ownership"></a>
+
 ## هزینه کل مالکیت (TCO)
 
 ### مؤلفه‌های TCO
@@ -872,6 +886,8 @@ def calculate_tco(scenario: dict) -> dict:
 *خودمیزبانی فقط فاکتور ساده‌لوحانه APIهای تماماً رده میانی را شکست می‌دهد، آن هم تنها قبل از اینکه نود دومی را برای افزونگی (Redundancy) اضافه کنید. صورت‌حساب API مسیریابی‌شده بیش از ۲ برابر آن را شکست می‌دهد (ارزان‌تر است). در حجم ۲ میلیون درخواست در ماه، خودمیزبانی را به‌خاطر کنترل، محل استقرار داده (Residency)، لایسنس یا وزن‌های Fine-tune شده انتخاب کنید، نه به‌خاطر هزینه.*
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -955,6 +971,8 @@ Savings: 57%
 خروجی نهایی، مدلی با جدول زمان‌بندی قیمت به ازای هر (مدل، پلتفرم) و یک سناریو برای هر تاریخ در تقویم است، نه یک نرخ ترکیبی واحد.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع
 

@@ -22,6 +22,8 @@
 
 ---
 
+<a id="generation-basics"></a>
+
 ## مبانی تولید
 
 مدل‌های LLM متن را به‌صورت خودبازگشتی (autoregressively) تولید می‌کنند: هر بار یک Token، با استفاده از تمام Tokenهای قبلی به عنوان زمینه (context).
@@ -65,6 +67,8 @@ def generate(prompt: str, max_tokens: int, model) -> str:
 </div>
 
 ---
+
+<a id="prefill-and-decode-phases"></a>
 
 ## فازهای Prefill و Decode
 
@@ -156,6 +160,8 @@ flowchart LR
 - **مدل‌ها اکنون حول این تفکیک طراحی می‌شوند**: مدل DeepSeek V4.1-Flash در فاز prefill به ازای هر Token معادل ۸ میلیارد پارامتر و در فاز decode معادل ۱۶ میلیارد پارامتر را فعال می‌کند.
 
 ---
+
+<a id="sampling-strategies"></a>
 
 ## استراتژی‌های نمونه‌برداری (Sampling)
 
@@ -280,6 +286,8 @@ def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
 - جریمه حضور (Presence penalty): جریمه کردن تمام Tokenهایی که ظاهر شده‌اند
 - جریمه فرکانس (Frequency penalty): جریمه متناسب با تعداد دفعات تکرار
 
+<a id="sampling-controls-on-hosted-frontier-models"></a>
+
 ### کنترل‌های نمونه‌برداری در مدل‌های پیشرو هاست‌شده
 
 تمام موارد بالا همچنان برای موتورهای خود‌میزبان (self-hosted) صادق است: vLLM، SGLang و llama.cpp مجموعه کامل این تنظیمات را ارائه می‌دهند. مدل‌های استدلالی هاست‌شده (hosted reasoning models) در حال حذف این ابزارهای کنترلی هستند:
@@ -297,6 +305,8 @@ def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
 - **لایه‌های انتزاع (Abstraction layers)**: بسته‌بندی‌ها (wrappers) و توابعی که پارامترهای نمونه‌برداری را به‌صورت هاردکد (hard-code) تعریف می‌کنند، هنگام مهاجرت به این مدل‌ها دچار شکست می‌شوند. پارامترهای خاص هر ارائه‌دهنده را در پشت یک لایه پیکربندی سبک و اختصاصی به ازای هر مدل نگه دارید.
 
 ---
+
+<a id="stopping-conditions"></a>
 
 ## شرایط توقف
 
@@ -347,6 +357,8 @@ for seq in stop_sequences:
 
 ---
 
+<a id="speculative-decoding"></a>
+
 ## رمزگشایی حدسی (Speculative Decoding)
 
 **استانداردی در تمامی موتورهای سرویس‌دهی اصلی برای decode حساس به تاخیر (Latency).**
@@ -384,6 +396,8 @@ Result: if the target accepts 4, it adds 1 of its own: 5 tokens for one
 برای بررسی کامل، بخش [رمزگشایی حدسی (Speculative Decoding)](../04-inference-optimization/03-speculative-decoding.md) را ببینید.
 
 ---
+
+<a id="latency-metrics"></a>
 
 ## معیارهای تاخیر (Latency)
 
@@ -483,6 +497,8 @@ Throughput = concurrent_requests * TPS / average_output_tokens
 
 ---
 
+<a id="memory-and-compute-requirements"></a>
+
 ## نیازمندی‌های حافظه و محاسبات
 
 ### وزن‌های مدل (Model Weights)
@@ -563,6 +579,8 @@ raises arithmetic intensity.
 
 ---
 
+<a id="streaming"></a>
+
 ## استریمینگ (Streaming)
 
 برای برنامه‌های تعاملی، Tokenها را به محض تولید استریم کنید:
@@ -605,6 +623,8 @@ async for event in sse_client.stream("/generate"):
 
 ---
 
+<a id="production-considerations"></a>
+
 ## ملاحظات محیط عملیاتی (Production)
 
 ### دسته‌بندی برای توان عملیاتی (Batching for Throughput)
@@ -625,6 +645,8 @@ responses = model.generate_batch(batch)
 
 </div>
 
+<a id="continuous-batching-and-prefix-caching"></a>
+
 ### دسته‌بندی پیوسته و کش‌کردن پیشوند
 
 **دسته‌بندی پیوسته (زمان‌بندی در سطح تکرار یا Iteration-level Scheduling):**
@@ -635,6 +657,8 @@ responses = model.generate_batch(batch)
 - **کاهش TTFT**: مرحله prefill برای پیشوند مشترک نادیده گرفته می‌شود؛ بنابراین، میزان صرفه‌جویی متناسب با بخش مشترک Prompt افزایش می‌یابد. حلقه‌های ایجنت با پیشوندهای طولانی و پایدار، بیشترین بهره را از این قابلیت می‌برند.
 - **سازوکار (Mechanism)**: موتور vLLM بلوک‌های KV با اندازه ثابت را در زنجیره‌ای هش می‌کند که کلید آن تمام محتوای پیشین است؛ SGLang پیشوندها را در یک درخت رادیکس (radix tree) ذخیره می‌کند. بلوک‌های خارج‌شده (evicted) می‌توانند در زنجیره‌ای از لایه‌ها تخلیه شوند: ابتدا HBM در GPU، سپس DRAM میزبان، و در ادامه دیسک، فضای ذخیره‌سازی شیء (object storage) یا گره‌های همتا (peer nodes).
 - **امنیت**: یک کش پیشوند مشترک، یک کانال جانبی زمان‌بندی بین‌مستأجری (multi-tenant) محسوب می‌شود؛ زیرا برخورد به کش (hit) سریع‌تر از عدم برخورد (miss) پاسخ می‌دهد. کلیدهای کش را به ازای هر مستأجر (multi-tenant) نمک‌گذاری (salt) کنید (پارامتر `cache_salt` در vLLM) و موتور را همواره به‌روز نگه دارید: هشدار امنیتی vLLM با شناسه GHSA-935w-9g4m-p28p که در نسخه 0.30.0 برطرف شد، نشان داد که نوبت‌های ادامه‌یافته ابزار (tool-continuation turns) در یکی از مسیرهای API مقدار salt را حذف می‌کردند. نسخه vLLM 0.32.0 را به‌عنوان حداقل نسخه مجاز در نظر بگیرید (نسخه 0.33.0 روی میزبان‌هایی که مخازن شخص ثالث را بارگذاری می‌کنند)؛ فهرست کامل هشدارهای امنیتی و حداقل نسخه‌های فعلی در [زیرساخت سرویس‌دهی](../04-inference-optimization/06-serving-infrastructure.md#operational-posture) ارائه شده است.
+
+<a id="multi-lora-serving"></a>
 
 ### سرویس‌دهی چندگانه LoRA (Multi-LoRA Serving)
 
@@ -742,6 +766,8 @@ def calculate_cost(metrics: RequestMetrics) -> float:
 </div>
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -858,6 +884,8 @@ def calculate_cost(metrics: RequestMetrics) -> float:
 اشتباهی که باید از آن پرهیز کرد، محاسبه اندازه KV بر اساس هدهای query به جای هدهای KV است: این کار در این مثال رقم ۱۶۸ گیگابایت را به دست می‌دهد که ۸ برابر بیش از حد واقعی است. همچنین برای مدل‌های دارای توجه ترکیبی (hybrid-attention) مانند پنجره لغزان، توجه خطی یا KV فشرده‌شده، از ارقام اعلام‌شده خود مدل برای KV استفاده کنید. سپس توان عملیاتی (Throughput) را بر اساس SLO خود از طریق بنچمارک اعتبارسنجی نمایید.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع
 

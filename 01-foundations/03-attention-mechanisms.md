@@ -20,6 +20,8 @@
 
 ---
 
+<a id="attention-fundamentals"></a>
+
 ## مبانی توجه
 
 ### ایده اصلی
@@ -53,6 +55,8 @@ V = x @ W_v  # [batch, seq_len, d_v]
 </div>
 
 ---
+
+<a id="scaled-dot-product-attention"></a>
 
 ## توجه ضرب نقطه‌ای مقیاس‌شده (Scaled Dot-Product Attention)
 
@@ -135,6 +139,8 @@ def create_causal_mask(seq_len):
 
 ---
 
+<a id="multi-head-attention"></a>
+
 ## توجه چند سر (Multi-Head Attention)
 
 به جای یک تابع توجه واحد، از چندین «سر» (Heads) استفاده می‌شود که به جنبه‌های متفاوتی توجه می‌کنند:
@@ -199,6 +205,8 @@ class MultiHeadAttention(nn.Module):
 
 ---
 
+<a id="attention-patterns"></a>
+
 ## الگوهای توجه (Attention Patterns)
 
 ### توجه چه چیزی را یاد می‌گیرد
@@ -240,6 +248,8 @@ mat     [○    ●    ○    ●    ●    □ ]
 کلمه "mat" به شدت به "cat" (معنایی)، "on" (نحوی) و "the" (حرف تعریف/تعیین‌کننده) توجه می‌کند.
 
 ---
+
+<a id="efficient-attention-variants"></a>
 
 ## انواع کارآمد توجه (Efficient Attention Variants)
 
@@ -304,6 +314,8 @@ attention = (Q @ (K.T @ V))  # Associativity trick
 | فلش اتنشن (Flash Attention) | O(n^2) | O(n) | بهترین | توجه دقیق، کرنل آگاه از ورودی/خروجی (IO-aware kernel) |
 | ترکیبی یا Hybrid (خطی یا SWA + چند لایه کامل/تنک) | غالباً O(n) | غالباً O(n) | نزدیک به بهترین | رایج در مدل‌های پرچمدار متن‌باز سال ۲۰۲۶ |
 
+<a id="hybrid-and-sparse-attention-in-2026-open-models"></a>
+
 ### توجه ترکیبی و تنک در مدل‌های متن‌باز سال ۲۰۲۶
 
 انواع مطرح‌شده در بالا دیگر صرفاً موضوعاتی پژوهشی نیستند. پنج انتشار پرچمدار متن‌باز زیر، همگی از اواخر اوت تا سپتامبر ۲۰۲۶، طبق شناسنامه‌های مدل (model cards) خود با طرح‌های غیرمعمول و نوآورانه توجه یا ساختار KV عرضه شده‌اند. البته همه مدل‌ها چنین نیستند: مدل Granite 4.2 از شرکت IBM (انتشار در ۲۵ اوت) یک ترنسفورمر چگال معمولی با ساختار GQA است.
@@ -324,6 +336,8 @@ attention = (Q @ (K.T @ V))  # Associativity trick
 - **قابلیت Prefix caching نیازمند موتورهای آگاه از معماری ترکیبی (Hybrid-aware) است.** لایه‌های خطی و پنجره لغزان دارای وضعیتی (state) هستند که صرفاً یک لیست ساده از KV به ازای هر Token نیست. درخت پیشوندی (Radix tree) آگاه از SWA در فریم‌ورک SGLang نسخه 0.5.20 نرخ اصابت Token (token hit rate) را از ۴۳.۸٪ به ۶۰.۸٪ افزایش داد و میانگین TTFT را از ۱.۵۷ ثانیه به ۱.۰۷ ثانیه روی DeepSeek-V4-Flash با یک Prompt سیستمی مشترک کاهش داد (طبق گزارش SGLang). پیش از آنکه روی صرفه‌جویی حاصل از prefix-cache حساب باز کنید، مطمئن شوید که نسخه موتور شما از چیدمان کش معماری مورد نظر پشتیبانی می‌کند.
 
 ---
+
+<a id="flash-attention"></a>
 
 ## فلش اتنشن (Flash Attention)
 
@@ -369,6 +383,8 @@ Flash:    Q, K -> Tiles (block_size x block_size) -> Incremental Output
 
 ---
 
+<a id="multi-head-latent-attention-mla"></a>
+
 ## توجه نهفته چند سر (MLA - Multi-head Latent Attention)
 
 معماری **MLA جایگزین مدرن GQA** برای فشارهای شدید روی KV cache است که در DeepSeek-V2 معرفی شد و در V3 نیز به کار گرفته شد.
@@ -398,6 +414,8 @@ Key, Value (Down-projected) ─▶ [Low-dim Latent Cache] ─▶ [Output]
 کاربرد MLA فراتر از DeepSeek گسترش یافت (مدل Kimi K2 از آن استفاده می‌کند، و لایه‌های توجه تنک در Tencent Hy4 و GLM-5.3-Flash مبتنی بر یک متغیر نهفته KV با ۵۱۲ بُعد هستند)، در حالی که خط تولید V4 خود شرکت DeepSeek به سمت رویکرد هیبریدی از «توجه تنک فشرده» و «توجه بسیار فشرده» حرکت کرده است؛ بخش [توجه هیبریدی و تنک در مدل‌های متن‌باز سال ۲۰۲۶](#hybrid-and-sparse-attention-in-2026-open-models) را ببینید.
 
 ---
+
+<a id="kv-cache-optimizations--context-caching"></a>
 
 ## بهینه‌سازی‌های KV Cache و Context Caching
 
@@ -469,6 +487,8 @@ V: [batch, 8, seq, d_k]   # 8 KV heads
 
 ---
 
+<a id="practical-implications"></a>
+
 ## پیامدهای عملی
 
 ### برای طراحی سیستم
@@ -513,6 +533,8 @@ V: [batch, 8, seq, d_k]   # 8 KV heads
 - احتمالاً موازی‌سازی مدل (Model Parallelism)
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -591,6 +613,8 @@ V: [batch, 8, seq, d_k]   # 8 KV heads
 فرآیند من: خواندن فایل `config.json` (انواع لایه‌ها، اندازه‌های پنجره، هدهای KV یا ابعاد متغیر نهفته، نوع داده KV dtype)، استناد به عدد KV به ازای هر Token منتشرشده توسط ارائه‌دهنده در صورت وجود، و سپس اندازه‌گیری میزان مصرف واقعی کَش در موتور هدف با توزیع کانتکست واقعی من؛ زیرا پشتیبانی موتورها از چیدمان‌های کَش هیبریدی بسته به نسخه متفاوت است. ظرفیت نهایی از تقسیم (HBM منهای وزن‌های مدل) بر میزان KV به ازای هر درخواست در صدک ۹۵ام (P95) طول کانتکست، به علاوه هر سطح انتقالی (offload) به حافظه میزبان که موتور از آن پشتیبانی می‌کند، به دست می‌آید.
 
 ---
+
+<a id="references"></a>
 
 ## منابع
 

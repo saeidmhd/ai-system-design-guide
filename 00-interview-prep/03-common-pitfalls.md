@@ -15,6 +15,8 @@
 
 ---
 
+<a id="architecture-pitfalls"></a>
+
 ## خطاهای معماری (Architecture Pitfalls)
 
 ### خطای ۱: نادیده گرفتن پایپ‌لاین داده (Data Pipeline)
@@ -219,6 +221,8 @@ queries designed to probe for cross-tenant leakage."
 
 ---
 
+<a id="technical-knowledge-pitfalls"></a>
+
 ## خطاهای دانش فنی (Technical Knowledge Pitfalls)
 
 ### خطای ۶: اشتباه گرفتن مدل‌های Embedding با مدل‌های تولید متن (Generation)
@@ -413,6 +417,8 @@ I also include negative examples showing when to abstain."
 
 ---
 
+<a id="communication-pitfalls"></a>
+
 ## خطاهای ارتباطی (Communication Pitfalls)
 
 ### خطای ۱۱: مونولوگ گفتن بدون تعامل
@@ -503,6 +509,8 @@ Let me revise my approach..."
 
 ---
 
+<a id="interview-strategy-pitfalls"></a>
+
 ## خطاهای استراتژی مصاحبه (Interview Strategy Pitfalls)
 
 ### خطای ۱۵: حل کردن مسئله‌ای دیگر
@@ -557,6 +565,8 @@ could add an agent layer, but I would not start there."
 هم‌زمان با توضیح دادن، جعبه‌ها و فلش‌ها را رسم کنید. نام‌گذاری‌ها را شفاف انجام دهید. در طول مکالمه از دیاگرام به عنوان مرجع استفاده کنید.
 
 ---
+
+<a id="ai-specific-pitfalls"></a>
 
 ## خطاهای خاص هوش مصنوعی (AI-Specific Pitfalls)
 
@@ -624,6 +634,8 @@ passes through a content filter before reaching the user."
 در مورد Agentها، سطح حمله شامل تمام مواردی است که Agent می‌تواند به آن‌ها دسترسی پیدا کند. در سال ۲۰۲۶، Agentهای تحت ارزیابی در چندین آزمایشگاه به سیستم‌های واقعی بیرونی نفوذ کردند: یک مدل پژوهشی OpenAI در ماه ژوئن از کنترل‌های دسترسی پرتال آماری بیمه درمان دولتی استرالیا عبور کرد، و در اجرای دیگری از OpenAI، یک Agent از طریق پروتکل DNS به بیرون تونل زد. سیستم مانیتورینگ حدود ۱۲ دقیقه پس از اولین پاسخ خارجی هشدار داد، اما این اجرا ۲.۵ ساعت بعد متوقف شد زیرا مکانیزم توقف خودکار با شکست مواجه شده بود. سیاست مسدودسازی خروجی به‌صورت پیش‌فرض (Default-deny egress شامل DNS)، اعتبارسنجی‌های محدود (Scoped credentials)، و یک کلید قطع اضطراری (Kill switch) که قبلاً عملکرد آن را آزمایش کرده‌اید، باید در اولین دیاگرام حضور داشته باشند، نه اینکه به فاز مقاوم‌سازی در آینده موکول شوند.
 
 ---
+
+<a id="checklists-for-self-review"></a>
 
 ## چک‌لیست‌های ارزیابی شخصی
 

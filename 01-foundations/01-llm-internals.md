@@ -25,6 +25,8 @@
 
 ---
 
+<a id="the-transformer-revolution"></a>
+
 ## انقلاب ترنسفورمر
 
 پیش از سال ۲۰۱۷، مدل‌سازی توالی بر معماری‌های بازگشتی (مانند RNNها و LSTMها) متکی بود که Tokenها را به‌صورت متوالی پردازش می‌کردند. این امر دو مشکل اساسی ایجاد می‌کرد:
@@ -63,6 +65,8 @@ flowchart LR
 </div>
 
 ---
+
+<a id="architecture-variants"></a>
 
 ## انواع معماری
 
@@ -124,6 +128,8 @@ flowchart LR
 
 ---
 
+<a id="mixture-of-experts-moe"></a>
+
 ## ترکیب متخصصان (MoE)
 
 **معماری پیش‌فرض برای مدل‌های مرزی با وزن‌های باز (DeepSeek V4 و V4.1، Kimi K3، GLM-5.3، Qwen3.8، MiMo-V2.6، Tencent Hy4 و مدل‌های اکتبر ۲۰۲۶ شامل Mistral Large 4 و Meta Muse Spark Open؛ و پیش از آن، Llama 4 Maverick و Mixtral).** گزارش‌های فنی و شناسنامه‌های مدل Google Gemini، ترنسفورمرهای MoE تنک (sparse) را توصیف می‌کنند؛ OpenAI و Anthropic معماری‌های خود را منتشر نمی‌کنند، بنابراین هر ادعایی درباره سازوکار درونی GPT یا Claude را باید صرفاً در حد حدس و گمان دانست.
@@ -182,6 +188,8 @@ flowchart TD
 
 ---
 
+<a id="scaling-laws-training-vs-inference-optimal"></a>
+
 ## قوانین مقیاس‌پذیری: بهینه برای آموزش در برابر بهینه برای استنتاج
 
 قوانین اولیه چینچیلا (Chinchilla laws - سال ۲۰۲۲) بر **بهینه‌سازی برای آموزش (Training-Optimal)** تمرکز داشتند: یافتن بهترین اندازه مدل به ازای یک بودجه آموزشی مشخص.
@@ -191,6 +199,8 @@ flowchart TD
 - **چرا؟**: هزینه استنتاج (Inference) برای میلیون‌ها کاربر، بسیار سنگین‌تر از هزینه یک‌باره آموزش است و آن را کم‌اهمیت جلوه می‌دهد. سرویس‌دهی به یک مدل 7B که ۱۰ برابر طولانی‌تر آموزش دیده باشد، بسیار ارزان‌تر از یک مدل 70B است که در نقطه چینچیلا آموزش دیده باشد.
 
 ---
+
+<a id="native-multimodality"></a>
 
 ## چندوجهی بومی (Native Multimodality)
 
@@ -203,6 +213,8 @@ flowchart TD
 - **مزیت**: استدلال فضایی بهتر و اتصال مفاهیم بین‌وجهی (cross-modal grounding) قوی‌تر نسبت به روش‌های مبتنی بر آداپتور.
 
 ---
+
+<a id="self-attention-mechanism"></a>
 
 ## سازوکار خودتوجهی (Self-Attention Mechanism)
 
@@ -270,6 +282,8 @@ scaled_dot = dot / np.sqrt(d)  # Expected magnitude: ~1
 
 ---
 
+<a id="multi-head-attention"></a>
+
 ## توجه چند سر (Multi-Head Attention)
 
 ترنسفورمرهای مدرن به جای یک مکانیزم توجه منفرد، از چندین «سر» (heads) بهره می‌برند که به جنبه‌های مختلف به‌صورت موازی توجه می‌کنند.
@@ -322,6 +336,8 @@ scaled_dot = dot / np.sqrt(d)  # Expected magnitude: ~1
 این امر مستقیماً بر اندازه بچ (batch size) و در نتیجه بر توان عملیاتی (Throughput) تأثیر می‌گذارد.
 
 ---
+
+<a id="position-encodings"></a>
 
 ## کدگذاری‌های موقعیت (Position Encodings)
 
@@ -410,6 +426,8 @@ Attention = softmax(QK^T / √d_k - m × distance)
 
 ---
 
+<a id="feed-forward-networks"></a>
+
 ## شبکه‌های پیش‌خور (Feed-Forward Networks)
 
 هر لایه ترنسفورمر دارای یک شبکه پیش‌خور (FFN) است که هر موقعیت را به‌صورت مستقل پردازش می‌کند:
@@ -458,6 +476,8 @@ output = (gate * hidden) @ W_down
 </div>
 
 ---
+
+<a id="layer-normalization"></a>
 
 ## نرمال‌سازی لایه‌ای (Layer Normalization)
 
@@ -522,6 +542,8 @@ def rms_norm(x, gamma):
 
 ---
 
+<a id="putting-it-all-together"></a>
+
 ## جمع‌بندی اجزا (Putting It All Together)
 
 یک لایه کامل ترنسفورمر:
@@ -557,6 +579,8 @@ Token IDs → Embedding → [Transformer Layer × N] → Output Norm → LM Head
 </div>
 
 ---
+
+<a id="key-numbers-to-know"></a>
 
 ## اعداد کلیدی که باید بدانید
 
@@ -622,6 +646,8 @@ H100 SXM: ~989 TFLOPS dense BF16, ~3.35 TB/s HBM bandwidth
 
 ---
 
+<a id="interview-questions"></a>
+
 ## سوالات مصاحبه
 
 ### سوال: توضیح دهید چرا مکانیزم توجه (Attention) در ترنسفورمر دارای پیچیدگی O(n²) است و چه جایگزین‌هایی برای آن وجود دارد؟
@@ -680,6 +706,8 @@ H100 SXM: ~989 TFLOPS dense BF16, ~3.35 TB/s HBM bandwidth
 مدل Llama 2 70B از GQA با ۸ هد KV برای ۶۴ هد Query استفاده می‌کند که حجم KV cache را با کمترین افت کیفیت تا ۸ برابر کاهش می‌دهد.
 
 ---
+
+<a id="references"></a>
 
 ## مراجع
 

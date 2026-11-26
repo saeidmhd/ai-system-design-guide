@@ -19,6 +19,8 @@
 
 ---
 
+<a id="why-hybrid-search"></a>
+
 ## چرا جستجوی ترکیبی
 
 هیچ‌یک از روش‌های بازیابی متراکم یا تنک برتری مطلق ندارند. هر کدام در انواع خاصی از پرس‌وجوها عالی عمل می‌کنند.
@@ -57,6 +59,8 @@ Dense search may miss this because:
 جستجوی تنک (BM25) به دلیل تطابق دقیق Token، این مورد را بلافاصله پیدا می‌کند.
 
 ---
+
+<a id="dense-vs-sparse-retrieval"></a>
 
 ## بازیابی متراکم در برابر بازیابی تنک
 
@@ -123,6 +127,8 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
 | پیاده‌سازی | متوسط | ساده | پیچیده |
 
 ---
+
+<a id="hybrid-search-architectures"></a>
 
 ## معماری‌های جستجوی ترکیبی
 
@@ -217,6 +223,8 @@ Query --> Sparse (fast, broad) --> Top 1000
 **معایب:** پیچیدگی بیشتر، خطر بروز خطا در مراحل اولیه
 
 ---
+
+<a id="fusion-methods"></a>
 
 ## روش‌های ادغام
 
@@ -345,6 +353,8 @@ def z_score_normalize(results: list[Result]) -> list[Result]:
 
 ---
 
+<a id="learned-sparse-embeddings-splade"></a>
+
 ## امبدینگ‌های تنک یادگرفته‌شده (SPLADE)
 
 مجموعه‌های نرم‌افزاری عملیاتی برای شاخه تنک جستجوی ترکیبی، فراتر از BM25 (بسامد ساده کلمات) رفته و به سمت **امبدینگ‌های تنک یادگرفته‌شده (Learned Sparse Embeddings)** حرکت کرده‌اند.
@@ -382,6 +392,8 @@ class SpladeEncoder:
 **نمایه‌های تنک خود را ارتقا داده‌اند.** بردارهای تنک یادگرفته‌شده نسبت به BM25 اصطلاحات غیرصفر بسیار بیشتری به ازای هر سند دارند، که پیش‌تر باعث کندی آن‌ها روی نمایه‌های معکوسِ طراحی‌شده برای جستجوی کلیدواژه‌ای می‌شد. پایگاه داده Milvus 3.0 نمایه تنک خود را حول محور SINDI، الگوریتم Block-Max WAND و Block-Max MaxScore بازطراحی کرد؛ طبق گزارش Milvus، حجم نمایه فشرده BM25 به حدود یک‌سوم نسخه 2.6 رسیده و کارایی SINDI روی بردارهای تنک یادگرفته‌شده تا حدود ۱۰ برابر QPS بالاتر از MaxScore است (بنچمارک‌های ارائه‌دهنده).
 
 ---
+
+<a id="implementation-patterns"></a>
 
 ## الگوهای پیاده‌سازی
 
@@ -460,6 +472,8 @@ def hybrid_search_weaviate(
 </div>
 
 ---
+
+<a id="tuning-and-optimization"></a>
 
 ## تنظیم و بهینه‌سازی
 
@@ -555,6 +569,8 @@ def hybrid_search(query: str, final_k: int = 10):
 
 ---
 
+<a id="production-considerations"></a>
+
 ## ملاحظات محیط عملیاتی
 
 ### بودجه تاخیر (Latency)
@@ -630,6 +646,8 @@ def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
 
 ---
 
+<a id="interview-questions"></a>
+
 ## سوالات مصاحبه
 
 ### سوال: چه زمانی از جستجوی ترکیبی به جای جستجوی صرفاً متراکم استفاده می‌کنید؟
@@ -686,6 +704,8 @@ def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
 - مکالمه‌ای: alpha بین ۰.۷ تا ۰.۸
 
 ---
+
+<a id="references"></a>
 
 ## منابع
 

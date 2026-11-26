@@ -17,6 +17,8 @@
 
 ---
 
+<a id="taxonomy-of-agent-failures"></a>
+
 ## طبقه‌بندی خطاهای Agentها
 
 ۱. **ابزارهای توهم‌شده (Hallucinated Tools)**: فراخوانی ابزاری که وجود ندارد.
@@ -28,6 +30,8 @@
 
 ---
 
+<a id="self-correction-loops"></a>
+
 ## حلقه‌های خوداصلاحی
 
 اکنون با خطاها به عنوان **Tokenهای اطلاعاتی (Tokens of Information)** برخورد می‌شود.
@@ -38,6 +42,8 @@
 
 ---
 
+<a id="stateful-rollbacks-checkpointing"></a>
+
 ## بازگردانی‌های حالت‌دار (چک‌پوینت‌گذاری)
 
 برای Agentهای با اجرای طولانی‌مدت (long-running agents)، بروز خطا در گام ۹ نباید کل پروژه را متوقف کند یا از کار بیندازد.
@@ -46,6 +52,8 @@
 - **بازگردانی (The Rollback)**: اگر Agent دچار توقف منطقی (logical stall) شود، Agent ناظر (supervisor agent) می‌تواند **وضعیت مشترک (common-state) را ریست کند** و به گام ۵ (آخرین وضعیت «امن») بازگرداند و مسیری متفاوت را تحمیل نماید.
 
 ---
+
+<a id="the-stuck-in-a-loop-fix"></a>
 
 ## راهکار رفع «گیر افتادن در حلقه»
 
@@ -56,6 +64,8 @@
 ۲. یک **«دستور تغییر مسیر» (Pivot Instruction)** اجباری را تزریق می‌کند: *"You have tried searching for 'X' three times. This path is dead. You MUST try a different tool or admit you are stuck."* («شما ۳ بار جستجو برای 'X' را امتحان کرده‌اید. این مسیر به بن‌بست رسیده است. باید ابزاری متفاوت را امتحان کنید یا اعلام نمایید که گیر افتاده‌اید.»)
 
 ---
+
+<a id="kill-switches-and-containment-time"></a>
 
 ## سوئیچ‌های قطع اضطراری و زمان مهار
 
@@ -70,6 +80,8 @@
 
 ---
 
+<a id="graceful-degradation"></a>
+
 ## تنزل تدریجی کارایی
 
 اگر Agent با توان استدلال بالا (Claude Opus 5.5، GPT-6 Astra) به‌طور مداوم با شکست مواجه شود، به راهکارهای زیر بازمی‌گردیم (fallback):
@@ -79,6 +91,8 @@
 - **ارجاع به نیروی انسانی (Human Escalation)**: (فصل بعدی را ببینید).
 
 ---
+
+<a id="interview-questions"></a>
 
 ## سوالات مصاحبه
 
@@ -93,6 +107,8 @@
 شکست‌های خاموش خطرناک‌ترین نوع خطاها هستند. ما **Agentهای اعتبارسنجی خروجی (Output Validation Agents)** را پیاده‌سازی می‌کنیم. برای گام‌های بحرانی، ما خروجی ابزار را کورکورانه قبول نمی‌کنیم؛ بلکه خروجی را به یک «Agent ارزیاب (Verifier Agent)» (اغلب مدلی کوچک‌تر و سریع‌تر) هدایت (pipe) می‌کنیم که تنها وظیفه‌اش بررسی این نکته است: *"Does this tool output actually answer the query provided?"* («آیا این خروجی ابزار واقعاً به پرسش ارائه‌شده پاسخ می‌دهد؟»). اگر ارزیاب بگوید «خیر»، یک حلقه خوداصلاحی درست همانند یک خطای سخت (hard error) فعال می‌شود.
 
 ---
+
+<a id="references"></a>
 
 ## منابع
 - LangGraph. "Persistence and Checkpointing" (2025)
