@@ -4,7 +4,7 @@
 <p align="center">
   <a href="https://saeidmhd.github.io/ai-system-design-guide/"><img src="https://img.shields.io/badge/Read%20Online-Persian%20Site-7C3AED?style=for-the-badge&logo=bookstack&logoColor=white" alt="Read online"></a>
   <a href="https://github.com/saeidmhd/ai-system-design-guide"><img src="https://img.shields.io/badge/Follow%20on%20GitHub-saeidmhd-181717?style=for-the-badge&logo=github" alt="Follow on GitHub"></a>
-  <a href="https://github.com/saeidmhd/ai-system-design-guide/stargazers"><img src="https://img.shields.io/badge/%E2%AD%90%20%D8%A7%D8%B3%D8%AA%D8%A7%D8%B1%D9%87%20%D8%A8%D8%AF%D9%87%DB%8C%D8%AF-7C3AED?style=for-the-badge" alt="Star this repo"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide"><img src="https://img.shields.io/badge/%E2%AD%90%20%D8%A7%D8%B3%D8%AA%D8%A7%D8%B1%D9%87%20%D8%A8%D8%AF%D9%87%DB%8C%D8%AF-7C3AED?style=for-the-badge" alt="Star this repo"></a>
   <a href="https://github.com/ombharatiya/ai-system-design-guide"><img src="https://img.shields.io/badge/Original%20Repo-ombharatiya-1F2937?style=for-the-badge&logo=github" alt="Original repository"></a>
 </p>
 <p align="center">
@@ -15,7 +15,7 @@
   <a href="https://github.com/saeidmhd/ai-system-design-guide/commits/main"><img src="https://img.shields.io/github/last-commit/saeidmhd/ai-system-design-guide?label=updated&color=blue" alt="Last commit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
   <a href="#-مشارکت"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="https://github.com/saeidmhd/ai-system-design-guide/stargazers"><img src="https://img.shields.io/github/stars/saeidmhd/ai-system-design-guide?style=social" alt="Stars"></a>
+  <a href="https://github.com/saeidmhd/ai-system-design-guide"><img src="https://img.shields.io/github/stars/saeidmhd/ai-system-design-guide?style=social" alt="Stars"></a>
   <a href="https://github.com/saeidmhd/ai-system-design-guide/issues"><img src="https://img.shields.io/github/issues/saeidmhd/ai-system-design-guide?color=orange" alt="Open issues"></a>
 </p>
 

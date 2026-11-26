@@ -8,7 +8,7 @@
   <p class="fa-hero-sub">مرجع کامل مصاحبه و محیط تولید — نسخه‌ی فارسی</p>
   <div class="fa-hero-actions">
     <a class="fa-btn fa-btn-primary" href="#/00-interview-prep/01-question-bank">شروع با بانک سؤالات</a>
-    <a class="fa-btn" href="https://github.com/saeidmhd/ai-system-design-guide/stargazers" target="_blank" rel="noopener">⭐ ستاره بدهید</a>
+    <a class="fa-btn" href="https://github.com/saeidmhd/ai-system-design-guide" target="_blank" rel="noopener">⭐ ستاره بدهید</a>
     <a class="fa-btn" href="https://github.com/saeidmhd/ai-system-design-guide" target="_blank" rel="noopener">مخزن فارسی</a>
     <a class="fa-btn" href="https://github.com/ombharatiya/ai-system-design-guide" target="_blank" rel="noopener">مخزن اصلی (انگلیسی)</a>
   </div>
