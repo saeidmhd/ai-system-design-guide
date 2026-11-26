@@ -1,4 +1,4 @@
-- [🏠 خانه](README.md)
+- [🏠 خانه](/)
 - **۰۰ · آمادگی مصاحبه**
   - [بانک سؤالات](00-interview-prep/01-question-bank.md)
   - [چارچوب‌های پاسخ‌دهی](00-interview-prep/02-answer-frameworks.md)

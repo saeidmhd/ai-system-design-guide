@@ -225,6 +225,7 @@
       hook.mounted(function () { buildToolbar(); });
       hook.doneEach(function () {
         buildToolbar();
+        document.body.classList.toggle('fa-home', (vm.route.path || '/') === '/');
         addReadingTime(vm);
         addCopyButtons();
         // سایدبار ممکن است کمی دیرتر از محتوا رندر شود

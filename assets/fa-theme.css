@@ -136,6 +136,9 @@ body.close .sidebar-toggle { width: auto; border: 0; background: transparent; }
 .sidebar .app-sub-sidebar { padding: 2px 14px 4px 0; }
 .sidebar .app-sub-sidebar a { font-size: 13.5px; padding: 3px 10px; }
 
+/* در صفحهٔ خانه زیرمنوی سرفصل‌ها لازم نیست (خود صفحه ناوبری دارد) */
+.fa-home .sidebar .app-sub-sidebar { display: none; }
+
 /* گروه‌های تاشو */
 .sidebar-nav > ul > li.fa-group { margin: 6px 0; }
 .sidebar-nav > ul > li.fa-group > strong,
@@ -320,6 +323,8 @@ html[data-theme="dark"] .markdown-section .mermaid { background: #fff; border-ra
 }
 .fa-hero-title { font-size: 2rem; font-weight: 800; line-height: 1.6; color: var(--fa-head); }
 .fa-hero-sub { margin: .3rem 0 1.2rem; color: var(--fa-muted); font-size: 1.05rem; line-height: 1.9; }
+.fa-hero-credit { margin: 1.1rem 0 0; font-size: .85rem; color: var(--fa-muted); line-height: 1.9; }
+.fa-hero-credit a { font-weight: 600; }
 .fa-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .fa-btn {
   display: inline-flex; align-items: center; gap: 6px;
