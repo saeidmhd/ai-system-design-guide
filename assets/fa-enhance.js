@@ -119,7 +119,23 @@
     if (!h) return;
     e.stopPropagation();
     toggleGroup(h);
+    // موبایل: با کلیک روی سرفصل، صفحهٔ معرفی (README) همان فصل هم نمایش داده می‌شود؛
+    // دراور باز می‌ماند تا کاربر بتواند زیرمجموعه را انتخاب کند.
+    if (isMobile()) {
+      var target = chapterHome(h);
+      if (target && normPath(location.hash).replace(/^\//, '') !== target) location.hash = '#/' + target;
+    }
   }, true);
+  function isMobile() {
+    return window.matchMedia && matchMedia('(max-width: 768px)').matches;
+  }
+  // آدرس README فصل را از اولین لینک زیرمجموعه‌ی گروه می‌سازد (مثلاً 01-foundations/README)
+  function chapterHome(head) {
+    var a = head.parentElement.querySelector('ul a[href^="#/"]');
+    if (!a) return null;
+    var m = /^#\/(\d\d-[^\/?]+)\//.exec(a.getAttribute('href'));
+    return m ? m[1] + '/README' : null;
+  }
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var h = groupHeadFrom(e.target);
