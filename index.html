@@ -46,6 +46,23 @@
       document.head.appendChild(s);
     }
 
+    // Docsify فقط با id به بخش‌ها اسکرول می‌کند، اما لینک‌های فهرست مطالب با <a name="..."> نوشته شده‌اند.
+    // این پلاگین به هر <a name> بدون id، همان مقدار را به‌عنوان id می‌دهد و در صورت نیاز اسکرول می‌کند.
+    function anchorNamePlugin(hook, vm) {
+      hook.doneEach(function () {
+        document.querySelectorAll('.markdown-section a[name]:not([id])').forEach(function (a) {
+          var n = a.getAttribute('name');
+          if (n && !document.getElementById(n)) a.id = n;
+        });
+        var m = /[?&]id=([^&]+)/.exec(location.hash);
+        if (m) {
+          var id; try { id = decodeURIComponent(m[1]); } catch (e) { id = m[1]; }
+          var el = document.getElementById(id);
+          if (el) setTimeout(function () { el.scrollIntoView(); }, 0);
+        }
+      });
+    }
+
     function mermaidPlugin(hook) {
       hook.doneEach(function () {
         var blocks = document.querySelectorAll('pre[data-lang="mermaid"]');
@@ -78,7 +95,7 @@
       auto2top: true,
       maxLevel: 3,
       // جست‌وجو با assets/fa-search.js ارائه می‌شود (جایگزین پلاگین search پیش‌فرض Docsify)
-      plugins: [mermaidPlugin].concat(window.FaPlugins || [])
+      plugins: [anchorNamePlugin, mermaidPlugin].concat(window.FaPlugins || [])
     };
   </script>
   <script src="assets/docsify.min.js"></script>
