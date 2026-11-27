@@ -61,7 +61,7 @@ body, .markdown-section, .sidebar { letter-spacing: 0 !important; }
   background: var(--fa-bg);
   color: var(--fa-fg);
   direction: rtl; text-align: right;
-  padding-top: 22px;
+  padding-top: 62px;           /* جا برای دکمهٔ منو که بالای سایدبار است */
 }
 .content { left: 0; right: var(--fa-sw); transition: right .25s ease; }
 body.close .sidebar { transform: translateX(var(--fa-sw)); }
@@ -73,18 +73,42 @@ body.close .content { left: 0; right: 0; }
 /* گوشهٔ GitHub آینه شود */
 .github-corner { right: auto; left: 0; transform: scaleX(-1); }
 
-/* دکمهٔ همبرگری */
-.sidebar-toggle {
-  left: auto; right: 0;
-  width: var(--fa-sw);
+/* دکمهٔ همبرگری: بالا-راست، همیشه ثابت (هم دسکتاپ هم موبایل، هم باز هم بسته) */
+.sidebar-toggle,
+body.close .sidebar-toggle {
+  position: fixed;
+  top: 10px; right: 10px; bottom: auto; left: auto;
+  width: 42px; height: 42px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
   background: var(--fa-bg);
-  border-top: 1px solid var(--fa-border);
-  padding: 12px;
+  border: 1px solid var(--fa-border); border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+  cursor: pointer;
+  z-index: 30;
 }
-body.close .sidebar-toggle { width: auto; border: 0; background: transparent; }
-.sidebar-toggle span { background-color: var(--theme-color); }
+.sidebar-toggle .sidebar-toggle-button { display: flex; flex-direction: column; gap: 4px; }
+.sidebar-toggle span { margin: 0; width: 18px; height: 2px; border-radius: 2px; background-color: var(--theme-color); }
 
-/* ---------- جست‌وجو ---------- */
+/* ---------- جست‌وجو (ماژول fa-search.js) ---------- */
+.search .results-panel { display: none; }
+.search .results-panel.show { display: block; }
+.search input { width: 100%; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+.search input::-webkit-search-decoration,
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.search input::-ms-clear { display: none; height: 0; width: 0; }
+.search .clear-button { display: none; cursor: pointer; width: 36px; flex: none; text-align: center; }
+.search .clear-button.show { display: block; }
+.search .clear-button svg { transform: scale(.7); vertical-align: middle; }
+.search a { text-decoration: none; color: inherit; }
+.search .matching-post:last-child { border-bottom: 0; }
+.search p.empty { text-align: center; }
+.search .fa-search-status { margin: 8px 4px; font-size: 12.5px; line-height: 1.9; color: var(--fa-muted); text-align: right; }
+.search .fa-hit-page { color: var(--fa-muted); font-weight: 500; }
+.sidebar .search .input-wrap:focus-within { border-color: var(--theme-color); }
+/* هنگام جست‌وجو، منوی عادی پنهان شود تا نتایج پایین منو گم نشوند */
+.sidebar.fa-searching .sidebar-nav,
+.sidebar.fa-searching .app-name { display: none; }
+
 .sidebar .search { margin: 0 14px 14px; padding: 0; border: 0; }
 .sidebar .search .input-wrap {
   display: flex; align-items: center;
@@ -104,8 +128,15 @@ body.close .sidebar-toggle { width: auto; border: 0; background: transparent; }
 .sidebar .search .results-panel { direction: rtl; text-align: right; }
 .sidebar .search .matching-post { border-bottom: 1px solid var(--fa-border); padding: 8px 4px; }
 .sidebar .search .matching-post a { white-space: normal; }
-.sidebar .search .matching-post h2 { font-size: 14px; margin: 0 0 4px; }
-.sidebar .search .matching-post p { font-size: 13px; line-height: 1.8; color: var(--fa-muted); margin: 0; }
+.sidebar .search .matching-post h2 {
+  font-size: 14px; margin: 0 0 4px; line-height: 1.8;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.sidebar .search .matching-post p {
+  font-size: 13px; line-height: 1.8; color: var(--fa-muted); margin: 0;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+.sidebar .search .matching-post p.fa-search-status { display: block; -webkit-line-clamp: unset; }
 .search .search-keyword { color: var(--theme-color); font-style: normal; font-weight: 700; }
 
 /* ---------- منوی سایدبار ---------- */
@@ -226,7 +257,7 @@ bdi { unicode-bidi: isolate; }
 .markdown-section pre {
   direction: ltr; text-align: left;
   position: relative;
-  margin: 1.3em 0; padding: 0;
+  margin: 1.3em 0; padding: 38px 0 0;      /* نوار بالا: برچسب زبان + دکمهٔ کپی؛ روی کد نمی‌افتد */
   font-size: 14px; line-height: 1.65;
   background: var(--fa-code-bg);
   border: 1px solid var(--fa-border);
@@ -237,22 +268,35 @@ bdi { unicode-bidi: isolate; }
   padding: 1.1em 1.2em;
   overflow: auto;
   background: transparent; color: var(--fa-fg);
-  border-radius: 12px;
+  border-top: 1px solid var(--fa-border);
+  border-radius: 0 0 12px 12px;
   font-size: inherit;
 }
+/* برچسب زبان: سمت شروعِ نوار (چپ، چون کد LTR است) */
+.markdown-section pre::after {
+  content: attr(data-lang);
+  position: absolute; top: 0; left: 0; right: auto;
+  height: 38px; padding: 0 14px;
+  font-family: var(--fa-mono); font-size: 12px; font-weight: 600; line-height: 38px;
+  color: var(--fa-muted); text-align: left;
+}
+.markdown-section pre[data-lang="mermaid"] { padding-top: 0; }
+.markdown-section pre[data-lang="mermaid"]::after { content: none; }
 .fa-copy {
-  position: absolute; top: 8px; left: 8px;
-  padding: 3px 10px;
-  font-size: 12px; line-height: 1.8;
+  position: absolute; top: 5px; right: 8px; left: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 10px;
+  font-size: 12px; line-height: 1;
   color: var(--fa-muted);
   background: var(--fa-bg);
   border: 1px solid var(--fa-border);
   border-radius: 8px;
   cursor: pointer;
-  opacity: 0; transition: opacity .15s;
+  transition: color .15s, border-color .15s;
 }
-.markdown-section pre:hover .fa-copy, .fa-copy:focus-visible { opacity: 1; }
-@media (hover: none) { .fa-copy { opacity: 1; } }
+.fa-copy:hover, .fa-copy:focus-visible { color: var(--theme-color); border-color: var(--theme-color); }
+.fa-copy.is-done { color: #15803d; border-color: #15803d; }
+html[data-theme="dark"] .fa-copy.is-done { color: #4ade80; border-color: #4ade80; }
 
 .markdown-section .mermaid { direction: ltr; text-align: center; overflow-x: auto; margin: 1.4em 0; }
 .markdown-section .mermaid foreignObject div,
@@ -354,13 +398,13 @@ html[data-theme="dark"] .fa-btn-primary { color: #111 !important; }
 /* ---------- موبایل ---------- */
 @media screen and (max-width: 768px) {
   .sidebar { left: auto; right: calc(var(--fa-sw) * -1); }
-  .content { left: 0; right: 0; padding-top: 20px; }
+  .content { left: 0; right: 0; padding-top: 28px; }   /* با padding بخش متن، زیر دکمهٔ منوی ثابتِ بالا قرار می‌گیرد */
   .markdown-section { padding: 28px 18px 90px; }
   .markdown-section h1, .fa-hero-title { font-size: 1.6rem; }
-  .sidebar-toggle { left: auto; right: 0; width: auto; padding: 30px 10px 10px 30px; background: transparent; border: 0; }
   body.close .sidebar { transform: translateX(calc(var(--fa-sw) * -1)); }
   body.close .content { transform: translateX(calc(var(--fa-sw) * -1)); }
-  body.close .sidebar-toggle { width: var(--fa-sw); padding: 12px; background: var(--fa-bg); border-top: 1px solid var(--fa-border); }
+  body.close .fa-tools { display: none; }               /* وقتی دراور باز است، روی منو نیفتد */
+  .sidebar .search input { font-size: 16px; }           /* جلوگیری از زوم خودکار iOS هنگام فوکوس */
   .fa-pager { flex-direction: column; }
   .fa-pager a { max-width: none; }
   .fa-tools { bottom: 12px; left: 12px; }

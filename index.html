@@ -65,6 +65,7 @@
     }
   </script>
   <script src="assets/fa-enhance.js"></script>
+  <script src="assets/fa-search.js"></script>
   <script>
     window.$docsify = {
       name: 'راهنمای طراحی سیستم‌های هوش مصنوعی',
@@ -76,17 +77,10 @@
       subMaxLevel: 2,
       auto2top: true,
       maxLevel: 3,
-      search: {
-        placeholder: 'جست‌وجو…',
-        noData: 'نتیجه‌ای پیدا نشد',
-        depth: 3,
-        namespace: 'ai-system-design-guide-fa',
-        maxAge: 86400000
-      },
+      // جست‌وجو با assets/fa-search.js ارائه می‌شود (جایگزین پلاگین search پیش‌فرض Docsify)
       plugins: [mermaidPlugin].concat(window.FaPlugins || [])
     };
   </script>
   <script src="assets/docsify.min.js"></script>
-  <script src="assets/search.min.js"></script>
 </body>
 </html>

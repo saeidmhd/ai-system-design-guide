@@ -4,7 +4,7 @@
    - دکمهٔ قبلی/بعدی و زمان مطالعه
    - دکمهٔ کپی کد
    - نوار ابزار: حالت تیره و اندازهٔ متن
-   - نرمال‌سازی جست‌وجو (ي/ك عربی و ارقام عربی)
+   (جست‌وجو در فایل جداگانهٔ fa-search.js است)
    پیش از docsify.min.js بارگذاری شود؛ پلاگین‌ها در window.FaPlugins قرار می‌گیرند.
    ========================================================================== */
 (function () {
@@ -112,10 +112,14 @@
     var h = target.closest('.sidebar-nav > ul > li.fa-group > strong, .sidebar-nav > ul > li.fa-group > p');
     return h;
   }
+  // نکته: Docsify روی موبایل با هر کلیکی که به body برسد دراور را می‌بندد. کلیک روی سرگروه را
+  // در مرحلهٔ capture مصرف می‌کنیم تا به body نرسد و فقط همان گروه باز/بسته شود.
   document.addEventListener('click', function (e) {
     var h = groupHeadFrom(e.target);
-    if (h) toggleGroup(h);
-  });
+    if (!h) return;
+    e.stopPropagation();
+    toggleGroup(h);
+  }, true);
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var h = groupHeadFrom(e.target);
@@ -178,6 +182,15 @@
   }
 
   /* ---------- دکمهٔ کپی کد ---------- */
+  var ICON_ATTRS = 'viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" ' +
+                   'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  var COPY_ICON = '<svg ' + ICON_ATTRS + '><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+  var DONE_ICON = '<svg ' + ICON_ATTRS + '><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function setCopyLabel(b, done) {
+    b.innerHTML = (done ? DONE_ICON : COPY_ICON) + '<span>' + (done ? 'کپی شد' : 'کپی') + '</span>';
+    b.classList.toggle('is-done', !!done);
+  }
+
   function addCopyButtons() {
     Array.prototype.forEach.call(document.querySelectorAll('.markdown-section pre'), function (pre) {
       if (pre.querySelector('.fa-copy') || pre.classList.contains('mermaid') || pre.getAttribute('data-lang') === 'mermaid') return;
@@ -185,11 +198,11 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'fa-copy';
-      b.textContent = 'کپی';
       b.setAttribute('aria-label', 'کپی کد');
+      setCopyLabel(b, false);
       b.addEventListener('click', function () {
         var text = code.textContent;
-        function ok() { b.textContent = 'کپی شد ✓'; setTimeout(function () { b.textContent = 'کپی'; }, 1500); }
+        function ok() { setCopyLabel(b, true); setTimeout(function () { setCopyLabel(b, false); }, 1500); }
         function fallback() {
           var ta = document.createElement('textarea');
           ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -204,20 +217,6 @@
       pre.appendChild(b);
     });
   }
-
-  /* ---------- جست‌وجو: یکسان‌سازی حروف و ارقام ---------- */
-  document.addEventListener('input', function (e) {
-    var t = e.target;
-    if (!t || !t.closest || !t.closest('.search')) return;
-    var v = t.value;
-    var n = v.replace(/ي|ى/g, 'ی').replace(/ك/g, 'ک')
-             .replace(/[٠-٩]/g, function (d) { return FA_DIGITS.charAt(d.charCodeAt(0) - 0x0660); });
-    if (n !== v) {
-      var p = t.selectionStart;
-      t.value = n;
-      try { t.setSelectionRange(p, p); } catch (err) { /* ignore */ }
-    }
-  }, true);
 
   /* ---------- پلاگین Docsify ---------- */
   window.FaPlugins = [
